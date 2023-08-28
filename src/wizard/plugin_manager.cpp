@@ -170,7 +170,7 @@ void PluginManager::loadAll() {
 
                 for (const auto& [name, pluginClass] : assembly.getPluginClasses()) {
                     uint64_t pluginId = lastPluginId++;
-                    plugins.try_emplace(pluginId, name, pluginClass, pluginId);
+                    plugins.try_emplace(pluginId, name, path, pluginClass, pluginId);
                 }
 
                 pluginAssemblies.try_emplace(path, std::move(assembly));
@@ -198,33 +198,12 @@ void PluginManager::loadAll() {
     }
 }
 
-bool PluginManager::load(PluginId id, bool& already) {
-    //already = false;
-    auto plugin = findPlugin(id);
-    if (!plugin)
-        return false;
-
-    // TODO: reload plugin & assembly
-
-    bool ret = plugin->invokeOnLoad();
-    if (ret) {
-        NOTIFY_OTHERS(onLoaded, plugin->id);
-    }
-    return ret;
+std::vector<PluginId> load(const fs::path& file, bool& already) {
+    return {};
 }
 
-bool PluginManager::unload(PluginId id, bool force) {
-    auto plugin = findPlugin(id);
-    if (!plugin)
-        return false;
-
-    bool ret = plugin->invokeOnUnload(force);
-    if (ret) {
-        NOTIFY_OTHERS(onUnloaded, plugin->id);
-
-        // TODO: delete plugin
-    }
-    return ret;
+std::vector<PluginId> unload(const fs::path& file, bool force) {
+    return {};
 }
 
 bool PluginManager::pause(PluginId id) {
@@ -383,14 +362,15 @@ bool PluginClass::isSubclassOf(MonoClass* otherClass, bool checkInterface) const
     return mono_class_is_subclass_of(monoClass, otherClass, checkInterface);
 }
 
-MonoObject* PluginClass::InvokeMethod(MonoObject* instance, MonoMethod* method, void** params) {
+MonoObject* PluginClass::invokeMethod(MonoObject* instance, MonoMethod* method, void** params) const {
     MonoObject* exception = nullptr;
     return mono_runtime_invoke(method, instance, params, &exception);
 }
 
 /*_________________________________________________*/
 
-PluginInstance::PluginInstance(std::string className, std::shared_ptr<PluginClass> _pluginClass, PluginId pluginId) : name{std::move(className)}, pluginClass{std::move(_pluginClass)}, id{pluginId} {
+PluginInstance::PluginInstance(std::string className, fs::path assemblyPath, std::shared_ptr<PluginClass> _pluginClass, PluginId pluginId)
+    : name{std::move(className)}, path{std::move(assemblyPath)}, pluginClass{std::move(_pluginClass)}, id{pluginId} {
     instance = pluginClass->instantiate();
 
     constructor = PluginManager::Get().findCoreClass("Plugin")->getMethod(".ctor", 1);
@@ -405,7 +385,7 @@ PluginInstance::PluginInstance(std::string className, std::shared_ptr<PluginClas
     // Call Plugin constructor
     {
         void* param = &id;
-        PluginClass::InvokeMethod(instance, constructor, &param);
+        pluginClass->invokeMethod(instance, constructor, &param);
     }
 
     auto& pluginInfo = *PluginManager::Get().findCoreClass("IPluginInfo");

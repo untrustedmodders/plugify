@@ -34,7 +34,7 @@ int main() {
             running = false;
         } else if (args[0] == "help") {
             std::cout << "Wizard Menu" << std::endl;
-            std::cout << "usage: wizard <command> [arguments]" << std::endl;
+            std::cout << "usage: wzd <command> [arguments]" << std::endl;
             //std::cout << "  alias        - List or set an alias" << std::endl;
             //std::cout << "  clear        - Unload all plugins forcefully" << std::endl;
             //std::cout << "  cmds         - Show plugin commands" << std::endl;
@@ -51,7 +51,7 @@ int main() {
             //std::cout << "  unload       - Unload a loaded plugin" << std::endl;
             std::cout << "  unpause      - Unpause a paused plugin" << std::endl;
             //std::cout << "  version      - Version information" << std::endl;
-        } else if (args[0] == "wizard" && args.size() > 1) {
+        } else if (args[0] == "wzd" && args.size() > 1) {
             if (args[1] == "list") {
                 const char separator = ' ';
                 const int nameWidth = 20;
@@ -84,7 +84,7 @@ int main() {
                         std::cout << "\t" << "Licence: " << plugin->getLicence() << std::endl;
                         std::cout << "\t" << "Version: " << plugin->getVersion() << std::endl;
                         std::cout << "\t" << "Date: " << plugin->getDate() << std::endl;
-                        //std::cout << "\t" << "Path: " << *path << std::endl;
+                        std::cout << "\t" << "Path: " << plugin->getPath() << std::endl;
                     }
                 } else if (args[1] == "pause") {
                     if (pluginManager.pause(std::stoul(args[2]))) {

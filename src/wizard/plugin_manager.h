@@ -50,7 +50,7 @@ namespace wizard {
 
         bool isSubclassOf(MonoClass* monoClass, bool checkInterface = false) const;
 
-        static MonoObject* InvokeMethod(MonoObject* instance, MonoMethod* method, void** params = nullptr);
+        MonoObject* invokeMethod(MonoObject* instance, MonoMethod* method, void** params = nullptr) const;
 
         operator bool() const { return monoClass != nullptr; }
         operator MonoClass*() const { return monoClass; }
@@ -68,7 +68,7 @@ namespace wizard {
     class PluginInstance {
     public:
         PluginInstance() = delete;
-        PluginInstance(std::string className, std::shared_ptr<PluginClass> pluginClass, PluginId pluginId);
+        PluginInstance(std::string className, fs::path assemblyPath, std::shared_ptr<PluginClass> pluginClass, PluginId pluginId);
         PluginInstance(PluginInstance const&) = delete;
         PluginInstance& operator=(PluginInstance const&) = delete;
 
@@ -83,7 +83,8 @@ namespace wizard {
         const std::string& getAuthor() const { return author; }
         const std::string& getLicence() const { return licence; }
         const std::string& getVersion() const { return version; }
-        const std::string& getDate() const { return date;  }
+        const std::string& getDate() const { return date; }
+        const fs::path& getPath() const { return path; }
 
         operator bool() const { return instance != nullptr; }
         operator MonoObject*() const { return instance; }
@@ -98,16 +99,16 @@ namespace wizard {
         template<typename M>
         void invoke(M&& method, void** params = nullptr) {
             if (method)
-                PluginClass::InvokeMethod(instance, method, params);
+                pluginClass->invokeMethod(instance, method, params);
         }
 
         template<typename T, typename M>
         T invoke(M&& method, void** params = nullptr) {
             if (method) {
                 if constexpr (std::is_same_v<T, std::string>)
-                    return Utils::MonoStringToString((MonoString*) PluginClass::InvokeMethod(instance, method, params));
+                    return Utils::MonoStringToString((MonoString*)pluginClass->invokeMethod(instance, method, params));
                 else
-                    return *reinterpret_cast<T*>(mono_object_unbox(PluginClass::InvokeMethod(instance, method, params)));
+                    return *reinterpret_cast<T*>(mono_object_unbox(pluginClass->invokeMethod(instance, method, params)));
             }
             return T{};
         }
@@ -145,6 +146,8 @@ namespace wizard {
         std::string licence;
         std::string version;
         std::string date;
+
+        fs::path path;
 
         friend class PluginManager;
     };
@@ -193,11 +196,10 @@ namespace wizard {
         static PluginManager& Get();
 
         void loadAll();
-        bool unloadAll();
+        //void unloadAll();
 
-        //std::vector<PluginId> load(const fs::path& file, bool& already);
-        bool load(PluginId id, bool& already);
-        bool unload(PluginId id, bool force);
+        std::vector<PluginId> load(const fs::path& file, bool& already);
+        std::vector<PluginId> unload(const fs::path& file, bool force);
         bool pause(PluginId id);
         bool unpause(PluginId id);
 
