@@ -25,10 +25,17 @@ set(WIZARD_PCH_FILE "src/pch.h")
 
 add_executable(${PROJECT_NAME} ${WIZARD_SRC_FILES} ${WIZARD_HDR_FILES})
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${MONO_INCLUDE_DIRS})
+#target_include_directories(${PROJECT_NAME} PUBLIC ${MONO_INCLUDE_DIRS})
+include_directories(SYSTEM "${MONO_INCLUDE_DIRS}")
 target_link_directories(${PROJECT_NAME} PUBLIC ${MONO_LIBRARY_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${MONO_LIBRARIES})
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${WIZARD_PCH_FILE})
+
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
+endif()
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
         ${CMAKE_CURRENT_SOURCE_DIR}/mono
