@@ -28,11 +28,7 @@ namespace Wizard
 
         public Plugin? FindPluginByName(string name)
         {
-            ulong pluginId = InternalCalls.Plugin_FindPluginByName(name);
-            if (pluginId == ulong.MaxValue)
-                return null;
-
-            return new Plugin(pluginId);
+            return (Plugin?) InternalCalls.Plugin_FindPluginByName(name);
         }
 
         public static bool operator ==(Plugin plugin1, Plugin plugin2)

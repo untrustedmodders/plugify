@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "plugin_manager.h"
 
 template<typename T> void PrintElement(T t, int width, char separator) {
@@ -45,11 +43,11 @@ int main() {
             std::cout << "  info         - Information about a plugin" << std::endl;
             std::cout << "  list         - List plugins" << std::endl;
             //std::cout << "  load         - Load a plugin" << std::endl;
-            std::cout << "  pause        - Pause a running plugin" << std::endl;
+            //std::cout << "  pause        - Pause a running plugin" << std::endl;
             //std::cout << "  refresh      - Reparse plugin files" << std::endl;
             //std::cout << "  retry        - Attempt to reload a plugin" << std::endl;
             //std::cout << "  unload       - Unload a loaded plugin" << std::endl;
-            std::cout << "  unpause      - Unpause a paused plugin" << std::endl;
+            //std::cout << "  unpause      - Unpause a paused plugin" << std::endl;
             //std::cout << "  version      - Version information" << std::endl;
         } else if (args[0] == "wzd" && args.size() > 1) {
             if (args[1] == "list") {
@@ -65,12 +63,12 @@ int main() {
                 PrintElement("Status", statusWidth, separator);
                 std::cout << std::endl;
 
-                for (const auto& [id, plugin] : pluginManager) {
-                    PrintElement(id, numWidth, separator);
+                for (const auto& plugin : pluginManager) {
+                    PrintElement(plugin.getId(), numWidth, separator);
                     PrintElement(plugin.getName(), nameWidth, separator);
                     PrintElement(plugin.getVersion(), nameWidth, separator);
                     PrintElement(plugin.getAuthor(), nameWidth, separator);
-                    PrintElement(wizard::Utils::GetStatusText(plugin.getStatus()), statusWidth, separator);
+                    PrintElement(wizard::utils::GetStatusText(plugin.getStatus()), statusWidth, separator);
                     std::cout << std::endl;
                 }
             } else if (args.size() > 2) {
@@ -79,24 +77,9 @@ int main() {
                         std::cout << "\t" << "Name: " << plugin->getName() << std::endl;
                         std::cout << "\t" << "Description: " << plugin->getDescription() << std::endl;
                         std::cout << "\t" << "Url: " << plugin->getUrl() << std::endl;
-                        std::cout << "\t" << "Tag: " << plugin->getTag() << std::endl;
                         std::cout << "\t" << "Author: " << plugin->getAuthor() << std::endl;
-                        std::cout << "\t" << "Licence: " << plugin->getLicence() << std::endl;
                         std::cout << "\t" << "Version: " << plugin->getVersion() << std::endl;
-                        std::cout << "\t" << "Date: " << plugin->getDate() << std::endl;
                         std::cout << "\t" << "Path: " << plugin->getPath() << std::endl;
-                    }
-                } else if (args[1] == "pause") {
-                    if (pluginManager.pause(std::stoul(args[2]))) {
-                        std::cout << "Plugin was paused" << std::endl;
-                    } else {
-                        std::cerr << "Plugin pause was failed" << std::endl;
-                    }
-                } else if (args[1] == "unpause") {
-                    if (pluginManager.unpause(std::stoul(args[2]))) {
-                        std::cout << "Plugin was paused" << std::endl;
-                    } else {
-                        std::cerr << "Plugin unpause was failed" << std::endl;
                     }
                 }
             }

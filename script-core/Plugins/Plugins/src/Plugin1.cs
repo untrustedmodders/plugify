@@ -3,71 +3,31 @@ using Wizard;
 
 namespace Plugin1
 {
-    public class SamplePlugin : Plugin, IPluginInfo
+	[PluginInfo(Name, Description, Author, Version, URL, new []{"SamplePlugin2", "Plugin3.SamplePlugin"})]
+    public class SamplePlugin : Plugin
     {
-#region Plugin state
-
-		/**
-		 * Called before OnStart, in case the plugin wants to check for load failure. 
-		 */
-		bool OnLoad()
-		{
-			
-			Console.Write(GetName() + ": OnLoad\n");
-			return true;
-		}
-
-		/**
-		 * Called when a plugin is unloaded, use this to disable any asynchronous tasks and remove any callbacks you have registered with the engine (for example a game events listener). Additionally, this function will be called if false is returned by Load().
-		 */
-		void OnUnload()
-		{
-			Console.Write(GetName() + ": OnUnload\n");
-		}
+	    private const string Name = "SamplePlugin1";
+	    private const string Description = "Sample plugin to help developers";
+	    private const string URL = "http://www.site.net/";
+	    private const string Author = "qubka";
+	    private const string Version = "0.0.0.0";
 
 		/**
 		 * Called when the plugin is fully initialized and all known external references are resolved.
-		 * This is only called once in the lifetime of the plugin, and is paired with OnEnd().
+		 * This is only called once in the lifetime of the plugin, and is paired with OnDestroy().
 		 */
-		void OnStart()
+		void OnCreate()
 		{
-			Console.Write(GetName() + ": OnStart\n");
+			Console.Write(Name + ": OnCreate\n");
+			Console.Write($"FindPluginByName: SamplePlugin2 => (Found: id) => {FindPluginByName("SamplePlugin2")?.Id}\n");
 		}
 
 		/**
-		 * Called when the plugin is about to be unloaded.
+		 * Called when the plugin is about to be released.
 		 */
-		void OnEnd()
+		void OnDestroy()
 		{
-			Console.Write(GetName() + ": OnEnd\n");
+			Console.Write(Name + ": OnDestroy\n");
 		}
-
-		/**
-		 * Called when the operation of the plugin is paused (i.e it will stop receiving callbacks but should not be unloaded).
-		 */
-		void OnPause()
-		{
-			Console.Write(GetName() + ": OnPause\n");
-		}
-
-		/**
-		 * Called when a plugin is brought out of the paused state. You should re-enable any asynchronous events your plugin uses in this call
-		 */
-		void OnUnpause()
-		{
-			Console.Write(GetName() + ": OnUnpause\n");
-		}
-
-#endregion
-
-// IPluginInfo
-		public string GetName() { return "Sample Plugin 1"; }
-		public string GetDescription() { return "Sample plugin to help developers"; }
-		public string GetURL() { return "http://www.site.net/"; }
-		public string GetTag() { return "SAMPLE"; }
-		public string GetLicence() { return "SAMPLE"; }
-		public string GetAuthor() { return "qubka"; }
-		public string GetVersion() { return "0.0.0.0"; }
-		public string GetDate() { return "01.01.1970"; }
     }
 }

@@ -1,4 +1,5 @@
 #include "plugin_manager.h"
+#include "plugin_glue.h"
 #include "file_system.h"
 
 #include <mono/jit/jit.h>
@@ -6,14 +7,13 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/mono-debug.h>
 #include <mono/metadata/threads.h>
 
 using namespace std::string_literals;
 
 using namespace wizard;
 
-namespace wizard::Utils {
+namespace wizard::utils {
     MonoAssembly* LoadMonoAssembly(const fs::path& assemblyPath, bool loadPDB) {
         MonoImageOpenStatus status = MONO_IMAGE_IMAGE_INVALID;
         MonoImage* image = nullptr;
@@ -23,7 +23,7 @@ namespace wizard::Utils {
         });
 
         if (status != MONO_IMAGE_OK) {
-            printf("Failed to load assembly file: %s", mono_image_strerror(status));
+            std::cout << "Failed to load assembly file: " << mono_image_strerror(status) << std::endl;
             return nullptr;
         }
 
@@ -33,7 +33,7 @@ namespace wizard::Utils {
 
             FileSystem::ReadBytes<mono_byte>(pdbPath, [&image, &pdbPath](std::span<mono_byte> buffer) {
                 mono_debug_open_image_from_memory(image, buffer.data(), static_cast<int>(buffer.size()));
-                printf("Loaded PDB: %s", pdbPath.string().c_str());
+                std::cout << "Loaded PDB: " << pdbPath.string() << std::endl;
             });
         }
 
@@ -54,7 +54,7 @@ namespace wizard::Utils {
             const char* nameSpace = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE]);
             const char* name = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME]);
 
-            printf("%s.%s", nameSpace, name);
+            std::cout << nameSpace << "." << name << std::endl;
         }
     }
 
@@ -71,10 +71,6 @@ namespace wizard::Utils {
                 return "NOLOAD";
             case PluginStatus::Error:
                 return "ERROR";
-            case PluginStatus::Refused:
-                return "FAILED";
-            case PluginStatus::Paused:
-                return "PAUSED";
             case PluginStatus::Running:
                 return "RUNNING";
             default:
@@ -83,21 +79,75 @@ namespace wizard::Utils {
     }
 }
 
-#define NOTIFY_OTHERS(method, id) \
-    void* param = &id; \
-    for (auto& [i, p] : plugins) { \
-        if (i != id) { \
-            p.invoke(p.method, &param); \
-        } \
-    } \
+namespace wizard::dfs {
+    void TopSort(const std::string& pluginName, PluginInfoList& sourceList, PluginInfoList& targetList) {
+        auto it = std::find_if(sourceList.begin(), sourceList.end(), [&pluginName](const std::unique_ptr<PluginInfo>& i) {
+            return i->name == pluginName;
+        });
+        if (it != sourceList.end()) {
+            auto index = static_cast<size_t>(std::distance(sourceList.begin(), it));
+            auto info = std::move(sourceList[index]);
+            sourceList.erase(it);
+            for (const auto& name : info->dependencies) {
+                TopSort(name, sourceList, targetList);
+            }
+            targetList.push_back(std::move(info));
+        }
+    }
+
+    bool IsCyclicUtil(const std::unique_ptr<PluginInfo>& info, PluginInfoList& sourceList, std::unordered_map<std::string, std::pair<bool, bool>>& data) {
+        auto& [visited, recursive] = data[info->name];
+        if (!visited) {
+            // Mark the current node as visited
+            // and part of recursion stack
+            visited = true;
+            recursive = true;
+
+            // Recur for all the vertices adjacent to this vertex
+            for (const auto& name : info->dependencies) {
+                auto it = std::find_if(sourceList.begin(), sourceList.end(), [&name](const std::unique_ptr<PluginInfo>& i) {
+                    return i->name == name;
+                });
+
+                if (it != sourceList.end()) {
+                    auto [vis, rec] = data[name];
+                    if ((!vis && IsCyclicUtil(*it, sourceList, data)) || rec)
+                        return true;
+                }
+            }
+        }
+
+        // Remove the vertex from recursion stack
+        recursive = false;
+        return false;
+    }
+
+    bool IsCyclic(PluginInfoList& sourceList) {
+        // Mark all the vertices as not visited
+        // and not part of recursion stack
+        std::unordered_map<std::string, std::pair<bool, bool>> data;
+
+        // Call the recursive helper function
+        // to detect cycle in different DFS trees
+        for (const auto& obj : sourceList) {
+            if (!data[obj->name].first && IsCyclicUtil(obj, sourceList, data))
+                return true;
+        }
+
+        return false;
+    }
+}
 
 PluginManager::PluginManager() {
     initMono();
 
-    //PluginGlue::RegisterFunctions();
+    PluginGlue::RegisterFunctions();
 }
 
 PluginManager::~PluginManager() {
+    for (const auto& plugin : plugins)
+        plugin.invokeOnDestroy();
+
     shutdownMono();
 }
 
@@ -147,7 +197,7 @@ void PluginManager::loadAll() {
         return;
 
     // Create an app domain
-    char appName[] = "WizardPluginRuntime";
+    char appName[] = "WizardMonoRuntime";
     appDomain = mono_domain_create_appdomain(appName, nullptr);
     mono_domain_set(appDomain, true);
 
@@ -156,9 +206,10 @@ void PluginManager::loadAll() {
         throw std::runtime_error("Core assembly '" + corePath.string() + "' is missing!");
 
     // Retrieve and instantiate core classes
-    coreClasses.try_emplace("Plugin", coreAssembly, "Wizard", "Plugin");
-    coreClasses.try_emplace("IPluginListener", coreAssembly, "Wizard", "IPluginListener");
-    coreClasses.try_emplace("IPluginInfo", coreAssembly, "Wizard", "IPluginInfo");
+    coreClasses.emplace("Plugin", mono_class_from_name(coreAssembly, "Wizard", "Plugin"));
+    coreClasses.emplace("PluginInfo", mono_class_from_name(coreAssembly, "Wizard", "PluginInfo"));
+
+    PluginInfoList pluginInfos;
 
     // Load a plugin assemblies
     for (auto const& entry : fs::directory_iterator(pluginsPath)) {
@@ -166,78 +217,55 @@ void PluginManager::loadAll() {
         if (fs::is_regular_file(path) && path.extension().string() == ".dll") {
             PluginAssembly assembly;
             if (assembly.load(path, enableDebugging)) {
-                assembly.loadClasses();
-
-                for (const auto& [name, pluginClass] : assembly.getPluginClasses()) {
-                    uint64_t pluginId = lastPluginId++;
-                    plugins.try_emplace(pluginId, name, path, pluginClass, pluginId);
+                auto info = assembly.loadClass();
+                if (info) {
+                    info->path = path;
+                    pluginInfos.push_back(std::move(info));
+                    pluginAssemblies.emplace(path, std::move(assembly));
                 }
-
-                pluginAssemblies.try_emplace(path, std::move(assembly));
             }
         }
     }
 
-    std::vector<PluginId> loaded;
-    loaded.reserve(plugins.size());
+    if (pluginInfos.empty())
+        return;
 
-    // Load a plugins
-    for (auto& [id, plugin] : plugins) {
-        bool ret = plugin.invokeOnLoad();
-        if (ret) {
-            loaded.push_back(id);
-        }
+    // Sort plugins by dependencies
+    PluginInfoList sortedInfos;
+    sortedInfos.reserve(pluginInfos.size());
+    while (!pluginInfos.empty()) {
+        dfs::TopSort(pluginInfos.back()->name, pluginInfos, sortedInfos);
     }
 
-    for (auto id : loaded) {
-        NOTIFY_OTHERS(onLoaded, id);
+    // Function call
+    if (dfs::IsCyclic(sortedInfos))
+        std::cerr << "Plugins contains cycle dependencies" << std::endl;
+    else
+        std::cout << "Plugins doesn't contain cycle dependencies" << std::endl;
+
+    // Initialize plugins
+    plugins.reserve(sortedInfos.size());
+
+    for (size_t i = 0; i < sortedInfos.size(); ++i) {
+        plugins.emplace_back(std::move(sortedInfos[i]), i);
     }
-
-    for (auto& [id, plugin] : plugins) {
-        plugin.invoke(plugin.onAllLoaded);
-    }
-}
-
-std::vector<PluginId> load(const fs::path& file, bool& already) {
-    return {};
-}
-
-std::vector<PluginId> unload(const fs::path& file, bool force) {
-    return {};
-}
-
-bool PluginManager::pause(PluginId id) {
-    auto plugin = findPlugin(id);
-    if (!plugin)
-        return false;
-
-    bool ret = plugin->invokeOnPause();
-    if (ret) {
-        NOTIFY_OTHERS(onPaused, plugin->id);
-    }
-    return ret;
-}
-
-bool PluginManager::unpause(PluginId id) {
-    auto plugin = findPlugin(id);
-    if (!plugin)
-        return false;
-
-    bool ret = plugin->invokeOnUnpause();
-    if (ret) {
-        NOTIFY_OTHERS(onUnpaused, plugin->id);
-    }
-    return ret;
-}
-
-PluginClass* PluginManager::findCoreClass(const std::string& name) {
-    auto it = coreClasses.find(name);
-    return it != coreClasses.end() ? &it->second : nullptr;
 }
 
 PluginInstance* PluginManager::findPlugin(PluginId id) {
-    auto it = plugins.find(id);
-    return it != plugins.end() ? &it->second : nullptr;
+    auto size = plugins.size();
+    return id < size ? &plugins[id] : nullptr;
+}
+
+PluginInstance* PluginManager::findPlugin(std::string_view name) {
+    auto it = std::find_if(plugins.begin(), plugins.end(), [name](const PluginInstance& plugin) {
+       return plugin.getName() == name;
+    });
+    return it != plugins.end() ? &*it : nullptr;
+}
+
+MonoClass* PluginManager::findCoreClass(const std::string& name) {
+    auto it = coreClasses.find(name);
+    return it != coreClasses.end() ? it->second : nullptr;
 }
 
 MonoString* PluginManager::createString(const char* string) const {
@@ -258,32 +286,22 @@ PluginAssembly::~PluginAssembly() {
 PluginAssembly::PluginAssembly(PluginAssembly&& other) noexcept {
     assembly = other.assembly;
     image = other.image;
-    pluginClasses = std::move(other.pluginClasses);
     other.assembly = nullptr;
     other.image = nullptr;
 }
 
-PluginAssembly& PluginAssembly::operator=(PluginAssembly&& other) noexcept {
-    assembly = other.assembly;
-    image = other.image;
-    pluginClasses = std::move(other.pluginClasses);
-    other.assembly = nullptr;
-    other.image = nullptr;
-    return *this;
-}
-
-bool PluginAssembly::load(const fs::path& file, bool enableDebugging) {
+bool PluginAssembly::load(const fs::path& path, bool enableDebugging) {
     unload();
 
-    assembly = Utils::LoadMonoAssembly(file, enableDebugging);
+    assembly = utils::LoadMonoAssembly(path, enableDebugging);
     if (!assembly) {
-        printf("Could not load '%s' assembly.", file.string().c_str());
+        std::cout << "Could not load '" << path.string() << "' assembly." << std::endl;
         return false;
     }
 
     image = mono_assembly_get_image(assembly);
     if (!image) {
-        printf("Could not load '%s' image.", file.string().c_str());
+        std::cout << "Could not load '" << path.string() << "' image." << std::endl;
         return false;
     }
 
@@ -291,6 +309,9 @@ bool PluginAssembly::load(const fs::path& file, bool enableDebugging) {
 }
 
 void PluginAssembly::unload() {
+    if (!PluginManager::Get().appDomain)
+        return;
+
     if (image) {
         mono_image_close(image);
         image = nullptr;
@@ -302,15 +323,15 @@ void PluginAssembly::unload() {
     }
 }
 
-void PluginAssembly::loadClasses() {
+std::unique_ptr<PluginInfo> PluginAssembly::loadClass() {
     assert(image);
-
-    pluginClasses.clear();
 
     const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
     int numTypes = mono_table_info_get_rows(typeDefinitionsTable);
 
-    MonoClass* pluginClass = *PluginManager::Get().findCoreClass("Plugin");
+    MonoClass* pluginClass = PluginManager::Get().findCoreClass("Plugin");
+    MonoClass* pluginInfo = PluginManager::Get().findCoreClass("PluginInfo");
+    MonoDomain* appDomain = PluginManager::Get().appDomain;
 
     for (int i = 0; i < numTypes; ++i) {
         uint32_t cols[MONO_TYPEDEF_SIZE];
@@ -318,11 +339,6 @@ void PluginAssembly::loadClasses() {
 
         const char* nameSpace = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE]);
         const char* className = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME]);
-        std::string fullName;
-        if (strlen(nameSpace) != 0)
-            fullName = nameSpace + "."s + className;
-        else
-            fullName = className;
 
         MonoClass* monoClass = mono_class_from_name(image, nameSpace, className);
         if (monoClass == pluginClass)
@@ -332,122 +348,112 @@ void PluginAssembly::loadClasses() {
         if (!isPlugin)
             continue;
 
-        pluginClasses[std::move(fullName)] = std::make_shared<PluginClass>(image, nameSpace, className);
+        auto info = std::make_unique<PluginInfo>(monoClass);
+
+        MonoCustomAttrInfo* attributes = mono_custom_attrs_from_class(monoClass);
+        if (attributes) {
+            for (int j = 0; j < attributes->num_attrs; ++j) {
+                auto& attrs = attributes->attrs[j];
+                if (pluginInfo != mono_method_get_class(attrs.ctor))
+                    continue;
+
+                auto instance = mono_custom_attrs_get_attr(attributes, pluginInfo);
+
+                void* iterator = nullptr;
+                while (MonoClassField* field = mono_class_get_fields(pluginInfo, &iterator)) {
+                    const char* fieldName = mono_field_get_name(field);
+                    MonoObject* fieldValue = mono_field_get_value_object(appDomain, field, instance);
+
+                    if (!strcmp(fieldName, "_name"))
+                        info->name = utils::MonoStringToString((MonoString*) fieldValue);
+                    else if (!strcmp(fieldName, "_description"))
+                        info->description = utils::MonoStringToString((MonoString*) fieldValue);
+                    else if (!strcmp(fieldName, "_author"))
+                        info->author = utils::MonoStringToString((MonoString*) fieldValue);
+                    else if (!strcmp(fieldName, "_version"))
+                        info->version = utils::MonoStringToString((MonoString*) fieldValue);
+                    else if (!strcmp(fieldName, "_url"))
+                        info->url = utils::MonoStringToString((MonoString*) fieldValue);
+                    else if (!strcmp(fieldName, "_dependencies")) {
+                        MonoArray* array = (MonoArray*) fieldValue;
+                        uintptr_t length = mono_array_length(array);
+                        info->dependencies.reserve(length);
+                        for (uintptr_t k = 0; k < length; ++k) {
+                            MonoString* str = mono_array_get(array, MonoString*, k);
+                            if (mono_string_length(str) > 0)
+                                info->dependencies.push_back(utils::MonoStringToString(str));
+                        }
+                    }
+                }
+                break;
+            }
+            mono_custom_attrs_free(attributes);
+        }
+
+        if (info->name.empty()) {
+            if (strlen(nameSpace) != 0)
+                info->name = nameSpace + "."s + className;
+            else
+                info->name = className;
+        }
+
+        return info;
     }
+
+    return nullptr;
 }
 
 /*_________________________________________________*/
 
-PluginClass::PluginClass(MonoImage* image, std::string _classNamespace, std::string _className) : classNamespace{std::move(_classNamespace)}, className{std::move(_className)} {
-    monoClass = mono_class_from_name(image, classNamespace.c_str(), className.c_str());
-}
-
-MonoObject* PluginClass::instantiate() const {
-    assert(monoClass);
-    return PluginManager::Get().instantiateClass(monoClass);
-}
-
-MonoMethod* PluginClass::getMethod(const char* name, int parameterCount) const {
-    assert(monoClass);
-    return mono_class_get_method_from_name(monoClass, name, parameterCount);
-}
-
-MonoMethod* PluginClass::getVirtualMethod(MonoObject* instance, const char* name, int parameterCount) const {
-    assert(monoClass);
-    MonoMethod* method = mono_class_get_method_from_name(monoClass, name, parameterCount);
-    return method ? mono_object_get_virtual_method(instance, method) : nullptr;
-}
-
-bool PluginClass::isSubclassOf(MonoClass* otherClass, bool checkInterface) const {
-    return mono_class_is_subclass_of(monoClass, otherClass, checkInterface);
-}
-
-MonoObject* PluginClass::invokeMethod(MonoObject* instance, MonoMethod* method, void** params) const {
-    MonoObject* exception = nullptr;
-    return mono_runtime_invoke(method, instance, params, &exception);
-}
-
-/*_________________________________________________*/
-
-PluginInstance::PluginInstance(std::string className, fs::path assemblyPath, std::shared_ptr<PluginClass> _pluginClass, PluginId pluginId)
-    : name{std::move(className)}, path{std::move(assemblyPath)}, pluginClass{std::move(_pluginClass)}, id{pluginId} {
-    instance = pluginClass->instantiate();
-
-    constructor = PluginManager::Get().findCoreClass("Plugin")->getMethod(".ctor", 1);
-
-    onLoad = pluginClass->getMethod("OnLoad", 0);
-    onUnload = pluginClass->getMethod("OnUnload", 0);
-    onPause = pluginClass->getMethod("OnPause", 0);
-    onUnpause = pluginClass->getMethod("OnUnpause", 0);
-    onStart = pluginClass->getMethod("OnStart", 0);
-    onEnd = pluginClass->getMethod("OnEnd", 0);
+PluginInstance::PluginInstance(std::unique_ptr<PluginInfo>&& pluginInfo, PluginId pluginId) : info{std::move(pluginInfo)}, id{pluginId} {
+    instance = PluginManager::Get().instantiateClass(info->monoClass);
 
     // Call Plugin constructor
     {
+        MonoClass* pluginClass = PluginManager::Get().findCoreClass("Plugin");
+        MonoMethod* constructor = mono_class_get_method_from_name(pluginClass, ".ctor", 1);
+
         void* param = &id;
-        pluginClass->invokeMethod(instance, constructor, &param);
+        MonoObject* exception = nullptr;
+        mono_runtime_invoke(constructor, instance, &param, &exception);
+        //TODO: Handle exception
     }
 
-    auto& pluginInfo = *PluginManager::Get().findCoreClass("IPluginInfo");
+    onCreateMethod = mono_class_get_method_from_name(info->monoClass, "OnCreate", 0);
+    onUpdateMethod = mono_class_get_method_from_name(info->monoClass, "OnUpdate", 1);
+    onDestroyMethod = mono_class_get_method_from_name(info->monoClass, "OnDestroy", 0);
 
-    if (pluginClass->isSubclassOf(pluginInfo, true)) {
-        name = invoke<std::string>(pluginInfo.getVirtualMethod(instance, "GetName", 0));
-        description = invoke<std::string>(pluginInfo.getVirtualMethod(instance, "GetDescription", 0));
-        url = invoke<std::string>(pluginInfo.getVirtualMethod(instance, "GetURL", 0));
-        tag = invoke<std::string>(pluginInfo.getVirtualMethod(instance, "GetTag", 0));
-        author = invoke<std::string>(pluginInfo.getVirtualMethod(instance, "GetAuthor", 0));
-        licence = invoke<std::string>(pluginInfo.getVirtualMethod(instance, "GetLicence", 0));
-        version = invoke<std::string>(pluginInfo.getVirtualMethod(instance, "GetVersion", 0));
-        date = invoke<std::string>(pluginInfo.getVirtualMethod(instance, "GetDate", 0));
-    }
+    status = PluginStatus::Running;
 
-    auto& pluginListener = *PluginManager::Get().findCoreClass("IPluginListener");
+    invokeOnCreate();
+}
 
-    if (pluginClass->isSubclassOf(pluginListener, true)) {
-        onLoaded = pluginListener.getVirtualMethod(instance, "OnLoaded", 1);
-        onUnloaded = pluginListener.getVirtualMethod(instance, "OnUnloaded", 1);
-        onPaused = pluginListener.getVirtualMethod(instance, "OnPaused", 1);
-        onUnpaused = pluginListener.getVirtualMethod(instance, "OnUnpaused", 1);
-        onAllLoaded = pluginListener.getVirtualMethod(instance, "OnAllLoaded", 0);
+void PluginInstance::invokeOnCreate() const {
+    if (onCreateMethod) {
+        MonoObject* exception = nullptr;
+        mono_runtime_invoke(onCreateMethod, instance, nullptr, &exception);
+        //TODO: Handle exception
     }
 }
 
-bool PluginInstance::invokeOnLoad() {
-    bool ret = !onLoad || invoke<bool>(onLoad);
-    if (ret) {
-        invoke(onStart);
-        status = PluginStatus::Running;
-    } else {
-        status = PluginStatus::Refused;
+void PluginInstance::invokeOnUpdate(float ts) const {
+    if (onUpdateMethod) {
+        void* param = &ts;
+        MonoObject* exception = nullptr;
+        mono_runtime_invoke(onUpdateMethod, instance, &param, &exception);
+        //TODO: Handle exception
     }
-    return ret;
 }
 
-bool PluginInstance::invokeOnUnload(bool force) {
-    bool ret = !onUnload || invoke<bool>(onUnload) || force;
-    if (ret) {
-        invoke(onEnd);
-        status = PluginStatus::NotLoaded;
+void PluginInstance::invokeOnDestroy() const {
+    if (onDestroyMethod) {
+        MonoObject* exception = nullptr;
+        mono_runtime_invoke(onDestroyMethod, instance, nullptr, &exception);
+        //TODO: Handle exception
     }
-    return ret;
-}
-
-bool PluginInstance::invokeOnPause() {
-    if (status == PluginStatus::Running) {
-        invoke(onPause);
-        status = PluginStatus::Paused;
-        return true;
-    }
-    return false;
-}
-
-bool PluginInstance::invokeOnUnpause() {
-    if (status == PluginStatus::Paused) {
-        invoke(onUnpause);
-        status = PluginStatus::Running;
-        return true;
-    }
-    return false;
 }
 
 /*_________________________________________________*/
+
+PluginInfo::PluginInfo(MonoClass* _monoClass) : monoClass{_monoClass} {
+}
