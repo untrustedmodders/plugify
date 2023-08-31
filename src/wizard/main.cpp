@@ -24,7 +24,7 @@ int main() {
     while (running) {
         std::string command;
         std::getline(std::cin, command);
-        std::vector<std::string> args = Split(command, ' ');
+        std::vector<std::string> args{ Split(command, ' ') };
         if (args.empty())
             continue;
 

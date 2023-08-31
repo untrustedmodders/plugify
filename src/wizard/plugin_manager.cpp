@@ -125,7 +125,7 @@ namespace wizard::dfs {
     bool IsCyclic(PluginInfoList& sourceList) {
         // Mark all the vertices as not visited
         // and not part of recursion stack
-        std::unordered_map<std::string, std::pair<bool, bool>> data;
+        std::unordered_map<std::string, std::pair<bool, bool>> data; /* [visited, recursive] */
 
         // Call the recursive helper function
         // to detect cycle in different DFS trees
@@ -230,6 +230,21 @@ void PluginManager::loadAll() {
     if (pluginInfos.empty())
         return;
 
+    // Find plugins with missing dependencies
+    for (size_t j = pluginInfos.size() - 1; j != static_cast<size_t>(-1); --j) {
+        const auto& info = pluginInfos[j];
+        for (const auto& name : info->dependencies) {
+            auto it = std::find_if(pluginInfos.begin(), pluginInfos.end(), [&name](const std::unique_ptr<PluginInfo>& i) {
+                return i->name == name;
+            });
+            if (it == pluginInfos.end()) {
+                std::cout << "Could not load '" << info->name << "' plugin. It require dependency: '" << name << "' which not exist!" << std::endl;
+                pluginAssemblies.erase(info->path);
+                pluginInfos.erase(pluginInfos.begin() + static_cast<int64_t>(j));
+            }
+        }
+    }
+
     // Sort plugins by dependencies
     PluginInfoList sortedInfos;
     sortedInfos.reserve(pluginInfos.size());
@@ -313,7 +328,7 @@ void PluginAssembly::unload() {
         return;
 
     if (image) {
-        mono_image_close(image);
+        ///mono_image_close(image);
         image = nullptr;
     }
 
