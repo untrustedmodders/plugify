@@ -145,8 +145,9 @@ PluginManager::PluginManager() {
 }
 
 PluginManager::~PluginManager() {
-    for (const auto& plugin : plugins)
-        plugin.invokeOnDestroy();
+    for (size_t i = plugins.size() - 1; i != static_cast<size_t>(-1); --i) {
+        plugins[i].invokeOnDestroy();
+    }
 
     shutdownMono();
 }
@@ -333,7 +334,7 @@ void PluginAssembly::unload() {
     }
 
     if (assembly) {
-        mono_assembly_close(assembly);
+        ///mono_assembly_close(assembly);
         assembly = nullptr;
     }
 }
