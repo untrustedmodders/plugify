@@ -12,11 +12,11 @@ extern "C" {
 }
 
 namespace wizard {
-    using PluginId = size_t;
+    using PluginId = uint64_t;
 
     enum class PluginStatus {
         NotLoaded = -1,
-        Error = -0,
+        Error = 0,
         Running = 1
     };
 
@@ -28,7 +28,9 @@ namespace wizard {
     }
 
     struct PluginInfo {
-        MonoClass* monoClass{ nullptr };
+        MonoAssembly* assembly{ nullptr };
+        MonoImage* image{ nullptr };
+        MonoClass* mainClass{ nullptr };
 
         std::string name;
         std::string description;
@@ -38,7 +40,7 @@ namespace wizard {
         std::vector<std::string> dependencies;
         fs::path path;
 
-        explicit PluginInfo(MonoClass* monoClass);
+        explicit PluginInfo(MonoAssembly* assembly, MonoImage* image, MonoClass* monoClass);
     };
 
     class PluginInstance {
@@ -81,30 +83,6 @@ namespace wizard {
         friend class PluginManager;
     };
 
-    class PluginAssembly {
-    public:
-        PluginAssembly() = default;
-        PluginAssembly(PluginAssembly&& other) noexcept;
-        ~PluginAssembly();
-
-        bool load(const fs::path& path, bool enableDebugging);
-        void unload();
-
-        std::unique_ptr<PluginInfo> loadClass();
-
-        operator bool() const { return image != nullptr; }
-        operator MonoImage*() const { return image; }
-        MonoImage* getImage() const { return image; }
-
-    private:
-        MonoAssembly* assembly{ nullptr };
-        MonoImage* image{ nullptr };
-
-        friend class PluginManager;
-    };
-
-    using PluginAssemblyMap = std::unordered_map<fs::path, PluginAssembly>;
-    using PluginClassesMap = std::unordered_map<std::string, MonoClass*>;
     using PluginInfoList = std::vector<std::unique_ptr<PluginInfo>>;
     using PluginList = std::vector<PluginInstance>;
 
@@ -119,7 +97,6 @@ namespace wizard {
         void loadAll();
         //void unloadAll();
 
-        const PluginAssemblyMap& getAssemblies() const { return pluginAssemblies; }
         const PluginList& getPlugins() const { return plugins; }
         size_t getPluginCount() { return plugins.size(); }
 
@@ -138,7 +115,9 @@ namespace wizard {
     private:
         void initMono();
         void shutdownMono();
-
+		
+		std::unique_ptr<PluginInfo> PluginManager::loadPlugin(const fs::path& path) const;
+		
         MonoString* createString(const char* string) const;
         MonoObject* instantiateClass(MonoClass* monoClass) const;
 
@@ -148,15 +127,15 @@ namespace wizard {
         MonoDomain* rootDomain{ nullptr };
         MonoDomain* appDomain{ nullptr };
 
+        MonoAssembly* coreAssembly{ nullptr };
+        MonoImage* coreImage{ nullptr };
+        std::unordered_map<std::string, MonoClass*> coreClasses;
+		
+        PluginList plugins;
+
         fs::path corePath{ "../addons/wizard/bin/Wizard.dll" };
         fs::path pluginsPath{ "../addons/wizard/plugins/" };
 
-        PluginAssembly coreAssembly;
-        PluginAssemblyMap pluginAssemblies;
-        PluginClassesMap coreClasses;
-        PluginList plugins;
-
-        friend class PluginAssembly;
         friend class PluginInstance;
 
 #ifdef _DEBUG

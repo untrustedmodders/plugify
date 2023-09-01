@@ -203,12 +203,21 @@ void PluginManager::loadAll() {
     mono_domain_set(appDomain, true);
 
     // Load a core assembly
-    if (!coreAssembly.load(corePath, enableDebugging))
-        throw std::runtime_error("Core assembly '" + corePath.string() + "' is missing!");
+	coreAssembly = utils::LoadMonoAssembly(corePath, enableDebugging);
+    if (!coreAssembly) {
+        std::cout << "Could not load '" << corePath.string() << "' core assembly." << std::endl;
+        return;
+    }
+
+    coreImage = mono_assembly_get_image(assembly);
+    if (!coreImage) {
+        std::cout << "Could not load '" << corePath.string() << "' core image." << std::endl;
+        return;
+    }
 
     // Retrieve and instantiate core classes
-    coreClasses.emplace("Plugin", mono_class_from_name(coreAssembly, "Wizard", "Plugin"));
-    coreClasses.emplace("PluginInfo", mono_class_from_name(coreAssembly, "Wizard", "PluginInfo"));
+    coreClasses.emplace("Plugin", mono_class_from_name(coreImage, "Wizard", "Plugin"));
+    coreClasses.emplace("PluginInfo", mono_class_from_name(coreImage, "Wizard", "PluginInfo"));
 
     PluginInfoList pluginInfos;
 
@@ -216,15 +225,8 @@ void PluginManager::loadAll() {
     for (auto const& entry : fs::directory_iterator(pluginsPath)) {
         const auto& path = entry.path();
         if (fs::is_regular_file(path) && path.extension().string() == ".dll") {
-            PluginAssembly assembly;
-            if (assembly.load(path, enableDebugging)) {
-                auto info = assembly.loadClass();
-                if (info) {
-                    info->path = path;
-                    pluginInfos.push_back(std::move(info));
-                    pluginAssemblies.emplace(path, std::move(assembly));
-                }
-            }
+			if (auto info = loadPlugin(path))
+				pluginInfos.push_back(std::move(info));
         }
     }
 
@@ -240,7 +242,6 @@ void PluginManager::loadAll() {
             });
             if (it == pluginInfos.end()) {
                 std::cout << "Could not load '" << info->name << "' plugin. It require dependency: '" << name << "' which not exist!" << std::endl;
-                pluginAssemblies.erase(info->path);
                 pluginInfos.erase(pluginInfos.begin() + static_cast<int64_t>(j));
             }
         }
@@ -293,61 +294,25 @@ MonoObject* PluginManager::instantiateClass(MonoClass* monoClass) const {
     mono_runtime_object_init(instance);
     return instance;
 }
-/*_________________________________________________*/
 
-PluginAssembly::~PluginAssembly() {
-    unload();
-}
-
-PluginAssembly::PluginAssembly(PluginAssembly&& other) noexcept {
-    assembly = other.assembly;
-    image = other.image;
-    other.assembly = nullptr;
-    other.image = nullptr;
-}
-
-bool PluginAssembly::load(const fs::path& path, bool enableDebugging) {
-    unload();
-
-    assembly = utils::LoadMonoAssembly(path, enableDebugging);
+std::unique_ptr<PluginInfo> PluginManager::loadPlugin(const fs::path& path) const {
+    MonoAssembly* assembly = utils::LoadMonoAssembly(path, enableDebugging);
     if (!assembly) {
         std::cout << "Could not load '" << path.string() << "' assembly." << std::endl;
-        return false;
+        return nullptr;
     }
 
-    image = mono_assembly_get_image(assembly);
+    MonoImage* image = mono_assembly_get_image(assembly);
     if (!image) {
         std::cout << "Could not load '" << path.string() << "' image." << std::endl;
-        return false;
+        return nullptr;
     }
-
-    return true;
-}
-
-void PluginAssembly::unload() {
-    if (!PluginManager::Get().appDomain)
-        return;
-
-    if (image) {
-        ///mono_image_close(image);
-        image = nullptr;
-    }
-
-    if (assembly) {
-        ///mono_assembly_close(assembly);
-        assembly = nullptr;
-    }
-}
-
-std::unique_ptr<PluginInfo> PluginAssembly::loadClass() {
-    assert(image);
 
     const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
     int numTypes = mono_table_info_get_rows(typeDefinitionsTable);
 
-    MonoClass* pluginClass = PluginManager::Get().findCoreClass("Plugin");
-    MonoClass* pluginInfo = PluginManager::Get().findCoreClass("PluginInfo");
-    MonoDomain* appDomain = PluginManager::Get().appDomain;
+    MonoClass* pluginClass = findCoreClass("Plugin");
+    MonoClass* pluginInfo = findCoreClass("PluginInfo");
 
     for (int i = 0; i < numTypes; ++i) {
         uint32_t cols[MONO_TYPEDEF_SIZE];
@@ -364,7 +329,7 @@ std::unique_ptr<PluginInfo> PluginAssembly::loadClass() {
         if (!isPlugin)
             continue;
 
-        auto info = std::make_unique<PluginInfo>(monoClass);
+        auto info = std::make_unique<PluginInfo>(assembly, image, monoClass);
 
         MonoCustomAttrInfo* attributes = mono_custom_attrs_from_class(monoClass);
         if (attributes) {
@@ -412,6 +377,8 @@ std::unique_ptr<PluginInfo> PluginAssembly::loadClass() {
             else
                 info->name = className;
         }
+		
+		info->path = path;
 
         return info;
     }
@@ -422,7 +389,7 @@ std::unique_ptr<PluginInfo> PluginAssembly::loadClass() {
 /*_________________________________________________*/
 
 PluginInstance::PluginInstance(std::unique_ptr<PluginInfo>&& pluginInfo, PluginId pluginId) : info{std::move(pluginInfo)}, id{pluginId} {
-    instance = PluginManager::Get().instantiateClass(info->monoClass);
+    instance = PluginManager::Get().instantiateClass(info->mainClass);
 
     // Call Plugin constructor
     {
@@ -435,9 +402,9 @@ PluginInstance::PluginInstance(std::unique_ptr<PluginInfo>&& pluginInfo, PluginI
         //TODO: Handle exception
     }
 
-    onCreateMethod = mono_class_get_method_from_name(info->monoClass, "OnCreate", 0);
-    onUpdateMethod = mono_class_get_method_from_name(info->monoClass, "OnUpdate", 1);
-    onDestroyMethod = mono_class_get_method_from_name(info->monoClass, "OnDestroy", 0);
+    onCreateMethod = mono_class_get_method_from_name(info->mainClass, "OnCreate", 0);
+    onUpdateMethod = mono_class_get_method_from_name(info->mainClass, "OnUpdate", 1);
+    onDestroyMethod = mono_class_get_method_from_name(info->mainClass, "OnDestroy", 0);
 
     status = PluginStatus::Running;
 
@@ -471,5 +438,5 @@ void PluginInstance::invokeOnDestroy() const {
 
 /*_________________________________________________*/
 
-PluginInfo::PluginInfo(MonoClass* _monoClass) : monoClass{_monoClass} {
+PluginInfo::PluginInfo(MonoAssembly* _assembly, MonoImage* _image, MonoClass* _mainClass) : assembly{_assembly}, image{_image}, mainClass{_mainClass} {
 }
