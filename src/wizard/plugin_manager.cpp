@@ -209,15 +209,17 @@ void PluginManager::loadAll() {
         return;
     }
 
-    coreImage = mono_assembly_get_image(assembly);
+    coreImage = mono_assembly_get_image(coreAssembly);
     if (!coreImage) {
         std::cout << "Could not load '" << corePath.string() << "' core image." << std::endl;
         return;
     }
 
-    // Retrieve and instantiate core classes
-    coreClasses.emplace("Plugin", mono_class_from_name(coreImage, "Wizard", "Plugin"));
+    // Retrieve and cache core classes/methods
+    MonoClass* pluginClass = mono_class_from_name(coreImage, "Wizard", "Plugin");
+    coreClasses.emplace("Plugin", pluginClass);
     coreClasses.emplace("PluginInfo", mono_class_from_name(coreImage, "Wizard", "PluginInfo"));
+    coreMethods.emplace(".ctor", mono_class_get_method_from_name(pluginClass, ".ctor", 1));
 
     PluginInfoList pluginInfos;
 
@@ -285,17 +287,22 @@ MonoClass* PluginManager::findCoreClass(const std::string& name) {
     return it != coreClasses.end() ? it->second : nullptr;
 }
 
+MonoMethod* PluginManager::findCoreMethod(const std::string& name) {
+    auto it = coreMethods.find(name);
+    return it != coreMethods.end() ? it->second : nullptr;
+}
+
 MonoString* PluginManager::createString(const char* string) const {
     return mono_string_new(appDomain, string);
 }
 
-MonoObject* PluginManager::instantiateClass(MonoClass* monoClass) const {
-    MonoObject* instance = mono_object_new(appDomain, monoClass);
+MonoObject* PluginManager::instantiateClass(MonoClass* klass) const {
+    MonoObject* instance = mono_object_new(appDomain, klass);
     mono_runtime_object_init(instance);
     return instance;
 }
 
-std::unique_ptr<PluginInfo> PluginManager::loadPlugin(const fs::path& path) const {
+std::unique_ptr<PluginInfo> PluginManager::loadPlugin(const fs::path& path) {
     MonoAssembly* assembly = utils::LoadMonoAssembly(path, enableDebugging);
     if (!assembly) {
         std::cout << "Could not load '" << path.string() << "' assembly." << std::endl;
@@ -389,12 +396,11 @@ std::unique_ptr<PluginInfo> PluginManager::loadPlugin(const fs::path& path) cons
 /*_________________________________________________*/
 
 PluginInstance::PluginInstance(std::unique_ptr<PluginInfo>&& pluginInfo, PluginId pluginId) : info{std::move(pluginInfo)}, id{pluginId} {
-    instance = PluginManager::Get().instantiateClass(info->mainClass);
+    instance = PluginManager::Get().instantiateClass(info->klass);
 
     // Call Plugin constructor
     {
-        MonoClass* pluginClass = PluginManager::Get().findCoreClass("Plugin");
-        MonoMethod* constructor = mono_class_get_method_from_name(pluginClass, ".ctor", 1);
+        MonoMethod* constructor = PluginManager::Get().findCoreMethod(".ctor");
 
         void* param = &id;
         MonoObject* exception = nullptr;
@@ -402,9 +408,9 @@ PluginInstance::PluginInstance(std::unique_ptr<PluginInfo>&& pluginInfo, PluginI
         //TODO: Handle exception
     }
 
-    onCreateMethod = mono_class_get_method_from_name(info->mainClass, "OnCreate", 0);
-    onUpdateMethod = mono_class_get_method_from_name(info->mainClass, "OnUpdate", 1);
-    onDestroyMethod = mono_class_get_method_from_name(info->mainClass, "OnDestroy", 0);
+    onCreateMethod = mono_class_get_method_from_name(info->klass, "OnCreate", 0);
+    onUpdateMethod = mono_class_get_method_from_name(info->klass, "OnUpdate", 1);
+    onDestroyMethod = mono_class_get_method_from_name(info->klass, "OnDestroy", 0);
 
     status = PluginStatus::Running;
 
@@ -438,5 +444,6 @@ void PluginInstance::invokeOnDestroy() const {
 
 /*_________________________________________________*/
 
-PluginInfo::PluginInfo(MonoAssembly* _assembly, MonoImage* _image, MonoClass* _mainClass) : assembly{_assembly}, image{_image}, mainClass{_mainClass} {
+PluginInfo::PluginInfo(MonoAssembly* _assembly, MonoImage* _image, MonoClass* _klass)
+    : assembly{_assembly}, image{_image}, klass{_klass} {
 }

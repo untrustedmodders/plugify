@@ -30,7 +30,7 @@ namespace wizard {
     struct PluginInfo {
         MonoAssembly* assembly{ nullptr };
         MonoImage* image{ nullptr };
-        MonoClass* mainClass{ nullptr };
+        MonoClass* klass{ nullptr };
 
         std::string name;
         std::string description;
@@ -40,7 +40,7 @@ namespace wizard {
         std::vector<std::string> dependencies;
         fs::path path;
 
-        explicit PluginInfo(MonoAssembly* assembly, MonoImage* image, MonoClass* monoClass);
+        PluginInfo(MonoAssembly* assembly, MonoImage* image, MonoClass* klass);
     };
 
     class PluginInstance {
@@ -116,12 +116,13 @@ namespace wizard {
         void initMono();
         void shutdownMono();
 		
-		std::unique_ptr<PluginInfo> PluginManager::loadPlugin(const fs::path& path) const;
+		std::unique_ptr<PluginInfo> loadPlugin(const fs::path& path);
 		
         MonoString* createString(const char* string) const;
-        MonoObject* instantiateClass(MonoClass* monoClass) const;
+        MonoObject* instantiateClass(MonoClass* klass) const;
 
         MonoClass* findCoreClass(const std::string& name);
+        MonoMethod* findCoreMethod(const std::string& name);
 
     private:
         MonoDomain* rootDomain{ nullptr };
@@ -129,8 +130,10 @@ namespace wizard {
 
         MonoAssembly* coreAssembly{ nullptr };
         MonoImage* coreImage{ nullptr };
+
         std::unordered_map<std::string, MonoClass*> coreClasses;
-		
+        std::unordered_map<std::string, MonoMethod*> coreMethods;
+
         PluginList plugins;
 
         fs::path corePath{ "../addons/wizard/bin/Wizard.dll" };
