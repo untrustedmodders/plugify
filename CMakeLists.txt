@@ -19,16 +19,18 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MONO REQUIRED mono-2)
 
+find_package(Lua 5.1 REQUIRED)
+
 file(GLOB_RECURSE WIZARD_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/wizard/*.cpp")
 file(GLOB_RECURSE WIZARD_HDR_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/wizard/*.h")
 set(WIZARD_PCH_FILE "src/pch.h")
 
 add_executable(${PROJECT_NAME} ${WIZARD_SRC_FILES} ${WIZARD_HDR_FILES})
 
-#target_include_directories(${PROJECT_NAME} PUBLIC ${MONO_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC ${LUA_INCLUDE_DIR})
 include_directories(SYSTEM "${MONO_INCLUDE_DIRS}")
 target_link_directories(${PROJECT_NAME} PUBLIC ${MONO_LIBRARY_DIRS})
-target_link_libraries(${PROJECT_NAME} PUBLIC ${MONO_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${MONO_LIBRARIES} ${LUA_LIBRARIES})
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${WIZARD_PCH_FILE})
 
 if(MSVC)

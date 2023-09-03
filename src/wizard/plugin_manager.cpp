@@ -271,8 +271,7 @@ void PluginManager::loadAll() {
 }
 
 PluginInstance* PluginManager::findPlugin(PluginId id) {
-    auto size = plugins.size();
-    return id < size ? &plugins[id] : nullptr;
+    return id < plugins.size() ? &plugins[id] : nullptr;
 }
 
 PluginInstance* PluginManager::findPlugin(std::string_view name) {
