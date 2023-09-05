@@ -1,18 +1,12 @@
 ﻿using System;
-        
+
 #nullable enable
 
 namespace Wizard
 {
     public class Plugin : IEquatable<Plugin>
     {
-        public enum Result
-        {
-            Continue, // Continue with the original action
-            Changed,  // Inputs or outputs have been overridden with new values
-            Handled,  // Handle the action at the end (don't call it)
-            Stop      // Immediately stop the hook chain and handle the original
-        }
+        public readonly ulong Id;
 
         protected Plugin()
         {
@@ -24,26 +18,24 @@ namespace Wizard
             Id = id;
         }
 
-        public readonly ulong Id;
-
         public Plugin? FindPluginByName(string name)
         {
             return (Plugin?) InternalCalls.Plugin_FindPluginByName(name);
         }
 
-        public static bool operator ==(Plugin plugin1, Plugin plugin2)
+        public static bool operator ==(Plugin lhs, Plugin rhs)
         {
-            return plugin1.Id == plugin2.Id;
+            return lhs.Id == rhs.Id;
         }
 
-        public static bool operator !=(Plugin plugin1, Plugin plugin2)
+        public static bool operator !=(Plugin lhs, Plugin rhs)
         {
-            return plugin1.Id != plugin2.Id;
+            return lhs.Id != rhs.Id;
         }
 
-        public bool Equals(Plugin? otherPlugin)
+        public bool Equals(Plugin? other)
         {
-            return !ReferenceEquals(otherPlugin, null) && Id == otherPlugin.Id;
+            return !ReferenceEquals(other, null) && Id == other.Id;
         }
 
         public override bool Equals(object? obj)
@@ -60,7 +52,12 @@ namespace Wizard
 
         public override int GetHashCode()
         {
-            return (int)Id;
+            return Id.GetHashCode();
+        }
+
+		public override string ToString()
+        {
+            return Equals(null) ? "Plugin.Null" : $"Plugin({Id})";
         }
     }
 }
