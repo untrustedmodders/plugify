@@ -20,7 +20,7 @@ namespace Wizard
         /** @brief A url link to this plugin */
         private string _url;
 
-        /** */
+        /** @brief A dependency plugins list of this plugin */
         private string[] _dependencies;
 
         public PluginInfo(string name, string description, string author, string version, string url)

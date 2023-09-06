@@ -69,14 +69,15 @@ namespace wizard {
         PluginStatus getStatus() const { return status; }
 
     private:
+		MonoMethod* cacheMethod(const char* name, int params);
+		MonoMethod* cacheVirtualMethod(const char* name);
+	
+	private:
         std::unique_ptr<PluginInfo> info;
         uint64_t id;
 
         MonoObject* instance{ nullptr };
-        //MonoMethod* constructor{ nullptr };
-        MonoMethod* onCreateMethod{ nullptr };
-        MonoMethod* onUpdateMethod{ nullptr };
-        MonoMethod* onDestroyMethod{ nullptr };
+		std::unordered_map<std::string, MonoMethod*> methods;
 
         PluginStatus status{ PluginStatus::NotLoaded };
 
@@ -121,6 +122,9 @@ namespace wizard {
         MonoString* createString(const char* string) const;
         MonoObject* instantiateClass(MonoClass* klass) const;
 
+		MonoClass* cacheCoreClass(const char* name);
+		MonoMethod* cacheCoreMethod(MonoClass* klass, const char* name, int params);
+		
         MonoClass* findCoreClass(const std::string& name);
         MonoMethod* findCoreMethod(const std::string& name);
 

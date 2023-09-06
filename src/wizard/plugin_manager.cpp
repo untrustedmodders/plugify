@@ -216,11 +216,41 @@ void PluginManager::loadAll() {
     }
 
     // Retrieve and cache core classes/methods
-    MonoClass* pluginClass = mono_class_from_name(coreImage, "Wizard", "Plugin");
-    coreClasses.emplace("Plugin", pluginClass);
-    coreClasses.emplace("PluginInfo", mono_class_from_name(coreImage, "Wizard", "PluginInfo"));
-    coreMethods.emplace(".ctor", mono_class_get_method_from_name(pluginClass, ".ctor", 1));
+	
+	/// Plugin
+    MonoClass* pluginClass = cacheCoreClass("Plugin");
+	cacheCoreMethod(pluginClass, ".ctor", 1);
+	
+	/// PluginInfo
+	cacheCoreClass("PluginInfo");
+	
+	/// IServerListener
+	{
+		MonoClass* serverListener = cacheCoreClass("IServerListener");
+		cacheCoreMethod(serverListener, "OnConfigsExecuted", 0);
+		cacheCoreMethod(serverListener, "OnLevelShutdown", 0);
+		cacheCoreMethod(serverListener, "OnLevelInit", 1);
+		cacheCoreMethod(serverListener, "OnLevelStart", 0);
+		cacheCoreMethod(serverListener, "OnEntityCreated", 2);
+		cacheCoreMethod(serverListener, "OnEntityDestroyed", 2);
+	}
 
+	/// IClientListener
+	{
+		MonoClass* clientListener = cacheCoreClass("IClientListener");
+		cacheCoreMethod(clientListener, "OnClientAuthorized", 2);
+		cacheCoreMethod(clientListener, "OnClientCommand", 2);
+		cacheCoreMethod(clientListener, "OnClientConnect", 4);
+		cacheCoreMethod(clientListener, "OnClientConnected", 1);
+		cacheCoreMethod(clientListener, "OnClientDisconnect", 1);
+		cacheCoreMethod(clientListener, "OnClientDisconnected", 1);
+		cacheCoreMethod(clientListener, "OnClientPutInServer", 2);
+		cacheCoreMethod(clientListener, "OnClientActive", 2);
+		cacheCoreMethod(clientListener, "OnClientSettingsChanged", 1);
+	}
+	
+	//
+	
     PluginInfoList pluginInfos;
 
     // Load a plugin assemblies
@@ -279,6 +309,19 @@ PluginInstance* PluginManager::findPlugin(std::string_view name) {
        return plugin.getName() == name;
     });
     return it != plugins.end() ? &*it : nullptr;
+}
+
+MonoClass* PluginManager::cacheCoreClass(const char* name) {
+	MonoClass* klass = mono_class_from_name(coreImage, "Wizard", name);
+	assert(klass);
+	coreClasses.emplace(name, klass);
+	return klass;
+}
+MonoMethod* PluginManager::cacheCoreMethod(MonoClass* klass, const char* name, int params) {
+	MonoMethod* method = mono_class_get_method_from_name(klass, name, params);
+	assert(method);
+	coreMethods.emplace(name, method);
+	return method;
 }
 
 MonoClass* PluginManager::findCoreClass(const std::string& name) {
@@ -395,21 +438,47 @@ std::unique_ptr<PluginInfo> PluginManager::loadPlugin(const fs::path& path) {
 /*_________________________________________________*/
 
 PluginInstance::PluginInstance(std::unique_ptr<PluginInfo>&& pluginInfo, PluginId pluginId) : info{std::move(pluginInfo)}, id{pluginId} {
-    instance = PluginManager::Get().instantiateClass(info->klass);
+    MonoClass* monoClass = info->klass;
+	
+	instance = PluginManager::Get().instantiateClass();
 
     // Call Plugin constructor
     {
         MonoMethod* constructor = PluginManager::Get().findCoreMethod(".ctor");
-
+		assert(constructor);
         void* param = &id;
         MonoObject* exception = nullptr;
         mono_runtime_invoke(constructor, instance, &param, &exception);
         //TODO: Handle exception
     }
 
-    onCreateMethod = mono_class_get_method_from_name(info->klass, "OnCreate", 0);
-    onUpdateMethod = mono_class_get_method_from_name(info->klass, "OnUpdate", 1);
-    onDestroyMethod = mono_class_get_method_from_name(info->klass, "OnDestroy", 0);
+	cacheMethod("OnCreate", 0);
+	cacheMethod("OnUpdate", 1);
+	cacheMethod("OnDestroy", 0);
+
+	// IServerListener
+	MonoClass* serverListener = PluginManager::Get().findCoreClass("IServerListener");
+	if (mono_class_is_subclass_of(monoClass, serverListener, true)) {
+		cacheVirtualMethod("OnConfigsExecuted");
+		cacheVirtualMethod("OnLevelShutdown");
+		cacheVirtualMethod("OnLevelInit");
+		cacheVirtualMethod("OnLevelStart");
+		cacheVirtualMethod("OnEntityCreated");
+		cacheVirtualMethod("OnEntityDestroyed");
+	}
+	
+	// IClientListener
+	MonoClass* clientListener = PluginManager::Get().findCoreClass("IClientListener");
+	if (mono_class_is_subclass_of(monoClass, clientListener, true)) {
+		cacheVirtualMethod("OnClientAuthorized");
+		cacheVirtualMethod("OnClientCommand");
+		cacheVirtualMethod("OnClientConnect");
+		cacheVirtualMethod("OnClientConnected");
+		cacheVirtualMethod("OnClientDisconnect");
+		cacheVirtualMethod("OnClientPutInServer");
+		cacheVirtualMethod("OnClientActive");
+		cacheVirtualMethod("OnClientSettingsChanged");
+	}
 
     status = PluginStatus::Running;
 
@@ -417,28 +486,44 @@ PluginInstance::PluginInstance(std::unique_ptr<PluginInfo>&& pluginInfo, PluginI
 }
 
 void PluginInstance::invokeOnCreate() const {
-    if (onCreateMethod) {
+	if (auto it = methods.find("OnCreate"); it != methods.ends()) {
         MonoObject* exception = nullptr;
-        mono_runtime_invoke(onCreateMethod, instance, nullptr, &exception);
+        mono_runtime_invoke(it->second, instance, nullptr, &exception);
         //TODO: Handle exception
     }
 }
 
 void PluginInstance::invokeOnUpdate(float ts) const {
-    if (onUpdateMethod) {
+    if (auto it = methods.find("OnUpdate"); it != methods.ends()) {
         void* param = &ts;
         MonoObject* exception = nullptr;
-        mono_runtime_invoke(onUpdateMethod, instance, &param, &exception);
+        mono_runtime_invoke(it->second, instance, &param, &exception);
         //TODO: Handle exception
     }
 }
 
 void PluginInstance::invokeOnDestroy() const {
-    if (onDestroyMethod) {
+    if (auto it = methods.find("OnDestroy"); it != methods.ends()) {
         MonoObject* exception = nullptr;
-        mono_runtime_invoke(onDestroyMethod, instance, nullptr, &exception);
+        mono_runtime_invoke(it->second, instance, nullptr, &exception);
         //TODO: Handle exception
     }
+}
+
+MonoMethod* PluginInstance::cacheMethod(const char* name, int params) {
+	Method* method = mono_class_get_method_from_name(monoClass, name, params);
+	assert(method);
+	methods.emplace(name, method);
+	return method;
+}
+
+MonoMethod* PluginInstance::cacheVirtualMethod(const char* name) {
+	Method* method = PluginManager::Get().findCoreMethod(name);
+	assert(method);
+	Method* vmethod = mono_object_get_virtual_method(instance, method);
+	assert(vmethod);
+	methods.emplace(name, vmethod);
+	return vmethod;
 }
 
 /*_________________________________________________*/
