@@ -64,7 +64,7 @@ namespace Wizard
 
 		public override string ToString()
         {
-            return Equals(null) ? "Plugin.Null" : $"Plugin({Id})";
+            return IsNull() ? "Plugin.Null" : $"Plugin({Id})";
         }
     }
 }
