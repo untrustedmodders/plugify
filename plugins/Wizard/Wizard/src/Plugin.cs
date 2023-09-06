@@ -4,7 +4,7 @@
 
 namespace Wizard
 {
-    public class Plugin : IEquatable<Plugin>
+    public class Plugin : IEquatable<Plugin>, IComparable<Plugin>
     {
         public readonly ulong Id;
 
@@ -32,7 +32,14 @@ namespace Wizard
         {
             return lhs.Id != rhs.Id;
         }
-
+        
+        public int CompareTo(Plugin? other)
+        {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
+            return Id.CompareTo(other.Id);
+        }
+        
         public bool Equals(Plugin? other)
         {
             return !ReferenceEquals(other, null) && Id == other.Id;
@@ -42,7 +49,7 @@ namespace Wizard
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj.GetType() == GetType() && Equals((Plugin)obj);
+            return obj.GetType() == GetType() && Id == ((Plugin)obj).Id;
         }
         
         public bool IsNull()

@@ -8,11 +8,6 @@ namespace Wizard
 	{
 		public readonly ulong Ptr;
 
-		public Entity()
-		{ 
-			Ptr = 0;
-		} 
-
 		public Entity(ulong ptr)
 		{
 			Ptr = ptr;
@@ -20,27 +15,27 @@ namespace Wizard
 
 		public static bool operator ==(Entity lhs, Entity rhs)
 		{
-			return (lhs.Ptr == rhs.Ptr);
+			return lhs.Ptr == rhs.Ptr;
 		}
 
 		public static bool operator !=(Entity lhs, Entity rhs)
 		{
-			return (lhs.Ptr != rhs.Ptr);
+			return lhs.Ptr != rhs.Ptr;
 		}
 		
 		public int CompareTo(Entity other)
         {
-            return Ptr - other.Ptr;
+            return Ptr.CompareTo(other.Ptr);
         }
 		
-		public bool Equals(Entity? other)
+		public bool Equals(Entity other)
         {
             return Ptr == other.Ptr;
         }
 
-        public override bool Equals(object? compare)
+		public override bool Equals(object? compare)
         {
-            return compare is Entity compareEntity && Equals(compareEntity);
+            return compare is Entity compareEntity && Ptr == compareEntity.Ptr;
         }
         
         public bool IsNull()
@@ -53,7 +48,7 @@ namespace Wizard
             return Ptr.GetHashCode();
         }
 		
-		public static Entity Null => new Entity();
+		public static Entity Null => new(0);
 		
 		public override string ToString()
         {
