@@ -1,0 +1,7 @@
+[submodule "libraries/asmjit"]
+	path = libraries/asmjit
+	url = https://github.com/asmjit/asmjit
+	ignore = all
+[submodule "libraries/nlohmann_json"]
+	path = libraries/nlohmann_json
+	url = https://github.com/nlohmann/json
