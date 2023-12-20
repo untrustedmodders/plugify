@@ -16,8 +16,8 @@ endif()
 #
 # Options
 #
-option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" ON)
-option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared libary" ON)
+option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" OFF)
+option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared libary" OFF)
 
 option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared libary" OFF)
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit libary" OFF)
@@ -30,14 +30,6 @@ if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
     set(ASMJIT_STATIC ${WIZARD_BUILD_SHARED_ASMJIT} CACHE BOOL "")
 
     add_subdirectory(external/asmjit)
-
-    if(MSVC)
-        if(ASMJIT_STATIC)
-            set_target_properties(asmjit PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-        else()
-            set_target_properties(asmjit PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-        endif()
-    endif()
 endif()
 
 #
@@ -47,12 +39,7 @@ if(NOT WIZARD_USE_EXTERNAL_NLOHMANN_JSON)
     set(JSON_BuildTests OFF CACHE INTERNAL "")
 
     add_subdirectory(external/nlohmann_json)
-
-    if(MSVC)
-        set_target_properties(nlohmann_json PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    endif()
 endif()
-
 
 #
 # Wizard
@@ -97,14 +84,12 @@ target_include_directories(${PROJECT_NAME}
         )
 
 #Core
-set(WIZARD_CORE_HEADERS
-        ${PROJECT_SOURCE_DIR}/src/core/language_module.h
-        ${PROJECT_SOURCE_DIR}/src/core/plugin_manager.h)
+file(GLOB_RECURSE WIZARD_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/core/*.cpp")
+file(GLOB_RECURSE WIZARD_CORE_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/core/*.h")
 
 install(FILES ${WIZARD_CORE_HEADERS} DESTINATION include)
 
-target_sources(${PROJECT_NAME} PRIVATE
-        ${PROJECT_SOURCE_DIR}/src/core/plugin_manager.cpp)
+target_sources(${PROJECT_NAME} PRIVATE ${WIZARD_CORE_SOURCES})
 
 install(TARGETS wizard DESTINATION /usr/lib)
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.h)
