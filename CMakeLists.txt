@@ -29,7 +29,7 @@ option(WIZARD_USE_EXTERNAL_NLOHMANN_JSON "Use external nlohmann/json libary" OFF
 if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
     set(ASMJIT_STATIC ${WIZARD_BUILD_SHARED_ASMJIT} CACHE BOOL "")
 
-    add_subdirectory(libraries/asmjit)
+    add_subdirectory(external/asmjit)
 
     if(MSVC)
         if(ASMJIT_STATIC)
@@ -46,7 +46,7 @@ endif()
 if(NOT WIZARD_USE_EXTERNAL_NLOHMANN_JSON)
     set(JSON_BuildTests OFF CACHE INTERNAL "")
 
-    add_subdirectory(libraries/nlohmann_json)
+    add_subdirectory(external/nlohmann_json)
 
     if(MSVC)
         set_target_properties(nlohmann_json PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
