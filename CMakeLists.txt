@@ -71,18 +71,18 @@ endif()
 if(WIZARD_USE_EXTERNAL_ASMJIT)
     find_library(ASMJIT_LIBRARY NAMES asmjit)
     find_path(ASMJIT_INCLUDE_DIR NAMES asmjit/asmjit.h)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${ASMJIT_LIBRARY})
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${ASMJIT_LIBRARY})
     target_include_directories(${PROJECT_NAME} PUBLIC ${ASMJIT_INCLUDE_DIR})
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:asmjit>)
+    target_link_libraries(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:asmjit>)
     target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${ASMJIT_SRC}>")
 endif()
 
 if(WIZARD_USE_EXTERNAL_NLOHMANN_JSON)
     find_library(NLOHMANN_JSON_LIBRARY NAMES nlohmann_json)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${NLOHMANN_JSON_LIBRARY})
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${NLOHMANN_JSON_LIBRARY})
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE $<BUILD_INTERFACE:nlohmann_json>)
+    target_link_libraries(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:nlohmann_json>)
 endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
@@ -101,11 +101,12 @@ set(WIZARD_CORE_HEADERS
         ${PROJECT_SOURCE_DIR}/src/core/language_module.h
         ${PROJECT_SOURCE_DIR}/src/core/plugin_manager.h)
 
-install(FILES ${WIZARD_CORE_HEADERS} DESTINATION include/wizard)
+install(FILES ${WIZARD_CORE_HEADERS} DESTINATION include)
 
 target_sources(${PROJECT_NAME} PRIVATE
         ${PROJECT_SOURCE_DIR}/src/core/plugin_manager.cpp)
 
+install(TARGETS wizard DESTINATION /usr/lib)
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.h)
 
 if(MSVC)
