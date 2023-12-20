@@ -16,8 +16,8 @@ endif()
 #
 # Options
 #
-option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" OFF)
-option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared libary" OFF)
+option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" ON)
+option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared libary" ON)
 
 option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared libary" OFF)
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit libary" OFF)
@@ -98,12 +98,13 @@ target_include_directories(${PROJECT_NAME}
 
 #Core
 set(WIZARD_CORE_HEADERS
-        ${PROJECT_SOURCE_DIR}/src/core/test.h)
+        ${PROJECT_SOURCE_DIR}/src/core/language_module.h
+        ${PROJECT_SOURCE_DIR}/src/core/plugin_manager.h)
 
 install(FILES ${WIZARD_CORE_HEADERS} DESTINATION include/wizard)
 
 target_sources(${PROJECT_NAME} PRIVATE
-        ${PROJECT_SOURCE_DIR}/src/core/main.cpp)
+        ${PROJECT_SOURCE_DIR}/src/core/plugin_manager.cpp)
 
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.h)
 
@@ -124,38 +125,3 @@ if(MSVC)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
-
-#
-# Install
-#
-include(CMakePackageConfigHelpers)
-
-configure_package_config_file(
-        "${PROJECT_NAME}-config.cmake.in"
-        "${PROJECT_NAME}-config.cmake"
-        INSTALL_DESTINATION
-        "lib/${PROJECT_NAME}"
-)
-
-install(
-        FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
-        DESTINATION
-        "lib/${PROJECT_NAME}"
-)
-
-install(TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}-targets
-        RUNTIME DESTINATION "bin"
-        LIBRARY DESTINATION "lib"
-        ARCHIVE DESTINATION "lib"
-        )
-
-install(
-        EXPORT
-        ${PROJECT_NAME}-targets
-        NAMESPACE
-        ${PROJECT_NAME}::
-        DESTINATION
-        "lib/${PROJECT_NAME}"
-)
