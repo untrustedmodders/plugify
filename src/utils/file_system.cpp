@@ -50,17 +50,18 @@ std::vector<fs::path> FileSystem::GetFiles(const fs::path& root, bool recursive,
     std::vector<fs::path> paths;
 
     if (fs::exists(root) && fs::is_directory(root)) {
-        if (!ext.empty()) {
-            for (auto const& entry : fs::recursive_directory_iterator(root)) {
+        auto iterate = [&paths, &ext](auto iterator) {
+            for (auto const& entry : iterator) {
                 const auto& path = entry.path();
-                if (fs::is_regular_file(entry) && path.extension().string() == ext)
+                if (fs::is_regular_file(entry) && (ext.empty() || path.extension().string() == ext))
                     paths.push_back(path);
             }
+        };
+
+        if (recursive) {
+            iterate(fs::recursive_directory_iterator(root));
         } else {
-            for (auto const& entry : fs::recursive_directory_iterator(root)) {
-                if (fs::is_regular_file(entry))
-                    paths.push_back(entry.path());
-            }
+            iterate(fs::directory_iterator(root));
         }
     }
 
