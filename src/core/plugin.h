@@ -27,7 +27,7 @@ namespace wizard {
         /**
          * Plugin constructor
          */
-        Plugin(uint64_t id, fs::path  filePath, PluginDescriptor  descriptor);
+        Plugin(uint64_t id, fs::path filePath, PluginDescriptor descriptor);
 
         /**
          * Destructor.
