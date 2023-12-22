@@ -9,7 +9,3 @@ const fs::path& wizard::Paths::PluginsDir() {
     static fs::path modulesDir{"docs/plugins/" };
     return modulesDir;
 }
-
-std::string wizard::Paths::GetExtension(const fs::path& filepath) {
-    return String::Lowercase(filepath.extension().string());
-}

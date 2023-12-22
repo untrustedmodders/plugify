@@ -21,12 +21,5 @@ namespace wizard {
          * @return Plugins directory.
          */
         static const fs::path& PluginsDir();
-
-        /**
-         * Gets the file extention in the lowercase format.
-         * @param filepath The path to the file.
-         * @return The string extension.
-         */
-        static std::string GetExtension(const fs::path& filepath);
     };
 }
