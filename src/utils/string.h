@@ -9,34 +9,6 @@ namespace wizard {
         String() = delete;
 
         /**
-         * Converts a CTF16 (wide) string to a UTF8 string.
-         * @param str The string to convert.
-         * @return The converted string.
-         */
-        static std::string ConvertUtf8(std::wstring_view str);
-
-        /**
-         * Converts a CTF16 (wide) char to a UTF8 char.
-         * @param c The string.
-         * @return The converted char.
-         */
-        static char ConvertUtf8(wchar_t c);
-
-        /**
-         * Converts a CTF8 string to a UTF16 (wide) string.
-         * @param str The string.
-         * @return The converted string.
-         */
-        static std::wstring ConvertUtf16(std::string_view str);
-
-        /**
-         * Converts a CTF8 char to a UTF16 (wide) char.
-         * @param c The char to convert.
-         * @return The converted char.
-         */
-        static wchar_t ConvertUtf16(char c);
-
-        /**
          * Converts a string to a valid boolean.
          * @param str The string.
          * @return The converted bool.

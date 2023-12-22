@@ -1,26 +1,6 @@
 #include "string.h"
 
-#include <codecvt>
-
 using namespace wizard;
-
-std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> UTF8_TO_UTF16_CONVERTER;
-
-std::string String::ConvertUtf8(std::wstring_view str) {
-    return UTF8_TO_UTF16_CONVERTER.to_bytes(str.data(), str.data() + str.length());
-}
-
-char String::ConvertUtf8(wchar_t c) {
-    return UTF8_TO_UTF16_CONVERTER.to_bytes(c).front();
-}
-
-std::wstring String::ConvertUtf16(std::string_view str) {
-    return UTF8_TO_UTF16_CONVERTER.from_bytes(str.data(), str.data() + str.length());
-}
-
-wchar_t String::ConvertUtf16(char c) {
-    return UTF8_TO_UTF16_CONVERTER.from_bytes(c).front();
-}
 
 bool String::ConvertBool(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);
