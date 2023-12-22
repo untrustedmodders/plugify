@@ -1,0 +1,11 @@
+﻿{
+  "version": 4,
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default Config",
+      "description": "Default build using Ninja generator",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    }
+  ]
+}
