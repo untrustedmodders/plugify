@@ -1,7 +1,7 @@
 #pragma once
 
-#include "interfaces/iplugin_manager.h"
-#include "interfaces/iplugin.h"
+#include <wizard/plugin_manager.h>
+#include <wizard/plugin.h>
 
 namespace wizard {
     class Plugin;

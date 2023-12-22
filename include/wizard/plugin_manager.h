@@ -1,8 +1,7 @@
 #pragma once
 
-#include "iplugin.h"
-
 namespace wizard {
+    class IPlugin;
     class PluginReferenceDescriptor;
 
     /**

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "interfaces/iplugin.h"
+#include <wizard/plugin.h>
 #include "plugin_descriptor.h"
 
 namespace wizard {
