@@ -189,6 +189,10 @@ bool PluginManager::GetPluginDependencies_FromDescriptor(const PluginReferenceDe
     return false;
 }
 
+void PluginManager::RefreshPluginsList() {
+    // TODO:
+}
+
 IPluginManager& IPluginManager::Get() {
     static PluginManager pluginManager;
     return pluginManager;
