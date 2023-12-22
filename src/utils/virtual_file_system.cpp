@@ -22,7 +22,10 @@ void VirtualFileSystem::Unmount(const fs::path& path) {
 }
 
 void VirtualFileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
-    assert(PHYSFS_isInit());
+    if (!PHYSFS_isInit()) {
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        return;
+    }
 
     auto fsFile = PHYSFS_openRead(filepath.string().c_str());
 
@@ -43,7 +46,10 @@ void VirtualFileSystem::ReadBytes(const fs::path& filepath, const FileHandler& h
 }
 
 std::string VirtualFileSystem::ReadText(const fs::path& filepath) {
-    assert(PHYSFS_isInit());
+    if (!PHYSFS_isInit()) {
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        return {};
+    }
 
     auto fsFile = PHYSFS_openRead(filepath.string().c_str());
 
@@ -64,13 +70,19 @@ std::string VirtualFileSystem::ReadText(const fs::path& filepath) {
 }
 
 bool VirtualFileSystem::IsExists(const fs::path& filepath) {
-    assert(PHYSFS_isInit());
+    if (!PHYSFS_isInit()) {
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        return false;
+    }
 
     return PHYSFS_exists(filepath.string().c_str()) != 0;
 }
 
 bool VirtualFileSystem::IsDirectory(const fs::path& filepath) {
-    assert(PHYSFS_isInit());
+    if (!PHYSFS_isInit()) {
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        return false;
+    }
 
     PHYSFS_Stat stat;
     if (!PHYSFS_stat(filepath.string().c_str(), &stat)) {
@@ -91,7 +103,10 @@ bool VirtualFileSystem::IsDirectory(const fs::path& filepath) {
 }
 
 std::vector<fs::path> VirtualFileSystem::GetFiles(const fs::path& filepath, bool recursive, std::string_view ext) {
-    assert(PHYSFS_isInit());
+    if (!PHYSFS_isInit()) {
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        return {};
+    }
 
     auto rc = PHYSFS_enumerateFiles(filepath.string().c_str());
 
@@ -103,7 +118,7 @@ std::vector<fs::path> VirtualFileSystem::GetFiles(const fs::path& filepath, bool
             auto filesInFound = GetFiles(path, recursive);
             files.insert(files.end(), filesInFound.begin(), filesInFound.end());
         } else {
-            if (ext.empty() || ext == Paths::GetExtension(path))
+            if (ext.empty() || ext == filepath.extension().string())
                 files.push_back(std::move(path));
         }
     }
@@ -113,7 +128,10 @@ std::vector<fs::path> VirtualFileSystem::GetFiles(const fs::path& filepath, bool
 }
 
 std::vector<fs::path> VirtualFileSystem::GetSearchPaths() {
-    assert(PHYSFS_isInit());
+    if (!PHYSFS_isInit()) {
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        return {};
+    }
 
     auto rc = PHYSFS_getSearchPath();
 
