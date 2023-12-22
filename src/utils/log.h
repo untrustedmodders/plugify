@@ -2,10 +2,9 @@
 
 namespace wizard {
     enum class ErrorLevel : uint8_t {
-        NONE,
         INFO,
         WARN,
-        SEV,
+        ERROR,
     };
 
     /**

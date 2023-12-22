@@ -13,6 +13,11 @@ namespace wizard {
         virtual ~IPluginManager() = default;
 
         /**
+         * Updates the list of plugins.
+         */
+        virtual void RefreshPluginsList() = 0;
+
+        /**
          * Finds information for a plugin.
          * @return Pointer to the plugin's information or nullptr.
          */

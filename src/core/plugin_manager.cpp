@@ -44,7 +44,6 @@ void PluginManager::ReadAllPlugins() {
 }
 
 void PluginManager::LoadRequiredLanguageModules() {
-    //
     std::set<std::string> languageModules;
     for (const auto& plugin : allPlugins) {
         languageModules.insert(plugin->m_descriptor.languageModule.name);
@@ -56,7 +55,6 @@ void PluginManager::LoadRequiredLanguageModules() {
 
     if (!modulesFilePaths.empty()) {
         for (const auto& path : modulesFilePaths)  {
-
         }
     }*/
 }

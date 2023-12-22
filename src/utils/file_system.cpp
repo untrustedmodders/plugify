@@ -6,7 +6,7 @@ void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler)
     std::ifstream is{filepath, std::ios::binary};
 
     if (!is.is_open()) {
-        WIZARD_LOG("File: '" + filepath.string() + "' could not be opened", ErrorLevel::SEV);
+        WIZARD_LOG("File: '" + filepath.string() + "' could not be opened", ErrorLevel::ERROR);
         return;
     }
 
@@ -28,7 +28,7 @@ std::string FileSystem::ReadText(const fs::path& filepath) {
     std::ifstream is{filepath, std::ios::binary};
 
     if (!is.is_open()) {
-        WIZARD_LOG("File: '" + filepath.string() + "' could not be opened", ErrorLevel::SEV);
+        WIZARD_LOG("File: '" + filepath.string() + "' could not be opened", ErrorLevel::ERROR);
         return {};
     }
 

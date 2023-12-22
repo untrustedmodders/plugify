@@ -23,14 +23,14 @@ void VirtualFileSystem::Unmount(const fs::path& path) {
 
 void VirtualFileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
         return;
     }
 
     auto fsFile = PHYSFS_openRead(filepath.string().c_str());
 
     if (!fsFile) {
-        WIZARD_LOG("Failed to open file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::SEV);
+        WIZARD_LOG("Failed to open file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::ERROR);
         return;
     }
 
@@ -39,7 +39,7 @@ void VirtualFileSystem::ReadBytes(const fs::path& filepath, const FileHandler& h
     PHYSFS_readBytes(fsFile, buffer.data(), size);
 
     if (PHYSFS_close(fsFile) == 0) {
-        WIZARD_LOG("Failed to close file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::SEV);
+        WIZARD_LOG("Failed to close file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::ERROR);
     }
 
     handler(buffer);
@@ -47,14 +47,14 @@ void VirtualFileSystem::ReadBytes(const fs::path& filepath, const FileHandler& h
 
 std::string VirtualFileSystem::ReadText(const fs::path& filepath) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
         return {};
     }
 
     auto fsFile = PHYSFS_openRead(filepath.string().c_str());
 
     if (!fsFile) {
-        WIZARD_LOG("Failed to open file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::SEV);
+        WIZARD_LOG("Failed to open file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::ERROR);
         return {};
     }
 
@@ -63,7 +63,7 @@ std::string VirtualFileSystem::ReadText(const fs::path& filepath) {
     PHYSFS_readBytes(fsFile, buffer.data(), size);
 
     if (PHYSFS_close(fsFile) == 0) {
-        WIZARD_LOG("Failed to close file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::SEV);
+        WIZARD_LOG("Failed to close file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::ERROR);
     }
 
     return { buffer.begin(), buffer.end() };
@@ -71,7 +71,7 @@ std::string VirtualFileSystem::ReadText(const fs::path& filepath) {
 
 bool VirtualFileSystem::IsExists(const fs::path& filepath) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
         return false;
     }
 
@@ -80,7 +80,7 @@ bool VirtualFileSystem::IsExists(const fs::path& filepath) {
 
 bool VirtualFileSystem::IsDirectory(const fs::path& filepath) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
         return false;
     }
 
@@ -104,7 +104,7 @@ bool VirtualFileSystem::IsDirectory(const fs::path& filepath) {
 
 std::vector<fs::path> VirtualFileSystem::GetFiles(const fs::path& filepath, bool recursive, std::string_view ext) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
         return {};
     }
 
@@ -129,7 +129,7 @@ std::vector<fs::path> VirtualFileSystem::GetFiles(const fs::path& filepath, bool
 
 std::vector<fs::path> VirtualFileSystem::GetSearchPaths() {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::SEV);
+        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
         return {};
     }
 
