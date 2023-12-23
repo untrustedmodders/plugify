@@ -3,6 +3,7 @@
 namespace wizard {
     struct PluginDescriptor;
 
+    // Plugin provided to user, which implemented in core
     class IPlugin {
     public:
         virtual ~IPlugin() = default;

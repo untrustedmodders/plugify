@@ -1,10 +1,14 @@
 #include "plugin_manager.h"
 #include "plugin.h"
+#include "module.h"
+
+#include "utils/file_system.h"
 
 using namespace wizard;
 
 PluginManager::PluginManager() {
     DiscoverAllPlugins();
+    DiscoverAllModules();
     LoadRequiredLanguageModules();
 }
 
@@ -15,7 +19,7 @@ PluginManager::~PluginManager() {
 void PluginManager::DiscoverAllPlugins() {
     assert(allPlugins.empty());
 
-    //PluginSystemDefs::GetAdditionalPluginPaths(pluginDiscoveryPaths);
+    //PluginSystem::GetAdditionalPluginPaths(pluginDiscoveryPaths);
     ReadAllPlugins();
 
     PluginList sortedPlugins;
@@ -27,19 +31,38 @@ void PluginManager::DiscoverAllPlugins() {
 }
 
 void PluginManager::ReadAllPlugins() {
-    // Find any plugin manifest files. These give us the plugin list (and their descriptors) without needing to scour the directory tree.
-    std::vector<fs::path> manifestFilePaths;
-    //FindPluginManifestsInDirectory(Paths::PluginsDir(), manifestFilePaths);
+    // TODO: Load .wpluginmanifest here
+    std::vector<fs::path> pluginsFilePaths = FileSystem::GetFiles(Paths::ModulesDir(), true, PluginDescriptor::FileExtension);
+}
 
-    // track child plugins that don't want to go into main plugin set
-    std::vector<std::shared_ptr<Plugin>> childPlugins;
+void PluginManager::DiscoverAllModules() {
+    assert(allModules.empty());
 
-    // If we didn't find any manifests, do a recursive search for plugins
-    if (manifestFilePaths.empty()) {
-        WIZARD_LOG("No *.wpluginmanifest files found, looking for *.wplugin files instead.", ErrorLevel::INFO);
-    }
-    else {
-        // TODO: Load & download plugins from manifest
+    std::vector<fs::path> modulesFilePaths = FileSystem::GetFiles(Paths::ModulesDir(), true, LanguageModuleDescriptor::FileExtension);
+
+    for (const auto& path : modulesFilePaths) {
+        LanguageModuleDescriptor languageModuleDescriptor;
+        if (languageModuleDescriptor.Load(path) && languageModuleDescriptor.IsSupportsPlatform(WIZARD_PLATFORM)) {
+            // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
+
+            std::string name{ path.filename().replace_extension().string() };
+            if (allModules.contains(name)) {
+                WIZARD_LOG("Cannot load module. '" + name + "' already was loaded.", ErrorLevel::WARN);
+                continue;
+            }
+
+            fs::path moduleBinaryPath{ path.parent_path() };
+            moduleBinaryPath /= "bin";
+            moduleBinaryPath /= WIZARD_MODULE_PREFIX;
+            moduleBinaryPath += name;
+            moduleBinaryPath += WIZARD_MODULE_SUFFIX;
+
+            if (fs::exists(moduleBinaryPath) && fs::is_regular_file(moduleBinaryPath)) {
+                allModules.emplace(name, std::make_shared<Module>(moduleBinaryPath, languageModuleDescriptor));
+            } else {
+                WIZARD_LOG("Module binary'" + moduleBinaryPath.string() + "' not exist!.", ErrorLevel::WARN);
+            }
+        }
     }
 }
 
@@ -49,14 +72,7 @@ void PluginManager::LoadRequiredLanguageModules() {
         languageModules.insert(plugin->GetDescriptor().languageModule.name);
     }
 
-    // Find any module files. These give us the plugin list (and their descriptors) without needing to scour the directory tree.
-    /*std::vector<fs::path> modulesFilePaths;
-    FindLanguageModulesInDirectory(Paths::ModulesDir(), modulesFilePaths);
-
-    if (!modulesFilePaths.empty()) {
-        for (const auto& path : modulesFilePaths)  {
-        }
-    }*/
+    // TODO: Initialize modules here
 }
 
 void PluginManager::SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList) {
@@ -99,7 +115,7 @@ bool PluginManager::IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& 
 
         // Recur for all the vertices adjacent to this vertex
         for (const auto& pluginDescriptor : plugin->GetDescriptor().dependencies) {
-            auto& name = pluginDescriptor.name;
+            const auto& name = pluginDescriptor.name;
 
             auto it = std::find_if(plugins.begin(), plugins.end(), [&name](const auto& p) {
                 return p->GetName() == name;

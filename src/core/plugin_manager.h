@@ -2,9 +2,11 @@
 
 #include <wizard/plugin_manager.h>
 #include <wizard/plugin.h>
+#include <wizard/language_module.h>
 
 namespace wizard {
     class Plugin;
+    class Module;
 
     class PluginManager final : public IPluginManager {
     public:
@@ -25,10 +27,13 @@ namespace wizard {
 
     private:
         using PluginList = std::vector<std::shared_ptr<Plugin>>;
+        using ModuleMap = std::unordered_map<std::string, std::shared_ptr<Module>>;
         using VisitedPluginMap = std::unordered_map<std::string, std::pair<bool, bool>>;
 
         void DiscoverAllPlugins();
+        void DiscoverAllModules();
         void ReadAllPlugins();
+
         void LoadRequiredLanguageModules();
 
         static void SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList);
@@ -37,5 +42,6 @@ namespace wizard {
 
     private:
         PluginList allPlugins;
+        ModuleMap allModules;
     };
 }

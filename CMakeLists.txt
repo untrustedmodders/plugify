@@ -132,11 +132,16 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
+string(TOLOWER ${CMAKE_SYSTEM_NAME} WIZARD_PLATFORM)
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC
+        WIZARD_PLATFORM="${WIZARD_PLATFORM}"
         WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>
         WIZARD_COMPILED_COMPILER="${CMAKE_CXX_COMPILER}"
         WIZARD_COMPILED_SYSTEM="${CMAKE_SYSTEM}"
         WIZARD_COMPILED_GENERATOR="${CMAKE_GENERATOR}"
+        WIZARD_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        WIZARD_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}"
         WIZARD_BUILD_SHARED_LIB=$<BOOL:${WIZARD_BUILD_SHARED_LIB}>)
 
 # If building shared library, set dllimport/dllexport proper.
