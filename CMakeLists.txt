@@ -91,6 +91,12 @@ if(WIZARD_USE_EXTERNAL_ASMJIT)
 else()
     target_link_libraries(${PROJECT_NAME} PUBLIC asmjit)
     target_include_directories(${PROJECT_NAME} PUBLIC ${ASMJIT_SRC})
+
+    if(MSVC)
+        target_compile_options(asmjit PUBLIC /wd5054)
+    else()
+        target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion)
+    endif()
 endif()
 
 if(WIZARD_USE_EXTERNAL_RAPIDJSON)
