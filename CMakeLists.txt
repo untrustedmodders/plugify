@@ -1,9 +1,12 @@
-cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+
+if(POLICY CMP0092)
+    cmake_policy(SET CMP0092 NEW) # Don't add -W3 warning level by default.
+endif()
+
+
 project(wizard)
 
-# Force all compilers to use the correct C and C++ standard versions.
-# Needed to allow for CheckCXXSourceCompiles to work correctly.
-set(CMAKE_REQUIRED_FLAGS "-std=c++20 -std=c11")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -13,7 +16,7 @@ if(WIN32)
     add_link_options(-fuse-ld=lld)
 endif()
 
-include(makefiles/git.cmake)
+include(cmake/git.cmake)
 
 #
 # Options
@@ -27,11 +30,13 @@ option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit libary" OFF)
 option(WIZARD_USE_EXTERNAL_NLOHMANN_JSON "Use external nlohmann/json libary" OFF)
 option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs libary" OFF)
 
+option(WIZARD_LOGGING "Enable logs" ON)
+
 #
 # ASMJIT
 #
 if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
-    set(ASMJIT_STATIC ${WIZARD_BUILD_SHARED_ASMJIT} CACHE BOOL "")
+    set(ASMJIT_STATIC $<BOOL:${WIZARD_BUILD_SHARED_ASMJIT}> CACHE BOOL "")
 
     add_subdirectory(external/asmjit)
 endif()
@@ -105,35 +110,23 @@ else()
     endif()
 endif()
 
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS ON)
 target_link_libraries(${PROJECT_NAME} PRIVATE git-info)
 
 if(MSVC)
-    if(MSVC)
-        set(COMPILE_FLAGS_PLH "/W4 /Z7")
-        if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-            set(COMPILE_FLAGS_PLH "/MP ${COMPILE_FLAGS_PLH}")
-        endif()
-
-        set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS ${COMPILE_FLAGS_PLH})
-        target_link_libraries(${PROJECT_NAME} PRIVATE optimized -DEBUG)
-    endif()
-endif()
-
-if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(${PROJECT_NAME} PRIVATE /MP)
+    endif()
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-        WIZARD_LOGGING
+        WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>
         WIZARD_COMPILED_COMPILER="${CMAKE_CXX_COMPILER}"
         WIZARD_COMPILED_SYSTEM="${CMAKE_SYSTEM}"
         WIZARD_COMPILED_GENERATOR="${CMAKE_GENERATOR}"
-        WIZARD_BUILD_SHARED_LIB=${WIZARD_BUILD_SHARED_LIB})
+        WIZARD_BUILD_SHARED_LIB=$<BOOL:${WIZARD_BUILD_SHARED_LIB}>)
 
 # If building shared library, set dllimport/dllexport proper.
 if (WIZARD_BUILD_DLL)

@@ -2,7 +2,7 @@
 
 namespace wizard {
     class IPlugin;
-    class PluginReferenceDescriptor;
+    struct PluginReferenceDescriptor;
 
     /**
      * Manager oversees and manages both loaded and unloaded code and content extensions.
