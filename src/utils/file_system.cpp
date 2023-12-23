@@ -3,7 +3,7 @@
 using namespace wizard;
 
 void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
-    std::ifstream is{filepath, std::ios::binary};
+    std::basic_ifstream<uint8_t, std::char_traits<uint8_t>> is{filepath, std::ios::binary};
 
     if (!is.is_open()) {
         WIZARD_LOG("File: '" + filepath.string() + "' could not be opened", ErrorLevel::ERROR);
@@ -13,14 +13,7 @@ void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler)
     // Stop eating new lines in binary mode!!!
     is.unsetf(std::ios::skipws);
 
-    is.seekg(0, std::ios::end);
-    std::streampos size = is.tellg();
-    is.seekg(0, std::ios::beg);
-
-    std::vector<uint8_t> buffer;
-    buffer.reserve(static_cast<size_t>(size));
-    buffer.insert(buffer.begin(), std::istream_iterator<uint8_t>(is), std::istream_iterator<uint8_t>());
-
+    std::vector<uint8_t> buffer{ std::istreambuf_iterator<uint8_t>{is}, std::istreambuf_iterator<uint8_t>{} };
     handler({ buffer.data(), buffer.size() });
 }
 
@@ -35,7 +28,7 @@ std::string FileSystem::ReadText(const fs::path& filepath) {
     // Stop eating new lines in binary mode!!!
     is.unsetf(std::ios::skipws);
 
-    return { std::istream_iterator<int8_t>(is), std::istream_iterator<int8_t>() };
+    return { std::istreambuf_iterator<char>{is}, std::istreambuf_iterator<char>{} };
 }
 
 bool FileSystem::IsExists(const fs::path& filepath) {

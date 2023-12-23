@@ -7,9 +7,6 @@ namespace wizard {
         ERROR,
     };
 
-    /**
-     * Helper class for abstract logging in core.
-     */
     class WIZARD_API Logger {
     public:
         Logger() = default;

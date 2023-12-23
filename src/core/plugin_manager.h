@@ -6,15 +6,9 @@
 namespace wizard {
     class Plugin;
 
-    /**
-     * PluginManager manages available code and content extensions (both loaded and not loaded.)
-     */
     class PluginManager final : public IPluginManager {
     public:
-        /** Constructor */
         PluginManager();
-
-        /** Destructor */
         ~PluginManager() override;
 
         /** IPluginManager interface */
@@ -33,27 +27,15 @@ namespace wizard {
         using PluginList = std::vector<std::shared_ptr<Plugin>>;
         using VisitedPluginMap = std::unordered_map<std::string, std::pair<bool, bool>>;
 
-        /** Initiates a search for all plugins stored on the server, constructing an array of plugin objects without loading any of them.
-            This process occurs upon the initial access of the plugin manager singleton. */
         void DiscoverAllPlugins();
-
-        /** Reads all plugin descriptors. */
         void ReadAllPlugins();
-
-        /** */
         void LoadRequiredLanguageModules();
 
-        /** */
         static void SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList);
-
-        /** */
         static bool HasCyclicDependencies(PluginList& plugins);
-
-        /** */
         static bool IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins);
 
     private:
-        /** All of the plugins that we know about */
         PluginList allPlugins;
     };
 }

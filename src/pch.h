@@ -9,6 +9,8 @@
 #include <span>
 #include <unordered_map>
 #include <set>
+#include <functional>
+#include <iterator>
 
 #include <fstream>
 #include <iostream>
