@@ -11,4 +11,6 @@ int main() {
 
     PluginDescriptor descriptor;
     descriptor.Load("docs/plugins/Plugin1/Plugin1.wplugin");
+
+    WIZARD_LOG(descriptor.friendlyName, ErrorLevel::INFO);
 }

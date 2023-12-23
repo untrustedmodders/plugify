@@ -95,9 +95,9 @@ endif()
 
 if(WIZARD_USE_EXTERNAL_RAPIDJSON)
 	find_package(rapidjson REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE rapidjson::rapidjson)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${RAPIDJSON_INCLUDE_DIRS})
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE rapidjson)
+    target_include_directories(${PROJECT_NAME} PRIVATE external/rapidjson/include)
 endif()
 
 if(WIZARD_USE_EXTERNAL_PHYSFS)
