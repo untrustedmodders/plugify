@@ -53,8 +53,9 @@ std::vector<fs::path> FileSystem::GetFiles(const fs::path& root, bool recursive,
         auto iterate = [&paths, ext](auto iterator) {
             for (auto const& entry : iterator) {
                 const auto& path = entry.path();
-                if (fs::is_regular_file(entry) && (ext.empty() || path.extension().string() == ext))
+                if (fs::is_regular_file(entry) && (ext.empty() || path.extension().string() == ext)) {
                     paths.push_back(path);
+                }
             }
         };
 

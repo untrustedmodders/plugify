@@ -27,13 +27,13 @@ option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared libary" OFF)
 option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared libary" OFF)
 
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit libary" OFF)
-option(WIZARD_USE_EXTERNAL_NLOHMANN_JSON "Use external nlohmann/json libary" OFF)
+option(WIZARD_USE_EXTERNAL_RAPIDJSON "Use external rapidjson libary" OFF)
 option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs libary" OFF)
 
 option(WIZARD_LOGGING "Enable logs" ON)
 
 #
-# ASMJIT
+# Asmjit
 #
 if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
     set(ASMJIT_STATIC $<BOOL:${WIZARD_BUILD_SHARED_ASMJIT}> CACHE BOOL "")
@@ -42,12 +42,17 @@ if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
 endif()
 
 #
-# Nlohmann/json
+# Rapidjson
 #
-if(NOT WIZARD_USE_EXTERNAL_NLOHMANN_JSON)
-    set(JSON_BuildTests OFF CACHE INTERNAL "")
+if(NOT WIZARD_USE_EXTERNAL_RAPIDJSON)
+    set(RAPIDJSON_BUILD_DOC OFF CACHE INTERNAL "")
+    set(RAPIDJSON_BUILD_EXAMPLES OFF CACHE INTERNAL "")
+    set(RAPIDJSON_BUILD_TESTS OFF CACHE INTERNAL "")
+    set(RAPIDJSON_BUILD_THIRDPARTY_GTEST OFF CACHE INTERNAL "")
+    set(RAPIDJSON_BUILD_CXX11 OFF CACHE INTERNAL "")
+    set(RAPIDJSON_BUILD_CXX17 ON CACHE INTERNAL "")
 
-    add_subdirectory(external/nlohmann_json)
+    add_subdirectory(external/rapidjson)
 endif()
 
 #
@@ -88,11 +93,11 @@ else()
     target_include_directories(${PROJECT_NAME} PUBLIC ${ASMJIT_SRC})
 endif()
 
-if(WIZARD_USE_EXTERNAL_NLOHMANN_JSON)
-	find_package(nlohmann_json CONFIG REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
+if(WIZARD_USE_EXTERNAL_RAPIDJSON)
+	find_package(rapidjson REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE rapidjson::rapidjson)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json)
+    target_link_libraries(${PROJECT_NAME} PRIVATE rapidjson)
 endif()
 
 if(WIZARD_USE_EXTERNAL_PHYSFS)
