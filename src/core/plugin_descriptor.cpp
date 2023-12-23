@@ -28,7 +28,7 @@ bool PluginDescriptor::Load(const fs::path& filePath) {
 
 bool PluginDescriptor::Read(const rapidjson::Value& object) {
     if (!object.IsObject()) {
-        WIZARD_LOG("Document should be an object!", ErrorLevel::ERROR);
+        WIZARD_LOG("PluginDescriptor should be a valid object!", ErrorLevel::ERROR);
         return false;
     }
     
