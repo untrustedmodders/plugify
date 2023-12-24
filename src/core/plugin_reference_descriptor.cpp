@@ -1,7 +1,5 @@
 #include "plugin_reference_descriptor.h"
 
-#include <rapidjson/document.h>
-
 using namespace wizard;
 
 PluginReferenceDescriptor::PluginReferenceDescriptor(std::string pluginName) : name{std::move(pluginName)} {
@@ -11,7 +9,7 @@ bool PluginReferenceDescriptor::IsSupportsPlatform(const std::string& platform) 
     return supportedPlatforms.empty() || std::find(supportedPlatforms.begin(), supportedPlatforms.end(), platform) != supportedPlatforms.end();
 }
 
-bool PluginReferenceDescriptor::Read(const rapidjson::Value& object) {
+bool PluginReferenceDescriptor::Read(const utils::json::Value& object) {
     supportedPlatforms.clear();
 
     for (auto itr = object.MemberBegin(); itr != object.MemberEnd(); ++itr) {

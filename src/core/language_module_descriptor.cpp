@@ -1,9 +1,6 @@
 #include "language_module_descriptor.h"
 #include "utils/file_system.h"
 
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
-
 using namespace wizard;
 
 bool LanguageModuleDescriptor::IsSupportsPlatform(const std::string& platform) const {
@@ -15,18 +12,18 @@ bool LanguageModuleDescriptor::Load(const fs::path& filePath) {
     if (json.empty())
         return false;
 
-    rapidjson::Document doc;
+    utils::json::Document doc;
     doc.Parse(json.c_str());
 
     if (doc.HasParseError()) {
-        WIZARD_LOG("File: '" + filePath.string() + "' could not be parsed correctly: " + rapidjson::GetParseError_En(doc.GetParseError()), ErrorLevel::ERROR);
+        WIZARD_LOG("File: '" + filePath.string() + "' could not be parsed correctly: " + utils::json::GetParseError_En(doc.GetParseError()), ErrorLevel::ERROR);
         return false;
     }
 
     return Read(doc.GetObject());
 }
 
-bool LanguageModuleDescriptor::Read(const rapidjson::Value& object) {
+bool LanguageModuleDescriptor::Read(const utils::json::Value& object) {
     if (!object.IsObject()) {
         WIZARD_LOG("LanguageModuleDescriptor should be a valid object!", ErrorLevel::ERROR);
         return false;
@@ -112,7 +109,7 @@ bool LanguageModuleDescriptor::Read(const rapidjson::Value& object) {
     return true;
 }
 
-bool LanguageModuleInfo::Read(const rapidjson::Value& object) {
+bool LanguageModuleInfo::Read(const utils::json::Value& object) {
     for (auto itr = object.MemberBegin(); itr != object.MemberEnd(); ++itr) {
         const char* blockName = itr->name.GetString();
         const auto& value = itr->value;

@@ -24,7 +24,7 @@ namespace wizard {
         bool IsSupportsPlatform(const std::string& platform) const;
 
 	    bool Load(const fs::path& filePath);
-        bool Read(const rapidjson::Value& object);
+        bool Read(const utils::json::Value& object);
 
         static inline const char* const FileExtension = ".wplugin";
     };

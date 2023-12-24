@@ -11,5 +11,5 @@ int main() {
 
     PluginManager pluginManager;
 
-    WIZARD_LOG("Exit", ErrorLevel::INFO);
+    return 0;
 }

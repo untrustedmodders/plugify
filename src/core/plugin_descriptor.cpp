@@ -1,9 +1,6 @@
 #include "plugin_descriptor.h"
 #include "utils/file_system.h"
 
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
-
 using namespace wizard;
 
 bool PluginDescriptor::IsSupportsPlatform(const std::string& platform) const {
@@ -15,18 +12,18 @@ bool PluginDescriptor::Load(const fs::path& filePath) {
     if (json.empty())
         return false;
 
-    rapidjson::Document doc;
+    utils::json::Document doc;
     doc.Parse(json.c_str());
 
     if (doc.HasParseError()) {
-        WIZARD_LOG("File: '" + filePath.string() + "' could not be parsed correctly: " + rapidjson::GetParseError_En(doc.GetParseError()), ErrorLevel::ERROR);
+        WIZARD_LOG("File: '" + filePath.string() + "' could not be parsed correctly: " + utils::json::GetParseError_En(doc.GetParseError()), ErrorLevel::ERROR);
         return false;
     }
 
     return Read(doc.GetObject());
 }
 
-bool PluginDescriptor::Read(const rapidjson::Value& object) {
+bool PluginDescriptor::Read(const utils::json::Value& object) {
     if (!object.IsObject()) {
         WIZARD_LOG("PluginDescriptor should be a valid object!", ErrorLevel::ERROR);
         return false;

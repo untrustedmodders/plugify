@@ -94,6 +94,8 @@ else()
 
     if(MSVC)
         target_compile_options(asmjit PUBLIC /wd5054)
+    elseif(MINGW)
+        target_compile_options(asmjit PUBLIC -Wno-deprecated-enum-enum-conversion)
     else()
         target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion)
     endif()

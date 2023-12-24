@@ -60,7 +60,7 @@ void PluginManager::DiscoverAllModules() {
             if (fs::exists(moduleBinaryPath) && fs::is_regular_file(moduleBinaryPath)) {
                 allModules.emplace(name, std::make_shared<Module>(moduleBinaryPath, languageModuleDescriptor));
             } else {
-                WIZARD_LOG("Module binary'" + moduleBinaryPath.string() + "' not exist!.", ErrorLevel::WARN);
+                WIZARD_LOG("Module binary '" + moduleBinaryPath.string() + "' not exist!.", ErrorLevel::WARN);
             }
         }
     }

@@ -13,6 +13,6 @@ namespace wizard {
 
         bool IsSupportsPlatform(const std::string& platform) const;
 
-        bool Read(const rapidjson::Value& object);
+        bool Read(const utils::json::Value& object);
     };
 }
