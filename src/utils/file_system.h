@@ -3,7 +3,7 @@
 namespace wizard {
     using FileHandler = std::function<void(std::span<const uint8_t>)>;
 
-    class WIZARD_API FileSystem {
+    class FileSystem {
     public:
         FileSystem() = delete;
 

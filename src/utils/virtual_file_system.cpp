@@ -104,7 +104,7 @@ bool VirtualFileSystem::IsDirectory(const fs::path& filepath) {
     }
 }
 
-bool VirtualFileSystem::GetFilesFromDirectoryRecursive(const fs::path& directory, std::unordered_map<fs::path, fs::path>& results, std::string_view ext) {
+bool VirtualFileSystem::GetFilesFromDirectoryRecursive(const fs::path& directory, std::unordered_map<fs::path, fs::path, PathHash>& results, std::string_view ext) {
     if (!PHYSFS_isInit()) {
         WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
         return false;

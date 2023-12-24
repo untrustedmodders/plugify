@@ -3,7 +3,7 @@
 namespace wizard {
     using FileHandler = std::function<void(std::span<const uint8_t>)>;
 
-    class WIZARD_API VirtualFileSystem {
+    class VirtualFileSystem {
     public:
         VirtualFileSystem() = delete;
 
@@ -57,7 +57,7 @@ namespace wizard {
          * @param ext The extension string.
          * @return The files found.
          */
-        static bool GetFilesFromDirectoryRecursive(const fs::path& directory, std::unordered_map<fs::path, fs::path>& results, std::string_view ext = "");
+        static bool GetFilesFromDirectoryRecursive(const fs::path& directory, std::unordered_map<fs::path, fs::path, PathHash>& results, std::string_view ext = "");
         static std::vector<fs::path> GetFilesFromDirectory(const fs::path& directory, std::string_view ext = "");
 
         /**
