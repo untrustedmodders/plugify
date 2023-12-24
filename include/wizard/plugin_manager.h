@@ -6,9 +6,10 @@ namespace wizard {
 
     // Plugin manager provided to user, which implemented in core
     class WIZARD_API IPluginManager {
-    public:
+    protected:
         virtual ~IPluginManager() = default;
 
+    public:
         virtual void RefreshPluginsList() = 0;
 
         virtual std::shared_ptr<IPlugin> FindPlugin(const std::string& pluginName) = 0;

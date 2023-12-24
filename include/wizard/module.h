@@ -5,9 +5,10 @@ namespace wizard {
 
     // Language module provided to user implemented in core !
     class IModule {
-    public:
+    protected:
         virtual ~IModule() = default;
 
+    public:
         virtual const std::string& GetName() const = 0;
         virtual const std::string& GetFriendlyName() const = 0;
         virtual const fs::path& GetDescriptorFilePath() const = 0;

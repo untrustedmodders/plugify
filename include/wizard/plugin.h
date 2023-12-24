@@ -5,9 +5,10 @@ namespace wizard {
 
     // Plugin provided to user, which implemented in core
     class IPlugin {
-    public:
+    protected:
         virtual ~IPlugin() = default;
 
+    public:
         virtual uint64_t GetId() const = 0;
         virtual const std::string& GetName() const = 0;
         virtual const std::string& GetFriendlyName() const = 0;
