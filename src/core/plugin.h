@@ -6,7 +6,7 @@
 namespace wizard {
     class Plugin final : public IPlugin {
     public:
-        Plugin(uint64_t id, fs::path filePath, PluginDescriptor descriptor);
+        Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor);
         ~Plugin() override = default;
 
         /* IPlugin interface */
@@ -45,7 +45,7 @@ namespace wizard {
         void SetInitialized(bool initialized) { m_initialized = initialized; }
 
     private:
-        uint64_t m_id;
+        uint64_t m_id{ std::numeric_limits<uint64_t>::max() };
         std::string m_name;
         fs::path m_filePath;
         PluginDescriptor m_descriptor;

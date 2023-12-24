@@ -35,14 +35,12 @@ namespace wizard {
             return m_descriptor;
         }
 
-        bool IsInitialized() const { return m_initialized; }
-        void SetInitialized(bool initialized) { m_initialized = initialized; }
+        bool IsInitialized() const { return languageModule.has_value(); }
 
     private:
         std::string m_name;
         fs::path m_filePath;
         LanguageModuleDescriptor m_descriptor;
-        ILanguageModule* languageModule;
-        bool m_initialized{ false };
+        std::optional<std::reference_wrapper<ILanguageModule>> languageModule;
     };
 }

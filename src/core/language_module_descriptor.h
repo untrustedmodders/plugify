@@ -23,7 +23,7 @@ namespace wizard {
         bool Load(const fs::path& filePath);
         bool Read(const utils::json::Value& object);
 
-        static inline const char* const FileExtension = ".wmodule";
+        static inline const char* const kFileExtension = ".wmodule";
     };
 
     struct LanguageModuleInfo {

@@ -26,6 +26,6 @@ namespace wizard {
 	    bool Load(const fs::path& filePath);
         bool Read(const utils::json::Value& object);
 
-        static inline const char* const FileExtension = ".wplugin";
+        static inline const char* const kFileExtension = ".wplugin";
     };
 }

@@ -32,7 +32,7 @@ namespace wizard {
 
         void DiscoverAllPlugins();
         void DiscoverAllModules();
-        void ReadAllPlugins();
+        void ReadAllPluginsDescriptors();
 
         void LoadRequiredLanguageModules();
 
