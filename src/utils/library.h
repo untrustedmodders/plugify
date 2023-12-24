@@ -9,6 +9,6 @@ namespace wizard {
         void* GetFunction(std::string_view functionName);
 
     private:
-        void* m_handle{ nullptr };
+        void* _handle{ nullptr };
     };
 }

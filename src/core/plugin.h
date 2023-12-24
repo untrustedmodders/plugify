@@ -11,11 +11,11 @@ namespace wizard {
 
         /* IPlugin interface */
         uint64_t GetId() const override {
-            return m_id;
+            return _id;
         }
 
         const std::string& GetName() const override {
-            return m_name;
+            return _name;
         }
 
         const std::string& GetFriendlyName() const override {
@@ -23,7 +23,7 @@ namespace wizard {
         }
 
         const fs::path& GetDescriptorFilePath() const override {
-            return m_filePath;
+            return _filePath;
         }
 
         // TODO: Implement
@@ -38,17 +38,17 @@ namespace wizard {
         }
 
         const PluginDescriptor& GetDescriptor() const override {
-            return m_descriptor;
+            return _descriptor;
         }
 
-        bool IsInitialized() const { return m_initialized; }
-        void SetInitialized(bool initialized) { m_initialized = initialized; }
+        bool IsInitialized() const { return _initialized; }
+        void SetInitialized(bool initialized) { _initialized = initialized; }
 
     private:
-        uint64_t m_id{ std::numeric_limits<uint64_t>::max() };
-        std::string m_name;
-        fs::path m_filePath;
-        PluginDescriptor m_descriptor;
-        bool m_initialized{ false };
+        uint64_t _id{ std::numeric_limits<uint64_t>::max() };
+        std::string _name;
+        fs::path _filePath;
+        PluginDescriptor _descriptor;
+        bool _initialized{ false };
     };
 }

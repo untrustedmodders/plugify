@@ -21,7 +21,7 @@ namespace sorcerer {
         void SetLogLevel(wizard::ErrorLevel level);
 
     private:
-        std::vector<Error> m_log;
-        wizard::ErrorLevel m_level{ wizard::ErrorLevel::INFO };
+        std::vector<Error> _log;
+        wizard::ErrorLevel _level{ wizard::ErrorLevel::INFO };
     };
 }

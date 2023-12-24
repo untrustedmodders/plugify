@@ -1,54 +1,54 @@
 #include "module.h"
-#include "library.h"
 
 using namespace wizard;
 
-Module::Module(fs::path filePath, LanguageModuleDescriptor descriptor) : m_filePath{std::move(filePath)}, m_descriptor{std::move(descriptor)} {
+Module::Module(fs::path filePath, LanguageModuleDescriptor descriptor) : _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
 
 }
 
 bool Module::Initialize() {
     assert(IsInitialized());
 
-    if (!fs::exists(m_filePath) || !fs::is_regular_file(m_filePath)) {
-        WIZARD_LOG("Module binary '" + m_filePath.string() + "' not exist!.", ErrorLevel::ERROR);
+    if (!fs::exists(_filePath) || !fs::is_regular_file(_filePath)) {
+        WIZARD_LOG("Module binary '" + _filePath.string() + "' not exist!.", ErrorLevel::ERROR);
         return false;
     }
 
-    library = std::make_unique<Library>(m_filePath);
-    if (library) {
-        void* GetLanguageModulePtr = library->GetFunction("GetLanguageModule");
+    _library = std::make_unique<Library>(_filePath);
+    if (_library) {
+        void* GetLanguageModulePtr = _library->GetFunction("GetLanguageModule");
         if (!GetLanguageModulePtr) {
-            WIZARD_LOG("Function 'GetLanguageModule' not exist inside '" + m_filePath.string() + "' library", ErrorLevel::ERROR);
-            Shutdown();
+            WIZARD_LOG("Function 'GetLanguageModule' not exist inside '" + _filePath.string() + "' library", ErrorLevel::ERROR);
+            Terminate();
             return false;
         }
 
-        ILanguageModule* (*GetLanguageModuleFunc)() = reinterpret_cast<ILanguageModule* (*)()>(GetLanguageModulePtr);
+        using GetLanguageModuleFuncT = ILanguageModule*(*)();
+        auto GetLanguageModuleFunc = reinterpret_cast<GetLanguageModuleFuncT>(GetLanguageModulePtr);
         ILanguageModule* languageModulePtr = GetLanguageModuleFunc();
 
         if (!languageModulePtr) {
-            WIZARD_LOG("Function 'GetLanguageModule' inside '" + m_filePath.string() + "' library. Not returned valid address of 'ILanguageModule' implementation!", ErrorLevel::ERROR);
-            Shutdown();
+            WIZARD_LOG("Function 'GetLanguageModule' inside '" + _filePath.string() + "' library. Not returned valid address of 'ILanguageModule' implementation!", ErrorLevel::ERROR);
+            Terminate();
             return false;
         }
 
         if (languageModulePtr->Initialize()) {
-            languageModule = std::make_optional(std::ref(*languageModulePtr));
+            _languageModule = std::make_optional(std::ref(*languageModulePtr));
             return true;
         } else {
-            Shutdown();
+            Terminate();
         }
     }
 
-    WIZARD_LOG("Failed to initialize module: '" + m_name + "' at: '" + m_filePath.string() + "'", ErrorLevel::ERROR);
+    WIZARD_LOG("Failed to initialize module: '" + _name + "' at: '" + _filePath.string() + "'", ErrorLevel::ERROR);
     return false;
 }
 
-void Module::Shutdown() {
-    if (languageModule.has_value()) {
+void Module::Terminate() {
+    if (_languageModule.has_value()) {
         GetLanguageModule().Shutdown();
     }
-    languageModule.reset();
-    library.reset();
+    _languageModule.reset();
+    _library.reset();
 }

@@ -2,7 +2,7 @@
 
 namespace sorcerer {
     void StdLogger::Log(const std::string& message, wizard::ErrorLevel level) {
-        if (level >= m_level) {
+        if (level >= _level) {
             switch (level) {
             case wizard::ErrorLevel::INFO:
                 std::cout << "[+] Info: " << message << std::endl;
@@ -22,19 +22,19 @@ namespace sorcerer {
     }
 
     void StdLogger::Push(Error error) {
-        m_log.emplace_back(std::move(error));
+        _log.emplace_back(std::move(error));
     }
 
     Error StdLogger::Pop() {
-        if (!m_log.empty()) {
-            Error error = std::move(m_log.back());
-            m_log.pop_back();
+        if (!_log.empty()) {
+            Error error = std::move(_log.back());
+            _log.pop_back();
             return error;
         }
         return {};
     }
 
     void StdLogger::SetLogLevel(wizard::ErrorLevel level) {
-        m_level = level;
+        _level = level;
     }
 }

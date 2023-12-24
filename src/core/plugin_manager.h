@@ -41,7 +41,7 @@ namespace wizard {
         static bool IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins);
 
     private:
-        PluginList allPlugins;
-        ModuleMap allModules;
+        PluginList _allPlugins;
+        ModuleMap _allModules;
     };
 }

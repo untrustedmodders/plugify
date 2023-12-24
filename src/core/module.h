@@ -3,7 +3,7 @@
 #include <wizard/module.h>
 #include <wizard/language_module.h>
 #include "language_module_descriptor.h"
-#include "library.h"
+#include "utils/library.h"
 
 namespace wizard {
     class IModule;
@@ -13,7 +13,7 @@ namespace wizard {
         ~Module() override = default;
 
         const std::string& GetName() const override {
-            return m_name;
+            return _name;
         }
 
         const std::string& GetFriendlyName() const override {
@@ -21,7 +21,7 @@ namespace wizard {
         }
 
         const fs::path& GetDescriptorFilePath() const override {
-            return m_filePath;
+            return _filePath;
         }
 
         // TODO: Implement
@@ -33,25 +33,25 @@ namespace wizard {
         }
 
         const LanguageModuleDescriptor& GetDescriptor() const override {
-            return m_descriptor;
+            return _descriptor;
         }
 
-        bool IsInitialized() const { return languageModule.has_value(); }
+        bool IsInitialized() const { return _languageModule.has_value(); }
 
-    private:
         bool Initialize();
-        void Shutdown();
+        void Terminate();
         // TODO: Add more interactions with ILanguageModule
 
+    private:
         ILanguageModule& GetLanguageModule() {
-            return languageModule.value().get();
+            return _languageModule.value().get();
         }
 
     private:
-        std::string m_name;
-        fs::path m_filePath;
-        LanguageModuleDescriptor m_descriptor;
-        std::unique_ptr<Library> library;
-        std::optional<std::reference_wrapper<ILanguageModule>> languageModule;
+        std::string _name;
+        fs::path _filePath;
+        LanguageModuleDescriptor _descriptor;
+        std::unique_ptr<Library> _library;
+        std::optional<std::reference_wrapper<ILanguageModule>> _languageModule;
     };
 }

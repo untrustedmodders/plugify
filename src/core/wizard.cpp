@@ -40,7 +40,7 @@ namespace wizard {
 		}
 
 	private:
-		bool _inited = false;
+		bool _inited{ false };
 	};
 
 	std::shared_ptr<IWizard> MakeWizard() {

@@ -9,7 +9,7 @@ namespace wizard {
         static void Log(const std::string& msg, ErrorLevel level);
 
     private:
-        static inline std::shared_ptr<ILogger> m_logger = nullptr;
+        static inline std::shared_ptr<ILogger> _logger = nullptr;
     };
 }
 
