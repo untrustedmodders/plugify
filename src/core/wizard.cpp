@@ -1,5 +1,5 @@
 #include "plugin_manager.h"
-#include <wizard/wazard.h>
+#include <wizard/wizard.h>
 
 namespace wizard {
 	class Wizard final : public IWizard {

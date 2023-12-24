@@ -1,5 +1,5 @@
 #include "std_logger.h"
-#include <wizard/wazard.h>
+#include <wizard/wizard.h>
 
 int main() {
     std::shared_ptr<wizard::IWizard> sorcerer = wizard::MakeWizard();
