@@ -17,7 +17,7 @@ PluginManager::~PluginManager() {
 }
 
 void PluginManager::DiscoverAllPlugins() {
-    assert(_allPlugins.empty());
+    // TODO: assert(_allPlugins.empty());
 
     //PluginSystem::GetAdditionalPluginPaths(pluginDiscoveryPaths);
     ReadAllPluginsDescriptors();
@@ -30,7 +30,7 @@ void PluginManager::DiscoverAllPlugins() {
     _allPlugins = std::move(sortedPlugins);
 
     WIZARD_LOG("Plugins order after topological sorting: ", ErrorLevel::INFO);
-    for (auto& plugin : _allPlugins) {
+    for (const auto& plugin : _allPlugins) {
         WIZARD_LOG(plugin->GetName() + " - " + plugin->GetFriendlyName(), ErrorLevel::INFO);
     }
 }
@@ -51,9 +51,9 @@ void PluginManager::ReadAllPluginsDescriptors() {
             });
             if (it == _allPlugins.end()) {
                 size_t index = _allPlugins.size();
-                _allPlugins.push_back(std::make_shared<Plugin>(index, name, path, descriptor));
+                _allPlugins.emplace_back(std::make_shared<Plugin>(index, name, path, descriptor));
             } else {
-                auto& existingPlugin = *it;
+                const auto& existingPlugin = *it;
 
                 int32_t existingVersion = existingPlugin->GetDescriptor().version;
                 if (existingVersion != descriptor.version) {
@@ -72,7 +72,8 @@ void PluginManager::ReadAllPluginsDescriptors() {
 }
 
 void PluginManager::DiscoverAllModules() {
-    assert(_allModules.empty());
+    // TODO: Mount modules zips
+    // TODO: assert(_allModules.empty());
 
     std::vector<fs::path> modulesFilePaths = FileSystem::GetFiles(Paths::ModulesDir(), true, LanguageModuleDescriptor::kFileExtension);
 
@@ -100,7 +101,7 @@ void PluginManager::DiscoverAllModules() {
             if (it == _allModules.end()) {
                 _allModules.emplace(name, std::make_shared<Module>(moduleBinaryPath, descriptor));
             } else {
-                auto& existingModule = it->second;
+                const auto& existingModule = it->second;
 
                 int32_t existingVersion = existingModule->GetDescriptor().version;
                 if (existingVersion != descriptor.version) {
@@ -110,7 +111,7 @@ void PluginManager::DiscoverAllModules() {
                         _allModules[name] = std::make_shared<Module>(moduleBinaryPath, descriptor);
                     }
                 } else {
-                    WIZARD_LOG("The same version (v" + std::to_string(existingVersion) + ") of module '"+ name + "' exists at '" + existingModule->GetDescriptorFilePath().string() + "' and '" + path.string() + "' - second location will be ignored.", ErrorLevel::WARN);
+                    WIZARD_LOG("The same version (v" + std::to_string(existingVersion) + ") of module '" + name + "' exists at '" + existingModule->GetDescriptorFilePath().string() + "' and '" + path.string() + "' - second location will be ignored.", ErrorLevel::WARN);
                 }
             }
         }
@@ -120,10 +121,11 @@ void PluginManager::DiscoverAllModules() {
 void PluginManager::LoadRequiredLanguageModules() {
     std::set<std::string> languageModules;
     for (const auto& plugin : _allPlugins) {
-        languageModules.insert(plugin->GetDescriptor().languageModule.name);
+        const auto& name = plugin->GetDescriptor().languageModule.name;
+        languageModules.insert(name);
     }
 
-    for (auto& [name, languageModule] : _allModules) {
+    for (const auto& [name, languageModule] : _allModules) {
         if (languageModule->GetDescriptor().forceLoad)
             languageModules.insert(name);
     }
@@ -145,13 +147,32 @@ void PluginManager::LoadRequiredLanguageModules() {
     }
 }
 
+void PluginManager::LoadPlugins() {
+    for (const auto& plugin : _allPlugins) {
+        const auto& name = plugin->GetDescriptor().languageModule.name;
+        auto it = _allModules.find(name);
+        if (it == _allModules.end()) {
+            WIZARD_LOG("Module: '" + name + "' not exist!", ErrorLevel::ERROR);
+            continue;
+        }
+
+        auto& languageModule = it->second;
+        if (!languageModule->IsInitialized())
+            continue;
+
+        /*if (languageModule->LoadPlugin(plugin)) {
+            // TODO: Plugin load
+        }*/
+    }
+}
+
 void PluginManager::SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList) {
     auto it = std::find_if(sourceList.begin(), sourceList.end(), [&pluginName](const auto& plugin) {
         return plugin->GetName() == pluginName;
     });
     if (it != sourceList.end()) {
         auto index = static_cast<size_t>(std::distance(sourceList.begin(), it));
-        auto plugin = sourceList[index];
+        auto plugin = std::move(sourceList[index]);
         sourceList.erase(it);
         for (const auto& descriptor : plugin->GetDescriptor().dependencies) {
             SortPluginsByDependencies(descriptor.name, sourceList, targetList);
@@ -192,7 +213,7 @@ bool PluginManager::IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& 
             });
 
             if (it != plugins.end()) {
-                auto [vis, rec] = visitedPlugins[name];
+                const auto& [vis, rec] = visitedPlugins[name];
                 if ((!vis && IsCyclic(*it, plugins, visitedPlugins)) || rec)
                     return true;
             }
@@ -273,8 +294,4 @@ bool PluginManager::GetPluginDependencies_FromDescriptor(const PluginReferenceDe
         return true;
     }
     return false;
-}
-
-void PluginManager::RefreshPluginsList() {
-    // TODO:
 }

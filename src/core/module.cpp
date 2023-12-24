@@ -7,7 +7,7 @@ Module::Module(fs::path filePath, LanguageModuleDescriptor descriptor) : _filePa
 }
 
 bool Module::Initialize() {
-    assert(IsInitialized());
+    // TODO: assert(IsInitialized());
 
     if (!fs::exists(_filePath) || !fs::is_regular_file(_filePath)) {
         WIZARD_LOG("Module binary '" + _filePath.string() + "' not exist!.", ErrorLevel::ERROR);

@@ -14,7 +14,6 @@ namespace wizard {
         ~PluginManager();
 
         /** IPluginManager interface */
-        void RefreshPluginsList() override;
         std::shared_ptr<IPlugin> FindPlugin(const std::string& pluginName) override;
         std::shared_ptr<IPlugin> FindPlugin(std::string_view pluginName) override;
         std::shared_ptr<IPlugin> FindPluginFromId(uint64_t pluginId) override;
@@ -35,6 +34,7 @@ namespace wizard {
         void ReadAllPluginsDescriptors();
 
         void LoadRequiredLanguageModules();
+        void LoadPlugins();
 
         static void SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList);
         static bool HasCyclicDependencies(PluginList& plugins);

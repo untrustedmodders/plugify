@@ -10,8 +10,6 @@ namespace wizard {
         ~IPluginManager() = default;
 
     public:
-        virtual void RefreshPluginsList() = 0;
-
         virtual std::shared_ptr<IPlugin> FindPlugin(const std::string& pluginName) = 0;
         virtual std::shared_ptr<IPlugin> FindPlugin(std::string_view pluginName) = 0;
 

@@ -3,6 +3,7 @@
 #include <wizard/module.h>
 #include <wizard/language_module.h>
 #include "language_module_descriptor.h"
+#include "plugin.h"
 #include "utils/library.h"
 
 namespace wizard {
@@ -40,9 +41,9 @@ namespace wizard {
 
         bool Initialize();
         void Terminate();
+
         // TODO: Add more interactions with ILanguageModule
 
-    private:
         ILanguageModule& GetLanguageModule() {
             return _languageModule.value().get();
         }

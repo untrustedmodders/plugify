@@ -4,6 +4,15 @@
 #include "plugin_descriptor.h"
 
 namespace wizard {
+    enum class PluginState : uint8_t {
+        NotLoaded,
+        Error,
+        Loaded,
+        Running,
+        Terminating,
+        Unloaded,
+    };
+
     class Plugin final : public IPlugin {
     public:
         Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor);
@@ -41,14 +50,37 @@ namespace wizard {
             return _descriptor;
         }
 
-        bool IsInitialized() const { return _initialized; }
-        void SetInitialized(bool initialized) { _initialized = initialized; }
+        PluginState GetState() const {
+            return _state;
+        }
+
+        void SetError(std::string error) {
+            _error = std::move(error);
+            _state = PluginState::Error;
+        }
+
+        void SetLoaded() {
+            _state = PluginState::Loaded;
+        }
+
+        void SetRunning() {
+            _state = PluginState::Running;
+        }
+
+        void SetTerminating() {
+            _state = PluginState::Terminating;
+        }
+
+        void SetUnloaded() {
+            _state = PluginState::Unloaded;
+        }
 
     private:
         uint64_t _id{ std::numeric_limits<uint64_t>::max() };
         std::string _name;
         fs::path _filePath;
+        std::string _error;
         PluginDescriptor _descriptor;
-        bool _initialized{ false };
+        PluginState _state{ PluginState::NotLoaded };
     };
 }

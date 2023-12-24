@@ -1,6 +1,10 @@
 #pragma once
 
+#include "load_result.h"
+
 namespace wizard {
+    class IPlugin;
+
     // Language module interface which should be implemented by user !
     class ILanguageModule {
     protected:
@@ -11,6 +15,7 @@ namespace wizard {
         virtual void Shutdown() = 0;
         virtual void* GetMethod(const std::string& name) = 0;
         virtual void OnNativeAdded(/*data*/) = 0;
-        virtual bool OnLoadPlugin(/*data*/) = 0;
+        virtual LoadResult OnLoadPlugin(const IPlugin& plugin) = 0;
+        virtual void OnStartPlugin(const IPlugin& plugin) = 0;
     };
 }
