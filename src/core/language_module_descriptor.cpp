@@ -122,7 +122,7 @@ bool LanguageModuleInfo::Read(const utils::json::Value& object) {
     }
 
     if (name.empty()) {
-        WIZARD_LOG("LanguageModuleInfo: Should contain valid name!", ErrorLevel::ERROR);
+        WIZARD_LOG("LanguageModuleInfo should contain valid name!", ErrorLevel::ERROR);
         return false;
     }
 
