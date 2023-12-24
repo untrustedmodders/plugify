@@ -3,6 +3,7 @@
 #include <wizard/module.h>
 #include <wizard/language_module.h>
 #include "language_module_descriptor.h"
+#include "library.h"
 
 namespace wizard {
     class IModule;
@@ -38,9 +39,19 @@ namespace wizard {
         bool IsInitialized() const { return languageModule.has_value(); }
 
     private:
+        bool Initialize();
+        void Shutdown();
+        // TODO: Add more interactions with ILanguageModule
+
+        ILanguageModule& GetLanguageModule() {
+            return languageModule.value().get();
+        }
+
+    private:
         std::string m_name;
         fs::path m_filePath;
         LanguageModuleDescriptor m_descriptor;
+        std::unique_ptr<Library> library;
         std::optional<std::reference_wrapper<ILanguageModule>> languageModule;
     };
 }
