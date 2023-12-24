@@ -11,7 +11,7 @@ namespace wizard {
     class PluginManager final : public IPluginManager {
     public:
         PluginManager();
-        ~PluginManager() override;
+        ~PluginManager();
 
         /** IPluginManager interface */
         void RefreshPluginsList() override;

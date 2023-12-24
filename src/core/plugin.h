@@ -7,7 +7,7 @@ namespace wizard {
     class Plugin final : public IPlugin {
     public:
         Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor);
-        ~Plugin() override = default;
+        ~Plugin() = default;
 
         /* IPlugin interface */
         uint64_t GetId() const override {

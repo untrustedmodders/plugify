@@ -10,7 +10,7 @@ namespace wizard {
     class Module final : public IModule {
     public:
         Module(fs::path filePath, LanguageModuleDescriptor descriptor);
-        ~Module() override = default;
+        ~Module() = default;
 
         const std::string& GetName() const override {
             return _name;

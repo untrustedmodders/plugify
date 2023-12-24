@@ -4,7 +4,7 @@ namespace wizard {
     // Language module interface which should be implemented by user !
     class ILanguageModule {
     protected:
-        virtual ~ILanguageModule() = default;
+        ~ILanguageModule() = default;
 
     public:
         virtual bool Initialize() = 0;

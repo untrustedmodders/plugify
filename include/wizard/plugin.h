@@ -6,7 +6,7 @@ namespace wizard {
     // Plugin provided to user, which implemented in core
     class IPlugin {
     protected:
-        virtual ~IPlugin() = default;
+        ~IPlugin() = default;
 
     public:
         virtual uint64_t GetId() const = 0;

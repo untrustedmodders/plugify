@@ -7,7 +7,7 @@ namespace wizard {
     // Plugin manager provided to user, which implemented in core
     class WIZARD_API IPluginManager {
     protected:
-        virtual ~IPluginManager() = default;
+        ~IPluginManager() = default;
 
     public:
         virtual void RefreshPluginsList() = 0;

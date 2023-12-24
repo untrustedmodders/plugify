@@ -6,7 +6,7 @@ namespace wizard {
     // Language module provided to user implemented in core !
     class IModule {
     protected:
-        virtual ~IModule() = default;
+        ~IModule() = default;
 
     public:
         virtual const std::string& GetName() const = 0;
