@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Speed up building on MinGW
-if(WIN32)
+if(MINGW)
     add_link_options(-fuse-ld=lld)
 endif()
 
