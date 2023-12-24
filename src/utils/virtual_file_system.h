@@ -14,7 +14,7 @@ namespace wizard {
          * Add an archive or directory to the search path.
          * @param path The path to the directory or archive.
          */
-        static void Mount(const fs::path& path, const fs::path& mount);
+        static void Mount(const fs::path& path, std::string_view mount);
 
         /**
          * Add an archive, contained in a PHYSFE_File handle, to the search path.
@@ -57,7 +57,8 @@ namespace wizard {
          * @param ext The extension string.
          * @return The files found.
          */
-        static std::vector<fs::path> GetFiles(const fs::path& filepath, bool recursive = false, std::string_view ext = "");
+        static bool GetFilesFromDirectoryRecursive(const fs::path& directory, std::unordered_map<fs::path, fs::path>& results, std::string_view ext = "");
+        static std::vector<fs::path> GetFilesFromDirectory(const fs::path& directory, std::string_view ext = "");
 
         /**
          * Get the current search path.
