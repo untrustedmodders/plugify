@@ -39,6 +39,8 @@ if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
     set(ASMJIT_STATIC $<BOOL:${WIZARD_BUILD_SHARED_ASMJIT}> CACHE BOOL "")
 
     add_subdirectory(external/asmjit)
+else()
+    find_package(asmjit)
 endif()
 
 #
@@ -84,22 +86,6 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.h)
-
-if(WIZARD_USE_EXTERNAL_ASMJIT)
-    find_package(asmjit REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PUBLIC asmjit::asmjit)
-else()
-    target_link_libraries(${PROJECT_NAME} PUBLIC asmjit)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${ASMJIT_SRC})
-
-    if(MSVC)
-        target_compile_options(asmjit PUBLIC /wd5054)
-    elseif(MINGW)
-        target_compile_options(asmjit PUBLIC -Wno-deprecated-enum-enum-conversion)
-    else()
-        target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion)
-    endif()
-endif()
 
 if(WIZARD_USE_EXTERNAL_RAPIDJSON)
 	find_package(rapidjson REQUIRED)
