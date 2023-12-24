@@ -1,6 +1,7 @@
 #pragma once
 
 #include "load_result.h"
+#include <string>
 
 namespace wizard {
     class IPlugin;

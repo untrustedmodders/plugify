@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace wizard {
     enum class ErrorLevel : uint8_t {
         INFO,
