@@ -16,9 +16,9 @@ Library::Library(const fs::path& libraryPath) {
         WIZARD_LOG("Failed to load DLL.", ErrorLevel::ERROR);
     }
 #else
-    _handle = dlopen(libraryPath, RTLD_LAZY);
+    _handle = dlopen(libraryPath.string().c_str(), RTLD_LAZY);
     if (!_handle) {
-        WIZARD_LOG(Failed to load shared library: + dlerror(), ErrorLevel::ERROR);
+        WIZARD_LOG("Failed to load shared library: " + std::string(dlerror()), ErrorLevel::ERROR);
     }
 #endif
 }

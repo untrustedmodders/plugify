@@ -111,8 +111,7 @@ else()
         target_link_libraries(${PROJECT_NAME} PRIVATE physfs-static)
     endif()
 endif()
-
-target_link_libraries(${PROJECT_NAME} PRIVATE git-info)
+target_link_libraries(${PROJECT_NAME} PRIVATE git-info ${CMAKE_DL_LIBS})
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
