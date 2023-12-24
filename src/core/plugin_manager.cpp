@@ -278,8 +278,3 @@ bool PluginManager::GetPluginDependencies_FromDescriptor(const PluginReferenceDe
 void PluginManager::RefreshPluginsList() {
     // TODO:
 }
-
-IPluginManager& IPluginManager::Get() {
-    static PluginManager pluginManager;
-    return pluginManager;
-}

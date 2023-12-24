@@ -24,9 +24,6 @@ namespace wizard {
         virtual bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) = 0;
         virtual bool GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) = 0;
         virtual bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) = 0;
-
-    public:
-        static IPluginManager& Get();
     };
 
 }
