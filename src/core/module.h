@@ -12,6 +12,7 @@ namespace wizard {
         Loaded
     };
 
+    class Plugin;
     class Module final : public IModule {
     public:
         Module(fs::path filePath, LanguageModuleDescriptor descriptor);
@@ -44,6 +45,10 @@ namespace wizard {
         bool Initialize();
         void Terminate();
 
+        void LoadPlugin(const std::shared_ptr<Plugin>& plugin);
+        void StartPlugin(const std::shared_ptr<Plugin>& plugin);
+        void EndPlugin(const std::shared_ptr<Plugin>& plugin);
+
         // TODO: Add more interactions with ILanguageModule
 
         ILanguageModule& GetLanguageModule() {
@@ -71,6 +76,7 @@ namespace wizard {
         ModuleState _state;
         std::string _error;
         std::unique_ptr<Library> _library;
+        std::vector<std::weak_ptr<Plugin>> _loadedPlugins;
         std::optional<std::reference_wrapper<ILanguageModule>> _languageModule;
     };
 }

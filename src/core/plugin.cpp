@@ -7,35 +7,8 @@ Plugin::Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescripto
 
 }
 
-void Plugin::Load() {
-    if (_state != PluginState::NotLoaded)
-        return;
-
-    _module->GetLanguageModule().OnPluginLoad(*this);
-
-    // TODO: Implement loading
-
-    SetLoaded();
-}
-
-void Plugin::Start() {
-    if (_state != PluginState::Loaded)
-        return;
-
-    _module->GetLanguageModule().OnPluginStart(*this);
-
-    // TODO: Implement plugin start
-
-    SetRunning();
-}
-
-void Plugin::End() {
-    if (_state != PluginState::Running)
-        return;
-
-    _module->GetLanguageModule().OnPluginEnd(*this);
-
-    // TODO: Implement plugin end
-
-    SetTerminating();
+void Plugin::SetError(std::string error) {
+    _error = std::move(error);
+    _state = PluginState::Error;
+    WIZARD_LOG(_error, ErrorLevel::ERROR);
 }

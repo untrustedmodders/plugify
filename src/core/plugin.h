@@ -9,7 +9,8 @@ namespace wizard {
         Error,
         Loaded,
         Running,
-        Terminating
+        Terminating,
+        Unloaded
     };
 
     class Module;
@@ -50,10 +51,6 @@ namespace wizard {
             return _descriptor;
         }
 
-        void Load();
-        void Start();
-        void End();
-
         std::shared_ptr<Module> GetModule() const {
             return _module;
         }
@@ -66,11 +63,7 @@ namespace wizard {
             return _state;
         }
 
-        void SetError(std::string error) {
-            _error = std::move(error);
-            _state = PluginState::Error;
-            WIZARD_LOG(_error, ErrorLevel::ERROR);
-        }
+        void SetError(std::string error);
 
         void SetLoaded() {
             _state = PluginState::Loaded;
@@ -82,6 +75,10 @@ namespace wizard {
 
         void SetTerminating() {
             _state = PluginState::Terminating;
+        }
+
+        void SetUnloaded() {
+            _state = PluginState::Unloaded;
         }
 
     private:

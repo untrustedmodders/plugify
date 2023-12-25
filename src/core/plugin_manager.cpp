@@ -10,11 +10,13 @@ PluginManager::PluginManager() {
     DiscoverAllModules();
     DiscoverAllPlugins();
     LoadRequiredLanguageModules();
-    LoadPlugins();
+    LoadAndStartAvailablePlugins();
 }
 
 PluginManager::~PluginManager() {
-    // NOTE: All plugins and modules should be cleaned up or abandoned by this point
+    TerminateAllPlugins();
+    _allPlugins.clear();
+    _allModules.clear();
 }
 
 void PluginManager::DiscoverAllPlugins() {
@@ -148,9 +150,25 @@ void PluginManager::LoadRequiredLanguageModules() {
     }
 }
 
-void PluginManager::LoadPlugins() {
+void PluginManager::LoadAndStartAvailablePlugins() {
     for (const auto& plugin : _allPlugins) {
-        plugin->Load();
+        if (plugin->GetState() == PluginState::NotLoaded) {
+            plugin->GetModule()->LoadPlugin(plugin);
+        }
+    }
+
+    for (const auto& plugin : _allPlugins) {
+        if (plugin->GetState() == PluginState::Loaded) {
+            plugin->GetModule()->StartPlugin(plugin);
+        }
+    }
+}
+
+void PluginManager::TerminateAllPlugins() {
+    for (const auto& plugin :  _allPlugins | std::views::reverse) {
+        if (plugin->GetState() == PluginState::Running) {
+            plugin->GetModule()->EndPlugin(plugin);
+        }
     }
 }
 

@@ -11,6 +11,7 @@
 #include <set>
 #include <functional>
 #include <iterator>
+#include <ranges>
 
 #include <fstream>
 #include <iostream>

@@ -34,7 +34,8 @@ namespace wizard {
         void ReadAllPluginsDescriptors();
 
         void LoadRequiredLanguageModules();
-        void LoadPlugins();
+        void LoadAndStartAvailablePlugins();
+        void TerminateAllPlugins();
 
         static void SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList);
         static bool HasCyclicDependencies(PluginList& plugins);
