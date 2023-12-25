@@ -15,8 +15,8 @@ namespace wizard {
         virtual bool Initialize() = 0;
         virtual void Shutdown() = 0;
         virtual void OnNativeAdded(/*data*/) = 0;
-        virtual LoadResult OnLoadPlugin(const IPlugin& plugin) = 0;
-        virtual void OnStartPlugin(const IPlugin& plugin) = 0;
-        virtual void OnEndPlugin(const IPlugin& plugin) = 0;
+        virtual LoadResult OnPluginLoad(const IPlugin& plugin) = 0;
+        virtual void OnPluginStart(const IPlugin& plugin) = 0;
+        virtual void OnPluginEnd(const IPlugin& plugin) = 0;
     };
 }

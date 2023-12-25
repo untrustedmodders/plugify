@@ -113,6 +113,12 @@ else()
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE git-info ${CMAKE_DL_LIBS})
 
+if(WIZARD_BUILD_DLL)
+    include(GenerateExportHeader)
+    generate_export_header(${PROJECT_NAME} EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/${PROJECT_NAME}_export.h)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/exports)
+endif()
+
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")

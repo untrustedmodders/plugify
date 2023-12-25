@@ -9,8 +9,7 @@ namespace wizard {
         Error,
         Loaded,
         Running,
-        Terminating,
-        Unloaded,
+        Terminating
     };
 
     class Module;
@@ -52,6 +51,8 @@ namespace wizard {
         }
 
         void Load();
+        void Start();
+        void End();
 
         std::shared_ptr<Module> GetModule() const {
             return _module;
@@ -81,10 +82,6 @@ namespace wizard {
 
         void SetTerminating() {
             _state = PluginState::Terminating;
-        }
-
-        void SetUnloaded() {
-            _state = PluginState::Unloaded;
         }
 
     private:

@@ -9,7 +9,7 @@ namespace wizard {
     struct PluginReferenceDescriptor;
 
     // Plugin manager provided to user, which implemented in core
-    class WIZARD_API IPluginManager {
+    class IPluginManager {
     protected:
         ~IPluginManager() = default;
 

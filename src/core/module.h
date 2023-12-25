@@ -3,7 +3,6 @@
 #include <wizard/module.h>
 #include <wizard/language_module.h>
 #include "language_module_descriptor.h"
-#include "plugin.h"
 #include "utils/library.h"
 
 namespace wizard {
@@ -42,15 +41,13 @@ namespace wizard {
             return _descriptor;
         }
 
-        bool IsInitialized() const { return _languageModule.has_value(); }
-
         bool Initialize();
         void Terminate();
 
         // TODO: Add more interactions with ILanguageModule
 
         ILanguageModule& GetLanguageModule() {
-            return _languageModule.value().get();
+            return _languageModule.value();
         }
 
         ModuleState GetState() const {

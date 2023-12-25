@@ -18,7 +18,6 @@
 
 namespace fs = std::filesystem;
 
-#include "core/global.h"
 #include "utils/log.h"
 #include "utils/json.h"
 #include "utils/paths.h"
