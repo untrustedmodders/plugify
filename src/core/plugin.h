@@ -13,9 +13,10 @@ namespace wizard {
         Unloaded,
     };
 
+    class Module;
     class Plugin final : public IPlugin {
     public:
-        Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor);
+        Plugin(uint64_t id, std::string&& name, fs::path&& filePath, PluginDescriptor&& descriptor);
         ~Plugin() = default;
 
         /* IPlugin interface */
@@ -50,6 +51,16 @@ namespace wizard {
             return _descriptor;
         }
 
+        void Load();
+
+        std::shared_ptr<Module> GetModule() const {
+            return _module;
+        }
+
+        void SetModule(std::shared_ptr<Module> module) {
+            _module = std::move(module);
+        }
+
         PluginState GetState() const {
             return _state;
         }
@@ -57,6 +68,7 @@ namespace wizard {
         void SetError(std::string error) {
             _error = std::move(error);
             _state = PluginState::Error;
+            WIZARD_LOG(_error, ErrorLevel::ERROR);
         }
 
         void SetLoaded() {
@@ -80,6 +92,7 @@ namespace wizard {
         std::string _name;
         fs::path _filePath;
         std::string _error;
+        std::shared_ptr<Module> _module;
         PluginDescriptor _descriptor;
         PluginState _state{ PluginState::NotLoaded };
     };

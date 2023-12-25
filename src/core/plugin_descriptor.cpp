@@ -86,6 +86,11 @@ bool PluginDescriptor::Read(const utils::json::Value& object) {
                 supportURL = value.GetString();
             }
         }
+        else if(!strcmp(blockName, "assemblyPath")) {
+            if (value.IsString()) {
+                assemblyPath = value.GetString();
+            }
+        }
         else if(!strcmp(blockName, "supportedPlatforms")) {
             if (value.IsArray()) {
                 for (const auto& val : value.GetArray()) {

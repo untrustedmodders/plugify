@@ -9,9 +9,10 @@
   "docsURL": "https://github.com/orgs/untrustedmodders/README.md",
   "downloadURL": "https://github.com/orgs/untrustedmodders/example-repo.zip",
   "supportURL": "https://github.com/untrustedmodders/wizard/issues",
+  "assemblyPath": "bin/Plugin3.dll",
   "supportedPlatforms": [],
   "languageModule": {
-    "name": "csharp"
+    "name": "csharp-lang-module"
   },
   "dependencies": [
     {

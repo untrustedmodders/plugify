@@ -7,11 +7,16 @@
 #include "utils/library.h"
 
 namespace wizard {
-    class IModule;
+    enum class ModuleState : uint8_t {
+        NotLoaded,
+        Error,
+        Loaded
+    };
+
     class Module final : public IModule {
     public:
-        Module(fs::path filePath, LanguageModuleDescriptor descriptor);
-        ~Module() = default;
+        Module(fs::path&& filePath, LanguageModuleDescriptor&& descriptor);
+        ~Module();
 
         const std::string& GetName() const override {
             return _name;
@@ -48,10 +53,26 @@ namespace wizard {
             return _languageModule.value().get();
         }
 
+        ModuleState GetState() const {
+            return _state;
+        }
+
+        void SetError(std::string error) {
+            _error = std::move(error);
+            _state = ModuleState::Error;
+            WIZARD_LOG(_error, ErrorLevel::ERROR);
+        }
+
+        void SetLoaded() {
+            _state = ModuleState::Loaded;
+        }
+
     private:
         std::string _name;
         fs::path _filePath;
         LanguageModuleDescriptor _descriptor;
+        ModuleState _state;
+        std::string _error;
         std::unique_ptr<Library> _library;
         std::optional<std::reference_wrapper<ILanguageModule>> _languageModule;
     };

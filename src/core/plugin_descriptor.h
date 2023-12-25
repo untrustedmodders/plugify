@@ -15,6 +15,7 @@ namespace wizard {
         std::string docsURL;
         std::string downloadURL;
         std::string supportURL;
+        fs::path assemblyPath;
         std::vector<std::string> supportedPlatforms;
         LanguageModuleInfo languageModule;
         std::vector<PluginReferenceDescriptor> dependencies;

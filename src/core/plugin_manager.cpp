@@ -10,6 +10,7 @@ PluginManager::PluginManager() {
     DiscoverAllModules();
     DiscoverAllPlugins();
     LoadRequiredLanguageModules();
+    LoadPlugins();
 }
 
 PluginManager::~PluginManager() {
@@ -46,12 +47,20 @@ void PluginManager::ReadAllPluginsDescriptors() {
 
         PluginDescriptor descriptor;
         if (descriptor.Load(path) && descriptor.IsSupportsPlatform(WIZARD_PLATFORM)) {
+            fs::path pluginAssemblyPath{ path.parent_path() };
+            pluginAssemblyPath /= descriptor.assemblyPath;
+
+            if (!fs::exists(pluginAssemblyPath) || !fs::is_regular_file(pluginAssemblyPath)) {
+                WIZARD_LOG("Plugin assembly '" + pluginAssemblyPath.string() + "' not exist!.", ErrorLevel::ERROR);
+                continue;
+            }
+
             auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name](const auto& plugin) {
                 return plugin->GetName() == name;
             });
             if (it == _allPlugins.end()) {
                 size_t index = _allPlugins.size();
-                _allPlugins.emplace_back(std::make_shared<Plugin>(index, name, path, descriptor));
+                _allPlugins.emplace_back(std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(descriptor)));
             } else {
                 const auto& existingPlugin = *it;
 
@@ -61,7 +70,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 
                     if (existingVersion < descriptor.version) {
                         auto index = static_cast<size_t>(std::distance(_allPlugins.begin(), it));
-                        _allPlugins[index] = std::make_shared<Plugin>(_allPlugins[index]->GetId(), name, path, descriptor);
+                        _allPlugins[index] = std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(descriptor));
                     }
                 } else {
                     WIZARD_LOG("The same version (v" + std::to_string(existingVersion) + ") of plugin '"+ name + "' exists at '" + existingPlugin->GetDescriptorFilePath().string() + "' and '" + path.string() + "' - second location will be ignored.", ErrorLevel::WARN);
@@ -99,7 +108,7 @@ void PluginManager::DiscoverAllModules() {
 
             auto it = _allModules.find(name);
             if (it == _allModules.end()) {
-                _allModules.emplace(name, std::make_shared<Module>(moduleBinaryPath, descriptor));
+                _allModules.emplace(std::move(name), std::make_shared<Module>(std::move(moduleBinaryPath), std::move(descriptor)));
             } else {
                 const auto& existingModule = it->second;
 
@@ -108,7 +117,7 @@ void PluginManager::DiscoverAllModules() {
                     WIZARD_LOG("By default, prioritizing newer version (v" + std::to_string(std::max(existingVersion, descriptor.version)) + ") of '" + name + "' module, over older version (v" + std::to_string(std::min(existingVersion, descriptor.version)) + ").", ErrorLevel::WARN);
 
                     if (existingVersion < descriptor.version) {
-                        _allModules[name] = std::make_shared<Module>(moduleBinaryPath, descriptor);
+                        _allModules[std::move(name)] = std::make_shared<Module>(std::move(moduleBinaryPath), std::move(descriptor));
                     }
                 } else {
                     WIZARD_LOG("The same version (v" + std::to_string(existingVersion) + ") of module '" + name + "' exists at '" + existingModule->GetDescriptorFilePath().string() + "' and '" + path.string() + "' - second location will be ignored.", ErrorLevel::WARN);
@@ -119,50 +128,29 @@ void PluginManager::DiscoverAllModules() {
 }
 
 void PluginManager::LoadRequiredLanguageModules() {
-    std::set<std::string> languageModules;
+    std::set<std::shared_ptr<Module>> modules;
     for (const auto& plugin : _allPlugins) {
         const auto& name = plugin->GetDescriptor().languageModule.name;
-        languageModules.insert(name);
-    }
-
-    for (const auto& [name, languageModule] : _allModules) {
-        if (languageModule->GetDescriptor().forceLoad)
-            languageModules.insert(name);
-    }
-
-    for (const auto& name : languageModules) {
         auto it = _allModules.find(name);
         if (it == _allModules.end()) {
-            WIZARD_LOG("Module: '" + name + "' not exist!", ErrorLevel::ERROR);
+            plugin->SetError("Language module: '" + name + "' missing!");
             continue;
         }
+        auto& module = it->second;
+        plugin->SetModule(module);
+        modules.insert(module);
+    }
 
-        auto& languageModule = it->second;
-        if (languageModule->IsInitialized())
-            continue;
-
-        if (!languageModule->Initialize()) {
-            //allModules.erase(it);
+    for (const auto& [_, languageModule] : _allModules) {
+        if (languageModule->GetDescriptor().forceLoad || modules.contains(languageModule)) {
+            languageModule->Initialize();
         }
     }
 }
 
 void PluginManager::LoadPlugins() {
     for (const auto& plugin : _allPlugins) {
-        const auto& name = plugin->GetDescriptor().languageModule.name;
-        auto it = _allModules.find(name);
-        if (it == _allModules.end()) {
-            WIZARD_LOG("Module: '" + name + "' not exist!", ErrorLevel::ERROR);
-            continue;
-        }
-
-        auto& languageModule = it->second;
-        if (!languageModule->IsInitialized())
-            continue;
-
-        /*if (languageModule->LoadPlugin(plugin)) {
-            // TODO: Plugin load
-        }*/
+        plugin->Load();
     }
 }
 
