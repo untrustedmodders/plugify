@@ -2,7 +2,7 @@
 
 using namespace wizard;
 
-Module::Module(fs::path&& filePath, LanguageModuleDescriptor&& descriptor) : _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
+Module::Module(fs::path filePath, LanguageModuleDescriptor descriptor) : _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
 
 }
 

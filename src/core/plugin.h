@@ -15,7 +15,7 @@ namespace wizard {
     class Module;
     class Plugin final : public IPlugin {
     public:
-        Plugin(uint64_t id, std::string&& name, fs::path&& filePath, PluginDescriptor&& descriptor);
+        Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor);
         ~Plugin() = default;
 
         /* IPlugin interface */
