@@ -140,7 +140,5 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         WIZARD_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}"
         WIZARD_BUILD_SHARED_LIB=$<BOOL:${WIZARD_BUILD_SHARED_LIB}>)
 
-# If building shared library, set dllimport/dllexport proper.
-if (WIZARD_BUILD_DLL)
-    target_compile_options(${PROJECT_NAME} PRIVATE WIZARD_BUILD_MAIN_LIB)
-endif()
+# If building wizard library
+target_compile_options(${PROJECT_NAME} PRIVATE WIZARD_BUILD_MAIN_LIB)

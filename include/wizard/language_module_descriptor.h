@@ -16,6 +16,7 @@ namespace wizard {
         std::vector<std::string> supportedPlatforms;
         bool forceLoad{ false };
 
+#if WIZARD_BUILD_MAIN_LIB
         LanguageModuleDescriptor() = default;
 
         bool IsSupportsPlatform(const std::string& platform) const;
@@ -24,11 +25,14 @@ namespace wizard {
         bool Read(const utils::json::Value& object);
 
         static inline const char* const kFileExtension = ".wmodule";
+#endif
     };
 
     struct LanguageModuleInfo {
         std::string name;
 
+#if WIZARD_BUILD_MAIN_LIB
         bool Read(const utils::json::Value& object);
+#endif
     };
 }

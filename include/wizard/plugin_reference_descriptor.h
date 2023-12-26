@@ -9,10 +9,12 @@ namespace wizard {
         std::vector<std::string> supportedPlatforms;
         std::optional<int32_t> requestedVersion;
 
+#if WIZARD_BUILD_MAIN_LIB
         explicit PluginReferenceDescriptor(std::string pluginName = "");
 
         bool IsSupportsPlatform(const std::string& platform) const;
 
         bool Read(const utils::json::Value& object);
+#endif
     };
 }
