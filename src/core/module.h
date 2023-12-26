@@ -2,7 +2,7 @@
 
 #include <wizard/module.h>
 #include <wizard/language_module.h>
-#include "language_module_descriptor.h"
+#include <wizard/language_module_descriptor.h>
 #include "utils/library.h"
 
 namespace wizard {

@@ -1,4 +1,5 @@
-#include "plugin_reference_descriptor.h"
+#include <wizard/plugin_reference_descriptor.h>
+#include <wizard/plugin_reference_descriptor.h>
 
 using namespace wizard;
 

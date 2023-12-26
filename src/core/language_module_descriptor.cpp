@@ -1,4 +1,4 @@
-#include "language_module_descriptor.h"
+#include <wizard/language_module_descriptor.h>
 #include "utils/file_system.h"
 
 using namespace wizard;

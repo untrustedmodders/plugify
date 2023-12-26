@@ -1,7 +1,7 @@
 #pragma once
 
-#include "plugin_reference_descriptor.h"
-#include "language_module_descriptor.h"
+#include <wizard/language_module_descriptor.h>
+#include <wizard/plugin_reference_descriptor.h>
 
 namespace wizard {
     struct PluginDescriptor {
