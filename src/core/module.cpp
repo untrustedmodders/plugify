@@ -38,7 +38,7 @@ bool Module::Initialize() {
             return false;
         }
 
-        if (languageModulePtr->Initialize()) {
+        if (languageModulePtr->Initialize(*this)) {
             _languageModule = std::ref(*languageModulePtr);
             SetLoaded();
             return true;
