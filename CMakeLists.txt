@@ -25,13 +25,13 @@ include(cmake/git.cmake)
 # Options
 #
 option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" OFF)
-option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared libary" OFF)
-option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared libary" OFF)
-option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared libary" OFF)
+option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared library" OFF)
+option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
+option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared library" OFF)
 
-option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit libary" OFF)
-option(WIZARD_USE_EXTERNAL_RAPIDJSON "Use external rapidjson libary" OFF)
-option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs libary" OFF)
+option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
+option(WIZARD_USE_EXTERNAL_RAPIDJSON "Use external rapidjson library" OFF)
+option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs library" OFF)
 
 option(WIZARD_LOGGING "Enable logs" ON)
 
