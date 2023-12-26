@@ -26,7 +26,7 @@ namespace wizard {
             return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
         }
 
-        const fs::path& GetDescriptorFilePath() const override {
+        const fs::path& GetFilePath() const override {
             return _filePath;
         }
 
