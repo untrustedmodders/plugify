@@ -170,6 +170,10 @@ void PluginManager::TerminateAllPlugins() {
             plugin->GetModule()->EndPlugin(plugin);
         }
     }
+
+    for (auto& plugin : _allPlugins | std::views::reverse) {
+        plugin->SetUnloaded();
+    }
 }
 
 void PluginManager::SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList) {

@@ -31,11 +31,11 @@ namespace wizard {
         }
 
         fs::path GetBaseDir() const override {
-            return _filePath.parent_path();
+            return _filePath.parent_path().parent_path();
         }
 
         fs::path GetBinariesDir() const override {
-            return _filePath.parent_path() / "bin";
+            return _filePath.parent_path();
         }
 
         const LanguageModuleDescriptor& GetDescriptor() const override {

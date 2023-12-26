@@ -55,9 +55,6 @@ bool Module::Initialize() {
 
 void Module::Terminate() {
     if (_languageModule.has_value()) {
-        for (auto& plugin : _loadedPlugins) {
-            plugin.lock()->SetUnloaded();
-        }
         GetLanguageModule().Shutdown();
     }
     _languageModule.reset();
