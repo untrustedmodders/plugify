@@ -1,9 +1,13 @@
 #pragma once
 
+#include <cstdint>
+#include <optional>
+#include <string>
+
 namespace wizard {
     struct LanguageModuleDescriptor {
-        int32_t fileVersion{ 0 };
-        int32_t version{ 0 };
+        std::int32_t fileVersion{ 0 };
+        std::int32_t version{ 0 };
         std::string versionName;
         std::string friendlyName;
         std::string language;

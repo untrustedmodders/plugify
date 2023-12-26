@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdint>
+#include <optional>
+#include <string>
+
 namespace wizard {
     struct PluginReferenceDescriptor {
         std::string name;
@@ -7,7 +11,7 @@ namespace wizard {
         std::string description;
         std::string downloadURL;
         std::vector<std::string> supportedPlatforms;
-        std::optional<int32_t> requestedVersion;
+        std::optional<std::int32_t> requestedVersion;
 
 #if WIZARD_BUILD_MAIN_LIB
         explicit PluginReferenceDescriptor(std::string pluginName = "");

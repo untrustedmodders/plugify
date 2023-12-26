@@ -1,29 +1,18 @@
 {
-  "fileVersion": 1,
-  "version": 1,
-  "versionName": "1.0",
-  "friendlyName": "Wizard Example Plugin (3)",
-  "description": "An example of a plugin. This can be used as a starting point when creating your own plugin.",
-  "createdBy": "untrustedmodders",
-  "createdByURL": "https://github.com/untrustedmodders/",
-  "docsURL": "https://github.com/orgs/untrustedmodders/README.md",
-  "downloadURL": "https://github.com/orgs/untrustedmodders/example-repo.zip",
-  "supportURL": "https://github.com/untrustedmodders/wizard/issues",
-  "assemblyPath": "bin/Plugin3.dll",
-  "supportedPlatforms": [],
-  "languageModule": {
-    "name": "csharp-lang-module"
-  },
-  "dependencies": [
-    {
-      "name": "Wizard Example Plugin",
-      "optional": false,
-      "description": "Some other desc plugin",
-      "downloadURL": "https://github.com/orgs/untrustedmodders/example2-plugin.zip",
-      "supportedPlatforms": [
-        "windows"
-      ],
-      "requestedVersion": 0
-    }
-  ]
+    "fileVersion": 1,
+    "version": 1,
+    "versionName": "1.0",
+    "friendlyName": "Plugin3",
+    "description": "An example of a plugin. This can be used as a starting point when creating your own plugin.",
+    "createdBy": "untrustedmodders",
+    "createdByURL": "https://github.com/untrustedmodders/",
+    "docsURL": "https://github.com/orgs/untrustedmodders/README.md",
+    "downloadURL": "https://github.com/orgs/untrustedmodders/example-repo.zip",
+    "supportURL": "https://github.com/untrustedmodders/wizard/issues",
+    "assemblyPath": "bin/Plugin3.dll",
+    "supportedPlatforms": [],
+    "languageModule": {
+     "name": "csharp-lang-module"
+    },
+    "dependencies": []
 }

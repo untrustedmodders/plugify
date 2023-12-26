@@ -2,11 +2,13 @@
 
 #include <wizard/language_module_descriptor.h>
 #include <wizard/plugin_reference_descriptor.h>
+#include <filesystem>
+#include <vector>
 
 namespace wizard {
     struct PluginDescriptor {
-        int32_t fileVersion{ 0 };
-        int32_t version{ 0 };
+        std::int32_t fileVersion{ 0 };
+        std::int32_t version{ 0 };
         std::string versionName;
         std::string friendlyName;
         std::string description;
@@ -15,11 +17,12 @@ namespace wizard {
         std::string docsURL;
         std::string downloadURL;
         std::string supportURL;
-        fs::path assemblyPath;
+        std::filesystem::path assemblyPath;
         std::vector<std::string> supportedPlatforms;
         LanguageModuleInfo languageModule;
         std::vector<PluginReferenceDescriptor> dependencies;
 
+#if WIZARD_BUILD_MAIN_LIB
         PluginDescriptor() = default;
 
         bool IsSupportsPlatform(const std::string& platform) const;
@@ -28,5 +31,6 @@ namespace wizard {
         bool Read(const utils::json::Value& object);
 
         static inline const char* const kFileExtension = ".wplugin";
+#endif
     };
 }
