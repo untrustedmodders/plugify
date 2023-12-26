@@ -1,4 +1,4 @@
-#include "plugin_descriptor.h"
+#include <wizard/plugin_descriptor.h>
 #include "utils/file_system.h"
 
 using namespace wizard;

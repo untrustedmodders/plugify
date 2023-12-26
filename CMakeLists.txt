@@ -141,4 +141,4 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         WIZARD_BUILD_SHARED_LIB=$<BOOL:${WIZARD_BUILD_SHARED_LIB}>)
 
 # If building wizard library
-target_compile_options(${PROJECT_NAME} PRIVATE WIZARD_BUILD_MAIN_LIB)
+target_compile_definitions(${PROJECT_NAME} PRIVATE WIZARD_BUILD_MAIN_LIB)

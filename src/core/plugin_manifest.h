@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugin_descriptor.h"
+#include <wizard/plugin_descriptor.h>
 
 namespace wizard {
     struct PluginManifestEntry {

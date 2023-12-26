@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wizard/plugin.h>
-#include "plugin_descriptor.h"
+#include <wizard/plugin_descriptor.h>
 
 namespace wizard {
     enum class PluginState : uint8_t {
