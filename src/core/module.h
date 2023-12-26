@@ -30,12 +30,12 @@ namespace wizard {
             return _filePath;
         }
 
-        // TODO: Implement
         fs::path GetBaseDir() const override {
-            return "";
+            return _filePath.parent_path();
         }
+
         fs::path GetBinariesDir() const override {
-            return "";
+            return _filePath.parent_path() / "bin";
         }
 
         const LanguageModuleDescriptor& GetDescriptor() const override {

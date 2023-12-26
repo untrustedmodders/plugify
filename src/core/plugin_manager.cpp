@@ -75,7 +75,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
                         _allPlugins[index] = std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(descriptor));
                     }
                 } else {
-                    WIZARD_LOG("The same version (v" + std::to_string(existingVersion) + ") of plugin '"+ name + "' exists at '" + existingPlugin->GetDescriptorFilePath().string() + "' and '" + path.string() + "' - second location will be ignored.", ErrorLevel::WARN);
+                    WIZARD_LOG("The same version (v" + std::to_string(existingVersion) + ") of plugin '"+ name + "' exists at '" + existingPlugin->GetFilePath().string() + "' and '" + path.string() + "' - second location will be ignored.", ErrorLevel::WARN);
                 }
             }
         }
@@ -122,7 +122,7 @@ void PluginManager::DiscoverAllModules() {
                         _allModules[std::move(name)] = std::make_shared<Module>(std::move(moduleBinaryPath), std::move(descriptor));
                     }
                 } else {
-                    WIZARD_LOG("The same version (v" + std::to_string(existingVersion) + ") of module '" + name + "' exists at '" + existingModule->GetDescriptorFilePath().string() + "' and '" + path.string() + "' - second location will be ignored.", ErrorLevel::WARN);
+                    WIZARD_LOG("The same version (v" + std::to_string(existingVersion) + ") of module '" + name + "' exists at '" + existingModule->GetFilePath().string() + "' and '" + path.string() + "' - second location will be ignored.", ErrorLevel::WARN);
                 }
             }
         }
@@ -254,7 +254,7 @@ std::shared_ptr<IPlugin> PluginManager::FindPluginFromId(uint64_t pluginId) {
 
 std::shared_ptr<IPlugin> PluginManager::FindPluginFromPath(const fs::path& pluginFilePath) {
     auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginFilePath](const auto& plugin) {
-        return plugin->GetDescriptorFilePath() == pluginFilePath;
+        return plugin->GetFilePath() == pluginFilePath;
     });
     return it != _allPlugins.end() ? *it : nullptr;
 }
