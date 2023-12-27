@@ -54,7 +54,7 @@ bool PluginReferenceDescriptor::Read(const utils::json::Value& object) {
     }
 
     if (name.empty()) {
-        WIZARD_LOG("PluginReferenceDescriptor Should contain valid name!", ErrorLevel::ERROR);
+        WIZARD_LOG("PluginReferenceDescriptor: Should contain valid name!", ErrorLevel::ERROR);
         return false;
     }
 

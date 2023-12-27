@@ -2,6 +2,7 @@
 
 #include <wizard/language_module_descriptor.h>
 #include <wizard/plugin_reference_descriptor.h>
+#include <wizard/method.h>
 #include <filesystem>
 #include <vector>
 
@@ -21,6 +22,7 @@ namespace wizard {
         std::vector<std::string> supportedPlatforms;
         LanguageModuleInfo languageModule;
         std::vector<PluginReferenceDescriptor> dependencies;
+        std::vector<Method> exportedMethods;
 
 #if WIZARD_BUILD_MAIN_LIB
         PluginDescriptor() = default;

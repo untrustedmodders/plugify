@@ -31,6 +31,7 @@ bool PluginDescriptor::Read(const utils::json::Value& object) {
     
     supportedPlatforms.clear();
     dependencies.clear();
+    exportedMethods.clear();
 
     for (auto itr = object.MemberBegin(); itr != object.MemberEnd(); ++itr) {
         const char* blockName = itr->name.GetString();
@@ -110,6 +111,15 @@ bool PluginDescriptor::Read(const utils::json::Value& object) {
                 for (const auto& val : value.GetArray()) {
                     if (val.IsObject()) {
                         dependencies.emplace_back().Read(val);
+                    }
+                }
+            }
+        }
+        else if(!strcmp(blockName, "exportedMethods")) {
+            if (value.IsArray()) {
+                for (const auto& val : value.GetArray()) {
+                    if (val.IsObject()) {
+                        exportedMethods.emplace_back().Read(val);
                     }
                 }
             }
