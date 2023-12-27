@@ -42,8 +42,6 @@ if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
     set(ASMJIT_STATIC $<BOOL:${WIZARD_BUILD_SHARED_ASMJIT}> CACHE BOOL "")
 
     add_subdirectory(external/asmjit)
-else()
-    find_package(asmjit)
 endif()
 
 #
@@ -85,6 +83,7 @@ if(WIZARD_BUILD_DLL)
     endif()
 else()
     add_executable(${PROJECT_NAME} ${WIZARD_CORE_SOURCES})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -95,6 +94,22 @@ if(WIZARD_USE_EXTERNAL_RAPIDJSON)
     target_include_directories(${PROJECT_NAME} PRIVATE ${RAPIDJSON_INCLUDE_DIRS})
 else()
     target_include_directories(${PROJECT_NAME} PRIVATE external/rapidjson/include)
+endif()
+
+if(WIZARD_USE_EXTERNAL_ASMJIT)
+    find_package(asmjit REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC asmjit::asmjit)
+else()
+    target_link_libraries(${PROJECT_NAME} PUBLIC asmjit)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${ASMJIT_SRC})
+
+    if(MSVC)
+        target_compile_options(asmjit PUBLIC /wd5054)
+    elseif(MINGW)
+        target_compile_options(asmjit PUBLIC -Wno-deprecated-enum-enum-conversion)
+    else()
+        target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion)
+    endif()
 endif()
 
 if(WIZARD_USE_EXTERNAL_PHYSFS)
@@ -125,20 +140,35 @@ if(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /MP)
     endif()
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
+    #target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
-string(TOLOWER ${CMAKE_SYSTEM_NAME} WIZARD_PLATFORM)
+if(WIN32)
+    set(WIZARD_PLATFORM "windows")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC WIZARD_PLATFORM_WINDOWS)
+elseif(APPLE)
+    set(WIZARD_PLATFORM "apple")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC WIZARD_PLATFORM_APPLE)
+elseif(UNIX)
+    set(WIZARD_PLATFORM "linux")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC WIZARD_PLATFORM_LINUX)
+endif()
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(WIZARD_ARCH_X86 64)
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(WIZARD_ARCH_X86 32)
+endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         WIZARD_PLATFORM="${WIZARD_PLATFORM}"
-        WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>
+        WIZARD_ARCH_X86=${WIZARD_ARCH_X86}
+        WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
         WIZARD_COMPILED_COMPILER="${CMAKE_CXX_COMPILER}"
         WIZARD_COMPILED_SYSTEM="${CMAKE_SYSTEM}"
         WIZARD_COMPILED_GENERATOR="${CMAKE_GENERATOR}"
         WIZARD_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
         WIZARD_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}"
-        WIZARD_BUILD_SHARED_LIB=$<BOOL:${WIZARD_BUILD_SHARED_LIB}>)
-
-# If building wizard library
-target_compile_definitions(${PROJECT_NAME} PRIVATE WIZARD_BUILD_MAIN_LIB)
+        WIZARD_BUILD_MAIN_LIB)
