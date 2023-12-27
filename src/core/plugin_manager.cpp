@@ -33,7 +33,7 @@ void PluginManager::DiscoverAllPlugins() {
     _allPlugins = std::move(sortedPlugins);
 
     WIZARD_LOG("Plugins order after topological sorting: ", ErrorLevel::INFO);
-    for (const auto& plugin : _allPlugins) {
+    for ([[maybe_unused]] const auto& plugin : _allPlugins) {
         WIZARD_LOG(plugin->GetName() + " - " + plugin->GetFriendlyName(), ErrorLevel::INFO);
     }
 }
