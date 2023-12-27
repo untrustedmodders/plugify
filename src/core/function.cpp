@@ -196,36 +196,22 @@ constexpr TypeId GetTypeIdx() {
 TypeId Function::GetTypeId(ValueType valueType) {
     switch (valueType) {
         case ValueType::Invalid:
-        case ValueType::Void:       return GetTypeIdx<void>();
-        case ValueType::SChar:      return GetTypeIdx<signed char>();
-        case ValueType::UChar:      return GetTypeIdx<unsigned char>();
-        case ValueType::Short:      return GetTypeIdx<short>();
-        case ValueType::UShort:     return GetTypeIdx<unsigned short>();
-        case ValueType::Int:        return GetTypeIdx<int>();
-        case ValueType::UInt:       return GetTypeIdx<unsigned int>();
-        case ValueType::Long:       return GetTypeIdx<long>();
-        case ValueType::ULong:      return GetTypeIdx<unsigned long>();
-        case ValueType::LongLong:   return GetTypeIdx<long long>();
-        case ValueType::ULongLong:  return GetTypeIdx<unsigned long long>();
-        case ValueType::Char:       return GetTypeIdx<char>();
-        case ValueType::Char16:     return GetTypeIdx<char16_t>();
-        case ValueType::Char32:     return GetTypeIdx<char32_t>();
-        case ValueType::WChar:      return GetTypeIdx<wchar_t>();
-        case ValueType::Uint8:      return GetTypeIdx<uint8_t>();
-        case ValueType::Int8:       return GetTypeIdx<int8_t>();
-        case ValueType::Uint16:     return GetTypeIdx<uint16_t>();
-        case ValueType::Int16:      return GetTypeIdx<int16_t>();
-        case ValueType::Int32:      return GetTypeIdx<int32_t>();
-        case ValueType::Uint32:     return GetTypeIdx<uint32_t>();
-        case ValueType::Uint64:     return GetTypeIdx<uint64_t>();
-        case ValueType::Int64:      return GetTypeIdx<int64_t>();
-        case ValueType::Float:      return GetTypeIdx<float>();
-        case ValueType::Double:     return GetTypeIdx<double>();
-        case ValueType::Bool:       return GetTypeIdx<bool>();
-        case ValueType::Intptr:     return TypeId::kIntPtr;
-        case ValueType::Ptr:
-        case ValueType::String:
-        case ValueType::Uintptr:    return TypeId::kUIntPtr;
+        case ValueType::Void:   return GetTypeIdx<void>();
+        case ValueType::Bool:   return GetTypeIdx<bool>();
+        case ValueType::Char8:  return GetTypeIdx<char>();
+        case ValueType::Char16: return GetTypeIdx<wchar_t>();
+        case ValueType::Int8:   return GetTypeIdx<int8_t>();
+        case ValueType::Int16:  return GetTypeIdx<int16_t>();
+        case ValueType::Int32:  return GetTypeIdx<int32_t>();
+        case ValueType::Int64:  return GetTypeIdx<int64_t>();
+        case ValueType::Uint8:  return GetTypeIdx<uint8_t>();
+        case ValueType::Uint16: return GetTypeIdx<uint16_t>();
+        case ValueType::Uint32: return GetTypeIdx<uint32_t>();
+        case ValueType::Uint64: return GetTypeIdx<uint64_t>();
+        case ValueType::Float:  return GetTypeIdx<float>();
+        case ValueType::Double: return GetTypeIdx<double>();
+        case ValueType::Ptr64:  
+        case ValueType::String: return TypeId::kUIntPtr;
     }
     return TypeId::kVoid;
 }

@@ -23,16 +23,5 @@ namespace wizard {
         LanguageModuleInfo languageModule;
         std::vector<PluginReferenceDescriptor> dependencies;
         std::vector<Method> exportedMethods;
-
-#if WIZARD_BUILD_MAIN_LIB
-        PluginDescriptor() = default;
-
-        bool IsSupportsPlatform(const std::string& platform) const;
-
-	    bool Load(const fs::path& filePath);
-        bool Read(const utils::json::Value& object);
-
-        static inline const char* const kFileExtension = ".wplugin";
-#endif
     };
 }

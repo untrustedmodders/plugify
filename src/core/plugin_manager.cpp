@@ -2,7 +2,9 @@
 #include "plugin.h"
 #include "module.h"
 
-#include "utils/file_system.h"
+#include <utils/file_system.h>
+#include <serialize/plugin.h>
+#include <serialize/language_module.h>
 
 using namespace wizard;
 
@@ -41,14 +43,14 @@ void PluginManager::DiscoverAllPlugins() {
 void PluginManager::ReadAllPluginsDescriptors() {
     // TODO: Load .wpluginmanifest here
 
-    std::vector<fs::path> pluginsFilePaths = FileSystem::GetFiles(Paths::PluginsDir(), true, PluginDescriptor::kFileExtension);
+    std::vector<fs::path> pluginsFilePaths = FileSystem::GetFiles(Paths::PluginsDir(), true, Plugin::kFileExtension);
 
     for (const auto& path : pluginsFilePaths) {
         std::string name{ path.filename().replace_extension().string() };
         WIZARD_LOG("Read module descriptor for " + name + ", from '" + path.string() + "'", ErrorLevel::INFO);
 
         PluginDescriptor descriptor;
-        if (descriptor.Load(path) && descriptor.IsSupportsPlatform(WIZARD_PLATFORM)) {
+        if (LoadPluginDescriptor(descriptor, path) && IsSupportsPlatform(descriptor.supportedPlatforms)) {
             fs::path pluginAssemblyPath{ path.parent_path() };
             pluginAssemblyPath /= descriptor.assemblyPath;
 
@@ -86,14 +88,14 @@ void PluginManager::DiscoverAllModules() {
     // TODO: Mount modules zips
     // TODO: assert(_allModules.empty());
 
-    std::vector<fs::path> modulesFilePaths = FileSystem::GetFiles(Paths::ModulesDir(), true, LanguageModuleDescriptor::kFileExtension);
+    std::vector<fs::path> modulesFilePaths = FileSystem::GetFiles(Paths::ModulesDir(), true, Module::kFileExtension);
 
     for (const auto& path : modulesFilePaths) {
         std::string name{ path.filename().replace_extension().string() };
         WIZARD_LOG("Read module descriptor for " + name + ", from " + path.string(), ErrorLevel::INFO);
 
         LanguageModuleDescriptor descriptor;
-        if (descriptor.Load(path) && descriptor.IsSupportsPlatform(WIZARD_PLATFORM)) {
+        if (LoadLanguageModuleDescriptor(descriptor, path) && IsSupportsPlatform(descriptor.supportedPlatforms)) {
 
             // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
 

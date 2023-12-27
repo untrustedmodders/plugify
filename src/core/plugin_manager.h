@@ -41,6 +41,10 @@ namespace wizard {
         static bool HasCyclicDependencies(PluginList& plugins);
         static bool IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins);
 
+        static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
+            return supportedPlatforms.empty() || std::find(supportedPlatforms.begin(), supportedPlatforms.end(), WIZARD_PLATFORM) != supportedPlatforms.end();
+        }
+
     private:
         PluginList _allPlugins;
         ModuleMap _allModules;

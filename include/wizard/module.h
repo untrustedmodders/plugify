@@ -14,7 +14,7 @@ namespace wizard {
     public:
         virtual const std::string& GetName() const = 0;
         virtual const std::string& GetFriendlyName() const = 0;
-        virtual const fs::path& GetFilePath() const = 0;
+        virtual const std::filesystem::path& GetFilePath() const = 0;
         virtual std::filesystem::path GetBaseDir() const = 0;
         virtual std::filesystem::path GetBinariesDir() const = 0;
         virtual const LanguageModuleDescriptor& GetDescriptor() const = 0;

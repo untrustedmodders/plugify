@@ -3,7 +3,7 @@
 #include <wizard/module.h>
 #include <wizard/language_module.h>
 #include <wizard/language_module_descriptor.h>
-#include "utils/library.h"
+#include <utils/library.h>
 
 namespace wizard {
     enum class ModuleState : uint8_t {
@@ -68,6 +68,8 @@ namespace wizard {
         void SetLoaded() {
             _state = ModuleState::Loaded;
         }
+
+        static inline const char* const kFileExtension = ".wmodule";
 
     private:
         std::string _name;

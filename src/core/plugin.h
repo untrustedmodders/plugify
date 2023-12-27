@@ -81,6 +81,8 @@ namespace wizard {
             _state = PluginState::Unloaded;
         }
 
+        static inline const char* const kFileExtension = ".wplugin";
+
     private:
         uint64_t _id{ std::numeric_limits<uint64_t>::max() };
         std::string _name;
@@ -89,5 +91,6 @@ namespace wizard {
         std::shared_ptr<Module> _module;
         PluginDescriptor _descriptor;
         PluginState _state{ PluginState::NotLoaded };
+
     };
 }
