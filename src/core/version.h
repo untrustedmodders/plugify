@@ -8,13 +8,7 @@ namespace wizard {
         Version& operator=(uint32_t version);
 
         operator uint32_t() const;
-
-        bool operator==(const Version& rhs) const { return (operator uint32_t()) == (rhs.operator uint32_t()); }
-        bool operator!=(const Version& rhs) const { return (operator uint32_t()) != (rhs.operator uint32_t()); }
-        bool operator<=(const Version& rhs) const { return (operator uint32_t()) <= (rhs.operator uint32_t()); }
-        bool operator>=(const Version& rhs) const { return (operator uint32_t()) >= (rhs.operator uint32_t()); }
-        bool operator>(const Version& rhs)  const { return (operator uint32_t()) > (rhs.operator uint32_t()); }
-        bool operator<(const Version& rhs)  const { return (operator uint32_t()) < (rhs.operator uint32_t()); }
+        auto operator<=>(const Version& rhs) const;
 
         std::string ToString() const;
 
