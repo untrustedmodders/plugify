@@ -83,7 +83,6 @@ if(WIZARD_BUILD_DLL)
     endif()
 else()
     add_executable(${PROJECT_NAME} ${WIZARD_CORE_SOURCES})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -93,7 +92,7 @@ if(WIZARD_USE_EXTERNAL_RAPIDJSON)
 	find_package(rapidjson REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${RAPIDJSON_INCLUDE_DIRS})
 else()
-    target_include_directories(${PROJECT_NAME} PRIVATE external/rapidjson/include)
+    target_include_directories(${PROJECT_NAME} PUBLIC external/rapidjson/include)
 endif()
 
 if(WIZARD_USE_EXTERNAL_ASMJIT)
@@ -137,7 +136,7 @@ if(WIZARD_BUILD_DLL)
             EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/${PROJECT_NAME}_export.h
             STATIC_DEFINE WIZARD_STATIC
             )
-    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/exports)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_BINARY_DIR}/exports)
 endif()
 
 if(MSVC)
