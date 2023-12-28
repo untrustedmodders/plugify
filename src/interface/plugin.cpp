@@ -3,39 +3,39 @@
 
 using namespace wizard;
 
-IPlugin::IPlugin(Plugin& impl) : impl{impl} {
+IPlugin::IPlugin(Plugin& impl) : _impl{impl} {
 }
 
 IPlugin::~IPlugin() = default;
 
 uint64_t IPlugin::GetId() const {
-    return impl.GetId();
+    return _impl.GetId();
 }
 
 const std::string& IPlugin::GetName() const {
-    return impl.GetName();
+    return _impl.GetName();
 }
 
 const std::string& IPlugin::GetFriendlyName() const {
-    return impl.GetFriendlyName();
+    return _impl.GetFriendlyName();
 }
 
 const std::filesystem::path& IPlugin::GetFilePath() const {
-    return impl.GetFilePath();
+    return _impl.GetFilePath();
 }
 
 std::filesystem::path IPlugin::GetBaseDir() const {
-    return impl.GetBaseDir();
+    return _impl.GetBaseDir();
 }
 
 std::filesystem::path IPlugin::GetContentDir() const {
-    return impl.GetContentDir();
+    return _impl.GetContentDir();
 }
 
 std::filesystem::path IPlugin::GetMountedAssetPath() const {
-    return impl.GetMountedAssetPath();
+    return _impl.GetMountedAssetPath();
 }
 
 const PluginDescriptor& IPlugin::GetDescriptor() const {
-    return impl.GetDescriptor();
+    return _impl.GetDescriptor();
 }

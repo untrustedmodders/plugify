@@ -30,8 +30,8 @@ namespace wizard {
         bool GetPluginDependencies_FromFilePath(const std::filesystem::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies);
         bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies);
 
-    protected:
-        PluginManager& impl;
+    private:
+        PluginManager& _impl;
     };
 
 }

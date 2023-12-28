@@ -3,41 +3,41 @@
 
 using namespace wizard;
 
-IPluginManager::IPluginManager(PluginManager& impl) : impl{impl} {
+IPluginManager::IPluginManager(PluginManager& impl) : _impl{impl} {
 }
 
 std::shared_ptr<IPlugin> IPluginManager::FindPlugin(const std::string& pluginName) {
-    return impl.FindPlugin(pluginName);
+    return _impl.FindPlugin(pluginName);
 }
 
 std::shared_ptr<IPlugin> IPluginManager::FindPlugin(std::string_view pluginName) {
-    return impl.FindPlugin(pluginName);
+    return _impl.FindPlugin(pluginName);
 }
 
 std::shared_ptr<IPlugin> IPluginManager::FindPluginFromId(uint64_t pluginId) {
-    return impl.FindPluginFromId(pluginId);
+    return _impl.FindPluginFromId(pluginId);
 }
 
 std::shared_ptr<IPlugin> IPluginManager::FindPluginFromPath(const std::filesystem::path& pluginFilePath) {
-    return impl.FindPluginFromPath(pluginFilePath);
+    return _impl.FindPluginFromPath(pluginFilePath);
 }
 
 std::shared_ptr<IPlugin> IPluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) {
-    return impl.FindPluginFromDescriptor(pluginDescriptor);
+    return _impl.FindPluginFromDescriptor(pluginDescriptor);
 }
 
 std::vector<std::shared_ptr<IPlugin>> IPluginManager::GetPlugins() {
-    return impl.GetPlugins();
+    return _impl.GetPlugins();
 }
 
 bool IPluginManager::GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
-    return impl.GetPluginDependencies(pluginName, pluginDependencies);
+    return _impl.GetPluginDependencies(pluginName, pluginDependencies);
 }
 
 bool IPluginManager::GetPluginDependencies_FromFilePath(const std::filesystem::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
-    return impl.GetPluginDependencies_FromFilePath(pluginFilePath, pluginDependencies);
+    return _impl.GetPluginDependencies_FromFilePath(pluginFilePath, pluginDependencies);
 }
 
 bool IPluginManager::GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
-    return impl.GetPluginDependencies_FromDescriptor(pluginDescriptor, pluginDependencies);
+    return _impl.GetPluginDependencies_FromDescriptor(pluginDescriptor, pluginDependencies);
 }

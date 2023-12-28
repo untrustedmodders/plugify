@@ -25,7 +25,7 @@ namespace wizard {
         std::filesystem::path GetMountedAssetPath() const;
         const PluginDescriptor& GetDescriptor() const;
 
-    protected:
-        Plugin& impl;
+    private:
+        Plugin& _impl;
     };
 }

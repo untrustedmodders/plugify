@@ -3,30 +3,30 @@
 
 using namespace wizard;
 
-IModule::IModule(Module& impl) : impl{impl} {
+IModule::IModule(Module& impl) : _impl{impl} {
 }
 
 const std::string& IModule::GetName() const {
-    return impl.GetName();
+    return _impl.GetName();
 }
 
 const std::string& IModule::GetFriendlyName() const {
-    return impl.GetFriendlyName();
+    return _impl.GetFriendlyName();
 }
 
 const std::filesystem::path& IModule::GetFilePath() const {
-    return impl.GetFilePath();
+    return _impl.GetFilePath();
 }
 
 std::filesystem::path IModule::GetBaseDir() const {
-    return impl.GetBaseDir();
+    return _impl.GetBaseDir();
 }
 
 std::filesystem::path IModule::GetBinariesDir() const {
-    return impl.GetBinariesDir();
+    return _impl.GetBinariesDir();
 }
 
 const LanguageModuleDescriptor& IModule::GetDescriptor() const {
-    return impl.GetDescriptor();
+    return _impl.GetDescriptor();
 }
 

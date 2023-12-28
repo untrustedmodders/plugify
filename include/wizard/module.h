@@ -23,6 +23,6 @@ namespace wizard {
         const LanguageModuleDescriptor& GetDescriptor() const;
 
     private:
-        Module& impl;
+        Module& _impl;
     };
 }
