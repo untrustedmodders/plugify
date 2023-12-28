@@ -1,5 +1,6 @@
 #pragma once
 
+#include "wizard_context.h"
 #include <wizard/plugin_manager.h>
 #include <wizard/plugin.h>
 #include <wizard/language_module.h>
@@ -7,10 +8,11 @@
 namespace wizard {
     class Plugin;
     class Module;
+    class IWizard;
 
-    class PluginManager final : public IPluginManager {
+    class PluginManager final : public IPluginManager, public WizardContext {
     public:
-        PluginManager();
+        PluginManager(std::weak_ptr<IWizard> wizard);
         ~PluginManager();
 
         /** IPluginManager interface */

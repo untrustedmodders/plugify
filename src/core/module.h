@@ -42,7 +42,7 @@ namespace wizard {
             return _descriptor;
         }
 
-        bool Initialize();
+        bool Initialize(std::weak_ptr<IWizardProvider> provider);
         void Terminate();
 
         void LoadPlugin(const std::shared_ptr<Plugin>& plugin);

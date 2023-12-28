@@ -11,7 +11,7 @@ Module::~Module() {
     Terminate();
 }
 
-bool Module::Initialize() {
+bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
     // TODO: assert(IsInitialized());
 
     if (!fs::exists(_filePath) || !fs::is_regular_file(_filePath)) {
@@ -20,37 +20,38 @@ bool Module::Initialize() {
     }
 
     _library = std::make_unique<Library>(_filePath);
-    if (_library) {
-        void* GetLanguageModulePtr = _library->GetFunction("GetLanguageModule");
-        if (!GetLanguageModulePtr) {
-            SetError("Function 'GetLanguageModule' not exist inside '" + _filePath.string() + "' library");
-            Terminate();
-            return false;
-        }
-
-        using GetLanguageModuleFuncT = ILanguageModule*(*)();
-        auto GetLanguageModuleFunc = reinterpret_cast<GetLanguageModuleFuncT>(GetLanguageModulePtr);
-        ILanguageModule* languageModulePtr = GetLanguageModuleFunc();
-
-        if (!languageModulePtr) {
-            SetError("Function 'GetLanguageModule' inside '" + _filePath.string() + "' library. Not returned valid address of 'ILanguageModule' implementation!");
-            Terminate();
-            return false;
-        }
-
-        if (languageModulePtr->Initialize(*this)) {
-            _languageModule = std::ref(*languageModulePtr);
-            SetLoaded();
-            return true;
-        } else {
-            SetError("Failed to initialize module: '" + _name + "' at: '" + _filePath.string() + "'");
-            Terminate();
-            return false;
-        }
-    } else {
+    if (!_library) {
         SetError("Failed to load library: '" + _name + "' at: '" + _filePath.string() + "'");
         return false;
     }
+
+    void* GetLanguageModulePtr = _library->GetFunction("GetLanguageModule");
+    if (!GetLanguageModulePtr) {
+        SetError("Function 'GetLanguageModule' not exist inside '" + _filePath.string() + "' library");
+        Terminate();
+        return false;
+    }
+
+    using GetLanguageModuleFuncT = ILanguageModule*(*)();
+    auto GetLanguageModuleFunc = reinterpret_cast<GetLanguageModuleFuncT>(GetLanguageModulePtr);
+    ILanguageModule* languageModulePtr = GetLanguageModuleFunc();
+
+    if (!languageModulePtr) {
+        SetError("Function 'GetLanguageModule' inside '" + _filePath.string() + "' library. Not returned valid address of 'ILanguageModule' implementation!");
+        Terminate();
+        return false;
+    }
+
+    InitResult result = languageModulePtr->Initialize(std::move(provider), *this);
+    if (ErrorData* data = std::get_if<ErrorData>(&result)) {
+        SetError("Failed to initialize module: '" + _name + "' error: '" + data->error + "' at: '" + _filePath.string() + "'");
+        Terminate();
+        return false;
+    }
+
+    _languageModule = std::ref(*languageModulePtr);
+    SetLoaded();
+    return true;
 }
 
 void Module::Terminate() {

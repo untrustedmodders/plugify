@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
 namespace wizard {
 	class ILogger;
+	class IWizardProvider;
 	class IPluginManager;
+	enum class ErrorLevel : uint8_t;
 
 	class IWizard {
 	public:
@@ -14,7 +17,9 @@ namespace wizard {
 		virtual void Terminate() = 0;
 
 		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
+		virtual void Log(const std::string& msg, ErrorLevel level) = 0;
 
+		virtual std::weak_ptr<IWizardProvider> GetProvider() = 0;
 		virtual std::weak_ptr<IPluginManager> GetPluginManager() = 0;
 	};
 

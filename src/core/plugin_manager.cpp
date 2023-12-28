@@ -5,10 +5,11 @@
 #include <utils/file_system.h>
 #include <serialize/plugin.h>
 #include <serialize/language_module.h>
+#include <wizard/wizard.h>
 
 using namespace wizard;
 
-PluginManager::PluginManager() {
+PluginManager::PluginManager(std::weak_ptr<IWizard> wizard) : WizardContext(std::move(wizard)) {
     DiscoverAllModules();
     DiscoverAllPlugins();
     LoadRequiredLanguageModules();
@@ -132,6 +133,11 @@ void PluginManager::DiscoverAllModules() {
 }
 
 void PluginManager::LoadRequiredLanguageModules() {
+    auto wizard = _wizard.lock();
+    if (!wizard) {
+        return;
+    }
+
     std::set<std::shared_ptr<Module>> modules;
     for (const auto& plugin : _allPlugins) {
         const auto& name = plugin->GetDescriptor().languageModule.name;
@@ -147,7 +153,7 @@ void PluginManager::LoadRequiredLanguageModules() {
 
     for (const auto& [_, languageModule] : _allModules) {
         if (languageModule->GetDescriptor().forceLoad || modules.contains(languageModule)) {
-            languageModule->Initialize();
+            languageModule->Initialize(wizard->GetProvider());
         }
     }
 }
