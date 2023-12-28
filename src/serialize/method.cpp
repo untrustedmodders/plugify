@@ -41,7 +41,7 @@ namespace wizard {
             }
             else if(!strcmp(blockName, "varIndex")) {
                 if (value.IsUint()) {
-                    method.varIndex = value.GetUint();
+                    method.varIndex = static_cast<uint8_t>(value.GetUint());
                 }
             }
         }
