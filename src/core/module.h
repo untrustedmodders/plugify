@@ -18,27 +18,27 @@ namespace wizard {
         Module(fs::path filePath, LanguageModuleDescriptor descriptor);
         ~Module();
 
-        const std::string& GetName() const override {
+        const std::string& GetName() const {
             return _name;
         }
 
-        const std::string& GetFriendlyName() const override {
+        const std::string& GetFriendlyName() const {
             return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
         }
 
-        const fs::path& GetFilePath() const override {
+        const fs::path& GetFilePath() const {
             return _filePath;
         }
 
-        fs::path GetBaseDir() const override {
+        fs::path GetBaseDir() const {
             return _filePath.parent_path().parent_path();
         }
 
-        fs::path GetBinariesDir() const override {
+        fs::path GetBinariesDir() const {
             return _filePath.parent_path();
         }
 
-        const LanguageModuleDescriptor& GetDescriptor() const override {
+        const LanguageModuleDescriptor& GetDescriptor() const {
             return _descriptor;
         }
 
@@ -75,7 +75,7 @@ namespace wizard {
         std::string _name;
         fs::path _filePath;
         LanguageModuleDescriptor _descriptor;
-        ModuleState _state;
+        ModuleState _state{ ModuleState::NotLoaded  };
         std::string _error;
         std::unique_ptr<Library> _library;
         std::vector<std::weak_ptr<Plugin>> _loadedPlugins;

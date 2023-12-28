@@ -14,16 +14,5 @@
     "languageModule": {
      "name": "csharp-lang-module"
     },
-    "dependencies": [],
-    "exportedMethods": [
-        {
-            "name": "Plugin1.SamplePlugin.StaticMethod",
-            "paramTypes": [
-                "int",
-                "float",
-                "double"
-            ],
-            "retType": "float"
-        }
-    ]
+    "dependencies": []
 }

@@ -1,9 +1,11 @@
 #include "module.h"
 #include "plugin.h"
+#include "wizard/module.h"
+
 
 using namespace wizard;
 
-Module::Module(fs::path filePath, LanguageModuleDescriptor descriptor) : _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
+Module::Module(fs::path filePath, LanguageModuleDescriptor descriptor) : IModule(*this), _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
 
 }
 

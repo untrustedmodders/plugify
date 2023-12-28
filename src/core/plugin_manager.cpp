@@ -1,6 +1,8 @@
 #include "plugin_manager.h"
 #include "plugin.h"
 #include "module.h"
+#include "wizard/plugin_manager.h"
+
 
 #include <utils/file_system.h>
 #include <serialize/plugin.h>
@@ -9,7 +11,7 @@
 
 using namespace wizard;
 
-PluginManager::PluginManager(std::weak_ptr<IWizard> wizard) : WizardContext(std::move(wizard)) {
+PluginManager::PluginManager(std::weak_ptr<IWizard> wizard) : IPluginManager(*this), WizardContext(std::move(wizard)) {
     DiscoverAllModules();
     DiscoverAllPlugins();
     LoadRequiredLanguageModules();

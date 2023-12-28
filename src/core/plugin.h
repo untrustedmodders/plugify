@@ -20,34 +20,33 @@ namespace wizard {
         ~Plugin() = default;
 
         /* IPlugin interface */
-        uint64_t GetId() const override {
+        uint64_t GetId() const {
             return _id;
         }
 
-        const std::string& GetName() const override {
+        const std::string& GetName() const {
             return _name;
         }
 
-        const std::string& GetFriendlyName() const override {
+        const std::string& GetFriendlyName() const {
             return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
         }
 
-        const fs::path& GetFilePath() const override {
+        const fs::path& GetFilePath() const {
             return _filePath;
         }
 
-        // TODO: Implement
-        fs::path GetBaseDir() const override {
+        fs::path GetBaseDir() const {
             return "";
         }
-        fs::path GetContentDir() const override {
+        fs::path GetContentDir() const {
             return "";
         }
-        fs::path GetMountedAssetPath() const override {
+        fs::path GetMountedAssetPath() const {
             return "";
         }
 
-        const PluginDescriptor& GetDescriptor() const override {
+        const PluginDescriptor& GetDescriptor() const {
             return _descriptor;
         }
 
@@ -91,6 +90,5 @@ namespace wizard {
         std::shared_ptr<Module> _module;
         PluginDescriptor _descriptor;
         PluginState _state{ PluginState::NotLoaded };
-
     };
 }

@@ -1,9 +1,11 @@
 #include "plugin.h"
 #include "module.h"
+#include "wizard/plugin.h"
+
 
 using namespace wizard;
 
-Plugin::Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor) : _id{id}, _name{std::move(name)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
+Plugin::Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor) : IPlugin(*this), _id{id}, _name{std::move(name)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
 
 }
 

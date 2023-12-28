@@ -3,29 +3,35 @@
 #include <string>
 #include <string_view>
 #include <filesystem>
+#include <wizard_export.h>
 
 namespace wizard {
     class IPlugin;
+    class PluginManager;
     struct PluginReferenceDescriptor;
 
     // Plugin manager provided to user, which implemented in core
-    class IPluginManager {
+    class WIZARD_API IPluginManager {
     protected:
+        explicit IPluginManager(PluginManager& impl);
         ~IPluginManager() = default;
 
     public:
-        virtual std::shared_ptr<IPlugin> FindPlugin(const std::string& pluginName) = 0;
-        virtual std::shared_ptr<IPlugin> FindPlugin(std::string_view pluginName) = 0;
+        std::shared_ptr<IPlugin> FindPlugin(const std::string& pluginName);
+        std::shared_ptr<IPlugin> FindPlugin(std::string_view pluginName);
 
-        virtual std::shared_ptr<IPlugin> FindPluginFromId(uint64_t pluginId) = 0;
-        virtual std::shared_ptr<IPlugin> FindPluginFromPath(const std::filesystem::path& pluginFilePath) = 0;
-        virtual std::shared_ptr<IPlugin> FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) = 0;
+        std::shared_ptr<IPlugin> FindPluginFromId(uint64_t pluginId);
+        std::shared_ptr<IPlugin> FindPluginFromPath(const std::filesystem::path& pluginFilePath);
+        std::shared_ptr<IPlugin> FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor);
 
-        virtual std::vector<std::shared_ptr<IPlugin>> GetPlugins() = 0;
+        std::vector<std::shared_ptr<IPlugin>> GetPlugins();
 
-        virtual bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) = 0;
-        virtual bool GetPluginDependencies_FromFilePath(const std::filesystem::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) = 0;
-        virtual bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) = 0;
+        bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies);
+        bool GetPluginDependencies_FromFilePath(const std::filesystem::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies);
+        bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies);
+
+    protected:
+        PluginManager& impl;
     };
 
 }

@@ -3,23 +3,29 @@
 #include <cstdint>
 #include <string>
 #include <filesystem>
+#include <wizard_export.h>
 
 namespace wizard {
+    class Plugin;
     struct PluginDescriptor;
 
     // Plugin provided to user, which implemented in core
-    class IPlugin {
+    class WIZARD_API IPlugin {
     protected:
-        ~IPlugin() = default;
+        explicit IPlugin(Plugin& impl);
+        ~IPlugin();
 
     public:
-        virtual std::uint64_t GetId() const = 0;
-        virtual const std::string& GetName() const = 0;
-        virtual const std::string& GetFriendlyName() const = 0;
-        virtual const std::filesystem::path& GetFilePath() const = 0;
-        virtual std::filesystem::path GetBaseDir() const = 0;
-        virtual std::filesystem::path GetContentDir() const = 0;
-        virtual std::filesystem::path GetMountedAssetPath() const = 0;
-        virtual const PluginDescriptor& GetDescriptor() const = 0;
+        std::uint64_t GetId() const;
+        const std::string& GetName() const;
+        const std::string& GetFriendlyName() const;
+        const std::filesystem::path& GetFilePath() const;
+        std::filesystem::path GetBaseDir() const;
+        std::filesystem::path GetContentDir() const;
+        std::filesystem::path GetMountedAssetPath() const;
+        const PluginDescriptor& GetDescriptor() const;
+
+    protected:
+        Plugin& impl;
     };
 }

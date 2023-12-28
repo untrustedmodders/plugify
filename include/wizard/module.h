@@ -2,21 +2,27 @@
 
 #include <string>
 #include <filesystem>
+#include <wizard_export.h>
 
 namespace wizard {
+    class Module;
     struct LanguageModuleDescriptor;
 
     // Language module provided to user implemented in core !
-    class IModule {
+    class WIZARD_API IModule {
     protected:
+        explicit IModule(Module& impl);
         ~IModule() = default;
 
     public:
-        virtual const std::string& GetName() const = 0;
-        virtual const std::string& GetFriendlyName() const = 0;
-        virtual const std::filesystem::path& GetFilePath() const = 0;
-        virtual std::filesystem::path GetBaseDir() const = 0;
-        virtual std::filesystem::path GetBinariesDir() const = 0;
-        virtual const LanguageModuleDescriptor& GetDescriptor() const = 0;
+        const std::string& GetName() const;
+        const std::string& GetFriendlyName() const;
+        const std::filesystem::path& GetFilePath() const;
+        std::filesystem::path GetBaseDir() const;
+        std::filesystem::path GetBinariesDir() const;
+        const LanguageModuleDescriptor& GetDescriptor() const;
+
+    private:
+        Module& impl;
     };
 }
