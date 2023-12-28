@@ -4,8 +4,7 @@ if(POLICY CMP0092)
     cmake_policy(SET CMP0092 NEW) # Don't add -W3 warning level by default.
 endif()
 
-
-project(wizard)
+project(wizard VERSION 1.0.0.0  DESCRIPTION "Wizard Core" HOMEPAGE_URL "https://github.com/untrustedmodders/wizard" LANGUAGES "CXX")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -164,6 +163,10 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
+        WIZARD_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+        WIZARD_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+        WIZARD_VERSION_PATCH=${PROJECT_VERSION_PATCH}
+        WIZARD_VERSION_TWEAK=${PROJECT_VERSION_TWEAK}
         WIZARD_PLATFORM="${WIZARD_PLATFORM}"
         WIZARD_ARCH_X86=${WIZARD_ARCH_X86}
         WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>)
