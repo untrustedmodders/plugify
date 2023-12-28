@@ -19,8 +19,8 @@ namespace wizard {
         std::vector<std::pair<std::string, void*>> methods;
     };
 
-    using InitResult = std::variant<LoadResultData, ErrorData>;
-    using LoadResult = std::variant<InitResultData, ErrorData>;
+    using InitResult = std::variant<InitResultData, ErrorData>;
+    using LoadResult = std::variant<LoadResultData, ErrorData>;
     
     // Language module interface which should be implemented by user !
     class ILanguageModule {
