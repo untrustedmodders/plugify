@@ -24,8 +24,8 @@ include(cmake/git.cmake)
 #
 # Options
 #
-option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" OFF)
-option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared library" OFF)
+option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" ON)
+option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared library" ON)
 option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
 option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared library" OFF)
 
@@ -130,7 +130,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE git-info ${CMAKE_DL_LIBS})
 
 if(WIZARD_BUILD_DLL)
     include(GenerateExportHeader)
-    generate_export_header(${PROJECT_NAME} EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/${PROJECT_NAME}_export.h)
+    generate_export_header(${PROJECT_NAME}
+            BASE_NAME WIZARD
+            EXPORT_MACRO_NAME WIZARD_API
+            NO_EXPORT_MACRO_NAME WIZARD_PRIVATE
+            EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/${PROJECT_NAME}_export.h
+            STATIC_DEFINE WIZARD_STATIC
+            )
     target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/exports)
 endif()
 
