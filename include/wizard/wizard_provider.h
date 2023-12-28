@@ -1,15 +1,25 @@
 #pragma once
 
 #include <string>
+#include <wizard_export.h>
 
 namespace wizard {
+    class WizardProvider;
+    class IPluginManager;
 	enum class ErrorLevel : uint8_t;
 
-	class IWizardProvider {
+    // Wizard provided to user, which implemented in core
+	class WIZARD_API IWizardProvider {
 	protected:
-		~IWizardProvider() = default;
+		IWizardProvider(WizardProvider& impl);
+        ~IWizardProvider();
 
 	public:
-		virtual void Log(const std::string& msg, ErrorLevel level) = 0;
+		void Log(const std::string& msg, ErrorLevel level);
+
+        std::weak_ptr<IPluginManager> GetPluginManager();
+
+    private:
+        WizardProvider& _impl;
 	};
 }

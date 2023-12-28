@@ -5,7 +5,7 @@ namespace wizard {
 
 	class WizardContext {
 	public:
-		WizardContext(std::weak_ptr<IWizard> wizard);
+		explicit WizardContext(std::weak_ptr<IWizard> wizard);
 		~WizardContext();
 
 	protected:

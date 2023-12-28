@@ -7,8 +7,11 @@
 namespace wizard {
 	class WizardProvider final : public IWizardProvider, public WizardContext {
 	public:
-		using WizardContext::WizardContext;
+        explicit WizardProvider(std::weak_ptr<IWizard> wizard);
+        ~WizardProvider();
 
-		void Log(const std::string& msg, ErrorLevel level) override;
+		void Log(const std::string& msg, ErrorLevel level);
+
+        std::weak_ptr<IPluginManager> GetPluginManager();
 	};
 }
