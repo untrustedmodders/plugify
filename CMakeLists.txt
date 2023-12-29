@@ -27,6 +27,7 @@ option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" ON)
 option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared library" ON)
 option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
 option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared library" OFF)
+option(WIZARD_BUILD_TESTS "Build tests" ON)
 
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
 option(WIZARD_USE_EXTERNAL_RAPIDJSON "Use external rapidjson library" OFF)
@@ -198,3 +199,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         WIZARD_COMPILED_GENERATOR="${CMAKE_GENERATOR}"
         WIZARD_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
         WIZARD_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}")
+
+if(WIZARD_BUILD_TESTS)
+    add_subdirectory(test/hat)
+endif()
