@@ -13,11 +13,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-# Speed up building on MinGW
-if(MINGW)
-    add_link_options(-fuse-ld=lld)
-endif()
-
 include(cmake/git.cmake)
 
 #
