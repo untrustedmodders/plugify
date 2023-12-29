@@ -1,5 +1,7 @@
 #pragma once
 
+namespace fs = std::filesystem;
+
 namespace wizard {
     class Paths {
     public:

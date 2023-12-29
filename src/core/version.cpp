@@ -26,7 +26,5 @@ Version& Version::operator=(uint32_t version) {
 }
 
 std::string Version::ToString() const {
-    std::stringstream ss;
-    ss << static_cast<long>(_major) << "." << static_cast<long>(_minor) << "." << static_cast<long>(_patch) << "." << static_cast<long>(_tweak);
-    return ss.str();
+    return WZ_FMT::format("{}.{}.{}.{}", _major, _minor, _patch, _tweak);
 }

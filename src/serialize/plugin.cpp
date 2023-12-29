@@ -14,7 +14,7 @@ namespace wizard {
         doc.Parse(json.c_str());
 
         if (doc.HasParseError()) {
-            WIZARD_LOG("File: '" + filePath.string() + "' could not be parsed correctly: " + utils::json::GetParseError_En(doc.GetParseError()), ErrorLevel::ERROR);
+            WZ_LOG_ERROR("File: '{}' could not be parsed correctly: {}", filePath.string(), utils::json::GetParseError_En(doc.GetParseError()));
             return false;
         }
 
@@ -23,7 +23,7 @@ namespace wizard {
 
     bool ReadPluginDescriptor(PluginDescriptor& desc, const utils::json::Value& object) {
         if (!object.IsObject()) {
-            WIZARD_LOG("PluginDescriptor should be a valid object!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("PluginDescriptor should be a valid object!");
             return false;
         }
 
@@ -129,7 +129,7 @@ namespace wizard {
 
     bool ReadPluginReferenceDescriptor(PluginReferenceDescriptor& desc, const utils::json::Value& object) {
         if (!object.IsObject()) {
-            WIZARD_LOG("PluginReferenceDescriptor should be a valid object!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("PluginReferenceDescriptor should be a valid object!");
             return false;
         }
 
@@ -176,7 +176,7 @@ namespace wizard {
         }
 
         if (desc.name.empty()) {
-            WIZARD_LOG("PluginReferenceDescriptor: Should contain valid name!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("PluginReferenceDescriptor: Should contain valid name!");
             return false;
         }
 

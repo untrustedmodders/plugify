@@ -13,11 +13,11 @@
 #include <iterator>
 #include <ranges>
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
-
-namespace fs = std::filesystem;
+#if __has_include(<format>)
+#include <format>
+#else
+#include <fmt/format.h>
+#endif
 
 #include <utils/log.h>
 #include <utils/json.h>

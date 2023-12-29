@@ -8,8 +8,8 @@ IWizardProvider::IWizardProvider(WizardProvider& impl) : _impl{impl} {
 
 IWizardProvider::~IWizardProvider() = default;
 
-void IWizardProvider::Log(const std::string& msg, ErrorLevel level) {
-    _impl.Log(msg, level);
+void IWizardProvider::Log(const std::string& msg, Severity severity) {
+    _impl.Log(msg, severity);
 }
 
 std::weak_ptr<IPluginManager> IWizardProvider::GetPluginManager() {

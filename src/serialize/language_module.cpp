@@ -12,7 +12,7 @@ namespace wizard {
         doc.Parse(json.c_str());
 
         if (doc.HasParseError()) {
-            WIZARD_LOG("File: '" + filePath.string() + "' could not be parsed correctly: " + utils::json::GetParseError_En(doc.GetParseError()), ErrorLevel::ERROR);
+            WZ_LOG_ERROR("File: '{}' could not be parsed correctly: {}", filePath.string(), utils::json::GetParseError_En(doc.GetParseError()));
             return false;
         }
 
@@ -21,7 +21,7 @@ namespace wizard {
 
     bool ReadLanguageModuleDescriptor(LanguageModuleDescriptor& desc, const utils::json::Value& object) {
         if (!object.IsObject()) {
-            WIZARD_LOG("LanguageModuleDescriptor should be a valid object!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("LanguageModuleDescriptor should be a valid object!");
             return false;
         }
 
@@ -95,7 +95,7 @@ namespace wizard {
 
     bool ReadLanguageModuleInfo(LanguageModuleInfo& info, const utils::json::Value& object) {
         if (!object.IsObject()) {
-            WIZARD_LOG("LanguageModuleInfo should be a valid object!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("LanguageModuleInfo should be a valid object!");
             return false;
         }
 
@@ -111,7 +111,7 @@ namespace wizard {
         }
 
         if (info.name.empty()) {
-            WIZARD_LOG("LanguageModuleInfo should contain valid name!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("LanguageModuleInfo should contain valid name!");
             return false;
         }
 

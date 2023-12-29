@@ -25,3 +25,5 @@ namespace wizard {
 #define WIZARD_MAKE_VERSION_MINOR(version) uint8_t(((uint32_t)(version) >> 22) & 0x7FU)
 #define WIZARD_MAKE_VERSION_PATCH(version) uint8_t(((uint32_t)(version) >> 12) & 0x3FFU)
 #define WIZARD_MAKE_VERSION_TWEAK(version) uint8_t((uint32_t)(version) & 0xFFFU)
+
+#define WIZARD_API_VERSION_1_0 WIZARD_MAKE_VERSION(1, 0, 0, 0)

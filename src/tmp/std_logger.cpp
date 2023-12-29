@@ -1,40 +1,52 @@
 #include "std_logger.h"
 
+#include <iostream>
+
 namespace sorcerer {
-    void StdLogger::Log(const std::string& message, wizard::ErrorLevel level) {
-        if (level >= _level) {
-            switch (level) {
-            case wizard::ErrorLevel::INFO:
-                std::cout << "[+] Info: " << message << std::endl;
-                break;
-            case wizard::ErrorLevel::WARN:
-                std::cout << "[!] Warn: " << message << std::endl;
-                break;
-            case wizard::ErrorLevel::ERROR:
-                std::cout << "[!] Error: " << message << std::endl;
-                break;
-            default:
-                std::cout << "Unsupported error message logged " << message << std::endl;
+    void StdLogger::Log(const std::string& message, wizard::Severity severity) {
+        if (severity >= _severity) {
+            switch (severity) {
+                case wizard::Severity::Fatal:
+                    std::cerr << "[@] Fatal: " << message << std::endl;
+                    break;
+                case wizard::Severity::Error:
+                    std::cerr << "[#] Error: " << message << std::endl;
+                    break;
+                case wizard::Severity::Warning:
+                    std::cout << "[!] Warning: " << message << std::endl;
+                    break;
+                case wizard::Severity::Info:
+                    std::cout << "[+] Info: " << message << std::endl;
+                    break;
+                case wizard::Severity::Debug:
+                    std::cout << "[~] Debug: " << message << std::endl;
+                    break;
+                case wizard::Severity::Verbose:
+                    std::cout << "[*] Verbose: " << message << std::endl;
+                    break;
+                default:
+                    std::cout << "Unsupported error message logged " << message << std::endl;
+                    break;
             }
         }
 
-        Push({ message, level });
+        Push(message);
     }
 
-    void StdLogger::Push(Error error) {
-        _log.emplace_back(std::move(error));
+    void StdLogger::Push(std::string message) {
+        _log.emplace_back(std::move(message));
     }
 
-    Error StdLogger::Pop() {
+    std::string StdLogger::Pop() {
         if (!_log.empty()) {
-            Error error = std::move(_log.back());
+            std::string message = std::move(_log.back());
             _log.pop_back();
-            return error;
+            return message;
         }
         return {};
     }
 
-    void StdLogger::SetLogLevel(wizard::ErrorLevel level) {
-        _level = level;
+    void StdLogger::SetSeverity(wizard::Severity severity) {
+        _severity = severity;
     }
 }

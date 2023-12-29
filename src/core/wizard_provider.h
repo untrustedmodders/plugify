@@ -10,7 +10,7 @@ namespace wizard {
         explicit WizardProvider(std::weak_ptr<IWizard> wizard);
         ~WizardProvider();
 
-		void Log(const std::string& msg, ErrorLevel level);
+		void Log(const std::string& msg, Severity severity);
 
         std::weak_ptr<IPluginManager> GetPluginManager();
 	};

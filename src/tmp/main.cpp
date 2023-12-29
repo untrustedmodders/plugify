@@ -4,11 +4,13 @@
 int main() {
     std::shared_ptr<wizard::IWizard> sorcerer = wizard::MakeWizard();
     if (sorcerer) {
-        sorcerer->SetLogger(std::make_shared<sorcerer::StdLogger>());
+        auto logger = std::make_shared<sorcerer::StdLogger>();
+        logger->SetSeverity(wizard::Severity::Debug);
+        sorcerer->SetLogger(std::move(logger));
 
         bool init = sorcerer->Initialize();
         if (!init) {
-            std::cout << "!!! ERROR !!!  No feet, no sweets!" << std::endl;
+            WZ_LOG_ERROR("No feet, no sweets!");
         }
     }
 

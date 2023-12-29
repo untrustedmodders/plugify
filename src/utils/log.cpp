@@ -6,7 +6,7 @@ void LogSystem::SetLogger(std::shared_ptr<ILogger> logger) {
     _logger = std::move(logger);
 }
 
-void LogSystem::Log(const std::string& msg, ErrorLevel level) {
+void LogSystem::Log(const std::string& msg, Severity severity) {
     if (_logger)
-        _logger->Log(msg, level);
+        _logger->Log(msg, severity);
 }

@@ -59,15 +59,11 @@ namespace wizard {
             return _state;
         }
 
-        void SetError(std::string error) {
-            _error = std::move(error);
-            _state = ModuleState::Error;
-            WIZARD_LOG(_error, ErrorLevel::ERROR);
-        }
-
         void SetLoaded() {
             _state = ModuleState::Loaded;
         }
+
+        void SetError(std::string error);
 
         static inline const char* const kFileExtension = ".wmodule";
 

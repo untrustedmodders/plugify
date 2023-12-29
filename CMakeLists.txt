@@ -31,6 +31,7 @@ option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared library" OFF)
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
 option(WIZARD_USE_EXTERNAL_RAPIDJSON "Use external rapidjson library" OFF)
 option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs library" OFF)
+option(WIZARD_USE_EXTERNAL_FMT "Use external fmt library" OFF)
 
 option(WIZARD_LOGGING "Enable logs" ON)
 
@@ -66,6 +67,15 @@ if(NOT WIZARD_USE_EXTERNAL_PHYSFS)
     set(PHYSFS_BUILD_DOCS OFF CACHE BOOL "")
 
     add_subdirectory(external/physfs)
+endif()
+
+#
+# std::format
+#
+include(CheckIncludeFileCXX)
+check_include_file_cxx("format" CXX_FORMAT_SUPPORT)
+if(NOT CXX_FORMAT_SUPPORT AND NOT WIZARD_USE_EXTERNAL_FMT)
+    add_subdirectory(external/fmt)
 endif()
 
 #
@@ -122,6 +132,16 @@ else()
         target_link_libraries(${PROJECT_NAME} PRIVATE physfs-static)
     endif()
 endif()
+
+if(NOT CXX_FORMAT_SUPPORT)
+    if(WIZARD_USE_EXTERNAL_FMT)
+        find_package(fmt REQUIRED)
+        target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
+    else()
+        target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
+    endif()
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE git-info ${CMAKE_DL_LIBS})
 
 if(WIZARD_BUILD_DLL)
@@ -169,7 +189,8 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         WIZARD_VERSION_TWEAK=${PROJECT_VERSION_TWEAK}
         WIZARD_PLATFORM="${WIZARD_PLATFORM}"
         WIZARD_ARCH_X86=${WIZARD_ARCH_X86}
-        WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>)
+        WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>
+        )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         WIZARD_COMPILED_COMPILER="${CMAKE_CXX_COMPILER}"

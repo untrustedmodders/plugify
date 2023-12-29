@@ -16,19 +16,19 @@ bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
     // TODO: assert(IsInitialized());
 
     if (!fs::exists(_filePath) || !fs::is_regular_file(_filePath)) {
-        SetError("Module binary '" + _filePath.string() + "' not exist!.");
+        SetError(WZ_FMT::format("Module binary '{}' not exist!.", _filePath.string()));
         return false;
     }
 
     _library = std::make_unique<Library>(_filePath);
     if (!_library) {
-        SetError("Failed to load library: '" + _name + "' at: '" + _filePath.string() + "'");
+        SetError(WZ_FMT::format("Failed to load library: '{}' at: '{}'", _name, _filePath.string()));
         return false;
     }
 
     void* GetLanguageModulePtr = _library->GetFunction("GetLanguageModule");
     if (!GetLanguageModulePtr) {
-        SetError("Function 'GetLanguageModule' not exist inside '" + _filePath.string() + "' library");
+        SetError(WZ_FMT::format("Function 'GetLanguageModule' not exist inside '{}' library", _filePath.string()));
         Terminate();
         return false;
     }
@@ -38,14 +38,14 @@ bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
     ILanguageModule* languageModulePtr = GetLanguageModuleFunc();
 
     if (!languageModulePtr) {
-        SetError("Function 'GetLanguageModule' inside '" + _filePath.string() + "' library. Not returned valid address of 'ILanguageModule' implementation!");
+        SetError(WZ_FMT::format("Function 'GetLanguageModule' inside '{}' library. Not returned valid address of 'ILanguageModule' implementation!",  _filePath.string()));
         Terminate();
         return false;
     }
 
     InitResult result = languageModulePtr->Initialize(std::move(provider), *this);
     if (ErrorData* data = std::get_if<ErrorData>(&result)) {
-        SetError("Failed to initialize module: '" + _name + "' error: '" + data->error + "' at: '" + _filePath.string() + "'");
+        SetError(WZ_FMT::format("Failed to initialize module: '{}' error: '{}' at: '{}'", _name, data->error, _filePath.string()));
         Terminate();
         return false;
     }
@@ -64,9 +64,14 @@ void Module::Terminate() {
 }
 
 void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
+    if (!fs::exists(_filePath) || !fs::is_regular_file(_filePath)) {
+        plugin->SetError(WZ_FMT::format("Plugin assembly '{}' not exist!.", _filePath.string()));
+        return;
+    }
+
     auto result = GetLanguageModule().OnPluginLoad(*plugin);
     if (ErrorData* data = std::get_if<ErrorData>(&result)) {
-        plugin->SetError("Failed to load plugin: '" + plugin->GetName() + "' error: '" + data->error + "' at: '" + _filePath.string() + "'");
+        plugin->SetError(WZ_FMT::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin->GetName(), data->error, _filePath.string()));
         return;
     }
 
@@ -85,4 +90,10 @@ void Module::EndPlugin(const std::shared_ptr<Plugin>& plugin) {
     GetLanguageModule().OnPluginEnd(*plugin);
 
     plugin->SetTerminating();
+}
+
+void Module::SetError(std::string error) {
+    _error = std::move(error);
+    _state = ModuleState::Error;
+    WZ_LOG_ERROR("Module: {}", error);
 }

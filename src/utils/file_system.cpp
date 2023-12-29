@@ -1,12 +1,14 @@
 #include "file_system.h"
 
+#include <fstream>
+
 using namespace wizard;
 
 void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
     std::basic_ifstream<uint8_t, std::char_traits<uint8_t>> is{filepath, std::ios::binary};
 
     if (!is.is_open()) {
-        WIZARD_LOG("File: '" + filepath.string() + "' could not be opened", ErrorLevel::ERROR);
+        WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
         return;
     }
 
@@ -21,7 +23,7 @@ std::string FileSystem::ReadText(const fs::path& filepath) {
     std::ifstream is{filepath, std::ios::binary};
 
     if (!is.is_open()) {
-        WIZARD_LOG("File: '" + filepath.string() + "' could not be opened", ErrorLevel::ERROR);
+        WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
         return {};
     }
 

@@ -20,10 +20,10 @@ namespace wizard {
 
 			_inited = true;
 
-			WIZARD_LOG("Wizard Init!", ErrorLevel::INFO);
-            WIZARD_LOG("Version: " + version.ToString(), ErrorLevel::INFO);
-			WIZARD_LOG("Git: [" WIZARD_GIT_COMMIT_HASH "]:(" WIZARD_GIT_TAG ") - " WIZARD_GIT_COMMIT_SUBJECT " on " WIZARD_GIT_BRANCH " at '" WIZARD_GIT_COMMIT_DATE "'", ErrorLevel::INFO);
-			WIZARD_LOG("Compiled on: " WIZARD_COMPILED_SYSTEM " from: " WIZARD_COMPILED_GENERATOR" with: '" WIZARD_COMPILED_COMPILER "'", ErrorLevel::INFO);
+            WZ_LOG_INFO("Wizard Init!");
+            WZ_LOG_INFO("Version: {}", version.ToString());
+            WZ_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", WIZARD_GIT_COMMIT_HASH, WIZARD_GIT_TAG, WIZARD_GIT_COMMIT_SUBJECT, WIZARD_GIT_BRANCH, WIZARD_GIT_COMMIT_DATE);
+            WZ_LOG_INFO("Compiled on: {} from: {} with: '{}'", WIZARD_COMPILED_SYSTEM, WIZARD_COMPILED_GENERATOR, WIZARD_COMPILED_COMPILER);
 
 			_provider = std::make_shared<WizardProvider>(weak_from_this());
 			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
@@ -37,17 +37,17 @@ namespace wizard {
 			}
 
 			if (_pluginManager.use_count() != 1) {
-				WIZARD_LOG("Lack of owning for plugin manager! Will not released on wizard terminate", ErrorLevel::ERROR);
+                WZ_LOG_ERROR("Lack of owning for plugin manager! Will not released on wizard terminate");
 			}
 			_pluginManager.reset();
 
 			_inited = false;
 
-			WIZARD_LOG("Wizard Terminated!", ErrorLevel::INFO);
+            WZ_LOG_INFO("Wizard Terminated!");
 		}
 
-		void Log(const std::string& msg, ErrorLevel level) override {
-			WIZARD_LOG(msg, level);
+		void Log(const std::string& msg, Severity severity) override {
+            LogSystem::Log(msg, severity);
 		}
 
 		void SetLogger(std::shared_ptr<ILogger> logger) override {

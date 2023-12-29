@@ -23,14 +23,14 @@ void VirtualFileSystem::Unmount(const fs::path& path) {
 
 void VirtualFileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
+        WZ_LOG_FATAL("PHYSFS library was not initialized");
         return;
     }
 
     auto fsFile = PHYSFS_openRead(filepath.generic_string().c_str());
 
     if (!fsFile) {
-        WIZARD_LOG("Failed to open file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::ERROR);
+        WZ_LOG_ERROR("Failed to open file: '{}' - {}", filepath.string(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
         return;
     }
 
@@ -39,7 +39,7 @@ void VirtualFileSystem::ReadBytes(const fs::path& filepath, const FileHandler& h
     PHYSFS_readBytes(fsFile, buffer.data(), size);
 
     if (PHYSFS_close(fsFile) == 0) {
-        WIZARD_LOG("Failed to close file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::ERROR);
+        WZ_LOG_ERROR("Failed to close file: '{}' - {}", filepath.string(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
     }
 
     handler(buffer);
@@ -47,14 +47,14 @@ void VirtualFileSystem::ReadBytes(const fs::path& filepath, const FileHandler& h
 
 std::string VirtualFileSystem::ReadText(const fs::path& filepath) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
+        WZ_LOG_FATAL("PHYSFS library was not initialized");
         return {};
     }
 
     auto fsFile = PHYSFS_openRead(filepath.generic_string().c_str());
 
     if (!fsFile) {
-        WIZARD_LOG("Failed to open file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::ERROR);
+        WZ_LOG_ERROR("Failed to open file: '{}' - {}", filepath.string(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
         return {};
     }
 
@@ -63,7 +63,7 @@ std::string VirtualFileSystem::ReadText(const fs::path& filepath) {
     PHYSFS_readBytes(fsFile, buffer.data(), size);
 
     if (PHYSFS_close(fsFile) == 0) {
-        WIZARD_LOG("Failed to close file: '" + filepath.string() + "' - " + PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()), ErrorLevel::ERROR);
+        WZ_LOG_ERROR("Failed to close file: '{}' - {}", filepath.string(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
     }
 
     return { buffer.begin(), buffer.end() };
@@ -71,7 +71,7 @@ std::string VirtualFileSystem::ReadText(const fs::path& filepath) {
 
 bool VirtualFileSystem::IsExists(const fs::path& filepath) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
+        WZ_LOG_FATAL("PHYSFS library was not initialized");
         return false;
     }
 
@@ -80,7 +80,7 @@ bool VirtualFileSystem::IsExists(const fs::path& filepath) {
 
 bool VirtualFileSystem::IsDirectory(const fs::path& filepath) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
+        WZ_LOG_FATAL("PHYSFS library was not initialized");
         return false;
     }
 
@@ -106,7 +106,7 @@ bool VirtualFileSystem::IsDirectory(const fs::path& filepath) {
 
 bool VirtualFileSystem::GetFilesFromDirectoryRecursive(const fs::path& directory, std::unordered_map<fs::path, fs::path, PathHash>& results, std::string_view ext) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
+        WZ_LOG_FATAL("PHYSFS library was not initialized");
         return false;
     }
 
@@ -130,7 +130,7 @@ bool VirtualFileSystem::GetFilesFromDirectoryRecursive(const fs::path& directory
 
 std::vector<fs::path> VirtualFileSystem::GetFilesFromDirectory(const fs::path& directory, std::string_view ext) {
     if (!PHYSFS_isInit()) {
-        WIZARD_LOG("PHYSFS library was not initialized", ErrorLevel::ERROR);
+        WZ_LOG_FATAL("PHYSFS library was not initialized");
         return {};
     }
 

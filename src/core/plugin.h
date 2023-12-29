@@ -62,8 +62,6 @@ namespace wizard {
             return _state;
         }
 
-        void SetError(std::string error);
-
         void SetLoaded() {
             _state = PluginState::Loaded;
         }
@@ -79,6 +77,8 @@ namespace wizard {
         void SetUnloaded() {
             _state = PluginState::Unloaded;
         }
+
+        void SetError(std::string error);
 
         static inline const char* const kFileExtension = ".wplugin";
 

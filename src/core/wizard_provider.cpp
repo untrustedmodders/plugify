@@ -7,9 +7,9 @@ WizardProvider::WizardProvider(std::weak_ptr<IWizard> wizard) : IWizardProvider(
 
 WizardProvider::~WizardProvider() = default;
 
-void WizardProvider::Log(const std::string& msg, ErrorLevel level) {
+void WizardProvider::Log(const std::string& msg, Severity severity) {
 	if (auto locker = _wizard.lock()) {
-		locker->Log(msg, level);
+		locker->Log(msg, severity);
 	}
 }
 

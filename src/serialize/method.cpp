@@ -5,7 +5,7 @@
 namespace wizard {
     bool ReadMethod(Method& method, const utils::json::Value& object) {
         if (!object.IsObject()) {
-            WIZARD_LOG("Method should be a valid object!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("Method should be a valid object!");
             return false;
         }
 
@@ -47,18 +47,18 @@ namespace wizard {
         }
 
         if (method.name.empty()) {
-            WIZARD_LOG("Method: Should contain valid name!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("Method: Should contain valid name!");
             return false;
         }
 
         if (method.retType == ValueType::Invalid) {
-            WIZARD_LOG("Method: '" + method.name + "' Invalid return type!", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("Method: '{}' Invalid return type!", method.name);
             return false;
         }
 
         for (size_t i = 0; i < method.paramTypes.size(); ++i) {
             if (method.paramTypes[i] == ValueType::Invalid) {
-                WIZARD_LOG("Method: '" + method.name + "' Invalid parameter type - at index: " + std::to_string(i), ErrorLevel::ERROR);
+                WZ_LOG_ERROR("Method: '{}' Invalid parameter type - at index: {}", method.name, i);
                 return false;
             }
         }

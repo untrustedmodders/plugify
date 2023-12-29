@@ -57,7 +57,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         } else if (IsXmmReg(argType)) {
             arg = cc.newXmm();
         } else {
-            WIZARD_LOG("Parameters wider than 64bits not supported", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("Parameters wider than 64bits not supported");
             return nullptr;
         }
 
@@ -93,7 +93,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         } else if(IsXmmReg(argType)) {
             cc.movq(argsStackIdx, argRegisters.at(argIdx).as<x86::Xmm>());
         } else {
-            WIZARD_LOG("Parameters wider than 64bits not supported", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("Parameters wider than 64bits not supported");
             return nullptr;
         }
 
@@ -139,7 +139,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         }else if (IsXmmReg(argType)) {
             cc.movq(argRegisters.at(arg_idx).as<x86::Xmm>(), argsStackIdx);
         }else {
-            WIZARD_LOG("Parameters wider than 64bits not supported", ErrorLevel::ERROR);
+            WZ_LOG_ERROR("Parameters wider than 64bits not supported");
             return nullptr;
         }
 
@@ -168,11 +168,11 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
     Error err = _rt.add(&_callback, &code);
     if (err) {
-        WIZARD_LOG("AsmJit failed: " + std::string{DebugUtils::errorAsString(err)}, ErrorLevel::ERROR);
+        WZ_LOG_ERROR("AsmJit failed: {}", DebugUtils::errorAsString(err));
         return nullptr;
     }
 
-    WIZARD_LOG("JIT Stub:\n" + std::string{log.data()}, ErrorLevel::INFO);
+    WZ_LOG_INFO("JIT Stub:\n{}", log.data());
 
     return _callback;
 }
