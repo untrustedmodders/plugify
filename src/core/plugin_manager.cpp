@@ -108,11 +108,6 @@ void PluginManager::DiscoverAllModules() {
             moduleBinaryPath += name;
             moduleBinaryPath += WIZARD_MODULE_SUFFIX;
 
-            if (!fs::exists(moduleBinaryPath) || !fs::is_regular_file(moduleBinaryPath)) {
-                WIZARD_LOG("Module binary '" + moduleBinaryPath.string() + "' not exist!.", ErrorLevel::ERROR);
-                continue;
-            }
-
             auto it = _allModules.find(name);
             if (it == _allModules.end()) {
                 _allModules.emplace(std::move(name), std::make_shared<Module>(std::move(moduleBinaryPath), std::move(descriptor)));
@@ -145,7 +140,7 @@ void PluginManager::LoadRequiredLanguageModules() {
         const auto& name = plugin->GetDescriptor().languageModule.name;
         auto it = _allModules.find(name);
         if (it == _allModules.end()) {
-            plugin->SetError("Language module: '" + name + "' missing!");
+            plugin->SetError("Language module: '" + name + "' missing for plugin: '" + plugin->GetFriendlyName() + "'!");
             continue;
         }
         auto& module = it->second;

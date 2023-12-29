@@ -5,9 +5,7 @@ using namespace wizard;
 WizardProvider::WizardProvider(std::weak_ptr<IWizard> wizard) : IWizardProvider(*this), WizardContext(std::move(wizard)) {
 }
 
-WizardProvider::~WizardProvider() {
-
-}
+WizardProvider::~WizardProvider() = default;
 
 void WizardProvider::Log(const std::string& msg, ErrorLevel level) {
 	if (auto locker = _wizard.lock()) {
