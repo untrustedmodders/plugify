@@ -6,7 +6,6 @@
 using namespace wizard;
 
 Module::Module(fs::path filePath, LanguageModuleDescriptor descriptor) : IModule(*this), _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
-
 }
 
 Module::~Module() {
@@ -66,8 +65,10 @@ void Module::Terminate() {
 
 void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
     auto loadResult = GetLanguageModule().OnPluginLoad(*plugin);
-
-    // TODO: Implement loading
+    if (ErrorData* data = std::get_if<ErrorData>(&loadResult)) {
+        plugin->SetError("Failed to load plugin: '" + plugin->GetName() + "' error: '" + data->error + "' at: '" + _filePath.string() + "'");
+        return;
+    }
 
     plugin->SetLoaded();
 
@@ -77,15 +78,11 @@ void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
 void Module::StartPlugin(const std::shared_ptr<Plugin>& plugin) {
     GetLanguageModule().OnPluginStart(*plugin);
 
-    // TODO: Implement plugin start
-
     plugin->SetRunning();
 }
 
 void Module::EndPlugin(const std::shared_ptr<Plugin>& plugin) {
     GetLanguageModule().OnPluginEnd(*plugin);
-
-    // TODO: Implement plugin end
 
     plugin->SetTerminating();
 }
