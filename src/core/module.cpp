@@ -64,8 +64,8 @@ void Module::Terminate() {
 }
 
 void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
-    auto loadResult = GetLanguageModule().OnPluginLoad(*plugin);
-    if (ErrorData* data = std::get_if<ErrorData>(&loadResult)) {
+    auto result = GetLanguageModule().OnPluginLoad(*plugin);
+    if (ErrorData* data = std::get_if<ErrorData>(&result)) {
         plugin->SetError("Failed to load plugin: '" + plugin->GetName() + "' error: '" + data->error + "' at: '" + _filePath.string() + "'");
         return;
     }
