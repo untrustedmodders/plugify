@@ -107,18 +107,14 @@ namespace wizard {
             else if(!strcmp(blockName, "dependencies")) {
                 if (value.IsArray()) {
                     for (const auto& val : value.GetArray()) {
-                        if (val.IsObject()) {
-                            ReadPluginReferenceDescriptor(desc.dependencies.emplace_back(), val);
-                        }
+                        ReadPluginReferenceDescriptor(desc.dependencies.emplace_back(), val);
                     }
                 }
             }
             else if(!strcmp(blockName, "exportedMethods")) {
                 if (value.IsArray()) {
                     for (const auto& val : value.GetArray()) {
-                        if (val.IsObject()) {
-                            ReadMethod(desc.exportedMethods.emplace_back(), val);
-                        }
+                        ReadMethod(desc.exportedMethods.emplace_back(), val);
                     }
                 }
             }

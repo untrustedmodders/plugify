@@ -1,4 +1,4 @@
-#include "version.h"
+#include <wizard/version.h>
 
 using namespace wizard;
 

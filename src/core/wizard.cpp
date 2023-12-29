@@ -1,6 +1,6 @@
 #include "wizard_provider.h"
 #include "plugin_manager.h"
-#include "version.h"
+#include <wizard/version.h>
 #include <wizard/wizard.h>
 
 namespace wizard {
@@ -21,7 +21,7 @@ namespace wizard {
 			_inited = true;
 
             WZ_LOG_INFO("Wizard Init!");
-            WZ_LOG_INFO("Version: {}", version.ToString());
+            WZ_LOG_INFO("Version: {}", _version.ToString());
             WZ_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", WIZARD_GIT_COMMIT_HASH, WIZARD_GIT_TAG, WIZARD_GIT_COMMIT_SUBJECT, WIZARD_GIT_BRANCH, WIZARD_GIT_COMMIT_DATE);
             WZ_LOG_INFO("Compiled on: {} from: {} with: '{}'", WIZARD_COMPILED_SYSTEM, WIZARD_COMPILED_GENERATOR, WIZARD_COMPILED_COMPILER);
 
@@ -62,11 +62,15 @@ namespace wizard {
 			return _provider;
 		}
 
+        Version GetVersion() override {
+            return _version;
+        }
+
 	private:
 		bool _inited{ false };
 		std::shared_ptr<PluginManager> _pluginManager;
 		std::shared_ptr<WizardProvider> _provider;
-        Version version{ WIZARD_VERSION_MAJOR, WIZARD_VERSION_MINOR, WIZARD_VERSION_PATCH, WIZARD_VERSION_TWEAK };
+        Version _version{ WIZARD_VERSION_MAJOR, WIZARD_VERSION_MINOR, WIZARD_VERSION_PATCH, WIZARD_VERSION_TWEAK };
 	};
 
 	std::shared_ptr<IWizard> MakeWizard() {

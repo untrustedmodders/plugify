@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wizard/version.h>
+#include <wizard_export.h>
 #include <cstdint>
 #include <memory>
 
@@ -21,8 +23,9 @@ namespace wizard {
 
 		virtual std::weak_ptr<IWizardProvider> GetProvider() = 0;
 		virtual std::weak_ptr<IPluginManager> GetPluginManager() = 0;
+		virtual Version GetVersion() = 0;
 	};
 
 	// Entry Point
-	std::shared_ptr<IWizard> MakeWizard();
+	WIZARD_API std::shared_ptr<IWizard> MakeWizard();
 }

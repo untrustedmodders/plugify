@@ -14,5 +14,9 @@
     "languageModule": {
      "name": "csharp-lang-module"
     },
-    "dependencies": []
+    "dependencies": [
+		{
+			"name": "Plugin3"
+		}
+	]
 }

@@ -4,7 +4,7 @@
 
 namespace sorcerer {
     void StdLogger::Log(const std::string& message, wizard::Severity severity) {
-        if (severity >= _severity) {
+        if (severity <= _severity) {
             switch (severity) {
                 case wizard::Severity::Fatal:
                     std::cerr << "[@] Fatal: " << message << std::endl;

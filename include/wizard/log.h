@@ -11,7 +11,7 @@ namespace wizard {
         Warning = 3,
         Info = 4,
         Debug = 5,
-        Verbose = 6
+        Verbose = 6,
     };
 
     class ILogger {

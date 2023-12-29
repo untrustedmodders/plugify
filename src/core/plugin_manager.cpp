@@ -35,11 +35,12 @@ void PluginManager::DiscoverAllPlugins() {
     while (!_allPlugins.empty()) {
         SortPluginsByDependencies(_allPlugins.back()->GetName(), _allPlugins, sortedPlugins);
     }
+
     _allPlugins = std::move(sortedPlugins);
 
-    WZ_LOG_INFO("Plugins order after topological sorting: ");
-    for ([[maybe_unused]] const auto& plugin : _allPlugins) {
-        WZ_LOG_INFO("{} - {}", plugin->GetName(), plugin->GetFriendlyName());
+    WZ_LOG_VERBOSE("Plugins order after topological sorting: ");
+    for (const auto& plugin : _allPlugins) {
+        WZ_LOG_VERBOSE("{} - {}", plugin->GetName(), plugin->GetFriendlyName());
     }
 }
 
