@@ -15,14 +15,16 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 include(cmake/git.cmake)
 
-#
-# Options
-#
+# ------------------------------------------------------------------------------
+# Build options for tests
+option(WIZARD_BUILD_TESTS "Build all tests" ON)
+
+# ------------------------------------------------------------------------------
+# Compilation options
 option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" ON)
 option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared library" ON)
 option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
 option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared library" OFF)
-option(WIZARD_BUILD_TESTS "Build tests" ON)
 
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
 option(WIZARD_USE_EXTERNAL_RAPIDJSON "Use external rapidjson library" OFF)
@@ -31,18 +33,16 @@ option(WIZARD_USE_EXTERNAL_FMT "Use external fmt library" OFF)
 
 option(WIZARD_LOGGING "Enable logs" ON)
 
-#
+# ------------------------------------------------------------------------------
 # Asmjit
-#
 if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
     set(ASMJIT_STATIC $<BOOL:${WIZARD_BUILD_SHARED_ASMJIT}> CACHE BOOL "")
 
     add_subdirectory(external/asmjit)
 endif()
 
-#
+# ------------------------------------------------------------------------------
 # Rapidjson
-#
 if(NOT WIZARD_USE_EXTERNAL_RAPIDJSON)
     set(RAPIDJSON_BUILD_DOC OFF CACHE INTERNAL "")
     set(RAPIDJSON_BUILD_EXAMPLES OFF CACHE INTERNAL "")
@@ -54,9 +54,8 @@ if(NOT WIZARD_USE_EXTERNAL_RAPIDJSON)
     add_subdirectory(external/rapidjson)
 endif()
 
-#
+# ------------------------------------------------------------------------------
 # Physfs
-#
 if(NOT WIZARD_USE_EXTERNAL_PHYSFS)
     set(PHYSFS_BUILD_SHARED ${WIZARD_BUILD_SHARED_PHYSFS} CACHE BOOL "")
     set(PHYSFS_BUILD_TEST OFF CACHE BOOL "")
@@ -65,18 +64,16 @@ if(NOT WIZARD_USE_EXTERNAL_PHYSFS)
     add_subdirectory(external/physfs)
 endif()
 
-#
-# std::format
-#
+# ------------------------------------------------------------------------------
+# Format
 include(CheckIncludeFileCXX)
 check_include_file_cxx("format" CXX_FORMAT_SUPPORT)
 if(NOT CXX_FORMAT_SUPPORT AND NOT WIZARD_USE_EXTERNAL_FMT)
     add_subdirectory(external/fmt)
 endif()
 
-#
+# ------------------------------------------------------------------------------
 # Wizard
-#
 file(GLOB_RECURSE WIZARD_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
 
 if(WIZARD_BUILD_DLL)
@@ -93,6 +90,8 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.h)
 
+# ------------------------------------------------------------------------------
+# Rapidjson
 if(WIZARD_USE_EXTERNAL_RAPIDJSON)
 	find_package(rapidjson REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${RAPIDJSON_INCLUDE_DIRS})
@@ -100,6 +99,8 @@ else()
     target_include_directories(${PROJECT_NAME} PUBLIC external/rapidjson/include)
 endif()
 
+# ------------------------------------------------------------------------------
+# Asmjit
 if(WIZARD_USE_EXTERNAL_ASMJIT)
     find_package(asmjit REQUIRED)
     target_link_libraries(${PROJECT_NAME} PUBLIC asmjit::asmjit)
@@ -114,6 +115,8 @@ else()
     endif()
 endif()
 
+# ------------------------------------------------------------------------------
+# Physfs
 if(WIZARD_USE_EXTERNAL_PHYSFS)
 	find_package(physfs REQUIRED)
 	if(WIZARD_BUILD_SHARED_PHYSFS)
@@ -129,6 +132,8 @@ else()
     endif()
 endif()
 
+# ------------------------------------------------------------------------------
+# Format
 if(NOT CXX_FORMAT_SUPPORT)
     if(WIZARD_USE_EXTERNAL_FMT)
         find_package(fmt REQUIRED)
@@ -138,6 +143,8 @@ if(NOT CXX_FORMAT_SUPPORT)
     endif()
 endif()
 
+# ------------------------------------------------------------------------------
+# System
 target_link_libraries(${PROJECT_NAME} PRIVATE git-info ${CMAKE_DL_LIBS})
 
 if(WIZARD_BUILD_DLL)
