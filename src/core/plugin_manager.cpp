@@ -54,7 +54,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
         auto json = FileSystem::ReadText(path);
         auto descriptor = glz::read_json<PluginDescriptor>(json);
         if (!descriptor.has_value()) {
-            WZ_LOG_ERROR("JSON parsing error: {}", glz::format_error(descriptor.error(), json));
+            WZ_LOG_ERROR("Plugin descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
             continue;
         }
 
@@ -100,7 +100,7 @@ void PluginManager::DiscoverAllModules() {
         auto json = FileSystem::ReadText(path);
         auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
         if (!descriptor.has_value()) {
-            WZ_LOG_ERROR("JSON parsing error: {}", glz::format_error(descriptor.error(), json));
+            WZ_LOG_ERROR("Module descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
             continue;
         }
 
