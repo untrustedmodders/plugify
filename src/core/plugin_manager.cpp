@@ -136,7 +136,7 @@ void PluginManager::LoadRequiredLanguageModules() {
         const auto& name = plugin->GetDescriptor().languageModule.name;
         auto it = _allModules.find(name);
         if (it == _allModules.end()) {
-            plugin->SetError(WZ_FMT::format("Language module: '{}' missing for plugin: '{}'!", name, plugin->GetFriendlyName()));
+            plugin->SetError(std::format("Language module: '{}' missing for plugin: '{}'!", name, plugin->GetFriendlyName()));
             continue;
         }
         auto& module = it->second;

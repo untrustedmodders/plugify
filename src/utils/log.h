@@ -1,12 +1,7 @@
 #pragma once
 
 #include <wizard/log.h>
-
-#if __has_include(<format>)
-#define WZ_FMT std
-#else
-#define WZ_FMT fmt
-#endif
+#include <wizard/compat_format.h>
 
 namespace wizard {
     class LogSystem {
@@ -20,7 +15,7 @@ namespace wizard {
 }
 
 #if WIZARD_LOGGING
-#define WZ_LOG(sev, ...)    wizard::LogSystem::Log(WZ_FMT::format(__VA_ARGS__), sev)
+#define WZ_LOG(sev, ...)    wizard::LogSystem::Log(std::format(__VA_ARGS__), sev)
 #define WZ_LOG_VERBOSE(...) WZ_LOG(wizard::Severity::Verbose, __VA_ARGS__)
 #define WZ_LOG_DEBUG(...)   WZ_LOG(wizard::Severity::Debug, __VA_ARGS__)
 #define WZ_LOG_INFO(...)    WZ_LOG(wizard::Severity::Info, __VA_ARGS__)
