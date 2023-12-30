@@ -37,7 +37,7 @@ namespace wizard {
         uintptr_t ret;
     };
 
-    class Function {
+    class WIZARD_API Function {
     public:
         explicit Function(asmjit::JitRuntime& rt);
         ~Function();
