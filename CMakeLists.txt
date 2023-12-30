@@ -27,7 +27,7 @@ option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
 option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared library" OFF)
 
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
-option(WIZARD_USE_EXTERNAL_RAPIDJSON "Use external rapidjson library" OFF)
+option(WIZARD_USE_EXTERNAL_GLAZE "Use external glaze library" OFF)
 option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs library" OFF)
 option(WIZARD_USE_EXTERNAL_FMT "Use external fmt library" OFF)
 
@@ -42,16 +42,9 @@ if(NOT WIZARD_USE_EXTERNAL_ASMJIT)
 endif()
 
 # ------------------------------------------------------------------------------
-# Rapidjson
-if(NOT WIZARD_USE_EXTERNAL_RAPIDJSON)
-    set(RAPIDJSON_BUILD_DOC OFF CACHE INTERNAL "")
-    set(RAPIDJSON_BUILD_EXAMPLES OFF CACHE INTERNAL "")
-    set(RAPIDJSON_BUILD_TESTS OFF CACHE INTERNAL "")
-    set(RAPIDJSON_BUILD_THIRDPARTY_GTEST OFF CACHE INTERNAL "")
-    set(RAPIDJSON_BUILD_CXX11 OFF CACHE INTERNAL "")
-    set(RAPIDJSON_BUILD_CXX17 ON CACHE INTERNAL "")
-
-    add_subdirectory(external/rapidjson)
+# Glaze
+if(NOT WIZARD_USE_EXTERNAL_GLAZE)
+    add_subdirectory(external/glaze)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -91,12 +84,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sr
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.h)
 
 # ------------------------------------------------------------------------------
-# Rapidjson
-if(WIZARD_USE_EXTERNAL_RAPIDJSON)
-	find_package(rapidjson REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${RAPIDJSON_INCLUDE_DIRS})
+# Glaze
+if(WIZARD_USE_EXTERNAL_GLAZE)
+	find_package(glaze REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 else()
-    target_include_directories(${PROJECT_NAME} PUBLIC external/rapidjson/include)
+    target_link_libraries(${PROJECT_NAME} PRIVATE glaze_glaze)
 endif()
 
 # ------------------------------------------------------------------------------

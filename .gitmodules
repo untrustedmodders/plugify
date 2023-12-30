@@ -14,3 +14,7 @@
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt
 	ignore = all
+[submodule "external/glaze"]
+	path = external/glaze
+	url = https://github.com/stephenberry/glaze
+	ignore = all

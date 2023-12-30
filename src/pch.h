@@ -14,5 +14,4 @@
 #include <ranges>
 
 #include <utils/log.h>
-#include <utils/json.h>
 #include <utils/paths.h>

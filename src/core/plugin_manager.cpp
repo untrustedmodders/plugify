@@ -1,13 +1,11 @@
 #include "plugin_manager.h"
 #include "plugin.h"
 #include "module.h"
-#include "wizard/plugin_manager.h"
 
-
-#include <utils/file_system.h>
-#include <serialize/plugin.h>
-#include <serialize/language_module.h>
+#include <wizard/plugin_manager.h>
 #include <wizard/wizard.h>
+#include <utils/file_system.h>
+#include <utils/json.h>
 
 using namespace wizard;
 
@@ -53,27 +51,33 @@ void PluginManager::ReadAllPluginsDescriptors() {
         std::string name{ path.filename().replace_extension().string() };
         WZ_LOG_INFO("Read plugin descriptor for '{}', from '{}'", name, path.string());
 
-        PluginDescriptor descriptor;
-        if (LoadPluginDescriptor(descriptor, path) && IsSupportsPlatform(descriptor.supportedPlatforms)) {
+        auto json = FileSystem::ReadText(path);
+        auto descriptor = glz::read_json<PluginDescriptor>(json);
+        if (!descriptor.has_value()) {
+            WZ_LOG_ERROR("JSON parsing error: {}", glz::format_error(descriptor.error(), json));
+            continue;
+        }
+
+        if (IsSupportsPlatform(descriptor->supportedPlatforms)) {
             fs::path pluginAssemblyPath{ path.parent_path() };
-            pluginAssemblyPath /= descriptor.assemblyPath;
+            pluginAssemblyPath /= descriptor->assemblyPath;
 
             auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name](const auto& plugin) {
                 return plugin->GetName() == name;
             });
             if (it == _allPlugins.end()) {
                 size_t index = _allPlugins.size();
-                _allPlugins.emplace_back(std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(descriptor)));
+                _allPlugins.emplace_back(std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor)));
             } else {
                 const auto& existingPlugin = *it;
 
                 int32_t existingVersion = existingPlugin->GetDescriptor().version;
-                if (existingVersion != descriptor.version) {
-                    WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' plugin, over older version (v{}).", std::max(existingVersion, descriptor.version), name, std::min(existingVersion, descriptor.version));
+                if (existingVersion != descriptor->version) {
+                    WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' plugin, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
 
-                    if (existingVersion < descriptor.version) {
+                    if (existingVersion < descriptor->version) {
                         auto index = static_cast<size_t>(std::distance(_allPlugins.begin(), it));
-                        _allPlugins[index] = std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(descriptor));
+                        _allPlugins[index] = std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor));
                     }
                 } else {
                     WZ_LOG_WARNING("The same version (v{}) of plugin '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingPlugin->GetFilePath().string(), path.string());
@@ -93,8 +97,14 @@ void PluginManager::DiscoverAllModules() {
         std::string name{ path.filename().replace_extension().string() };
         WZ_LOG_INFO("Read module descriptor for '{}', from '{}'", name, path.string());
 
-        LanguageModuleDescriptor descriptor;
-        if (LoadLanguageModuleDescriptor(descriptor, path) && IsSupportsPlatform(descriptor.supportedPlatforms)) {
+        auto json = FileSystem::ReadText(path);
+        auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
+        if (!descriptor.has_value()) {
+            WZ_LOG_ERROR("JSON parsing error: {}", glz::format_error(descriptor.error(), json));
+            continue;
+        }
+
+        if (IsSupportsPlatform(descriptor->supportedPlatforms)) {
 
             // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
 
@@ -106,16 +116,16 @@ void PluginManager::DiscoverAllModules() {
 
             auto it = _allModules.find(name);
             if (it == _allModules.end()) {
-                _allModules.emplace(std::move(name), std::make_shared<Module>(std::move(moduleBinaryPath), std::move(descriptor)));
+                _allModules.emplace(std::move(name), std::make_shared<Module>(std::move(moduleBinaryPath), std::move(*descriptor)));
             } else {
                 const auto& existingModule = it->second;
 
                 int32_t existingVersion = existingModule->GetDescriptor().version;
-                if (existingVersion != descriptor.version) {
-                    WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' module, over older version (v{}).", std::max(existingVersion, descriptor.version), name, std::min(existingVersion, descriptor.version));
+                if (existingVersion != descriptor->version) {
+                    WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' module, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
 
-                    if (existingVersion < descriptor.version) {
-                        _allModules[std::move(name)] = std::make_shared<Module>(std::move(moduleBinaryPath), std::move(descriptor));
+                    if (existingVersion < descriptor->version) {
+                        _allModules[std::move(name)] = std::make_shared<Module>(std::move(moduleBinaryPath), std::move(*descriptor));
                     }
                 } else {
                     WZ_LOG_WARNING("The same version (v{}) of module '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingModule->GetFilePath().string(), path.string());
