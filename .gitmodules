@@ -6,10 +6,6 @@
 	path = external/physfs
 	url = https://github.com/icculus/physfs
 	ignore = all
-[submodule "external/rapidjson"]
-	path = external/rapidjson
-	url = https://github.com/Tencent/rapidjson
-	ignore = all
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt
