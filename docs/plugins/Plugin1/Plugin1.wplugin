@@ -18,5 +18,12 @@
 		{
 			"name": "Plugin3"
 		}
+	],
+	"exportedMethods": [
+		{
+			"name": "Plugin1.SamplePlugin.MyExportFunction",
+			"paramTypes": ["int32", "float", "double"],
+			"retType": "int32"
+		}
 	]
 }
