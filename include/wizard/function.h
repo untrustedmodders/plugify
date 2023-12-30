@@ -21,7 +21,6 @@ namespace wizard {
         // we the Native allocates stack space that is set to point here
         volatile uintptr_t arguments;
 
-    private:
         // must be char* for aliasing rules to work when reading back out
         int8_t* GetArgumentPtr(uint8_t idx) const {
             return ((int8_t*)&arguments) + sizeof(uintptr_t) * idx;

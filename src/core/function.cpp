@@ -22,7 +22,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         return _callback;
 
     auto rt = _rt.lock();
-    if (rt)
+    if (!rt)
         return nullptr;
 
     /*
