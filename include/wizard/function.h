@@ -1,7 +1,9 @@
 #pragma once
 
+#include <wizard_export.h>
 #include <wizard/method.h>
 #include <asmjit/asmjit.h>
+#include <memory>
 
 namespace wizard {
     struct Parameters {
@@ -39,7 +41,8 @@ namespace wizard {
 
     class WIZARD_API Function {
     public:
-        explicit Function(asmjit::JitRuntime& rt);
+        explicit Function(std::weak_ptr<asmjit::JitRuntime> rt);
+        Function(Function&& other) noexcept;
         ~Function();
 
         typedef void(*FuncCallback)(const Method* method, const Parameters* params, const uint8_t count, const ReturnValue* ret);
@@ -65,7 +68,7 @@ namespace wizard {
         static bool IsXmmReg(asmjit::TypeId typeId) ;
 
     private:
-        asmjit::JitRuntime& _rt;
+        std::weak_ptr<asmjit::JitRuntime> _rt;
         void* _callback{ nullptr };
     };
 }

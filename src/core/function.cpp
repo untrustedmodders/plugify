@@ -1,17 +1,30 @@
-#include "function.h"
+#include <wizard/function.h>
 
 using namespace wizard;
 using namespace asmjit;
 
-Function::Function(JitRuntime& rt) : _rt{rt} {
+Function::Function(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
+}
+
+Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _callback{other._callback} {
+    other._callback = nullptr;
 }
 
 Function::~Function() {
-    if (_callback)
-        _rt.release(_callback);
+    if (auto rt = _rt.lock()) {
+        if (_callback)
+            rt->release(_callback);
+    }
 }
 
 void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback) {
+    if (_callback)
+        return _callback;
+
+    auto rt = _rt.lock();
+    if (rt)
+        return nullptr;
+
     /*
       AsmJit is smart enough to track register allocations and will forward
       the proper registers the right values and fixup any it dirtied earlier.
@@ -31,7 +44,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
     */
 
     CodeHolder code;
-    code.init(_rt.environment(), _rt.cpuFeatures());
+    code.init(rt->environment(), rt->cpuFeatures());
 
     // initialize function
     x86::Compiler cc{&code};
@@ -166,7 +179,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
     // write to buffer
     cc.finalize();
 
-    Error err = _rt.add(&_callback, &code);
+    Error err = rt->add(&_callback, &code);
     if (err) {
         WZ_LOG_ERROR("AsmJit failed: {}", DebugUtils::errorAsString(err));
         return nullptr;
