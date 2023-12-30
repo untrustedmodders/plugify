@@ -38,7 +38,7 @@ namespace glz::detail {
             std::string str;
             read<json>::op<Opts>(str, args...);
             value = str;
-            if (!value.empty())  value.make_preferred();
+            if (!value.empty()) value.make_preferred();
         }
     };
 
