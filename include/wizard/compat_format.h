@@ -4,7 +4,7 @@
 
 #include <format>
 
-#else // __cplusplus < 202002L
+#else // __has_include(<format>)
 
 // Define FMT_FORMAT_H externally to force a difference location for {fmt}
 #ifndef FMT_FORMAT_H
@@ -20,4 +20,4 @@ namespace std {
     using fmt::format_to_n;
 }
 
-#endif // __cplusplus >= 202002L
+#endif // __has_include(<format>)
