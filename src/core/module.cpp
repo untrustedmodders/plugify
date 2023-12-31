@@ -85,11 +85,11 @@ void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
     _loadedPlugins.emplace_back(plugin);
 }
 
-void Module::ExportPlugin(const std::shared_ptr<Plugin>& plugin) {
+void Module::MethodExport(const std::shared_ptr<Plugin>& plugin) {
     if (_state != ModuleState::Loaded)
         return;
 
-    GetLanguageModule().OnPluginExport(*plugin);
+    GetLanguageModule().OnMethodExport(*plugin);
 }
 
 void Module::StartPlugin(const std::shared_ptr<Plugin>& plugin) {

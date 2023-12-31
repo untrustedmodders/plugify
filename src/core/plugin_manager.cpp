@@ -168,9 +168,11 @@ void PluginManager::LoadAndStartAvailablePlugins() {
         }
     }
 
+    // TODO: Check dependency and unload plugins if neccesary
+
     for (const auto& plugin : _allPlugins) {
         if (plugin->GetState() == PluginState::Loaded) {
-            plugin->GetModule()->ExportPlugin(plugin);
+            plugin->GetModule()->MethodExport(plugin);
         }
     }
 

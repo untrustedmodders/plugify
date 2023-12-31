@@ -33,8 +33,8 @@ namespace wizard {
         virtual InitResult Initialize(std::weak_ptr<IWizardProvider> provider, const IModule& module) = 0;
         virtual void Shutdown() = 0;
         virtual LoadResult OnPluginLoad(const IPlugin& plugin) = 0;
-        virtual void OnPluginExport(const IPlugin& plugin) = 0;
         virtual void OnPluginStart(const IPlugin& plugin) = 0;
         virtual void OnPluginEnd(const IPlugin& plugin) = 0;
+        virtual void OnMethodExport(const IPlugin& plugin) = 0;
     };
 }
