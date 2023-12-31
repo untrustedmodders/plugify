@@ -134,7 +134,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
     InvokeNode* invokeNode;
     cc.invoke(&invokeNode,
               (uintptr_t)callback,
-              FuncSignatureT<void, Method*, Parameters*, uint8_t, ReturnValue*>()
+              FuncSignature::build<void, Method*, Parameters*, uint8_t, ReturnValue*>()
     );
 
     // call to user provided function (use ABI of host compiler)
@@ -185,7 +185,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         return nullptr;
     }
 
-    WZ_LOG_INFO("JIT Stub:\n{}", log.data());
+    WZ_LOG_VERBOSE("JIT Stub:\n{}", log.data());
 
     return _callback;
 }
