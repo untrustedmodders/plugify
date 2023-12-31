@@ -9,7 +9,7 @@ namespace wizard {
     class Plugin;
     struct PluginDescriptor;
 
-    enum class PluginState : uint8_t {
+    enum class PluginState : std::uint8_t {
         NotLoaded,
         Error,
         Loaded,

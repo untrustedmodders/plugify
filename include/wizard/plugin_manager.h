@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <filesystem>
@@ -28,7 +29,7 @@ namespace wizard {
 
         std::shared_ptr<IPlugin> FindPlugin(const std::string& pluginName);
         std::shared_ptr<IPlugin> FindPlugin(std::string_view pluginName);
-        std::shared_ptr<IPlugin> FindPluginFromId(uint64_t pluginId);
+        std::shared_ptr<IPlugin> FindPluginFromId(std::uint64_t pluginId);
         std::shared_ptr<IPlugin> FindPluginFromPath(const std::filesystem::path& pluginFilePath);
         std::shared_ptr<IPlugin> FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor);
 

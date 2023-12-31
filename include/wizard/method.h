@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 namespace wizard {
-    enum class ValueType : uint8_t {
+    enum class ValueType : std::uint8_t {
         Invalid,
         Void,
         Bool,

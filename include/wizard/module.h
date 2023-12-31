@@ -9,7 +9,7 @@ namespace wizard {
     class Module;
     struct LanguageModuleDescriptor;
 
-    enum class ModuleState : uint8_t {
+    enum class ModuleState : std::uint8_t {
         NotLoaded,
         Error,
         Loaded,
