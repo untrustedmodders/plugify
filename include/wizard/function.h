@@ -38,7 +38,7 @@ namespace wizard {
         uintptr_t ret;
     };
 
-    class WIZARD_API Function {
+    class Function {
     public:
         explicit Function(std::weak_ptr<asmjit::JitRuntime> rt);
         Function(Function&& other) noexcept;
