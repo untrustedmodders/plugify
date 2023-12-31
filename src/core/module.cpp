@@ -20,23 +20,21 @@ bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
         return false;
     }
 
-    _library = std::make_unique<Library>(_filePath);
+    _library = Library::LoadFromPath(_filePath);
     if (!_library) {
-        SetError(std::format("Failed to load library: '{}' at: '{}'", _name, _filePath.string()));
+        SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), Library::GetError()));
         return false;
     }
 
-    void* GetLanguageModulePtr = _library->GetFunction("GetLanguageModule");
-    if (!GetLanguageModulePtr) {
+    using GetLanguageModuleFuncT = ILanguageModule*(*)();
+    auto GetLanguageModuleFunc = _library->GetFunction<GetLanguageModuleFuncT>("GetLanguageModule");
+    if (!GetLanguageModuleFunc) {
         SetError(std::format("Function 'GetLanguageModule' not exist inside '{}' library", _filePath.string()));
         Terminate();
         return false;
     }
 
-    using GetLanguageModuleFuncT = ILanguageModule*(*)();
-    auto GetLanguageModuleFunc = reinterpret_cast<GetLanguageModuleFuncT>(GetLanguageModulePtr);
     ILanguageModule* languageModulePtr = GetLanguageModuleFunc();
-
     if (!languageModulePtr) {
         SetError(std::format("Function 'GetLanguageModule' inside '{}' library. Not returned valid address of 'ILanguageModule' implementation!",  _filePath.string()));
         Terminate();
@@ -64,6 +62,9 @@ void Module::Terminate() {
 }
 
 void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
+    if (_state != ModuleState::Loaded)
+        return;
+
     if (!fs::exists(_filePath) || !fs::is_regular_file(_filePath)) {
         plugin->SetError(std::format("Plugin assembly '{}' not exist!.", _filePath.string()));
         return;
@@ -81,12 +82,18 @@ void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
 }
 
 void Module::StartPlugin(const std::shared_ptr<Plugin>& plugin) {
+    if (_state != ModuleState::Loaded)
+        return;
+
     GetLanguageModule().OnPluginStart(*plugin);
 
     plugin->SetRunning();
 }
 
 void Module::EndPlugin(const std::shared_ptr<Plugin>& plugin) {
+    if (_state != ModuleState::Loaded)
+        return;
+
     GetLanguageModule().OnPluginEnd(*plugin);
 
     plugin->SetTerminating();
