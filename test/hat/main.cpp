@@ -1,5 +1,10 @@
 #include "std_logger.h"
 #include <wizard/wizard.h>
+#include <wizard/module.h>
+#include <wizard/plugin_manager.h>
+#include <wizard/plugin.h>
+#include <wizard/plugin_descriptor.h>
+
 #include <iostream>
 
 std::vector<std::string> Split(const std::string& str, char sep) {
@@ -15,6 +20,14 @@ std::vector<std::string> Split(const std::string& str, char sep) {
 template<typename T>
 void PrintElement(T t, int width, char separator) {
     std::cout << std::left << std::setw(width) << std::setfill(separator) << t;
+}
+
+template<typename T>
+void PrintArrayElement(const std::vector<T>& t, int width, char separator) {
+    std::cout << std::left << std::setw(width) << std::setfill(separator);
+    for (const auto& e : t) {
+        std::cout << e << " ";
+    }
 }
 
 int main() {
@@ -36,14 +49,6 @@ int main() {
 
             if (args[0] == "exit") {
                 running = false;
-            } else if (args[0] == "help") {
-                std::cout << "Wizard Menu" << std::endl;
-                std::cout << "usage: wzd <command> [arguments]" << std::endl;
-                std::cout << "  plugin       - Information about a module" << std::endl;
-                std::cout << "  module       - Information about a plugin" << std::endl;
-                //std::cout << "  listm        - List modules" << std::endl;
-                //std::cout << "  listp        - List plugins" << std::endl;
-                std::cout << "  version      - Version information" << std::endl;
             } else if (args[0] == "wzd" && args.size() > 1) {
                 if (args[1] == "init") {
                     if (!sorcerer->Initialize()) {
@@ -52,8 +57,58 @@ int main() {
                     }
                 } else if (args[1] == "term") {
                     sorcerer->Terminate();
-                } else if (args[1] == "version") {
-                    std::cout << "Version: " << sorcerer->GetVersion().ToString() << std::endl;
+                } else if (args[1] == "help") {
+                    std::cout << "Wizard Menu" << std::endl;
+                    std::cout << "usage: wzd <command> [arguments]" << std::endl;
+                    std::cout << "  plugin       - Information about a module" << std::endl;
+                    std::cout << "  module       - Information about a plugin" << std::endl;
+                    std::cout << "  modules      - List modules" << std::endl;
+                    std::cout << "  plugins      - List plugins" << std::endl;
+                    std::cout << "  version      - Version information" << std::endl;
+                } else if (args[1] == "modules") {
+                    const char separator = ' ';
+                    const int nameWidth = 20;
+                    const int numWidth = 10;
+                    const int statusWidth = 10;
+
+                    PrintElement("Lang", numWidth, separator);
+                    PrintElement("Name", nameWidth, separator);
+                    PrintElement("FriendlyName", nameWidth + numWidth, separator);
+                    PrintElement("Status", statusWidth, separator);
+
+                    std::cout << std::endl;
+
+                    if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+                        for (auto& module : pluginManager->GetModules()) {
+                            PrintElement(module->GetDescriptor().language, numWidth, separator);
+                            PrintElement(module->GetName(), nameWidth, separator);
+                            PrintElement(module->GetFriendlyName(), nameWidth + numWidth, separator);
+                            PrintElement(wizard::ModuleStateToString(module->GetState()), statusWidth, separator);
+                            std::cout << std::endl;
+                        }
+                    }
+                } else if (args[1] == "plugins") {
+                    const char separator = ' ';
+                    const int nameWidth = 20;
+                    const int numWidth = 6;
+                    const int statusWidth = 10;
+
+                    PrintElement("Id", numWidth, separator);
+                    PrintElement("Name", nameWidth, separator);
+                    PrintElement("FriendlyName", nameWidth, separator);
+                    PrintElement("Status", statusWidth, separator);
+
+                    std::cout << std::endl;
+
+                    if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+                        for (auto& plugin : pluginManager->GetPlugins()) {
+                            PrintElement(plugin->GetId(), numWidth, separator);
+                            PrintElement(plugin->GetName(), nameWidth, separator);
+                            PrintElement(plugin->GetFriendlyName(), nameWidth, separator);
+                            PrintElement(wizard::PluginStateToString(plugin->GetState()), statusWidth, separator);
+                            std::cout << std::endl;
+                        }
+                    }
                 }
             }
         }
