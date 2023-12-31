@@ -30,3 +30,10 @@ const LanguageModuleDescriptor& IModule::GetDescriptor() const {
     return _impl.GetDescriptor();
 }
 
+ModuleState IModule::GetState() const {
+    return _impl.GetState();
+}
+
+const std::string& IModule::GetError() const {
+    return _impl.GetError();
+}

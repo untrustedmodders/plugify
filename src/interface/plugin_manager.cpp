@@ -6,6 +6,30 @@ using namespace wizard;
 IPluginManager::IPluginManager(PluginManager& impl) : _impl{impl} {
 }
 
+std::shared_ptr<IModule> IPluginManager::FindModule(const std::string& moduleName) {
+    return _impl.FindModule(moduleName);
+}
+
+std::shared_ptr<IModule> IPluginManager::FindModule(std::string_view moduleName) {
+    return _impl.FindModule(moduleName);
+}
+
+std::shared_ptr<IModule> IPluginManager::FindModuleFromLang(const std::string& moduleLang) {
+    return _impl.FindModuleFromLang(moduleLang);
+}
+
+std::shared_ptr<IModule> IPluginManager::FindModuleFromPath(const std::filesystem::path& moduleFilePath) {
+    return _impl.FindModuleFromPath(moduleFilePath);
+}
+
+std::shared_ptr<IModule> IPluginManager::FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) {
+    return _impl.FindModuleFromDescriptor(moduleDescriptor);
+}
+
+std::vector<std::shared_ptr<IModule>> IPluginManager::GetModules() {
+    return _impl.GetModules();
+}
+
 std::shared_ptr<IPlugin> IPluginManager::FindPlugin(const std::string& pluginName) {
     return _impl.FindPlugin(pluginName);
 }

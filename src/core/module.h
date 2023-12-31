@@ -6,16 +6,10 @@
 #include <utils/library.h>
 
 namespace wizard {
-    enum class ModuleState : uint8_t {
-        NotLoaded,
-        Error,
-        Loaded
-    };
-
     class Plugin;
     class Module final : public IModule {
     public:
-        Module(fs::path filePath, LanguageModuleDescriptor descriptor);
+        Module(std::string name, fs::path filePath, LanguageModuleDescriptor descriptor);
         ~Module();
 
         const std::string& GetName() const {
@@ -64,6 +58,10 @@ namespace wizard {
         }
 
         void SetError(std::string error);
+
+        const std::string& GetError() const {
+            return _error;
+        }
 
         static inline const char* const kFileExtension = ".wmodule";
 

@@ -9,9 +9,9 @@ namespace wizard {
         ~Library();
 
         void* GetFunction(const char* functionName) const;
-        template<class _Fn> requires(std::is_pointer_v<_Fn> && std::is_function_v<std::remove_pointer_t<_Fn>>)
-        _Fn GetFunction(const char* functionName) const {
-            return reinterpret_cast<_Fn>(GetFunction(functionName));
+        template<class Func> requires(std::is_pointer_v<Func> && std::is_function_v<std::remove_pointer_t<Func>>)
+        Func GetFunction(const char* functionName) const {
+            return reinterpret_cast<Func>(GetFunction(functionName));
         }
 
     private:

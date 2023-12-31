@@ -9,6 +9,16 @@ namespace wizard {
     class Plugin;
     struct PluginDescriptor;
 
+    enum class PluginState : uint8_t {
+        NotLoaded,
+        Error,
+        Loaded,
+        Running,
+        Terminating,
+        Unloaded,
+        Unknown,
+    };
+
     // Plugin provided to user, which implemented in core
     class WIZARD_API IPlugin {
     protected:
@@ -24,8 +34,38 @@ namespace wizard {
         std::filesystem::path GetContentDir() const;
         std::filesystem::path GetMountedAssetPath() const;
         const PluginDescriptor& GetDescriptor() const;
+        PluginState GetState() const;
+        const std::string& GetError() const;
 
     private:
         Plugin& _impl;
     };
+
+    [[maybe_unused]] constexpr std::string_view PluginStateToString(PluginState state) {
+        switch (state) {
+            case PluginState::NotLoaded:   return "NotLoaded";
+            case PluginState::Error:       return "Error";
+            case PluginState::Loaded:      return "Loaded";
+            case PluginState::Running:     return "Running";
+            case PluginState::Terminating: return "Terminating";
+            case PluginState::Unloaded:    return "Unloaded";
+            default:                       return "Unknown";
+        }
+    }
+    [[maybe_unused]] constexpr PluginState PluginStateFromString(std::string_view state) {
+        if (state == "NotLoaded") {
+            return PluginState::NotLoaded;
+        } else if (state == "Error") {
+            return PluginState::Error;
+        } else if (state == "Loaded") {
+            return PluginState::Loaded;
+        } else if (state == "Running") {
+            return PluginState::Running;
+        } else if (state == "Terminating") {
+            return PluginState::Terminating;
+        } else if (state == "Unloaded") {
+            return PluginState::Unloaded;
+        }
+        return PluginState::Unknown;
+    }
 }

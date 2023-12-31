@@ -4,15 +4,6 @@
 #include <wizard/plugin_descriptor.h>
 
 namespace wizard {
-    enum class PluginState : uint8_t {
-        NotLoaded,
-        Error,
-        Loaded,
-        Running,
-        Terminating,
-        Unloaded
-    };
-
     class Module;
     class Plugin final : public IPlugin {
     public:
@@ -79,6 +70,10 @@ namespace wizard {
         }
 
         void SetError(std::string error);
+
+        const std::string& GetError() const {
+            return _error;
+        }
 
         static inline const char* const kFileExtension = ".wplugin";
 

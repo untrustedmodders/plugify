@@ -12,7 +12,7 @@
     "assemblyPath": "bin/Plugin1.dll",
     "supportedPlatforms": [],
     "languageModule": {
-     "name": "csharp-lang-module"
+		"name": "csharp"
     },
     "dependencies": [
 		{

@@ -39,3 +39,11 @@ std::filesystem::path IPlugin::GetMountedAssetPath() const {
 const PluginDescriptor& IPlugin::GetDescriptor() const {
     return _impl.GetDescriptor();
 }
+
+PluginState IPlugin::GetState() const {
+    return _impl.GetState();
+}
+
+const std::string& IPlugin::GetError() const {
+    return _impl.GetError();
+}
