@@ -191,13 +191,10 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 }
 
 void* Function::GetJitFunc(const Method& method, FuncCallback callback) {
-    std::vector<TypeId> args;
-    args.reserve(method.paramTypes.size());
+    FuncSignature sig{ GetCallConv(method.callConv),method.varIndex, GetTypeId(method.retType) };
     for (auto type : method.paramTypes) {
-        args.push_back(GetTypeId(type));
+        sig.addArg(GetTypeId(type));
     }
-    FuncSignature sig{};
-    sig.init(GetCallConv(method.callConv),method.varIndex, GetTypeId(method.retType), args.data(), (uint32_t)args.size());
     return GetJitFunc(sig, method, callback);
 }
 

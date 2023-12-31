@@ -28,6 +28,7 @@ namespace wizard {
 
     struct Method {
         std::string name;
+        std::string funcName;
         std::string callConv;
         std::vector<ValueType> paramTypes;
         ValueType retType{ };

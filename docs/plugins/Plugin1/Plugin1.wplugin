@@ -21,7 +21,8 @@
 	],
 	"exportedMethods": [
 		{
-			"name": "Plugin1.Plugin1.SamplePlugin.MyExportFunction",
+			"name": "MyExportFunction",
+            "funcName": "Plugin1.Plugin1.SamplePlugin.MyExportFunction",
 			"paramTypes": ["int32", "float", "double"],
 			"retType": "int32"
 		}

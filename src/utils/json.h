@@ -25,10 +25,7 @@ struct glz::meta<wizard::ValueType> {
     );
 };
 
-GLZ_META(wizard::LanguageModuleDescriptor, fileVersion, version, versionName, friendlyName, language, description, createdBy, createdByURL, docsURL, downloadURL, supportURL, supportedPlatforms, forceLoad);
-GLZ_META(wizard::LanguageModuleInfo, name);
 GLZ_META(wizard::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy,createdByURL, docsURL, downloadURL, supportURL, assemblyPath, supportedPlatforms, languageModule, dependencies, exportedMethods);
-GLZ_META(wizard::PluginReferenceDescriptor, name, optional, description, downloadURL, supportedPlatforms, requestedVersion);
 
 namespace glz::detail {
     template <>

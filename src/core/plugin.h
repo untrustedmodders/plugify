@@ -30,9 +30,11 @@ namespace wizard {
         fs::path GetBaseDir() const {
             return "";
         }
+
         fs::path GetContentDir() const {
             return "";
         }
+
         fs::path GetMountedAssetPath() const {
             return "";
         }
