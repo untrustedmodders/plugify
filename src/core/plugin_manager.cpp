@@ -154,9 +154,9 @@ void PluginManager::LoadRequiredLanguageModules() {
         modules.insert(module);
     }
 
-    for (const auto& [_, languageModule] : _allModules) {
-        if (languageModule->GetDescriptor().forceLoad || modules.contains(languageModule)) {
-            languageModule->Initialize(wizard->GetProvider());
+    for (const auto& [_, module] : _allModules) {
+        if (module->GetDescriptor().forceLoad || modules.contains(module)) {
+            module->Initialize(wizard->GetProvider());
         }
     }
 }
@@ -165,6 +165,12 @@ void PluginManager::LoadAndStartAvailablePlugins() {
     for (const auto& plugin : _allPlugins) {
         if (plugin->GetState() == PluginState::NotLoaded) {
             plugin->GetModule()->LoadPlugin(plugin);
+        }
+    }
+
+    for (const auto& plugin : _allPlugins) {
+        if (plugin->GetState() == PluginState::Loaded) {
+            plugin->GetModule()->ExportPlugin(plugin);
         }
     }
 

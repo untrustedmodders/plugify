@@ -47,3 +47,7 @@ PluginState IPlugin::GetState() const {
 const std::string& IPlugin::GetError() const {
     return _impl.GetError();
 }
+
+const std::vector<MethodData>& IPlugin::GetMethods() const {
+    return _impl.GetMethods();
+}

@@ -19,6 +19,8 @@ namespace wizard {
         Unknown,
     };
 
+    using MethodData = std::pair<std::string, void*>;
+
     // Plugin provided to user, which implemented in core
     class WIZARD_API IPlugin {
     protected:
@@ -36,6 +38,7 @@ namespace wizard {
         const PluginDescriptor& GetDescriptor() const;
         PluginState GetState() const;
         const std::string& GetError() const;
+        const std::vector<MethodData>& GetMethods() const;
 
     private:
         Plugin& _impl;

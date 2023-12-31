@@ -71,14 +71,25 @@ void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
     }
 
     auto result = GetLanguageModule().OnPluginLoad(*plugin);
-    if (ErrorData* data = std::get_if<ErrorData>(&result)) {
+    if (auto data = std::get_if<ErrorData>(&result)) {
         plugin->SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin->GetName(), data->error, _filePath.string()));
         return;
+    }
+
+    if (auto data = std::get_if<LoadResultData>(&result)) {
+        plugin->SetMethods(std::move(data->methods));
     }
 
     plugin->SetLoaded();
 
     _loadedPlugins.emplace_back(plugin);
+}
+
+void Module::ExportPlugin(const std::shared_ptr<Plugin>& plugin) {
+    if (_state != ModuleState::Loaded)
+        return;
+
+    GetLanguageModule().OnPluginExport(*plugin);
 }
 
 void Module::StartPlugin(const std::shared_ptr<Plugin>& plugin) {

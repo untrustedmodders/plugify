@@ -75,6 +75,14 @@ namespace wizard {
             return _error;
         }
 
+        void SetMethods(std::vector<MethodData> methods) {
+            _methods = std::move(methods);
+        }
+
+        const std::vector<MethodData>& GetMethods() const {
+            return _methods;
+        }
+
         static inline const char* const kFileExtension = ".wplugin";
 
     private:
@@ -83,6 +91,7 @@ namespace wizard {
         fs::path _filePath;
         std::string _error;
         std::shared_ptr<Module> _module;
+        std::vector<MethodData> _methods;
         PluginDescriptor _descriptor;
         PluginState _state{ PluginState::NotLoaded };
     };

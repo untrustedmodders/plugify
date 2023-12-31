@@ -9,6 +9,8 @@ namespace wizard {
     class IModule;
     class IWizardProvider;
 
+    using MethodData = std::pair<std::string, void*>;
+
     struct ErrorData {
         std::string error;
     };
@@ -16,7 +18,7 @@ namespace wizard {
     struct InitResultData {};
 
     struct LoadResultData {
-        std::vector<std::pair<std::string, void*>> methods;
+        std::vector<MethodData> methods;
     };
 
     using InitResult = std::variant<InitResultData, ErrorData>;
@@ -30,8 +32,8 @@ namespace wizard {
     public:
         virtual InitResult Initialize(std::weak_ptr<IWizardProvider> provider, const IModule& module) = 0;
         virtual void Shutdown() = 0;
-        virtual void OnNativeAdded(/*data*/) = 0;
         virtual LoadResult OnPluginLoad(const IPlugin& plugin) = 0;
+        virtual void OnPluginExport(const IPlugin& plugin) = 0;
         virtual void OnPluginStart(const IPlugin& plugin) = 0;
         virtual void OnPluginEnd(const IPlugin& plugin) = 0;
     };

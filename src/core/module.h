@@ -40,6 +40,7 @@ namespace wizard {
         void Terminate();
 
         void LoadPlugin(const std::shared_ptr<Plugin>& plugin);
+        void ExportPlugin(const std::shared_ptr<Plugin>& plugin);
         void StartPlugin(const std::shared_ptr<Plugin>& plugin);
         void EndPlugin(const std::shared_ptr<Plugin>& plugin);
 
