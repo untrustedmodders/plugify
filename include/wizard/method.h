@@ -26,12 +26,17 @@ namespace wizard {
 		String
 	};
 
+	struct Property {
+		ValueType type;
+		std::string name;
+	};
+
 	struct Method {
 		std::string name;
 		std::string funcName;
 		std::string callConv;
-		std::vector<ValueType> paramTypes;
-		ValueType retType{ };
+		std::vector<Property> paramTypes;
+		Property retType{ };
 		std::uint8_t varIndex{ kNoVarArgs };
 
 		static inline const std::uint8_t kNoVarArgs = 0xFFu;
