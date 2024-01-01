@@ -42,10 +42,33 @@ void PluginManager::DiscoverAllPlugins() {
     }
 }
 
+template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
+void RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
+    Cnt result;
+    result.reserve(std::size(cnt));
+
+    std::copy_if(
+        std::make_move_iterator(std::begin(cnt)),
+        std::make_move_iterator(std::end(cnt)),
+        std::back_inserter(result),
+        [&](const typename Cnt::value_type& what) {
+            return std::find_if(std::begin(result), std::end(result), [&](const typename Cnt::value_type& existing) {
+                return cmp(what, existing);
+            }) == std::end(result);
+        }
+    );
+
+    cnt = std::move(result);
+}
+
 void PluginManager::ReadAllPluginsDescriptors() {
     // TODO: Load .wpluginmanifest here
 
-    std::vector<fs::path> pluginsFilePaths = FileSystem::GetFiles(Paths::PluginsDir(), true, Plugin::kFileExtension);
+    auto wizard = _wizard.lock();
+    if (!wizard)
+        return;
+
+    std::vector<fs::path> pluginsFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir / "plugins", true, Plugin::kFileExtension);
 
     for (const auto& path : pluginsFilePaths) {
         std::string name{ path.filename().replace_extension().string() };
@@ -57,6 +80,9 @@ void PluginManager::ReadAllPluginsDescriptors() {
             WZ_LOG_ERROR("Plugin descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
             continue;
         }
+
+        RemoveDuplicates(descriptor->dependencies);
+        RemoveDuplicates(descriptor->exportedMethods);
 
         if (IsSupportsPlatform(descriptor->supportedPlatforms)) {
             fs::path pluginAssemblyPath{ path.parent_path() };
@@ -89,9 +115,11 @@ void PluginManager::ReadAllPluginsDescriptors() {
 
 void PluginManager::DiscoverAllModules() {
     // TODO: Mount modules zips
-    // TODO: assert(_allModules.empty());
+    auto wizard = _wizard.lock();
+    if (!wizard)
+        return;
 
-    std::vector<fs::path> modulesFilePaths = FileSystem::GetFiles(Paths::ModulesDir(), true, Module::kFileExtension);
+    std::vector<fs::path> modulesFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir / "modules", true, Module::kFileExtension);
 
     for (const auto& path : modulesFilePaths) {
         std::string name{ path.filename().replace_extension().string() };
@@ -118,7 +146,7 @@ void PluginManager::DiscoverAllModules() {
             if (it == _allModules.end()) {
                 _allModules.emplace(std::move(lang), std::make_shared<Module>(std::move(name), std::move(moduleBinaryPath), std::move(*descriptor)));
             } else {
-                const auto& existingModule = it->second;
+                const auto& existingModule = std::get<std::shared_ptr<Module>>(*it);
 
                 int32_t existingVersion = existingModule->GetDescriptor().version;
                 if (existingVersion != descriptor->version) {
@@ -149,7 +177,7 @@ void PluginManager::LoadRequiredLanguageModules() {
             plugin->SetError(std::format("Language module: '{}' missing for plugin: '{}'!", lang, plugin->GetFriendlyName()));
             continue;
         }
-        auto& module = it->second;
+        auto& module = std::get<std::shared_ptr<Module>>(*it);
         plugin->SetModule(module);
         modules.insert(module);
     }
@@ -168,11 +196,21 @@ void PluginManager::LoadAndStartAvailablePlugins() {
         }
     }
 
-    // TODO: Check dependency and unload plugins if neccesary
+    // TODO: Check dependency and unload plugins if necessary
+    /*for (auto i = static_cast<int64_t>(_allPlugins.size() - 1); i >= 0; --i) {
+        const auto& plugin = _allPlugins[static_cast<size_t>(i)];
+        for (const auto& descriptor : plugin->GetDescriptor().dependencies) {
+            if (!FindPlugin(descriptor.name) && !descriptor.optional) {
+
+            }
+        }
+    }*/
 
     for (const auto& plugin : _allPlugins) {
         if (plugin->GetState() == PluginState::Loaded) {
-            plugin->GetModule()->MethodExport(plugin);
+            for (const auto& [_, module] : _allModules) {
+                module->MethodExport(plugin);
+            }
         }
     }
 
@@ -256,35 +294,35 @@ bool PluginManager::IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& 
 
 std::shared_ptr<IModule> PluginManager::FindModule(const std::string& moduleName) {
     auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
-        return module.second->GetName() == moduleName;
+        return std::get<std::shared_ptr<Module>>(module)->GetName() == moduleName;
     });
-    return it != _allModules.end() ? it->second : nullptr;
+    return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
 }
 
 std::shared_ptr<IModule> PluginManager::FindModule(std::string_view moduleName) {
     auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
-        return module.second->GetName() == moduleName;
+        return std::get<std::shared_ptr<Module>>(module)->GetName() == moduleName;
     });
-    return it != _allModules.end() ? it->second : nullptr;
+    return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
 }
 
 std::shared_ptr<IModule> PluginManager::FindModuleFromLang(const std::string& moduleLang) {
     auto it = _allModules.find(moduleLang);
-    return it != _allModules.end() ? it->second : nullptr;
+    return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
 }
 
 std::shared_ptr<IModule> PluginManager::FindModuleFromPath(const std::filesystem::path& moduleFilePath) {
     auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleFilePath](const auto& module) {
-        return module.second->GetFilePath() == moduleFilePath;
+        return std::get<std::shared_ptr<Module>>(module)->GetFilePath() == moduleFilePath;
     });
-    return it != _allModules.end() ? it->second : nullptr;
+    return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
 }
 
 std::shared_ptr<IModule> PluginManager::FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) {
     auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleDescriptor](const auto& module) {
-        return module.second->GetName() == moduleDescriptor.name && (!moduleDescriptor.requestedVersion || module.second->GetDescriptor().version == moduleDescriptor.requestedVersion);
+        return std::get<std::shared_ptr<Module>>(module)->GetName() == moduleDescriptor.name && (!moduleDescriptor.requestedVersion || std::get<std::shared_ptr<Module>>(module)->GetDescriptor().version == moduleDescriptor.requestedVersion);
     });
-    return it != _allModules.end() ? it->second : nullptr;
+    return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
 }
 
 std::vector<std::shared_ptr<IModule>> PluginManager::GetModules() {

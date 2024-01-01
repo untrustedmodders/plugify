@@ -35,6 +35,8 @@ namespace wizard {
         std::uint8_t varIndex{ kNoVarArgs };
 
         static inline const std::uint8_t kNoVarArgs = 0xFFu;
+
+        bool operator==(const Method& rhs) const { return name == rhs.name; }
     };
 
     [[maybe_unused]] constexpr std::string_view ValueTypeToString(ValueType value) {

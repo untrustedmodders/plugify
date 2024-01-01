@@ -12,5 +12,7 @@ namespace wizard {
         std::string downloadURL;
         std::vector<std::string> supportedPlatforms;
         std::optional<std::int32_t> requestedVersion;
+
+        bool operator==(const PluginReferenceDescriptor& rhs) const { return name == rhs.name; }
     };
 }
