@@ -31,7 +31,6 @@ option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
 option(WIZARD_USE_EXTERNAL_GLAZE "Use external glaze library" OFF)
 option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs library" OFF)
 option(WIZARD_USE_EXTERNAL_FMT "Use external fmt library" OFF)
-option(WIZARD_USE_FMT "Use fmt library" OFF)
 
 option(WIZARD_LOGGING "Enable logs" ON)
 
@@ -70,9 +69,10 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Format
-include(CheckIncludeFileCXX)
-check_include_file_cxx("format" CXX_FORMAT_SUPPORT)
-if((NOT CXX_FORMAT_SUPPORT AND NOT WIZARD_USE_EXTERNAL_FMT) OR WIZARD_USE_FMT)
+#include(CheckIncludeFileCXX)
+#check_include_file_cxx("format" CXX_FORMAT_SUPPORT)
+try_compile(CXX_FORMAT_SUPPORT ${CMAKE_BINARY_DIR}/format_check SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/test/format_check.cpp)
+if(NOT CXX_FORMAT_SUPPORT AND NOT WIZARD_USE_EXTERNAL_FMT)
     add_subdirectory(external/fmt)
 endif()
 
@@ -202,6 +202,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         WIZARD_PLATFORM="${WIZARD_PLATFORM}"
         WIZARD_ARCH_X86=${WIZARD_ARCH_X86}
         WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>
+        WIZARD_FORMAT_SUPPORT=$<BOOL:${CXX_FORMAT_SUPPORT}>
         )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
