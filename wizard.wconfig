@@ -1,0 +1,5 @@
+{
+    "baseDir": "docs",
+    "logSeverity": "debug",
+    "strictMode": false
+}
