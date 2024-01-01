@@ -1,16 +1,12 @@
 [submodule "external/asmjit"]
 	path = external/asmjit
 	url = https://github.com/asmjit/asmjit
-	ignore = all
 [submodule "external/physfs"]
 	path = external/physfs
 	url = https://github.com/icculus/physfs
-	ignore = all
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt
-	ignore = all
 [submodule "external/glaze"]
 	path = external/glaze
 	url = https://github.com/stephenberry/glaze
-	ignore = all
