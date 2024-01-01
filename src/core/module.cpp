@@ -113,5 +113,5 @@ void Module::EndPlugin(const std::shared_ptr<Plugin>& plugin) {
 void Module::SetError(std::string error) {
     _error = std::move(error);
     _state = ModuleState::Error;
-    WZ_LOG_ERROR("Module: {}", _error);
+    WZ_LOG_ERROR("Module '{}': {}", _name, _error);
 }

@@ -11,5 +11,5 @@ Plugin::Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescripto
 void Plugin::SetError(std::string error) {
     _error = std::move(error);
     _state = PluginState::Error;
-    WZ_LOG_ERROR("Module: {}", _error);
+    WZ_LOG_ERROR("Plugin '{}': {}", _name, _error);
 }

@@ -43,9 +43,10 @@ void PluginManager::DiscoverAllPlugins() {
 }
 
 template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
-void RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
+bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
+    auto size = std::size(cnt);
     Cnt result;
-    result.reserve(std::size(cnt));
+    result.reserve(size);
 
     std::copy_if(
         std::make_move_iterator(std::begin(cnt)),
@@ -59,6 +60,7 @@ void RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
     );
 
     cnt = std::move(result);
+    return std::size(cnt) != size;
 }
 
 void PluginManager::ReadAllPluginsDescriptors() {
@@ -68,6 +70,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
     if (!wizard)
         return;
 
+    bool strictMode = wizard->GetConfig().strictMode;
     std::vector<fs::path> pluginsFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir / "plugins", true, Plugin::kFileExtension);
 
     for (const auto& path : pluginsFilePaths) {
@@ -77,12 +80,23 @@ void PluginManager::ReadAllPluginsDescriptors() {
         auto json = FileSystem::ReadText(path);
         auto descriptor = glz::read_json<PluginDescriptor>(json);
         if (!descriptor.has_value()) {
-            WZ_LOG_ERROR("Plugin descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
+            WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
             continue;
         }
 
-        RemoveDuplicates(descriptor->dependencies);
-        RemoveDuplicates(descriptor->exportedMethods);
+        if (RemoveDuplicates(descriptor->dependencies)) {
+            if (strictMode) {
+                WZ_LOG_ERROR("Plugin descriptor: '{}' has multiple dependencies with same name!", name);
+                continue;
+            }
+        }
+
+        if (RemoveDuplicates(descriptor->exportedMethods)) {
+            if (strictMode) {
+                WZ_LOG_ERROR("Plugin descriptor: '{}' has multiple method with same name!", name);
+                continue;
+            }
+        }
 
         if (IsSupportsPlatform(descriptor->supportedPlatforms)) {
             fs::path pluginAssemblyPath{ path.parent_path() };
@@ -165,9 +179,8 @@ void PluginManager::DiscoverAllModules() {
 
 void PluginManager::LoadRequiredLanguageModules() {
     auto wizard = _wizard.lock();
-    if (!wizard) {
+    if (!wizard)
         return;
-    }
 
     std::set<std::shared_ptr<Module>> modules;
     for (const auto& plugin : _allPlugins) {
@@ -192,19 +205,27 @@ void PluginManager::LoadRequiredLanguageModules() {
 void PluginManager::LoadAndStartAvailablePlugins() {
     for (const auto& plugin : _allPlugins) {
         if (plugin->GetState() == PluginState::NotLoaded) {
-            plugin->GetModule()->LoadPlugin(plugin);
-        }
-    }
+            std::vector<std::string_view> names;
+            for (const auto& descriptor : plugin->GetDescriptor().dependencies) {
+                auto dependencyPlugin = FindPlugin(descriptor.name);
+                if ((!dependencyPlugin || dependencyPlugin->GetState() != PluginState::Loaded) && !descriptor.optional) {
+                    names.emplace_back(descriptor.name);
+                }
+            }
 
-    // TODO: Check dependency and unload plugins if necessary
-    /*for (auto i = static_cast<int64_t>(_allPlugins.size() - 1); i >= 0; --i) {
-        const auto& plugin = _allPlugins[static_cast<size_t>(i)];
-        for (const auto& descriptor : plugin->GetDescriptor().dependencies) {
-            if (!FindPlugin(descriptor.name) && !descriptor.optional) {
-
+            if (!names.empty()) {
+                std::ostringstream error;
+                error << "'" << names[0];
+                for (auto it = std::next(names.begin()); it != names.end(); ++it) {
+                    error << "', '" << *it;
+                }
+                error << "'";
+                plugin->SetError(std::format("Not loaded {} dependency plugin(s)", error.str()));
+            } else {
+                plugin->GetModule()->LoadPlugin(plugin);
             }
         }
-    }*/
+    }
 
     for (const auto& plugin : _allPlugins) {
         if (plugin->GetState() == PluginState::Loaded) {
