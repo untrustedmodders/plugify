@@ -5,7 +5,7 @@ if(POLICY CMP0092)
 endif()
 
 
-project(wizard VERSION 1.0.0.0  DESCRIPTION "Wizard Core" HOMEPAGE_URL "https://github.com/untrustedmodders/wizard" LANGUAGES "CXX")
+project(wizard VERSION 1.0.0.0  DESCRIPTION "Wizard Core" HOMEPAGE_URL "https://github.com/untrustedmodders/wizard")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -54,6 +54,15 @@ if(NOT WIZARD_USE_EXTERNAL_PHYSFS)
     set(PHYSFS_BUILD_SHARED ${WIZARD_BUILD_SHARED_PHYSFS} CACHE BOOL "")
     set(PHYSFS_BUILD_TEST OFF CACHE BOOL "")
     set(PHYSFS_BUILD_DOCS OFF CACHE BOOL "")
+
+    include(CheckCCompilerFlag)
+    check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
+
+    if(COMPILER_SUPPORTS_FPIC)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    else()
+        message(FATAL_ERROR "The compiler does not support -fPIC. Cannot build shared libraries.")
+    endif()
 
     add_subdirectory(external/physfs)
 endif()

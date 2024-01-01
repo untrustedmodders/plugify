@@ -13,7 +13,7 @@ std::unique_ptr<Library> Library::LoadFromPath(const fs::path& libraryPath) {
     #if WIZARD_PLATFORM_WINDOWS
         void* handle = static_cast<void*>(LoadLibraryW(libraryPath.c_str()));
 #elif WIZARD_PLATFORM_LINUX
-        void* handle = dlopen(assemblyPath.string().c_str(), RTLD_LAZY);
+        void* handle = dlopen(libraryPath.string().c_str(), RTLD_LAZY);
 #endif // WIZARD_PLATFORM_WINDOWS
         if (handle) {
             return std::unique_ptr<Library>(new Library{handle});
@@ -57,6 +57,6 @@ void* Library::GetFunction(const char* functionName) const {
 #if WIZARD_PLATFORM_WINDOWS
     return reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>(_handle), functionName));
 #else
-    return dlsym(_handle, functionName.data());
+    return dlsym(_handle, functionName);
 #endif
 }
