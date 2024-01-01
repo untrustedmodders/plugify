@@ -21,11 +21,6 @@ namespace wizard {
 				return false;
 			}
 
-			WZ_LOG_INFO("Wizard Init!");
-			WZ_LOG_INFO("Version: {}", _version.ToString());
-			WZ_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", WIZARD_GIT_COMMIT_HASH, WIZARD_GIT_TAG, WIZARD_GIT_COMMIT_SUBJECT, WIZARD_GIT_BRANCH, WIZARD_GIT_COMMIT_DATE);
-			WZ_LOG_INFO("Compiled on: {} from: {} with: '{}'", WIZARD_COMPILED_SYSTEM, WIZARD_COMPILED_GENERATOR, WIZARD_COMPILED_COMPILER);
-
 			auto json = FileSystem::ReadText("wizard.wconfig");
 			auto config = glz::read_json<Config>(json);
 			if (!config.has_value()) {
@@ -41,6 +36,11 @@ namespace wizard {
 			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
 
 			_inited = true;
+
+			WZ_LOG_INFO("Wizard Init!");
+			WZ_LOG_INFO("Version: {}", _version.ToString());
+			WZ_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", WIZARD_GIT_COMMIT_HASH, WIZARD_GIT_TAG, WIZARD_GIT_COMMIT_SUBJECT, WIZARD_GIT_BRANCH, WIZARD_GIT_COMMIT_DATE);
+			WZ_LOG_INFO("Compiled on: {} from: {} with: '{}'", WIZARD_COMPILED_SYSTEM, WIZARD_COMPILED_GENERATOR, WIZARD_COMPILED_COMPILER);
 
 			return true;
 		}

@@ -10,10 +10,14 @@
 using namespace wizard;
 
 PluginManager::PluginManager(std::weak_ptr<IWizard> wizard) : IPluginManager(*this), WizardContext(std::move(wizard)) {
+	auto debugStart = DateTime::Now();
+
 	DiscoverAllModules();
 	DiscoverAllPlugins();
 	LoadRequiredLanguageModules();
 	LoadAndStartAvailablePlugins();
+
+	WZ_LOG_DEBUG("PluginManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
 PluginManager::~PluginManager() {

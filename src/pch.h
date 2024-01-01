@@ -12,6 +12,8 @@
 #include <functional>
 #include <iterator>
 #include <ranges>
+#include <cmath>
 
 #include <utils/log.h>
 #include <utils/paths.h>
+#include <utils/date_time.h>
