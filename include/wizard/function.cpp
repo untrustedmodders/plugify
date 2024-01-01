@@ -193,9 +193,9 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 }
 
 void* Function::GetJitFunc(const Method& method, FuncCallback callback) {
-	FuncSignature sig{ GetCallConv(method.callConv),method.varIndex, GetTypeId(method.retType) };
+	FuncSignature sig{ GetCallConv(method.callConv), method.varIndex, GetTypeId(method.retType.type) };
 	for (auto type : method.paramTypes) {
-		sig.addArg(GetTypeId(type));
+		sig.addArg(GetTypeId(type.type));
 	}
 	return GetJitFunc(sig, method, callback);
 }
