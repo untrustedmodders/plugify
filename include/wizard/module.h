@@ -37,21 +37,23 @@ namespace wizard {
     };
 
     [[maybe_unused]] constexpr std::string_view ModuleStateToString(ModuleState state) {
+        using enum ModuleState;
         switch (state) {
-            case ModuleState::NotLoaded: return "NotLoaded";
-            case ModuleState::Error:     return "Error";
-            case ModuleState::Loaded:    return "Loaded";
-            default:                     return "Unknown";
+            case NotLoaded: return "NotLoaded";
+            case Error:     return "Error";
+            case Loaded:    return "Loaded";
+            default:        return "Unknown";
         }
     }
     [[maybe_unused]] constexpr ModuleState ModuleStateFromString(std::string_view state) {
+        using enum ModuleState;
         if (state == "NotLoaded") {
-            return ModuleState::NotLoaded;
+            return NotLoaded;
         } else if (state == "Error") {
-            return ModuleState::Error;
+            return Error;
         } else if (state == "Loaded") {
-            return ModuleState::Loaded;
+            return Loaded;
         }
-        return ModuleState::Unknown;
+        return Unknown;
     }
 }
