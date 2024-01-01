@@ -22,8 +22,10 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         return _callback;
 
     auto rt = _rt.lock();
-    if (!rt)
+    if (!rt) {
+        _error = "JitRuntime invalid";
         return nullptr;
+    }
 
     /*
       AsmJit is smart enough to track register allocations and will forward
@@ -50,11 +52,11 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
     x86::Compiler cc{&code};
     FuncNode* func = cc.addFunc(sig);
 
-    StringLogger log;
+    /*StringLogger log;
     auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
 
     log.addFlags(kFormatFlags);
-    code.setLogger(&log);
+    code.setLogger(&log);*/
 
     // too small to really need it
     func->frame().resetPreservedFP();
@@ -70,7 +72,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         } else if (IsXmmReg(argType)) {
             arg = cc.newXmm();
         } else {
-            //WZ_LOG_ERROR("Parameters wider than 64bits not supported");
+            _error = "Parameters wider than 64bits not supported";
             return nullptr;
         }
 
@@ -106,7 +108,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         } else if(IsXmmReg(argType)) {
             cc.movq(argsStackIdx, argRegisters.at(argIdx).as<x86::Xmm>());
         } else {
-            //WZ_LOG_ERROR("Parameters wider than 64bits not supported");
+            _error = "Parameters wider than 64bits not supported";
             return nullptr;
         }
 
@@ -152,7 +154,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
         }else if (IsXmmReg(argType)) {
             cc.movq(argRegisters.at(arg_idx).as<x86::Xmm>(), argsStackIdx);
         }else {
-            //WZ_LOG_ERROR("Parameters wider than 64bits not supported");
+            _error = "Parameters wider than 64bits not supported";
             return nullptr;
         }
 
@@ -181,7 +183,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
     Error err = rt->add(&_callback, &code);
     if (err) {
-        //WZ_LOG_ERROR("AsmJit failed: {}", DebugUtils::errorAsString(err));
+        _error = DebugUtils::errorAsString(err));
         return nullptr;
     }
 

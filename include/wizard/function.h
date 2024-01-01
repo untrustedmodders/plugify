@@ -59,6 +59,8 @@ namespace wizard {
          */
         void* GetJitFunc(const Method& method, FuncCallback callback);
 
+        const std::string& GetError() { return _error; }
+
     private:
         static asmjit::CallConvId GetCallConv(const std::string& conv);
         static asmjit::TypeId GetTypeId(ValueType type);
@@ -69,5 +71,6 @@ namespace wizard {
     private:
         std::weak_ptr<asmjit::JitRuntime> _rt;
         void* _callback{ nullptr };
+        std::string _error;
     };
 }
