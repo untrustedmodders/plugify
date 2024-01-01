@@ -31,6 +31,7 @@ option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
 option(WIZARD_USE_EXTERNAL_GLAZE "Use external glaze library" OFF)
 option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs library" OFF)
 option(WIZARD_USE_EXTERNAL_FMT "Use external fmt library" OFF)
+option(WIZARD_USE_FMT "Use fmt library" OFF)
 
 option(WIZARD_LOGGING "Enable logs" ON)
 
@@ -71,7 +72,7 @@ endif()
 # Format
 include(CheckIncludeFileCXX)
 check_include_file_cxx("format" CXX_FORMAT_SUPPORT)
-if(NOT CXX_FORMAT_SUPPORT AND NOT WIZARD_USE_EXTERNAL_FMT)
+if((NOT CXX_FORMAT_SUPPORT AND NOT WIZARD_USE_EXTERNAL_FMT) OR WIZARD_USE_FMT)
     add_subdirectory(external/fmt)
 endif()
 
