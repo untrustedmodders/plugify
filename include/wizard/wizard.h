@@ -1,9 +1,11 @@
 #pragma once
 
 #include <wizard/version.h>
+#include <wizard/config.h>
 #include <wizard_export.h>
 #include <cstdint>
 #include <memory>
+#include <span>
 
 namespace wizard {
 	class ILogger;
@@ -15,15 +17,16 @@ namespace wizard {
 	public:
 		virtual ~IWizard() = default;
 
-		virtual bool Initialize() = 0;
+		virtual bool Initialize(std::span<const char*> args) = 0;
 		virtual void Terminate() = 0;
 
 		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
 		virtual void Log(const std::string& msg, Severity severity) = 0;
 
-		virtual std::weak_ptr<IWizardProvider> GetProvider() = 0;
-		virtual std::weak_ptr<IPluginManager> GetPluginManager() = 0;
-		virtual Version GetVersion() = 0;
+		virtual std::weak_ptr<IWizardProvider> GetProvider() const = 0;
+		virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
+        virtual const Config& GetConfig() const = 0;
+		virtual Version GetVersion() const = 0;
 	};
 
 	// Entry Point

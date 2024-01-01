@@ -4,9 +4,8 @@
 
 using namespace wizard;
 
-void VirtualFileSystem::Initialize() {
-    // TODO: This may be NULL on most platforms (such as ones without a standard main() function), but you should always try to pass something in here. Unix-like systems such as Linux need to pass argv[0] from main() in here.
-    PHYSFS_init(NULL);
+void VirtualFileSystem::Initialize(const char* arg0) {
+    PHYSFS_init(arg0);
 }
 
 void VirtualFileSystem::Shutdown() {

@@ -2,6 +2,9 @@
 #include "plugin_manager.h"
 #include <wizard/version.h>
 #include <wizard/wizard.h>
+#include <utils/file_system.h>
+#include <utils/virtual_file_system.h>
+#include <utils/json.h>
 
 namespace wizard {
 	class Wizard final : public IWizard, public std::enable_shared_from_this<Wizard> {
@@ -13,20 +16,31 @@ namespace wizard {
 			}
 		};
 
-		bool Initialize() override {
+		bool Initialize(std::span<const char*> args) override {
 			if (_inited) {
 				return false;
 			}
-
-			_inited = true;
 
             WZ_LOG_INFO("Wizard Init!");
             WZ_LOG_INFO("Version: {}", _version.ToString());
             WZ_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", WIZARD_GIT_COMMIT_HASH, WIZARD_GIT_TAG, WIZARD_GIT_COMMIT_SUBJECT, WIZARD_GIT_BRANCH, WIZARD_GIT_COMMIT_DATE);
             WZ_LOG_INFO("Compiled on: {} from: {} with: '{}'", WIZARD_COMPILED_SYSTEM, WIZARD_COMPILED_GENERATOR, WIZARD_COMPILED_COMPILER);
 
+            auto json = FileSystem::ReadText("wizard.wconfig");
+            auto config = glz::read_json<Config>(json);
+            if (!config.has_value()) {
+                WZ_LOG_ERROR("Config: wizard.wconfig has JSON parsing error: {}", glz::format_error(config.error(), json));
+                return false;
+            }
+
+            _config = std::move(*config);
+
+            VirtualFileSystem::Initialize(args[0]);
+
 			_provider = std::make_shared<WizardProvider>(weak_from_this());
 			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
+
+            _inited = true;
 
 			return true;
 		}
@@ -41,6 +55,8 @@ namespace wizard {
 			}
 			_pluginManager.reset();
 
+            VirtualFileSystem::Shutdown();
+
 			_inited = false;
 
             WZ_LOG_INFO("Wizard Terminated!");
@@ -54,23 +70,28 @@ namespace wizard {
 			LogSystem::SetLogger(std::move(logger));
 		}
 
-		std::weak_ptr<IPluginManager> GetPluginManager() override {
+		std::weak_ptr<IPluginManager> GetPluginManager() const override {
 			return _pluginManager;
 		}
 
-		std::weak_ptr<IWizardProvider> GetProvider() override {
+		std::weak_ptr<IWizardProvider> GetProvider() const override {
 			return _provider;
 		}
 
-        Version GetVersion() override {
+        const Config& GetConfig() const override {
+            return _config;
+        }
+
+        Version GetVersion() const override {
             return _version;
         }
 
 	private:
-		bool _inited{ false };
 		std::shared_ptr<PluginManager> _pluginManager;
 		std::shared_ptr<WizardProvider> _provider;
         Version _version{ WIZARD_VERSION_MAJOR, WIZARD_VERSION_MINOR, WIZARD_VERSION_PATCH, WIZARD_VERSION_TWEAK };
+        Config _config;
+        bool _inited{ false };
 	};
 
 	std::shared_ptr<IWizard> MakeWizard() {

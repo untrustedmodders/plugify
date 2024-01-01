@@ -30,7 +30,8 @@ void PrintArrayElement(const std::vector<T>& t, int width, char separator) {
     }
 }
 
-int main() {
+int main(int argc, const char** argv) {
+    std::span<const char*> arg{argv, static_cast<size_t>(argc)};
     std::shared_ptr<wizard::IWizard> sorcerer = wizard::MakeWizard();
     if (sorcerer) {
         auto logger = std::make_shared<sorcerer::StdLogger>();
@@ -51,7 +52,7 @@ int main() {
                 running = false;
             } else if (args[0] == "wzd" && args.size() > 1) {
                 if (args[1] == "init") {
-                    if (!sorcerer->Initialize()) {
+                    if (!sorcerer->Initialize(arg)) {
                         sorcerer->Log("No feet, no sweets!", wizard::Severity::Error);
                         return EXIT_FAILURE;
                     }

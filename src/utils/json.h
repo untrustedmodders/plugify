@@ -1,5 +1,11 @@
+#pragma once
+
 #include <glaze/glaze.hpp>
 #include <glaze/core/macros.hpp>
+
+#include <wizard/method.h>
+#include <wizard/plugin_descriptor.h>
+#include <wizard/config.h>
 
 template<>
 struct glz::meta<wizard::ValueType> {
@@ -25,7 +31,22 @@ struct glz::meta<wizard::ValueType> {
     );
 };
 
+template<>
+struct glz::meta<wizard::Severity> {
+    using enum wizard::Severity;
+    static constexpr auto value = enumerate(
+        "none", None,
+        "fatal", Fatal,
+        "error", Error,
+        "warning", Warning,
+        "info", Info,
+        "debug", Debug,
+        "verbose", Verbose
+    );
+};
+
 GLZ_META(wizard::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy,createdByURL, docsURL, downloadURL, supportURL, assemblyPath, supportedPlatforms, languageModule, dependencies, exportedMethods);
+GLZ_META(wizard::Config, baseDir, logSeverity, strictMode);
 
 namespace glz::detail {
     template <>

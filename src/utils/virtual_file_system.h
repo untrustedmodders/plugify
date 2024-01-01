@@ -7,7 +7,7 @@ namespace wizard {
     public:
         VirtualFileSystem() = delete;
 
-        static void Initialize();
+        static void Initialize(const char* arg0);
         static void Shutdown();
 
         /**
