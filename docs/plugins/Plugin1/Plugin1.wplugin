@@ -16,7 +16,7 @@
     },
     "dependencies": [
 		{
-			"name": "Plugin3"
+			"name": "example_plugin"
 		}
 	],
 	"exportedMethods": [

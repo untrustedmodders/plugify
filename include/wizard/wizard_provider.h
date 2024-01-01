@@ -4,22 +4,22 @@
 #include <wizard_export.h>
 
 namespace wizard {
-    class WizardProvider;
-    class IPluginManager;
+	class WizardProvider;
+	class IPluginManager;
 	enum class ErrorLevel : uint8_t;
 
-    // Wizard provided to user, which implemented in core
+	// Wizard provided to user, which implemented in core
 	class WIZARD_API IWizardProvider {
 	protected:
 		IWizardProvider(WizardProvider& impl);
-        ~IWizardProvider();
+		~IWizardProvider();
 
 	public:
 		void Log(const std::string& msg, Severity severity);
 
-        std::weak_ptr<IPluginManager> GetPluginManager();
+		std::weak_ptr<IPluginManager> GetPluginManager();
 
-    private:
-        WizardProvider& _impl;
+	private:
+		WizardProvider& _impl;
 	};
 }
