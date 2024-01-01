@@ -6,7 +6,7 @@ using namespace asmjit;
 Function::Function(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
-Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _callback{other._callback} {
+Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _callback{other._callback}, _error{std::move(other._error)} {
     other._callback = nullptr;
 }
 
