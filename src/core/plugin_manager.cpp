@@ -332,12 +332,7 @@ std::shared_ptr<IPlugin> PluginManager::FindPluginFromDescriptor(const PluginRef
 }
 
 std::vector<std::shared_ptr<IPlugin>> PluginManager::GetPlugins() {
-    std::vector<std::shared_ptr<IPlugin>> plugins;
-    plugins.reserve(_allPlugins.size());
-    for (const auto& plugin : _allPlugins)  {
-        plugins.push_back(plugin);
-    }
-    return plugins;
+    return { _allPlugins.begin(), _allPlugins.end() };
 }
 
 bool PluginManager::GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) {

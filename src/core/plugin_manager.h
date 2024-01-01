@@ -12,7 +12,7 @@ namespace wizard {
 
     class PluginManager final : public IPluginManager, public WizardContext {
     public:
-        PluginManager(std::weak_ptr<IWizard> wizard);
+        explicit PluginManager(std::weak_ptr<IWizard> wizard);
         ~PluginManager();
 
         /** IPluginManager interface */

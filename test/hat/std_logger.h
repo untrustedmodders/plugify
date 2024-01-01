@@ -10,7 +10,7 @@ namespace sorcerer {
 
         void Log(const std::string& message, wizard::Severity severity) override;
 
-        void Push(std::string error);
+        void Push(std::string message);
         std::string Pop();
 
         void SetSeverity(wizard::Severity severity);
