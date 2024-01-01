@@ -28,7 +28,6 @@ namespace wizard {
 
 	struct Property {
 		ValueType type;
-		std::string name;
 	};
 
 	struct Method {

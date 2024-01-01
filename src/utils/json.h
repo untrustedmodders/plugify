@@ -51,7 +51,7 @@ GLZ_META(wizard::Config, baseDir, logSeverity, strictMode);
 template <>
 struct glz::meta<wizard::Property> {
 	using T = wizard::Property;
-	static constexpr auto value = object("type", &T::type, "name", skip{}, &T::name);
+	static constexpr auto value = object("type", &T::type, "name", skip{});
 };
 
 namespace glz::detail {
