@@ -1,10 +1,10 @@
 #pragma once
 
-#if __has_include(<format>)
+#if __cplusplus >= 202002L
 
 #include <format>
 
-#else // __has_include(<format>)
+#else // __cplusplus < 202002L
 
 // Define FMT_FORMAT_H externally to force a difference location for {fmt}
 #ifndef FMT_FORMAT_H
@@ -20,4 +20,4 @@ namespace std {
 	using fmt::format_to_n;
 }
 
-#endif // __has_include(<format>)
+#endif // __cplusplus < 202002L
