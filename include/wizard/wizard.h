@@ -25,7 +25,7 @@ namespace wizard {
 
 		virtual std::weak_ptr<IWizardProvider> GetProvider() const = 0;
 		virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
-        virtual const Config& GetConfig() const = 0;
+		virtual const Config& GetConfig() const = 0;
 		virtual Version GetVersion() const = 0;
 	};
 

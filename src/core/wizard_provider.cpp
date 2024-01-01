@@ -14,8 +14,8 @@ void WizardProvider::Log(const std::string& msg, Severity severity) {
 }
 
 std::weak_ptr<IPluginManager> WizardProvider::GetPluginManager() {
-    if (auto locker = _wizard.lock()) {
-        return locker->GetPluginManager();
-    }
-    return {};
+	if (auto locker = _wizard.lock()) {
+		return locker->GetPluginManager();
+	}
+	return {};
 }

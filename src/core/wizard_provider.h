@@ -7,11 +7,11 @@
 namespace wizard {
 	class WizardProvider final : public IWizardProvider, public WizardContext {
 	public:
-        explicit WizardProvider(std::weak_ptr<IWizard> wizard);
-        ~WizardProvider();
+		explicit WizardProvider(std::weak_ptr<IWizard> wizard);
+		~WizardProvider();
 
 		void Log(const std::string& msg, Severity severity);
 
-        std::weak_ptr<IPluginManager> GetPluginManager();
+		std::weak_ptr<IPluginManager> GetPluginManager();
 	};
 }
