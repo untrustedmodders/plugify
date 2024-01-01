@@ -183,7 +183,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
     Error err = rt->add(&_callback, &code);
     if (err) {
-        _error = DebugUtils::errorAsString(err));
+        _error = DebugUtils::errorAsString(err);
         return nullptr;
     }
 
