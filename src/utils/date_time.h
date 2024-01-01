@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <sstream>
 
 namespace wizard {
     using namespace std::chrono_literals;
@@ -49,7 +50,7 @@ namespace wizard {
             return std::chrono::duration_cast<std::chrono::duration<Rep, Period>>(_value);
         }
 
-        constexpr auto operator<=>(const DateTime& rhs) const { return _value <=> rhs._value; }
+        //constexpr auto operator<=>(const DateTime& rhs) const { return _value <=> rhs._value; }
         constexpr bool operator==(const DateTime& rhs) const { return _value == rhs._value; }
         constexpr bool operator!=(const DateTime& rhs) const { return _value != rhs._value; }
         constexpr bool operator<(const DateTime& rhs) const { return _value < rhs._value; }
