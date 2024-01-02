@@ -216,7 +216,6 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 					names.emplace_back(descriptor.name);
 				}
 			}
-
 			if (!names.empty()) {
 				std::ostringstream error;
 				error << "'" << names[0];
@@ -247,13 +246,15 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 }
 
 void PluginManager::TerminateAllPlugins() {
-	for (const auto& plugin :  _allPlugins | std::views::reverse) {
+	for (auto i = static_cast<int64_t>(_allPlugins.size() - 1); i >= 0; --i) {
+		const auto& plugin = _allPlugins[static_cast<uint64_t>(i)];
 		if (plugin->GetState() == PluginState::Running) {
 			plugin->GetModule()->EndPlugin(plugin);
 		}
 	}
 
-	for (auto& plugin : _allPlugins | std::views::reverse) {
+	for (auto i = static_cast<int64_t>(_allPlugins.size() - 1); i >= 0; --i) {
+		auto& plugin = _allPlugins[static_cast<uint64_t>(i)];
 		plugin->SetUnloaded();
 	}
 }

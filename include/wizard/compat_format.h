@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef WIZARD_FORMAT_SUPPORT
+#if WIZARD_FORMAT_SUPPORT
 
 #include <format>
 
