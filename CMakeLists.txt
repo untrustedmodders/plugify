@@ -95,9 +95,9 @@ target_precompile_headers(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
 # Glaze
 if(WIZARD_USE_EXTERNAL_GLAZE)
 	find_package(glaze REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
+    target_link_libraries(${PROJECT_NAME} PUBLIC glaze::glaze)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE glaze_glaze)
+    target_link_libraries(${PROJECT_NAME} PUBLIC glaze_glaze)
 endif()
 
 # ------------------------------------------------------------------------------
