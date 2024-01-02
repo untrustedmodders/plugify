@@ -32,7 +32,6 @@ struct glz::meta<wizard::ValueType> {
 
 template<>
 struct glz::meta<wizard::Severity> {
-    using enum wizard::Severity;
     static constexpr auto value = enumerate(
         "none", wizard::Severity::None,
         "fatal", wizard::Severity::Fatal,
