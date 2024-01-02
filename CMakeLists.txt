@@ -51,18 +51,15 @@ endif()
 # ------------------------------------------------------------------------------
 # Physfs
 if(NOT WIZARD_USE_EXTERNAL_PHYSFS)
-    set(PHYSFS_BUILD_SHARED ${WIZARD_BUILD_SHARED_PHYSFS} CACHE BOOL "")
+    if(WIZARD_BUILD_SHARED_PHYSFS)
+        set(PHYSFS_BUILD_SHARED ON CACHE BOOL "")
+        set(PHYSFS_BUILD_STATIC OFF CACHE BOOL "")
+    else()
+        set(PHYSFS_BUILD_SHARED OFF CACHE BOOL "")
+        set(PHYSFS_BUILD_STATIC ON CACHE BOOL "")
+    endif()
     set(PHYSFS_BUILD_TEST OFF CACHE BOOL "")
     set(PHYSFS_BUILD_DOCS OFF CACHE BOOL "")
-
-    include(CheckCCompilerFlag)
-    check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
-
-    if(COMPILER_SUPPORTS_FPIC)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-    else()
-        message(FATAL_ERROR "The compiler does not support -fPIC. Cannot build shared libraries.")
-    endif()
 
     add_subdirectory(external/physfs)
 endif()
@@ -138,6 +135,12 @@ else()
         target_link_libraries(${PROJECT_NAME} PRIVATE physfs)
     else()
         target_link_libraries(${PROJECT_NAME} PRIVATE physfs-static)
+
+        include(CheckCCompilerFlag)
+        check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
+        if(COMPILER_SUPPORTS_FPIC)
+            target_compile_options(physfs-static PRIVATE -fPIC)
+        endif()
     endif()
 endif()
 
