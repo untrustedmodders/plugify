@@ -4,19 +4,19 @@
 
 using namespace wizard;
 
-void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
-    std::basic_ifstream<uint8_t, std::char_traits<uint8_t>> is{filepath, std::ios::binary};
-
-    if (!is.is_open()) {
-        WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
-        return;
-    }
-
-    // Stop eating new lines in binary mode!!!
-    is.unsetf(std::ios::skipws);
-
-    std::vector<uint8_t> buffer{ std::istreambuf_iterator<uint8_t>{is}, std::istreambuf_iterator<uint8_t>{} };
-    handler({ buffer.data(), buffer.size() });
+void FileSystem::ReadBytes(const fs::path& /*filepath*/, const FileHandler& /*handler*/) {
+    // std::basic_ifstream<uint8_t, std::char_traits<uint8_t>> is{filepath, std::ios::binary};
+    // 
+    // if (!is.is_open()) {
+    //     WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
+    //     return;
+    // }
+    // 
+    // // Stop eating new lines in binary mode!!!
+    // is.unsetf(std::ios::skipws);
+    // 
+    // std::vector<uint8_t> buffer{ std::istreambuf_iterator<uint8_t>{is}, std::istreambuf_iterator<uint8_t>{} };
+    // handler({ buffer.data(), buffer.size() });
 }
 
 std::string FileSystem::ReadText(const fs::path& filepath) {
