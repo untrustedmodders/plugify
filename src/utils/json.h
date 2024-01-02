@@ -9,25 +9,24 @@
 
 template<>
 struct glz::meta<wizard::ValueType> {
-    using enum wizard::ValueType;
     static constexpr auto value = enumerate(
-        "invalid", Invalid,
-        "void", Void,
-        "bool", Bool,
-        "char8", Char8,
-        "char16", Char16,
-        "int8", Int8,
-        "int16", Int16,
-        "int32", Int32,
-        "int64", Int64,
-        "uint8", Uint8,
-        "uint16", Uint16,
-        "uint32", Uint32,
-        "uint64", Uint64,
-        "ptr64", Ptr64,
-        "float", Float,
-        "double", Double,
-        "string", String
+        "invalid", wizard::ValueType::Invalid,
+        "void", wizard::ValueType::Void,
+        "bool", wizard::ValueType::Bool,
+        "char8", wizard::ValueType::Char8,
+        "char16", wizard::ValueType::Char16,
+        "int8", wizard::ValueType::Int8,
+        "int16", wizard::ValueType::Int16,
+        "int32", wizard::ValueType::Int32,
+        "int64", wizard::ValueType::Int64,
+        "uint8", wizard::ValueType::Uint8,
+        "uint16", wizard::ValueType::Uint16,
+        "uint32", wizard::ValueType::Uint32,
+        "uint64", wizard::ValueType::Uint64,
+        "ptr64", wizard::ValueType::Ptr64,
+        "float", wizard::ValueType::Float,
+        "double", wizard::ValueType::Double,
+        "string", wizard::ValueType::String
     );
 };
 
@@ -35,13 +34,13 @@ template<>
 struct glz::meta<wizard::Severity> {
     using enum wizard::Severity;
     static constexpr auto value = enumerate(
-        "none", None,
-        "fatal", Fatal,
-        "error", Error,
-        "warning", Warning,
-        "info", Info,
-        "debug", Debug,
-        "verbose", Verbose
+        "none", wizard::Severity::None,
+        "fatal", wizard::Severity::Fatal,
+        "error", wizard::Severity::Error,
+        "warning", wizard::Severity::Warning,
+        "info", wizard::Severity::Info,
+        "debug", wizard::Severity::Debug,
+        "verbose", wizard::Severity::Verbose
     );
 };
 
