@@ -37,13 +37,13 @@ namespace wizard {
             return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - LocalEpoch);
         }
 
-        static std::string Get(std::string_view format = "%Y-%m-%d %H:%M:%S") {
-            auto now = std::chrono::system_clock::now();
-            auto timeT = std::chrono::system_clock::to_time_t(now);
-            std::stringstream ss;
-            ss << std::put_time(std::localtime(&timeT), format.data());
-            return ss.str();
-        }
+        //static std::string Get(std::string_view format = "%Y-%m-%d %H:%M:%S") {
+        //    auto now = std::chrono::system_clock::now();
+        //    auto timeT = std::chrono::system_clock::to_time_t(now);
+        //    std::stringstream ss;
+        //    ss << std::put_time(std::localtime(&timeT), format.data());
+        //    return ss.str();
+        //}
 
         template<typename Rep, typename Period>
         constexpr explicit operator std::chrono::duration<Rep, Period>() const {
