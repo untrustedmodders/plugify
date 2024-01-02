@@ -22,33 +22,31 @@ namespace wizard {
 	};
 
 	[[maybe_unused]] constexpr std::string_view SeverityToString(Severity severity) {
-		using enum Severity;
 		switch (severity) {
-			case Fatal:   return "Fatal";
-			case Error:   return "Error";
-			case Warning: return "Warning";
-			case Info:	return "Info";
-			case Debug:   return "Debug";
-			case Verbose: return "Verbose";
+			case Severity::Fatal:   return "Fatal";
+			case Severity::Error:   return "Error";
+			case Severity::Warning: return "Warning";
+			case Severity::Info:	return "Info";
+			case Severity::Debug:   return "Debug";
+			case Severity::Verbose: return "Verbose";
 			default:				return "None";
 		}
 	}
 
 	[[maybe_unused]] constexpr Severity SeverityFromString(std::string_view severity) {
-		using enum Severity;
 		if (severity == "Fatal") {
-			return Fatal;
+			return Severity::Fatal;
 		} else if (severity == "Error") {
-			return Error;
+			return Severity::Error;
 		} else if (severity == "Warning") {
-			return Warning;
+			return Severity::Warning;
 		} else if (severity == "Info") {
-			return Info;
+			return Severity::Info;
 		} else if (severity == "Debug") {
-			return Debug;
+			return Severity::Debug;
 		} else if (severity == "Verbose") {
-			return Verbose;
+			return Severity::Verbose;
 		}
-		return None;
+		return Severity::None;
 	}
 }

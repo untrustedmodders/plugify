@@ -45,32 +45,30 @@ namespace wizard {
 	};
 
 	[[maybe_unused]] constexpr std::string_view PluginStateToString(PluginState state) {
-		using enum PluginState;
 		switch (state) {
-			case NotLoaded:   return "NotLoaded";
-			case Error:	   return "Error";
-			case Loaded:	  return "Loaded";
-			case Running:	 return "Running";
-			case Terminating: return "Terminating";
-			case Unloaded:	return "Unloaded";
+			case PluginState::NotLoaded:   return "NotLoaded";
+			case PluginState::Error:	   return "Error";
+			case PluginState::Loaded:	  return "Loaded";
+			case PluginState::Running:	 return "Running";
+			case PluginState::Terminating: return "Terminating";
+			case PluginState::Unloaded:	return "Unloaded";
 			default:					   return "Unknown";
 		}
 	}
 	[[maybe_unused]] constexpr PluginState PluginStateFromString(std::string_view state) {
-		using enum PluginState;
 		if (state == "NotLoaded") {
-			return NotLoaded;
+			return PluginState::NotLoaded;
 		} else if (state == "Error") {
-			return Error;
+			return PluginState::Error;
 		} else if (state == "Loaded") {
-			return Loaded;
+			return PluginState::Loaded;
 		} else if (state == "Running") {
-			return Running;
+			return PluginState::Running;
 		} else if (state == "Terminating") {
-			return Terminating;
+			return PluginState::Terminating;
 		} else if (state == "Unloaded") {
-			return Unloaded;
+			return PluginState::Unloaded;
 		}
-		return Unknown;
+		return PluginState::Unknown;
 	}
 }
