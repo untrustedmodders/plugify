@@ -26,7 +26,8 @@ struct glz::meta<wizard::ValueType> {
         "ptr64", wizard::ValueType::Ptr64,
         "float", wizard::ValueType::Float,
         "double", wizard::ValueType::Double,
-        "string", wizard::ValueType::String
+        "string", wizard::ValueType::String,
+        "function", wizard::ValueType::Function
     );
 };
 
@@ -49,7 +50,7 @@ GLZ_META(wizard::Config, baseDir, logSeverity, strictMode);
 template <>
 struct glz::meta<wizard::Property> {
 	using T = wizard::Property;
-	static constexpr auto value = object("type", &T::type, "name", skip{});
+	static constexpr auto value = object("type", &T::type, "name", skip{}, "paramTypes", skip{}, "retType", skip{});
 };
 
 namespace glz::detail {

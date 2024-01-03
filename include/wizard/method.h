@@ -23,7 +23,8 @@ namespace wizard {
 		Ptr64,
 		Float,
 		Double,
-		String
+		String,
+		Function,
 	};
 
 	struct Property {
@@ -45,23 +46,24 @@ namespace wizard {
 
 	[[maybe_unused]] constexpr std::string_view ValueTypeToString(ValueType value) {
 		switch (value) {
-			case ValueType::Void:   return "void";
-			case ValueType::Bool:   return "bool";
-			case ValueType::Char8:  return "char8";
-			case ValueType::Char16: return "char16";
-			case ValueType::Int8:   return "int8";
-			case ValueType::Int16:  return "int16";
-			case ValueType::Int32:  return "int32";
-			case ValueType::Int64:  return "int64";
-			case ValueType::Uint8:  return "uint8";
-			case ValueType::Uint16: return "uint16";
-			case ValueType::Uint32: return "uint32";
-			case ValueType::Uint64: return "uint64";
-			case ValueType::Ptr64:  return "ptr64";
-			case ValueType::Float:  return "float";
-			case ValueType::Double: return "double";
-			case ValueType::String: return "string";
-			default:	 return "unknown";
+			case ValueType::Void:     return "void";
+			case ValueType::Bool:     return "bool";
+			case ValueType::Char8:    return "char8";
+			case ValueType::Char16:   return "char16";
+			case ValueType::Int8:     return "int8";
+			case ValueType::Int16:    return "int16";
+			case ValueType::Int32:    return "int32";
+			case ValueType::Int64:    return "int64";
+			case ValueType::Uint8:    return "uint8";
+			case ValueType::Uint16:   return "uint16";
+			case ValueType::Uint32:   return "uint32";
+			case ValueType::Uint64:   return "uint64";
+			case ValueType::Ptr64:    return "ptr64";
+			case ValueType::Float:    return "float";
+			case ValueType::Double:   return "double";
+			case ValueType::String:   return "string";
+			case ValueType::Function: return "function";
+			default:                  return "unknown";
 		}
 	}
 
@@ -98,6 +100,8 @@ namespace wizard {
 			return ValueType::Double;
 		} else if (value == "string") {
 			return ValueType::String;
+		} else if (value == "function") {
+			return ValueType::Function;
 		}
 		return ValueType::Invalid;
 	}
