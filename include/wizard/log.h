@@ -26,10 +26,10 @@ namespace wizard {
 			case Severity::Fatal:   return "Fatal";
 			case Severity::Error:   return "Error";
 			case Severity::Warning: return "Warning";
-			case Severity::Info:	return "Info";
+			case Severity::Info:    return "Info";
 			case Severity::Debug:   return "Debug";
 			case Severity::Verbose: return "Verbose";
-			default:				return "None";
+			default:                return "None";
 		}
 	}
 

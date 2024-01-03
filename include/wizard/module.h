@@ -39,9 +39,9 @@ namespace wizard {
 	[[maybe_unused]] constexpr std::string_view ModuleStateToString(ModuleState state) {
 		switch (state) {
 			case ModuleState::NotLoaded: return "NotLoaded";
-			case ModuleState::Error:	 return "Error";
-			case ModuleState::Loaded:	 return "Loaded";
-			default:					 return "Unknown";
+			case ModuleState::Error:     return "Error";
+			case ModuleState::Loaded:    return "Loaded";
+			default:                     return "Unknown";
 		}
 	}
 	[[maybe_unused]] constexpr ModuleState ModuleStateFromString(std::string_view state) {
