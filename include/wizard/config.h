@@ -2,8 +2,10 @@
 
 namespace wizard {
 	struct Config {
-		fs::path baseDir;
+		std::filesystem::path baseDir;
 		Severity logSeverity{ Severity::Verbose };
 		bool strictMode{ true };
+		bool packageVerification{ true };
+		std::string packageVerifyUrl;
 	};
 }

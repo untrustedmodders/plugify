@@ -1,5 +1,7 @@
 {
     "baseDir": "docs",
     "logSeverity": "debug",
-    "strictMode": false
+    "strictMode": false,
+    "packageVerification": true,
+    "packageVerifyUrl": ""
 }

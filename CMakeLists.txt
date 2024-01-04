@@ -26,10 +26,12 @@ option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" ON)
 option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared library" ON)
 option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
 option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared library" OFF)
+option(WIZARD_BUILD_SHARED_CURL "Build curl as shared library" OFF)
 
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
 option(WIZARD_USE_EXTERNAL_GLAZE "Use external glaze library" OFF)
 option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs library" OFF)
+option(WIZARD_USE_EXTERNAL_CURL "Use external curl library" ON)
 option(WIZARD_USE_EXTERNAL_FMT "Use external fmt library" OFF)
 
 option(WIZARD_LOGGING "Enable logs" ON)
@@ -63,6 +65,25 @@ if(NOT WIZARD_USE_EXTERNAL_PHYSFS)
 
     add_subdirectory(external/physfs)
 endif()
+
+# ------------------------------------------------------------------------------
+# Curl
+if(NOT WIZARD_USE_EXTERNAL_CURL)
+    if(WIZARD_BUILD_SHARED_CURL)
+        set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+        set(BUILD_STATIC_LIBS OFF CACHE BOOL "")
+    else()
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+        set(BUILD_STATIC_LIBS ON CACHE BOOL "")
+    endif()
+    set(CURL_USE_OPENSSL ON CACHE BOOL "")
+    add_subdirectory(external/curl)
+endif()
+
+# ------------------------------------------------------------------------------
+# Picosha2 & Miniz
+add_subdirectory(external/picosha2)
+add_subdirectory(external/miniz)
 
 # ------------------------------------------------------------------------------
 # Format
@@ -143,6 +164,27 @@ else()
         endif()
     endif()
 endif()
+
+# ------------------------------------------------------------------------------
+# Curl
+if(WIZARD_USE_EXTERNAL_CURL)
+	find_package(CURL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
+    message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
+    message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
+    message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
+else()
+    if(WIZARD_BUILD_SHARED_CURL)
+        target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_shared)
+    else()
+        target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_static)
+    endif()
+    target_include_directories(${PROJECT_NAME} PRIVATE external/curl/include)
+endif()
+
+# ------------------------------------------------------------------------------
+# Picosha2 & Miniz
+target_link_libraries(${PROJECT_NAME} PRIVATE picosha2 miniz)
 
 # ------------------------------------------------------------------------------
 # Format
