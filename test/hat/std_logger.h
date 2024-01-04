@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wizard/log.h>
+#include <mutex>
 
 namespace sorcerer {
     class StdLogger final : public wizard::ILogger {
@@ -16,7 +17,8 @@ namespace sorcerer {
         void SetSeverity(wizard::Severity severity);
 
     private:
-        std::vector<std::string> _log;
+		std::mutex _mutex;
+		std::vector<std::string> _log;
         wizard::Severity _severity{ wizard::Severity::None };
     };
 }

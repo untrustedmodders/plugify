@@ -34,10 +34,12 @@ namespace sorcerer {
     }
 
     void StdLogger::Push(std::string message) {
+		std::lock_guard<std::mutex> lock{_mutex};
         _log.emplace_back(std::move(message));
     }
 
     std::string StdLogger::Pop() {
+		std::lock_guard<std::mutex> lock{_mutex};
         if (!_log.empty()) {
             std::string message = std::move(_log.back());
             _log.pop_back();
@@ -47,6 +49,7 @@ namespace sorcerer {
     }
 
     void StdLogger::SetSeverity(wizard::Severity severity) {
+		std::lock_guard<std::mutex> lock{_mutex};
         _severity = severity;
     }
 }
