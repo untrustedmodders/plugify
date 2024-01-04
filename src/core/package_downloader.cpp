@@ -10,8 +10,8 @@ using namespace wizard;
 
 PackageDownloader::PackageDownloader(std::weak_ptr<IWizard> wizard) : WizardContext(std::move(wizard)) {
 	auto debugStart = DateTime::Now();
-	Initialize();
 	curl_global_init(CURL_GLOBAL_ALL);
+	Initialize();
 	WZ_LOG_DEBUG("PackageDownloader loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 

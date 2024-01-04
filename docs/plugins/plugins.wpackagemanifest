@@ -1,10 +1,9 @@
 {
   "contents": {
     "Plugin1": {
-		"username": "user-name",
-		"repository": "project-name",
-		"commitHash": "sha-id or branch name",
-		"checksum": "zip-checksum (Should be used for plugin validations)"
+		"name": "",
+		"url": "",
+		"version": 1
     }
   }
 }

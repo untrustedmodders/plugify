@@ -115,7 +115,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 			} else {
 				const auto& existingPlugin = *it;
 
-				int32_t existingVersion = existingPlugin->GetDescriptor().version;
+				auto& existingVersion = existingPlugin->GetDescriptor().version;
 				if (existingVersion != descriptor->version) {
 					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' plugin, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
 
@@ -166,7 +166,7 @@ void PluginManager::DiscoverAllModules() {
 			} else {
 				const auto& existingModule = std::get<std::shared_ptr<Module>>(*it);
 
-				int32_t existingVersion = existingModule->GetDescriptor().version;
+				auto& existingVersion = existingModule->GetDescriptor().version;
 				if (existingVersion != descriptor->version) {
 					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' module, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
 
