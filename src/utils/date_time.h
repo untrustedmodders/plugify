@@ -40,9 +40,9 @@ namespace wizard {
         static std::string Get(std::string_view format = "%Y-%m-%d %H:%M:%S") {
             auto now = std::chrono::system_clock::now();
             auto timeT = std::chrono::system_clock::to_time_t(now);
-            std::stringstream ss;
-            ss << std::put_time(std::localtime(&timeT), format.data());
-            return ss.str();
+			std::string datetime(100, 0);
+			datetime.resize(std::strftime(&datetime[0], datetime.size(), format.data(), std::localtime(&timeT)));
+			return datetime;
         }
 
         template<typename Rep, typename Period>
