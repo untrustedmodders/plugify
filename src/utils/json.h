@@ -45,7 +45,7 @@ struct glz::meta<wizard::Severity> {
     );
 };
 
-GLZ_META(wizard::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy,createdByURL, docsURL, downloadURL, supportURL, assemblyPath, supportedPlatforms, languageModule, dependencies, exportedMethods);
+GLZ_META(wizard::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, assemblyPath, supportedPlatforms, languageModule, dependencies, exportedMethods);
 GLZ_META(wizard::Config, baseDir, logSeverity, strictMode, packageVerification, packageVerifyUrl);
 GLZ_META(wizard::Package, name, url, version, extractArchive, languageModule);
 

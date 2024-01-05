@@ -114,7 +114,7 @@ int main(int argc, const char** argv) {
                     }
                 } else if (args[1] == "snapshot") {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->SnapshotPackages(std::format("snapshot_{}.wpackagemanifest", wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S"), true);
+						packageManager->SnapshotPackages(std::format("snapshot_{}.wpackagemanifest", wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S")), true);
 					}
 				}
             }
