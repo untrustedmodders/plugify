@@ -128,22 +128,22 @@ std::optional<Package> PackageDownloader::Update(const Package& package) {
 	return {};
 }
 
-bool PackageDownloader::Download(const Package& package)  {
+std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
 	if (package.url.empty() || !package.url.starts_with("http://") || !package.url.starts_with("https://")) {
 		WZ_LOG_ERROR("Package: {} (v{}) has invalid download URL : '{}'", package.name, package.version, package.url);
-		return false;
+		return {};
 	}
 
 	if (!IsPackageAuthorized(package)) {
 		WZ_LOG_WARNING("Tried to download a package that is not verified, aborting");
-		return false;
+		return {};
 	}
 
 	auto fetchingResult = FetchPackageFromURL(package);
 	if (!fetchingResult.has_value()) {
 		WZ_LOG_ERROR("Something went wrong while fetching archive, aborting");
 		_packageState.state = PackageInstallState::PackageFetchingFailed;
-		return false;
+		return {};
 	}
 
 	fs::path& archiveLocation = fetchingResult.value().path;
@@ -151,40 +151,51 @@ bool PackageDownloader::Download(const Package& package)  {
 	if (!IsPackageLegit(package, archiveLocation)) {
 		WZ_LOG_WARNING("Archive hash does not match expected checksum, aborting");
 		_packageState.state = PackageInstallState::PackageCorrupted;
-		return false;
+		return {};
 	}
 
-	auto finalLocation = _config.baseDir / (package.languageModule ? "modules" : "plugins");
+	fs::path finalLocation = _config.baseDir / (package.languageModule ? "modules" : "plugins");
+	if (package.extractArchive)
+		finalLocation /= archiveLocation.filename().replace_extension();
 
-	if (!fs::exists(finalLocation)) {
-		if (!fs::create_directory(finalLocation)) {
-			WZ_LOG_ERROR("Error creating output directory {}", finalLocation.string());
+	std::error_code ec;
+	if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
+		if (!fs::create_directory(finalLocation, ec)) {
+			WZ_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
 			_packageState.state = PackageInstallState::FailedCreatingDirectory;
-			return false;
+			return {};
+		}
+		fs::permissions(finalLocation, fs::perms::owner_all | fs::perms::group_read | fs::perms::group_exec | fs::perms::others_read | fs::perms::others_exec, ec);
+		if (ec) {
+			WZ_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
+			_packageState.state = PackageInstallState::FailedCreatingDirectory;
+			return {};
 		}
 	}
 
 	bool success;
-	if (package.extractArchive)
+	if (package.extractArchive) {
 		success = ExtractPackage(archiveLocation, finalLocation);
-	else
+	} else {
+		finalLocation /= archiveLocation.filename();
 		success = MovePackage(archiveLocation, finalLocation);
+	}
 
 	if (success) {
 		WZ_LOG_INFO("Done downloading {}", package.name);
 		_packageState.state = PackageInstallState::Done;
-		return true;
+		return { std::move(finalLocation) };
 	} else {
 		WZ_LOG_INFO("Failed downloading {}", package.name);
 		_packageState.state = PackageInstallState::Failed;
-		return false;
+		return {};
 	}
 }
 
 bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::path& extractPath) {
 	std::ifstream zipFile{packagePath, std::ios::binary};
 	if (!zipFile.is_open()) {
-		WZ_LOG_ERROR("Cannot open archive located at {}", packagePath.string());
+		WZ_LOG_ERROR("Cannot open archive located at '{}'", packagePath.string());
 		_packageState.state = PackageInstallState::FailedReadingArchive;
 		return false;
 	}
@@ -204,7 +215,7 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 	for (uint32_t i = 0; i < numFiles; ++i) {
 		mz_zip_archive_file_stat fileStat;
 		if (!mz_zip_reader_file_stat(&zipArchive, i, &fileStat)) {
-			WZ_LOG_ERROR("Error getting file stat: {} in zip located at {}", i, packagePath.string());
+			WZ_LOG_ERROR("Error getting file stat: {} in zip located at '{}'", i, packagePath.string());
 			_packageState.state = PackageInstallState::FailedReadingArchive;
 			break;
 		}
@@ -257,11 +268,16 @@ std::optional<PackageDownloader::FetchResult> PackageDownloader::FetchPackageFro
 
 	auto fileName = std::format("{}-{}-{}.zip", package.name, std::to_string(package.version), wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S"));
 	auto downloadPath = std::filesystem::temp_directory_path() / fileName;
-	WZ_LOG_INFO("Downloading archive to {}", downloadPath.string());
+	WZ_LOG_INFO("Downloading archive to '{}'", downloadPath.string());
 
 	_packageState.state = PackageInstallState::Downloading;
 
 	std::ofstream file{downloadPath, std::ios::binary};
+	if (!file.is_open()) {
+		WZ_LOG_ERROR("Failed creating destination file: {}", downloadPath.string());
+		_packageState.state = PackageInstallState::FailedWritingToDisk;
+		return {};
+	}
 
 	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
 	std::unique_ptr<CURL, decltype(curl_close)> handle{curl_easy_init(), curl_close};
@@ -293,7 +309,7 @@ bool PackageDownloader::IsPackageLegit(const Package& package, const fs::path& p
 
 	std::ifstream file{packagePath, std::ios::binary};
 	if (!file.is_open()) {
-		WZ_LOG_ERROR("Unable to open archive: {}", packagePath.string());
+		WZ_LOG_ERROR("Unable to open archive: '{}'", packagePath.string());
 		_packageState.state = PackageInstallState::FailedReadingArchive;
 		return false;
 	}
@@ -314,26 +330,20 @@ bool PackageDownloader::IsPackageLegit(const Package& package, const fs::path& p
 }
 
 bool PackageDownloader::MovePackage(const fs::path& packagePath, const fs::path& movePath) {
-#if WIZARD_PLATFORM_LINUX
-	auto cmd = std::format("mv '{}' '{}'", filePath.string(), movePath.string());
-    system(cmd.c_str());
-#else
-    auto cmd = std::format("move '{}' '{}'", packagePath.string(), movePath.string());
-    system(cmd.c_str());
-#endif
-    return fs::exists(movePath / packagePath.filename());
+	std::error_code ec;
+	if (fs::exists(movePath, ec))
+		fs::remove(movePath, ec);
+	fs::rename(packagePath, movePath, ec);
+    return !ec; // fs::exists(movePath, ec);
 }
 
 PackageDownloader::FetchResult::FetchResult(fs::path filePath) : path{std::move(filePath)} {
 }
 
 PackageDownloader::FetchResult::~FetchResult() {
-	try {
-		if (fs::exists(path))
-			fs::remove(path);
-	} catch (const std::exception& e) {
-		WZ_LOG_ERROR("Error while removing downloaded archive: {}", e.what());
-	}
+	std::error_code ec;
+	if (fs::exists(path, ec))
+		fs::remove(path, ec);
 }
 
 std::string PackageState::ToString(int barWidth) const {

@@ -76,23 +76,29 @@ void PackageManager::UpdatePackages() {
 	std::vector<fs::path> filePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir, true);
 
 	for (const auto& path : filePaths) {
-		std::string extension{ path.extension().string() };
+		auto extension = path.extension().string();
 		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
 			continue;
 
-		std::string name{ path.filename().replace_extension().string() };
+		auto name = path.filename().replace_extension().string();
 
 		auto package = CreatePackage(path, name, extension == Module::kFileExtension, true);
 		if (!package.has_value())
 			continue;
 
 		if (auto newPackage = downloader.Update(*package)) {
-			if (downloader.Download(*newPackage)) {
-				try {
-					fs::remove_all(path.parent_path());
-				} catch (const std::exception& e) {
-					WZ_LOG_ERROR("Error while removing old package: {}", e.what());
+			if (auto newPath = downloader.Download(*newPackage)) {
+				auto baseDir = path.parent_path();
+
+				std::error_code ec;
+				if (fs::exists(baseDir, ec) ) {
+					if (fs::is_directory(baseDir, ec))
+						fs::remove_all(baseDir, ec);
+					else if (fs::is_regular_file(baseDir, ec))
+						fs::remove(baseDir, ec);
 				}
+
+				fs::rename(*newPath, newPath->parent_path() / baseDir.filename(), ec);
 			}
 		}
 	}
@@ -110,11 +116,11 @@ void PackageManager::SnapshotPackages(const fs::path& filepath, bool prettify) {
 	std::vector<fs::path> filePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir, true);
 
 	for (const auto& path : filePaths) {
-		std::string extension{ path.extension().string() };
+		auto extension = path.extension().string();
 		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
 			continue;
 
-		std::string name{ path.filename().replace_extension().string() };
+		auto name = path.filename().replace_extension().string();
 
 		auto package = CreatePackage(path, name, extension == Module::kFileExtension, false);
 		if (!package.has_value())

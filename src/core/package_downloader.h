@@ -70,7 +70,7 @@ namespace wizard {
 		/**
 		 * Downloads a given package from URL to local storage.
 		 **/
-		bool Download(const Package& package);
+		std::optional<fs::path> Download(const Package& package);
 
 		PackageState GetState() const {
 			return _packageState;
