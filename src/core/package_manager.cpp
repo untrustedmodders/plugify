@@ -1,8 +1,7 @@
 #include "package_manager.h"
+#include "package_downloader.h"
 #include "module.h"
 #include "plugin.h"
-#include "wizard/package_manager.h"
-
 
 #include <wizard/wizard.h>
 #include <utils/file_system.h>
@@ -23,7 +22,7 @@ void PackageManager::LoadPackages() {
 	if (!wizard)
 		return;
 
-	std::vector<fs::path> manifestsFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir, true, { PackageManifest::kFileExtension });
+	std::vector<fs::path> manifestsFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir, true, PackageManifest::kFileExtension);
 
 	for (const auto& path : manifestsFilePaths) {
 		WZ_LOG_INFO("Read package manifest from '{}'", path.string());
@@ -61,6 +60,42 @@ void PackageManager::LoadPackages() {
 			_allPackages[*name] = std::move(manifest->content[*name]);
 		}
 	}
+
+	// TODO: Download packages
+}
+
+void PackageManager::UpdatePackages() {
+	auto wizard = _wizard.lock();
+	if (!wizard)
+		return;
+
+	PackageDownloader downloader{ wizard->GetConfig() };
+
+	std::unordered_map<std::string, Package> packages;
+
+	std::vector<fs::path> filePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir, true);
+
+	for (const auto& path : filePaths) {
+		std::string extension{ path.extension().string() };
+		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
+			continue;
+
+		std::string name{ path.filename().replace_extension().string() };
+
+		auto package = CreatePackage(path, name, extension == Module::kFileExtension, true);
+		if (!package.has_value())
+			continue;
+
+		if (auto newPackage = downloader.Update(*package)) {
+			if (downloader.Download(*newPackage)) {
+				try {
+					fs::remove_all(path.parent_path());
+				} catch (const std::exception& e) {
+					WZ_LOG_ERROR("Error while removing old package: {}", e.what());
+				}
+			}
+		}
+	}
 }
 
 void PackageManager::SnapshotPackages(const fs::path& filepath, bool prettify) {
@@ -81,7 +116,7 @@ void PackageManager::SnapshotPackages(const fs::path& filepath, bool prettify) {
 
 		std::string name{ path.filename().replace_extension().string() };
 
-		auto package = ReadDescriptor(path, name, extension == Module::kFileExtension);
+		auto package = CreatePackage(path, name, extension == Module::kFileExtension, false);
 		if (!package.has_value())
 			continue;
 
@@ -118,7 +153,8 @@ void PackageManager::SnapshotPackages(const fs::path& filepath, bool prettify) {
 	WZ_LOG_DEBUG("Snapshot '{}' created in {}ms", filepath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
-std::optional<Package> PackageManager::ReadDescriptor(const fs::path& path, const std::string& name, bool module) {
+std::optional<Package> PackageManager::CreatePackage(const fs::path& path, const std::string& name, bool module, bool update) {
+	// TODO: use template ?
 	if (module) {
 		auto json = FileSystem::ReadText(path);
 		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
@@ -126,7 +162,12 @@ std::optional<Package> PackageManager::ReadDescriptor(const fs::path& path, cons
 			WZ_LOG_ERROR("Module descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
 			return {};
 		}
-		return std::make_optional<Package>(name, descriptor->downloadURL, descriptor->version, false, true);
+		auto& url = update ? descriptor->updateURL : descriptor->downloadURL;
+		if (url.empty() || !url.starts_with("http://") || !url.starts_with("https://")) {
+			WZ_LOG_ERROR("Module descriptor: {} at '{}' has invalid {} URL: '{}'", name, path.string(), update ? "update" : "download", url);
+			return  {};
+		}
+		return std::make_optional<Package>(name, url, descriptor->version, false, true);
 	} else {
 		auto json = FileSystem::ReadText(path);
 		auto descriptor = glz::read_json<PluginDescriptor>(json);
@@ -134,6 +175,11 @@ std::optional<Package> PackageManager::ReadDescriptor(const fs::path& path, cons
 			WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
 			return {};
 		}
-		return std::make_optional<Package>(name, descriptor->downloadURL, descriptor->version, false, false);
+		auto& url = update ? descriptor->updateURL : descriptor->downloadURL;
+		if (url.empty() || !url.starts_with("http://") || !url.starts_with("https://")) {
+			WZ_LOG_ERROR("Plugin descriptor: {} at '{}' has invalid {} URL: '{}'", name, path.string(), update ? "update" : "download", url);
+			return  {};
+		}
+		return std::make_optional<Package>(name, url, descriptor->version, false, false);
 	}
 }

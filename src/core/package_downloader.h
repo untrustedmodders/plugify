@@ -2,6 +2,7 @@
 
 #include "wizard_context.h"
 #include "package.h"
+#include "wizard/config.h"
 
 namespace wizard {
 	class IWizard;
@@ -34,12 +35,10 @@ namespace wizard {
 		std::string ToString(int barWidth = 60) const;
 	};
 
-	class PackageDownloader final : public WizardContext {
+	class PackageDownloader {
 	public:
-		explicit PackageDownloader(std::weak_ptr<IWizard> wizard);
+		explicit PackageDownloader(Config config);
 		~PackageDownloader();
-
-		void Initialize();
 
 		/**
 		 * Retrieves the verified packages list from the central authority.
@@ -64,9 +63,14 @@ namespace wizard {
 		bool IsPackageAuthorized(const Package& package);
 
 		/**
+		 * .
+		 **/
+		std::optional<Package> Update(const Package& package);
+
+		/**
 		 * Downloads a given package from URL to local storage.
 		 **/
-		void Download(const Package& package);
+		bool Download(const Package& package);
 
 		PackageState GetState() const {
 			return _packageState;
@@ -95,7 +99,7 @@ namespace wizard {
 		 * very method to ensure the archive downloaded from the Internet is the exact
 		 * same that has been manually verified.
 		 */
-		bool IsPackageLegit(const fs::path& packagePath, std::string_view expectedChecksum);
+		bool IsPackageLegit(const Package& package, const fs::path& packagePath);
 
 		/**
 		 * Extracts a package archive to the core folder.
@@ -105,7 +109,7 @@ namespace wizard {
 		 */
 		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath);
 
-		static bool MovePackage(const fs::path& filePath, const fs::path& movePath);
+		static bool MovePackage(const fs::path& packagePath, const fs::path& movePath);
 
 	private:
 		struct VerifiedPackageVersion {
@@ -127,8 +131,7 @@ namespace wizard {
 
 	private:
 		VerifiedPackageMap _packages;
-		std::string _packageVerifyUrl;
 		PackageState _packageState;
-		bool _packageVerification{ true };
+		Config _config;
 	};
 }

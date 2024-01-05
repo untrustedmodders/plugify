@@ -2,6 +2,6 @@
     "baseDir": "docs",
     "logSeverity": "debug",
     "strictMode": false,
-    "packageVerification": true,
-    "packageVerifyUrl": ""
+    "packageVerification": false,
+    "packageVerifyUrl": "https://raw.githubusercontent.com/untrustedmodders/verified_packages/main/verified-packages.json"
 }
