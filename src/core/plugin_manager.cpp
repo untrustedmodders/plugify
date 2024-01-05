@@ -78,7 +78,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 	std::vector<fs::path> pluginsFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir / "plugins", true, Plugin::kFileExtension);
 
 	for (const auto& path : pluginsFilePaths) {
-		std::string name{ path.filename().replace_extension().string() };
+		auto name = path.filename().replace_extension().string();
 		WZ_LOG_INFO("Read plugin descriptor for '{}', from '{}'", name, path.string());
 
 		auto json = FileSystem::ReadText(path);
@@ -103,7 +103,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 		}
 
 		if (IsSupportsPlatform(descriptor->supportedPlatforms)) {
-			fs::path pluginAssemblyPath{ path.parent_path() };
+			auto pluginAssemblyPath = path.parent_path();
 			pluginAssemblyPath /= descriptor->assemblyPath;
 
 			auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name](const auto& plugin) {
@@ -140,7 +140,7 @@ void PluginManager::DiscoverAllModules() {
 	std::vector<fs::path> modulesFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir / "modules", true, Module::kFileExtension);
 
 	for (const auto& path : modulesFilePaths) {
-		std::string name{ path.filename().replace_extension().string() };
+		auto name = path.filename().replace_extension().string();
 		WZ_LOG_INFO("Read module descriptor for '{}', from '{}'", name, path.string());
 
 		auto json = FileSystem::ReadText(path);
@@ -154,7 +154,7 @@ void PluginManager::DiscoverAllModules() {
 
 			// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
 
-			fs::path moduleBinaryPath{ path.parent_path() };
+			auto moduleBinaryPath = path.parent_path();
 			moduleBinaryPath /= "bin";
 			moduleBinaryPath /= std::format(WIZARD_MODULE_PREFIX "{}" WIZARD_MODULE_SUFFIX, name);
 
