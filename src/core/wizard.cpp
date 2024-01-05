@@ -1,5 +1,6 @@
 #include "wizard_provider.h"
 #include "plugin_manager.h"
+#include "package_manager.h"
 #include <wizard/version.h>
 #include <wizard/wizard.h>
 #include <utils/file_system.h>
@@ -33,6 +34,7 @@ namespace wizard {
 			VirtualFileSystem::Initialize(args[0]);
 
 			_provider = std::make_shared<WizardProvider>(weak_from_this());
+			_packageManager = std::make_shared<PackageManager>(weak_from_this());
 			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
 
 			_inited = true;
@@ -49,6 +51,11 @@ namespace wizard {
 			if (!_inited) {
 				return;
 			}
+
+			if (_packageManager.use_count() != 1) {
+				WZ_LOG_ERROR("Lack of owning for package manager! Will not released on wizard terminate");
+			}
+			_packageManager.reset();
 
 			if (_pluginManager.use_count() != 1) {
 				WZ_LOG_ERROR("Lack of owning for plugin manager! Will not released on wizard terminate");
@@ -74,6 +81,10 @@ namespace wizard {
 			return _pluginManager;
 		}
 
+		std::weak_ptr<IPackageManager> GetPackageManager() const override {
+			return _packageManager;
+		}
+
 		std::weak_ptr<IWizardProvider> GetProvider() const override {
 			return _provider;
 		}
@@ -88,6 +99,7 @@ namespace wizard {
 
 	private:
 		std::shared_ptr<PluginManager> _pluginManager;
+		std::shared_ptr<PackageManager> _packageManager;
 		std::shared_ptr<WizardProvider> _provider;
 		Version _version{ WIZARD_VERSION_MAJOR, WIZARD_VERSION_MINOR, WIZARD_VERSION_PATCH, WIZARD_VERSION_TWEAK };
 		Config _config;
