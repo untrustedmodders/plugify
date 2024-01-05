@@ -1,6 +1,7 @@
 #include "std_logger.h"
 #include <wizard/wizard.h>
 #include <wizard/module.h>
+#include <wizard/package_manager.h>
 #include <wizard/plugin_manager.h>
 #include <wizard/plugin.h>
 #include <wizard/plugin_descriptor.h>
@@ -110,7 +111,11 @@ int main(int argc, const char** argv) {
                             std::cout << std::endl;
                         }
                     }
-                }
+                } else if (args[1] == "snapshot") {
+					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
+						packageManager->SnapshotPackages(std::format("snapshot_{}.wpackagemanifest", std::tmpnam(nullptr)), true);
+					}
+				}
             }
         }
     }
