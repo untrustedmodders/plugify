@@ -46,21 +46,24 @@ bool FileSystem::WriteText(const fs::path& filepath, std::string_view text) {
 }
 
 bool FileSystem::IsExists(const fs::path& filepath) {
-	return fs::exists(filepath);
+	std::error_code ec;
+	return fs::exists(filepath, ec);
 }
 
 bool FileSystem::IsDirectory(const fs::path& filepath) {
-	return fs::is_directory(filepath);
+	std::error_code ec;
+	return fs::is_directory(filepath, ec);
 }
 
 std::vector<fs::path> FileSystem::GetFiles(const fs::path& root, bool recursive, std::string_view ext) {
 	std::vector<fs::path> paths;
 
-	if (fs::exists(root) && fs::is_directory(root)) {
-		auto iterate = [&paths, ext](auto iterator) {
+	std::error_code ec;
+	if (fs::exists(root, ec) && fs::is_directory(root, ec)) {
+		auto iterate = [&](auto iterator) {
 			for (auto const& entry : iterator) {
 				const auto& path = entry.path();
-				if (fs::is_regular_file(entry) && (ext.empty() || path.extension().string() == ext)) {
+				if (fs::is_regular_file(entry, ec) && (ext.empty() || path.extension().string() == ext)) {
 					paths.push_back(path);
 				}
 			}
