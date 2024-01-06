@@ -70,9 +70,8 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath) {
 }
 
 template<bool Update>
-std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std::string& name, bool m) {
-	// TODO: use template ?
-	if (m) {
+std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std::string& name, bool isModule) {
+	if (isModule) {
 		auto json = FileSystem::ReadText(path);
 		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
 		if (!descriptor.has_value()) {
@@ -110,18 +109,21 @@ void PackageManager::UpdatePackages() {
 
 	std::unordered_map<std::string, Package> packages;
 
-	std::vector<fs::path> filePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir, true);
+	FileSystem::ReadDirectory(wizard->GetConfig().baseDir, [&](const fs::path& path, int depth) {
+		// TODO: Add read of zip
+		if (depth != 1)
+			return;
 
-	for (const auto& path : filePaths) {
 		auto extension = path.extension().string();
-		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
-			continue;
+		bool isModule = extension == Module::kFileExtension;
+		if (!isModule && extension != Plugin::kFileExtension)
+			return;
 
 		auto name = path.filename().replace_extension().string();
 
-		auto package = GetPackageFromDescriptor<true>(path, name, extension == Module::kFileExtension);
+		auto package = GetPackageFromDescriptor<true>(path, name, isModule);
 		if (!package.has_value())
-			continue;
+			return;
 
 		if (auto newPackage = downloader.Update(*package)) {
 			if (auto newPath = downloader.Download(*newPackage)) {
@@ -138,7 +140,7 @@ void PackageManager::UpdatePackages() {
 				fs::rename(*newPath, newPath->parent_path() / baseDir.filename(), ec);
 			}
 		}
-	}
+	}, 3);
 }
 
 void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) {
@@ -150,18 +152,21 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 
 	std::unordered_map<std::string, Package> packages;
 
-	std::vector<fs::path> filePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir, true);
+	FileSystem::ReadDirectory(wizard->GetConfig().baseDir, [&](const fs::path& path, int depth) {
+		// TODO: Add read of zip
+		if (depth != 1)
+			return;
 
-	for (const auto& path : filePaths) {
 		auto extension = path.extension().string();
-		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
-			continue;
+		bool isModule = extension == Module::kFileExtension;
+		if (!isModule && extension != Plugin::kFileExtension)
+			return;
 
 		auto name = path.filename().replace_extension().string();
 
-		auto package = GetPackageFromDescriptor<false>(path, name, extension == Module::kFileExtension);
+		auto package = GetPackageFromDescriptor<false>(path, name, isModule);
 		if (!package.has_value())
-			continue;
+			return;
 
 		auto it = packages.find(name);
 		if (it == packages.end()) {
@@ -180,7 +185,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 				WZ_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, name, path.string());
 			}
 		}
-	}
+	}, 3);
 
 	if (packages.empty()) {
 		WZ_LOG_WARNING("Packages was not found!");
