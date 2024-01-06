@@ -85,7 +85,7 @@ bool PackageDownloader::IsPackageAuthorized(const Package& package) {
 }
 
 std::optional<Package> PackageDownloader::Update(const Package& package) {
-	if (package.url.empty() || !package.url.starts_with("http://") || !package.url.starts_with("https://")) {
+	if (!IsValidURL(package.url)) {
 		WZ_LOG_ERROR("Package: {} (v{}) has invalid update URL: '{}'", package.name, package.version, package.url);
 		return {};
 	}
@@ -129,7 +129,7 @@ std::optional<Package> PackageDownloader::Update(const Package& package) {
 }
 
 std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
-	if (package.url.empty() || !package.url.starts_with("http://") || !package.url.starts_with("https://")) {
+	if (!IsValidURL(package.url)) {
 		WZ_LOG_ERROR("Package: {} (v{}) has invalid download URL : '{}'", package.name, package.version, package.url);
 		return {};
 	}

@@ -134,4 +134,8 @@ namespace wizard {
 		PackageState _packageState;
 		Config _config;
 	};
+
+	inline bool IsValidURL(std::string_view str) {
+		return str.starts_with("http://") || str.starts_with("https://");
+	}
 }
