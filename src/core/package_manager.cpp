@@ -69,20 +69,20 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath) {
 	return;
 }
 
-template<bool Update>
-std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
+template<bool U>
+std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std::string& name, bool isModule) {
 	auto json = FileSystem::ReadText(path);
 	auto descriptor = glz::read_json<Descriptor>(json);
 	if (!descriptor.has_value()) {
 		WZ_LOG_ERROR("Package: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
 		return {};
 	}
-	auto& url = Update ? descriptor->updateURL : descriptor->downloadURL;
+	auto& url = U ? descriptor->updateURL : descriptor->downloadURL;
 	if (!IsValidURL(url)) {
-		WZ_LOG_ERROR("Package: {} at '{}' has invalid {} URL: '{}'", name, path.string(), Update ? "update" : "download", url);
+		WZ_LOG_ERROR("Package: {} at '{}' has invalid {} URL: '{}'", name, path.string(), U ? "update" : "download", url);
 		return  {};
 	}
-	return std::make_optional<Package>(name, url, descriptor->version, true, false);
+	return std::make_optional<Package>(name, std::move(url), descriptor->version, true, isModule);
 }
 
 void PackageManager::UpdatePackages() {
@@ -100,12 +100,13 @@ void PackageManager::UpdatePackages() {
 			return;
 
 		auto extension = path.extension().string();
-		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
+		bool isModule = extension == Module::kFileExtension;
+		if (!isModule && extension != Plugin::kFileExtension)
 			return;
 
 		auto name = path.filename().replace_extension().string();
 
-		auto package = GetPackageFromDescriptor<true>(path, name);
+		auto package = GetPackageFromDescriptor<true>(path, name, isModule);
 		if (!package.has_value())
 			return;
 
@@ -142,12 +143,13 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 			return;
 
 		auto extension = path.extension().string();
-		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
+		bool isModule = extension == Module::kFileExtension;
+		if (!isModule && extension != Plugin::kFileExtension)
 			return;
 
 		auto name = path.filename().replace_extension().string();
 
-		auto package = GetPackageFromDescriptor<false>(path, name);
+		auto package = GetPackageFromDescriptor<false>(path, name, isModule);
 		if (!package.has_value())
 			return;
 
@@ -182,43 +184,3 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 
 	WZ_LOG_DEBUG("Snapshot '{}' created in {}ms", manifestFilePath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
-
-/*std::vector<Package> PackageManager::GetPackagesFromDescriptor(const fs::path& descriptorFilePath, bool isModule, bool isUpdate) {
-	// TODO: use template ?
-	auto name = descriptorFilePath.filename().replace_extension().string();
-	if (isModule) {
-		auto json = FileSystem::ReadText(descriptorFilePath);
-		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
-		if (!descriptor.has_value()) {
-			WZ_LOG_ERROR("Module descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
-			return {};
-		}
-		auto& url = isUpdate ? descriptor->updateURL : descriptor->downloadURL;
-		if (!IsValidURL(url)) {
-			WZ_LOG_ERROR("Module descriptor: {} at '{}' has invalid {} URL: '{}'", name, descriptorFilePath.string(), isUpdate ? "update" : "download", url);
-			return  {};
-		}
-		return { Package{std::move(name), url, descriptor->version, false, true} };
-	} else {
-		auto json = FileSystem::ReadText(descriptorFilePath);
-		auto descriptor = glz::read_json<PluginDescriptor>(json);
-		if (!descriptor.has_value()) {
-			WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
-			return {};
-		}
-		auto& url = isUpdate ? descriptor->updateURL : descriptor->downloadURL;
-		if (!IsValidURL(url)) {
-			WZ_LOG_ERROR("Plugin descriptor: {} at '{}' has invalid {} URL: '{}'", name, descriptorFilePath.string(), isUpdate ? "update" : "download", url);
-			return  {};
-		}
-		std::vector<Package> packages;
-		packages.reserve(descriptor->dependencies.size() + 1);
-		packages.emplace_back(std::move(name), url, descriptor->version, false, false);
-		for (const auto& dependency : descriptor->dependencies) {
-			if (!IsValidURL(dependency.downloadURL))
-				continue;
-			packages.emplace_back(dependency.name, dependency.downloadURL, dependency.requestedVersion.value_or(-1), false, false);
-		}
-		return packages;
-	}
-}*/

@@ -74,11 +74,13 @@ struct glz::meta<wizard::Descriptor> {
 		"updateURL", &T::updateURL,
 		"supportedPlatforms", &T::supportedPlatforms,
 
+		/* PluginDescriptor */
 		"assemblyPath", skip{},
 		"languageModule", skip{},
 		"dependencies", skip{},
 		"exportedMethods", skip{},
 
+		/* LanguageModuleDescriptor */
 		"language", skip{},
 		"forceLoad", skip{}
 	);
