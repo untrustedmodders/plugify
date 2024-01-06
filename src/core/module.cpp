@@ -66,17 +66,9 @@ void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	auto& filePath = plugin->GetFilePath();
-
-	std::error_code ec;
-	if (!fs::exists(filePath, ec) || !fs::is_regular_file(filePath, ec)) {
-		plugin->SetError(std::format("Plugin assembly '{}' not exist!.", filePath.string()));
-		return;
-	}
-
 	auto result = GetLanguageModule().OnPluginLoad(*plugin);
 	if (auto data = std::get_if<ErrorData>(&result)) {
-		plugin->SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin->GetName(), data->error, filePath.string()));
+		plugin->SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin->GetName(), data->error, plugin->GetFilePath().string()));
 		return;
 	}
 
