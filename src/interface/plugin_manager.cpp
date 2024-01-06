@@ -18,7 +18,7 @@ std::shared_ptr<IModule> IPluginManager::FindModuleFromLang(const std::string& m
     return _impl.FindModuleFromLang(moduleLang);
 }
 
-std::shared_ptr<IModule> IPluginManager::FindModuleFromPath(const std::filesystem::path& moduleFilePath) {
+std::shared_ptr<IModule> IPluginManager::FindModuleFromPath(const fs::path& moduleFilePath) {
     return _impl.FindModuleFromPath(moduleFilePath);
 }
 
@@ -42,7 +42,7 @@ std::shared_ptr<IPlugin> IPluginManager::FindPluginFromId(uint64_t pluginId) {
     return _impl.FindPluginFromId(pluginId);
 }
 
-std::shared_ptr<IPlugin> IPluginManager::FindPluginFromPath(const std::filesystem::path& pluginFilePath) {
+std::shared_ptr<IPlugin> IPluginManager::FindPluginFromPath(const fs::path& pluginFilePath) {
     return _impl.FindPluginFromPath(pluginFilePath);
 }
 
@@ -58,7 +58,7 @@ bool IPluginManager::GetPluginDependencies(const std::string& pluginName, std::v
     return _impl.GetPluginDependencies(pluginName, pluginDependencies);
 }
 
-bool IPluginManager::GetPluginDependencies_FromFilePath(const std::filesystem::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
+bool IPluginManager::GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
     return _impl.GetPluginDependencies_FromFilePath(pluginFilePath, pluginDependencies);
 }
 

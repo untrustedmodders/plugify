@@ -20,19 +20,19 @@ const std::string& IPlugin::GetFriendlyName() const {
     return _impl.GetFriendlyName();
 }
 
-const std::filesystem::path& IPlugin::GetFilePath() const {
+const fs::path& IPlugin::GetFilePath() const {
     return _impl.GetFilePath();
 }
 
-std::filesystem::path IPlugin::GetBaseDir() const {
+fs::path IPlugin::GetBaseDir() const {
     return _impl.GetBaseDir();
 }
 
-std::filesystem::path IPlugin::GetContentDir() const {
+fs::path IPlugin::GetContentDir() const {
     return _impl.GetContentDir();
 }
 
-std::filesystem::path IPlugin::GetMountedAssetPath() const {
+fs::path IPlugin::GetMountedAssetPath() const {
     return _impl.GetMountedAssetPath();
 }
 
