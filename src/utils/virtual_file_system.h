@@ -2,6 +2,7 @@
 
 namespace wizard {
     using FileHandler = std::function<void(std::span<const uint8_t>)>;
+	using PathHandler = std::function<void(const fs::path&, int)>;
 
     class VirtualFileSystem {
     public:
@@ -14,7 +15,7 @@ namespace wizard {
          * Add an archive or directory to the search path.
          * @param path The path to the directory or archive.
          */
-        static void Mount(const fs::path& path, std::string_view mount);
+        static void Mount(const fs::path& path, const fs::path& mount);
 
         /**
          * Add an archive, contained in a PHYSFE_File handle, to the search path.
@@ -57,12 +58,10 @@ namespace wizard {
          * @param ext The extension string.
          * @return The files found.
          */
-        static bool GetFilesFromDirectoryRecursive(const fs::path& directory, std::unordered_map<fs::path, fs::path, PathHash>& results, std::string_view ext = "");
-        static std::vector<fs::path> GetFilesFromDirectory(const fs::path& directory, std::string_view ext = "");
+        static bool GetFiles(const fs::path& directory, std::unordered_map<fs::path, fs::path, PathHash>& results, std::string_view ext = "");
 
-        /**
-         * Get the current search path.
-         */
-        static std::vector<fs::path> GetSearchPaths();
-    };
+		static void ReadDirectory(const fs::path& directory, const PathHandler& handler, int depth = 2);
+
+		static bool IsArchive(std::string_view extension);
+	};
 }

@@ -5,15 +5,15 @@
 using namespace wizard;
 
 void VirtualFileSystem::Initialize(const char* arg0) {
-    PHYSFS_init(arg0);
+	PHYSFS_init(arg0);
 }
 
 void VirtualFileSystem::Shutdown() {
     PHYSFS_deinit();
 }
 
-void VirtualFileSystem::Mount(const fs::path& path, std::string_view mount) {
-    PHYSFS_mount(path.generic_string().c_str(), mount.data(), 1);
+void VirtualFileSystem::Mount(const fs::path& path, const fs::path& mount) {
+    PHYSFS_mount(path.generic_string().c_str(), mount.empty() ? nullptr : mount.generic_string().c_str(), 1);
 }
 
 void VirtualFileSystem::Unmount(const fs::path& path) {
@@ -103,7 +103,7 @@ bool VirtualFileSystem::IsDirectory(const fs::path& filepath) {
     }
 }
 
-bool VirtualFileSystem::GetFilesFromDirectoryRecursive(const fs::path& directory, std::unordered_map<fs::path, fs::path, PathHash>& results, std::string_view ext) {
+bool VirtualFileSystem::GetFiles(const fs::path& directory, std::unordered_map<fs::path, fs::path, PathHash>& results, std::string_view ext) {
     if (!PHYSFS_isInit()) {
         WZ_LOG_FATAL("PHYSFS library was not initialized");
         return false;
@@ -114,7 +114,7 @@ bool VirtualFileSystem::GetFilesFromDirectoryRecursive(const fs::path& directory
     for (auto i = rc; *i; ++i) {
         fs::path newDirectory{ directory / *i };
         if (IsDirectory(newDirectory)) {
-            GetFilesFromDirectoryRecursive(newDirectory, results, ext);
+			GetFiles(newDirectory, results, ext);
         } else {
             fs::path path{ *i };
             if (ext.empty() || ext == path.extension().string()) {
@@ -127,25 +127,43 @@ bool VirtualFileSystem::GetFilesFromDirectoryRecursive(const fs::path& directory
     return true;
 }
 
-std::vector<fs::path> VirtualFileSystem::GetFilesFromDirectory(const fs::path& directory, std::string_view ext) {
-    if (!PHYSFS_isInit()) {
-        WZ_LOG_FATAL("PHYSFS library was not initialized");
-        return {};
-    }
+void VirtualFileSystem::ReadDirectory(const fs::path& directory, const PathHandler& handler, int depth) {
+	if (depth <= 0)
+		return;
 
-    std::vector<fs::path> fileList;
+	auto rc = PHYSFS_enumerateFiles(directory.generic_string().c_str());
 
-    auto rc = PHYSFS_enumerateFiles(directory.generic_string().c_str());
+	for (auto i = rc; *i; ++i) {
+		fs::path newDirectory{ directory / *i };
+		if (IsDirectory(newDirectory)) {
+			ReadDirectory(newDirectory, handler, depth - 1);
+		} else {
+			handler(directory / *i, depth);
+		}
+	}
 
-    for (auto i = rc; *i; ++i) {
-        fs::path path{ *i };
-        if (!IsDirectory(path)) {
-            if (ext.empty() || ext == path.extension().string()) {
-                fileList.emplace_back(std::move(path));
-            }
-        }
-    }
+	PHYSFS_freeList(rc);
+}
 
-    PHYSFS_freeList(rc);
-    return fileList;
+#ifdef WIZARD_PLATFORM_WINDOWS
+#include <string.h>
+#define strcasecmp _stricmp
+#else // assuming POSIX or BSD compliant system
+#include <strings.h>
+#endif
+
+bool VirtualFileSystem::IsArchive(std::string_view extension) {
+	if (extension.size() <= 1)
+		return false;
+
+	auto rc = PHYSFS_supportedArchiveTypes();
+	if (*rc == nullptr)
+		return false;
+
+	for (auto i = rc; *i; i++) {
+		if (!strcasecmp((*i)->extension, &extension[1]))
+			return true;
+	}
+
+	return false;
 }
