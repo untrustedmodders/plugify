@@ -104,9 +104,9 @@ std::optional<Package> PackageDownloader::Update(const Package& package) {
 	CURLcode result = curl_easy_perform(handle.get());
 
 	if (result == CURLcode::CURLE_OK) {
-		WZ_LOG_INFO("Package successfully fetched.");
+		WZ_LOG_INFO("Package {}(v{}) successfully fetched.", package.name, package.version);
 	} else {
-		WZ_LOG_ERROR("Fetching package failed: {}", curl_easy_strerror(result));
+		WZ_LOG_ERROR("Fetching package {}(v{}) failed: {}", package.name, package.version, curl_easy_strerror(result));
 		return {};
 	}
 

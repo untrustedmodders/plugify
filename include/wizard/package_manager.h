@@ -13,7 +13,9 @@ namespace wizard {
 		~IPackageManager() = default;
 
 	public:
-		void SnapshotPackages(const std::filesystem::path& filepath, bool prettify);
+		void UpdatePackages();
+		void InstallPackages(const std::filesystem::path& manifestFilePath);
+		void SnapshotPackages(const std::filesystem::path& manifestFilePath, bool prettify);
 
 	private:
 		PackageManager& _impl;

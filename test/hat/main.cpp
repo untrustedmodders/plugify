@@ -67,6 +67,7 @@ int main(int argc, const char** argv) {
                     std::cout << "  modules      - List modules" << std::endl;
                     std::cout << "  plugins      - List plugins" << std::endl;
                     std::cout << "  snapshot     - Snapshot packages into manifest" << std::endl;
+                    std::cout << "  update       - Update all packages" << std::endl;
                     std::cout << "  version      - Version information" << std::endl;
                 } else if (args[1] == "modules") {
                     const char separator = ' ';
@@ -114,7 +115,15 @@ int main(int argc, const char** argv) {
                     }
                 } else if (args[1] == "snapshot") {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->SnapshotPackages(std::format("snapshot_{}.wpackagemanifest", wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S")), true);
+						packageManager->SnapshotPackages(sorcerer->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S")), true);
+					}
+				} else if (args[1] == "update") {
+					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
+						packageManager->UpdatePackages();
+					}
+				} else if (args[1] == "install") {
+					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
+						packageManager->InstallPackages(args[2]);
 					}
 				}
             }

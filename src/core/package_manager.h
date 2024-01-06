@@ -10,14 +10,12 @@ namespace wizard {
 		explicit PackageManager(std::weak_ptr<IWizard> wizard);
 		~PackageManager();
 
-		void LoadPackages();
 		void UpdatePackages();
-		void SnapshotPackages(const fs::path& filepath, bool prettify);
+		void InstallPackages(const fs::path& manifestFilePath);
+		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify);
 
 	private:
 		using PackageMap = std::unordered_map<std::string, Package>;
-
-		static std::optional<Package> CreatePackage(const fs::path& path, const std::string& name, bool module, bool update);
 
 	private:
 		PackageMap _allPackages;

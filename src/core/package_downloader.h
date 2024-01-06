@@ -62,14 +62,7 @@ namespace wizard {
 		 */
 		bool IsPackageAuthorized(const Package& package);
 
-		/**
-		 * .
-		 **/
 		std::optional<Package> Update(const Package& package);
-
-		/**
-		 * Downloads a given package from URL to local storage.
-		 **/
 		std::optional<fs::path> Download(const Package& package);
 
 		PackageState GetState() const {
@@ -101,14 +94,7 @@ namespace wizard {
 		 */
 		bool IsPackageLegit(const Package& package, const fs::path& packagePath);
 
-		/**
-		 * Extracts a package archive to the core folder.
-		 *
-		 * This extracts a downloaded package archive from its original location to the
-		 * current game profile, in the remote packages folder.
-		 */
 		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath);
-
 		static bool MovePackage(const fs::path& packagePath, const fs::path& movePath);
 
 	private:

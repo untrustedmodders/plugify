@@ -7,7 +7,7 @@ namespace wizard {
 		std::string name;
 		std::string url;
 		int32_t version;
-		bool extractArchive{ false };
+		bool extractArchive{ true };
 		bool languageModule{ false };
 	};
 

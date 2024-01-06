@@ -17,51 +17,88 @@ PackageManager::PackageManager(std::weak_ptr<IWizard> wizard) : IPackageManager(
 
 PackageManager::~PackageManager() = default;
 
-void PackageManager::LoadPackages() {
+void PackageManager::InstallPackages(const fs::path& manifestFilePath) {
 	auto wizard = _wizard.lock();
 	if (!wizard)
 		return;
 
-	std::vector<fs::path> manifestsFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir, true, PackageManifest::kFileExtension);
+	if (manifestFilePath.extension().string() != PackageManifest::kFileExtension) {
+		WZ_LOG_ERROR("Package manifest: '{}' should be in *{} format", manifestFilePath.string(), PackageManifest::kFileExtension);
+		return;
+	}
 
-	for (const auto& path : manifestsFilePaths) {
-		WZ_LOG_INFO("Read package manifest from '{}'", path.string());
+	auto path = wizard->GetConfig().baseDir / manifestFilePath;
 
-		auto json = FileSystem::ReadText(path);
-		auto manifest = glz::read_json<PackageManifest>(json);
-		if (!manifest.has_value()) {
-			WZ_LOG_ERROR("Package manifest: '{}' has JSON parsing error: {}", path.string(), glz::format_error(manifest.error(), json));
-			continue;
-		}
+	WZ_LOG_INFO("Read package manifest from '{}'", path.string());
 
-		std::vector<const std::string*> packages;
+	auto json = FileSystem::ReadText(path);
+	auto manifest = glz::read_json<PackageManifest>(json);
+	if (!manifest.has_value()) {
+		WZ_LOG_ERROR("Package manifest: '{}' has JSON parsing error: {}", path.string(), glz::format_error(manifest.error(), json));
+		return;
+	}
 
-		for (const auto& [name, package] : manifest->content) {
-			auto it = _allPackages.find(name);
-			if (it == _allPackages.end()) {
-				packages.push_back(&name);
-			} else {
-				const auto& existingPackage = std::get<Package>(*it);
+	std::vector<const std::string*> packages;
 
-				auto& existingVersion = existingPackage.version;
-				if (existingVersion != package.version) {
-					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(existingVersion, package.version), name, std::min(existingVersion, package.version));
+	for (const auto& [name, package] : manifest->content) {
+		auto it = _allPackages.find(name);
+		if (it == _allPackages.end()) {
+			packages.push_back(&name);
+		} else {
+			const auto& existingPackage = std::get<Package>(*it);
 
-					if (existingVersion < package.version) {
-						packages.push_back(&name);
-					}
-				} else {
-					WZ_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingPackage.url, path.string());
+			auto& existingVersion = existingPackage.version;
+			if (existingVersion != package.version) {
+				WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(existingVersion, package.version), name, std::min(existingVersion, package.version));
+
+				if (existingVersion < package.version) {
+					packages.push_back(&name);
 				}
+			} else {
+				WZ_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingPackage.url, path.string());
 			}
-		}
-
-		for (const std::string* name : packages) {
-			_allPackages[*name] = std::move(manifest->content[*name]);
 		}
 	}
 
+	for (const std::string* name : packages) {
+		_allPackages[*name] = std::move(manifest->content[*name]);
+	}
+
 	// TODO: Download packages
+
+	return;
+}
+
+template<bool Update>
+std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std::string& name, bool m) {
+	// TODO: use template ?
+	if (m) {
+		auto json = FileSystem::ReadText(path);
+		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
+		if (!descriptor.has_value()) {
+			WZ_LOG_ERROR("Module descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
+			return {};
+		}
+		auto& url = Update ? descriptor->updateURL : descriptor->downloadURL;
+		if (!IsValidURL(url)) {
+			WZ_LOG_ERROR("Module descriptor: {} at '{}' has invalid {} URL: '{}'", name, path.string(), Update ? "update" : "download", url);
+			return  {};
+		}
+		return std::make_optional<Package>(name, url, descriptor->version, true, true);
+	} else {
+		auto json = FileSystem::ReadText(path);
+		auto descriptor = glz::read_json<PluginDescriptor>(json);
+		if (!descriptor.has_value()) {
+			WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
+			return {};
+		}
+		auto& url = Update ? descriptor->updateURL : descriptor->downloadURL;
+		if (!IsValidURL(url)) {
+			WZ_LOG_ERROR("Plugin descriptor: {} at '{}' has invalid {} URL: '{}'", name, path.string(), Update ? "update" : "download", url);
+			return  {};
+		}
+		return std::make_optional<Package>(name, url, descriptor->version, true, false);
+	}
 }
 
 void PackageManager::UpdatePackages() {
@@ -82,7 +119,7 @@ void PackageManager::UpdatePackages() {
 
 		auto name = path.filename().replace_extension().string();
 
-		auto package = CreatePackage(path, name, extension == Module::kFileExtension, true);
+		auto package = GetPackageFromDescriptor<true>(path, name, extension == Module::kFileExtension);
 		if (!package.has_value())
 			continue;
 
@@ -104,7 +141,7 @@ void PackageManager::UpdatePackages() {
 	}
 }
 
-void PackageManager::SnapshotPackages(const fs::path& filepath, bool prettify) {
+void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) {
 	auto wizard = _wizard.lock();
 	if (!wizard)
 		return;
@@ -122,7 +159,7 @@ void PackageManager::SnapshotPackages(const fs::path& filepath, bool prettify) {
 
 		auto name = path.filename().replace_extension().string();
 
-		auto package = CreatePackage(path, name, extension == Module::kFileExtension, false);
+		auto package = GetPackageFromDescriptor<false>(path, name, extension == Module::kFileExtension);
 		if (!package.has_value())
 			continue;
 
@@ -153,39 +190,47 @@ void PackageManager::SnapshotPackages(const fs::path& filepath, bool prettify) {
 	PackageManifest manifest{ std::move(packages) };
 	std::string buffer;
 	glz::write_json(manifest, buffer);
-	if (prettify) glz::prettify(buffer);
-	FileSystem::WriteText(filepath, buffer);
+	FileSystem::WriteText(manifestFilePath, prettify ? glz::prettify(buffer) : buffer);
 
-	WZ_LOG_DEBUG("Snapshot '{}' created in {}ms", filepath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
+	WZ_LOG_DEBUG("Snapshot '{}' created in {}ms", manifestFilePath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
-std::optional<Package> PackageManager::CreatePackage(const fs::path& path, const std::string& name, bool module, bool update) {
+/*std::vector<Package> PackageManager::GetPackagesFromDescriptor(const fs::path& descriptorFilePath, bool isModule, bool isUpdate) {
 	// TODO: use template ?
-	if (module) {
-		auto json = FileSystem::ReadText(path);
+	auto name = descriptorFilePath.filename().replace_extension().string();
+	if (isModule) {
+		auto json = FileSystem::ReadText(descriptorFilePath);
 		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
 		if (!descriptor.has_value()) {
 			WZ_LOG_ERROR("Module descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
 			return {};
 		}
-		auto& url = update ? descriptor->updateURL : descriptor->downloadURL;
-		if (url.empty() || !url.starts_with("http://") || !url.starts_with("https://")) {
-			WZ_LOG_ERROR("Module descriptor: {} at '{}' has invalid {} URL: '{}'", name, path.string(), update ? "update" : "download", url);
+		auto& url = isUpdate ? descriptor->updateURL : descriptor->downloadURL;
+		if (!IsValidURL(url)) {
+			WZ_LOG_ERROR("Module descriptor: {} at '{}' has invalid {} URL: '{}'", name, descriptorFilePath.string(), isUpdate ? "update" : "download", url);
 			return  {};
 		}
-		return std::make_optional<Package>(name, url, descriptor->version, false, true);
+		return { Package{std::move(name), url, descriptor->version, false, true} };
 	} else {
-		auto json = FileSystem::ReadText(path);
+		auto json = FileSystem::ReadText(descriptorFilePath);
 		auto descriptor = glz::read_json<PluginDescriptor>(json);
 		if (!descriptor.has_value()) {
 			WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
 			return {};
 		}
-		auto& url = update ? descriptor->updateURL : descriptor->downloadURL;
-		if (url.empty() || !url.starts_with("http://") || !url.starts_with("https://")) {
-			WZ_LOG_ERROR("Plugin descriptor: {} at '{}' has invalid {} URL: '{}'", name, path.string(), update ? "update" : "download", url);
+		auto& url = isUpdate ? descriptor->updateURL : descriptor->downloadURL;
+		if (!IsValidURL(url)) {
+			WZ_LOG_ERROR("Plugin descriptor: {} at '{}' has invalid {} URL: '{}'", name, descriptorFilePath.string(), isUpdate ? "update" : "download", url);
 			return  {};
 		}
-		return std::make_optional<Package>(name, url, descriptor->version, false, false);
+		std::vector<Package> packages;
+		packages.reserve(descriptor->dependencies.size() + 1);
+		packages.emplace_back(std::move(name), url, descriptor->version, false, false);
+		for (const auto& dependency : descriptor->dependencies) {
+			if (!IsValidURL(dependency.downloadURL))
+				continue;
+			packages.emplace_back(dependency.name, dependency.downloadURL, dependency.requestedVersion.value_or(-1), false, false);
+		}
+		return packages;
 	}
-}
+}*/
