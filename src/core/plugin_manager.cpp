@@ -75,9 +75,15 @@ void PluginManager::ReadAllPluginsDescriptors() {
 		return;
 
 	bool strictMode = wizard->GetConfig().strictMode;
-	std::vector<fs::path> pluginsFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir / "plugins", true, Plugin::kFileExtension);
 
-	for (const auto& path : pluginsFilePaths) {
+	FileSystem::ReadDirectory(wizard->GetConfig().baseDir / "plugins", [&](const fs::path& path, int depth) {
+		// TODO: Add read from zip (zip should be on 1st depth)
+		if (depth != 1)
+			return;
+
+		if (path.extension().string() != Plugin::kFileExtension)
+			return;
+
 		auto name = path.filename().replace_extension().string();
 		WZ_LOG_INFO("Read plugin descriptor for '{}', from '{}'", name, path.string());
 
@@ -85,20 +91,20 @@ void PluginManager::ReadAllPluginsDescriptors() {
 		auto descriptor = glz::read_json<PluginDescriptor>(json);
 		if (!descriptor.has_value()) {
 			WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
-			continue;
+			return;
 		}
 
 		if (RemoveDuplicates(descriptor->dependencies)) {
 			if (strictMode) {
 				WZ_LOG_ERROR("Plugin descriptor: '{}' has multiple dependencies with same name!", name);
-				continue;
+				return;
 			}
 		}
 
 		if (RemoveDuplicates(descriptor->exportedMethods)) {
 			if (strictMode) {
 				WZ_LOG_ERROR("Plugin descriptor: '{}' has multiple method with same name!", name);
-				continue;
+				return;
 			}
 		}
 
@@ -128,7 +134,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 				}
 			}
 		}
-	}
+	});
 }
 
 void PluginManager::DiscoverAllModules() {
@@ -137,9 +143,14 @@ void PluginManager::DiscoverAllModules() {
 	if (!wizard)
 		return;
 
-	std::vector<fs::path> modulesFilePaths = FileSystem::GetFiles(wizard->GetConfig().baseDir / "modules", true, Module::kFileExtension);
+	FileSystem::ReadDirectory(wizard->GetConfig().baseDir / "modules", [&](const fs::path& path, int depth) {
+		// TODO: Add read of zip
+		if (depth != 1)
+			return;
 
-	for (const auto& path : modulesFilePaths) {
+		if (path.extension().string() != Module::kFileExtension)
+			return;
+
 		auto name = path.filename().replace_extension().string();
 		WZ_LOG_INFO("Read module descriptor for '{}', from '{}'", name, path.string());
 
@@ -147,7 +158,7 @@ void PluginManager::DiscoverAllModules() {
 		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
 		if (!descriptor.has_value()) {
 			WZ_LOG_ERROR("Module descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
-			continue;
+			return;
 		}
 
 		if (IsSupportsPlatform(descriptor->supportedPlatforms)) {
@@ -178,7 +189,7 @@ void PluginManager::DiscoverAllModules() {
 				}
 			}
 		}
-	}
+	});
 }
 
 void PluginManager::LoadRequiredLanguageModules() {
