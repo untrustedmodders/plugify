@@ -70,11 +70,26 @@ std::vector<fs::path> FileSystem::GetFiles(const fs::path& root, bool recursive,
 		};
 
 		if (recursive) {
-			iterate(fs::recursive_directory_iterator(root));
+			iterate(fs::recursive_directory_iterator(root, ec));
 		} else {
-			iterate(fs::directory_iterator(root));
+			iterate(fs::directory_iterator(root, ec));
 		}
 	}
 
 	return paths;
+}
+
+void FileSystem::ReadDirectory(const fs::path& directory, const PathHandler& handler, int depth) {
+	if (depth <= 0)
+		return;
+
+	std::error_code ec;
+	for (const auto& entry : fs::directory_iterator(directory, ec)) {
+		const auto& path = entry.path();
+		if (fs::is_directory(entry, ec)) {
+			ReadDirectory(path, handler, depth - 1);
+		} else if (fs::is_regular_file(entry, ec)) {
+			handler(path, depth);
+		}
+	}
 }

@@ -2,6 +2,7 @@
 
 namespace wizard {
 	using FileHandler = std::function<void(std::span<const uint8_t>)>;
+	using PathHandler = std::function<void(const fs::path&, int)>;
 
 	class FileSystem {
 	public:
@@ -59,5 +60,7 @@ namespace wizard {
 		 * @return The files found.
 		 */
 		static std::vector<fs::path> GetFiles(const fs::path& root, bool recursive = false, std::string_view ext = "");
+
+		static void ReadDirectory(const fs::path& directory, const PathHandler& handler, int depth = 2);
 	};
 }
