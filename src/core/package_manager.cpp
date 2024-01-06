@@ -70,34 +70,19 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath) {
 }
 
 template<bool Update>
-std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std::string& name, bool isModule) {
-	if (isModule) {
-		auto json = FileSystem::ReadText(path);
-		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
-		if (!descriptor.has_value()) {
-			WZ_LOG_ERROR("Module descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
-			return {};
-		}
-		auto& url = Update ? descriptor->updateURL : descriptor->downloadURL;
-		if (!IsValidURL(url)) {
-			WZ_LOG_ERROR("Module descriptor: {} at '{}' has invalid {} URL: '{}'", name, path.string(), Update ? "update" : "download", url);
-			return  {};
-		}
-		return std::make_optional<Package>(name, url, descriptor->version, true, true);
-	} else {
-		auto json = FileSystem::ReadText(path);
-		auto descriptor = glz::read_json<PluginDescriptor>(json);
-		if (!descriptor.has_value()) {
-			WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
-			return {};
-		}
-		auto& url = Update ? descriptor->updateURL : descriptor->downloadURL;
-		if (!IsValidURL(url)) {
-			WZ_LOG_ERROR("Plugin descriptor: {} at '{}' has invalid {} URL: '{}'", name, path.string(), Update ? "update" : "download", url);
-			return  {};
-		}
-		return std::make_optional<Package>(name, url, descriptor->version, true, false);
+std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
+	auto json = FileSystem::ReadText(path);
+	auto descriptor = glz::read_json<Descriptor>(json);
+	if (!descriptor.has_value()) {
+		WZ_LOG_ERROR("Package: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
+		return {};
 	}
+	auto& url = Update ? descriptor->updateURL : descriptor->downloadURL;
+	if (!IsValidURL(url)) {
+		WZ_LOG_ERROR("Package: {} at '{}' has invalid {} URL: '{}'", name, path.string(), Update ? "update" : "download", url);
+		return  {};
+	}
+	return std::make_optional<Package>(name, url, descriptor->version, true, false);
 }
 
 void PackageManager::UpdatePackages() {
@@ -115,13 +100,12 @@ void PackageManager::UpdatePackages() {
 			return;
 
 		auto extension = path.extension().string();
-		bool isModule = extension == Module::kFileExtension;
-		if (!isModule && extension != Plugin::kFileExtension)
+		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
 			return;
 
 		auto name = path.filename().replace_extension().string();
 
-		auto package = GetPackageFromDescriptor<true>(path, name, isModule);
+		auto package = GetPackageFromDescriptor<true>(path, name);
 		if (!package.has_value())
 			return;
 
@@ -158,13 +142,12 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 			return;
 
 		auto extension = path.extension().string();
-		bool isModule = extension == Module::kFileExtension;
-		if (!isModule && extension != Plugin::kFileExtension)
+		if (extension != Module::kFileExtension && extension != Plugin::kFileExtension)
 			return;
 
 		auto name = path.filename().replace_extension().string();
 
-		auto package = GetPackageFromDescriptor<false>(path, name, isModule);
+		auto package = GetPackageFromDescriptor<false>(path, name);
 		if (!package.has_value())
 			return;
 

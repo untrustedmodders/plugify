@@ -4,7 +4,9 @@
 #include <glaze/core/macros.hpp>
 
 #include <wizard/method.h>
+#include <wizard/descriptor.h>
 #include <wizard/plugin_descriptor.h>
+#include <wizard/language_module_descriptor.h>
 #include <wizard/config.h>
 #include <core/package.h>
 
@@ -45,7 +47,8 @@ struct glz::meta<wizard::Severity> {
     );
 };
 
-GLZ_META(wizard::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, assemblyPath, supportedPlatforms, languageModule, dependencies, exportedMethods);
+GLZ_META(wizard::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, assemblyPath, languageModule, dependencies, exportedMethods);
+GLZ_META(wizard::LanguageModuleDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, language, forceLoad);
 GLZ_META(wizard::Config, baseDir, logSeverity, strictMode, packageVerification, packageVerifyUrl);
 GLZ_META(wizard::Package, name, url, version, extractArchive, languageModule);
 
@@ -53,6 +56,32 @@ template <>
 struct glz::meta<wizard::Property> {
 	using T = wizard::Property;
 	static constexpr auto value = object("type", &T::type, "name", skip{}, "paramTypes", skip{}, "retType", skip{});
+};
+
+template <>
+struct glz::meta<wizard::Descriptor> {
+	using T = wizard::Descriptor;
+	static constexpr auto value = object(
+		"fileVersion", &T::fileVersion,
+		"version", &T::version,
+		"versionName", &T::versionName,
+		"friendlyName", &T::friendlyName,
+		"description", &T::description,
+		"createdBy", &T::createdBy,
+		"createdByURL", &T::createdByURL,
+		"docsURL", &T::docsURL,
+		"downloadURL", &T::downloadURL,
+		"updateURL", &T::updateURL,
+		"supportedPlatforms", &T::supportedPlatforms,
+
+		"assemblyPath", skip{},
+		"languageModule", skip{},
+		"dependencies", skip{},
+		"exportedMethods", skip{},
+
+		"language", skip{},
+		"forceLoad", skip{}
+	);
 };
 
 namespace glz::detail {
