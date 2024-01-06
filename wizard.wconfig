@@ -1,5 +1,5 @@
 {
-    "baseDir": "docs",
+    "baseDir": "res",
     "logSeverity": "debug",
     "strictMode": false,
     "packageVerification": false,

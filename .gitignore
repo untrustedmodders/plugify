@@ -8,3 +8,6 @@ CMakeUserPresets.json
 
 # Build results
 /build
+
+# Resource
+/res
