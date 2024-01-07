@@ -1,9 +1,6 @@
 [submodule "external/asmjit"]
 	path = external/asmjit
 	url = https://github.com/asmjit/asmjit
-[submodule "external/physfs"]
-	path = external/physfs
-	url = https://github.com/icculus/physfs
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt
