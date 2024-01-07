@@ -67,7 +67,7 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath, bool rein
 		float lastRatio = 0;
 		while (!stopFlag) {
 			const auto& state = downloader.GetState();
-			if (lastRatio != state.ratio && state.state >= PackageInstallState::Done) {
+			if (lastRatio != state.ratio && state.state < PackageInstallState::Done) {
 				lastRatio = state.ratio;
 				WZ_LOG_INFO("{}", state.GetProgress(60));
 			}
@@ -129,7 +129,7 @@ void PackageManager::UpdatePackages() {
 		float lastRatio = 0;
 		while (!stopFlag) {
 			const auto& state = downloader.GetState();
-			if (lastRatio != state.ratio && state.state >= PackageInstallState::Done) {
+			if (lastRatio != state.ratio && state.state < PackageInstallState::Done) {
 				lastRatio = state.ratio;
 				WZ_LOG_INFO("{}", state.GetProgress(60));
 			}

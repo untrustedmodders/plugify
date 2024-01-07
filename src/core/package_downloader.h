@@ -20,10 +20,10 @@ namespace wizard {
 	enum class PackageError : uint8_t {
 		None,
 		InvalidURL,
-		FailedMovingArchive,
 		FailedReadingArchive,
 		FailedCreatingDirectory,
 		FailedWritingToDisk,
+		PackageMissingDescriptor,
 		PackageFetchingFailed,
 		PackageAuthorizationFailed,
 		PackageCorrupted,
@@ -101,8 +101,7 @@ namespace wizard {
 		 */
 		bool IsPackageLegit(const Package& package, const fs::path& packagePath);
 
-		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath);
-		bool MovePackage(const fs::path& packagePath, const fs::path& movePath);
+		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath, bool isModule);
 
 	private:
 		struct VerifiedPackageVersion {
