@@ -83,7 +83,7 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath, bool rein
 		}
 
 		if (auto tempPath = downloader.Download(package)) {
-			auto destinationPath = tempPath->parent_path() / name;
+			/*auto destinationPath = tempPath->parent_path() / name;
 			std::error_code ec;
 			if (fs::exists(destinationPath, ec) ) {
 				if (fs::is_directory(destinationPath, ec))
@@ -91,7 +91,9 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath, bool rein
 			}
 			if (!ec)
 				fs::rename(*tempPath, destinationPath, ec);
-
+			if (!ec) {
+				WZ_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", name, tempPath->string(), destinationPath.string(), ec.message());
+			}*/
 		} else {
 			WZ_LOG_ERROR("Package: '{}' has downloading error: {}", name, downloader.GetState().GetError());
 		}
@@ -110,7 +112,7 @@ std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std:
 	}
 	auto& url = U ? descriptor->updateURL : descriptor->downloadURL;
 	if (!IsValidURL(url)) {
-		WZ_LOG_ERROR("Package: {} at '{}' has invalid {} URL: '{}'", name, path.string(), U ? "update" : "download", url);
+		WZ_LOG_ERROR("Package: '{}' at '{}' has invalid {} URL: '{}'", name, path.string(), U ? "update" : "download", url);
 		return  {};
 	}
 	return std::make_optional<Package>(name, std::move(url), descriptor->version, isModule);
@@ -155,22 +157,32 @@ void PackageManager::UpdatePackages() {
 
 		if (auto newPackage = downloader.Update(*package)) {
 			if (auto tempPath = downloader.Download(*newPackage)) {
-				auto destinationPath = tempPath->parent_path() / package->name;
+				auto destinationPath = tempPath->parent_path() / newPackage->name;
 				std::error_code ec;
 				if (fs::exists(destinationPath, ec) ) {
 					if (fs::is_directory(destinationPath, ec))
 						fs::remove_all(destinationPath, ec);
 				}
+				if (newPackage->name != package->name) {
+					auto oldPath = path.parent_path();
+					if (fs::exists(oldPath, ec) ) {
+						if (fs::is_directory(oldPath, ec))
+							fs::remove_all(oldPath, ec);
+					}
+				}
 				if (!ec)
 					fs::rename(*tempPath, destinationPath, ec);
-
-
+				if (!ec) {
+					WZ_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", newPackage->name, tempPath->string(), destinationPath.string(), ec.message());
+				}
 			} else {
 				WZ_LOG_ERROR("Package: '{}' has downloading error: {}", newPackage->name, downloader.GetState().GetError());
 			}
 		}
 
 	}, 3);
+
+
 
 	stopFlag = true;
 }

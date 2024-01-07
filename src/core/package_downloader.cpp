@@ -32,7 +32,7 @@ void PackageDownloader::FetchPackagesListFromAPI() {
 		return;
 
 	if (!_config.packageVerifyUrl.empty()) {
-		WZ_LOG_INFO("Not found verified packages URL in config: {}", _config.packageVerifyUrl);
+		WZ_LOG_INFO("Found custom verified packages URL in config: '{}'", _config.packageVerifyUrl);
 	} else {
 		WZ_LOG_INFO("Custom verified packages URL not found in config, using default URL");
 		_config.packageVerifyUrl = kDefaultPackageList;
@@ -92,7 +92,7 @@ std::optional<Package> PackageDownloader::Update(const Package& package) {
 	_packageState.error = PackageError::None;
 
 	if (!IsValidURL(package.url)) {
-		WZ_LOG_ERROR("Package: {} (v{}) has invalid update URL: '{}'", package.name, package.version, package.url);
+		WZ_LOG_ERROR("Package: '{}' (v{}) has invalid update URL: '{}'", package.name, package.version, package.url);
 		_packageState.error = PackageError::InvalidURL;
 		return {};
 	}
@@ -113,9 +113,9 @@ std::optional<Package> PackageDownloader::Update(const Package& package) {
 	CURLcode result = curl_easy_perform(handle.get());
 
 	if (result == CURLcode::CURLE_OK) {
-		WZ_LOG_INFO("Package {}(v{}) successfully fetched.", package.name, package.version);
+		WZ_LOG_INFO("Package '{}' (v{}) successfully fetched.", package.name, package.version);
 	} else {
-		WZ_LOG_ERROR("Fetching package {}(v{}) failed: {}", package.name, package.version, curl_easy_strerror(result));
+		WZ_LOG_ERROR("Fetching package '{}' (v{}) failed: {}", package.name, package.version, curl_easy_strerror(result));
 		return {};
 	}
 
@@ -141,7 +141,7 @@ std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
 	_packageState.error = PackageError::None;
 
 	if (!IsValidURL(package.url)) {
-		WZ_LOG_ERROR("Package: {} (v{}) has invalid download URL : '{}'", package.name, package.version, package.url);
+		WZ_LOG_ERROR("Package: '{}' (v{}) has invalid download URL : '{}'", package.name, package.version, package.url);
 		_packageState.error = PackageError::InvalidURL;
 		return {};
 	}
@@ -179,11 +179,11 @@ std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
 	}
 
 	if (ExtractPackage(archiveLocation, finalLocation, package.languageModule)) {
-		WZ_LOG_INFO("Done downloading {}", package.name);
+		WZ_LOG_INFO("Done downloading '{}'", package.name);
 		_packageState.state = PackageInstallState::Done;
 		return { std::move(finalLocation) };
 	} else {
-		WZ_LOG_INFO("Failed downloading {}", package.name);
+		WZ_LOG_INFO("Failed downloading '{}'", package.name);
 		_packageState.state = PackageInstallState::Failed;
 		return {};
 	}
@@ -234,7 +234,7 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 	}
 
 	if (!foundDescriptor) {
-		WZ_LOG_ERROR("Package descriptor ({}) missing in zip located at '{}'", extension, packagePath.string());
+		WZ_LOG_ERROR("Package descriptor *{} missing inside zip located at '{}'", extension, packagePath.string());
 		_packageState.error = PackageError::PackageMissingDescriptor;
 		return false;
 	}
@@ -245,7 +245,7 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 		std::vector<char> fileData(fileStat.m_uncomp_size);
 
 		if (!mz_zip_reader_extract_to_mem(zipArchive.get(), i, fileData.data(), fileData.size(), 0)) {
-			WZ_LOG_ERROR("Failed extracting file: {}", fileStat.m_filename);
+			WZ_LOG_ERROR("Failed extracting file: '{}'", fileStat.m_filename);
 			_packageState.error = PackageError::NoMemoryAvailable;
 			return false;
 		}
@@ -266,7 +266,7 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 		if (outputFile.is_open()) {
 			outputFile.write(fileData.data(), static_cast<std::streamsize>(fileData.size()));
 		} else {
-			WZ_LOG_ERROR("Failed creating destination file: {}", fileStat.m_filename);
+			WZ_LOG_ERROR("Failed creating destination file: '{}'", fileStat.m_filename);
 			_packageState.error = PackageError::FailedWritingToDisk;
 			return false;
 		}

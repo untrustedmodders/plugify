@@ -17,7 +17,7 @@ PluginManager::PluginManager(std::weak_ptr<IWizard> wizard) : IPluginManager(*th
 	LoadRequiredLanguageModules();
 	LoadAndStartAvailablePlugins();
 
-	WZ_LOG_DEBUG("PluginManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
+	zipArchive.get()DEBUG("PluginManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
 PluginManager::~PluginManager() {
@@ -156,7 +156,7 @@ void PluginManager::DiscoverAllModules() {
 		auto json = FileSystem::ReadText(path);
 		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
 		if (!descriptor.has_value()) {
-			WZ_LOG_ERROR("Module descriptor: {} has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
+			WZ_LOG_ERROR("Module descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
 			return;
 		}
 
