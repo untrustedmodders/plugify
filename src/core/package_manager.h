@@ -11,13 +11,7 @@ namespace wizard {
 		~PackageManager();
 
 		void UpdatePackages();
-		void InstallPackages(const fs::path& manifestFilePath);
+		void InstallPackages(const fs::path& manifestFilePath, bool reinstall = true);
 		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify);
-
-	private:
-		using PackageMap = std::unordered_map<std::string, Package>;
-
-	private:
-		PackageMap _allPackages;
 	};
 }

@@ -64,4 +64,14 @@ namespace wizard {
 
 		static bool IsArchive(std::string_view extension);
 	};
+
+	struct ScopedVFS {
+		ScopedVFS(fs::path filepath, const fs::path& mount) : path{std::move(filepath)} {
+			VirtualFileSystem::Mount(path, mount);
+		}
+		~ScopedVFS() {
+			VirtualFileSystem::Unmount(path);
+		}
+		fs::path path;
+	};
 }
