@@ -5,7 +5,6 @@
 
 #include <wizard/wizard.h>
 #include <utils/file_system.h>
-#include <utils/virtual_file_system.h>
 #include <utils/json.h>
 #include <thread>
 
@@ -42,7 +41,6 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath, bool rein
 
 	if (!reinstall) {
 		FileSystem::ReadDirectory(wizard->GetConfig().baseDir, [&](const fs::path& path, int depth) {
-			// TODO: Add read of zip
 			if (depth != 1)
 				return;
 
@@ -78,8 +76,6 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath, bool rein
 	for (const auto& [_, package] : manifest->content) {
 		if (auto tempPath = downloader.Download(package)) {
 			auto destinationPath = tempPath->parent_path() / package.name;
-			if (!package.extractArchive)
-				destinationPath += tempPath->extension();
 			std::error_code ec;
 			if (fs::exists(destinationPath, ec) ) {
 				if (fs::is_directory(destinationPath, ec))
@@ -110,7 +106,7 @@ std::optional<Package> GetPackageFromDescriptor(const fs::path& path, const std:
 		WZ_LOG_ERROR("Package: {} at '{}' has invalid {} URL: '{}'", name, path.string(), U ? "update" : "download", url);
 		return  {};
 	}
-	return std::make_optional<Package>(name, std::move(url), descriptor->version, true, isModule);
+	return std::make_optional<Package>(name, std::move(url), descriptor->version, isModule);
 }
 
 void PackageManager::UpdatePackages() {
@@ -135,12 +131,24 @@ void PackageManager::UpdatePackages() {
 
 	printer.detach();
 
-	auto updatePackage = [&downloader](const Package& package) {
-		if (auto newPackage = downloader.Update(package)) {
+	FileSystem::ReadDirectory(wizard->GetConfig().baseDir, [&](const fs::path& path, int depth) {
+		if (depth != 1)
+			return;
+
+		auto extension = path.extension().string();
+		bool isModule = extension == Module::kFileExtension;
+		if (!isModule && extension != Plugin::kFileExtension)
+			return;
+
+		auto name = path.filename().replace_extension().string();
+
+		auto package = GetPackageFromDescriptor<FileSystem, true>(path, name, isModule);
+		if (!package.has_value())
+			return;
+
+		if (auto newPackage = downloader.Update(*package)) {
 			if (auto tempPath = downloader.Download(*newPackage)) {
-				auto destinationPath = tempPath->parent_path() / package.name;
-				if (!package.extractArchive)
-					destinationPath += tempPath->extension();
+				auto destinationPath = tempPath->parent_path() / package->name;
 				std::error_code ec;
 				if (fs::exists(destinationPath, ec) ) {
 					if (fs::is_directory(destinationPath, ec))
@@ -154,49 +162,8 @@ void PackageManager::UpdatePackages() {
 				WZ_LOG_ERROR("Package: '{}' has downloading error: {}", newPackage->name, downloader.GetState().GetError());
 			}
 		}
-	};
-
-	// TODO: Finish zip
-	//std::vector<std::unique_ptr<ScopedVFS>> files;
-
-	//auto mount = wizard->GetConfig().baseDir / "vfs";
-	FileSystem::ReadDirectory(wizard->GetConfig().baseDir, [&](const fs::path& path, int depth) {
-		/*if (depth == 2) {
-			if (VirtualFileSystem::IsArchive(extension))
-				files.push_back(std::make_unique<ScopedVFS>(path, mount / path.filename().replace_extension()));
-			return;
-		}
-		// TODO: Add read of zip
-		else */
-		if (depth != 1)
-			return;
-
-		auto extension = path.extension().string();
-		bool isModule = extension == Module::kFileExtension;
-		if (!isModule && extension != Plugin::kFileExtension)
-			return;
-
-		auto name = path.filename().replace_extension().string();
-
-		auto package = GetPackageFromDescriptor<FileSystem, true>(path, name, isModule);
-		if (package.has_value())
-			updatePackage(*package);
 
 	}, 3);
-
-	/*VirtualFileSystem::ReadDirectory("", [&](const fs::path& path, int depth) {
-		auto extension = path.extension().string();
-		bool isModule = extension == Module::kFileExtension;
-		if (!isModule && extension != Plugin::kFileExtension)
-			return;
-
-		auto name = path.filename().replace_extension().string();
-
-		auto package = GetPackageFromDescriptor<VirtualFileSystem, true>(path, name, isModule);
-		if (package.has_value())
-			updatePackage(*package);
-
-	}, 4);*/
 
 	stopFlag = true;
 }
@@ -211,7 +178,6 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	std::unordered_map<std::string, Package> packages;
 
 	FileSystem::ReadDirectory(wizard->GetConfig().baseDir, [&](const fs::path& path, int depth) {
-		// TODO: Add read of zip
 		if (depth != 1)
 			return;
 

@@ -1,5 +1,5 @@
 {
-    "baseDir": "res",
+    "baseDir": "",
     "logSeverity": "debug",
     "strictMode": false,
     "packageVerification": false,

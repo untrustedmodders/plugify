@@ -25,12 +25,10 @@ option(WIZARD_BUILD_TESTS "Build all tests" ON)
 option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" ON)
 option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared library" ON)
 option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
-option(WIZARD_BUILD_SHARED_PHYSFS "Build physfs as shared library" OFF)
 option(WIZARD_BUILD_SHARED_CURL "Build curl as shared library" OFF)
 
 option(WIZARD_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
 option(WIZARD_USE_EXTERNAL_GLAZE "Use external glaze library" OFF)
-option(WIZARD_USE_EXTERNAL_PHYSFS "Use external physfs library" OFF)
 option(WIZARD_USE_EXTERNAL_CURL "Use external curl library" ON)
 option(WIZARD_USE_EXTERNAL_FMT "Use external fmt library" OFF)
 
@@ -48,22 +46,6 @@ endif()
 # Glaze
 if(NOT WIZARD_USE_EXTERNAL_GLAZE)
     add_subdirectory(external/glaze)
-endif()
-
-# ------------------------------------------------------------------------------
-# Physfs
-if(NOT WIZARD_USE_EXTERNAL_PHYSFS)
-    if(WIZARD_BUILD_SHARED_PHYSFS)
-        set(PHYSFS_BUILD_SHARED ON CACHE BOOL "")
-        set(PHYSFS_BUILD_STATIC OFF CACHE BOOL "")
-    else()
-        set(PHYSFS_BUILD_SHARED OFF CACHE BOOL "")
-        set(PHYSFS_BUILD_STATIC ON CACHE BOOL "")
-    endif()
-    set(PHYSFS_BUILD_TEST OFF CACHE BOOL "")
-    set(PHYSFS_BUILD_DOCS OFF CACHE BOOL "")
-
-    add_subdirectory(external/physfs)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -139,29 +121,6 @@ else()
             target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion)
         endif()
         target_compile_options(asmjit PUBLIC -Wno-deprecated-declarations -Wno-error -Wno-pedantic -Wno-shadow)
-    endif()
-endif()
-
-# ------------------------------------------------------------------------------
-# Physfs
-if(WIZARD_USE_EXTERNAL_PHYSFS)
-	find_package(physfs REQUIRED)
-	if(WIZARD_BUILD_SHARED_PHYSFS)
-		target_link_libraries(${PROJECT_NAME} PRIVATE physfs::physfs)
-	else()
-		target_link_libraries(${PROJECT_NAME} PRIVATE physfs::physfs-static)
-	endif()
-else()
-    if(WIZARD_BUILD_SHARED_PHYSFS)
-        target_link_libraries(${PROJECT_NAME} PRIVATE physfs)
-    else()
-        target_link_libraries(${PROJECT_NAME} PRIVATE physfs-static)
-
-        include(CheckCCompilerFlag)
-        check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
-        if(COMPILER_SUPPORTS_FPIC)
-            target_compile_options(physfs-static PRIVATE -fPIC)
-        endif()
     endif()
 endif()
 

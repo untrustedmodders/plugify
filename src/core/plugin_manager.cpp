@@ -144,7 +144,6 @@ void PluginManager::DiscoverAllModules() {
 		return;
 
 	FileSystem::ReadDirectory(wizard->GetConfig().baseDir / "modules", [&](const fs::path& path, int depth) {
-		// TODO: Add read of zip
 		if (depth != 1)
 			return;
 
