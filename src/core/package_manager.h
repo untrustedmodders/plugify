@@ -11,7 +11,7 @@ namespace wizard {
 		~PackageManager();
 
 		void UpdatePackages();
-		void InstallPackages(const fs::path& manifestFilePath, bool reinstall = true);
+		void InstallPackages(const fs::path& manifestFilePath, bool reinstall);
 		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify);
 	};
 }

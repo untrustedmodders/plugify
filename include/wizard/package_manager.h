@@ -14,7 +14,7 @@ namespace wizard {
 
 	public:
 		void UpdatePackages();
-		void InstallPackages(const std::filesystem::path& manifestFilePath);
+		void InstallPackages(const std::filesystem::path& manifestFilePath, bool reinstall);
 		void SnapshotPackages(const std::filesystem::path& manifestFilePath, bool prettify);
 
 	private:

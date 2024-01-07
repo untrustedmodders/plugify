@@ -49,11 +49,14 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath, bool rein
 			if (!isModule && extension != Plugin::kFileExtension)
 				return;
 
-			auto name = path.filename().replace_extension().string();
-
-			manifest->content.erase(name);
+			manifest->content.erase(path.filename().replace_extension().string());
 
 		}, 3);
+	}
+
+	if (manifest->content.empty()) {
+		WZ_LOG_WARNING("No packages to install was found! If you need to reinstall all installed packages, use the reinstall flag!");
+		return;
 	}
 
 	PackageDownloader downloader{ wizard->GetConfig() };
@@ -64,7 +67,7 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath, bool rein
 		float lastRatio = 0;
 		while (!stopFlag) {
 			const auto& state = downloader.GetState();
-			if (lastRatio != state.ratio) {
+			if (lastRatio != state.ratio && state.state >= PackageInstallState::Done) {
 				lastRatio = state.ratio;
 				WZ_LOG_INFO("{}", state.GetProgress(60));
 			}
@@ -73,20 +76,24 @@ void PackageManager::InstallPackages(const fs::path& manifestFilePath, bool rein
 
 	printer.detach();
 
-	for (const auto& [_, package] : manifest->content) {
+	for (const auto& [name, package] : manifest->content) {
+		if (package.name != name) {
+			WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", path.string(), name, package.name);
+			continue;
+		}
+
 		if (auto tempPath = downloader.Download(package)) {
-			auto destinationPath = tempPath->parent_path() / package.name;
+			auto destinationPath = tempPath->parent_path() / name;
 			std::error_code ec;
 			if (fs::exists(destinationPath, ec) ) {
 				if (fs::is_directory(destinationPath, ec))
 					fs::remove_all(destinationPath, ec);
-				else if (fs::is_regular_file(destinationPath, ec))
-					fs::remove(destinationPath, ec);
 			}
 			if (!ec)
 				fs::rename(*tempPath, destinationPath, ec);
+
 		} else {
-			WZ_LOG_ERROR("Package: '{}' has downloading error: {}", package.name, downloader.GetState().GetError());
+			WZ_LOG_ERROR("Package: '{}' has downloading error: {}", name, downloader.GetState().GetError());
 		}
 	}
 
@@ -122,7 +129,7 @@ void PackageManager::UpdatePackages() {
 		float lastRatio = 0;
 		while (!stopFlag) {
 			const auto& state = downloader.GetState();
-			if (lastRatio != state.ratio) {
+			if (lastRatio != state.ratio && state.state >= PackageInstallState::Done) {
 				lastRatio = state.ratio;
 				WZ_LOG_INFO("{}", state.GetProgress(60));
 			}
@@ -153,11 +160,11 @@ void PackageManager::UpdatePackages() {
 				if (fs::exists(destinationPath, ec) ) {
 					if (fs::is_directory(destinationPath, ec))
 						fs::remove_all(destinationPath, ec);
-					else if (fs::is_regular_file(destinationPath, ec))
-						fs::remove(destinationPath, ec);
 				}
 				if (!ec)
 					fs::rename(*tempPath, destinationPath, ec);
+
+
 			} else {
 				WZ_LOG_ERROR("Package: '{}' has downloading error: {}", newPackage->name, downloader.GetState().GetError());
 			}

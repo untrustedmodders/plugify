@@ -121,9 +121,9 @@ int main(int argc, const char** argv) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
 						packageManager->UpdatePackages();
 					}
-				} else if (args[1] == "install") {
+				} else if (args[1] == "install" && args.size() > 2) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->InstallPackages(args[2]);
+						packageManager->InstallPackages(args[2], args.size() > 3);
 					}
 				}
             }

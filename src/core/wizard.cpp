@@ -4,7 +4,6 @@
 #include <wizard/version.h>
 #include <wizard/wizard.h>
 #include <utils/file_system.h>
-#include <utils/virtual_file_system.h>
 #include <utils/json.h>
 
 namespace wizard {
@@ -31,11 +30,9 @@ namespace wizard {
 
 			_config = std::move(*config);
 
-			VirtualFileSystem::Initialize(args[0]);
-
 			_provider = std::make_shared<WizardProvider>(weak_from_this());
 			_packageManager = std::make_shared<PackageManager>(weak_from_this());
-			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
+			//_pluginManager = std::make_shared<PluginManager>(weak_from_this());
 
 			_inited = true;
 
@@ -61,8 +58,6 @@ namespace wizard {
 				WZ_LOG_ERROR("Lack of owning for plugin manager! Will not released on wizard terminate");
 			}
 			_pluginManager.reset();
-
-			VirtualFileSystem::Shutdown();
 
 			_inited = false;
 
