@@ -9,30 +9,37 @@ namespace wizard {
 
 	enum class PackageInstallState : uint8_t {
 		None,
-
-		// Normal installation process
+		Updating,
 		Downloading,
 		Checksuming,
 		Extracting,
-		Done, // Everything went fine, package can be used in-core
+		Done,
+		Failed,
+	};
 
-		Failed, // Generic error message, should be avoided
+	enum class PackageError : uint8_t {
+		None,
+		InvalidURL,
+		FailedMovingArchive,
 		FailedReadingArchive,
 		FailedCreatingDirectory,
 		FailedWritingToDisk,
 		PackageFetchingFailed,
-		PackageCorrupted, // Downloaded archive checksum does not match verified hash
+		PackageAuthorizationFailed,
+		PackageCorrupted,
 		NoMemoryAvailable,
-		NotFound, // Package is not currently being auto-downloaded
+		NotFound,
 	};
 
 	struct PackageState {
-		PackageInstallState state{ PackageInstallState::None };
 		size_t progress{};
 		size_t total{};
 		float ratio{};
+		PackageInstallState state{ PackageInstallState::None };
+		PackageError error{ PackageError::None };
 
-		std::string ToString(int barWidth = 60) const;
+		std::string_view GetError() const;
+		std::string GetProgress(int barWidth = 60) const;
 	};
 
 	class PackageDownloader {
@@ -95,7 +102,7 @@ namespace wizard {
 		bool IsPackageLegit(const Package& package, const fs::path& packagePath);
 
 		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath);
-		static bool MovePackage(const fs::path& packagePath, const fs::path& movePath);
+		bool MovePackage(const fs::path& packagePath, const fs::path& movePath);
 
 	private:
 		struct VerifiedPackageVersion {

@@ -66,11 +66,13 @@ void PackageDownloader::FetchPackagesListFromAPI() {
 
 	_packages = std::move(*packages);
 
-	WZ_LOG_INFO("Done loading verified packages list.");
-
-	// No verified packages found, disable then ?
-	if (_packages.verified.empty())
+	// No verified packages found, disable then
+	if (_packages.verified.empty()) {
+		WZ_LOG_INFO("Empty verification packages list, disabling...");
 		_config.packageVerification = false;
+	} else {
+		WZ_LOG_INFO("Done loading verified packages list.");
+	}
 }
 
 bool PackageDownloader::IsPackageAuthorized(const Package& package) {
@@ -85,10 +87,15 @@ bool PackageDownloader::IsPackageAuthorized(const Package& package) {
 }
 
 std::optional<Package> PackageDownloader::Update(const Package& package) {
+	_packageState.error = PackageError::None;
+
 	if (!IsValidURL(package.url)) {
 		WZ_LOG_ERROR("Package: {} (v{}) has invalid update URL: '{}'", package.name, package.version, package.url);
+		_packageState.error = PackageError::InvalidURL;
 		return {};
 	}
+
+	_packageState.state = PackageInstallState::Updating;
 
 	std::string json;
 
@@ -129,20 +136,24 @@ std::optional<Package> PackageDownloader::Update(const Package& package) {
 }
 
 std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
+	_packageState.error = PackageError::None;
+
 	if (!IsValidURL(package.url)) {
 		WZ_LOG_ERROR("Package: {} (v{}) has invalid download URL : '{}'", package.name, package.version, package.url);
+		_packageState.error = PackageError::InvalidURL;
 		return {};
 	}
 
 	if (!IsPackageAuthorized(package)) {
 		WZ_LOG_WARNING("Tried to download a package that is not verified, aborting");
+		_packageState.error = PackageError::PackageAuthorizationFailed;
 		return {};
 	}
 
 	auto fetchingResult = FetchPackageFromURL(package);
 	if (!fetchingResult.has_value()) {
 		WZ_LOG_ERROR("Something went wrong while fetching archive, aborting");
-		_packageState.state = PackageInstallState::PackageFetchingFailed;
+		_packageState.error = PackageError::PackageFetchingFailed;
 		return {};
 	}
 
@@ -150,7 +161,7 @@ std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
 	
 	if (!IsPackageLegit(package, archiveLocation)) {
 		WZ_LOG_WARNING("Archive hash does not match expected checksum, aborting");
-		_packageState.state = PackageInstallState::PackageCorrupted;
+		_packageState.error = PackageError::PackageCorrupted;
 		return {};
 	}
 
@@ -160,15 +171,9 @@ std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
 
 	std::error_code ec;
 	if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
-		if (!fs::create_directory(finalLocation, ec)) {
+		if (!fs::create_directories(finalLocation, ec)) {
 			WZ_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
-			_packageState.state = PackageInstallState::FailedCreatingDirectory;
-			return {};
-		}
-		fs::permissions(finalLocation, fs::perms::owner_all | fs::perms::group_read | fs::perms::group_exec | fs::perms::others_read | fs::perms::others_exec, ec);
-		if (ec) {
-			WZ_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
-			_packageState.state = PackageInstallState::FailedCreatingDirectory;
+			_packageState.error = PackageError::FailedCreatingDirectory;
 			return {};
 		}
 	}
@@ -196,15 +201,18 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 	std::ifstream zipFile{packagePath, std::ios::binary};
 	if (!zipFile.is_open()) {
 		WZ_LOG_ERROR("Cannot open archive located at '{}'", packagePath.string());
-		_packageState.state = PackageInstallState::FailedReadingArchive;
+		_packageState.error = PackageError::FailedReadingArchive;
 		return false;
 	}
+
+	WZ_LOG_INFO("Start extracting....");
 
 	_packageState.state = PackageInstallState::Extracting;
 
 	std::vector<char> zipData{(std::istreambuf_iterator<char>(zipFile)), std::istreambuf_iterator<char>()};
 
 	mz_zip_archive zipArchive;
+	memset(&zipArchive, 0, sizeof(zipArchive));
 	mz_zip_reader_init_mem(&zipArchive, zipData.data(), zipData.size(), 0);
 
 	_packageState.total = zipArchive.m_archive_size;
@@ -216,7 +224,7 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 		mz_zip_archive_file_stat fileStat;
 		if (!mz_zip_reader_file_stat(&zipArchive, i, &fileStat)) {
 			WZ_LOG_ERROR("Error getting file stat: {} in zip located at '{}'", i, packagePath.string());
-			_packageState.state = PackageInstallState::FailedReadingArchive;
+			_packageState.error = PackageError::FailedReadingArchive;
 			break;
 		}
 
@@ -224,26 +232,38 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 
 		if (!mz_zip_reader_extract_to_mem(&zipArchive, i, fileData.data(), fileData.size(), 0)) {
 			WZ_LOG_ERROR("Failed extracting file: {}", fileStat.m_filename);
-			_packageState.state = PackageInstallState::NoMemoryAvailable;
+			_packageState.error = PackageError::NoMemoryAvailable;
 			break;
 		}
 
-		std::ofstream outputFile{extractPath / fileStat.m_filename, std::ios::binary};
+		fs::path finalPath = extractPath / fileStat.m_filename;
+		fs::path finalLocation = finalPath.parent_path();
+
+		std::error_code ec;
+		if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
+			if (!fs::create_directories(finalLocation, ec)) {
+				WZ_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
+				_packageState.error = PackageError::FailedCreatingDirectory;
+				break;
+			}
+		}
+
+		std::ofstream outputFile{finalPath, std::ios::binary};
 		if (outputFile.is_open()) {
 			outputFile.write(fileData.data(), static_cast<std::streamsize>(fileData.size()));
 		} else {
 			WZ_LOG_ERROR("Failed creating destination file: {}", fileStat.m_filename);
-			_packageState.state = PackageInstallState::FailedWritingToDisk;
+			_packageState.error = PackageError::FailedWritingToDisk;
 			break;
 		}
 
-		_packageState.progress += fileData.size();
+		_packageState.progress += fileStat.m_comp_size;
 		_packageState.ratio = std::roundf(static_cast<float>(_packageState.progress) / static_cast<float>(_packageState.total) * 100.0f);
 	}
 
 	mz_zip_reader_end(&zipArchive);
 
-	return _packageState.state == PackageInstallState::Extracting;
+	return _packageState.error != PackageError::None;
 }
 
 size_t WriteToStream(void* contents, size_t size, size_t count, std::ostream* stream) {
@@ -275,9 +295,11 @@ std::optional<PackageDownloader::FetchResult> PackageDownloader::FetchPackageFro
 	std::ofstream file{downloadPath, std::ios::binary};
 	if (!file.is_open()) {
 		WZ_LOG_ERROR("Failed creating destination file: {}", downloadPath.string());
-		_packageState.state = PackageInstallState::FailedWritingToDisk;
+		_packageState.error = PackageError::FailedWritingToDisk;
 		return {};
 	}
+
+	WZ_LOG_INFO("Start downloading....");
 
 	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
 	std::unique_ptr<CURL, decltype(curl_close)> handle{curl_easy_init(), curl_close};
@@ -310,7 +332,7 @@ bool PackageDownloader::IsPackageLegit(const Package& package, const fs::path& p
 	std::ifstream file{packagePath, std::ios::binary};
 	if (!file.is_open()) {
 		WZ_LOG_ERROR("Unable to open archive: '{}'", packagePath.string());
-		_packageState.state = PackageInstallState::FailedReadingArchive;
+		_packageState.error = PackageError::FailedReadingArchive;
 		return false;
 	}
 
@@ -325,15 +347,19 @@ bool PackageDownloader::IsPackageLegit(const Package& package, const fs::path& p
 
 	bool equal = expectedHash == hash;
 	if (!equal)
-		_packageState.state = PackageInstallState::PackageCorrupted;
+		_packageState.error = PackageError::PackageCorrupted;
 	return equal;
 }
 
 bool PackageDownloader::MovePackage(const fs::path& packagePath, const fs::path& movePath) {
+	bool status = true;
 	std::error_code ec;
 	if (fs::exists(movePath, ec))
-		fs::remove(movePath, ec);
-	fs::rename(packagePath, movePath, ec);
+		status = fs::remove(movePath, ec);
+	if (status)
+		fs::rename(packagePath, movePath, ec);
+	if (!ec)
+		_packageState.error = PackageError::FailedMovingArchive;
     return !ec; // fs::exists(movePath, ec);
 }
 
@@ -346,15 +372,43 @@ PackageDownloader::FetchResult::~FetchResult() {
 		fs::remove(path, ec);
 }
 
-std::string PackageState::ToString(int barWidth) const {
+std::string PackageState::GetProgress(int barWidth) const {
 	std::stringstream ss;
 	ss << "[";
-	int pos = barWidth * static_cast<int>(ratio);
+	int pos = static_cast<int>(static_cast<float>(barWidth) * (ratio / 100.0f));
 	for (int i = 0; i < barWidth; ++i) {
 		if (i < pos) ss << "=";
 		else if (i == pos) ss << ">";
 		else ss << " ";
 	}
-	ss << "] " << static_cast<int>(ratio * 100.0) << " %\n";
+	ss << "] " << static_cast<int>(ratio) << " %\n";
 	return ss.str();
+}
+
+std::string_view PackageState::GetError() const {
+	switch (error) {
+		case PackageError::InvalidURL:
+			return "Invalid URL";
+		case PackageError::FailedMovingArchive:
+			return "Failed moving archive";
+		case PackageError::FailedReadingArchive:
+			return "Failed reading archive";
+		case PackageError::FailedCreatingDirectory:
+			return "Failed creating directory";
+		case PackageError::FailedWritingToDisk:
+			return "Failed writing to disk";
+		case PackageError::PackageFetchingFailed:
+			return "Package fetching failed";
+		case PackageError::PackageAuthorizationFailed:
+			return "Package authorization failed";
+		case PackageError::PackageCorrupted:
+			return "Downloaded archive checksum does not match verified hash";
+		case PackageError::NoMemoryAvailable:
+			return "No memory available";
+		case PackageError::NotFound:
+			return "Package not found, not currently being downloaded";
+		case PackageError::None:
+		default:
+			return "";
+	}
 }
