@@ -7,5 +7,6 @@ namespace wizard {
 		bool strictMode{ true };
 		bool packageVerification{ true };
 		std::string packageVerifyUrl;
+		std::vector<std::string> repositories;
 	};
 }

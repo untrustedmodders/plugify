@@ -1,47 +1,11 @@
 #pragma once
 
-#include "wizard_context.h"
 #include "package.h"
+#include "wizard_context.h"
 #include "wizard/config.h"
 
 namespace wizard {
 	class IWizard;
-
-	enum class PackageInstallState : uint8_t {
-		None,
-		Updating,
-		Downloading,
-		Checksuming,
-		Extracting,
-		Done,
-		Failed,
-	};
-
-	enum class PackageError : uint8_t {
-		None,
-		InvalidURL,
-		FailedReadingArchive,
-		FailedCreatingDirectory,
-		FailedWritingToDisk,
-		PackageMissingDescriptor,
-		PackageFetchingFailed,
-		PackageAuthorizationFailed,
-		PackageCorrupted,
-		NoMemoryAvailable,
-		NotFound,
-	};
-
-	struct PackageState {
-		size_t progress{};
-		size_t total{};
-		float ratio{};
-		PackageInstallState state{ PackageInstallState::None };
-		PackageError error{ PackageError::None };
-
-		std::string_view GetError() const;
-		std::string GetProgress(int barWidth = 60) const;
-	};
-
 	class PackageDownloader {
 	public:
 		explicit PackageDownloader(Config config);
@@ -67,19 +31,20 @@ namespace wizard {
 		 * A package is deemed verified/authorized through a manual validation process that is
 		 * described here: https://github.com/untrustedpackageders/verified_packages/README.md;
 		 */
-		bool IsPackageAuthorized(const Package& package);
+		bool IsPackageAuthorized(const RemotePackage& package);
 
-		std::optional<Package> Update(const Package& package);
-		std::optional<fs::path> Download(const Package& package);
+		std::optional<PackageManifest> FetchPackageManifest(const std::string& url);
+		std::optional<RemotePackage> UpdatePackage(const LocalPackage& package);
+		std::optional<fs::path> DownloadPackage(const RemotePackage& package);
 
 		PackageState GetState() const {
 			return _packageState;
 		}
 
 	private:
-		struct FetchResult {
-			explicit FetchResult(fs::path filePath);
-			~FetchResult();
+		struct TempFile {
+			explicit TempFile(fs::path filePath);
+			~TempFile();
 			fs::path path;
 		};
 
@@ -89,7 +54,10 @@ namespace wizard {
 		 * If something went wrong during archive download, this will return an empty
 		 * optional object.
 		 */
-		std::optional<FetchResult> FetchPackageFromURL(const Package& package);
+		std::optional<TempFile> FetchPackageFromURL(const RemotePackage& package);
+
+
+		std::optional<std::string> FetchJsonFromURL(const std::string& url);
 
 		/**
 		 * Tells if a package archive has not been corrupted.
@@ -99,7 +67,7 @@ namespace wizard {
 		 * very method to ensure the archive downloaded from the Internet is the exact
 		 * same that has been manually verified.
 		 */
-		bool IsPackageLegit(const Package& package, const fs::path& packagePath);
+		bool IsPackageLegit(const RemotePackage& package, const fs::path& packagePath);
 
 		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath, bool isModule);
 

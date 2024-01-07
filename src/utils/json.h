@@ -58,34 +58,6 @@ struct glz::meta<wizard::Property> {
 	static constexpr auto value = object("type", &T::type, "name", skip{}, "paramTypes", skip{}, "retType", skip{});
 };
 
-template <>
-struct glz::meta<wizard::Descriptor> {
-	using T = wizard::Descriptor;
-	static constexpr auto value = object(
-		"fileVersion", &T::fileVersion,
-		"version", &T::version,
-		"versionName", &T::versionName,
-		"friendlyName", &T::friendlyName,
-		"description", &T::description,
-		"createdBy", &T::createdBy,
-		"createdByURL", &T::createdByURL,
-		"docsURL", &T::docsURL,
-		"downloadURL", &T::downloadURL,
-		"updateURL", &T::updateURL,
-		"supportedPlatforms", &T::supportedPlatforms,
-
-		/* PluginDescriptor */
-		"assemblyPath", skip{},
-		"languageModule", skip{},
-		"dependencies", skip{},
-		"exportedMethods", skip{},
-
-		/* LanguageModuleDescriptor */
-		"language", skip{},
-		"forceLoad", skip{}
-	);
-};
-
 namespace glz::detail {
     template <>
     struct from_json<fs::path> {

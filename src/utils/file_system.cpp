@@ -4,19 +4,19 @@
 
 using namespace wizard;
 
-void FileSystem::ReadBytes(const fs::path& /*filepath*/, const FileHandler& /*handler*/) {
-	// std::basic_ifstream<uint8_t, std::char_traits<uint8_t>> is{filepath, std::ios::binary};
-	// 
-	// if (!is.is_open()) {
-	//	 WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
-	//	 return;
-	// }
-	// 
-	// // Stop eating new lines in binary mode!!!
-	// is.unsetf(std::ios::skipws);
-	// 
-	// std::vector<uint8_t> buffer{ std::istreambuf_iterator<uint8_t>{is}, std::istreambuf_iterator<uint8_t>{} };
-	// handler({ buffer.data(), buffer.size() });
+void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
+	std::ifstream is{filepath, std::ios::binary};
+
+	 if (!is.is_open()) {
+		 WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
+		 return;
+	 }
+
+	 // Stop eating new lines in binary mode!!!
+	 is.unsetf(std::ios::skipws);
+
+	 std::vector<uint8_t> buffer{ std::istreambuf_iterator<char>{is}, std::istreambuf_iterator<char>{} };
+	 handler({ buffer.data(), buffer.size() });
 }
 
 std::string FileSystem::ReadText(const fs::path& filepath) {
@@ -92,4 +92,20 @@ void FileSystem::ReadDirectory(const fs::path& directory, const PathHandler& han
 			handler(path, depth);
 		}
 	}
+}
+
+std::error_code FileSystem::MoveFolder(const fs::path& from, const fs::path& to) {
+	std::error_code ec = RemoveFolder(from);
+	if (!ec) {
+		fs::rename(from, to, ec);
+	}
+	return ec;
+}
+
+std::error_code FileSystem::RemoveFolder(const fs::path& at) {
+	std::error_code ec;
+	if (fs::exists(at, ec) && fs::is_directory(at, ec)) {
+		fs::remove_all(at, ec);
+	}
+	return ec;
 }

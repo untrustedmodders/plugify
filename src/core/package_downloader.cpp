@@ -21,12 +21,6 @@ PackageDownloader::~PackageDownloader() {
 	curl_global_cleanup();
 }
 
-size_t WriteToString(void* ptr, size_t size, size_t count, std::string* stream) {
-	size_t totalSize = size * count;
-	stream->append(static_cast<char*>(ptr), totalSize);
-	return totalSize;
-}
-
 void PackageDownloader::FetchPackagesListFromAPI() {
 	if (!_config.packageVerification)
 		return;
@@ -38,92 +32,76 @@ void PackageDownloader::FetchPackagesListFromAPI() {
 		_config.packageVerifyUrl = kDefaultPackageList;
 	}
 
-	std::string json;
+	WZ_LOG_INFO("Loading verification packages...");
 
-	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
-	std::unique_ptr<CURL, decltype(curl_close)> handle{curl_easy_init(), curl_close};
-
-	curl_easy_setopt(handle.get(), CURLOPT_CUSTOMREQUEST, "GET");
-	curl_easy_setopt(handle.get(), CURLOPT_TIMEOUT, 30L);
-	curl_easy_setopt(handle.get(), CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(handle.get(), CURLOPT_URL, _config.packageVerifyUrl.c_str());
-	curl_easy_setopt(handle.get(), CURLOPT_WRITEDATA, &json);
-	curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, WriteToString);
-	CURLcode result = curl_easy_perform(handle.get());
-
-	if (result == CURLcode::CURLE_OK) {
-		WZ_LOG_INFO("Packages list successfully fetched.");
-	} else {
-		WZ_LOG_ERROR("Fetching packages list failed: {}", curl_easy_strerror(result));
+	auto json = FetchJsonFromURL(_config.packageVerifyUrl);
+	if (!json.has_value()) {
+		WZ_LOG_ERROR("Verification packages from '{}' not found", _config.packageVerifyUrl);
 		return;
 	}
 
-	WZ_LOG_INFO("Loading packages configuration...");
-
-	auto packages = glz::read_json<VerifiedPackageMap>(json);
+	auto packages = glz::read_json<VerifiedPackageMap>(*json);
 	if (!packages.has_value()) {
-		WZ_LOG_ERROR("File from '{}' has JSON parsing error: {}", _config.packageVerifyUrl, glz::format_error(packages.error(), json));
+		WZ_LOG_ERROR("Verification packages from '{}' has JSON parsing error: {}", _config.packageVerifyUrl, glz::format_error(packages.error(), *json));
 		return;
 	}
 
 	_packages = std::move(*packages);
 
-	// No verified packages found, disable then
 	if (_packages.verified.empty()) {
-		WZ_LOG_INFO("Empty verification packages list, disabling...");
-		_config.packageVerification = false;
+		WZ_LOG_WARNING("Empty verification packages list");
 	} else {
 		WZ_LOG_INFO("Done loading verified packages list.");
 	}
 }
 
-bool PackageDownloader::IsPackageAuthorized(const Package& package) {
-	if (!_config.packageVerification)
-		return true;
-
-	auto it = _packages.verified.find(package.name);
-	if (it == _packages.verified.end())
-		return false;
-
-	return std::get<VerifiedPackageDetails>(*it).versions.contains(std::to_string(package.version));
-}
-
-std::optional<Package> PackageDownloader::Update(const Package& package) {
-	_packageState.error = PackageError::None;
-
-	if (!IsValidURL(package.url)) {
-		WZ_LOG_ERROR("Package: '{}' (v{}) has invalid update URL: '{}'", package.name, package.version, package.url);
-		_packageState.error = PackageError::InvalidURL;
+std::optional<PackageManifest> PackageDownloader::FetchPackageManifest(const std::string& url) {
+	if (!IsValidURL(url)) {
+		WZ_LOG_ERROR("Invalid remote URL: '{}'", url);
 		return {};
 	}
 
-	_packageState.state = PackageInstallState::Updating;
+	WZ_LOG_INFO("Loading packages manifest...");
 
-	std::string json;
+	auto json = FetchJsonFromURL(url);
+	if (!json.has_value()) {
+		WZ_LOG_ERROR("Packages manifest from '{}' not found", url);
+		return {};
+	}
 
-	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
-	std::unique_ptr<CURL, decltype(curl_close)> handle{curl_easy_init(), curl_close};
+	auto manifest = glz::read_json<PackageManifest>(*json);
+	if (!manifest.has_value()) {
+		WZ_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", url, glz::format_error(manifest.error(), *json));
+		return {};
+	}
 
-	curl_easy_setopt(handle.get(), CURLOPT_CUSTOMREQUEST, "GET");
-	curl_easy_setopt(handle.get(), CURLOPT_TIMEOUT, 30L);
-	curl_easy_setopt(handle.get(), CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(handle.get(), CURLOPT_URL, package.url.c_str());
-	curl_easy_setopt(handle.get(), CURLOPT_WRITEDATA, &json);
-	curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, WriteToString);
-	CURLcode result = curl_easy_perform(handle.get());
+	WZ_LOG_INFO("Done loading packages manifest from '{}'.", url);
 
-	if (result == CURLcode::CURLE_OK) {
-		WZ_LOG_INFO("Package '{}' (v{}) successfully fetched.", package.name, package.version);
-	} else {
-		WZ_LOG_ERROR("Fetching package '{}' (v{}) failed: {}", package.name, package.version, curl_easy_strerror(result));
+	return std::move(*manifest);
+}
+
+std::optional<RemotePackage> PackageDownloader::UpdatePackage(const LocalPackage& package) {
+	_packageState.error = PackageError::None;
+
+	if (!IsValidURL(package.descriptor->updateURL)) {
+		WZ_LOG_ERROR("Package: '{}' (v{}) has invalid update URL: '{}'", package.name, package.version, package.descriptor->updateURL);
+		_packageState.error = PackageError::InvalidURL;
 		return {};
 	}
 
 	WZ_LOG_INFO("Loading package info...");
 
-	auto newPackage = glz::read_json<Package>(json);
+	_packageState.state = PackageInstallState::Updating;
+
+	auto json = FetchJsonFromURL(package.descriptor->updateURL);
+	if (!json.has_value()) {
+		WZ_LOG_ERROR("Package: '{}' (v{}) from '{}' not found", package.name, package.version, package.descriptor->updateURL);
+		return {};
+	}
+
+	auto newPackage = glz::read_json<RemotePackage>(*json);
 	if (!newPackage.has_value()) {
-		WZ_LOG_ERROR("File from '{}' has JSON parsing error: {}", package.url, glz::format_error(newPackage.error(), json));
+		WZ_LOG_ERROR("Package: '{}' (v{}) from '{}' has JSON parsing error: {}", package.name, package.version, package.descriptor->updateURL, glz::format_error(newPackage.error(), *json));
 		return {};
 	}
 
@@ -137,7 +115,7 @@ std::optional<Package> PackageDownloader::Update(const Package& package) {
 	return {};
 }
 
-std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
+std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& package)  {
 	_packageState.error = PackageError::None;
 
 	if (!IsValidURL(package.url)) {
@@ -167,7 +145,7 @@ std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
 		return {};
 	}
 
-	fs::path finalLocation = _config.baseDir / (package.languageModule ? "modules" : "plugins") / archiveLocation.filename().replace_extension();
+	fs::path finalLocation = _config.baseDir / (package.module ? "modules" : "plugins") / archiveLocation.filename().replace_extension();
 
 	std::error_code ec;
 	if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
@@ -178,7 +156,7 @@ std::optional<fs::path> PackageDownloader::Download(const Package& package)  {
 		}
 	}
 
-	if (ExtractPackage(archiveLocation, finalLocation, package.languageModule)) {
+	if (ExtractPackage(archiveLocation, finalLocation, package.module)) {
 		WZ_LOG_INFO("Done downloading '{}'", package.name);
 		_packageState.state = PackageInstallState::Done;
 		return { std::move(finalLocation) };
@@ -278,6 +256,12 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 	return true;
 }
 
+size_t WriteToString(void* ptr, size_t size, size_t count, std::string* stream) {
+	size_t totalSize = size * count;
+	stream->append(static_cast<char*>(ptr), totalSize);
+	return totalSize;
+}
+
 size_t WriteToStream(void* contents, size_t size, size_t count, std::ostream* stream) {
 	size_t totalSize = size * count;
 	stream->write(static_cast<char*>(contents), static_cast<std::streamsize>(totalSize));
@@ -295,7 +279,7 @@ int PackageDownloader::PackageFetchingProgressCallback(void* ptr, curl_off_t tot
 	return 0;
 }
 
-std::optional<PackageDownloader::FetchResult> PackageDownloader::FetchPackageFromURL(const Package& package) {
+std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromURL(const RemotePackage& package) {
 	WZ_LOG_INFO("Fetching package archive from: '{}'", package.url);
 
 	auto fileName = std::format("{}-{}-{}.zip", package.name, std::to_string(package.version), wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S"));
@@ -332,10 +316,45 @@ std::optional<PackageDownloader::FetchResult> PackageDownloader::FetchPackageFro
 		return {};
 	}
 
-	return { FetchResult{ std::move(downloadPath) } };
+	return {TempFile{std::move(downloadPath) } };
 }
 
-bool PackageDownloader::IsPackageLegit(const Package& package, const fs::path& packagePath) {
+std::optional<std::string> PackageDownloader::FetchJsonFromURL(const std::string& url) {
+	std::string json;
+
+	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
+	std::unique_ptr<CURL, decltype(curl_close)> handle{curl_easy_init(), curl_close};
+
+	curl_easy_setopt(handle.get(), CURLOPT_CUSTOMREQUEST, "GET");
+	curl_easy_setopt(handle.get(), CURLOPT_TIMEOUT, 30L);
+	curl_easy_setopt(handle.get(), CURLOPT_FAILONERROR, 1L);
+	curl_easy_setopt(handle.get(), CURLOPT_URL, url.c_str());
+	curl_easy_setopt(handle.get(), CURLOPT_WRITEDATA, &json);
+	curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, WriteToString);
+	CURLcode result = curl_easy_perform(handle.get());
+
+	if (result == CURLcode::CURLE_OK) {
+		WZ_LOG_INFO("JSON successfully fetched.");
+	} else {
+		WZ_LOG_ERROR("Fetching json failed: {}", curl_easy_strerror(result));
+		return {};
+	}
+
+	return { std::move(json) };
+}
+
+bool PackageDownloader::IsPackageAuthorized(const RemotePackage& package) {
+	if (!_config.packageVerification)
+		return true;
+
+	auto it = _packages.verified.find(package.name);
+	if (it == _packages.verified.end())
+		return false;
+
+	return std::get<VerifiedPackageDetails>(*it).versions.contains(std::to_string(package.version));
+}
+
+bool PackageDownloader::IsPackageLegit(const RemotePackage& package, const fs::path& packagePath) {
 	if (!_config.packageVerification)
 		return true;
 
@@ -363,50 +382,11 @@ bool PackageDownloader::IsPackageLegit(const Package& package, const fs::path& p
 	return equal;
 }
 
-PackageDownloader::FetchResult::FetchResult(fs::path filePath) : path{std::move(filePath)} {
+PackageDownloader::TempFile::TempFile(fs::path filePath) : path{std::move(filePath)} {
 }
 
-PackageDownloader::FetchResult::~FetchResult() {
+PackageDownloader::TempFile::~TempFile() {
 	std::error_code ec;
 	if (fs::exists(path, ec))
 		fs::remove(path, ec);
-}
-
-std::string PackageState::GetProgress(int barWidth) const {
-	std::stringstream ss;
-	ss << "[";
-	int pos = static_cast<int>(static_cast<float>(barWidth) * (ratio / 100.0f));
-	for (int i = 0; i < barWidth; ++i) {
-		if (i < pos) ss << "=";
-		else if (i == pos) ss << ">";
-		else ss << " ";
-	}
-	ss << "] " << static_cast<int>(ratio) << " %\n";
-	return ss.str();
-}
-
-std::string_view PackageState::GetError() const {
-	switch (error) {
-		case PackageError::InvalidURL:
-			return "Invalid URL";
-		case PackageError::FailedReadingArchive:
-			return "Failed reading archive";
-		case PackageError::FailedCreatingDirectory:
-			return "Failed creating directory";
-		case PackageError::FailedWritingToDisk:
-			return "Failed writing to disk";
-		case PackageError::PackageFetchingFailed:
-			return "Package fetching failed";
-		case PackageError::PackageAuthorizationFailed:
-			return "Package authorization failed";
-		case PackageError::PackageCorrupted:
-			return "Downloaded archive checksum does not match verified hash";
-		case PackageError::NoMemoryAvailable:
-			return "No memory available";
-		case PackageError::NotFound:
-			return "Package not found, not currently being downloaded";
-		case PackageError::None:
-		default:
-			return "";
-	}
 }
