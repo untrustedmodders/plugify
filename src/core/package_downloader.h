@@ -1,6 +1,5 @@
 #pragma once
 
-#include "package.h"
 #include "wizard_context.h"
 #include "wizard/config.h"
 

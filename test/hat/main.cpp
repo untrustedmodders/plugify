@@ -119,11 +119,11 @@ int main(int argc, const char** argv) {
 					}
 				} else if (args[1] == "update") {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->UpdatePackages();
+						packageManager->UpdateAllPackages();
 					}
 				} else if (args[1] == "install" && args.size() > 2) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->InstallPackages(args[2], args.size() > 3);
+						packageManager->InstallAllPackages(args[2], args.size() > 3);
 					}
 				}
             }

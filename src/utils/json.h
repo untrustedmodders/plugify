@@ -8,7 +8,7 @@
 #include <wizard/plugin_descriptor.h>
 #include <wizard/language_module_descriptor.h>
 #include <wizard/config.h>
-#include <core/package.h>
+#include <wizard/package.h>
 
 template<>
 struct glz::meta<wizard::ValueType> {

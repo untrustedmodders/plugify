@@ -2,7 +2,6 @@
 
 #include <wizard/version.h>
 #include <wizard/descriptor.h>
-#include <wizard/package_version.h>
 #include <filesystem>
 #include <functional>
 #include <optional>

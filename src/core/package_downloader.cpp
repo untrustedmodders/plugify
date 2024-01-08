@@ -12,9 +12,9 @@
 using namespace wizard;
 
 static std::map<std::string_view, std::pair<std::string_view, std::string_view>> packageTypes {
-	/*type    folder      descriptor extension */
-	"module", {"modules", Module::kFileExtension},
-	"plugin", {"plugins", Plugin::kFileExtension}
+	/* type      folder     descriptor extension */
+	{ "module", {"modules", Module::kFileExtension} },
+	{ "plugin", {"plugins", Plugin::kFileExtension} },
 	// Might add more package types in future
 };
 
