@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <wizard_export.h>
 
 namespace wizard {

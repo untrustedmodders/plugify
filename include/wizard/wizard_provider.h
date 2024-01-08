@@ -11,7 +11,7 @@ namespace wizard {
 	// Wizard provided to user, which implemented in core
 	class WIZARD_API IWizardProvider {
 	protected:
-		IWizardProvider(WizardProvider& impl);
+		explicit IWizardProvider(WizardProvider& impl);
 		~IWizardProvider();
 
 	public:

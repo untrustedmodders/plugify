@@ -1,9 +1,9 @@
 #pragma once
 
-#include "package.h"
 #include "package_downloader.h"
 #include "wizard_context.h"
 #include <wizard/package_manager.h>
+#include <wizard/package.h>
 
 namespace wizard {
 	using LocalPackageRef = std::optional<std::reference_wrapper<const LocalPackage>>;
@@ -34,6 +34,7 @@ namespace wizard {
 		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const;
 
 	private:
+		// Move to IPackageManager
 		LocalPackageRef FindLocalPackage(const std::string& packageName) const;
 		RemotePackageRef FindRemotePackage(const std::string& packageName) const;
 
