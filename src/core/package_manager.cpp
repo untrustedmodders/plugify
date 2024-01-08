@@ -88,11 +88,15 @@ void PackageManager::LoadRemotePackages() {
 	_remotePackages.clear();
 
 	for (const auto& url : wizard->GetConfig().repositories) {
-		auto repository = _downloader.FetchPackageManifest(url);
-		if (!repository.has_value())
+		auto manifest = _downloader.FetchPackageManifest(url);
+		if (!manifest.has_value())
 			continue;
 
-		for (auto& [name, package] : repository->content) {
+		for (auto& [name, package] : manifest->content) {
+			if (package.name != name) {
+				WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package.name);
+				continue;
+			}
 			auto it = _remotePackages.find(name);
 			if (it == _remotePackages.end()) {
 				_remotePackages.emplace(name, package);
@@ -108,7 +112,7 @@ void PackageManager::LoadRemotePackages() {
 	}
 }
 
-void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) {
+void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const {
 	auto debugStart = DateTime::Now();
 
 	std::unordered_map<std::string, RemotePackage> packages;
@@ -131,7 +135,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 }
 
 void PackageManager::InstallPackage(const std::string& packageName) {
-	DoPackage([&]{
+	Request([&] {
 		auto package = FindRemotePackage(packageName);
 		if (package.has_value()) {
 			InstallPackage(*package);
@@ -140,8 +144,8 @@ void PackageManager::InstallPackage(const std::string& packageName) {
 }
 
 void PackageManager::InstallPackages(std::span<const std::string> packageNames) {
-	DoPackage([&]{
-		for (const auto& packageName : packageNames) {
+	Request([&] {
+		for (const auto& packageName: packageNames) {
 			auto package = FindRemotePackage(packageName);
 			if (package.has_value()) {
 				InstallPackage(*package);
@@ -182,8 +186,8 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 		return;
 	}
 
-	DoPackage([&]{
-		for (const auto& [name, package] : manifest->content) {
+	Request([&] {
+		for (const auto& [name, package]: manifest->content) {
 			if (package.name != name) {
 				WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", path.string(), name, package.name);
 				continue;
@@ -193,20 +197,52 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 	});
 }
 
-void PackageManager::InstallPackage(const RemotePackage& package) {
+void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool reinstall) {
+	WZ_LOG_INFO("Read package manifest from '{}'", manifestUrl);
+
+	auto manifest = _downloader.FetchPackageManifest(manifestUrl);
+	if (!manifest.has_value()) {
+		return;
+	}
+
+	if (!reinstall) {
+		for (const auto& [name, _] : _localPackages) {
+			manifest->content.erase(name);
+		};
+	}
+
+	if (manifest->content.empty()) {
+		WZ_LOG_WARNING("No packages to install was found! If you need to reinstall all installed packages, use the reinstall flag!");
+		return;
+	}
+
+	Request([&] {
+		for (const auto& [name, package] : manifest->content) {
+			if (package.name != name) {
+				WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package.name);
+				continue;
+			}
+			InstallPackage(package);
+		}
+	});
+}
+
+bool PackageManager::InstallPackage(const RemotePackage& package) {
 	if (auto tempPath = _downloader.DownloadPackage(package)) {
 		auto destinationPath = tempPath->parent_path() / package.name;
 		std::error_code ec = FileSystem::MoveFolder(*tempPath, destinationPath);
 		if (ec) {
 			WZ_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", package.name, tempPath->string(), destinationPath.string(), ec.message());
 		}
+		return true;
 	} else {
 		WZ_LOG_ERROR("Package: '{}' has downloading error: {}", package.name, _downloader.GetState().GetError());
 	}
+	return false;
 }
 
 void PackageManager::UpdatePackage(const std::string& packageName) {
-	DoPackage([&]{
+	Request([&] {
 		auto package = FindLocalPackage(packageName);
 		if (package.has_value()) {
 			UpdatePackage(*package);
@@ -215,8 +251,8 @@ void PackageManager::UpdatePackage(const std::string& packageName) {
 }
 
 void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
-	DoPackage([&]{
-		for (const auto& packageName : packageNames) {
+	Request([&] {
+		for (const auto& packageName: packageNames) {
 			auto package = FindLocalPackage(packageName);
 			if (package.has_value()) {
 				UpdatePackage(*package);
@@ -226,32 +262,34 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 }
 
 void PackageManager::UpdateAllPackages() {
-	DoPackage([&]{
-		for (const auto& [_, package] : _localPackages) {
+	Request([&] {
+		for (const auto& [_, package]: _localPackages) {
 			UpdatePackage(package);
 		}
 	});
 }
 
-void PackageManager::UpdatePackage(const LocalPackage& package) {
+bool PackageManager::UpdatePackage(const LocalPackage& package) {
 	if (auto newPackage = _downloader.UpdatePackage(package)) {
 		if (auto tempPath = _downloader.DownloadPackage(*newPackage)) {
 			auto destinationPath = tempPath->parent_path() / newPackage->name;
 			if (newPackage->name != package.name) {
-				FileSystem::RemoveFolder(package.path.parent_path());
+				UninstallPackage(package);
 			}
 			std::error_code ec = FileSystem::MoveFolder(*tempPath, destinationPath);
 			if (ec) {
 				WZ_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", newPackage->name, tempPath->string(), destinationPath.string(), ec.message());
 			}
+			return true;
 		} else {
 			WZ_LOG_ERROR("Package: '{}' has downloading error: {}", newPackage->name, _downloader.GetState().GetError());
 		}
 	}
+	return false;
 }
 
 void PackageManager::UninstallPackage(const std::string& packageName) {
-	DoPackage([&]{
+	Request([&] {
 		auto package = FindLocalPackage(packageName);
 		if (package.has_value()) {
 			UninstallPackage(*package);
@@ -260,8 +298,8 @@ void PackageManager::UninstallPackage(const std::string& packageName) {
 }
 
 void PackageManager::UninstallPackages(std::span<const std::string> packageNames) {
-	DoPackage([&]{
-		for (const auto& packageName : packageNames) {
+	Request([&] {
+		for (const auto& packageName: packageNames) {
 			auto package = FindLocalPackage(packageName);
 			if (package.has_value()) {
 				UninstallPackage(*package);
@@ -271,32 +309,38 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 }
 
 void PackageManager::UninstallAllPackages() {
-	DoPackage([&]{
-		for (const auto& [_, package] : _localPackages) {
+	Request([&] {
+		for (const auto& [_, package]: _localPackages) {
 			UninstallPackage(package);
 		}
 	});
 }
 
-void PackageManager::UninstallPackage(const LocalPackage& package) {
-	// TODO:
+bool PackageManager::UninstallPackage(const LocalPackage& package) {
+	auto packagePath = package.path.parent_path();
+	std::error_code ec = FileSystem::RemoveFolder(packagePath);
+	if (!ec) {
+		WZ_LOG_ERROR("Package: '{}' (v{}) was removed from: '{}'", package.name, package.version, packagePath.string());
+		return true;
+	}
+	return false;
 }
 
-LocalPackageRef PackageManager::FindLocalPackage(const std::string& packageName) {
+LocalPackageRef PackageManager::FindLocalPackage(const std::string& packageName) const {
 	auto it = _localPackages.find(packageName);
 	if (it != _localPackages.end())
 		return std::get<LocalPackage>(*it);
 	return {};
 }
 
-RemotePackageRef PackageManager::FindRemotePackage(const std::string& packageName) {
+RemotePackageRef PackageManager::FindRemotePackage(const std::string& packageName) const {
 	auto it = _remotePackages.find(packageName);
 	if (it != _remotePackages.end())
 		return std::get<RemotePackage>(*it);
 	return {};
 }
 
-void PackageManager::DoPackage(const std::function<void()>& body) {
+void PackageManager::Request(const std::function<void()>& action) {
 	std::atomic<bool> stopFlag{false};
 
 	std::thread printer([&](){
@@ -312,7 +356,7 @@ void PackageManager::DoPackage(const std::function<void()>& body) {
 
 	printer.detach();
 
-	body();
+	action();
 
 	stopFlag = true;
 

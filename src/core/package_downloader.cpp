@@ -10,6 +10,13 @@
 
 using namespace wizard;
 
+static std::map<std::string_view, std::pair<std::string_view, std::string_view>> packageTypes {
+	/*type    folder      descriptor extension */
+	"module", {"modules", Module::kFileExtension},
+	"plugin", {"plugins", Plugin::kFileExtension}
+	// Might add more package types in future
+};
+
 PackageDownloader::PackageDownloader(Config config) : _config(std::move(config)) {
 	auto debugStart = DateTime::Now();
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -95,7 +102,8 @@ std::optional<RemotePackage> PackageDownloader::UpdatePackage(const LocalPackage
 	if (requiredVersion.has_value()) {
 		auto newVersion = newPackage->Version(*requiredVersion);
 		if (newVersion.has_value()) {
-			// TODO: info
+			const auto& version = newVersion->get();
+			WZ_LOG_INFO("Package '{}' (v{}) can be {}, to different version (v{})", package.name, package.version, version.version > package.version ? "upgraded" : version.version == package.version ? "reinstalled" : "downgraded", version.version);
 			_packageState.state = PackageInstallState::Updating;
 			return std::move(*newPackage);
 		}
@@ -121,9 +129,16 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 
 	WZ_LOG_INFO("Download package: '{}'", package.name);
 
+	auto it = packageTypes.find(package.type);
+	if (it == packageTypes.end()) {
+		WZ_LOG_ERROR("Package: '{}' has unknown type: {}", package.name, package.type);
+		_packageState.error = PackageError::NotFound;
+		return {};
+	}
+
 	auto newVersion = requiredVersion.has_value() ? package.Version(*requiredVersion) : package.LatestVersion();
 	if (!newVersion.has_value()) {
-		// TODO: info
+		WZ_LOG_ERROR("Package: '{}' (v{}) was not found", package.name, requiredVersion.has_value() ? std::to_string(*requiredVersion) : "[latest]");
 		_packageState.error = PackageError::NotFound;
 		return {};
 	}
@@ -158,10 +173,9 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 		return {};
 	}
 
-	//TODO: Rework !
-	bool isModule = package.type == "module";
+	const auto& [folder, extension] = it->second;
 
-	fs::path finalLocation = _config.baseDir / (isModule ? "modules" : "plugins") / archiveLocation.filename().replace_extension();
+	fs::path finalLocation = _config.baseDir / folder / archiveLocation.filename().replace_extension();
 
 	std::error_code ec;
 	if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
@@ -172,7 +186,7 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 		}
 	}
 
-	if (ExtractPackage(archiveLocation, finalLocation, isModule)) {
+	if (ExtractPackage(archiveLocation, finalLocation, extension)) {
 		WZ_LOG_INFO("Done downloading '{}'", package.name);
 		_packageState.state = PackageInstallState::Done;
 		return { std::move(finalLocation) };
@@ -183,7 +197,7 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 	}
 }
 
-bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::path& extractPath, bool isModule) {
+bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::path& extractPath, std::string_view descriptorExt) {
 	std::ifstream zipFile{packagePath, std::ios::binary};
 	if (!zipFile.is_open()) {
 		WZ_LOG_ERROR("Cannot open archive located at '{}'", packagePath.string());
@@ -210,7 +224,6 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 	std::vector<mz_zip_archive_file_stat> fileStats(numFiles);
 
 	bool foundDescriptor = false;
-	std::string_view extension = isModule ? Module::kFileExtension : Plugin::kFileExtension;
 
 	for (uint32_t i = 0; i < numFiles; ++i) {
 		mz_zip_archive_file_stat& fileStat = fileStats[i];
@@ -222,13 +235,13 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 		}
 
 		fs::path filename{ fileStat.m_filename };
-		if (filename.extension().string() == extension) {
+		if (filename.extension().string() == descriptorExt) {
 			foundDescriptor = true;
 		}
 	}
 
 	if (!foundDescriptor) {
-		WZ_LOG_ERROR("Package descriptor *{} missing inside zip located at '{}'", extension, packagePath.string());
+		WZ_LOG_ERROR("Package descriptor *{} missing inside zip located at '{}'", descriptorExt, packagePath.string());
 		_packageState.error = PackageError::PackageMissingDescriptor;
 		return false;
 	}
@@ -245,12 +258,12 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 		}
 
 		fs::path finalPath = extractPath / fileStat.m_filename;
-		fs::path finalLocation = finalPath.parent_path();
+		fs::path finalDir = finalPath.parent_path();
 
 		std::error_code ec;
-		if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
-			if (!fs::create_directories(finalLocation, ec)) {
-				WZ_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
+		if (!fs::exists(finalDir, ec) || !fs::is_directory(finalDir, ec)) {
+			if (!fs::create_directories(finalDir, ec)) {
+				WZ_LOG_ERROR("Error creating output directory '{}'", finalDir.string());
 				_packageState.error = PackageError::FailedCreatingDirectory;
 				return false;
 			}

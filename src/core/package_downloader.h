@@ -68,7 +68,7 @@ namespace wizard {
 		 */
 		bool IsPackageLegit(const std::string& packageName, int32_t packageVersion, const fs::path& packagePath);
 
-		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath, bool isModule);
+		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath, std::string_view descriptorExt);
 
 	private:
 		struct VerifiedPackageVersion {

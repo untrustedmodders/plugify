@@ -50,11 +50,7 @@ namespace wizard {
 		std::set<PackageVersion> versions;
 
 		bool operator==(const RemotePackage& rhs) const;
-
-		/// Returns the package for the latest version.
 		PackageRef LatestVersion() const;
-
-		/// Returns the package for the given package version.
 		PackageRef Version(int32_t version) const;
 	};
 

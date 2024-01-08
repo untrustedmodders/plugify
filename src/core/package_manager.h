@@ -6,20 +6,22 @@
 #include <wizard/package_manager.h>
 
 namespace wizard {
-	using LocalPackageRef = std::optional<std::reference_wrapper<LocalPackage>>;
-	using RemotePackageRef = std::optional<std::reference_wrapper<RemotePackage>>;
+	using LocalPackageRef = std::optional<std::reference_wrapper<const LocalPackage>>;
+	using RemotePackageRef = std::optional<std::reference_wrapper<const RemotePackage>>;
 
 	class PackageManager : public IPackageManager, public WizardContext {
 	public:
 		explicit PackageManager(std::weak_ptr<IWizard> wizard);
 		~PackageManager();
 
+		/** IPackageManager interface */
 		void LoadLocalPackages();
 		void LoadRemotePackages();
 
 		void InstallPackage(const std::string& packageName);
 		void InstallPackages(std::span<const std::string> packageNames);
 		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall);
+		void InstallAllPackages(const std::string& manifestUrl, bool reinstall);
 
 		void UpdatePackage(const std::string& packageName);
 		void UpdatePackages(std::span<const std::string> packageNames);
@@ -29,17 +31,17 @@ namespace wizard {
 		void UninstallPackages(std::span<const std::string> packageNames);
 		void UninstallAllPackages();
 
-		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify);
+		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const;
 
 	private:
-		LocalPackageRef FindLocalPackage(const std::string& packageName);
-		RemotePackageRef FindRemotePackage(const std::string& packageName);
+		LocalPackageRef FindLocalPackage(const std::string& packageName) const;
+		RemotePackageRef FindRemotePackage(const std::string& packageName) const;
 
-		void UpdatePackage(const LocalPackage& package);
-		void InstallPackage(const RemotePackage& package);
-		void UninstallPackage(const LocalPackage& package);
+		bool UpdatePackage(const LocalPackage& package);
+		bool InstallPackage(const RemotePackage& package);
+		bool UninstallPackage(const LocalPackage& package);
 
-		void DoPackage(const std::function<void()>& body);
+		void Request(const std::function<void()>& action);
 
 	private:
 		PackageDownloader _downloader;
