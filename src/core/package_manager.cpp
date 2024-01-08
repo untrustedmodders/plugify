@@ -10,9 +10,10 @@
 
 using namespace wizard;
 
-PackageManager::PackageManager(std::weak_ptr<IWizard> wizard) : IPackageManager(*this), WizardContext(std::move(wizard)), _downloader{ _wizard.lock()->GetConfig() } {
-	//auto debugStart = DateTime::Now();
-	//WZ_LOG_DEBUG("PackageManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
+PackageManager::PackageManager(std::weak_ptr<IWizard> wizard) : IPackageManager(*this), WizardContext(std::move(wizard)), _downloader{ _wizard.lock()->GetConfig() } { // TODO: REWORK
+	auto debugStart = DateTime::Now();
+	LoadLocalPackages();
+	WZ_LOG_DEBUG("PackageManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
 PackageManager::~PackageManager() = default;
@@ -26,7 +27,7 @@ std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const
 		return {};
 	}
 	auto version = descriptor->version;
-	return std::make_optional<LocalPackage>(name, path, version, std::is_same_v<T, LanguageModuleDescriptor>, std::make_unique<Descriptor>(std::move(*descriptor)));
+	return std::make_optional<LocalPackage>(name, std::is_same_v<T, LanguageModuleDescriptor> ? "module" : "plugin", path, version, std::make_unique<Descriptor>(std::move(*descriptor)));
 }
 
 void PackageManager::LoadLocalPackages()  {
@@ -48,6 +49,8 @@ void PackageManager::LoadLocalPackages()  {
 			return;
 
 		auto name = path.filename().replace_extension().string();
+		if (name.empty())
+			return;
 
 		auto package = isModule ?
 				GetPackageFromDescriptor<LanguageModuleDescriptor>(path, name) :
@@ -85,26 +88,20 @@ void PackageManager::LoadRemotePackages() {
 	_remotePackages.clear();
 
 	for (const auto& url : wizard->GetConfig().repositories) {
-		auto repository = PackageDownloader::FetchRemotePackages(url);
+		auto repository = _downloader.FetchPackageManifest(url);
 		if (!repository.has_value())
 			continue;
 
-		for (const auto& [name, package] : repository->content) {
+		for (auto& [name, package] : repository->content) {
 			auto it = _remotePackages.find(name);
 			if (it == _remotePackages.end()) {
 				_remotePackages.emplace(name, package);
 			} else {
-				const auto& existingPackage = std::get<RemotePackage>(*it);
-
-				auto& existingVersion = existingPackage.version;
-				if (existingVersion != package.version) {
-					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(existingVersion, package.version), name, std::min(existingVersion, package.version));
-
-					if (existingVersion < package.version) {
-						_remotePackages[name] = package;
-					}
+				auto& existingPackage = std::get<RemotePackage>(*it);
+				if (existingPackage == package) {
+					existingPackage.versions.merge(package.versions);
 				} else {
-					WZ_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, name, url);
+					WZ_LOG_WARNING("The package '{}' exists at '{}' - second location will be ignored.", name, url);
 				}
 			}
 		}
@@ -117,7 +114,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	std::unordered_map<std::string, RemotePackage> packages;
 
 	for (const auto& [name, package] : _localPackages) {
-		packages.emplace(name, RemotePackage{ package.name, package.descriptor->downloadURL, package.version, package.module });
+		packages.emplace(name, package);
 	}
 
 	if (packages.empty()) {
@@ -197,7 +194,7 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 }
 
 void PackageManager::InstallPackage(const RemotePackage& package) {
-	if (auto tempPath = _downloader.Download(package)) {
+	if (auto tempPath = _downloader.DownloadPackage(package)) {
 		auto destinationPath = tempPath->parent_path() / package.name;
 		std::error_code ec = FileSystem::MoveFolder(*tempPath, destinationPath);
 		if (ec) {
@@ -237,8 +234,8 @@ void PackageManager::UpdateAllPackages() {
 }
 
 void PackageManager::UpdatePackage(const LocalPackage& package) {
-	if (auto newPackage = _downloader.Update(package)) {
-		if (auto tempPath = _downloader.Download(*newPackage)) {
+	if (auto newPackage = _downloader.UpdatePackage(package)) {
+		if (auto tempPath = _downloader.DownloadPackage(*newPackage)) {
 			auto destinationPath = tempPath->parent_path() / newPackage->name;
 			if (newPackage->name != package.name) {
 				FileSystem::RemoveFolder(package.path.parent_path());
@@ -289,14 +286,14 @@ LocalPackageRef PackageManager::FindLocalPackage(const std::string& packageName)
 	auto it = _localPackages.find(packageName);
 	if (it != _localPackages.end())
 		return std::get<LocalPackage>(*it);
-	return std::nullopt;
+	return {};
 }
 
 RemotePackageRef PackageManager::FindRemotePackage(const std::string& packageName) {
 	auto it = _remotePackages.find(packageName);
 	if (it != _remotePackages.end())
 		return std::get<RemotePackage>(*it);
-	return std::nullopt;
+	return {};
 }
 
 void PackageManager::DoPackage(const std::function<void()>& body) {

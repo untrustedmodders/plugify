@@ -56,11 +56,6 @@ void PackageDownloader::FetchPackagesListFromAPI() {
 }
 
 std::optional<PackageManifest> PackageDownloader::FetchPackageManifest(const std::string& url) {
-	if (!IsValidURL(url)) {
-		WZ_LOG_ERROR("Invalid remote URL: '{}'", url);
-		return {};
-	}
-
 	WZ_LOG_INFO("Loading packages manifest...");
 
 	auto json = FetchJsonFromURL(url);
@@ -80,18 +75,10 @@ std::optional<PackageManifest> PackageDownloader::FetchPackageManifest(const std
 	return std::move(*manifest);
 }
 
-std::optional<RemotePackage> PackageDownloader::UpdatePackage(const LocalPackage& package) {
+std::optional<RemotePackage> PackageDownloader::UpdatePackage(const LocalPackage& package, std::optional<int32_t> requiredVersion) {
 	_packageState.error = PackageError::None;
 
-	if (!IsValidURL(package.descriptor->updateURL)) {
-		WZ_LOG_ERROR("Package: '{}' (v{}) has invalid update URL: '{}'", package.name, package.version, package.descriptor->updateURL);
-		_packageState.error = PackageError::InvalidURL;
-		return {};
-	}
-
-	WZ_LOG_INFO("Loading package info...");
-
-	_packageState.state = PackageInstallState::Updating;
+	WZ_LOG_INFO("Update package: '{}' (v{})", package.name, package.version);
 
 	auto json = FetchJsonFromURL(package.descriptor->updateURL);
 	if (!json.has_value()) {
@@ -105,32 +92,58 @@ std::optional<RemotePackage> PackageDownloader::UpdatePackage(const LocalPackage
 		return {};
 	}
 
-	if (newPackage->version > package.version) {
-		WZ_LOG_INFO("Update available, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(package.version, newPackage->version), newPackage->name, std::min(package.version, newPackage->version));
-		return std::move(*newPackage);
+	if (requiredVersion.has_value()) {
+		auto newVersion = newPackage->Version(*requiredVersion);
+		if (newVersion.has_value()) {
+			// TODO: info
+			_packageState.state = PackageInstallState::Updating;
+			return std::move(*newPackage);
+		}
+	} else {
+		auto newVersion = newPackage->LatestVersion();
+		if (newVersion.has_value()) {
+			const auto& version = newVersion->get();
+			if (version.version > package.version) {
+				WZ_LOG_INFO("Update available, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(package.version, version.version), newPackage->name, std::min(package.version, version.version));
+				_packageState.state = PackageInstallState::Updating;
+				return std::move(*newPackage);
+			}
+		}
 	}
 
-	WZ_LOG_INFO("Done loading package info. (No update available)");
+	WZ_LOG_INFO("Done loading package. (No update available)");
 
 	return {};
 }
 
-std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& package)  {
+std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion)  {
 	_packageState.error = PackageError::None;
 
-	if (!IsValidURL(package.url)) {
-		WZ_LOG_ERROR("Package: '{}' (v{}) has invalid download URL : '{}'", package.name, package.version, package.url);
-		_packageState.error = PackageError::InvalidURL;
+	WZ_LOG_INFO("Download package: '{}'", package.name);
+
+	auto newVersion = requiredVersion.has_value() ? package.Version(*requiredVersion) : package.LatestVersion();
+	if (!newVersion.has_value()) {
+		// TODO: info
+		_packageState.error = PackageError::NotFound;
 		return {};
 	}
 
-	if (!IsPackageAuthorized(package)) {
+	const auto& version = newVersion->get();
+
+	if (!IsPackageAuthorized(package.name, version.version)) {
 		WZ_LOG_WARNING("Tried to download a package that is not verified, aborting");
 		_packageState.error = PackageError::PackageAuthorizationFailed;
 		return {};
 	}
 
-	auto fetchingResult = FetchPackageFromURL(package);
+	std::optional<TempFile> fetchingResult;
+	for (size_t i = 0; i < version.mirrors.size(); ++i) {
+		auto fileName = std::format("{}-{}-{}-{}.zip", package.name, version.version, wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S"), i);
+		fetchingResult = FetchPackageFromURL(version.mirrors[i], fileName);
+		if (fetchingResult.has_value())
+			break;
+	}
+
 	if (!fetchingResult.has_value()) {
 		WZ_LOG_ERROR("Something went wrong while fetching archive, aborting");
 		_packageState.error = PackageError::PackageFetchingFailed;
@@ -139,13 +152,16 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 
 	fs::path& archiveLocation = fetchingResult.value().path;
 	
-	if (!IsPackageLegit(package, archiveLocation)) {
+	if (!IsPackageLegit(package.name, version.version, archiveLocation)) {
 		WZ_LOG_WARNING("Archive hash does not match expected checksum, aborting");
 		_packageState.error = PackageError::PackageCorrupted;
 		return {};
 	}
 
-	fs::path finalLocation = _config.baseDir / (package.module ? "modules" : "plugins") / archiveLocation.filename().replace_extension();
+	//TODO: Rework !
+	bool isModule = package.type == "module";
+
+	fs::path finalLocation = _config.baseDir / (isModule ? "modules" : "plugins") / archiveLocation.filename().replace_extension();
 
 	std::error_code ec;
 	if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
@@ -156,7 +172,7 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 		}
 	}
 
-	if (ExtractPackage(archiveLocation, finalLocation, package.module)) {
+	if (ExtractPackage(archiveLocation, finalLocation, isModule)) {
 		WZ_LOG_INFO("Done downloading '{}'", package.name);
 		_packageState.state = PackageInstallState::Done;
 		return { std::move(finalLocation) };
@@ -279,10 +295,9 @@ int PackageDownloader::PackageFetchingProgressCallback(void* ptr, curl_off_t tot
 	return 0;
 }
 
-std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromURL(const RemotePackage& package) {
-	WZ_LOG_INFO("Fetching package archive from: '{}'", package.url);
+std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromURL(const std::string& url, const std::string& fileName) {
+	WZ_LOG_INFO("Fetching package archive from: '{}'", url);
 
-	auto fileName = std::format("{}-{}-{}.zip", package.name, std::to_string(package.version), wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S"));
 	auto downloadPath = std::filesystem::temp_directory_path() / fileName;
 	WZ_LOG_INFO("Downloading archive to '{}'", downloadPath.string());
 
@@ -295,12 +310,14 @@ std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromUR
 		return {};
 	}
 
+	TempFile tempFile{ std::move(downloadPath) };
+
 	WZ_LOG_INFO("Start downloading....");
 
 	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
 	std::unique_ptr<CURL, decltype(curl_close)> handle{curl_easy_init(), curl_close};
 
-	curl_easy_setopt(handle.get(), CURLOPT_URL, package.url.c_str());
+	curl_easy_setopt(handle.get(), CURLOPT_URL, url.c_str());
 	curl_easy_setopt(handle.get(), CURLOPT_FAILONERROR, 1L);
 	curl_easy_setopt(handle.get(), CURLOPT_WRITEDATA, &file);
 	curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, WriteToStream);
@@ -316,7 +333,7 @@ std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromUR
 		return {};
 	}
 
-	return {TempFile{std::move(downloadPath) } };
+	return { std::move(tempFile) };
 }
 
 std::optional<std::string> PackageDownloader::FetchJsonFromURL(const std::string& url) {
@@ -343,18 +360,18 @@ std::optional<std::string> PackageDownloader::FetchJsonFromURL(const std::string
 	return { std::move(json) };
 }
 
-bool PackageDownloader::IsPackageAuthorized(const RemotePackage& package) {
+bool PackageDownloader::IsPackageAuthorized(const std::string& packageName, int32_t packageVersion) {
 	if (!_config.packageVerification)
 		return true;
 
-	auto it = _packages.verified.find(package.name);
+	auto it = _packages.verified.find(packageName);
 	if (it == _packages.verified.end())
 		return false;
 
-	return std::get<VerifiedPackageDetails>(*it).versions.contains(std::to_string(package.version));
+	return std::get<VerifiedPackageDetails>(*it).versions.contains(VerifiedPackageVersion{packageVersion, ""});
 }
 
-bool PackageDownloader::IsPackageLegit(const RemotePackage& package, const fs::path& packagePath) {
+bool PackageDownloader::IsPackageLegit(const std::string& packageName, int32_t packageVersion, const fs::path& packagePath) {
 	if (!_config.packageVerification)
 		return true;
 
@@ -367,16 +384,16 @@ bool PackageDownloader::IsPackageLegit(const RemotePackage& package, const fs::p
 		return false;
 	}
 
-	std::string& expectedHash = _packages.verified[package.name].versions[std::to_string(package.version)].checksum;
+	auto it = _packages.verified[packageName].versions.find(VerifiedPackageVersion{packageVersion, ""});
 
 	std::vector<uint8_t> bytes(picosha2::k_digest_size);
 	picosha2::hash256(file, bytes.begin(), bytes.end());
 	std::string hash = picosha2::bytes_to_hex_string(bytes.begin(), bytes.end());
 
-	WZ_LOG_INFO("Expected checksum: {}", expectedHash);
+	WZ_LOG_INFO("Expected checksum: {}", it->checksum);
 	WZ_LOG_INFO("Computed checksum: {}", hash);
 
-	bool equal = expectedHash == hash;
+	bool equal = it->checksum == hash;
 	if (!equal)
 		_packageState.error = PackageError::PackageCorrupted;
 	return equal;
@@ -389,4 +406,8 @@ PackageDownloader::TempFile::~TempFile() {
 	std::error_code ec;
 	if (fs::exists(path, ec))
 		fs::remove(path, ec);
+}
+
+bool PackageDownloader::VerifiedPackageVersion::operator<(const PackageDownloader::VerifiedPackageVersion& rhs) const {
+	return version > rhs.version;
 }

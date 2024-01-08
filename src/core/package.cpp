@@ -17,8 +17,6 @@ std::string PackageState::GetProgress(int barWidth) const {
 
 std::string_view PackageState::GetError() const {
 	switch (error) {
-		case PackageError::InvalidURL:
-			return "Invalid URL";
 		case PackageError::FailedReadingArchive:
 			return "Failed reading archive";
 		case PackageError::FailedCreatingDirectory:
@@ -39,4 +37,30 @@ std::string_view PackageState::GetError() const {
 		default:
 			return "";
 	}
+}
+
+LocalPackage::operator RemotePackage() const {
+	return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, WIZARD_API_VERSION_1_0, { descriptor->downloadURL }} }};
+}
+
+bool PackageVersion::operator<(const PackageVersion& rhs) const {
+	return version > rhs.version;
+}
+
+bool RemotePackage::operator==(const RemotePackage& rhs) const {
+	return name == rhs.name && type == rhs.type;
+}
+
+PackageRef RemotePackage::LatestVersion() const {
+	if (!versions.empty())
+		return *versions.begin();
+	return {};
+}
+
+PackageRef RemotePackage::Version(const int32_t version) const{
+	PackageVersion key{ version, WIZARD_API_VERSION_1_0, {} };
+	auto it = versions.find(key);
+	if (it != versions.end())
+		return *it;
+	return {};
 }

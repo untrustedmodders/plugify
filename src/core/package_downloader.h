@@ -31,11 +31,11 @@ namespace wizard {
 		 * A package is deemed verified/authorized through a manual validation process that is
 		 * described here: https://github.com/untrustedpackageders/verified_packages/README.md;
 		 */
-		bool IsPackageAuthorized(const RemotePackage& package);
+		bool IsPackageAuthorized(const std::string& packageName, int32_t packageVersion);
 
 		std::optional<PackageManifest> FetchPackageManifest(const std::string& url);
-		std::optional<RemotePackage> UpdatePackage(const LocalPackage& package);
-		std::optional<fs::path> DownloadPackage(const RemotePackage& package);
+		std::optional<RemotePackage> UpdatePackage(const LocalPackage& package, std::optional<int32_t> requiredVersion = {});
+		std::optional<fs::path> DownloadPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion = {});
 
 		PackageState GetState() const {
 			return _packageState;
@@ -54,32 +54,32 @@ namespace wizard {
 		 * If something went wrong during archive download, this will return an empty
 		 * optional object.
 		 */
-		std::optional<TempFile> FetchPackageFromURL(const RemotePackage& package);
+		std::optional<TempFile> FetchPackageFromURL(const std::string& url, const std::string& fileName = std::tmpnam(nullptr));
 
-
-		std::optional<std::string> FetchJsonFromURL(const std::string& url);
+		static std::optional<std::string> FetchJsonFromURL(const std::string& url);
 
 		/**
-		 * Tells if a package archive has not been corrupted.
+		 * Tells if a package archive has not been corrupted. (Use after IsPackageAuthorized)
 		 *
 		 * The package validation procedure includes computing the SHA256 hash of the final
 		 * archive, which is stored in the verified packages list. This hash is used by this
 		 * very method to ensure the archive downloaded from the Internet is the exact
 		 * same that has been manually verified.
 		 */
-		bool IsPackageLegit(const RemotePackage& package, const fs::path& packagePath);
+		bool IsPackageLegit(const std::string& packageName, int32_t packageVersion, const fs::path& packagePath);
 
 		bool ExtractPackage(const fs::path& packagePath, const fs::path& extractPath, bool isModule);
 
 	private:
 		struct VerifiedPackageVersion {
+			int32_t version;
 			std::string checksum;
-			std::string commitHash;
+			bool operator <(const VerifiedPackageVersion& rhs) const;
 		};
 		struct VerifiedPackageDetails {
-			std::string username;
-			std::string repository;
-			std::unordered_map<std::string, VerifiedPackageVersion> versions;
+			std::string name;
+			std::string type;
+			std::set<VerifiedPackageVersion> versions;
 		};
 		struct VerifiedPackageMap {
 			std::unordered_map<std::string, VerifiedPackageDetails> verified;
@@ -94,8 +94,4 @@ namespace wizard {
 		PackageState _packageState;
 		Config _config;
 	};
-
-	inline bool IsValidURL(std::string_view str) {
-		return str.starts_with("http://") || str.starts_with("https://");
-	}
 }

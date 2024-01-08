@@ -1,8 +1,8 @@
 #pragma once
 
-#include "wizard_context.h"
 #include "package.h"
 #include "package_downloader.h"
+#include "wizard_context.h"
 #include <wizard/package_manager.h>
 
 namespace wizard {
@@ -42,7 +42,7 @@ namespace wizard {
 		void DoPackage(const std::function<void()>& body);
 
 	private:
-		//PackageDownloader _downloader;
+		PackageDownloader _downloader;
 		std::unordered_map<std::string, LocalPackage> _localPackages;
 		std::unordered_map<std::string, RemotePackage> _remotePackages;
 	};

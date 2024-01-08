@@ -17,7 +17,7 @@ PluginManager::PluginManager(std::weak_ptr<IWizard> wizard) : IPluginManager(*th
 	LoadRequiredLanguageModules();
 	LoadAndStartAvailablePlugins();
 
-	zipArchive.get()DEBUG("PluginManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
+	WZ_LOG_DEBUG("PluginManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
 PluginManager::~PluginManager() {

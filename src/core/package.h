@@ -17,7 +17,6 @@ namespace wizard {
 
 	enum class PackageError : uint8_t {
 		None,
-		InvalidURL,
 		FailedReadingArchive,
 		FailedCreatingDirectory,
 		FailedWritingToDisk,
@@ -29,19 +28,44 @@ namespace wizard {
 		NotFound,
 	};
 
+	struct PackageVersion {
+		int32_t version;
+		uint32_t sdkVersion;
+		//std::string checksum;
+		//std::vector<std::string> platforms;
+		std::vector<std::string> mirrors;
+
+		bool operator <(const PackageVersion& rhs) const;
+	};
+
+	using PackageRef = std::optional<std::reference_wrapper<const PackageVersion>>;
+
+	// TODO: Add more field ?
+
 	struct RemotePackage {
 		std::string name;
-		std::string url;
-		int32_t version;
-		bool module{ false };
+		std::string type;
+		std::string author;
+		std::string description;
+		std::set<PackageVersion> versions;
+
+		bool operator==(const RemotePackage& rhs) const;
+
+		/// Returns the package for the latest version.
+		PackageRef LatestVersion() const;
+
+		/// Returns the package for the given package version.
+		PackageRef Version(int32_t version) const;
 	};
 
 	struct LocalPackage {
 		std::string name;
+		std::string type;
 		fs::path path;
 		int32_t version;
-		bool module{ false };
 		std::unique_ptr<Descriptor> descriptor;
+
+		explicit operator RemotePackage() const;
 	};
 
 	struct PackageManifest {

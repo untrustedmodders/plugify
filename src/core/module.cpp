@@ -72,10 +72,7 @@ void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
 		return;
 	}
 
-	if (auto data = std::get_if<LoadResultData>(&result)) {
-		plugin->SetMethods(std::move(data->methods));
-	}
-
+	plugin->SetMethods(std::move(std::get<LoadResultData>(result).methods));
 	plugin->SetLoaded();
 
 	_loadedPlugins.emplace_back(plugin);
