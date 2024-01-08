@@ -57,3 +57,11 @@ void IPackageManager::UninstallAllPackages() {
 void IPackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const {
 	return _impl.SnapshotPackages(manifestFilePath, prettify);
 }
+
+LocalPackageRef IPackageManager::FindLocalPackage(const std::string& packageName) const {
+	return _impl.FindLocalPackage(packageName);
+}
+
+RemotePackageRef IPackageManager::FindRemotePackage(const std::string& packageName) const {
+	return _impl.FindRemotePackage(packageName);
+}

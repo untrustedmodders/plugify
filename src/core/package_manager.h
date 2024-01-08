@@ -6,9 +6,6 @@
 #include <wizard/package.h>
 
 namespace wizard {
-	using LocalPackageRef = std::optional<std::reference_wrapper<const LocalPackage>>;
-	using RemotePackageRef = std::optional<std::reference_wrapper<const RemotePackage>>;
-
 	class PackageManager : public IPackageManager, public WizardContext {
 	public:
 		explicit PackageManager(std::weak_ptr<IWizard> wizard);
@@ -33,11 +30,10 @@ namespace wizard {
 
 		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const;
 
-	private:
-		// Move to IPackageManager
 		LocalPackageRef FindLocalPackage(const std::string& packageName) const;
 		RemotePackageRef FindRemotePackage(const std::string& packageName) const;
 
+	private:
 		bool UpdatePackage(const LocalPackage& package);
 		bool InstallPackage(const RemotePackage& package);
 		bool UninstallPackage(const LocalPackage& package);

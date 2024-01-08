@@ -1,10 +1,17 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
+#include <optional>
 #include <wizard_export.h>
 
 namespace wizard {
 	class PackageManager;
+	class LocalPackage;
+	class RemotePackage;
+
+	using LocalPackageRef = std::optional<std::reference_wrapper<const LocalPackage>>;
+	using RemotePackageRef = std::optional<std::reference_wrapper<const RemotePackage>>;
 
 	// Package manager provided to user, which implemented in core
 	class WIZARD_API IPackageManager {
@@ -30,6 +37,9 @@ namespace wizard {
 		void UninstallAllPackages();
 
 		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const;
+
+		LocalPackageRef FindLocalPackage(const std::string& packageName) const;
+		RemotePackageRef FindRemotePackage(const std::string& packageName) const;
 
 	private:
 		PackageManager& _impl;
