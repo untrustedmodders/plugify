@@ -14,8 +14,8 @@ void IPackageManager::LoadRemotePackages() {
 	return _impl.LoadRemotePackages();
 }
 
-void IPackageManager::InstallPackage(const std::string& packageName) {
-	return _impl.InstallPackage(packageName);
+void IPackageManager::InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
+	return _impl.InstallPackage(packageName, requiredVersion);
 }
 
 void IPackageManager::InstallPackages(std::span<const std::string> packageNames) {
@@ -30,8 +30,8 @@ void IPackageManager::InstallAllPackages(const std::string& manifestUrl, bool re
 	return _impl.InstallAllPackages(manifestUrl, reinstall);
 }
 
-void IPackageManager::UpdatePackage(const std::string& packageName) {
-	return _impl.UpdatePackage(packageName);
+void IPackageManager::UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
+	return _impl.UpdatePackage(packageName, requiredVersion);
 }
 
 void IPackageManager::UpdatePackages(std::span<const std::string> packageNames) {

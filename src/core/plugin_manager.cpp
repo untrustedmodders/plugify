@@ -119,7 +119,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 				size_t index = _allPlugins.size();
 				_allPlugins.emplace_back(std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor)));
 			} else {
-				const auto& existingPlugin = *it;
+				auto& existingPlugin = *it;
 
 				auto& existingVersion = existingPlugin->GetDescriptor().version;
 				if (existingVersion != descriptor->version) {
@@ -127,7 +127,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 
 					if (existingVersion < descriptor->version) {
 						auto index = static_cast<size_t>(std::distance(_allPlugins.begin(), it));
-						_allPlugins[index] = std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor));
+						existingPlugin = std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor));
 					}
 				} else {
 					WZ_LOG_WARNING("The same version (v{}) of plugin '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingPlugin->GetFilePath().string(), path.string());
@@ -174,14 +174,14 @@ void PluginManager::DiscoverAllModules() {
 			if (it == _allModules.end()) {
 				_allModules.emplace(std::move(lang), std::make_shared<Module>(std::move(name), std::move(moduleBinaryPath), std::move(*descriptor)));
 			} else {
-				const auto& existingModule = std::get<std::shared_ptr<Module>>(*it);
+				auto& existingModule = std::get<std::shared_ptr<Module>>(*it);
 
 				auto& existingVersion = existingModule->GetDescriptor().version;
 				if (existingVersion != descriptor->version) {
 					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' module, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
 
 					if (existingVersion < descriptor->version) {
-						_allModules[std::move(lang)] = std::make_shared<Module>(std::move(name), std::move(moduleBinaryPath), std::move(*descriptor));
+						existingModule = std::make_shared<Module>(std::move(name), std::move(moduleBinaryPath), std::move(*descriptor));
 					}
 				} else {
 					WZ_LOG_WARNING("The same version (v{}) of module '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingModule->GetFilePath().string(), path.string());

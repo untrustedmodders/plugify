@@ -51,7 +51,7 @@ GLZ_META(wizard::PluginDescriptor, fileVersion, version, versionName, friendlyNa
 GLZ_META(wizard::LanguageModuleDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, language, forceLoad);
 GLZ_META(wizard::Config, baseDir, logSeverity, strictMode, packageVerification, packageVerifyUrl, repositories);
 
-GLZ_META(wizard::PackageVersion, version, sdkVersion, mirrors);
+GLZ_META(wizard::PackageVersion, version, sdkVersion, mirrors, platforms);
 GLZ_META(wizard::RemotePackage, name, type, author, description, versions);
 GLZ_META(wizard::LocalPackage, name, type, path, version, descriptor);
 

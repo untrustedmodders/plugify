@@ -11,10 +11,9 @@
 
 using namespace wizard;
 
-static std::map<std::string_view, std::pair<std::string_view, std::string_view>> packageTypes {
-	/* type      folder     descriptor extension */
-	{ "module", {"modules", Module::kFileExtension} },
-	{ "plugin", {"plugins", Plugin::kFileExtension} },
+static std::array<std::pair<std::string_view, std::string_view>, 2> packageTypes {
+	{ "modules", Module::kFileExtension} },
+	{ "plugins", Plugin::kFileExtension} },
 	// Might add more package types in future
 };
 
@@ -63,7 +62,7 @@ void PackageDownloader::FetchPackagesListFromAPI() {
 	}
 }
 
-std::optional<PackageManifest> PackageDownloader::FetchPackageManifest(const std::string& url) {
+std::optional<PackageManifest> PackageDownloader::FetchPackageManifest(std::string_view url) {
 	WZ_LOG_INFO("Loading packages manifest...");
 
 	auto json = FetchJsonFromURL(url);
@@ -83,61 +82,12 @@ std::optional<PackageManifest> PackageDownloader::FetchPackageManifest(const std
 	return std::move(*manifest);
 }
 
-std::optional<RemotePackage> PackageDownloader::UpdatePackage(const LocalPackage& package, std::optional<int32_t> requiredVersion) {
-	_packageState.error = PackageError::None;
-
-	WZ_LOG_INFO("Update package: '{}' (v{})", package.name, package.version);
-
-	auto json = FetchJsonFromURL(package.descriptor->updateURL);
-	if (!json.has_value()) {
-		WZ_LOG_ERROR("Package: '{}' (v{}) from '{}' not found", package.name, package.version, package.descriptor->updateURL);
-		return {};
-	}
-
-	auto newPackage = glz::read_json<RemotePackage>(*json);
-	if (!newPackage.has_value()) {
-		WZ_LOG_ERROR("Package: '{}' (v{}) from '{}' has JSON parsing error: {}", package.name, package.version, package.descriptor->updateURL, glz::format_error(newPackage.error(), *json));
-		return {};
-	}
-
-	if (requiredVersion.has_value()) {
-		auto newVersion = newPackage->Version(*requiredVersion);
-		if (newVersion.has_value()) {
-			const auto& version = newVersion->get();
-			WZ_LOG_INFO("Package '{}' (v{}) can be {}, to different version (v{})", package.name, package.version, version.version > package.version ? "upgraded" : version.version == package.version ? "reinstalled" : "downgraded", version.version);
-			_packageState.state = PackageInstallState::Updating;
-			return std::move(*newPackage);
-		}
-	} else {
-		auto newVersion = newPackage->LatestVersion();
-		if (newVersion.has_value()) {
-			const auto& version = newVersion->get();
-			if (version.version > package.version) {
-				WZ_LOG_INFO("Update available, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(package.version, version.version), newPackage->name, std::min(package.version, version.version));
-				_packageState.state = PackageInstallState::Updating;
-				return std::move(*newPackage);
-			}
-		}
-	}
-
-	WZ_LOG_INFO("Done loading package. (No update available)");
-
-	return {};
-}
-
 std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion)  {
-	_packageState.error = PackageError::None;
+	//_packageState.error = PackageError::None;
 
 	WZ_LOG_INFO("Download package: '{}'", package.name);
 
-	auto it = packageTypes.find(package.type);
-	if (it == packageTypes.end()) {
-		WZ_LOG_ERROR("Package: '{}' has unknown type: {}", package.name, package.type);
-		_packageState.error = PackageError::NotFound;
-		return {};
-	}
-
-	auto newVersion = requiredVersion.has_value() ? package.Version(*requiredVersion) : package.LatestVersion();
+	PackageRef newVersion = requiredVersion.has_value() ? package.Version(*requiredVersion) : package.LatestVersion();
 	if (!newVersion.has_value()) {
 		WZ_LOG_ERROR("Package: '{}' (v{}) was not found", package.name, requiredVersion.has_value() ? std::to_string(*requiredVersion) : "[latest]");
 		_packageState.error = PackageError::NotFound;
@@ -153,6 +103,7 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 	}
 
 	std::optional<TempFile> fetchingResult;
+
 	for (size_t i = 0; i < version.mirrors.size(); ++i) {
 		auto fileName = std::format("{}-{}-{}-{}.zip", package.name, version.version, wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S"), i);
 		fetchingResult = FetchPackageFromURL(version.mirrors[i], fileName);
@@ -166,15 +117,15 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 		return {};
 	}
 
-	fs::path& archiveLocation = fetchingResult.value().path;
-	
+	const fs::path& archiveLocation = fetchingResult.value().path;
+
 	if (!IsPackageLegit(package.name, version.version, archiveLocation)) {
 		WZ_LOG_WARNING("Archive hash does not match expected checksum, aborting");
 		_packageState.error = PackageError::PackageCorrupted;
 		return {};
 	}
 
-	const auto& [folder, extension] = it->second;
+	const auto& [folder, extension] = packageTypes[package.type == "plugin"];
 
 	fs::path finalLocation = _config.baseDir / folder / archiveLocation.filename().replace_extension();
 
@@ -309,10 +260,10 @@ int PackageDownloader::PackageFetchingProgressCallback(void* ptr, curl_off_t tot
 	return 0;
 }
 
-std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromURL(const std::string& url, const std::string& fileName) {
+std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromURL(std::string_view url, const std::string& fileName) {
 	WZ_LOG_INFO("Fetching package archive from: '{}'", url);
 
-	auto downloadPath = std::filesystem::temp_directory_path() / fileName;
+	fs::path downloadPath = std::filesystem::temp_directory_path() / fileName;
 	WZ_LOG_INFO("Downloading archive to '{}'", downloadPath.string());
 
 	_packageState.state = PackageInstallState::Downloading;
@@ -331,7 +282,7 @@ std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromUR
 	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
 	std::unique_ptr<CURL, decltype(curl_close)> handle{curl_easy_init(), curl_close};
 
-	curl_easy_setopt(handle.get(), CURLOPT_URL, url.c_str());
+	curl_easy_setopt(handle.get(), CURLOPT_URL, url.data());
 	curl_easy_setopt(handle.get(), CURLOPT_FAILONERROR, 1L);
 	curl_easy_setopt(handle.get(), CURLOPT_WRITEDATA, &file);
 	curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, WriteToStream);
@@ -350,7 +301,7 @@ std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromUR
 	return { std::move(tempFile) };
 }
 
-std::optional<std::string> PackageDownloader::FetchJsonFromURL(const std::string& url) {
+std::optional<std::string> PackageDownloader::FetchJsonFromURL(std::string_view url) {
 	std::string json;
 
 	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
@@ -359,7 +310,7 @@ std::optional<std::string> PackageDownloader::FetchJsonFromURL(const std::string
 	curl_easy_setopt(handle.get(), CURLOPT_CUSTOMREQUEST, "GET");
 	curl_easy_setopt(handle.get(), CURLOPT_TIMEOUT, 30L);
 	curl_easy_setopt(handle.get(), CURLOPT_FAILONERROR, 1L);
-	curl_easy_setopt(handle.get(), CURLOPT_URL, url.c_str());
+	curl_easy_setopt(handle.get(), CURLOPT_URL, url.data());
 	curl_easy_setopt(handle.get(), CURLOPT_WRITEDATA, &json);
 	curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, WriteToString);
 	CURLcode result = curl_easy_perform(handle.get());

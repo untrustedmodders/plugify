@@ -12,9 +12,9 @@ namespace wizard {
 	struct PackageVersion {
 		std::int32_t version;
 		std::uint32_t sdkVersion;
-		//std::string checksum;
-		//std::vector<std::string> platforms;
 		std::vector<std::string> mirrors;
+		std::vector<std::string> platforms;
+		// TODO: dependencies, conflicts here may be?
 
 		bool operator <(const PackageVersion& rhs) const { return version > rhs.version; }
 	};
@@ -49,10 +49,10 @@ namespace wizard {
 		std::string type;
 		std::filesystem::path path;
 		std::int32_t version;
-		std::unique_ptr<Descriptor> descriptor;
+		std::shared_ptr<Descriptor> descriptor;
 
 		explicit operator RemotePackage() const {
-			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, WIZARD_API_VERSION_1_0, { descriptor->downloadURL }} }};
+			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, WIZARD_API_VERSION_1_0, { descriptor->downloadURL }, descriptor->supportedPlatforms} }};
 		}
 	};
 }

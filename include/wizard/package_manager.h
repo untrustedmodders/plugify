@@ -23,12 +23,12 @@ namespace wizard {
 		void LoadLocalPackages();
 		void LoadRemotePackages();
 
-		void InstallPackage(const std::string& packageName);
+		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
 		void InstallPackages(std::span<const std::string> packageNames);
 		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall);
 		void InstallAllPackages(const std::string& manifestUrl, bool reinstall);
 
-		void UpdatePackage(const std::string& packageName);
+		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
 		void UpdatePackages(std::span<const std::string> packageNames);
 		void UpdateAllPackages();
 

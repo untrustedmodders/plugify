@@ -76,8 +76,8 @@ namespace wizard {
 		 */
 		bool IsPackageAuthorized(const std::string& packageName, int32_t packageVersion);
 
-		std::optional<PackageManifest> FetchPackageManifest(const std::string& url);
-		std::optional<RemotePackage> UpdatePackage(const LocalPackage& package, std::optional<int32_t> requiredVersion = {});
+		std::optional<PackageManifest> FetchPackageManifest(std::string_view url);
+
 		std::optional<fs::path> DownloadPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion = {});
 
 		PackageState GetState() const {
@@ -97,9 +97,9 @@ namespace wizard {
 		 * If something went wrong during archive download, this will return an empty
 		 * optional object.
 		 */
-		std::optional<TempFile> FetchPackageFromURL(const std::string& url, const std::string& fileName = std::tmpnam(nullptr));
+		std::optional<TempFile> FetchPackageFromURL(std::string_view url, const std::string& fileName = std::tmpnam(nullptr));
 
-		static std::optional<std::string> FetchJsonFromURL(const std::string& url);
+		static std::optional<std::string> FetchJsonFromURL(std::string_view url);
 
 		/**
 		 * Tells if a package archive has not been corrupted. (Use after IsPackageAuthorized)
