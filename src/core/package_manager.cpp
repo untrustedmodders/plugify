@@ -102,6 +102,7 @@ void PackageManager::LoadRemotePackages() {
 	_remotePackages.clear();
 
 	std::unordered_set<std::string> fetched;
+	fetched.reserve(wizard->GetConfig().repositories.size() + _localPackages.size());
 
 	auto fetchManifest = [&](std::string url) {
 		if (!url.empty() && url.back() == '/')
@@ -235,6 +236,8 @@ void PackageManager::ResolveDependencies() {
 		}
 	}
 
+	// TODO: Finish auto install
+
 	/*Request([&] {
 		for (const auto& [_, dependency] : dependencies) {
 			const auto& [package, version] = dependency;
@@ -247,6 +250,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	auto debugStart = DateTime::Now();
 
 	std::unordered_map<std::string, RemotePackage> packages;
+	packages.reserve(_localPackages.size());
 
 	for (const auto& [name, package] : _localPackages) {
 		packages.emplace(name, package);

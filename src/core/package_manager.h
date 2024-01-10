@@ -50,6 +50,7 @@ namespace wizard {
 
 	private:
 		PackageDownloader _downloader;
+		// Consider different conteinter like std::vector<std::pair<>>
 		std::unordered_map<std::string, LocalPackage> _localPackages;
 		std::unordered_map<std::string, RemotePackage> _remotePackages;
 	};
