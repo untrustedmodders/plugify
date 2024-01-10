@@ -16,5 +16,6 @@
 #include <cmath>
 
 #include <utils/log.h>
+#include <utils/assert.h>
 #include <utils/paths.h>
 #include <utils/date_time.h>

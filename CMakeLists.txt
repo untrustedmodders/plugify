@@ -33,6 +33,7 @@ option(WIZARD_USE_EXTERNAL_CURL "Use external curl library" ON)
 option(WIZARD_USE_EXTERNAL_FMT "Use external fmt library" OFF)
 
 option(WIZARD_LOGGING "Enable logs" ON)
+option(WIZARD_DEBUG "Enable debuging mode (asserts)" ON)
 
 # ------------------------------------------------------------------------------
 # Asmjit
@@ -206,6 +207,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         WIZARD_PLATFORM="${WIZARD_PLATFORM}"
         WIZARD_ARCH_X86=${WIZARD_ARCH_X86}
         WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>
+        WIZARD_DEBUG=$<BOOL:${WIZARD_DEBUG}>
         WIZARD_FORMAT_SUPPORT=$<BOOL:${CXX_FORMAT_SUPPORT}>
         )
 
