@@ -26,6 +26,7 @@ namespace wizard {
 	public:
 		ModuleRef FindModule(const std::string& moduleName);
 		ModuleRef FindModule(std::string_view moduleName);
+		ModuleRef FindModuleFromId(std::uint64_t moduleId);
 		ModuleRef FindModuleFromLang(const std::string& moduleLang);
 		ModuleRef FindModuleFromPath(const std::filesystem::path& moduleFilePath);
 		ModuleRef FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor);

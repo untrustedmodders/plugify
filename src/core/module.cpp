@@ -5,7 +5,7 @@
 
 using namespace wizard;
 
-Module::Module(std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor) : IModule(*this), _name{std::move(name)}, _lang{std::move(lang)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
+Module::Module(uint64_t id, std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor) : IModule(*this), _id{id}, _name{std::move(name)}, _lang{std::move(lang)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
 }
 
 Module::~Module() {

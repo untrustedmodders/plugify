@@ -9,8 +9,13 @@ namespace wizard {
 	class Plugin;
 	class Module final : public IModule {
 	public:
-		Module(std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor);
+		Module(uint64_t id, std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor);
 		~Module();
+
+		/* IModule interface */
+		uint64_t GetId() const {
+			return _id;
+		}
 
 		const std::string& GetName() const {
 			return _name;
@@ -76,6 +81,7 @@ namespace wizard {
 		static inline const char* const kFileExtension = ".wmodule";
 
 	private:
+		uint64_t _id{ std::numeric_limits<uint64_t>::max() };
 		std::string _name;
 		std::string _lang;
 		fs::path _filePath;

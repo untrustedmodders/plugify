@@ -174,7 +174,8 @@ void PluginManager::DiscoverAllModules() {
 				return plugin->GetLanguage() == lang;
 			});
 			if (it == _allModules.end()) {
-				_allModules.emplace_back(std::make_unique<Module>(std::move(name), std::move(lang), std::move(moduleBinaryPath), std::move(*descriptor)));
+				size_t index = _allModules.size();
+				_allModules.emplace_back(std::make_unique<Module>(index, std::move(name), std::move(lang), std::move(moduleBinaryPath), std::move(*descriptor)));
 			} else {
 				auto& existingModule = *it;
 
@@ -183,7 +184,8 @@ void PluginManager::DiscoverAllModules() {
 					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' module, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
 
 					if (existingVersion < descriptor->version) {
-						existingModule = std::make_unique<Module>(std::move(name), std::move(lang), std::move(moduleBinaryPath), std::move(*descriptor));
+						auto index = static_cast<size_t>(std::distance(_allModules.begin(), it));
+						existingModule = std::make_unique<Module>(index, std::move(name), std::move(lang), std::move(moduleBinaryPath), std::move(*descriptor));
 					}
 				} else {
 					WZ_LOG_WARNING("The same version (v{}) of module '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingModule->GetFilePath().string(), path.string());
@@ -198,7 +200,7 @@ void PluginManager::LoadRequiredLanguageModules() {
 	if (!wizard)
 		return;
 
-	std::unordered_set<std::string> modules;
+	std::vector<uint64_t> modules;
 	modules.reserve(_allModules.size());
 
 	for (const auto& plugin : _allPlugins) {
@@ -212,11 +214,11 @@ void PluginManager::LoadRequiredLanguageModules() {
 		}
 		auto& module = *it;
 		plugin->SetModule(*module);
-		modules.insert(module->GetLanguage());
+		modules.push_back(module->GetId());
 	}
 
 	for (const auto& module : _allModules) {
-		if (module->GetDescriptor().forceLoad || modules.contains(module->GetLanguage())) {
+		if (module->GetDescriptor().forceLoad || std::find(modules.begin(), modules.end(), module->GetId()) != modules.end()) {
 			module->Initialize(wizard->GetProvider());
 		}
 	}
@@ -352,6 +354,12 @@ ModuleRef PluginManager::FindModule(std::string_view moduleName) {
 	return {};
 }
 
+ModuleRef PluginManager::FindModuleFromId(uint64_t moduleId) {
+	if (_allModules.size() < moduleId)
+		return *_allModules[moduleId];
+	return {};
+}
+
 ModuleRef PluginManager::FindModuleFromLang(const std::string& moduleLang) {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleLang](const auto& module) {
 		return module->GetLanguage() == moduleLang;
@@ -407,11 +415,8 @@ PluginRef PluginManager::FindPlugin(std::string_view pluginName) {
 }
 
 PluginRef PluginManager::FindPluginFromId(uint64_t pluginId) {
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginId](const auto& plugin) {
-		return plugin->GetId() == pluginId;
-	});
-	if (it != _allPlugins.end())
-		return *(*it);
+	if (_allPlugins.size() < pluginId)
+		return *_allPlugins[pluginId];
 	return {};
 }
 

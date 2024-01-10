@@ -6,6 +6,10 @@ using namespace wizard;
 IModule::IModule(Module& impl) : _impl{impl} {
 }
 
+uint64_t IModule::GetId() const {
+	return _impl.GetId();
+}
+
 const std::string& IModule::GetName() const {
     return _impl.GetName();
 }

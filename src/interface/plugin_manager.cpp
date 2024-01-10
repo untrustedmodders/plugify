@@ -14,6 +14,10 @@ ModuleRef IPluginManager::FindModule(std::string_view moduleName) {
     return _impl.FindModule(moduleName);
 }
 
+ModuleRef IPluginManager::FindModuleFromId(std::uint64_t moduleId) {
+    return _impl.FindModuleFromId(moduleId);
+}
+
 ModuleRef IPluginManager::FindModuleFromLang(const std::string& moduleLang) {
     return _impl.FindModuleFromLang(moduleLang);
 }

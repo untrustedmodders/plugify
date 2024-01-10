@@ -23,6 +23,7 @@ namespace wizard {
 		~IModule() = default;
 
 	public:
+		std::uint64_t GetId() const;
 		const std::string& GetName() const;
 		const std::string& GetLanguage() const;
 		const std::string& GetFriendlyName() const;
