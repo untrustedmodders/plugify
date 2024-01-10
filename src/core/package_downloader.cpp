@@ -12,8 +12,8 @@
 using namespace wizard;
 
 static std::array<std::pair<std::string_view, std::string_view>, 2> packageTypes {
-	{ "modules", Module::kFileExtension} },
-	{ "plugins", Plugin::kFileExtension} },
+	std::pair{ "modules", Module::kFileExtension },
+	std::pair{ "plugins", Plugin::kFileExtension },
 	// Might add more package types in future
 };
 
@@ -63,7 +63,7 @@ void PackageDownloader::FetchPackagesListFromAPI() {
 }
 
 std::optional<PackageManifest> PackageDownloader::FetchPackageManifest(std::string_view url) {
-	WZ_LOG_INFO("Loading packages manifest...");
+	WZ_LOG_VERBOSE("Loading packages manifest...");
 
 	auto json = FetchJsonFromURL(url);
 	if (!json.has_value()) {
@@ -77,24 +77,14 @@ std::optional<PackageManifest> PackageDownloader::FetchPackageManifest(std::stri
 		return {};
 	}
 
-	WZ_LOG_INFO("Done loading packages manifest from '{}'.", url);
+	WZ_LOG_VERBOSE("Done loading packages manifest from '{}'.", url);
 
 	return std::move(*manifest);
 }
 
-std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion)  {
-	//_packageState.error = PackageError::None;
-
-	WZ_LOG_INFO("Download package: '{}'", package.name);
-
-	PackageRef newVersion = requiredVersion.has_value() ? package.Version(*requiredVersion) : package.LatestVersion();
-	if (!newVersion.has_value()) {
-		WZ_LOG_ERROR("Package: '{}' (v{}) was not found", package.name, requiredVersion.has_value() ? std::to_string(*requiredVersion) : "[latest]");
-		_packageState.error = PackageError::NotFound;
-		return {};
-	}
-
-	const auto& version = newVersion->get();
+std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& package, const PackageVersion& version)  {
+	_packageState.error = PackageError::None;
+	WZ_LOG_VERBOSE("Download package: '{}'", package.name);
 
 	if (!IsPackageAuthorized(package.name, version.version)) {
 		WZ_LOG_WARNING("Tried to download a package that is not verified, aborting");
@@ -139,11 +129,11 @@ std::optional<fs::path> PackageDownloader::DownloadPackage(const RemotePackage& 
 	}
 
 	if (ExtractPackage(archiveLocation, finalLocation, extension)) {
-		WZ_LOG_INFO("Done downloading '{}'", package.name);
+		WZ_LOG_VERBOSE("Done downloading '{}'", package.name);
 		_packageState.state = PackageInstallState::Done;
 		return { std::move(finalLocation) };
 	} else {
-		WZ_LOG_INFO("Failed downloading '{}'", package.name);
+		WZ_LOG_VERBOSE("Failed downloading '{}'", package.name);
 		_packageState.state = PackageInstallState::Failed;
 		return {};
 	}
@@ -157,7 +147,7 @@ bool PackageDownloader::ExtractPackage(const fs::path& packagePath, const fs::pa
 		return false;
 	}
 
-	WZ_LOG_INFO("Start extracting....");
+	WZ_LOG_VERBOSE("Start extracting....");
 
 	_packageState.state = PackageInstallState::Extracting;
 
@@ -261,10 +251,10 @@ int PackageDownloader::PackageFetchingProgressCallback(void* ptr, curl_off_t tot
 }
 
 std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromURL(std::string_view url, const std::string& fileName) {
-	WZ_LOG_INFO("Fetching package archive from: '{}'", url);
+	WZ_LOG_VERBOSE("Fetching package archive from: '{}'", url);
 
 	fs::path downloadPath = std::filesystem::temp_directory_path() / fileName;
-	WZ_LOG_INFO("Downloading archive to '{}'", downloadPath.string());
+	WZ_LOG_VERBOSE("Downloading archive to '{}'", downloadPath.string());
 
 	_packageState.state = PackageInstallState::Downloading;
 
@@ -277,7 +267,7 @@ std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromUR
 
 	TempFile tempFile{ std::move(downloadPath) };
 
-	WZ_LOG_INFO("Start downloading....");
+	WZ_LOG_VERBOSE("Start downloading....");
 
 	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
 	std::unique_ptr<CURL, decltype(curl_close)> handle{curl_easy_init(), curl_close};
@@ -292,7 +282,7 @@ std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromUR
 	CURLcode result = curl_easy_perform(handle.get());
 
 	if (result == CURLcode::CURLE_OK) {
-		WZ_LOG_INFO("Package archive successfully fetched.");
+		WZ_LOG_VERBOSE("Package archive successfully fetched.");
 	} else {
 		WZ_LOG_ERROR("Fetching package archive failed: {}", curl_easy_strerror(result));
 		return {};
@@ -302,6 +292,8 @@ std::optional<PackageDownloader::TempFile> PackageDownloader::FetchPackageFromUR
 }
 
 std::optional<std::string> PackageDownloader::FetchJsonFromURL(std::string_view url) {
+	WZ_LOG_VERBOSE("Fetching json from: '{}'", url);
+
 	std::string json;
 
 	auto curl_close = [](CURL* curl){ curl_easy_cleanup(curl); };
@@ -316,7 +308,7 @@ std::optional<std::string> PackageDownloader::FetchJsonFromURL(std::string_view 
 	CURLcode result = curl_easy_perform(handle.get());
 
 	if (result == CURLcode::CURLE_OK) {
-		WZ_LOG_INFO("JSON successfully fetched.");
+		WZ_LOG_VERBOSE("JSON successfully fetched.");
 	} else {
 		WZ_LOG_ERROR("Fetching json failed: {}", curl_easy_strerror(result));
 		return {};
@@ -355,8 +347,8 @@ bool PackageDownloader::IsPackageLegit(const std::string& packageName, int32_t p
 	picosha2::hash256(file, bytes.begin(), bytes.end());
 	std::string hash = picosha2::bytes_to_hex_string(bytes.begin(), bytes.end());
 
-	WZ_LOG_INFO("Expected checksum: {}", it->checksum);
-	WZ_LOG_INFO("Computed checksum: {}", hash);
+	WZ_LOG_VERBOSE("Expected checksum: {}", it->checksum);
+	WZ_LOG_VERBOSE("Computed checksum: {}", hash);
 
 	bool equal = it->checksum == hash;
 	if (!equal)

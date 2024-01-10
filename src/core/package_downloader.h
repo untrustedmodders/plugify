@@ -40,6 +40,7 @@ namespace wizard {
 		std::string GetProgress(int barWidth = 60) const;
 	};
 
+	struct PackageVersion;
 	struct RemotePackage;
 	struct LocalPackage;
 
@@ -78,7 +79,7 @@ namespace wizard {
 
 		std::optional<PackageManifest> FetchPackageManifest(std::string_view url);
 
-		std::optional<fs::path> DownloadPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion = {});
+		std::optional<fs::path> DownloadPackage(const RemotePackage& package, const PackageVersion& version);
 
 		PackageState GetState() const {
 			return _packageState;

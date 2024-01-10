@@ -30,6 +30,13 @@ namespace wizard {
 		LocalPackageRef FindLocalPackage(const std::string& packageName) const;
 		RemotePackageRef FindRemotePackage(const std::string& packageName) const;
 
+		std::vector<std::reference_wrapper<const LocalPackage>> GetLocalPackages() const;
+		std::vector<std::reference_wrapper<const RemotePackage>> GetRemotePackages() const;
+
+		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
+			return supportedPlatforms.empty() || std::find(supportedPlatforms.begin(), supportedPlatforms.end(), WIZARD_PLATFORM) != supportedPlatforms.end();
+		}
+
 	private:
 		void LoadLocalPackages();
 		void LoadRemotePackages();

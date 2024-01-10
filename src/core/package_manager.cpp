@@ -28,6 +28,8 @@ std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const
 		WZ_LOG_ERROR("Package: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
 		return {};
 	}
+	if (!PackageManager::IsSupportsPlatform(descriptor->supportedPlatforms))
+		return {};
 	std::string type;
 	if constexpr (std::is_same_v<T, LanguageModuleDescriptor>) {
 		if (descriptor->language == "plugin") {
@@ -115,6 +117,7 @@ void PackageManager::LoadRemotePackages() {
 					WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package.name);
 					continue;
 				}
+
 				auto it = _remotePackages.find(name);
 				if (it == _remotePackages.end()) {
 					_remotePackages.emplace(name, package);
@@ -171,12 +174,16 @@ void PackageManager::ResolveDependencies() {
 					auto it = dependencies.find(lang);
 					if (it == dependencies.end()) {
 						dependencies.emplace(lang, std::pair{ *remotePackage, std::nullopt }); // by default prioritizing latest language modules
+
 					}
+				} else {
+					WZ_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package.name, lang);
+					continue;
 				}
 			}
 
 			for (const auto& dependency : pluginDescriptor->dependencies) {
-				if (dependency.optional)
+				if (dependency.optional || !IsSupportsPlatform(dependency.supportedPlatforms))
 					continue;
 
 				auto localPackage = FindLocalPackage(dependency.name);
@@ -197,6 +204,7 @@ void PackageManager::ResolveDependencies() {
 					auto it = dependencies.find(dependency.name);
 					if (it == dependencies.end()) {
 						dependencies.emplace(dependency.name, std::pair{ *remotePackage, dependency.requestedVersion });
+
 					} else {
 						auto& existingDependency = std::get<Dependency>(*it);
 
@@ -301,7 +309,7 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 	if (!reinstall) {
 		for (const auto& [name, _] : _localPackages) {
 			manifest->content.erase(name);
-		};
+		}
 	}
 
 	if (manifest->content.empty()) {
@@ -359,7 +367,30 @@ bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<
 		return false;
 	}
 
-	if (auto tempPath = _downloader.DownloadPackage(package, requiredVersion)) {
+	PackageRef newVersion;
+	if (requiredVersion.has_value()) {
+		newVersion = package.Version(*requiredVersion);
+		if (newVersion.has_value()) {
+			const auto& version = newVersion->get();
+			if (!IsSupportsPlatform(version.platforms))
+				return false;
+		} else {
+			WZ_LOG_WARNING("Package: '{}' (v{}) has not been found", package.name, *requiredVersion);
+			return false;
+		}
+	} else {
+		newVersion = package.LatestVersion();
+		if (newVersion.has_value()) {
+			const auto& version = newVersion->get();
+			if (!IsSupportsPlatform(version.platforms))
+				return false;
+		} else {
+			WZ_LOG_WARNING("Package: '{}' (v[latest]]) has not been found", package.name);
+			return false;
+		}
+	}
+
+	if (auto tempPath = _downloader.DownloadPackage(package, *newVersion)) {
 		auto destinationPath = tempPath->parent_path() / package.name;
 		std::error_code ec = FileSystem::MoveFolder(*tempPath, destinationPath);
 		if (ec) {
@@ -408,30 +439,39 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 	}
 
 	const auto& newPackage =  remotePackage->get();
-
+	PackageRef newVersion;
 	if (requiredVersion.has_value()) {
-		PackageRef newVersion = newPackage.Version(*requiredVersion);
+		newVersion = newPackage.Version(*requiredVersion);
 		if (newVersion.has_value()) {
 			const auto& version = newVersion->get();
+			if (!IsSupportsPlatform(version.platforms))
+				return false;
+
 			WZ_LOG_INFO("Package '{}' (v{}) will be {}, to different version (v{})", package.name, package.version, version.version > package.version ? "upgraded" : version.version == package.version ? "reinstalled" : "downgraded", version.version);
 		} else {
 			WZ_LOG_WARNING("Package: '{}' (v{}) has not been found", package.name, *requiredVersion);
 			return false;
 		}
 	} else {
-		PackageRef newVersion = newPackage.LatestVersion();
+		newVersion = newPackage.LatestVersion();
 		if (newVersion.has_value()) {
 			const auto& version = newVersion->get();
+			if (!IsSupportsPlatform(version.platforms))
+				return false;
+
 			if (version.version > package.version) {
 				WZ_LOG_INFO("Update available, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(package.version, version.version), newPackage.name, std::min(package.version, version.version));
 			} else {
 				WZ_LOG_WARNING("Package: '{}' has no update available", package.name);
 				return false;
 			}
+		} else {
+			WZ_LOG_WARNING("Package: '{}' (v[latest]) has not been found", package.name);
+			return false;
 		}
 	}
 
-	if (auto tempPath = _downloader.DownloadPackage(newPackage, requiredVersion)) {
+	if (auto tempPath = _downloader.DownloadPackage(newPackage, *newVersion)) {
 		auto destinationPath = tempPath->parent_path() / newPackage.name;
 		if (newPackage.name != package.name) {
 			UninstallPackage(package);
@@ -497,6 +537,24 @@ RemotePackageRef PackageManager::FindRemotePackage(const std::string& packageNam
 	if (it != _remotePackages.end())
 		return std::get<RemotePackage>(*it);
 	return {};
+}
+
+std::vector<std::reference_wrapper<const LocalPackage>> PackageManager::GetLocalPackages() const {
+	std::vector<std::reference_wrapper<const LocalPackage>> localPackages;
+	localPackages.reserve(_localPackages.size());
+	for (const auto& [_, package] : _localPackages)  {
+		localPackages.emplace_back(package);
+	}
+	return localPackages;
+}
+
+std::vector<std::reference_wrapper<const RemotePackage>> PackageManager::GetRemotePackages() const {
+	std::vector<std::reference_wrapper<const RemotePackage>> remotePackages;
+	remotePackages.reserve(remotePackages.size());
+	for (const auto& [_, package] : _remotePackages)  {
+		remotePackages.emplace_back(package);
+	}
+	return remotePackages;
 }
 
 void PackageManager::Request(const std::function<void()>& action) {

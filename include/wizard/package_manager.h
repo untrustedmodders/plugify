@@ -20,9 +20,6 @@ namespace wizard {
 		~IPackageManager() = default;
 
 	public:
-		void LoadLocalPackages();
-		void LoadRemotePackages();
-
 		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
 		void InstallPackages(std::span<const std::string> packageNames);
 		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall);
@@ -40,6 +37,9 @@ namespace wizard {
 
 		LocalPackageRef FindLocalPackage(const std::string& packageName) const;
 		RemotePackageRef FindRemotePackage(const std::string& packageName) const;
+
+		std::vector<std::reference_wrapper<const LocalPackage>> GetLocalPackages() const;
+		std::vector<std::reference_wrapper<const RemotePackage>> GetRemotePackages() const;
 
 	private:
 		PackageManager& _impl;

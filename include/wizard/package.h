@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wizard/version.h>
 #include <wizard/descriptor.h>
 #include <filesystem>
 #include <functional>
@@ -11,7 +10,7 @@
 namespace wizard {
 	struct PackageVersion {
 		std::int32_t version;
-		std::uint32_t sdkVersion;
+		//std::uint32_t sdkVersion;
 		std::vector<std::string> mirrors;
 		std::vector<std::string> platforms;
 		// TODO: dependencies, conflicts here may be?
@@ -37,7 +36,7 @@ namespace wizard {
 		}
 
 		PackageRef Version(std::int32_t version) const {
-			auto it = versions.find(PackageVersion{ version, WIZARD_API_VERSION_1_0, {} }); // dummy key for lookup
+			auto it = versions.find(PackageVersion{ version, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
 				return *it;
 			return {};
@@ -52,7 +51,7 @@ namespace wizard {
 		std::shared_ptr<Descriptor> descriptor;
 
 		explicit operator RemotePackage() const {
-			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, WIZARD_API_VERSION_1_0, { descriptor->downloadURL }, descriptor->supportedPlatforms} }};
+			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, { descriptor->downloadURL }, descriptor->supportedPlatforms} }};
 		}
 	};
 }

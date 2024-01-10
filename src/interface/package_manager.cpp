@@ -6,14 +6,6 @@ using namespace wizard;
 IPackageManager::IPackageManager(PackageManager& impl) : _impl{impl} {
 }
 
-void IPackageManager::LoadLocalPackages() {
-	return _impl.LoadLocalPackages();
-}
-
-void IPackageManager::LoadRemotePackages() {
-	return _impl.LoadRemotePackages();
-}
-
 void IPackageManager::InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
 	return _impl.InstallPackage(packageName, requiredVersion);
 }
@@ -64,4 +56,12 @@ LocalPackageRef IPackageManager::FindLocalPackage(const std::string& packageName
 
 RemotePackageRef IPackageManager::FindRemotePackage(const std::string& packageName) const {
 	return _impl.FindRemotePackage(packageName);
+}
+
+std::vector<std::reference_wrapper<const LocalPackage>> IPackageManager::GetLocalPackages() const {
+	return _impl.GetLocalPackages();
+}
+
+std::vector<std::reference_wrapper<const RemotePackage>> IPackageManager::GetRemotePackages() const {
+	return _impl.GetRemotePackages();
 }
