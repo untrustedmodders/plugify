@@ -7,43 +7,43 @@ IPackageManager::IPackageManager(PackageManager& impl) : _impl{impl} {
 }
 
 void IPackageManager::InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
-	return _impl.InstallPackage(packageName, requiredVersion);
+	_impl.InstallPackage(packageName, requiredVersion);
 }
 
 void IPackageManager::InstallPackages(std::span<const std::string> packageNames) {
-	return _impl.InstallPackages(packageNames);
+	_impl.InstallPackages(packageNames);
 }
 
 void IPackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool reinstall) {
-	return _impl.InstallAllPackages(manifestFilePath, reinstall);
+	_impl.InstallAllPackages(manifestFilePath, reinstall);
 }
 
 void IPackageManager::InstallAllPackages(const std::string& manifestUrl, bool reinstall) {
-	return _impl.InstallAllPackages(manifestUrl, reinstall);
+	_impl.InstallAllPackages(manifestUrl, reinstall);
 }
 
 void IPackageManager::UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
-	return _impl.UpdatePackage(packageName, requiredVersion);
+	_impl.UpdatePackage(packageName, requiredVersion);
 }
 
 void IPackageManager::UpdatePackages(std::span<const std::string> packageNames) {
-	return _impl.UpdatePackages(packageNames);
+	_impl.UpdatePackages(packageNames);
 }
 
 void IPackageManager::UpdateAllPackages() {
-	return _impl.UpdateAllPackages();
+	_impl.UpdateAllPackages();
 }
 
 void IPackageManager::UninstallPackage(const std::string& packageName) {
-	return _impl.UninstallPackage(packageName);
+	_impl.UninstallPackage(packageName);
 }
 
 void IPackageManager::UninstallPackages(std::span<const std::string> packageNames) {
-	return _impl.UninstallPackages(packageNames);
+	_impl.UninstallPackages(packageNames);
 }
 
 void IPackageManager::UninstallAllPackages() {
-	return _impl.UninstallAllPackages();
+	_impl.UninstallAllPackages();
 }
 
 void IPackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const {
