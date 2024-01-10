@@ -10,6 +10,10 @@ const std::string& IModule::GetName() const {
     return _impl.GetName();
 }
 
+const std::string& IModule::GetLanguage() const {
+    return _impl.GetLanguage();
+}
+
 const std::string& IModule::GetFriendlyName() const {
     return _impl.GetFriendlyName();
 }

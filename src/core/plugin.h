@@ -43,12 +43,13 @@ namespace wizard {
 			return _descriptor;
 		}
 
-		std::shared_ptr<Module> GetModule() const {
-			return _module;
+		const Module& GetModule() const {
+			WZ_ASSERT(_module.has_value(), "Module is not set!");
+			return _module.value().get();
 		}
 
-		void SetModule(std::shared_ptr<Module> module) {
-			_module = std::move(module);
+		void SetModule(const Module& module) {
+			_module = module;
 		}
 
 		PluginState GetState() const {
@@ -68,7 +69,7 @@ namespace wizard {
 		}
 
 		void SetUnloaded() {
-			_state = PluginState::Unloaded;
+			_state = PluginState::NotLoaded;
 		}
 
 		void SetError(std::string error);
@@ -92,7 +93,7 @@ namespace wizard {
 		std::string _name;
 		fs::path _filePath;
 		std::string _error;
-		std::shared_ptr<Module> _module;
+		std::optional<std::reference_wrapper<const Module>> _module;
 		std::vector<MethodData> _methods;
 		PluginDescriptor _descriptor;
 		PluginState _state{ PluginState::NotLoaded };

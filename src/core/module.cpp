@@ -5,7 +5,7 @@
 
 using namespace wizard;
 
-Module::Module(std::string name, fs::path filePath, LanguageModuleDescriptor descriptor) : IModule(*this), _name{std::move(name)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
+Module::Module(std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor) : IModule(*this), _name{std::move(name)}, _lang{std::move(lang)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
 }
 
 Module::~Module() {
@@ -13,7 +13,7 @@ Module::~Module() {
 }
 
 bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
-	// TODO: assert(IsInitialized());
+	WZ_ASSERT(GetState() == ModuleState::Loaded, "Module already was initialized");
 
 	std::error_code ec;
 	if (!fs::exists(_filePath, ec) || !fs::is_regular_file(_filePath, ec)) {
@@ -43,7 +43,7 @@ bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
 	}
 
 	InitResult result = languageModulePtr->Initialize(std::move(provider), *this);
-	if (ErrorData* data = std::get_if<ErrorData>(&result)) {
+	if (auto data = std::get_if<ErrorData>(&result)) {
 		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", _name, data->error, _filePath.string()));
 		Terminate();
 		return false;
@@ -60,47 +60,48 @@ void Module::Terminate() {
 	}
 	_languageModule.reset();
 	_library.reset();
+	SetUnloaded();
 }
 
-void Module::LoadPlugin(const std::shared_ptr<Plugin>& plugin) {
+void Module::LoadPlugin(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	auto result = GetLanguageModule().OnPluginLoad(*plugin);
+	auto result = GetLanguageModule().OnPluginLoad(plugin);
 	if (auto data = std::get_if<ErrorData>(&result)) {
-		plugin->SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin->GetName(), data->error, plugin->GetFilePath().string()));
+		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error, plugin.GetFilePath().string()));
 		return;
 	}
 
-	plugin->SetMethods(std::move(std::get<LoadResultData>(result).methods));
-	plugin->SetLoaded();
+	plugin.SetMethods(std::move(std::get<LoadResultData>(result).methods));
+	plugin.SetLoaded();
 
-	_loadedPlugins.emplace_back(plugin);
+	//_loadedPlugins.emplace_back(plugin);
 }
 
-void Module::MethodExport(const std::shared_ptr<Plugin>& plugin) {
+void Module::MethodExport(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	GetLanguageModule().OnMethodExport(*plugin);
+	GetLanguageModule().OnMethodExport(plugin);
 }
 
-void Module::StartPlugin(const std::shared_ptr<Plugin>& plugin) {
+void Module::StartPlugin(Plugin& plugin) const  {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	GetLanguageModule().OnPluginStart(*plugin);
+	GetLanguageModule().OnPluginStart(plugin);
 
-	plugin->SetRunning();
+	plugin.SetRunning();
 }
 
-void Module::EndPlugin(const std::shared_ptr<Plugin>& plugin) {
+void Module::EndPlugin(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	GetLanguageModule().OnPluginEnd(*plugin);
+	GetLanguageModule().OnPluginEnd(plugin);
 
-	plugin->SetTerminating();
+	plugin.SetTerminating();
 }
 
 void Module::SetError(std::string error) {

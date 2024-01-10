@@ -24,6 +24,7 @@ namespace wizard {
 
 	public:
 		const std::string& GetName() const;
+		const std::string& GetLanguage() const;
 		const std::string& GetFriendlyName() const;
 		const std::filesystem::path& GetFilePath() const;
 		std::filesystem::path GetBaseDir() const;

@@ -15,7 +15,6 @@ namespace wizard {
 		Loaded,
 		Running,
 		Terminating,
-		Unloaded,
 		Unknown,
 	};
 
@@ -51,7 +50,6 @@ namespace wizard {
 			case PluginState::Loaded:      return "Loaded";
 			case PluginState::Running:     return "Running";
 			case PluginState::Terminating: return "Terminating";
-			case PluginState::Unloaded:    return "Unloaded";
 			default:                       return "Unknown";
 		}
 	}
@@ -66,8 +64,6 @@ namespace wizard {
 			return PluginState::Running;
 		} else if (state == "Terminating") {
 			return PluginState::Terminating;
-		} else if (state == "Unloaded") {
-			return PluginState::Unloaded;
 		}
 		return PluginState::Unknown;
 	}

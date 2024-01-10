@@ -16,26 +16,27 @@ namespace wizard {
 		~PluginManager();
 
 		/** IPluginManager interface */
-		std::shared_ptr<IModule> FindModule(const std::string& moduleName);
-		std::shared_ptr<IModule> FindModule(std::string_view moduleName);
-		std::shared_ptr<IModule> FindModuleFromLang(const std::string& moduleLang);
-		std::shared_ptr<IModule> FindModuleFromPath(const std::filesystem::path& moduleFilePath);
-		std::shared_ptr<IModule> FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor);
-		std::vector<std::shared_ptr<IModule>> GetModules();
+		ModuleRef FindModule(const std::string& moduleName);
+		ModuleRef FindModule(std::string_view moduleName);
+		ModuleRef FindModuleFromLang(const std::string& moduleLang);
+		ModuleRef FindModuleFromPath(const std::filesystem::path& moduleFilePath);
+		ModuleRef FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor);
+		std::vector<std::reference_wrapper<const IModule>> GetModules();
 
-		std::shared_ptr<IPlugin> FindPlugin(const std::string& pluginName);
-		std::shared_ptr<IPlugin> FindPlugin(std::string_view pluginName);
-		std::shared_ptr<IPlugin> FindPluginFromId(uint64_t pluginId);
-		std::shared_ptr<IPlugin> FindPluginFromPath(const fs::path& pluginFilePath);
-		std::shared_ptr<IPlugin> FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor);
-		std::vector<std::shared_ptr<IPlugin>> GetPlugins();
+		PluginRef FindPlugin(const std::string& pluginName);
+		PluginRef FindPlugin(std::string_view pluginName);
+		PluginRef FindPluginFromId(uint64_t pluginId);
+		PluginRef FindPluginFromPath(const fs::path& pluginFilePath);
+		PluginRef FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor);
+		std::vector<std::reference_wrapper<const IPlugin>> GetPlugins();
+
 		bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies);
 		bool GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies);
 		bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies);
 
 	private:
-		using PluginList = std::vector<std::shared_ptr<Plugin>>;
-		using ModuleMap = std::unordered_map<std::string, std::shared_ptr<Module>>;
+		using PluginList = std::vector<std::unique_ptr<Plugin>>;
+		using ModuleList = std::vector<std::unique_ptr<Module>>;
 		using VisitedPluginMap = std::unordered_map<std::string, std::pair<bool, bool>>;
 
 		void DiscoverAllPlugins();
@@ -48,14 +49,14 @@ namespace wizard {
 
 		static void SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList);
 		static bool HasCyclicDependencies(PluginList& plugins);
-		static bool IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins);
+		static bool IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins);
 
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
 			return supportedPlatforms.empty() || std::find(supportedPlatforms.begin(), supportedPlatforms.end(), WIZARD_PLATFORM) != supportedPlatforms.end();
 		}
 
 	private:
+		ModuleList _allModules;
 		PluginList _allPlugins;
-		ModuleMap _allModules;
 	};
 }

@@ -9,11 +9,15 @@ namespace wizard {
 	class Plugin;
 	class Module final : public IModule {
 	public:
-		Module(std::string name, fs::path filePath, LanguageModuleDescriptor descriptor);
+		Module(std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor);
 		~Module();
 
 		const std::string& GetName() const {
 			return _name;
+		}
+
+		const std::string& GetLanguage() const {
+			return _lang;
 		}
 
 		const std::string& GetFriendlyName() const {
@@ -39,14 +43,15 @@ namespace wizard {
 		bool Initialize(std::weak_ptr<IWizardProvider> provider);
 		void Terminate();
 
-		void LoadPlugin(const std::shared_ptr<Plugin>& plugin);
-		void StartPlugin(const std::shared_ptr<Plugin>& plugin);
-		void EndPlugin(const std::shared_ptr<Plugin>& plugin);
-		void MethodExport(const std::shared_ptr<Plugin>& plugin);
+		void LoadPlugin(Plugin& plugin) const;
+		void StartPlugin(Plugin& plugin) const;
+		void EndPlugin(Plugin& plugin) const;
+		void MethodExport(Plugin& plugin) const;
 
 		// TODO: Add more interactions with ILanguageModule
 
-		ILanguageModule& GetLanguageModule() {
+		ILanguageModule& GetLanguageModule() const {
+			WZ_ASSERT(_languageModule.has_value(), "Language module is not set!");
 			return _languageModule.value();
 		}
 
@@ -56,6 +61,10 @@ namespace wizard {
 
 		void SetLoaded() {
 			_state = ModuleState::Loaded;
+		}
+
+		void SetUnloaded() {
+			_state = ModuleState::NotLoaded;
 		}
 
 		void SetError(std::string error);
@@ -68,12 +77,13 @@ namespace wizard {
 
 	private:
 		std::string _name;
+		std::string _lang;
 		fs::path _filePath;
 		LanguageModuleDescriptor _descriptor;
-		ModuleState _state{ ModuleState::NotLoaded  };
+		ModuleState _state{ ModuleState::NotLoaded };
 		std::string _error;
 		std::unique_ptr<Library> _library;
-		std::vector<std::weak_ptr<Plugin>> _loadedPlugins;
+		//std::vector<std::weak_ptr<Plugin>> _loadedPlugins;
 		std::optional<std::reference_wrapper<ILanguageModule>> _languageModule;
 	};
 }

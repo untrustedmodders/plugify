@@ -117,7 +117,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 			});
 			if (it == _allPlugins.end()) {
 				size_t index = _allPlugins.size();
-				_allPlugins.emplace_back(std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor)));
+				_allPlugins.emplace_back(std::make_unique<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor)));
 			} else {
 				auto& existingPlugin = *it;
 
@@ -127,7 +127,7 @@ void PluginManager::ReadAllPluginsDescriptors() {
 
 					if (existingVersion < descriptor->version) {
 						auto index = static_cast<size_t>(std::distance(_allPlugins.begin(), it));
-						existingPlugin = std::make_shared<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor));
+						existingPlugin = std::make_unique<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor));
 					}
 				} else {
 					WZ_LOG_WARNING("The same version (v{}) of plugin '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingPlugin->GetFilePath().string(), path.string());
@@ -170,18 +170,20 @@ void PluginManager::DiscoverAllModules() {
 
 			std::string lang{ descriptor->language };
 
-			auto it = _allModules.find(lang);
+			auto it = std::find_if(_allModules.begin(), _allModules.end(), [&lang](const auto& plugin) {
+				return plugin->GetLanguage() == lang;
+			});
 			if (it == _allModules.end()) {
-				_allModules.emplace(std::move(lang), std::make_shared<Module>(std::move(name), std::move(moduleBinaryPath), std::move(*descriptor)));
+				_allModules.emplace_back(std::make_unique<Module>(std::move(name), std::move(lang), std::move(moduleBinaryPath), std::move(*descriptor)));
 			} else {
-				auto& existingModule = std::get<std::shared_ptr<Module>>(*it);
+				auto& existingModule = *it;
 
 				auto& existingVersion = existingModule->GetDescriptor().version;
 				if (existingVersion != descriptor->version) {
 					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' module, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
 
 					if (existingVersion < descriptor->version) {
-						existingModule = std::make_shared<Module>(std::move(name), std::move(moduleBinaryPath), std::move(*descriptor));
+						existingModule = std::make_unique<Module>(std::move(name), std::move(lang), std::move(moduleBinaryPath), std::move(*descriptor));
 					}
 				} else {
 					WZ_LOG_WARNING("The same version (v{}) of module '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingModule->GetFilePath().string(), path.string());
@@ -196,21 +198,25 @@ void PluginManager::LoadRequiredLanguageModules() {
 	if (!wizard)
 		return;
 
-	std::set<std::shared_ptr<Module>> modules;
+	std::unordered_set<std::string> modules;
+	modules.reserve(_allModules.size());
+
 	for (const auto& plugin : _allPlugins) {
 		const auto& lang = plugin->GetDescriptor().languageModule.name;
-		auto it = _allModules.find(lang);
+		auto it = std::find_if(_allModules.begin(), _allModules.end(), [&lang](const auto& plugin) {
+			return plugin->GetLanguage() == lang;
+		});
 		if (it == _allModules.end()) {
 			plugin->SetError(std::format("Language module: '{}' missing for plugin: '{}'!", lang, plugin->GetFriendlyName()));
 			continue;
 		}
-		auto& module = std::get<std::shared_ptr<Module>>(*it);
-		plugin->SetModule(module);
-		modules.insert(module);
+		auto& module = *it;
+		plugin->SetModule(*module);
+		modules.insert(module->GetLanguage());
 	}
 
-	for (const auto& [_, module] : _allModules) {
-		if (module->GetDescriptor().forceLoad || modules.contains(module)) {
+	for (const auto& module : _allModules) {
+		if (module->GetDescriptor().forceLoad || modules.contains(module->GetLanguage())) {
 			module->Initialize(wizard->GetProvider());
 		}
 	}
@@ -222,7 +228,7 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 			std::vector<std::string_view> names;
 			for (const auto& descriptor : plugin->GetDescriptor().dependencies) {
 				auto dependencyPlugin = FindPlugin(descriptor.name);
-				if ((!dependencyPlugin || dependencyPlugin->GetState() != PluginState::Loaded) && !descriptor.optional) {
+				if ((!dependencyPlugin.has_value() || dependencyPlugin->get().GetState() != PluginState::Loaded) && !descriptor.optional) {
 					names.emplace_back(descriptor.name);
 				}
 			}
@@ -235,22 +241,22 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 				error << "'";
 				plugin->SetError(std::format("Not loaded {} dependency plugin(s)", error.str()));
 			} else {
-				plugin->GetModule()->LoadPlugin(plugin);
+				plugin->GetModule().LoadPlugin(*plugin);
 			}
 		}
 	}
 
 	for (const auto& plugin : _allPlugins) {
 		if (plugin->GetState() == PluginState::Loaded) {
-			for (const auto& [_, module] : _allModules) {
-				module->MethodExport(plugin);
+			for (const auto&  module : _allModules) {
+				module->MethodExport(*plugin);
 			}
 		}
 	}
 
 	for (const auto& plugin : _allPlugins) {
 		if (plugin->GetState() == PluginState::Loaded) {
-			plugin->GetModule()->StartPlugin(plugin);
+			plugin->GetModule().StartPlugin(*plugin);
 		}
 	}
 }
@@ -259,7 +265,7 @@ void PluginManager::TerminateAllPlugins() {
 	for (auto i = static_cast<int64_t>(_allPlugins.size() - 1); i >= 0; --i) {
 		const auto& plugin = _allPlugins[static_cast<uint64_t>(i)];
 		if (plugin->GetState() == PluginState::Running) {
-			plugin->GetModule()->EndPlugin(plugin);
+			plugin->GetModule().EndPlugin(*plugin);
 		}
 	}
 
@@ -280,7 +286,7 @@ void PluginManager::SortPluginsByDependencies(const std::string& pluginName, Plu
 		for (const auto& descriptor : plugin->GetDescriptor().dependencies) {
 			SortPluginsByDependencies(descriptor.name, sourceList, targetList);
 		}
-		targetList.push_back(plugin);
+		targetList.emplace_back(std::move(plugin));
 	}
 }
 
@@ -299,7 +305,7 @@ bool PluginManager::HasCyclicDependencies(PluginList& plugins) {
 	return false;
 }
 
-bool PluginManager::IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins) {
+bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins) {
 	auto& [visited, recursive] = visitedPlugins[plugin->GetName()];
 	if (!visited) {
 		// Mark the current node as visited
@@ -328,91 +334,118 @@ bool PluginManager::IsCyclic(const std::shared_ptr<Plugin>& plugin, PluginList& 
 	return false;
 }
 
-std::shared_ptr<IModule> PluginManager::FindModule(const std::string& moduleName) {
+ModuleRef PluginManager::FindModule(const std::string& moduleName) {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
-		return std::get<std::shared_ptr<Module>>(module)->GetName() == moduleName;
+		return module->GetName() == moduleName;
 	});
-	return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
+	if (it != _allModules.end())
+		return *(*it);
+	return {};
 }
 
-std::shared_ptr<IModule> PluginManager::FindModule(std::string_view moduleName) {
+ModuleRef PluginManager::FindModule(std::string_view moduleName) {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
-		return std::get<std::shared_ptr<Module>>(module)->GetName() == moduleName;
+		return module->GetName() == moduleName;
 	});
-	return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
+	if (it != _allModules.end())
+		return *(*it);
+	return {};
 }
 
-std::shared_ptr<IModule> PluginManager::FindModuleFromLang(const std::string& moduleLang) {
-	auto it = _allModules.find(moduleLang);
-	return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
+ModuleRef PluginManager::FindModuleFromLang(const std::string& moduleLang) {
+	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleLang](const auto& module) {
+		return module->GetLanguage() == moduleLang;
+	});
+	if (it != _allModules.end())
+		return *(*it);
+	return {};
 }
 
-std::shared_ptr<IModule> PluginManager::FindModuleFromPath(const std::filesystem::path& moduleFilePath) {
+ModuleRef PluginManager::FindModuleFromPath(const std::filesystem::path& moduleFilePath) {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleFilePath](const auto& module) {
-		return std::get<std::shared_ptr<Module>>(module)->GetFilePath() == moduleFilePath;
+		return module->GetFilePath() == moduleFilePath;
 	});
-	return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
+	if (it != _allModules.end())
+		return *(*it);
+	return {};
 }
 
-std::shared_ptr<IModule> PluginManager::FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) {
+ModuleRef PluginManager::FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleDescriptor](const auto& module) {
-		return std::get<std::shared_ptr<Module>>(module)->GetName() == moduleDescriptor.name && (!moduleDescriptor.requestedVersion || std::get<std::shared_ptr<Module>>(module)->GetDescriptor().version == moduleDescriptor.requestedVersion);
+		return module->GetName() == moduleDescriptor.name && (!moduleDescriptor.requestedVersion || module->GetDescriptor().version == moduleDescriptor.requestedVersion);
 	});
-	return it != _allModules.end() ? std::get<std::shared_ptr<Module>>(*it) : nullptr;
+	if (it != _allModules.end())
+		return *(*it);
+	return {};
 }
 
-std::vector<std::shared_ptr<IModule>> PluginManager::GetModules() {
-	std::vector<std::shared_ptr<IModule>> modules;
+std::vector<std::reference_wrapper<const IModule>> PluginManager::GetModules() {
+	std::vector<std::reference_wrapper<const IModule>> modules;
 	modules.reserve(_allModules.size());
-	for (const auto& [_, module] : _allModules)  {
-		modules.push_back(module);
+	for (const auto& module : _allModules)  {
+		modules.emplace_back(*module);
 	}
 	return modules;
 }
 
-std::shared_ptr<IPlugin> PluginManager::FindPlugin(const std::string& pluginName) {
+PluginRef PluginManager::FindPlugin(const std::string& pluginName) {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginName](const auto& plugin) {
 		return plugin->GetName() == pluginName;
 	});
-	return it != _allPlugins.end() ? *it : nullptr;
+	if (it != _allPlugins.end())
+		return *(*it);
+	return {};
 }
 
-std::shared_ptr<IPlugin> PluginManager::FindPlugin(std::string_view pluginName) {
+PluginRef PluginManager::FindPlugin(std::string_view pluginName) {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginName](const auto& plugin) {
 		return plugin->GetName() == pluginName;
 	});
-	return it != _allPlugins.end() ? *it : nullptr;
+	if (it != _allPlugins.end())
+		return *(*it);
+	return {};
 }
 
-std::shared_ptr<IPlugin> PluginManager::FindPluginFromId(uint64_t pluginId) {
+PluginRef PluginManager::FindPluginFromId(uint64_t pluginId) {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginId](const auto& plugin) {
 		return plugin->GetId() == pluginId;
 	});
-	return it != _allPlugins.end() ? *it : nullptr;
+	if (it != _allPlugins.end())
+		return *(*it);
+	return {};
 }
 
-std::shared_ptr<IPlugin> PluginManager::FindPluginFromPath(const fs::path& pluginFilePath) {
+PluginRef PluginManager::FindPluginFromPath(const fs::path& pluginFilePath) {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginFilePath](const auto& plugin) {
 		return plugin->GetFilePath() == pluginFilePath;
 	});
-	return it != _allPlugins.end() ? *it : nullptr;
+	if (it != _allPlugins.end())
+		return *(*it);
+	return {};
 }
 
-std::shared_ptr<IPlugin> PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) {
+PluginRef PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginDescriptor](const auto& plugin) {
 		return plugin->GetName() == pluginDescriptor.name && (!pluginDescriptor.requestedVersion || plugin->GetDescriptor().version == pluginDescriptor.requestedVersion);
 	});
-	return it != _allPlugins.end() ? *it : nullptr;
+	if (it != _allPlugins.end())
+		return *(*it);
+	return {};
 }
 
-std::vector<std::shared_ptr<IPlugin>> PluginManager::GetPlugins() {
-	return { _allPlugins.begin(), _allPlugins.end() };
+std::vector<std::reference_wrapper<const IPlugin>> PluginManager::GetPlugins() {
+	std::vector<std::reference_wrapper<const IPlugin>> plugins;
+	plugins.reserve(_allPlugins.size());
+	for (const auto& plugin : _allPlugins)  {
+		plugins.emplace_back(*plugin);
+	}
+	return plugins;
 }
 
 bool PluginManager::GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
 	auto plugin = FindPlugin(pluginName);
-	if (plugin) {
-		pluginDependencies = plugin->GetDescriptor().dependencies;
+	if (plugin.has_value()) {
+		pluginDependencies = plugin->get().GetDescriptor().dependencies;
 		return true;
 	}
 	return false;
@@ -420,8 +453,8 @@ bool PluginManager::GetPluginDependencies(const std::string& pluginName, std::ve
 
 bool PluginManager::GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
 	auto plugin = FindPluginFromPath(pluginFilePath);
-	if (plugin) {
-		pluginDependencies = plugin->GetDescriptor().dependencies;
+	if (plugin.has_value()) {
+		pluginDependencies = plugin->get().GetDescriptor().dependencies;
 		return true;
 	}
 	return false;
@@ -429,8 +462,8 @@ bool PluginManager::GetPluginDependencies_FromFilePath(const fs::path& pluginFil
 
 bool PluginManager::GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
 	auto plugin = FindPluginFromDescriptor(pluginDescriptor);
-	if (plugin) {
-		pluginDependencies = plugin->GetDescriptor().dependencies;
+	if (plugin.has_value()) {
+		pluginDependencies = plugin->get().GetDescriptor().dependencies;
 		return true;
 	}
 	return false;
