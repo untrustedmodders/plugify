@@ -115,11 +115,12 @@ int main(int argc, const char** argv) {
                     std::cout << std::endl;
 
                     if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
-                        for (auto& module : pluginManager->GetModules()) {
-                            PrintElement(module->GetDescriptor().language, numWidth, separator);
-                            PrintElement(module->GetName(), nameWidth, separator);
-                            PrintElement(module->GetFriendlyName(), fullNameWidth, separator);
-                            PrintElement(wizard::ModuleStateToString(module->GetState()), statusWidth, separator);
+                        for (auto& moduleRef : pluginManager->GetModules()) {
+							auto& module = moduleRef.get();
+                            PrintElement(module.GetDescriptor().language, numWidth, separator);
+                            PrintElement(module.GetName(), nameWidth, separator);
+                            PrintElement(module.GetFriendlyName(), fullNameWidth, separator);
+                            PrintElement(wizard::ModuleStateToString(module.GetState()), statusWidth, separator);
                             std::cout << std::endl;
                         }
                     }
@@ -138,11 +139,12 @@ int main(int argc, const char** argv) {
                     std::cout << std::endl;
 
                     if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
-                        for (auto& plugin : pluginManager->GetPlugins()) {
-                            PrintElement(plugin->GetId(), numWidth, separator);
-                            PrintElement(plugin->GetName(), nameWidth, separator);
-                            PrintElement(plugin->GetFriendlyName(), fullNameWidth, separator);
-                            PrintElement(wizard::PluginStateToString(plugin->GetState()), statusWidth, separator);
+                        for (auto& pluginRed : pluginManager->GetPlugins()) {
+							auto& plugin = pluginRed.get();
+                            PrintElement(plugin.GetId(), numWidth, separator);
+                            PrintElement(plugin.GetName(), nameWidth, separator);
+                            PrintElement(plugin.GetFriendlyName(), fullNameWidth, separator);
+                            PrintElement(wizard::PluginStateToString(plugin.GetState()), statusWidth, separator);
                             std::cout << std::endl;
                         }
                     }
