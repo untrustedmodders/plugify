@@ -14,8 +14,8 @@ namespace wizard {
 	class PluginManager;
 	struct PluginReferenceDescriptor;
 
-	using ModuleRef = std::optional<IModule>;
-	using PluginRef = std::optional<IPlugin>;
+	using ModuleRef = std::optional<std::reference_wrapper<const IModule>>;
+	using PluginRef = std::optional<std::reference_wrapper<const IPlugin>>;
 
 	// Plugin manager provided to user, which implemented in core
 	class WIZARD_API IPluginManager {
