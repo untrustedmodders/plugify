@@ -355,7 +355,7 @@ ModuleRef PluginManager::FindModule(std::string_view moduleName) {
 }
 
 ModuleRef PluginManager::FindModuleFromId(uint64_t moduleId) {
-	if (_allModules.size() < moduleId)
+	if (_allModules.size() > moduleId)
 		return *_allModules[moduleId];
 	return {};
 }
@@ -415,7 +415,7 @@ PluginRef PluginManager::FindPlugin(std::string_view pluginName) {
 }
 
 PluginRef PluginManager::FindPluginFromId(uint64_t pluginId) {
-	if (_allPlugins.size() < pluginId)
+	if (_allPlugins.size() > pluginId)
 		return *_allPlugins[pluginId];
 	return {};
 }
