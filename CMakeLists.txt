@@ -51,7 +51,7 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Curl
-if(NOT WIZARD_USE_EXTERNAL_CURL)
+if(NOT WIN32 AND NOT WIZARD_USE_EXTERNAL_CURL)
     if(WIZARD_BUILD_SHARED_CURL)
         set(BUILD_SHARED_LIBS ON CACHE BOOL "")
         set(BUILD_STATIC_LIBS OFF CACHE BOOL "")
@@ -126,20 +126,24 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# Curl
-if(WIZARD_USE_EXTERNAL_CURL)
-	find_package(CURL REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
-    message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
-    message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
-    message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
+# Http
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
 else()
-    if(WIZARD_BUILD_SHARED_CURL)
-        target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_shared)
+    if(WIZARD_USE_EXTERNAL_CURL)
+        find_package(CURL REQUIRED)
+        target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
+        message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
+        message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
+        message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
     else()
-        target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_static)
+        if(WIZARD_BUILD_SHARED_CURL)
+            target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_shared)
+        else()
+            target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_static)
+        endif()
+        target_include_directories(${PROJECT_NAME} PRIVATE external/curl/include)
     endif()
-    target_include_directories(${PROJECT_NAME} PRIVATE external/curl/include)
 endif()
 
 # ------------------------------------------------------------------------------

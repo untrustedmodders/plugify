@@ -1,16 +1,26 @@
 #include "package_manager.h"
-#include "package_downloader.h"
+#include "package_manifest.h"
 #include "module.h"
 #include "plugin.h"
 
 #include <wizard/wizard.h>
 #include <utils/file_system.h>
+#include <utils/http_downloader.h>
 #include <utils/json.h>
+#include <mutex>
 #include <thread>
+#include <picosha2.h>
+#include <miniz.h>
 
 using namespace wizard;
 
-PackageManager::PackageManager(std::weak_ptr<IWizard> wizard) : IPackageManager(*this), WizardContext(std::move(wizard)), _downloader{ _wizard.lock()->GetConfig() } { // TODO: REWORK
+static std::array<std::pair<std::string_view, std::string_view>, 2> packageTypes {
+	std::pair{ "modules", Module::kFileExtension },
+	std::pair{ "plugins", Plugin::kFileExtension },
+	// Might add more package types in future
+};
+
+PackageManager::PackageManager(std::weak_ptr<IWizard> wizard) : IPackageManager(*this), WizardContext(std::move(wizard)), _httpDownloader{HTTPDownloader::Create()} {
 	auto debugStart = DateTime::Now();
 	LoadLocalPackages();
 	LoadRemotePackages();
@@ -41,7 +51,7 @@ std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const
 		type = "plugin";
 	}
 	auto version = descriptor->version;
-	return std::make_optional<LocalPackage>(name, type, path, version, std::make_unique<T>(std::move(*descriptor)));
+	return { {Package{name, type}, path, version, std::make_unique<T>(std::move(*descriptor))} };
 }
 
 void PackageManager::LoadLocalPackages()  {
@@ -52,6 +62,8 @@ void PackageManager::LoadLocalPackages()  {
 	WZ_LOG_DEBUG("Loading local packages");
 
 	_localPackages.clear();
+
+	// TODO: add threads
 
 	FileSystem::ReadDirectory(wizard->GetConfig().baseDir, [&](const fs::path& path, int depth) {
 		if (depth != 1)
@@ -72,11 +84,14 @@ void PackageManager::LoadLocalPackages()  {
 		if (!package.has_value())
 			return;
 
-		auto it = _localPackages.find(name);
+		auto it = std::find_if(_localPackages.begin(), _localPackages.end(), [&name](const auto& plugin) {
+			return plugin.name == name;
+		});
+
 		if (it == _localPackages.end()) {
-			_localPackages.emplace(std::move(name), std::move(*package));
+			_localPackages.emplace_back(std::move(*package));
 		} else {
-			auto& existingPackage = std::get<LocalPackage>(*it);
+			auto& existingPackage = *it;
 
 			auto& existingVersion = existingPackage.version;
 			if (existingVersion != package->version) {
@@ -101,39 +116,42 @@ void PackageManager::LoadRemotePackages() {
 
 	_remotePackages.clear();
 
-	std::unordered_set<std::string> fetched;
-	fetched.reserve(wizard->GetConfig().repositories.size() + _localPackages.size());
+	std::mutex mutex;
 
-	auto fetchManifest = [&](std::string url) {
-		if (!url.empty() && url.back() == '/')
-			url.pop_back();
-
-		if (fetched.contains(url))
-			return;
-
-		auto manifest = _downloader.FetchPackageManifest(url);
-		if (manifest.has_value()) {
-			for (auto& [name, package] : manifest->content) {
-				if (package.name != name) {
-					WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package.name);
-					continue;
+	auto fetchManifest = [&](const std::string& url) {
+		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
+			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
+				std::string buffer{ data.begin(), data.end() };
+				auto manifest = glz::read_json<PackageManifest>(buffer);
+				if (!manifest.has_value()) {
+					WZ_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", url, glz::format_error(manifest.error(), buffer));
+					return;
 				}
 
-				auto it = _remotePackages.find(name);
-				if (it == _remotePackages.end()) {
-					_remotePackages.emplace(name, package);
-				} else {
-					auto& existingPackage = std::get<RemotePackage>(*it);
-					if (existingPackage == package) {
-						existingPackage.versions.merge(package.versions);
+				for (auto& [name, package] : manifest->content) {
+					if (package.name != name) {
+						WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package.name);
+						continue;
+					}
+
+					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&name](const auto& plugin) {
+						return plugin.name == name;
+					});
+					if (it == _remotePackages.end()) {
+						std::unique_lock<std::mutex> lock{mutex};
+						_remotePackages.emplace_back(std::move(package));
 					} else {
-						WZ_LOG_WARNING("The package '{}' exists at '{}' - second location will be ignored.", name, url);
+						auto& existingPackage = *it;
+						if (existingPackage == package) {
+							std::unique_lock<std::mutex> lock{mutex};
+							existingPackage.versions.merge(package.versions);
+						} else {
+							WZ_LOG_WARNING("The package '{}' exists at '{}' - second location will be ignored.", name, url);
+						}
 					}
 				}
 			}
-		}
-
-		fetched.insert(std::move(url));
+		});
 	};
 
 	for (const auto& url : wizard->GetConfig().repositories) {
@@ -141,16 +159,18 @@ void PackageManager::LoadRemotePackages() {
 			fetchManifest(url);
 	}
 
-	for (const auto& [_, package] : _localPackages) {
+	for (const auto& package : _localPackages) {
 		const auto& url = package.descriptor->updateURL;
-		if (!url.empty() )
+		if (!url.empty())
 			fetchManifest(url);
 	}
+
+	_httpDownloader->WaitForAllRequests();
 }
 
-template<typename K, typename V>
-std::optional<std::reference_wrapper<const V>> GetLanguageModule(const std::unordered_map<K, V>& container, const std::string& name)  {
-	for (auto& [_, package] : container) {
+template<typename T>
+std::optional<std::reference_wrapper<const T>> GetLanguageModule(const std::vector<T>& container, const std::string& name)  {
+	for (auto& package : container) {
 		if (package.type == name) {
 			return package;
 		}
@@ -164,7 +184,7 @@ void PackageManager::ResolveDependencies() {
 
 	// TODO: Remove localPackages which could not be solve dependency issues
 
-	for (const auto& [_, package] : _localPackages) {
+	for (const auto& package : _localPackages) {
 		if (package.type == "plugin") {
 			auto pluginDescriptor = std::static_pointer_cast<PluginDescriptor>(package.descriptor);
 
@@ -175,7 +195,6 @@ void PackageManager::ResolveDependencies() {
 					auto it = dependencies.find(lang);
 					if (it == dependencies.end()) {
 						dependencies.emplace(lang, std::pair{ *remotePackage, std::nullopt }); // by default prioritizing latest language modules
-
 					}
 				} else {
 					WZ_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package.name, lang);
@@ -252,8 +271,8 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	std::unordered_map<std::string, RemotePackage> packages;
 	packages.reserve(_localPackages.size());
 
-	for (const auto& [name, package] : _localPackages) {
-		packages.emplace(name, package);
+	for (const auto& package : _localPackages) {
+		packages.emplace(package.name, package);
 	}
 
 	if (packages.empty()) {
@@ -311,8 +330,8 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 	}
 
 	if (!reinstall) {
-		for (const auto& [name, _] : _localPackages) {
-			manifest->content.erase(name);
+		for (const auto& package : _localPackages) {
+			manifest->content.erase(package.name);
 		}
 	}
 
@@ -333,7 +352,7 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 }
 
 void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool reinstall) {
-	if (manifestUrl.empty())
+	/*if (manifestUrl.empty())
 		return;
 
 	WZ_LOG_INFO("Read package manifest from '{}'", manifestUrl);
@@ -343,8 +362,8 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 		return;
 
 	if (!reinstall) {
-		for (const auto& [name, _] : _localPackages) {
-			manifest->content.erase(name);
+		for (const auto& package : _localPackages) {
+			manifest->content.erase(package.name);
 		};
 	}
 
@@ -361,7 +380,7 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 			}
 			InstallPackage(package);
 		}
-	});
+	});*/
 }
 
 bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion) {
@@ -394,17 +413,7 @@ bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<
 		}
 	}
 
-	if (auto tempPath = _downloader.DownloadPackage(package, *newVersion)) {
-		auto destinationPath = tempPath->parent_path() / package.name;
-		std::error_code ec = FileSystem::MoveFolder(*tempPath, destinationPath);
-		if (ec) {
-			WZ_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", package.name, tempPath->string(), destinationPath.string(), ec.message());
-		}
-		return true;
-	} else {
-		WZ_LOG_ERROR("Package: '{}' has downloading error: {}", package.name, _downloader.GetState().GetError());
-	}
-	return false;
+	return DownloadPackage(package, newVersion->get());
 }
 
 void PackageManager::UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
@@ -429,7 +438,7 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 
 void PackageManager::UpdateAllPackages() {
 	Request([&] {
-		for (const auto& [_, package]: _localPackages) {
+		for (const auto& package : _localPackages) {
 			UpdatePackage(package);
 		}
 	});
@@ -475,20 +484,7 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 		}
 	}
 
-	if (auto tempPath = _downloader.DownloadPackage(newPackage, *newVersion)) {
-		auto destinationPath = tempPath->parent_path() / newPackage.name;
-		if (newPackage.name != package.name) {
-			UninstallPackage(package);
-		}
-		std::error_code ec = FileSystem::MoveFolder(*tempPath, destinationPath);
-		if (ec) {
-			WZ_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", newPackage.name, tempPath->string(), destinationPath.string(), ec.message());
-		}
-		return true;
-	} else {
-		WZ_LOG_ERROR("Package: '{}' has downloading error: {}", newPackage.name, _downloader.GetState().GetError());
-	}
-	return false;
+	return DownloadPackage(package, newVersion->get());
 }
 
 void PackageManager::UninstallPackage(const std::string& packageName) {
@@ -513,7 +509,7 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 
 void PackageManager::UninstallAllPackages() {
 	Request([&] {
-		for (const auto& [_, package]: _localPackages) {
+		for (const auto& package : _localPackages) {
 			UninstallPackage(package);
 		}
 	});
@@ -530,23 +526,27 @@ bool PackageManager::UninstallPackage(const LocalPackage& package) {
 }
 
 LocalPackageRef PackageManager::FindLocalPackage(const std::string& packageName) const {
-	auto it = _localPackages.find(packageName);
+	auto it = std::find_if(_localPackages.begin(), _localPackages.end(), [&packageName](const auto& plugin) {
+		return plugin.name == packageName;
+	});
 	if (it != _localPackages.end())
-		return std::get<LocalPackage>(*it);
+		return *it;
 	return {};
 }
 
 RemotePackageRef PackageManager::FindRemotePackage(const std::string& packageName) const {
-	auto it = _remotePackages.find(packageName);
+	auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&packageName](const auto& plugin) {
+		return plugin.name == packageName;
+	});
 	if (it != _remotePackages.end())
-		return std::get<RemotePackage>(*it);
+		return *it;
 	return {};
 }
 
 std::vector<std::reference_wrapper<const LocalPackage>> PackageManager::GetLocalPackages() const {
 	std::vector<std::reference_wrapper<const LocalPackage>> localPackages;
 	localPackages.reserve(_localPackages.size());
-	for (const auto& [_, package] : _localPackages)  {
+	for (const auto& package : _localPackages)  {
 		localPackages.emplace_back(package);
 	}
 	return localPackages;
@@ -555,33 +555,196 @@ std::vector<std::reference_wrapper<const LocalPackage>> PackageManager::GetLocal
 std::vector<std::reference_wrapper<const RemotePackage>> PackageManager::GetRemotePackages() const {
 	std::vector<std::reference_wrapper<const RemotePackage>> remotePackages;
 	remotePackages.reserve(remotePackages.size());
-	for (const auto& [_, package] : _remotePackages)  {
+	for (const auto& package : _remotePackages)  {
 		remotePackages.emplace_back(package);
 	}
 	return remotePackages;
 }
 
 void PackageManager::Request(const std::function<void()>& action) {
-	std::atomic<bool> stopFlag{false};
-
-	std::thread printer([&](){
-		float lastRatio = 0;
-		while (!stopFlag) {
-			const auto& state = _downloader.GetState();
-			if (lastRatio != state.ratio && state.state < PackageInstallState::Done) {
-				lastRatio = state.ratio;
-				WZ_LOG_INFO("{}", state.GetProgress(60));
-			}
-		}
-	});
-
-	printer.detach();
-
 	action();
 
-	stopFlag = true;
+	_httpDownloader->WaitForAllRequests();
 
 	LoadLocalPackages();
 	LoadRemotePackages();
 	ResolveDependencies();
 }
+
+bool PackageManager::DownloadPackage(const Package& package, const PackageVersion& version) const {
+	/*if (!IsPackageAuthorized(package.name, version.version)) {
+		WZ_LOG_WARNING("Tried to download a package that is not verified, aborting");
+		return false;
+	}*/
+
+	_httpDownloader->CreateRequest(version.mirrors[0], [name = package.name, plugin = (package.type == "plugin")](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
+		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
+			WZ_LOG_VERBOSE("Done downloading: '{}'", name);
+
+			if (contentType != "application/zip") {
+				WZ_LOG_ERROR("Package: '{}' should be in *.zip format to be extracted correctly", name);
+				return;
+			}
+
+			/*if (!IsPackageLegit(name, version, data)) {
+				WZ_LOG_WARNING("Archive hash does not match expected checksum, aborting");
+				return;
+			}*/
+
+			const auto& [folder, extension] = packageTypes[plugin];
+
+			fs::path finalPath = fs::path{"res"} / folder;
+			fs::path finalLocation = finalPath / tmpnam(nullptr);
+
+			std::error_code ec;
+			if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
+				if (!fs::create_directories(finalLocation, ec)) {
+					WZ_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
+				}
+			}
+
+			auto error = ExtractPackage(data, finalLocation, extension);
+			if (error.empty()) {
+				WZ_LOG_VERBOSE("Done extracting: '{}'", name);
+				auto destinationPath = finalLocation.parent_path() / name;
+				std::error_code ec = FileSystem::MoveFolder(finalLocation, destinationPath);
+				if (ec) {
+					WZ_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", name, finalLocation.string(), destinationPath.string(), ec.message());
+				}
+			} else {
+				WZ_LOG_ERROR("Failed extracting: '{}' - {}", name, error);
+			}
+		}
+	});
+
+	return true;
+}
+
+std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt) {
+	WZ_LOG_VERBOSE("Start extracting....");
+
+	auto zip_close = [](mz_zip_archive* zipArchive){ mz_zip_reader_end(zipArchive); delete zipArchive; };
+	std::unique_ptr<mz_zip_archive, decltype(zip_close)> zipArchive{new mz_zip_archive, zip_close};
+	std::memset(zipArchive.get(), 0, sizeof(mz_zip_archive));
+
+	mz_zip_reader_init_mem(zipArchive.get(), packageData.data(), packageData.size(), 0);
+
+	//state.total = zipArchive->m_archive_size;
+	//state.progress = 0;
+
+	size_t numFiles = mz_zip_reader_get_num_files(zipArchive.get());
+	std::vector<mz_zip_archive_file_stat> fileStats(numFiles);
+
+	bool foundDescriptor = false;
+
+	for (uint32_t i = 0; i < numFiles; ++i) {
+		mz_zip_archive_file_stat& fileStat = fileStats[i];
+
+		if (!mz_zip_reader_file_stat(zipArchive.get(), i, &fileStat)) {
+			return std::format("Error getting file stat: {}", i);
+		}
+
+		fs::path filename{ fileStat.m_filename };
+		if (filename.extension().string() == descriptorExt) {
+			foundDescriptor = true;
+		}
+	}
+
+	if (!foundDescriptor) {
+		return std::format("Package descriptor *{} missing", descriptorExt);
+	}
+
+	for (uint32_t i = 0; i < numFiles; ++i) {
+		mz_zip_archive_file_stat& fileStat = fileStats[i];
+
+		std::vector<char> fileData(fileStat.m_uncomp_size);
+
+		if (!mz_zip_reader_extract_to_mem(zipArchive.get(), i, fileData.data(), fileData.size(), 0)) {
+			return std::format("Failed extracting file: '{}'", fileStat.m_filename);
+		}
+
+		fs::path finalPath = extractPath / fileStat.m_filename;
+		fs::path finalDir = finalPath.parent_path();
+
+		std::error_code ec;
+		if (!fs::exists(finalDir, ec) || !fs::is_directory(finalDir, ec)) {
+			if (!fs::create_directories(finalDir, ec)) {
+				return std::format("Error creating output directory '{}'", finalDir.string());
+			}
+		}
+
+		std::ofstream outputFile{finalPath, std::ios::binary};
+		if (outputFile.is_open()) {
+			outputFile.write(fileData.data(), static_cast<std::streamsize>(fileData.size()));
+		} else {
+			return std::format("Failed creating destination file: '{}'", fileStat.m_filename);
+		}
+
+		//state.progress += fileStat.m_comp_size;
+		//state.ratio = std::roundf(static_cast<float>(_packageState.progress) / static_cast<float>(_packageState.total) * 100.0f);
+	}
+
+	return {};
+}
+
+/*bool PackageManager::IsPackageAuthorized(const std::string& packageName, int32_t packageVersion) const {
+	if (!_config.packageVerification)
+		return true;
+
+	auto it = _packages.verified.find(packageName);
+	if (it == _packages.verified.end())
+		return false;
+
+	return std::get<VerifiedPackageDetails>(*it).versions.contains(VerifiedPackageVersion{packageVersion, ""});
+}
+
+bool PackageManager::IsPackageLegit(const std::string& packageName, int32_t packageVersion, std::span<const uint8_t> packageData) const {
+	if (!_config.packageVerification)
+		return true;
+
+	auto it = _packages.verified[packageName].versions.find(VerifiedPackageVersion{packageVersion, ""});
+
+	std::vector<uint8_t> bytes(picosha2::k_digest_size);
+	picosha2::hash256(packageData, bytes.begin(), bytes.end());
+	std::string hash = picosha2::bytes_to_hex_string(bytes.begin(), bytes.end());
+
+	WZ_LOG_VERBOSE("Expected checksum: {}", it->checksum);
+	WZ_LOG_VERBOSE("Computed checksum: {}", hash);
+
+	return it->checksum == hash;
+}
+
+void PackageManager::FetchPackagesListFromAPI() {
+	if (!_config.packageVerification)
+		return;
+
+	if (!_config.packageVerifyUrl.empty()) {
+		WZ_LOG_INFO("Found custom verified packages URL in config: '{}'", _config.packageVerifyUrl);
+	} else {
+		WZ_LOG_INFO("Custom verified packages URL not found in config, using default URL");
+		_config.packageVerifyUrl = kDefaultPackageList;
+	}
+
+	WZ_LOG_INFO("Loading verification packages...");
+
+	auto json = FetchJsonFromURL(_config.packageVerifyUrl);
+	if (!json.has_value()) {
+		WZ_LOG_ERROR("Verification packages from '{}' not found", _config.packageVerifyUrl);
+		return;
+	}
+
+	auto packages = glz::read_json<VerifiedPackageMap>(*json);
+	if (!packages.has_value()) {
+		WZ_LOG_ERROR("Verification packages from '{}' has JSON parsing error: {}", _config.packageVerifyUrl, glz::format_error(packages.error(), *json));
+		return;
+	}
+
+	_packages = std::move(*packages);
+
+	if (_packages.verified.empty()) {
+		WZ_LOG_WARNING("Empty verification packages list");
+	} else {
+		WZ_LOG_INFO("Done loading verified packages list.");
+	}
+}
+ */

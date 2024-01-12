@@ -20,14 +20,17 @@ namespace wizard {
 
 	using PackageRef = std::optional<std::reference_wrapper<const PackageVersion>>;
 
-	struct RemotePackage {
+	struct Package {
 		std::string name;
 		std::string type;
+
+		bool operator==(const Package& rhs) const { return name == rhs.name && type == rhs.type; }
+	};
+
+	struct RemotePackage : public Package {
 		std::string author;
 		std::string description;
 		std::set<PackageVersion> versions;
-
-		bool operator==(const RemotePackage& rhs) const { return name == rhs.name && type == rhs.type; }
 
 		PackageRef LatestVersion() const {
 			if (!versions.empty())
@@ -43,9 +46,7 @@ namespace wizard {
 		}
 	};
 
-	struct LocalPackage {
-		std::string name;
-		std::string type;
+	struct LocalPackage : public Package {
 		std::filesystem::path path;
 		std::int32_t version;
 		std::shared_ptr<Descriptor> descriptor;
