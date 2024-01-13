@@ -15,8 +15,10 @@ namespace wizard {
 	struct PluginReferenceDescriptor;
 
 	using UniqueId = std::uintmax_t;
-	using ModuleRef = std::optional<std::reference_wrapper<const IModule>>;
-	using PluginRef = std::optional<std::reference_wrapper<const IPlugin>>;
+	using ModuleRef = std::reference_wrapper<const IModule>;
+	using PluginRef = std::reference_wrapper<const IPlugin>;
+	using ModuleOpt = std::optional<ModuleRef>;
+	using PluginOpt = std::optional<PluginRef>;
 
 	// Plugin manager provided to user, which implemented in core
 	class WIZARD_API IPluginManager {
@@ -25,22 +27,25 @@ namespace wizard {
 		~IPluginManager() = default;
 
 	public:
-		ModuleRef FindModule(const std::string& moduleName) const;
-		ModuleRef FindModule(std::string_view moduleName) const;
-		ModuleRef FindModuleFromId(UniqueId moduleId) const;
-		ModuleRef FindModuleFromLang(const std::string& moduleLang) const;
-		ModuleRef FindModuleFromPath(const std::filesystem::path& moduleFilePath) const;
-		ModuleRef FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) const;
+		bool Initialize();
+		void Terminate();
 
-		std::vector<std::reference_wrapper<const IModule>> GetModules() const;
+		ModuleOpt FindModule(const std::string& moduleName) const;
+		ModuleOpt FindModule(std::string_view moduleName) const;
+		ModuleOpt FindModuleFromId(UniqueId moduleId) const;
+		ModuleOpt FindModuleFromLang(const std::string& moduleLang) const;
+		ModuleOpt FindModuleFromPath(const std::filesystem::path& moduleFilePath) const;
+		ModuleOpt FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) const;
 
-		PluginRef FindPlugin(const std::string& pluginName) const;
-		PluginRef FindPlugin(std::string_view pluginName) const;
-		PluginRef FindPluginFromId(UniqueId pluginId) const;
-		PluginRef FindPluginFromPath(const std::filesystem::path& pluginFilePath) const;
-		PluginRef FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) const;
+		std::vector<ModuleRef> GetModules() const;
 
-		std::vector<std::reference_wrapper<const IPlugin>> GetPlugins() const;
+		PluginOpt FindPlugin(const std::string& pluginName) const;
+		PluginOpt FindPlugin(std::string_view pluginName) const;
+		PluginOpt FindPluginFromId(UniqueId pluginId) const;
+		PluginOpt FindPluginFromPath(const std::filesystem::path& pluginFilePath) const;
+		PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) const;
+
+		std::vector<PluginRef> GetPlugins() const;
 
 		bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
 		bool GetPluginDependencies_FromFilePath(const std::filesystem::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
@@ -49,5 +54,4 @@ namespace wizard {
 	private:
 		PluginManager& _impl;
 	};
-
 }

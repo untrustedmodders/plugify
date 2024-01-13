@@ -19,20 +19,23 @@ namespace wizard {
 		friend class IPluginManager;
 
 		/** IPluginManager interface */
-		ModuleRef FindModule_(const std::string& moduleName) const;
-		ModuleRef FindModule_(std::string_view moduleName) const;
-		ModuleRef FindModuleFromId_(UniqueId moduleId) const;
-		ModuleRef FindModuleFromLang_(const std::string& moduleLang) const;
-		ModuleRef FindModuleFromPath_(const std::filesystem::path& moduleFilePath) const;
-		ModuleRef FindModuleFromDescriptor_(const PluginReferenceDescriptor& moduleDescriptor) const;
-		std::vector<std::reference_wrapper<const IModule>> GetModules_() const;
+		bool Initialize_();
+		void Terminate_();
 
-		PluginRef FindPlugin_(const std::string& pluginName) const;
-		PluginRef FindPlugin_(std::string_view pluginName) const;
-		PluginRef FindPluginFromId_(UniqueId pluginId) const;
-		PluginRef FindPluginFromPath_(const fs::path& pluginFilePath) const;
-		PluginRef FindPluginFromDescriptor_(const PluginReferenceDescriptor& pluginDescriptor) const;
-		std::vector<std::reference_wrapper<const IPlugin>> GetPlugins_() const;
+		ModuleOpt FindModule_(const std::string& moduleName) const;
+		ModuleOpt FindModule_(std::string_view moduleName) const;
+		ModuleOpt FindModuleFromId_(UniqueId moduleId) const;
+		ModuleOpt FindModuleFromLang_(const std::string& moduleLang) const;
+		ModuleOpt FindModuleFromPath_(const std::filesystem::path& moduleFilePath) const;
+		ModuleOpt FindModuleFromDescriptor_(const PluginReferenceDescriptor& moduleDescriptor) const;
+		std::vector<ModuleRef> GetModules_() const;
+
+		PluginOpt FindPlugin_(const std::string& pluginName) const;
+		PluginOpt FindPlugin_(std::string_view pluginName) const;
+		PluginOpt FindPluginFromId_(UniqueId pluginId) const;
+		PluginOpt FindPluginFromPath_(const fs::path& pluginFilePath) const;
+		PluginOpt FindPluginFromDescriptor_(const PluginReferenceDescriptor& pluginDescriptor) const;
+		std::vector<PluginRef> GetPlugins_() const;
 
 		bool GetPluginDependencies_(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
 		bool GetPluginDependencies_FromFilePath_(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
@@ -43,9 +46,7 @@ namespace wizard {
 		using ModuleList = std::vector<std::unique_ptr<Module>>;
 		using VisitedPluginMap = std::unordered_map<std::string, std::pair<bool, bool>>;
 
-		void DiscoverAllPlugins();
-		void DiscoverAllModules();
-
+		void DiscoverAllModulesAndPlugins();
 		void LoadRequiredLanguageModules();
 		void LoadAndStartAvailablePlugins();
 		void TerminateAllPlugins();

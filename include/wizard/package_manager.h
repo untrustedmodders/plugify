@@ -10,8 +10,10 @@ namespace wizard {
 	class LocalPackage;
 	class RemotePackage;
 
-	using LocalPackageRef = std::optional<std::reference_wrapper<const LocalPackage>>;
-	using RemotePackageRef = std::optional<std::reference_wrapper<const RemotePackage>>;
+	using LocalPackageRef = std::reference_wrapper<const LocalPackage>;
+	using RemotePackageRef = std::reference_wrapper<const RemotePackage>;
+	using LocalPackageOpt = std::optional<LocalPackageRef>;
+	using RemotePackageOpt = std::optional<RemotePackageRef>;
 
 	// Package manager provided to user, which implemented in core
 	class WIZARD_API IPackageManager {
@@ -20,6 +22,9 @@ namespace wizard {
 		~IPackageManager() = default;
 
 	public:
+		bool Initialize();
+		void Terminate();
+
 		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
 		void InstallPackages(std::span<const std::string> packageNames);
 		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall);
@@ -35,11 +40,16 @@ namespace wizard {
 
 		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const;
 
-		LocalPackageRef FindLocalPackage(const std::string& packageName) const;
-		RemotePackageRef FindRemotePackage(const std::string& packageName) const;
+		bool HasMissedPackages() const;
+		bool HasConflictedPackages() const;
+		void InstallMissedPackages();
+		void UninstallConflictedPackages();
 
-		std::vector<std::reference_wrapper<const LocalPackage>> GetLocalPackages() const;
-		std::vector<std::reference_wrapper<const RemotePackage>> GetRemotePackages() const;
+		LocalPackageOpt FindLocalPackage(const std::string& packageName) const;
+		RemotePackageOpt FindRemotePackage(const std::string& packageName) const;
+
+		std::vector<LocalPackageRef> GetLocalPackages() const;
+		std::vector<RemotePackageRef> GetRemotePackages() const;
 
 	private:
 		PackageManager& _impl;

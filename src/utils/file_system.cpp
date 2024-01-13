@@ -95,7 +95,7 @@ void FileSystem::ReadDirectory(const fs::path& directory, const PathHandler& han
 }
 
 std::error_code FileSystem::MoveFolder(const fs::path& from, const fs::path& to) {
-	std::error_code ec = RemoveFolder(from);
+	std::error_code ec = RemoveFolder(to);
 	if (!ec) {
 		fs::rename(from, to, ec);
 	}

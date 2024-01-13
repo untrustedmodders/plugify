@@ -40,7 +40,8 @@ void printHelp() {
 		"\nusage: wzd -<command> [arguments]"
 		"\n"
 		"\nGeneral commands:"
-		"\n  -init           Initialize wizard"
+		"\n  -init           Initialize wizard and package manager"
+		"\n  -load           Initialize plugin manager"
 		"\n  -term           Terminate wizard"
 		"\n  -help           Print help"
 		"\n  -version        Version information"
@@ -68,14 +69,13 @@ void printHelp() {
 	<< std::endl;
 }
 
-
 int main(int argc, const char** argv) {
     std::span<const char*> arg{argv, static_cast<size_t>(argc)};
     std::shared_ptr<wizard::IWizard> sorcerer = wizard::MakeWizard();
     if (sorcerer) {
         auto logger = std::make_shared<sorcerer::StdLogger>();
-        logger->SetSeverity(wizard::Severity::Debug);
-        sorcerer->SetLogger(std::move(logger));
+        sorcerer->SetLogger(logger);
+		logger->SetSeverity(wizard::Severity::Debug);
         bool running = true;
         while (running) {
             std::string command;
@@ -88,10 +88,27 @@ int main(int argc, const char** argv) {
                 running = false;
             } else if (args[0] == "wzd" && args.size() > 1) {
                 if (args[1] == "-init") {
-                    if (!sorcerer->Initialize(arg)) {
-                        sorcerer->Log("No feet, no sweets!", wizard::Severity::Error);
-                        return EXIT_FAILURE;
-                    }
+					if (!sorcerer->Initialize(arg)) {
+						sorcerer->Log("No feet, no sweets!", wizard::Severity::Error);
+						return EXIT_FAILURE;
+					}
+					logger->SetSeverity(sorcerer->GetConfig().logSeverity);
+                    if (auto packageManager = sorcerer->GetPackageManager().lock()) {
+						packageManager->Initialize();
+					}
+                } else if (args[1] == "-load") {
+					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
+						if (packageManager->HasMissedPackages()) {
+							packageManager->InstallMissedPackages();
+							continue;
+						}
+					} else {
+						sorcerer->Log("Package Manager is not initialized!", wizard::Severity::Error);
+						continue;
+					}
+                    if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+						pluginManager->Initialize();
+					}
                 } else if (args[1] == "-term") {
                     sorcerer->Terminate();
                 } else if (args[1] == "-exit") {

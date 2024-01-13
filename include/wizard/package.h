@@ -18,7 +18,7 @@ namespace wizard {
 		bool operator <(const PackageVersion& rhs) const { return version > rhs.version; }
 	};
 
-	using PackageRef = std::optional<std::reference_wrapper<const PackageVersion>>;
+	using PackageOpt = std::optional<std::reference_wrapper<const PackageVersion>>;
 
 	struct Package {
 		std::string name;
@@ -32,13 +32,13 @@ namespace wizard {
 		std::string description;
 		std::set<PackageVersion> versions;
 
-		PackageRef LatestVersion() const {
+		PackageOpt LatestVersion() const {
 			if (!versions.empty())
 				return *versions.begin();
 			return {};
 		}
 
-		PackageRef Version(std::int32_t version) const {
+		PackageOpt Version(std::int32_t version) const {
 			auto it = versions.find(PackageVersion{ version, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
 				return *it;

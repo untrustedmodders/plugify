@@ -15,6 +15,9 @@ namespace wizard {
 		friend class IPackageManager;
 
 		/** IPackageManager interface */
+		bool Initialize_();
+		void Terminate_();
+
 		void InstallPackage_(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
 		void InstallPackages_(std::span<const std::string> packageNames);
 		void InstallAllPackages_(const fs::path& manifestFilePath, bool reinstall);
@@ -30,11 +33,16 @@ namespace wizard {
 
 		void SnapshotPackages_(const fs::path& manifestFilePath, bool prettify) const;
 
-		LocalPackageRef FindLocalPackage_(const std::string& packageName) const;
-		RemotePackageRef FindRemotePackage_(const std::string& packageName) const;
+		bool HasMissedPackages_() const { return !_missedPackages.empty(); }
+		bool HasConflictedPackages_() const { return !_conflictedPackages.empty(); }
+		void InstallMissedPackages_();
+		void UninstallConflictedPackages_();
 
-		std::vector<std::reference_wrapper<const LocalPackage>> GetLocalPackages_() const;
-		std::vector<std::reference_wrapper<const RemotePackage>> GetRemotePackages_() const;
+		LocalPackageOpt FindLocalPackage_(const std::string& packageName) const;
+		RemotePackageOpt FindRemotePackage_(const std::string& packageName) const;
+
+		std::vector<LocalPackageRef> GetLocalPackages_() const;
+		std::vector<RemotePackageRef> GetRemotePackages_() const;
 
 	public:
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
@@ -44,9 +52,9 @@ namespace wizard {
 	private:
 		void LoadLocalPackages();
 		void LoadRemotePackages();
-		void ResolveDependencies();
+		void FindDependencies();
 
-		void Request(const std::function<void()>& action);
+		void Request(const std::function<void()>& action, std::string_view function);
 
 		bool UpdatePackage(const LocalPackage& package, std::optional<int32_t> requiredVersion = {});
 		bool InstallPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion = {});
@@ -92,10 +100,8 @@ namespace wizard {
 		std::vector<LocalPackage> _localPackages;
 		std::vector<RemotePackage> _remotePackages;
 		//VerifiedPackageMap _packages;
-
-		// cache packages to install and uninstall in ResolveDependencies. Add method to fully resolve them
-		using Dependency = std::pair<std::reference_wrapper<const RemotePackage>, std::optional<int32_t>>;
-		std::unordered_map<std::string, Dependency> toInstall;
-		std::vector<std::reference_wrapper<const LocalPackage>> toUninstall;
+		using Dependency = std::pair<RemotePackageRef, std::optional<int32_t>>;
+		std::unordered_map<std::string, Dependency> _missedPackages;
+		std::vector<LocalPackageRef> _conflictedPackages;
 	};
 }

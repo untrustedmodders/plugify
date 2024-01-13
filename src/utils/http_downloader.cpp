@@ -177,10 +177,6 @@ bool HTTPDownloader::HasAnyRequests() {
 }
 
 std::string_view HTTPDownloader::GetExtensionForContentType(std::string_view contentType) {
-	// array of pair lookup - 0.003ms
-	// unordered map lookup - 0.108ms
-
-	// Based on https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
 	static std::array<std::pair<std::string_view, std::string_view>, 75> table = {
 		std::pair{"audio/aac", ".aac"},
 		std::pair{"application/x-abiword", ".abw"},

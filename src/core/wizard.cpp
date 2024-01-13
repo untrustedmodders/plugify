@@ -11,15 +11,12 @@ namespace wizard {
 	public:
 		Wizard() = default;
 		~Wizard() override {
-			if (_inited) {
-				Terminate();
-			}
+			Terminate();
 		};
 
 		bool Initialize(std::span<const char*> args) override {
-			if (_inited) {
+			if (_inited)
 				return false;
-			}
 
 			auto json = FileSystem::ReadText("wizard.wconfig");
 			auto config = glz::read_json<Config>(json);
@@ -45,9 +42,8 @@ namespace wizard {
 		}
 
 		void Terminate() override {
-			if (!_inited) {
+			if (!_inited)
 				return;
-			}
 
 			if (_packageManager.use_count() != 1) {
 				WZ_LOG_ERROR("Lack of owning for package manager! Will not released on wizard terminate");
