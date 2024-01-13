@@ -11,3 +11,8 @@ CMakeUserPresets.json
 
 # Resource
 /res
+
+# vcpkg
+/vcpkg_installed
+/vcpkg.json
+/vcpkg-configuration.json
