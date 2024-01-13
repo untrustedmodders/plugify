@@ -1,11 +1,16 @@
 #include "plugin.h"
 #include "module.h"
-#include "wizard/plugin.h"
+#include <wizard/plugin.h>
+#include <wizard/package.h>
 
 using namespace wizard;
 
-Plugin::Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor) : IPlugin(*this), _id{id}, _name{std::move(name)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
-
+Plugin::Plugin(UniqueId id, const LocalPackage& package) : IPlugin(*this), _id{id}, _name{package.name}, _descriptor{std::static_pointer_cast<PluginDescriptor>(package.descriptor)} {
+	WZ_ASSERT(package.type == "plugin", "Invalid package type for plugin ctor");
+	WZ_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
+	_baseDir = package.path.parent_path();
+	_contentDir = _baseDir / "content";
+	_filePath /= _baseDir / _descriptor->assemblyPath;
 }
 
 void Plugin::SetError(std::string error) {

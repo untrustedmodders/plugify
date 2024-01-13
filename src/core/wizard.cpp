@@ -32,7 +32,7 @@ namespace wizard {
 
 			_provider = std::make_shared<WizardProvider>(weak_from_this());
 			_packageManager = std::make_shared<PackageManager>(weak_from_this());
-			//_pluginManager = std::make_shared<PluginManager>(weak_from_this());
+			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
 
 			_inited = true;
 

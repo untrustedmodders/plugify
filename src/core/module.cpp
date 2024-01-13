@@ -1,13 +1,17 @@
 #include "module.h"
 #include "plugin.h"
-#include "wizard/module.h"
-
+#include <wizard/module.h>
+#include <wizard/package.h>
 
 using namespace wizard;
 
-Module::Module(uint64_t id, std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor) : IModule(*this), _id{id}, _name{std::move(name)}, _lang{std::move(lang)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
-	_binaryDir = _filePath.parent_path();
-	_baseDir = _binaryDir.parent_path();
+Module::Module(UniqueId id, const LocalPackage& package) : IModule(*this), _id{id}, _name{package.name}, _lang{package.type}, _descriptor{std::static_pointer_cast<LanguageModuleDescriptor>(package.descriptor)} {
+	WZ_ASSERT(package.type != "plugin", "Invalid package type for module ctor");
+	WZ_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
+	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
+	_baseDir = package.path.parent_path();
+	_binaryDir = _baseDir / "bin";
+	_filePath = _binaryDir / std::format(WIZARD_MODULE_PREFIX "{}" WIZARD_MODULE_SUFFIX, package.name);
 }
 
 Module::~Module() {
@@ -15,7 +19,7 @@ Module::~Module() {
 }
 
 bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
-	WZ_ASSERT(GetState() == ModuleState::Loaded, "Module already was initialized");
+	WZ_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
 
 	std::error_code ec;
 	if (!fs::exists(_filePath, ec) || !fs::is_regular_file(_filePath, ec)) {

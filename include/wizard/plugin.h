@@ -18,6 +18,7 @@ namespace wizard {
 		Unknown,
 	};
 
+	using UniqueId = std::uintmax_t;
 	using MethodData = std::pair<std::string, void*>;
 
 	// Plugin provided to user, which implemented in core
@@ -27,13 +28,12 @@ namespace wizard {
 		~IPlugin();
 
 	public:
-		std::uint64_t GetId() const;
+		UniqueId GetId() const;
 		const std::string& GetName() const;
 		const std::string& GetFriendlyName() const;
 		const std::filesystem::path& GetFilePath() const;
-		std::filesystem::path GetBaseDir() const;
-		std::filesystem::path GetContentDir() const;
-		std::filesystem::path GetMountedAssetPath() const;
+		const std::filesystem::path& GetBaseDir() const;
+		const std::filesystem::path& GetContentDir() const;
 		const PluginDescriptor& GetDescriptor() const;
 		PluginState GetState() const;
 		const std::string& GetError() const;

@@ -5,16 +5,17 @@
 
 namespace wizard {
 	class Module;
+	class LocalPackage;
 	class Plugin final : public IPlugin {
 	public:
-		Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor);
+		Plugin(UniqueId id, const LocalPackage& package);
 		~Plugin() = default;
 
 	private:
 		friend class IPlugin;
 
 		/* IPlugin interface */
-		uint64_t GetId_() const {
+		UniqueId GetId_() const {
 			return _id;
 		}
 
@@ -30,20 +31,16 @@ namespace wizard {
 			return _filePath;
 		}
 
-		fs::path GetBaseDir_() const {
-			return "";
+		const fs::path& GetBaseDir_() const {
+			return _baseDir;
 		}
 
-		fs::path GetContentDir_() const {
-			return "";
-		}
-
-		fs::path GetMountedAssetPath_() const {
-			return "";
+		const fs::path& GetContentDir_() const {
+			return _contentDir;
 		}
 
 		const PluginDescriptor& GetDescriptor_() const {
-			return _descriptor;
+			return *_descriptor;
 		}
 
 		PluginState GetState_() const {
@@ -93,13 +90,15 @@ namespace wizard {
 		static inline const char* const kFileExtension = ".wplugin";
 
 	private:
-		uint64_t _id{ std::numeric_limits<uint64_t>::max() };
+		UniqueId _id{ std::numeric_limits<UniqueId>::max() };
 		std::string _name;
 		fs::path _filePath;
+		fs::path _baseDir;
+		fs::path _contentDir;
 		std::string _error;
 		std::optional<std::reference_wrapper<const Module>> _module;
 		std::vector<MethodData> _methods;
-		PluginDescriptor _descriptor;
+		std::shared_ptr<PluginDescriptor> _descriptor;
 		PluginState _state{ PluginState::NotLoaded };
 	};
 }

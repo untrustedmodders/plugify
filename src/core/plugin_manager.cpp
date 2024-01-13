@@ -1,10 +1,10 @@
 #include "plugin_manager.h"
+#include "package_manager.h"
 #include "plugin.h"
 #include "module.h"
 
 #include <wizard/plugin_manager.h>
 #include <wizard/wizard.h>
-#include <utils/file_system.h>
 #include <utils/json.h>
 
 using namespace wizard;
@@ -27,10 +27,19 @@ PluginManager::~PluginManager() {
 }
 
 void PluginManager::DiscoverAllPlugins() {
-	// TODO: assert(_allPlugins.empty());
+	WZ_ASSERT(_allPlugins.empty(), "Plugins already initialized");
+	auto wizard = _wizard.lock();
+	WZ_ASSERT(wizard);
 
-	//PluginSystem::GetAdditionalPluginPaths(pluginDiscoveryPaths);
-	ReadAllPluginsDescriptors();
+	if (auto packageManager = wizard->GetPackageManager().lock()) {
+		for (const auto& packageRef : packageManager->GetLocalPackages()) {
+			const auto& package = packageRef.get();
+			if (package.type == "plugin") {
+				size_t id = _allPlugins.size();
+				_allPlugins.emplace_back(std::make_unique<Plugin>(id, package));
+			}
+		}
+	}
 
 	PluginList sortedPlugins;
 	sortedPlugins.reserve(_allPlugins.size());
@@ -40,167 +49,33 @@ void PluginManager::DiscoverAllPlugins() {
 
 	_allPlugins = std::move(sortedPlugins);
 
-	WZ_LOG_VERBOSE("Plugins order after topological sorting: ");
+	WZ_LOG_VERBOSE("Plugins order after topological sorting by dependency: ");
 	for (const auto& plugin : _allPlugins) {
 		WZ_LOG_VERBOSE("{} - {}", plugin->GetName(), plugin->GetFriendlyName());
 	}
 }
 
-template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
-bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
-	auto size = std::size(cnt);
-	Cnt result;
-	result.reserve(size);
-
-	std::copy_if(
-		std::make_move_iterator(std::begin(cnt)),
-		std::make_move_iterator(std::end(cnt)),
-		std::back_inserter(result),
-		[&](const typename Cnt::value_type& what) {
-			return std::find_if(std::begin(result), std::end(result), [&](const typename Cnt::value_type& existing) {
-				return cmp(what, existing);
-			}) == std::end(result);
-		}
-	);
-
-	cnt = std::move(result);
-	return std::size(cnt) != size;
-}
-
-void PluginManager::ReadAllPluginsDescriptors() {
-	// TODO: Load .wpluginmanifest here
-
-	auto wizard = _wizard.lock();
-	if (!wizard)
-		return;
-
-	bool strictMode = wizard->GetConfig().strictMode;
-
-	FileSystem::ReadDirectory(wizard->GetConfig().baseDir / "plugins", [&](const fs::path& path, int depth) {
-		// TODO: Add read from zip (zip should be on 1st depth)
-		if (depth != 1)
-			return;
-
-		if (path.extension().string() != Plugin::kFileExtension)
-			return;
-
-		auto name = path.filename().replace_extension().string();
-		WZ_LOG_INFO("Read plugin descriptor for '{}', from '{}'", name, path.string());
-
-		auto json = FileSystem::ReadText(path);
-		auto descriptor = glz::read_json<PluginDescriptor>(json);
-		if (!descriptor.has_value()) {
-			WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
-			return;
-		}
-
-		if (RemoveDuplicates(descriptor->dependencies)) {
-			if (strictMode) {
-				WZ_LOG_ERROR("Plugin descriptor: '{}' has multiple dependencies with same name!", name);
-				return;
-			}
-		}
-
-		if (RemoveDuplicates(descriptor->exportedMethods)) {
-			if (strictMode) {
-				WZ_LOG_ERROR("Plugin descriptor: '{}' has multiple method with same name!", name);
-				return;
-			}
-		}
-
-		if (IsSupportsPlatform(descriptor->supportedPlatforms)) {
-			auto pluginAssemblyPath = path.parent_path();
-			pluginAssemblyPath /= descriptor->assemblyPath;
-
-			auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name](const auto& plugin) {
-				return plugin->GetName() == name;
-			});
-			if (it == _allPlugins.end()) {
-				size_t index = _allPlugins.size();
-				_allPlugins.emplace_back(std::make_unique<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor)));
-			} else {
-				auto& existingPlugin = *it;
-
-				auto& existingVersion = existingPlugin->GetDescriptor().version;
-				if (existingVersion != descriptor->version) {
-					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' plugin, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
-
-					if (existingVersion < descriptor->version) {
-						auto index = static_cast<size_t>(std::distance(_allPlugins.begin(), it));
-						existingPlugin = std::make_unique<Plugin>(index, std::move(name), std::move(pluginAssemblyPath), std::move(*descriptor));
-					}
-				} else {
-					WZ_LOG_WARNING("The same version (v{}) of plugin '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingPlugin->GetFilePath().string(), path.string());
-				}
-			}
-		}
-	});
-}
-
 void PluginManager::DiscoverAllModules() {
-	// TODO: Mount modules zips
+	WZ_ASSERT(_allModules.empty(), "Modules already initialized");
 	auto wizard = _wizard.lock();
-	if (!wizard)
-		return;
+	WZ_ASSERT(wizard);
 
-	FileSystem::ReadDirectory(wizard->GetConfig().baseDir / "modules", [&](const fs::path& path, int depth) {
-		if (depth != 1)
-			return;
-
-		if (path.extension().string() != Module::kFileExtension)
-			return;
-
-		auto name = path.filename().replace_extension().string();
-		WZ_LOG_INFO("Read module descriptor for '{}', from '{}'", name, path.string());
-
-		auto json = FileSystem::ReadText(path);
-		auto descriptor = glz::read_json<LanguageModuleDescriptor>(json);
-		if (!descriptor.has_value()) {
-			WZ_LOG_ERROR("Module descriptor: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
-			return;
-		}
-
-		if (IsSupportsPlatform(descriptor->supportedPlatforms)) {
-
-			// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
-
-			auto moduleBinaryPath = path.parent_path();
-			moduleBinaryPath /= "bin";
-			moduleBinaryPath /= std::format(WIZARD_MODULE_PREFIX "{}" WIZARD_MODULE_SUFFIX, name);
-
-			std::string lang{ descriptor->language };
-
-			auto it = std::find_if(_allModules.begin(), _allModules.end(), [&lang](const auto& plugin) {
-				return plugin->GetLanguage() == lang;
-			});
-			if (it == _allModules.end()) {
-				size_t index = _allModules.size();
-				_allModules.emplace_back(std::make_unique<Module>(index, std::move(name), std::move(lang), std::move(moduleBinaryPath), std::move(*descriptor)));
-			} else {
-				auto& existingModule = *it;
-
-				auto& existingVersion = existingModule->GetDescriptor().version;
-				if (existingVersion != descriptor->version) {
-					WZ_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' module, over older version (v{}).", std::max(existingVersion, descriptor->version), name, std::min(existingVersion, descriptor->version));
-
-					if (existingVersion < descriptor->version) {
-						auto index = static_cast<size_t>(std::distance(_allModules.begin(), it));
-						existingModule = std::make_unique<Module>(index, std::move(name), std::move(lang), std::move(moduleBinaryPath), std::move(*descriptor));
-					}
-				} else {
-					WZ_LOG_WARNING("The same version (v{}) of module '{}' exists at '{}' and '{}' - second location will be ignored.", existingVersion, name, existingModule->GetFilePath().string(), path.string());
-				}
+	if (auto packageManager = wizard->GetPackageManager().lock()) {
+		for (const auto& packageRef : packageManager->GetLocalPackages()) {
+			const auto& package = packageRef.get();
+			if (package.type != "plugin") {
+				size_t id = _allModules.size();
+				_allModules.emplace_back(std::make_unique<Module>(id, package));
 			}
 		}
-	});
+	}
 }
 
 void PluginManager::LoadRequiredLanguageModules() {
 	auto wizard = _wizard.lock();
-	if (!wizard)
-		return;
+	WZ_ASSERT(wizard);
 
-	std::vector<uint64_t> modules;
+	std::unordered_set<UniqueId> modules;
 	modules.reserve(_allModules.size());
 
 	for (const auto& plugin : _allPlugins) {
@@ -214,11 +89,11 @@ void PluginManager::LoadRequiredLanguageModules() {
 		}
 		auto& module = *it;
 		plugin->SetModule(*module);
-		modules.push_back(module->GetId());
+		modules.emplace(module->GetId());
 	}
 
 	for (const auto& module : _allModules) {
-		if (module->GetDescriptor().forceLoad || std::find(modules.begin(), modules.end(), module->GetId()) != modules.end()) {
+		if (module->GetDescriptor().forceLoad || modules.contains(module->GetId())) {
 			module->Initialize(wizard->GetProvider());
 		}
 	}
@@ -354,7 +229,7 @@ ModuleRef PluginManager::FindModule_(std::string_view moduleName) const {
 	return {};
 }
 
-ModuleRef PluginManager::FindModuleFromId_(uint64_t moduleId) const {
+ModuleRef PluginManager::FindModuleFromId_(UniqueId moduleId) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleId](const auto& module) {
 		return module->GetId() == moduleId;
 	});
@@ -417,7 +292,7 @@ PluginRef PluginManager::FindPlugin_(std::string_view pluginName) const {
 	return {};
 }
 
-PluginRef PluginManager::FindPluginFromId_(uint64_t pluginId) const {
+PluginRef PluginManager::FindPluginFromId_(UniqueId pluginId) const {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginId](const auto& plugin) {
 		return plugin->GetId() == pluginId;
 	});

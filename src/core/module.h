@@ -7,16 +7,17 @@
 
 namespace wizard {
 	class Plugin;
+	class LocalPackage;
 	class Module final : public IModule {
 	public:
-		Module(uint64_t id, std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor);
+		Module(UniqueId id, const LocalPackage& package);
 		~Module();
 
 	private:
 		friend class IModule;
 
 		/* IModule interface */
-		uint64_t GetId_() const {
+		UniqueId GetId_() const {
 			return _id;
 		}
 
@@ -45,7 +46,7 @@ namespace wizard {
 		}
 
 		const LanguageModuleDescriptor& GetDescriptor_() const {
-			return _descriptor;
+			return *_descriptor;
 		}
 
 		ModuleState GetState_() const {
@@ -85,13 +86,13 @@ namespace wizard {
 		static inline const char* const kFileExtension = ".wmodule";
 
 	private:
-		uint64_t _id{ std::numeric_limits<uint64_t>::max() };
+		UniqueId _id{ std::numeric_limits<UniqueId>::max() };
 		std::string _name;
 		std::string _lang;
 		fs::path _filePath;
 		fs::path _baseDir;
 		fs::path _binaryDir;
-		LanguageModuleDescriptor _descriptor;
+		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
 		ModuleState _state{ ModuleState::NotLoaded };
 		std::string _error;
 		std::unique_ptr<Library> _library;

@@ -6,7 +6,7 @@ using namespace wizard;
 IModule::IModule(Module& impl) : _impl{impl} {
 }
 
-uint64_t IModule::GetId() const {
+UniqueId IModule::GetId() const {
 	return _impl.GetId_();
 }
 
@@ -26,11 +26,11 @@ const fs::path& IModule::GetFilePath() const {
     return _impl.GetFilePath_();
 }
 
-fs::path IModule::GetBaseDir() const {
+const fs::path& IModule::GetBaseDir() const {
     return _impl.GetBaseDir_();
 }
 
-fs::path IModule::GetBinariesDir() const {
+const fs::path& IModule::GetBinariesDir() const {
     return _impl.GetBinariesDir_();
 }
 

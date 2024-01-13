@@ -14,6 +14,7 @@ namespace wizard {
 	class PluginManager;
 	struct PluginReferenceDescriptor;
 
+	using UniqueId = std::uintmax_t;
 	using ModuleRef = std::optional<std::reference_wrapper<const IModule>>;
 	using PluginRef = std::optional<std::reference_wrapper<const IPlugin>>;
 
@@ -26,7 +27,7 @@ namespace wizard {
 	public:
 		ModuleRef FindModule(const std::string& moduleName) const;
 		ModuleRef FindModule(std::string_view moduleName) const;
-		ModuleRef FindModuleFromId(std::uint64_t moduleId) const;
+		ModuleRef FindModuleFromId(UniqueId moduleId) const;
 		ModuleRef FindModuleFromLang(const std::string& moduleLang) const;
 		ModuleRef FindModuleFromPath(const std::filesystem::path& moduleFilePath) const;
 		ModuleRef FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) const;
@@ -35,7 +36,7 @@ namespace wizard {
 
 		PluginRef FindPlugin(const std::string& pluginName) const;
 		PluginRef FindPlugin(std::string_view pluginName) const;
-		PluginRef FindPluginFromId(std::uint64_t pluginId) const;
+		PluginRef FindPluginFromId(UniqueId pluginId) const;
 		PluginRef FindPluginFromPath(const std::filesystem::path& pluginFilePath) const;
 		PluginRef FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) const;
 

@@ -8,7 +8,7 @@ IPlugin::IPlugin(Plugin& impl) : _impl{impl} {
 
 IPlugin::~IPlugin() = default;
 
-uint64_t IPlugin::GetId() const {
+UniqueId IPlugin::GetId() const {
     return _impl.GetId_();
 }
 
@@ -24,16 +24,12 @@ const fs::path& IPlugin::GetFilePath() const {
     return _impl.GetFilePath_();
 }
 
-fs::path IPlugin::GetBaseDir() const {
+const fs::path& IPlugin::GetBaseDir() const {
     return _impl.GetBaseDir_();
 }
 
-fs::path IPlugin::GetContentDir() const {
+const fs::path& IPlugin::GetContentDir() const {
     return _impl.GetContentDir_();
-}
-
-fs::path IPlugin::GetMountedAssetPath() const {
-    return _impl.GetMountedAssetPath_();
 }
 
 const PluginDescriptor& IPlugin::GetDescriptor() const {

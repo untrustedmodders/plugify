@@ -16,6 +16,8 @@ namespace wizard {
 		Unknown,
 	};
 
+	using UniqueId = std::uintmax_t;
+
 	// Language module provided to user implemented in core !
 	class WIZARD_API IModule {
 	protected:
@@ -23,13 +25,13 @@ namespace wizard {
 		~IModule() = default;
 
 	public:
-		std::uint64_t GetId() const;
+		UniqueId GetId() const;
 		const std::string& GetName() const;
 		const std::string& GetLanguage() const;
 		const std::string& GetFriendlyName() const;
 		const std::filesystem::path& GetFilePath() const;
-		std::filesystem::path GetBaseDir() const;
-		std::filesystem::path GetBinariesDir() const;
+		const std::filesystem::path& GetBaseDir() const;
+		const std::filesystem::path& GetBinariesDir() const;
 		const LanguageModuleDescriptor& GetDescriptor() const;
 		ModuleState GetState() const;
 		const std::string& GetError() const;

@@ -1,9 +1,6 @@
 {
     "baseDir": "res",
     "logSeverity": "debug",
-    "strictMode": false,
-    "packageVerification": false,
-    "packageVerifyUrl": "https://raw.githubusercontent.com/untrustedmodders/verified_packages/main/verified-packages.json",
     "repositories": [
 
     ]

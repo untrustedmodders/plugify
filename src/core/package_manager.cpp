@@ -30,6 +30,27 @@ PackageManager::PackageManager(std::weak_ptr<IWizard> wizard) : IPackageManager(
 
 PackageManager::~PackageManager() = default;
 
+template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
+bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
+	auto size = std::size(cnt);
+	Cnt result;
+	result.reserve(size);
+
+	std::copy_if(
+		std::make_move_iterator(std::begin(cnt)),
+		std::make_move_iterator(std::end(cnt)),
+		std::back_inserter(result),
+		[&](const typename Cnt::value_type& what) {
+			return std::find_if(std::begin(result), std::end(result), [&](const typename Cnt::value_type& existing) {
+				return cmp(what, existing);
+			}) == std::end(result);
+		}
+	);
+
+	cnt = std::move(result);
+	return std::size(cnt) != size;
+}
+
 template<typename T>
 std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
 	auto json = FileSystem::ReadText(path);
@@ -43,12 +64,20 @@ std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const
 	std::string type;
 	if constexpr (std::is_same_v<T, LanguageModuleDescriptor>) {
 		if (descriptor->language == "plugin") {
-			WZ_LOG_ERROR("Package: '{}' has JSON parsing error: Forbidden language name", name);
+			WZ_LOG_ERROR("Module descriptor: '{}' has JSON parsing error: Forbidden language name", name);
 			return {};
 		}
 		type = descriptor->language;
 	} else {
 		type = "plugin";
+
+		if (RemoveDuplicates(descriptor->dependencies)) {
+			WZ_LOG_WARNING("Plugin descriptor: '{}' has multiple dependencies with same name!", name);
+		}
+
+		if (RemoveDuplicates(descriptor->exportedMethods)) {
+			WZ_LOG_WARNING("Plugin descriptor: '{}' has multiple method with same name!", name);
+		}
 	}
 	auto version = descriptor->version;
 	return { {Package{name, type}, path, version, std::make_unique<T>(std::move(*descriptor))} };
@@ -529,6 +558,7 @@ void PackageManager::UninstallAllPackages_() {
 }
 
 bool PackageManager::UninstallPackage(const LocalPackage& package, bool remove) {
+	WZ_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
 	auto packagePath = package.path.parent_path();
 	std::error_code ec = FileSystem::RemoveFolder(packagePath);
 	if (!ec) {

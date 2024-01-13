@@ -14,7 +14,7 @@ ModuleRef IPluginManager::FindModule(std::string_view moduleName) const {
     return _impl.FindModule_(moduleName);
 }
 
-ModuleRef IPluginManager::FindModuleFromId(std::uint64_t moduleId) const {
+ModuleRef IPluginManager::FindModuleFromId(UniqueId moduleId) const {
     return _impl.FindModuleFromId_(moduleId);
 }
 
@@ -42,7 +42,7 @@ PluginRef IPluginManager::FindPlugin(std::string_view pluginName) const {
     return _impl.FindPlugin_(pluginName);
 }
 
-PluginRef IPluginManager::FindPluginFromId(uint64_t pluginId) const {
+PluginRef IPluginManager::FindPluginFromId(UniqueId pluginId) const {
     return _impl.FindPluginFromId_(pluginId);
 }
 
