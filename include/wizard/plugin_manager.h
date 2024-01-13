@@ -24,26 +24,26 @@ namespace wizard {
 		~IPluginManager() = default;
 
 	public:
-		ModuleRef FindModule(const std::string& moduleName);
-		ModuleRef FindModule(std::string_view moduleName);
-		ModuleRef FindModuleFromId(std::uint64_t moduleId);
-		ModuleRef FindModuleFromLang(const std::string& moduleLang);
-		ModuleRef FindModuleFromPath(const std::filesystem::path& moduleFilePath);
-		ModuleRef FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor);
+		ModuleRef FindModule(const std::string& moduleName) const;
+		ModuleRef FindModule(std::string_view moduleName) const;
+		ModuleRef FindModuleFromId(std::uint64_t moduleId) const;
+		ModuleRef FindModuleFromLang(const std::string& moduleLang) const;
+		ModuleRef FindModuleFromPath(const std::filesystem::path& moduleFilePath) const;
+		ModuleRef FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) const;
 
-		std::vector<std::reference_wrapper<const IModule>> GetModules();
+		std::vector<std::reference_wrapper<const IModule>> GetModules() const;
 
-		PluginRef FindPlugin(const std::string& pluginName);
-		PluginRef FindPlugin(std::string_view pluginName);
-		PluginRef FindPluginFromId(std::uint64_t pluginId);
-		PluginRef FindPluginFromPath(const std::filesystem::path& pluginFilePath);
-		PluginRef FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor);
+		PluginRef FindPlugin(const std::string& pluginName) const;
+		PluginRef FindPlugin(std::string_view pluginName) const;
+		PluginRef FindPluginFromId(std::uint64_t pluginId) const;
+		PluginRef FindPluginFromPath(const std::filesystem::path& pluginFilePath) const;
+		PluginRef FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) const;
 
-		std::vector<std::reference_wrapper<const IPlugin>> GetPlugins();
+		std::vector<std::reference_wrapper<const IPlugin>> GetPlugins() const;
 
-		bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies);
-		bool GetPluginDependencies_FromFilePath(const std::filesystem::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies);
-		bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies);
+		bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
+		bool GetPluginDependencies_FromFilePath(const std::filesystem::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
+		bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
 
 	private:
 		PluginManager& _impl;

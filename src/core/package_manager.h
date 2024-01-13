@@ -11,28 +11,32 @@ namespace wizard {
 		explicit PackageManager(std::weak_ptr<IWizard> wizard);
 		~PackageManager();
 
+	private:
+		friend class IPackageManager;
+
 		/** IPackageManager interface */
-		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
-		void InstallPackages(std::span<const std::string> packageNames);
-		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall);
-		void InstallAllPackages(const std::string& manifestUrl, bool reinstall);
+		void InstallPackage_(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
+		void InstallPackages_(std::span<const std::string> packageNames);
+		void InstallAllPackages_(const fs::path& manifestFilePath, bool reinstall);
+		void InstallAllPackages_(const std::string& manifestUrl, bool reinstall);
 
-		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
-		void UpdatePackages(std::span<const std::string> packageNames);
-		void UpdateAllPackages();
+		void UpdatePackage_(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
+		void UpdatePackages_(std::span<const std::string> packageNames);
+		void UpdateAllPackages_();
 
-		void UninstallPackage(const std::string& packageName);
-		void UninstallPackages(std::span<const std::string> packageNames);
-		void UninstallAllPackages();
+		void UninstallPackage_(const std::string& packageName);
+		void UninstallPackages_(std::span<const std::string> packageNames);
+		void UninstallAllPackages_();
 
-		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const;
+		void SnapshotPackages_(const fs::path& manifestFilePath, bool prettify) const;
 
-		LocalPackageRef FindLocalPackage(const std::string& packageName) const;
-		RemotePackageRef FindRemotePackage(const std::string& packageName) const;
+		LocalPackageRef FindLocalPackage_(const std::string& packageName) const;
+		RemotePackageRef FindRemotePackage_(const std::string& packageName) const;
 
-		std::vector<std::reference_wrapper<const LocalPackage>> GetLocalPackages() const;
-		std::vector<std::reference_wrapper<const RemotePackage>> GetRemotePackages() const;
+		std::vector<std::reference_wrapper<const LocalPackage>> GetLocalPackages_() const;
+		std::vector<std::reference_wrapper<const RemotePackage>> GetRemotePackages_() const;
 
+	public:
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
 			return supportedPlatforms.empty() || std::find(supportedPlatforms.begin(), supportedPlatforms.end(), WIZARD_PLATFORM) != supportedPlatforms.end();
 		}
@@ -46,10 +50,9 @@ namespace wizard {
 
 		bool UpdatePackage(const LocalPackage& package, std::optional<int32_t> requiredVersion = {});
 		bool InstallPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion = {});
-		bool UninstallPackage(const LocalPackage& package);
+		bool UninstallPackage(const LocalPackage& package, bool remove = true);
 
-	private:
-		bool DownloadPackage(const Package& package, const PackageVersion& version) const;
+		[[nodiscard]] bool DownloadPackage(const Package& package, const PackageVersion& version) const;
 		static std::string ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt);
 
 		/**
@@ -89,5 +92,10 @@ namespace wizard {
 		std::vector<LocalPackage> _localPackages;
 		std::vector<RemotePackage> _remotePackages;
 		//VerifiedPackageMap _packages;
+
+		// cache packages to install and uninstall in ResolveDependencies. Add method to fully resolve them
+		using Dependency = std::pair<std::reference_wrapper<const RemotePackage>, std::optional<int32_t>>;
+		std::unordered_map<std::string, Dependency> toInstall;
+		std::vector<std::reference_wrapper<const LocalPackage>> toUninstall;
 	};
 }

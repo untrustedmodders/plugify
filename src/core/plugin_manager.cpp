@@ -336,7 +336,7 @@ bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& 
 	return false;
 }
 
-ModuleRef PluginManager::FindModule(const std::string& moduleName) {
+ModuleRef PluginManager::FindModule_(const std::string& moduleName) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
 		return module->GetName() == moduleName;
 	});
@@ -345,7 +345,7 @@ ModuleRef PluginManager::FindModule(const std::string& moduleName) {
 	return {};
 }
 
-ModuleRef PluginManager::FindModule(std::string_view moduleName) {
+ModuleRef PluginManager::FindModule_(std::string_view moduleName) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
 		return module->GetName() == moduleName;
 	});
@@ -354,7 +354,7 @@ ModuleRef PluginManager::FindModule(std::string_view moduleName) {
 	return {};
 }
 
-ModuleRef PluginManager::FindModuleFromId(uint64_t moduleId) {
+ModuleRef PluginManager::FindModuleFromId_(uint64_t moduleId) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleId](const auto& module) {
 		return module->GetId() == moduleId;
 	});
@@ -363,7 +363,7 @@ ModuleRef PluginManager::FindModuleFromId(uint64_t moduleId) {
 	return {};
 }
 
-ModuleRef PluginManager::FindModuleFromLang(const std::string& moduleLang) {
+ModuleRef PluginManager::FindModuleFromLang_(const std::string& moduleLang) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleLang](const auto& module) {
 		return module->GetLanguage() == moduleLang;
 	});
@@ -372,7 +372,7 @@ ModuleRef PluginManager::FindModuleFromLang(const std::string& moduleLang) {
 	return {};
 }
 
-ModuleRef PluginManager::FindModuleFromPath(const std::filesystem::path& moduleFilePath) {
+ModuleRef PluginManager::FindModuleFromPath_(const std::filesystem::path& moduleFilePath) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleFilePath](const auto& module) {
 		return module->GetFilePath() == moduleFilePath;
 	});
@@ -381,7 +381,7 @@ ModuleRef PluginManager::FindModuleFromPath(const std::filesystem::path& moduleF
 	return {};
 }
 
-ModuleRef PluginManager::FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) {
+ModuleRef PluginManager::FindModuleFromDescriptor_(const PluginReferenceDescriptor& moduleDescriptor) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleDescriptor](const auto& module) {
 		return module->GetName() == moduleDescriptor.name && (!moduleDescriptor.requestedVersion || module->GetDescriptor().version == moduleDescriptor.requestedVersion);
 	});
@@ -390,7 +390,7 @@ ModuleRef PluginManager::FindModuleFromDescriptor(const PluginReferenceDescripto
 	return {};
 }
 
-std::vector<std::reference_wrapper<const IModule>> PluginManager::GetModules() {
+std::vector<std::reference_wrapper<const IModule>> PluginManager::GetModules_() const {
 	std::vector<std::reference_wrapper<const IModule>> modules;
 	modules.reserve(_allModules.size());
 	for (const auto& module : _allModules)  {
@@ -399,7 +399,7 @@ std::vector<std::reference_wrapper<const IModule>> PluginManager::GetModules() {
 	return modules;
 }
 
-PluginRef PluginManager::FindPlugin(const std::string& pluginName) {
+PluginRef PluginManager::FindPlugin_(const std::string& pluginName) const {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginName](const auto& plugin) {
 		return plugin->GetName() == pluginName;
 	});
@@ -408,7 +408,7 @@ PluginRef PluginManager::FindPlugin(const std::string& pluginName) {
 	return {};
 }
 
-PluginRef PluginManager::FindPlugin(std::string_view pluginName) {
+PluginRef PluginManager::FindPlugin_(std::string_view pluginName) const {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginName](const auto& plugin) {
 		return plugin->GetName() == pluginName;
 	});
@@ -417,7 +417,7 @@ PluginRef PluginManager::FindPlugin(std::string_view pluginName) {
 	return {};
 }
 
-PluginRef PluginManager::FindPluginFromId(uint64_t pluginId) {
+PluginRef PluginManager::FindPluginFromId_(uint64_t pluginId) const {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginId](const auto& plugin) {
 		return plugin->GetId() == pluginId;
 	});
@@ -426,7 +426,7 @@ PluginRef PluginManager::FindPluginFromId(uint64_t pluginId) {
 	return {};
 }
 
-PluginRef PluginManager::FindPluginFromPath(const fs::path& pluginFilePath) {
+PluginRef PluginManager::FindPluginFromPath_(const fs::path& pluginFilePath) const {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginFilePath](const auto& plugin) {
 		return plugin->GetFilePath() == pluginFilePath;
 	});
@@ -435,7 +435,7 @@ PluginRef PluginManager::FindPluginFromPath(const fs::path& pluginFilePath) {
 	return {};
 }
 
-PluginRef PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) {
+PluginRef PluginManager::FindPluginFromDescriptor_(const PluginReferenceDescriptor& pluginDescriptor) const {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginDescriptor](const auto& plugin) {
 		return plugin->GetName() == pluginDescriptor.name && (!pluginDescriptor.requestedVersion || plugin->GetDescriptor().version == pluginDescriptor.requestedVersion);
 	});
@@ -444,7 +444,7 @@ PluginRef PluginManager::FindPluginFromDescriptor(const PluginReferenceDescripto
 	return {};
 }
 
-std::vector<std::reference_wrapper<const IPlugin>> PluginManager::GetPlugins() {
+std::vector<std::reference_wrapper<const IPlugin>> PluginManager::GetPlugins_() const {
 	std::vector<std::reference_wrapper<const IPlugin>> plugins;
 	plugins.reserve(_allPlugins.size());
 	for (const auto& plugin : _allPlugins)  {
@@ -453,7 +453,7 @@ std::vector<std::reference_wrapper<const IPlugin>> PluginManager::GetPlugins() {
 	return plugins;
 }
 
-bool PluginManager::GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
+bool PluginManager::GetPluginDependencies_(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) const {
 	auto plugin = FindPlugin(pluginName);
 	if (plugin.has_value()) {
 		pluginDependencies = plugin->get().GetDescriptor().dependencies;
@@ -462,7 +462,7 @@ bool PluginManager::GetPluginDependencies(const std::string& pluginName, std::ve
 	return false;
 }
 
-bool PluginManager::GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
+bool PluginManager::GetPluginDependencies_FromFilePath_(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) const {
 	auto plugin = FindPluginFromPath(pluginFilePath);
 	if (plugin.has_value()) {
 		pluginDependencies = plugin->get().GetDescriptor().dependencies;
@@ -471,7 +471,7 @@ bool PluginManager::GetPluginDependencies_FromFilePath(const fs::path& pluginFil
 	return false;
 }
 
-bool PluginManager::GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
+bool PluginManager::GetPluginDependencies_FromDescriptor_(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) const {
 	auto plugin = FindPluginFromDescriptor(pluginDescriptor);
 	if (plugin.has_value()) {
 		pluginDependencies = plugin->get().GetDescriptor().dependencies;

@@ -7,41 +7,41 @@ IModule::IModule(Module& impl) : _impl{impl} {
 }
 
 uint64_t IModule::GetId() const {
-	return _impl.GetId();
+	return _impl.GetId_();
 }
 
 const std::string& IModule::GetName() const {
-    return _impl.GetName();
+    return _impl.GetName_();
 }
 
 const std::string& IModule::GetLanguage() const {
-    return _impl.GetLanguage();
+    return _impl.GetLanguage_();
 }
 
 const std::string& IModule::GetFriendlyName() const {
-    return _impl.GetFriendlyName();
+    return _impl.GetFriendlyName_();
 }
 
 const fs::path& IModule::GetFilePath() const {
-    return _impl.GetFilePath();
+    return _impl.GetFilePath_();
 }
 
 fs::path IModule::GetBaseDir() const {
-    return _impl.GetBaseDir();
+    return _impl.GetBaseDir_();
 }
 
 fs::path IModule::GetBinariesDir() const {
-    return _impl.GetBinariesDir();
+    return _impl.GetBinariesDir_();
 }
 
 const LanguageModuleDescriptor& IModule::GetDescriptor() const {
-    return _impl.GetDescriptor();
+    return _impl.GetDescriptor_();
 }
 
 ModuleState IModule::GetState() const {
-    return _impl.GetState();
+    return _impl.GetState_();
 }
 
 const std::string& IModule::GetError() const {
-    return _impl.GetError();
+    return _impl.GetError_();
 }

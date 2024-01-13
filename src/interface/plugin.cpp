@@ -9,45 +9,45 @@ IPlugin::IPlugin(Plugin& impl) : _impl{impl} {
 IPlugin::~IPlugin() = default;
 
 uint64_t IPlugin::GetId() const {
-    return _impl.GetId();
+    return _impl.GetId_();
 }
 
 const std::string& IPlugin::GetName() const {
-    return _impl.GetName();
+    return _impl.GetName_();
 }
 
 const std::string& IPlugin::GetFriendlyName() const {
-    return _impl.GetFriendlyName();
+    return _impl.GetFriendlyName_();
 }
 
 const fs::path& IPlugin::GetFilePath() const {
-    return _impl.GetFilePath();
+    return _impl.GetFilePath_();
 }
 
 fs::path IPlugin::GetBaseDir() const {
-    return _impl.GetBaseDir();
+    return _impl.GetBaseDir_();
 }
 
 fs::path IPlugin::GetContentDir() const {
-    return _impl.GetContentDir();
+    return _impl.GetContentDir_();
 }
 
 fs::path IPlugin::GetMountedAssetPath() const {
-    return _impl.GetMountedAssetPath();
+    return _impl.GetMountedAssetPath_();
 }
 
 const PluginDescriptor& IPlugin::GetDescriptor() const {
-    return _impl.GetDescriptor();
+    return _impl.GetDescriptor_();
 }
 
 PluginState IPlugin::GetState() const {
-    return _impl.GetState();
+    return _impl.GetState_();
 }
 
 const std::string& IPlugin::GetError() const {
-    return _impl.GetError();
+    return _impl.GetError_();
 }
 
 const std::vector<MethodData>& IPlugin::GetMethods() const {
-    return _impl.GetMethods();
+    return _impl.GetMethods_();
 }

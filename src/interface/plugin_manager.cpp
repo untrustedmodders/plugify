@@ -6,66 +6,66 @@ using namespace wizard;
 IPluginManager::IPluginManager(PluginManager& impl) : _impl{impl} {
 }
 
-ModuleRef IPluginManager::FindModule(const std::string& moduleName) {
-    return _impl.FindModule(moduleName);
+ModuleRef IPluginManager::FindModule(const std::string& moduleName) const {
+    return _impl.FindModule_(moduleName);
 }
 
-ModuleRef IPluginManager::FindModule(std::string_view moduleName) {
-    return _impl.FindModule(moduleName);
+ModuleRef IPluginManager::FindModule(std::string_view moduleName) const {
+    return _impl.FindModule_(moduleName);
 }
 
-ModuleRef IPluginManager::FindModuleFromId(std::uint64_t moduleId) {
-    return _impl.FindModuleFromId(moduleId);
+ModuleRef IPluginManager::FindModuleFromId(std::uint64_t moduleId) const {
+    return _impl.FindModuleFromId_(moduleId);
 }
 
-ModuleRef IPluginManager::FindModuleFromLang(const std::string& moduleLang) {
-    return _impl.FindModuleFromLang(moduleLang);
+ModuleRef IPluginManager::FindModuleFromLang(const std::string& moduleLang) const {
+    return _impl.FindModuleFromLang_(moduleLang);
 }
 
-ModuleRef IPluginManager::FindModuleFromPath(const fs::path& moduleFilePath) {
-    return _impl.FindModuleFromPath(moduleFilePath);
+ModuleRef IPluginManager::FindModuleFromPath(const fs::path& moduleFilePath) const {
+    return _impl.FindModuleFromPath_(moduleFilePath);
 }
 
-ModuleRef IPluginManager::FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) {
-    return _impl.FindModuleFromDescriptor(moduleDescriptor);
+ModuleRef IPluginManager::FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) const {
+    return _impl.FindModuleFromDescriptor_(moduleDescriptor);
 }
 
-std::vector<std::reference_wrapper<const IModule>> IPluginManager::GetModules() {
-    return _impl.GetModules();
+std::vector<std::reference_wrapper<const IModule>> IPluginManager::GetModules() const {
+    return _impl.GetModules_();
 }
 
-PluginRef IPluginManager::FindPlugin(const std::string& pluginName) {
-    return _impl.FindPlugin(pluginName);
+PluginRef IPluginManager::FindPlugin(const std::string& pluginName) const {
+    return _impl.FindPlugin_(pluginName);
 }
 
-PluginRef IPluginManager::FindPlugin(std::string_view pluginName) {
-    return _impl.FindPlugin(pluginName);
+PluginRef IPluginManager::FindPlugin(std::string_view pluginName) const {
+    return _impl.FindPlugin_(pluginName);
 }
 
-PluginRef IPluginManager::FindPluginFromId(uint64_t pluginId) {
-    return _impl.FindPluginFromId(pluginId);
+PluginRef IPluginManager::FindPluginFromId(uint64_t pluginId) const {
+    return _impl.FindPluginFromId_(pluginId);
 }
 
-PluginRef IPluginManager::FindPluginFromPath(const fs::path& pluginFilePath) {
-    return _impl.FindPluginFromPath(pluginFilePath);
+PluginRef IPluginManager::FindPluginFromPath(const fs::path& pluginFilePath) const {
+    return _impl.FindPluginFromPath_(pluginFilePath);
 }
 
-PluginRef IPluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) {
-    return _impl.FindPluginFromDescriptor(pluginDescriptor);
+PluginRef IPluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) const {
+    return _impl.FindPluginFromDescriptor_(pluginDescriptor);
 }
 
-std::vector<std::reference_wrapper<const IPlugin>> IPluginManager::GetPlugins() {
-    return _impl.GetPlugins();
+std::vector<std::reference_wrapper<const IPlugin>> IPluginManager::GetPlugins() const {
+    return _impl.GetPlugins_();
 }
 
-bool IPluginManager::GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
-    return _impl.GetPluginDependencies(pluginName, pluginDependencies);
+bool IPluginManager::GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) const {
+    return _impl.GetPluginDependencies_(pluginName, pluginDependencies);
 }
 
-bool IPluginManager::GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
-    return _impl.GetPluginDependencies_FromFilePath(pluginFilePath, pluginDependencies);
+bool IPluginManager::GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) const {
+    return _impl.GetPluginDependencies_FromFilePath_(pluginFilePath, pluginDependencies);
 }
 
-bool IPluginManager::GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
-    return _impl.GetPluginDependencies_FromDescriptor(pluginDescriptor, pluginDependencies);
+bool IPluginManager::GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) const {
+    return _impl.GetPluginDependencies_FromDescriptor_(pluginDescriptor, pluginDependencies);
 }

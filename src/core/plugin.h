@@ -10,37 +10,59 @@ namespace wizard {
 		Plugin(uint64_t id, std::string name, fs::path filePath, PluginDescriptor descriptor);
 		~Plugin() = default;
 
+	private:
+		friend class IPlugin;
+
 		/* IPlugin interface */
-		uint64_t GetId() const {
+		uint64_t GetId_() const {
 			return _id;
 		}
 
-		const std::string& GetName() const {
+		const std::string& GetName_() const {
 			return _name;
 		}
 
-		const std::string& GetFriendlyName() const {
+		const std::string& GetFriendlyName_() const {
 			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
 		}
 
-		const fs::path& GetFilePath() const {
+		const fs::path& GetFilePath_() const {
 			return _filePath;
 		}
 
-		fs::path GetBaseDir() const {
+		fs::path GetBaseDir_() const {
 			return "";
 		}
 
-		fs::path GetContentDir() const {
+		fs::path GetContentDir_() const {
 			return "";
 		}
 
-		fs::path GetMountedAssetPath() const {
+		fs::path GetMountedAssetPath_() const {
 			return "";
 		}
 
-		const PluginDescriptor& GetDescriptor() const {
+		const PluginDescriptor& GetDescriptor_() const {
 			return _descriptor;
+		}
+
+		PluginState GetState_() const {
+			return _state;
+		}
+
+		const std::string& GetError_() const {
+			return _error;
+		}
+
+		const std::vector<MethodData>& GetMethods_() const {
+			return _methods;
+		}
+
+	public:
+		void SetError(std::string error);
+
+		void SetMethods(std::vector<MethodData> methods) {
+			_methods = std::move(methods);
 		}
 
 		const Module& GetModule() const {
@@ -50,10 +72,6 @@ namespace wizard {
 
 		void SetModule(const Module& module) {
 			_module = module;
-		}
-
-		PluginState GetState() const {
-			return _state;
 		}
 
 		void SetLoaded() {
@@ -70,20 +88,6 @@ namespace wizard {
 
 		void SetUnloaded() {
 			_state = PluginState::NotLoaded;
-		}
-
-		void SetError(std::string error);
-
-		const std::string& GetError() const {
-			return _error;
-		}
-
-		void SetMethods(std::vector<MethodData> methods) {
-			_methods = std::move(methods);
-		}
-
-		const std::vector<MethodData>& GetMethods() const {
-			return _methods;
 		}
 
 		static inline const char* const kFileExtension = ".wplugin";

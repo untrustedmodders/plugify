@@ -10,7 +10,7 @@ HTTPDownloaderWinHttp::HTTPDownloaderWinHttp() : HTTPDownloader() {
 
 HTTPDownloaderWinHttp::~HTTPDownloaderWinHttp() {
 	if (_hSession) {
-		WinHttpSetStatusCallback(_hSession, nullptr, WINHTTP_CALLBACK_FLAG_ALL_NOTIFICATIONS, NULL);
+		WinHttpSetStatusCallback(_hSession, nullptr, WINHTTP_CALLBACK_FLAG_ALL_NOTIFICATIONS, 0);
 		WinHttpCloseHandle(_hSession);
 	}
 }
@@ -32,7 +32,7 @@ bool HTTPDownloaderWinHttp::Initialize(std::string userAgent) {
 	}
 
 	const DWORD notification_flags = WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS | WINHTTP_CALLBACK_FLAG_REQUEST_ERROR | WINHTTP_CALLBACK_FLAG_HANDLES | WINHTTP_CALLBACK_FLAG_SECURE_FAILURE;
-	if (WinHttpSetStatusCallback(_hSession, HTTPStatusCallback, notification_flags, NULL) == WINHTTP_INVALID_STATUS_CALLBACK) {
+	if (WinHttpSetStatusCallback(_hSession, HTTPStatusCallback, notification_flags, 0) == WINHTTP_INVALID_STATUS_CALLBACK) {
 		WZ_LOG_ERROR("WinHttpSetStatusCallback() failed: {}", GetLastError());
 		return false;
 	}

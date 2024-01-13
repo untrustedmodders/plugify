@@ -179,10 +179,8 @@ std::optional<std::reference_wrapper<const T>> GetLanguageModule(const std::vect
 }
 
 void PackageManager::ResolveDependencies() {
-	using Dependency = std::pair<std::reference_wrapper<const RemotePackage>, std::optional<int32_t>>;
-	std::unordered_map<std::string, Dependency> dependencies;
-
-	// TODO: Remove localPackages which could not be solve dependency issues
+	toInstall.clear();
+	toUninstall.clear();
 
 	for (const auto& package : _localPackages) {
 		if (package.type == "plugin") {
@@ -192,12 +190,13 @@ void PackageManager::ResolveDependencies() {
 			if (!GetLanguageModule(_localPackages, lang)) {
 				auto remotePackage = GetLanguageModule(_remotePackages, lang);
 				if (remotePackage.has_value()) {
-					auto it = dependencies.find(lang);
-					if (it == dependencies.end()) {
-						dependencies.emplace(lang, std::pair{ *remotePackage, std::nullopt }); // by default prioritizing latest language modules
+					auto it = toInstall.find(lang);
+					if (it == toInstall.end()) {
+						toInstall.emplace(lang, std::pair{ *remotePackage, std::nullopt }); // by default prioritizing latest language modules
 					}
 				} else {
 					WZ_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package.name, lang);
+					toUninstall.emplace_back(package);
 					continue;
 				}
 			}
@@ -218,13 +217,13 @@ void PackageManager::ResolveDependencies() {
 				if (remotePackage.has_value()) {
 					if (dependency.requestedVersion.has_value() && !remotePackage->get().Version(*dependency.requestedVersion).has_value()) {
 						WZ_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package.name, dependency.name, *dependency.requestedVersion);
+						toUninstall.emplace_back(package);
 						continue;
 					}
 
-					auto it = dependencies.find(dependency.name);
-					if (it == dependencies.end()) {
-						dependencies.emplace(dependency.name, std::pair{ *remotePackage, dependency.requestedVersion });
-
+					auto it = toInstall.find(dependency.name);
+					if (it == toInstall.end()) {
+						toInstall.emplace(dependency.name, std::pair{ *remotePackage, dependency.requestedVersion });
 					} else {
 						auto& existingDependency = std::get<Dependency>(*it);
 
@@ -247,25 +246,14 @@ void PackageManager::ResolveDependencies() {
 					}
 				} else {
 					WZ_LOG_ERROR("Package: '{}' has dependency: '{}' which could not be found.", package.name, dependency.name);
+					toUninstall.emplace_back(package);
 				}
 			}
-
-		} else /* if (package.type == "module") */ {
-
 		}
 	}
-
-	// TODO: Finish auto install
-
-	/*Request([&] {
-		for (const auto& [_, dependency] : dependencies) {
-			const auto& [package, version] = dependency;
-			InstallPackage(package, version);
-		}
-	});*/
 }
 
-void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const {
+void PackageManager::SnapshotPackages_(const fs::path& manifestFilePath, bool prettify) const {
 	auto debugStart = DateTime::Now();
 
 	std::unordered_map<std::string, RemotePackage> packages;
@@ -288,7 +276,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	WZ_LOG_DEBUG("Snapshot '{}' created in {}ms", manifestFilePath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
-void PackageManager::InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
+void PackageManager::InstallPackage_(const std::string& packageName, std::optional<int32_t> requiredVersion) {
 	Request([&] {
 		auto package = FindRemotePackage(packageName);
 		if (package.has_value()) {
@@ -297,18 +285,23 @@ void PackageManager::InstallPackage(const std::string& packageName, std::optiona
 	});
 }
 
-void PackageManager::InstallPackages(std::span<const std::string> packageNames) {
+void PackageManager::InstallPackages_(std::span<const std::string> packageNames) {
+	std::unordered_set<std::string> unique;
+	unique.reserve(packageNames.size());
 	Request([&] {
 		for (const auto& packageName: packageNames) {
+			if (unique.contains(packageName))
+				continue;
 			auto package = FindRemotePackage(packageName);
 			if (package.has_value()) {
 				InstallPackage(*package);
 			}
+			unique.insert(packageName);
 		}
 	});
 }
 
-void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool reinstall) {
+void PackageManager::InstallAllPackages_(const fs::path& manifestFilePath, bool reinstall) {
 	if (manifestFilePath.extension().string() != PackageManifest::kFileExtension) {
 		WZ_LOG_ERROR("Package manifest: '{}' should be in *{} format", manifestFilePath.string(), PackageManifest::kFileExtension);
 		return;
@@ -351,36 +344,45 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 	});
 }
 
-void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool reinstall) {
-	/*if (manifestUrl.empty())
+void PackageManager::InstallAllPackages_(const std::string& manifestUrl, bool reinstall) {
+	if (manifestUrl.empty())
 		return;
 
 	WZ_LOG_INFO("Read package manifest from '{}'", manifestUrl);
 
-	auto manifest = _downloader.FetchPackageManifest(manifestUrl);
-	if (!manifest.has_value())
-		return;
-
-	if (!reinstall) {
-		for (const auto& package : _localPackages) {
-			manifest->content.erase(package.name);
-		};
-	}
-
-	if (manifest->content.empty()) {
-		WZ_LOG_WARNING("No packages to install was found! If you need to reinstall all installed packages, use the reinstall flag!");
-		return;
-	}
-
-	Request([&] {
-		for (const auto& [name, package] : manifest->content) {
-			if (package.name != name) {
-				WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package.name);
-				continue;
+	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
+		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
+			std::string buffer{ data.begin(), data.end() };
+			auto manifest = glz::read_json<PackageManifest>(buffer);
+			if (!manifest.has_value()) {
+				WZ_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", manifestUrl, glz::format_error(manifest.error(), buffer));
+				return;
 			}
-			InstallPackage(package);
+
+			if (!reinstall) {
+				for (const auto& package : _localPackages) {
+					manifest->content.erase(package.name);
+				};
+			}
+
+			if (manifest->content.empty()) {
+				WZ_LOG_WARNING("No packages to install was found! If you need to reinstall all installed packages, use the reinstall flag!");
+				return;
+			}
+
+			Request([&] {
+				for (const auto& [name, package] : manifest->content) {
+					if (package.name != name) {
+						WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package.name);
+						continue;
+					}
+					InstallPackage(package);
+				}
+			});
 		}
-	});*/
+	});
+
+	_httpDownloader->WaitForAllRequests();
 }
 
 bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion) {
@@ -416,7 +418,7 @@ bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<
 	return DownloadPackage(package, newVersion->get());
 }
 
-void PackageManager::UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
+void PackageManager::UpdatePackage_(const std::string& packageName, std::optional<int32_t> requiredVersion) {
 	Request([&] {
 		auto package = FindLocalPackage(packageName);
 		if (package.has_value()) {
@@ -425,18 +427,23 @@ void PackageManager::UpdatePackage(const std::string& packageName, std::optional
 	});
 }
 
-void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
+void PackageManager::UpdatePackages_(std::span<const std::string> packageNames) {
+	std::unordered_set<std::string> unique;
+	unique.reserve(packageNames.size());
 	Request([&] {
 		for (const auto& packageName: packageNames) {
+			if (unique.contains(packageName))
+				continue;
 			auto package = FindLocalPackage(packageName);
 			if (package.has_value()) {
 				UpdatePackage(*package);
 			}
+			unique.insert(packageName);
 		}
 	});
 }
 
-void PackageManager::UpdateAllPackages() {
+void PackageManager::UpdateAllPackages_() {
 	Request([&] {
 		for (const auto& package : _localPackages) {
 			UpdatePackage(package);
@@ -487,7 +494,7 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 	return DownloadPackage(package, newVersion->get());
 }
 
-void PackageManager::UninstallPackage(const std::string& packageName) {
+void PackageManager::UninstallPackage_(const std::string& packageName) {
 	Request([&] {
 		auto package = FindLocalPackage(packageName);
 		if (package.has_value()) {
@@ -496,36 +503,44 @@ void PackageManager::UninstallPackage(const std::string& packageName) {
 	});
 }
 
-void PackageManager::UninstallPackages(std::span<const std::string> packageNames) {
+void PackageManager::UninstallPackages_(std::span<const std::string> packageNames) {
+	std::unordered_set<std::string> unique;
+	unique.reserve(packageNames.size());
 	Request([&] {
 		for (const auto& packageName: packageNames) {
+			if (unique.contains(packageName))
+				continue;
 			auto package = FindLocalPackage(packageName);
 			if (package.has_value()) {
 				UninstallPackage(*package);
 			}
+			unique.insert(packageName);
 		}
 	});
 }
 
-void PackageManager::UninstallAllPackages() {
+void PackageManager::UninstallAllPackages_() {
 	Request([&] {
 		for (const auto& package : _localPackages) {
-			UninstallPackage(package);
+			UninstallPackage(package, false);
 		}
+		_localPackages.clear();
 	});
 }
 
-bool PackageManager::UninstallPackage(const LocalPackage& package) {
+bool PackageManager::UninstallPackage(const LocalPackage& package, bool remove) {
 	auto packagePath = package.path.parent_path();
 	std::error_code ec = FileSystem::RemoveFolder(packagePath);
 	if (!ec) {
+		if (remove)
+			_localPackages.erase(std::find(_localPackages.begin(), _localPackages.end(), package));
 		WZ_LOG_ERROR("Package: '{}' (v{}) was removed from: '{}'", package.name, package.version, packagePath.string());
 		return true;
 	}
 	return false;
 }
 
-LocalPackageRef PackageManager::FindLocalPackage(const std::string& packageName) const {
+LocalPackageRef PackageManager::FindLocalPackage_(const std::string& packageName) const {
 	auto it = std::find_if(_localPackages.begin(), _localPackages.end(), [&packageName](const auto& plugin) {
 		return plugin.name == packageName;
 	});
@@ -534,7 +549,7 @@ LocalPackageRef PackageManager::FindLocalPackage(const std::string& packageName)
 	return {};
 }
 
-RemotePackageRef PackageManager::FindRemotePackage(const std::string& packageName) const {
+RemotePackageRef PackageManager::FindRemotePackage_(const std::string& packageName) const {
 	auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&packageName](const auto& plugin) {
 		return plugin.name == packageName;
 	});
@@ -543,7 +558,7 @@ RemotePackageRef PackageManager::FindRemotePackage(const std::string& packageNam
 	return {};
 }
 
-std::vector<std::reference_wrapper<const LocalPackage>> PackageManager::GetLocalPackages() const {
+std::vector<std::reference_wrapper<const LocalPackage>> PackageManager::GetLocalPackages_() const {
 	std::vector<std::reference_wrapper<const LocalPackage>> localPackages;
 	localPackages.reserve(_localPackages.size());
 	for (const auto& package : _localPackages)  {
@@ -552,7 +567,7 @@ std::vector<std::reference_wrapper<const LocalPackage>> PackageManager::GetLocal
 	return localPackages;
 }
 
-std::vector<std::reference_wrapper<const RemotePackage>> PackageManager::GetRemotePackages() const {
+std::vector<std::reference_wrapper<const RemotePackage>> PackageManager::GetRemotePackages_() const {
 	std::vector<std::reference_wrapper<const RemotePackage>> remotePackages;
 	remotePackages.reserve(remotePackages.size());
 	for (const auto& package : _remotePackages)  {

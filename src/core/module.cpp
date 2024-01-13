@@ -6,6 +6,8 @@
 using namespace wizard;
 
 Module::Module(uint64_t id, std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor) : IModule(*this), _id{id}, _name{std::move(name)}, _lang{std::move(lang)}, _filePath{std::move(filePath)}, _descriptor{std::move(descriptor)} {
+	_binaryDir = _filePath.parent_path();
+	_baseDir = _binaryDir.parent_path();
 }
 
 Module::~Module() {

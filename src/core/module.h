@@ -12,39 +12,51 @@ namespace wizard {
 		Module(uint64_t id, std::string name, std::string lang, fs::path filePath, LanguageModuleDescriptor descriptor);
 		~Module();
 
+	private:
+		friend class IModule;
+
 		/* IModule interface */
-		uint64_t GetId() const {
+		uint64_t GetId_() const {
 			return _id;
 		}
 
-		const std::string& GetName() const {
+		const std::string& GetName_() const {
 			return _name;
 		}
 
-		const std::string& GetLanguage() const {
+		const std::string& GetLanguage_() const {
 			return _lang;
 		}
 
-		const std::string& GetFriendlyName() const {
+		const std::string& GetFriendlyName_() const {
 			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
 		}
 
-		const fs::path& GetFilePath() const {
+		const fs::path& GetFilePath_() const {
 			return _filePath;
 		}
 
-		fs::path GetBaseDir() const {
-			return _filePath.parent_path().parent_path();
+		const fs::path& GetBaseDir_() const {
+			return _baseDir;
 		}
 
-		fs::path GetBinariesDir() const {
-			return _filePath.parent_path();
+		const fs::path& GetBinariesDir_() const {
+			return _binaryDir;
 		}
 
-		const LanguageModuleDescriptor& GetDescriptor() const {
+		const LanguageModuleDescriptor& GetDescriptor_() const {
 			return _descriptor;
 		}
 
+		ModuleState GetState_() const {
+			return _state;
+		}
+
+		const std::string& GetError_() const {
+			return _error;
+		}
+
+	public:
 		bool Initialize(std::weak_ptr<IWizardProvider> provider);
 		void Terminate();
 
@@ -60,10 +72,6 @@ namespace wizard {
 			return _languageModule.value();
 		}
 
-		ModuleState GetState() const {
-			return _state;
-		}
-
 		void SetLoaded() {
 			_state = ModuleState::Loaded;
 		}
@@ -74,10 +82,6 @@ namespace wizard {
 
 		void SetError(std::string error);
 
-		const std::string& GetError() const {
-			return _error;
-		}
-
 		static inline const char* const kFileExtension = ".wmodule";
 
 	private:
@@ -85,6 +89,8 @@ namespace wizard {
 		std::string _name;
 		std::string _lang;
 		fs::path _filePath;
+		fs::path _baseDir;
+		fs::path _binaryDir;
 		LanguageModuleDescriptor _descriptor;
 		ModuleState _state{ ModuleState::NotLoaded };
 		std::string _error;
