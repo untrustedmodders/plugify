@@ -464,7 +464,7 @@ void PackageManager::InstallAllPackages_(const std::string& manifestUrl, bool re
 
 	auto func = __func__;
 
-	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
+	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& /*contentType*/, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			std::string buffer{ data.begin(), data.end() };
 			auto manifest = glz::read_json<PackageManifest>(buffer);
