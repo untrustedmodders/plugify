@@ -5,7 +5,7 @@
 using namespace wizard;
 
 void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
-	std::ifstream is{filepath, std::ios::binary};
+	std::ifstream is(filepath, std::ios::binary);
 
 	 if (!is.is_open()) {
 		 WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
@@ -20,7 +20,7 @@ void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler)
 }
 
 std::string FileSystem::ReadText(const fs::path& filepath) {
-	std::ifstream is{filepath, std::ios::binary};
+	std::ifstream is(filepath, std::ios::binary);
 
 	if (!is.is_open()) {
 		WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());

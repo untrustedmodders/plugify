@@ -822,7 +822,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 			return std::format("Error getting file stat: {}", i);
 		}
 
-		fs::path filename = fileStat.m_filename;
+		fs::path filename(fileStat.m_filename);
 		if (filename.extension().string() == descriptorExt) {
 			foundDescriptor = true;
 		}
