@@ -7,8 +7,8 @@
 
 namespace wizard {
 	class PackageManager;
-	class LocalPackage;
-	class RemotePackage;
+	struct LocalPackage;
+	struct RemotePackage;
 
 	using LocalPackageRef = std::reference_wrapper<const LocalPackage>;
 	using RemotePackageRef = std::reference_wrapper<const RemotePackage>;

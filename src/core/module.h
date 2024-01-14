@@ -7,7 +7,7 @@
 
 namespace wizard {
 	class Plugin;
-	class LocalPackage;
+	struct LocalPackage;
 	class Module final : public IModule {
 	public:
 		Module(UniqueId id, const LocalPackage& package);
