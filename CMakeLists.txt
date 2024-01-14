@@ -5,7 +5,7 @@ if(POLICY CMP0092)
 endif()
 
 
-project(wizard VERSION 1.0.0.0  DESCRIPTION "Wizard Core" HOMEPAGE_URL "https://github.com/untrustedmodders/wizard")
+project(wizard VERSION 1.0.0.0  DESCRIPTION "Wizard Core" HOMEPAGE_URL "https://github.com/untrustedmodders/wizard" LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -84,7 +84,6 @@ file(GLOB_RECURSE WIZARD_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/
 if(WIZARD_BUILD_DLL)
     if(WIZARD_BUILD_SHARED_LIB)
         add_library(${PROJECT_NAME} SHARED ${WIZARD_CORE_SOURCES})
-        set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     else()
         add_library(${PROJECT_NAME} STATIC ${WIZARD_CORE_SOURCES})
     endif()
