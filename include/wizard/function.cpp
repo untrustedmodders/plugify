@@ -1,4 +1,5 @@
 #include <wizard/function.h>
+#include <asmjit/asmjit.h>
 
 using namespace wizard;
 using namespace asmjit;
