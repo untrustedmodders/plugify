@@ -69,8 +69,7 @@ void printHelp() {
 	<< std::endl;
 }
 
-int main(int argc, const char** argv) {
-    std::span<const char*> arg{argv, static_cast<size_t>(argc)};
+int main() {
     std::shared_ptr<wizard::IWizard> sorcerer = wizard::MakeWizard();
     if (sorcerer) {
         auto logger = std::make_shared<sorcerer::StdLogger>();
@@ -88,7 +87,7 @@ int main(int argc, const char** argv) {
                 running = false;
             } else if (args[0] == "wzd" && args.size() > 1) {
                 if (args[1] == "-init") {
-					if (!sorcerer->Initialize(arg)) {
+					if (!sorcerer->Initialize()) {
 						sorcerer->Log("No feet, no sweets!", wizard::Severity::Error);
 						return EXIT_FAILURE;
 					}

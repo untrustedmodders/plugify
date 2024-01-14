@@ -73,7 +73,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 			WZ_LOG_ERROR("Request for '{}' timed out", req->url);
 
 			req->state.store(Request::State::Cancelled);
-			_pendingRequests.erase(_pendingRequests.begin() + static_cast<ssize_t>(index));
+			_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
 			lock.unlock();
 
 			req->callback(HTTP_STATUS_TIMEOUT, {}, {});
@@ -86,7 +86,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 			WZ_LOG_ERROR("Request for '{}' cancelled", req->url);
 
 			req->state.store(Request::State::Cancelled);
-			_pendingRequests.erase(_pendingRequests.begin() + static_cast<ssize_t>(index));
+			_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
 			lock.unlock();
 
 			req->callback(HTTP_STATUS_CANCELLED, {}, {});
@@ -113,7 +113,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 		}
 
 		WZ_LOG_VERBOSE("Request for '{}' complete, returned status code {} and {} bytes", req->url, req->statusCode, req->data.size());
-		_pendingRequests.erase(_pendingRequests.begin() + static_cast<ssize_t>(index));
+		_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
 
 		// run callback with lock unheld
 		lock.unlock();
@@ -132,7 +132,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 			}
 
 			if (!StartRequest(req)) {
-				_pendingRequests.erase(_pendingRequests.begin() + static_cast<ssize_t>(index));
+				_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
 				continue;
 			}
 

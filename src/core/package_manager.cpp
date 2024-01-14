@@ -163,7 +163,7 @@ void PackageManager::LoadRemotePackages() {
 	std::mutex mutex;
 
 	auto fetchManifest = [&](const std::string& url) {
-		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
+		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string&/* contentType*/, HTTPDownloader::Request::Data data) {
 			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 				std::string buffer{ data.begin(), data.end() };
 				auto manifest = glz::read_json<PackageManifest>(buffer);

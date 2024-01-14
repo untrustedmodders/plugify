@@ -14,7 +14,7 @@ namespace wizard {
 			Terminate();
 		};
 
-		bool Initialize(std::span<const char*> args) override {
+		bool Initialize() override {
 			if (_inited)
 				return false;
 

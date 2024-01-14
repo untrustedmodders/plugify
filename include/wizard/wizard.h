@@ -18,7 +18,7 @@ namespace wizard {
 	public:
 		virtual ~IWizard() = default;
 
-		virtual bool Initialize(std::span<const char*> args) = 0;
+		virtual bool Initialize() = 0;
 		virtual void Terminate() = 0;
 
 		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
