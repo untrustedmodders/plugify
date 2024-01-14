@@ -14,11 +14,11 @@ namespace wizard {
 			Terminate();
 		};
 
-		bool Initialize() override {
+		bool Initialize(const fs::path& configPath) override {
 			if (_inited)
 				return false;
 
-			auto json = FileSystem::ReadText("wizard.wconfig");
+			auto json = FileSystem::ReadText(configPath);
 			auto config = glz::read_json<Config>(json);
 			if (!config.has_value()) {
 				WZ_LOG_ERROR("Config: 'wizard.wconfig' has JSON parsing error: {}", glz::format_error(config.error(), json));

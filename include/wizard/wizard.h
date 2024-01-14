@@ -3,6 +3,7 @@
 #include <wizard/version.h>
 #include <wizard/config.h>
 #include <wizard_export.h>
+#include <filesystem>
 #include <cstdint>
 #include <memory>
 #include <span>
@@ -18,7 +19,7 @@ namespace wizard {
 	public:
 		virtual ~IWizard() = default;
 
-		virtual bool Initialize() = 0;
+		virtual bool Initialize(const std::filesystem::path& configPath = "wizard.wconfig") = 0;
 		virtual void Terminate() = 0;
 
 		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
