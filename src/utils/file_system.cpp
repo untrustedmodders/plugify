@@ -15,7 +15,7 @@ void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler)
 	 // Stop eating new lines in binary mode!!!
 	 is.unsetf(std::ios::skipws);
 
-	 std::vector<uint8_t> buffer(std::istreambuf_iterator<char>{is}, std::istreambuf_iterator<char>{});
+	 std::vector<uint8_t> buffer{ std::istreambuf_iterator<char>{is}, std::istreambuf_iterator<char>{} };
 	 handler({ buffer.data(), buffer.size() });
 }
 
@@ -30,7 +30,7 @@ std::string FileSystem::ReadText(const fs::path& filepath) {
 	// Stop eating new lines in binary mode!!!
 	is.unsetf(std::ios::skipws);
 
-	return {std::istreambuf_iterator<char>{is}, std::istreambuf_iterator<char>{} };
+	return { std::istreambuf_iterator<char>{is}, std::istreambuf_iterator<char>{} };
 }
 
 bool FileSystem::WriteBytes(const fs::path& filepath, std::span<const uint8_t> buffer) {
