@@ -76,8 +76,8 @@ void PluginManager::LoadRequiredLanguageModules() {
 
 	for (const auto& plugin : _allPlugins) {
 		const auto& lang = plugin->GetDescriptor().languageModule.name;
-		auto it = std::find_if(_allModules.begin(), _allModules.end(), [&lang](const auto& plugin) {
-			return plugin->GetLanguage() == lang;
+		auto it = std::find_if(_allModules.begin(), _allModules.end(), [&lang](const auto& p) {
+			return p->GetLanguage() == lang;
 		});
 		if (it == _allModules.end()) {
 			plugin->SetError(std::format("Language module: '{}' missing for plugin: '{}'", lang, plugin->GetFriendlyName()));
