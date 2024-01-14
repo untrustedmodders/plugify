@@ -18,11 +18,11 @@ include(cmake/git.cmake)
 
 # ------------------------------------------------------------------------------
 # Build options for tests
-option(WIZARD_BUILD_TESTS "Build all tests" ON)
+option(WIZARD_BUILD_TESTS "Build all tests" OFF)
 
 # ------------------------------------------------------------------------------
 # Compilation options
-option(WIZARD_BUILD_DLL "Build dll & lib instead of tests" ON)
+option(WIZARD_BUILD_OBJECT_LIB "Build wizard as object library" OFF)
 option(WIZARD_BUILD_SHARED_LIB "Build wizard as shared library" ON)
 option(WIZARD_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
 option(WIZARD_BUILD_SHARED_CURL "Build curl as shared library" OFF)
@@ -81,18 +81,14 @@ endif()
 # Wizard
 file(GLOB_RECURSE WIZARD_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
 
-if(WIZARD_BUILD_DLL)
+if(NOT WIZARD_BUILD_OBJECT_LIB)
     if(WIZARD_BUILD_SHARED_LIB)
         add_library(${PROJECT_NAME} SHARED ${WIZARD_CORE_SOURCES})
     else()
         add_library(${PROJECT_NAME} STATIC ${WIZARD_CORE_SOURCES})
     endif()
 else()
-    if(WIZARD_BUILD_TESTS)
-        add_executable(${PROJECT_NAME} ${WIZARD_CORE_SOURCES})
-    else()
-        add_library(${PROJECT_NAME} OBJECT ${WIZARD_CORE_SOURCES})
-    endif()
+    add_library(${PROJECT_NAME} OBJECT ${WIZARD_CORE_SOURCES})
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -167,19 +163,17 @@ endif()
 
 # ------------------------------------------------------------------------------
 # System
-target_link_libraries(${PROJECT_NAME} PRIVATE git-info ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE git-info)
 
-if(NOT WIZARD_BUILD_TESTS)
-    include(GenerateExportHeader)
-    generate_export_header(${PROJECT_NAME}
-            BASE_NAME WIZARD
-            EXPORT_MACRO_NAME WIZARD_API
-            NO_EXPORT_MACRO_NAME WIZARD_PRIVATE
-            EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/${PROJECT_NAME}_export.h
-            STATIC_DEFINE WIZARD_STATIC
-            )
-    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_BINARY_DIR}/exports)
-endif()
+include(GenerateExportHeader)
+generate_export_header(${PROJECT_NAME}
+        BASE_NAME WIZARD
+        EXPORT_MACRO_NAME WIZARD_API
+        NO_EXPORT_MACRO_NAME WIZARD_PRIVATE
+        EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/${PROJECT_NAME}_export.h
+        STATIC_DEFINE WIZARD_STATIC
+        )
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_BINARY_DIR}/exports)
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)

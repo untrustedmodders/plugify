@@ -18,7 +18,7 @@ file(GLOB_RECURSE HAT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 
 add_executable(${PROJECT_NAME} ${HAT_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE wizard)
+target_link_libraries(${PROJECT_NAME} PRIVATE wizard ${CMAKE_DL_LIBS})
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
