@@ -12,7 +12,7 @@ namespace wizard {
 	class IWizardProvider;
 	class IPluginManager;
 	class IPackageManager;
-	enum class ErrorLevel : uint8_t;
+	enum class Severity : uint8_t;
 
 	class IWizard {
 	public:

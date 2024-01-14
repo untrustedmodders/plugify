@@ -6,7 +6,7 @@
 namespace wizard {
 	class WizardProvider;
 	class IPluginManager;
-	enum class ErrorLevel : uint8_t;
+	enum class Severity : uint8_t;
 
 	// Wizard provided to user, which implemented in core
 	class WIZARD_API IWizardProvider {
