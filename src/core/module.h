@@ -13,51 +13,48 @@ namespace wizard {
 		Module(UniqueId id, const LocalPackage& package);
 		~Module();
 
-	private:
-		friend class IModule;
-
+	public:
 		/* IModule interface */
-		UniqueId GetId_() const {
+		UniqueId GetId() {
 			return _id;
 		}
 
-		const std::string& GetName_() const {
+		const std::string& GetName() {
 			return _name;
 		}
 
-		const std::string& GetLanguage_() const {
+		const std::string& GetLanguage() {
 			return _lang;
 		}
 
-		const std::string& GetFriendlyName_() const {
+		const std::string& GetFriendlyName() {
 			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
 		}
 
-		const fs::path& GetFilePath_() const {
+		const fs::path& GetFilePath() {
 			return _filePath;
 		}
 
-		const fs::path& GetBaseDir_() const {
+		const fs::path& GetBaseDir() {
 			return _baseDir;
 		}
 
-		const fs::path& GetBinariesDir_() const {
+		const fs::path& GetBinariesDir() {
 			return _binaryDir;
 		}
 
-		const LanguageModuleDescriptor& GetDescriptor_() const {
+		const LanguageModuleDescriptor& GetDescriptor() {
 			return *_descriptor;
 		}
 
-		ModuleState GetState_() const {
+		ModuleState GetState() {
 			return _state;
 		}
 
-		const std::string& GetError_() const {
+		const std::string& GetError() {
 			return _error;
 		}
 
-	public:
 		bool Initialize(std::weak_ptr<IWizardProvider> provider);
 		void Terminate();
 

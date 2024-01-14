@@ -11,38 +11,36 @@ namespace wizard {
 		explicit PackageManager(std::weak_ptr<IWizard> wizard);
 		~PackageManager();
 
-	private:
-		friend class IPackageManager;
-
+	public:
 		/** IPackageManager interface */
-		bool Initialize_();
-		void Terminate_();
+		bool Initialize();
+		void Terminate();
 
-		void InstallPackage_(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
-		void InstallPackages_(std::span<const std::string> packageNames);
-		void InstallAllPackages_(const fs::path& manifestFilePath, bool reinstall);
-		void InstallAllPackages_(const std::string& manifestUrl, bool reinstall);
+		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
+		void InstallPackages(std::span<const std::string> packageNames);
+		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall);
+		void InstallAllPackages(const std::string& manifestUrl, bool reinstall);
 
-		void UpdatePackage_(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
-		void UpdatePackages_(std::span<const std::string> packageNames);
-		void UpdateAllPackages_();
+		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
+		void UpdatePackages(std::span<const std::string> packageNames);
+		void UpdateAllPackages();
 
-		void UninstallPackage_(const std::string& packageName);
-		void UninstallPackages_(std::span<const std::string> packageNames);
-		void UninstallAllPackages_();
+		void UninstallPackage(const std::string& packageName);
+		void UninstallPackages(std::span<const std::string> packageNames);
+		void UninstallAllPackages();
 
-		void SnapshotPackages_(const fs::path& manifestFilePath, bool prettify) const;
+		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify);
 
-		bool HasMissedPackages_() const { return !_missedPackages.empty(); }
-		bool HasConflictedPackages_() const { return !_conflictedPackages.empty(); }
-		void InstallMissedPackages_();
-		void UninstallConflictedPackages_();
+		bool HasMissedPackages() { return !_missedPackages.empty(); }
+		bool HasConflictedPackages() { return !_conflictedPackages.empty(); }
+		void InstallMissedPackages();
+		void UninstallConflictedPackages();
 
-		LocalPackageOpt FindLocalPackage_(const std::string& packageName) const;
-		RemotePackageOpt FindRemotePackage_(const std::string& packageName) const;
+		LocalPackageOpt FindLocalPackage(const std::string& packageName);
+		RemotePackageOpt FindRemotePackage(const std::string& packageName);
 
-		std::vector<LocalPackageRef> GetLocalPackages_() const;
-		std::vector<RemotePackageRef> GetRemotePackages_() const;
+		std::vector<LocalPackageRef> GetLocalPackages();
+		std::vector<RemotePackageRef> GetRemotePackages();
 
 	public:
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {

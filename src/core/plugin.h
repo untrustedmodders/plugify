@@ -11,51 +11,48 @@ namespace wizard {
 		Plugin(UniqueId id, const LocalPackage& package);
 		~Plugin() = default;
 
-	private:
-		friend class IPlugin;
-
+	public:
 		/* IPlugin interface */
-		UniqueId GetId_() const {
+		UniqueId GetId() {
 			return _id;
 		}
 
-		const std::string& GetName_() const {
+		const std::string& GetName() {
 			return _name;
 		}
 
-		const std::string& GetFriendlyName_() const {
+		const std::string& GetFriendlyName() {
 			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
 		}
 
-		const fs::path& GetFilePath_() const {
+		const fs::path& GetFilePath() {
 			return _filePath;
 		}
 
-		const fs::path& GetBaseDir_() const {
+		const fs::path& GetBaseDir() {
 			return _baseDir;
 		}
 
-		const fs::path& GetContentDir_() const {
+		const fs::path& GetContentDir() {
 			return _contentDir;
 		}
 
-		const PluginDescriptor& GetDescriptor_() const {
+		const PluginDescriptor& GetDescriptor() {
 			return *_descriptor;
 		}
 
-		PluginState GetState_() const {
+		PluginState GetState() {
 			return _state;
 		}
 
-		const std::string& GetError_() const {
+		const std::string& GetError() {
 			return _error;
 		}
 
-		const std::vector<MethodData>& GetMethods_() const {
+		const std::vector<MethodData>& GetMethods() {
 			return _methods;
 		}
 
-	public:
 		void SetError(std::string error);
 
 		void SetMethods(std::vector<MethodData> methods) {

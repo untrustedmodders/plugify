@@ -15,31 +15,29 @@ namespace wizard {
 		explicit PluginManager(std::weak_ptr<IWizard> wizard);
 		~PluginManager();
 
-	private:
-		friend class IPluginManager;
-
+	public:
 		/** IPluginManager interface */
-		bool Initialize_();
-		void Terminate_();
+		bool Initialize();
+		void Terminate();
 
-		ModuleOpt FindModule_(const std::string& moduleName) const;
-		ModuleOpt FindModule_(std::string_view moduleName) const;
-		ModuleOpt FindModuleFromId_(UniqueId moduleId) const;
-		ModuleOpt FindModuleFromLang_(const std::string& moduleLang) const;
-		ModuleOpt FindModuleFromPath_(const std::filesystem::path& moduleFilePath) const;
-		ModuleOpt FindModuleFromDescriptor_(const PluginReferenceDescriptor& moduleDescriptor) const;
-		std::vector<ModuleRef> GetModules_() const;
+		ModuleOpt FindModule(const std::string& moduleName);
+		ModuleOpt FindModule(std::string_view moduleName);
+		ModuleOpt FindModuleFromId(UniqueId moduleId);
+		ModuleOpt FindModuleFromLang(const std::string& moduleLang);
+		ModuleOpt FindModuleFromPath(const std::filesystem::path& moduleFilePath);
+		ModuleOpt FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor);
+		std::vector<ModuleRef> GetModules();
 
-		PluginOpt FindPlugin_(const std::string& pluginName) const;
-		PluginOpt FindPlugin_(std::string_view pluginName) const;
-		PluginOpt FindPluginFromId_(UniqueId pluginId) const;
-		PluginOpt FindPluginFromPath_(const fs::path& pluginFilePath) const;
-		PluginOpt FindPluginFromDescriptor_(const PluginReferenceDescriptor& pluginDescriptor) const;
-		std::vector<PluginRef> GetPlugins_() const;
+		PluginOpt FindPlugin(const std::string& pluginName);
+		PluginOpt FindPlugin(std::string_view pluginName);
+		PluginOpt FindPluginFromId(UniqueId pluginId);
+		PluginOpt FindPluginFromPath(const fs::path& pluginFilePath);
+		PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor);
+		std::vector<PluginRef> GetPlugins();
 
-		bool GetPluginDependencies_(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
-		bool GetPluginDependencies_FromFilePath_(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
-		bool GetPluginDependencies_FromDescriptor_(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies) const;
+		bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies);
+		bool GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies);
+		bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies);
 
 	private:
 		using PluginList = std::vector<std::unique_ptr<Plugin>>;

@@ -24,10 +24,10 @@ PackageManager::PackageManager(std::weak_ptr<IWizard> wizard) : IPackageManager(
 }
 
 PackageManager::~PackageManager() {
-	Terminate_();
+	Terminate();
 }
 
-bool PackageManager::Initialize_() {
+bool PackageManager::Initialize() {
 	if (_httpDownloader)
 		return false;
 	auto debugStart = DateTime::Now();
@@ -39,7 +39,7 @@ bool PackageManager::Initialize_() {
 	return true;
 }
 
-void PackageManager::Terminate_() {
+void PackageManager::Terminate() {
 	_localPackages.clear();
 	_remotePackages.clear();
 	_missedPackages.clear();
@@ -165,7 +165,7 @@ void PackageManager::LoadRemotePackages() {
 	auto fetchManifest = [&](const std::string& url) {
 		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string&/* contentType*/, HTTPDownloader::Request::Data data) {
 			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
-				std::string buffer{ data.begin(), data.end() };
+				std::string buffer(data.begin(), data.end());
 				auto manifest = glz::read_json<PackageManifest>(buffer);
 				if (!manifest.has_value()) {
 					WZ_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", url, glz::format_error(manifest.error(), buffer));
@@ -182,12 +182,12 @@ void PackageManager::LoadRemotePackages() {
 						return plugin.name == name;
 					});
 					if (it == _remotePackages.end()) {
-						std::unique_lock<std::mutex> lock{mutex};
+						std::unique_lock<std::mutex> lock(mutex);
 						_remotePackages.emplace_back(std::move(package));
 					} else {
 						auto& existingPackage = *it;
 						if (existingPackage == package) {
-							std::unique_lock<std::mutex> lock{mutex};
+							std::unique_lock<std::mutex> lock(mutex);
 							existingPackage.versions.merge(package.versions);
 						} else {
 							WZ_LOG_WARNING("The package '{}' exists at '{}' - second location will be ignored.", name, url);
@@ -307,7 +307,7 @@ void PackageManager::FindDependencies() {
 	}
 }
 
-void PackageManager::InstallMissedPackages_() {
+void PackageManager::InstallMissedPackages() {
 	Request([&]{
 		std::ostringstream missed;
 		bool first = true;
@@ -328,7 +328,7 @@ void PackageManager::InstallMissedPackages_() {
 	}, __func__);
 }
 
-void PackageManager::UninstallConflictedPackages_() {
+void PackageManager::UninstallConflictedPackages() {
 	Request([&]{
 		std::ostringstream conflicted;
 		bool first = true;
@@ -348,7 +348,7 @@ void PackageManager::UninstallConflictedPackages_() {
 	}, __func__);
 }
 
-void PackageManager::SnapshotPackages_(const fs::path& manifestFilePath, bool prettify) const {
+void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) {
 	auto debugStart = DateTime::Now();
 
 	std::unordered_map<std::string, RemotePackage> packages;
@@ -371,7 +371,7 @@ void PackageManager::SnapshotPackages_(const fs::path& manifestFilePath, bool pr
 	WZ_LOG_DEBUG("Snapshot '{}' created in {}ms", manifestFilePath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
-void PackageManager::InstallPackage_(const std::string& packageName, std::optional<int32_t> requiredVersion) {
+void PackageManager::InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
 	if (packageName.empty())
 		return;
 
@@ -385,7 +385,7 @@ void PackageManager::InstallPackage_(const std::string& packageName, std::option
 	}, __func__);
 }
 
-void PackageManager::InstallPackages_(std::span<const std::string> packageNames) {
+void PackageManager::InstallPackages(std::span<const std::string> packageNames) {
 	std::unordered_set<std::string> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
@@ -414,7 +414,7 @@ void PackageManager::InstallPackages_(std::span<const std::string> packageNames)
 	}, __func__);
 }
 
-void PackageManager::InstallAllPackages_(const fs::path& manifestFilePath, bool reinstall) {
+void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool reinstall) {
 	if (manifestFilePath.extension().string() != PackageManifest::kFileExtension) {
 		WZ_LOG_ERROR("Package manifest: '{}' should be in *{} format", manifestFilePath.string(), PackageManifest::kFileExtension);
 		return;
@@ -456,7 +456,7 @@ void PackageManager::InstallAllPackages_(const fs::path& manifestFilePath, bool 
 	}, __func__);
 }
 
-void PackageManager::InstallAllPackages_(const std::string& manifestUrl, bool reinstall) {
+void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool reinstall) {
 	if (manifestUrl.empty())
 		return;
 
@@ -466,7 +466,7 @@ void PackageManager::InstallAllPackages_(const std::string& manifestUrl, bool re
 
 	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& /*contentType*/, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
-			std::string buffer{ data.begin(), data.end() };
+			std::string buffer(data.begin(), data.end());
 			auto manifest = glz::read_json<PackageManifest>(buffer);
 			if (!manifest.has_value()) {
 				WZ_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", manifestUrl, glz::format_error(manifest.error(), buffer));
@@ -532,7 +532,7 @@ bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<
 	return DownloadPackage(package, newVersion->get());
 }
 
-void PackageManager::UpdatePackage_(const std::string& packageName, std::optional<int32_t> requiredVersion) {
+void PackageManager::UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
 	if (packageName.empty())
 		return;
 
@@ -546,7 +546,7 @@ void PackageManager::UpdatePackage_(const std::string& packageName, std::optiona
 	}, __func__);
 }
 
-void PackageManager::UpdatePackages_(std::span<const std::string> packageNames) {
+void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 	std::unordered_set<std::string> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
@@ -575,7 +575,7 @@ void PackageManager::UpdatePackages_(std::span<const std::string> packageNames) 
 	}, __func__);
 }
 
-void PackageManager::UpdateAllPackages_() {
+void PackageManager::UpdateAllPackages() {
 	Request([&] {
 		for (const auto& package : _localPackages) {
 			UpdatePackage(package);
@@ -626,7 +626,7 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 	return DownloadPackage(package, newVersion->get());
 }
 
-void PackageManager::UninstallPackage_(const std::string& packageName) {
+void PackageManager::UninstallPackage(const std::string& packageName) {
 	if (packageName.empty())
 		return;
 
@@ -640,7 +640,7 @@ void PackageManager::UninstallPackage_(const std::string& packageName) {
 	}, __func__);
 }
 
-void PackageManager::UninstallPackages_(std::span<const std::string> packageNames) {
+void PackageManager::UninstallPackages(std::span<const std::string> packageNames) {
 	std::unordered_set<std::string> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
@@ -669,7 +669,7 @@ void PackageManager::UninstallPackages_(std::span<const std::string> packageName
 	}, __func__);
 }
 
-void PackageManager::UninstallAllPackages_() {
+void PackageManager::UninstallAllPackages() {
 	Request([&] {
 		for (const auto& package : _localPackages) {
 			UninstallPackage(package, false);
@@ -691,7 +691,7 @@ bool PackageManager::UninstallPackage(const LocalPackage& package, bool remove) 
 	return false;
 }
 
-LocalPackageOpt PackageManager::FindLocalPackage_(const std::string& packageName) const {
+LocalPackageOpt PackageManager::FindLocalPackage(const std::string& packageName) {
 	auto it = std::find_if(_localPackages.begin(), _localPackages.end(), [&packageName](const auto& plugin) {
 		return plugin.name == packageName;
 	});
@@ -700,7 +700,7 @@ LocalPackageOpt PackageManager::FindLocalPackage_(const std::string& packageName
 	return {};
 }
 
-RemotePackageOpt PackageManager::FindRemotePackage_(const std::string& packageName) const {
+RemotePackageOpt PackageManager::FindRemotePackage(const std::string& packageName) {
 	auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&packageName](const auto& plugin) {
 		return plugin.name == packageName;
 	});
@@ -709,7 +709,7 @@ RemotePackageOpt PackageManager::FindRemotePackage_(const std::string& packageNa
 	return {};
 }
 
-std::vector<LocalPackageRef> PackageManager::GetLocalPackages_() const {
+std::vector<LocalPackageRef> PackageManager::GetLocalPackages() {
 	std::vector<LocalPackageRef> localPackages;
 	localPackages.reserve(_localPackages.size());
 	for (const auto& package : _localPackages)  {
@@ -718,7 +718,7 @@ std::vector<LocalPackageRef> PackageManager::GetLocalPackages_() const {
 	return localPackages;
 }
 
-std::vector<RemotePackageRef> PackageManager::GetRemotePackages_() const {
+std::vector<RemotePackageRef> PackageManager::GetRemotePackages() {
 	std::vector<RemotePackageRef> remotePackages;
 	remotePackages.reserve(remotePackages.size());
 	for (const auto& package : _remotePackages)  {
@@ -802,7 +802,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 	WZ_LOG_VERBOSE("Start extracting....");
 
 	auto zip_close = [](mz_zip_archive* zipArchive){ mz_zip_reader_end(zipArchive); delete zipArchive; };
-	std::unique_ptr<mz_zip_archive, decltype(zip_close)> zipArchive{new mz_zip_archive, zip_close};
+	std::unique_ptr<mz_zip_archive, decltype(zip_close)> zipArchive(new mz_zip_archive, zip_close);
 	std::memset(zipArchive.get(), 0, sizeof(mz_zip_archive));
 
 	mz_zip_reader_init_mem(zipArchive.get(), packageData.data(), packageData.size(), 0);
@@ -822,7 +822,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 			return std::format("Error getting file stat: {}", i);
 		}
 
-		fs::path filename{ fileStat.m_filename };
+		fs::path filename = fileStat.m_filename;
 		if (filename.extension().string() == descriptorExt) {
 			foundDescriptor = true;
 		}
@@ -851,7 +851,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 			}
 		}
 
-		std::ofstream outputFile{finalPath, std::ios::binary};
+		std::ofstream outputFile(finalPath, std::ios::binary);
 		if (outputFile.is_open()) {
 			outputFile.write(fileData.data(), static_cast<std::streamsize>(fileData.size()));
 		} else {

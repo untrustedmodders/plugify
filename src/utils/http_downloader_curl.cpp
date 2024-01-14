@@ -14,27 +14,27 @@ HTTPDownloaderCurl::~HTTPDownloaderCurl() {
 }
 
 std::unique_ptr<HTTPDownloader> HTTPDownloader::Create(std::string userAgent) {
-	std::unique_ptr<HTTPDownloaderCurl> instance{std::make_unique<HTTPDownloaderCurl>()};
+	std::unique_ptr<HTTPDownloaderCurl> instance(std::make_unique<HTTPDownloaderCurl>());
 	if (!instance->Initialize(std::move(userAgent)))
 		return {};
 	return instance;
 }
 
-static bool s_curl_initialized = false;
-static std::once_flag s_curl_initialized_once_flag;
+static bool curl_initialized = false;
+static std::once_flag curl_initialized_once_flag;
 
 bool HTTPDownloaderCurl::Initialize(std::string userAgent) {
-	if (!s_curl_initialized) {
-		std::call_once(s_curl_initialized_once_flag, []() {
-			s_curl_initialized = curl_global_init(CURL_GLOBAL_ALL) == CURLE_OK;
-			if (s_curl_initialized) {
+	if (!curl_initialized) {
+		std::call_once(curl_initialized_once_flag, []() {
+			curl_initialized = curl_global_init(CURL_GLOBAL_ALL) == CURLE_OK;
+			if (curl_initialized) {
 				std::atexit([]() {
 					curl_global_cleanup();
-					s_curl_initialized = false;
+					curl_initialized = false;
 				});
 			}
 		});
-		if (!s_curl_initialized) {
+		if (!curl_initialized) {
 			WZ_LOG_ERROR("curl_global_init() failed");
 			return false;
 		}

@@ -16,7 +16,7 @@ HTTPDownloaderWinHttp::~HTTPDownloaderWinHttp() {
 }
 
 std::unique_ptr<HTTPDownloader> HTTPDownloader::Create(std::string userAgent) {
-	std::unique_ptr<HTTPDownloaderWinHttp> instance{std::make_unique<HTTPDownloaderWinHttp>()};
+	std::unique_ptr<HTTPDownloaderWinHttp> instance(std::make_unique<HTTPDownloaderWinHttp>());
 	if (!instance->Initialize(std::move(userAgent)))
 		return {};
 	return instance;
@@ -56,7 +56,7 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 
 			auto parent = dynamic_cast<HTTPDownloaderWinHttp*>(req->parent);
 			WZ_ASSERT(parent != nullptr);
-			std::unique_lock<std::mutex> lock{parent->_pendingRequestLock};
+			std::unique_lock<std::mutex> lock(parent->_pendingRequestLock);
 			WZ_ASSERT(std::none_of(parent->_pendingRequests.begin(), parent->_pendingRequests.end(), [req](HTTPDownloader::Request* it) { return it == req; }));
 
 			// we can clean up the connection as well
@@ -202,7 +202,7 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 	uc.lpszUrlPath = req->objectName.data();
 	uc.dwUrlPathLength = static_cast<DWORD>(req->objectName.size());
 
-	const std::wstring urlWide{ String::UTF8StringToWideString(req->url) };
+	const std::wstring urlWide = String::UTF8StringToWideString(req->url);
 	if (!WinHttpCrackUrl(urlWide.c_str(), static_cast<DWORD>(urlWide.size()), 0, &uc)) {
 		WZ_LOG_ERROR("WinHttpCrackUrl() failed: {}", GetLastError());
 		req->callback(HTTP_STATUS_ERROR, {}, req->data);
@@ -231,7 +231,7 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 
 	BOOL result;
 	if (req->type == HTTPDownloader::Request::Type::Post) {
-		const std::wstring_view additionalHeaders{ L"Content-Type: application/x-www-form-urlencoded\r\n" };
+		const std::wstring_view additionalHeaders = L"Content-Type: application/x-www-form-urlencoded\r\n";
 		result = WinHttpSendRequest(req->hRequest, additionalHeaders.data(), static_cast<DWORD>(additionalHeaders.size()), req->postData.data(), static_cast<DWORD>(req->postData.size()), static_cast<DWORD>(req->postData.size()), reinterpret_cast<DWORD_PTR>(req));
 	} else {
 		result = WinHttpSendRequest(req->hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, reinterpret_cast<DWORD_PTR>(req));

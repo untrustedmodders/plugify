@@ -22,28 +22,28 @@ namespace wizard {
 		~IPackageManager() = default;
 
 	public:
-		bool Initialize();
-		void Terminate();
+		bool Initialize() const;
+		void Terminate() const;
 
-		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
-		void InstallPackages(std::span<const std::string> packageNames);
-		void InstallAllPackages(const std::filesystem::path& manifestFilePath, bool reinstall);
-		void InstallAllPackages(const std::string& manifestUrl, bool reinstall);
+		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) const;
+		void InstallPackages(std::span<const std::string> packageNames) const;
+		void InstallAllPackages(const std::filesystem::path& manifestFilePath, bool reinstall) const;
+		void InstallAllPackages(const std::string& manifestUrl, bool reinstall) const;
 
-		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
-		void UpdatePackages(std::span<const std::string> packageNames);
-		void UpdateAllPackages();
+		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) const;
+		void UpdatePackages(std::span<const std::string> packageNames) const;
+		void UpdateAllPackages() const;
 
-		void UninstallPackage(const std::string& packageName);
-		void UninstallPackages(std::span<const std::string> packageNames);
-		void UninstallAllPackages();
+		void UninstallPackage(const std::string& packageName) const;
+		void UninstallPackages(std::span<const std::string> packageNames) const;
+		void UninstallAllPackages() const;
 
 		void SnapshotPackages(const std::filesystem::path& manifestFilePath, bool prettify) const;
 
 		bool HasMissedPackages() const;
 		bool HasConflictedPackages() const;
-		void InstallMissedPackages();
-		void UninstallConflictedPackages();
+		void InstallMissedPackages() const;
+		void UninstallConflictedPackages() const;
 
 		LocalPackageOpt FindLocalPackage(const std::string& packageName) const;
 		RemotePackageOpt FindRemotePackage(const std::string& packageName) const;
