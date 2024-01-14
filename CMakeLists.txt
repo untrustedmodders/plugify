@@ -168,7 +168,7 @@ endif()
 # System
 target_link_libraries(${PROJECT_NAME} PRIVATE git-info ${CMAKE_DL_LIBS})
 
-if(WIZARD_BUILD_DLL)
+if(NOT WIZARD_BUILD_TESTS)
     include(GenerateExportHeader)
     generate_export_header(${PROJECT_NAME}
             BASE_NAME WIZARD
