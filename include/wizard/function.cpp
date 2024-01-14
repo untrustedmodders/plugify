@@ -50,7 +50,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	code.init(rt->environment(), rt->cpuFeatures());
 
 	// initialize function
-	x86::Compiler cc{&code};
+	x86::Compiler cc(&code);
 	FuncNode* func = cc.addFunc(sig);
 
 	/*StringLogger log;
