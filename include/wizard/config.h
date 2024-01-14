@@ -1,5 +1,9 @@
 #pragma once
 
+#include <wizard/log.h>
+#include <filesystem>
+#include <vector>
+
 namespace wizard {
 	struct Config {
 		std::filesystem::path baseDir;

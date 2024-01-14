@@ -194,7 +194,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 void* Function::GetJitFunc(const Method& method, FuncCallback callback) {
 	FuncSignature sig{ GetCallConv(method.callConv), method.varIndex, GetTypeId(method.retType.type) };
-	for (auto type : method.paramTypes) {
+	for (const auto& type : method.paramTypes) {
 		sig.addArg(GetTypeId(type.type));
 	}
 	return GetJitFunc(sig, method, callback);
@@ -235,7 +235,7 @@ CallConvId Function::GetCallConv(const std::string& conv) {
 		return CallConvId::kVectorCall;
 	}
 	return CallConvId::kX64Windows;
-#elif
+#else
 	return CallConvId::kX64SystemV;
 #endif // WIZARD_PLATFORM_WINDOWS
 #elif WIZARD_ARCH_X86 == 32

@@ -27,7 +27,7 @@ namespace wizard {
 
 		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
 		void InstallPackages(std::span<const std::string> packageNames);
-		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall);
+		void InstallAllPackages(const std::filesystem::path& manifestFilePath, bool reinstall);
 		void InstallAllPackages(const std::string& manifestUrl, bool reinstall);
 
 		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
@@ -38,7 +38,7 @@ namespace wizard {
 		void UninstallPackages(std::span<const std::string> packageNames);
 		void UninstallAllPackages();
 
-		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) const;
+		void SnapshotPackages(const std::filesystem::path& manifestFilePath, bool prettify) const;
 
 		bool HasMissedPackages() const;
 		bool HasConflictedPackages() const;

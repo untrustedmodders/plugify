@@ -95,36 +95,37 @@ else()
     endif()
 endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_precompile_headers(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.h)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.h)
 
 # ------------------------------------------------------------------------------
 # Glaze
 if(WIZARD_USE_EXTERNAL_GLAZE)
 	find_package(glaze REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PUBLIC glaze::glaze)
+    target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 else()
-    target_link_libraries(${PROJECT_NAME} PUBLIC glaze_glaze)
+    target_link_libraries(${PROJECT_NAME} PRIVATE glaze_glaze)
 endif()
 
 # ------------------------------------------------------------------------------
 # Asmjit
 if(WIZARD_USE_EXTERNAL_ASMJIT)
     find_package(asmjit REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PUBLIC asmjit::asmjit)
+    target_link_libraries(${PROJECT_NAME} PRIVATE asmjit::asmjit)
 else()
-    target_link_libraries(${PROJECT_NAME} PUBLIC asmjit)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${ASMJIT_SRC})
+    target_link_libraries(${PROJECT_NAME} PRIVATE asmjit)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ASMJIT_SRC})
 
     if(MSVC)
-        target_compile_options(asmjit PUBLIC /wd5054)
+        target_compile_options(asmjit PRIVATE /wd5054)
     else()
         if(MINGW)
-            target_compile_options(asmjit PUBLIC -Wno-deprecated-enum-enum-conversion)
+            target_compile_options(asmjit PRIVATE -Wno-deprecated-enum-enum-conversion)
         else()
-            target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion)
+            target_compile_options(asmjit PRIVATE -Wno-deprecated-anon-enum-enum-conversion)
         endif()
-        target_compile_options(asmjit PUBLIC -Wno-deprecated-declarations -Wno-error -Wno-pedantic -Wno-shadow)
+        target_compile_options(asmjit PRIVATE -Wno-deprecated-declarations -Wno-error -Wno-pedantic -Wno-shadow)
     endif()
 endif()
 
@@ -191,13 +192,10 @@ endif()
 
 if(WIN32)
     set(WIZARD_PLATFORM "windows")
-    target_compile_definitions(${PROJECT_NAME} PUBLIC WIZARD_PLATFORM_WINDOWS)
 elseif(APPLE)
     set(WIZARD_PLATFORM "apple")
-    target_compile_definitions(${PROJECT_NAME} PUBLIC WIZARD_PLATFORM_APPLE)
 elseif(UNIX)
     set(WIZARD_PLATFORM "linux")
-    target_compile_definitions(${PROJECT_NAME} PUBLIC WIZARD_PLATFORM_LINUX)
 endif()
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -207,23 +205,40 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
+        WIZARD_FORMAT_SUPPORT=$<BOOL:${CXX_FORMAT_SUPPORT}>
+        )
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
         WIZARD_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
         WIZARD_VERSION_MINOR=${PROJECT_VERSION_MINOR}
         WIZARD_VERSION_PATCH=${PROJECT_VERSION_PATCH}
         WIZARD_VERSION_TWEAK=${PROJECT_VERSION_TWEAK}
         WIZARD_PLATFORM="${WIZARD_PLATFORM}"
+        WIZARD_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
+        WIZARD_PLATFORM_APPLE=$<BOOL:${APPLE}>
+        WIZARD_PLATFORM_LINUX=$<BOOL:${UNIX}>
         WIZARD_ARCH_X86=${WIZARD_ARCH_X86}
         WIZARD_LOGGING=$<BOOL:${WIZARD_LOGGING}>
         WIZARD_DEBUG=$<BOOL:${WIZARD_DEBUG}>
-        WIZARD_FORMAT_SUPPORT=$<BOOL:${CXX_FORMAT_SUPPORT}>
-        )
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE
         WIZARD_COMPILED_COMPILER="${CMAKE_CXX_COMPILER}"
         WIZARD_COMPILED_SYSTEM="${CMAKE_SYSTEM}"
         WIZARD_COMPILED_GENERATOR="${CMAKE_GENERATOR}"
         WIZARD_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
         WIZARD_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}")
+
+add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/wizard/function.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/wizard/function.h")
+target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+if(WIZARD_USE_EXTERNAL_ASMJIT)
+    target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
+else()
+    target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit)
+    target_include_directories(${PROJECT_NAME}-function PRIVATE ${ASMJIT_SRC})
+endif()
+target_compile_definitions(${PROJECT_NAME}-function PRIVATE
+        WIZARD_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
+        WIZARD_PLATFORM_APPLE=$<BOOL:${APPLE}>
+        WIZARD_PLATFORM_LINUX=$<BOOL:${UNIX}>
+        WIZARD_ARCH_X86=${WIZARD_ARCH_X86})
 
 if(WIZARD_BUILD_TESTS)
     add_subdirectory(test/hat)

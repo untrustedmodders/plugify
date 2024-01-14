@@ -2,6 +2,7 @@
 
 #include <wizard/log.h>
 #include <mutex>
+#include <vector>
 
 namespace sorcerer {
     class StdLogger final : public wizard::ILogger {

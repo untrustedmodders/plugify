@@ -7,6 +7,7 @@
 #include <wizard/plugin.h>
 #include <wizard/plugin_descriptor.h>
 
+#include <chrono>
 #include <iostream>
 
 std::vector<std::string> Split(const std::string& str, char sep) {
@@ -17,6 +18,14 @@ std::vector<std::string> Split(const std::string& str, char sep) {
     while (std::getline(is, token, sep))
         tokens.emplace_back(token.c_str());
     return tokens;
+}
+
+std::string FormatTime(std::string_view format = "%Y-%m-%d %H:%M:%S") {
+	auto now = std::chrono::system_clock::now();
+	auto timeT = std::chrono::system_clock::to_time_t(now);
+	std::string datetime(100, 0);
+	datetime.resize(std::strftime(&datetime[0], datetime.size(), format.data(), std::localtime(&timeT)));
+	return datetime;
 }
 
 template<typename T>
@@ -166,7 +175,7 @@ int main() {
                     }
                 } else if (args[1] == "-Qd") {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->SnapshotPackages(sorcerer->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", wizard::DateTime::Get("%Y_%m_%d_%H_%M_%S")), true);
+						packageManager->SnapshotPackages(sorcerer->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", FormatTime("%Y_%m_%d_%H_%M_%S")), true);
 					}
 				} else if (args[1] == "-S" && args.size() > 2) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
@@ -174,7 +183,7 @@ int main() {
 					}
 				} else if (args[1] == "-Sf" && args.size() > 2) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->InstallAllPackages(fs::path{args[2]}, args.size() > 3);
+						packageManager->InstallAllPackages(std::filesystem::path{args[2]}, args.size() > 3);
 					}
 				} else if (args[1] == "-Sw" && args.size() > 2) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
