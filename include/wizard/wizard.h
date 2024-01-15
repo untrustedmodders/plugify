@@ -19,7 +19,7 @@ namespace wizard {
 	public:
 		virtual ~IWizard() = default;
 
-		virtual bool Initialize(const std::filesystem::path& configPath = "wizard.wconfig") = 0;
+		virtual bool Initialize(const std::filesystem::path& rootDir = {}) = 0;
 		virtual void Terminate() = 0;
 
 		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;

@@ -14,11 +14,11 @@ namespace wizard {
 			Terminate();
 		};
 
-		bool Initialize(const fs::path& configPath) override {
+		bool Initialize(const fs::path& rootDir) override {
 			if (_inited)
 				return false;
 
-			auto json = FileSystem::ReadText(configPath);
+			auto json = FileSystem::ReadText(rootDir / "wizard.wconfig");
 			auto config = glz::read_json<Config>(json);
 			if (!config.has_value()) {
 				WZ_LOG_ERROR("Config: 'wizard.wconfig' has JSON parsing error: {}", glz::format_error(config.error(), json));
@@ -26,6 +26,9 @@ namespace wizard {
 			}
 
 			_config = std::move(*config);
+
+			if (!rootDir.empty())
+				_config.baseDir = rootDir / _config.baseDir;
 
 			_provider = std::make_shared<WizardProvider>(weak_from_this());
 			_packageManager = std::make_shared<PackageManager>(weak_from_this());
