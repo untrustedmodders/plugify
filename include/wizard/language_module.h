@@ -3,6 +3,7 @@
 #include <variant>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace wizard {
 	class IPlugin;
