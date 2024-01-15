@@ -1,7 +1,8 @@
 #pragma once
 
-#include <string>
 #include <wizard_export.h>
+#include <string>
+#include <memory>
 
 namespace wizard {
 	class WizardProvider;
