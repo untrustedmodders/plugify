@@ -214,7 +214,7 @@ void PackageManager::LoadRemotePackages() {
 
 template<typename T>
 std::optional<std::reference_wrapper<const T>> FindLanguageModule(const std::vector<T>& container, const std::string& name)  {
-	for (auto& package : container) {
+	for (const auto& package : container) {
 		if (package.type == name) {
 			return package;
 		}

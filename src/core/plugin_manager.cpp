@@ -59,6 +59,10 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 		SortPluginsByDependencies(_allPlugins.back()->GetName(), _allPlugins, sortedPlugins);
 	}
 
+	if (HasCyclicDependencies(sortedPlugins)) {
+		WZ_LOG_WARNING("Found cyclic plugin dependencies");
+	}
+
 	_allPlugins = std::move(sortedPlugins);
 
 	WZ_LOG_VERBOSE("Plugins order after topological sorting by dependency: ");
