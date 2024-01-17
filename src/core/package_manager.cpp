@@ -80,12 +80,16 @@ std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const
 		return {};
 	std::string type;
 	if constexpr (std::is_same_v<T, LanguageModuleDescriptor>) {
-		if (descriptor->language == "plugin") {
+		if (descriptor->language.empty() || descriptor->language == "plugin") {
 			WZ_LOG_ERROR("Module descriptor: '{}' has JSON parsing error: Forbidden language name", name);
 			return {};
 		}
 		type = descriptor->language;
 	} else {
+		if (descriptor->languageModule.name.empty()) {
+			WZ_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: Missing language name", name);
+			return {};
+		}
 		type = "plugin";
 
 		if (RemoveDuplicates(descriptor->dependencies)) {
