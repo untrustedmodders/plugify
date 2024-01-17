@@ -60,7 +60,7 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 	}
 
 	if (HasCyclicDependencies(sortedPlugins)) {
-		WZ_LOG_WARNING("Found cyclic plugin dependencies");
+		WZ_LOG_WARNING("Found cyclic dependencies");
 	}
 
 	_allPlugins = std::move(sortedPlugins);

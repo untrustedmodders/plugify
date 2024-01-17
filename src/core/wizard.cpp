@@ -18,10 +18,11 @@ namespace wizard {
 			if (_inited)
 				return false;
 
-			auto json = FileSystem::ReadText(rootDir / "wizard.wconfig");
+			auto path = rootDir / "wizard.wconfig";
+			auto json = FileSystem::ReadText(path);
 			auto config = glz::read_json<Config>(json);
 			if (!config.has_value()) {
-				WZ_LOG_ERROR("Config: 'wizard.wconfig' has JSON parsing error: {}", glz::format_error(config.error(), json));
+				WZ_LOG_ERROR("Config: '{}' has JSON parsing error: {}", path.string(), glz::format_error(config.error(), json));
 				return false;
 			}
 
