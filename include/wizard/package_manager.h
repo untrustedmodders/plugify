@@ -24,6 +24,7 @@ namespace wizard {
 	public:
 		bool Initialize() const;
 		void Terminate() const;
+		bool IsInitialized() const;
 
 		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) const;
 		void InstallPackages(std::span<const std::string> packageNames) const;

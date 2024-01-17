@@ -64,6 +64,10 @@ namespace wizard {
 			WZ_LOG_INFO("Wizard Terminated!");
 		}
 
+		bool IsInitialized() const override {
+			return _inited;
+		}
+
 		void Log(const std::string& msg, Severity severity) override {
 			LogSystem::Log(msg, severity);
 		}

@@ -19,6 +19,7 @@ namespace wizard {
 		/** IPluginManager interface */
 		bool Initialize();
 		void Terminate();
+		bool IsInitialized();
 
 		ModuleOpt FindModule(const std::string& moduleName);
 		ModuleOpt FindModule(std::string_view moduleName);

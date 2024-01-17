@@ -14,6 +14,10 @@ void IPackageManager::Terminate() const {
 	_impl.Terminate();
 }
 
+bool IPackageManager::IsInitialized() const {
+	return _impl.IsInitialized();
+}
+
 void IPackageManager::InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) const {
 	_impl.InstallPackage(packageName, requiredVersion);
 }

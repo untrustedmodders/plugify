@@ -15,6 +15,7 @@ namespace wizard {
 		/** IPackageManager interface */
 		bool Initialize();
 		void Terminate();
+		bool IsInitialized();
 
 		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
 		void InstallPackages(std::span<const std::string> packageNames);

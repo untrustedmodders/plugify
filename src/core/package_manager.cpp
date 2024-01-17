@@ -28,7 +28,7 @@ PackageManager::~PackageManager() {
 }
 
 bool PackageManager::Initialize() {
-	if (_httpDownloader)
+	if (IsInitialized())
 		return false;
 	auto debugStart = DateTime::Now();
 	_httpDownloader = HTTPDownloader::Create();
@@ -40,11 +40,18 @@ bool PackageManager::Initialize() {
 }
 
 void PackageManager::Terminate() {
+	if (!IsInitialized())
+		return;
+
 	_localPackages.clear();
 	_remotePackages.clear();
 	_missedPackages.clear();
 	_conflictedPackages.clear();
 	_httpDownloader.reset();
+}
+
+bool PackageManager::IsInitialized() {
+	return _httpDownloader != nullptr;
 }
 
 template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>

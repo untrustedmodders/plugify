@@ -14,6 +14,10 @@ void IPluginManager::Terminate() const {
 	_impl.Terminate();
 }
 
+bool IPluginManager::IsInitialized() const {
+	return _impl.IsInitialized();
+}
+
 ModuleOpt IPluginManager::FindModule(const std::string& moduleName) const {
     return _impl.FindModule(moduleName);
 }

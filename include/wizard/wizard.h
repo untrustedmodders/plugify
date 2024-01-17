@@ -21,6 +21,7 @@ namespace wizard {
 
 		virtual bool Initialize(const std::filesystem::path& rootDir = {}) = 0;
 		virtual void Terminate() = 0;
+		virtual bool IsInitialized() const = 0;
 
 		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
 		virtual void Log(const std::string& msg, Severity severity) = 0;

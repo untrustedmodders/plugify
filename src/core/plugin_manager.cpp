@@ -17,7 +17,7 @@ PluginManager::~PluginManager() {
 }
 
 bool PluginManager::Initialize() {
-	if (!_allPlugins.empty() || !_allModules.empty())
+	if (IsInitialized())
 		return false;
 
 	auto debugStart = DateTime::Now();
@@ -29,9 +29,16 @@ bool PluginManager::Initialize() {
 }
 
 void PluginManager::Terminate() {
+	if (!IsInitialized())
+		return;
+
 	TerminateAllPlugins();
 	_allPlugins.clear();
 	_allModules.clear();
+}
+
+bool PluginManager::IsInitialized() {
+	return !_allPlugins.empty() || !_allModules.empty();
 }
 
 void PluginManager::DiscoverAllModulesAndPlugins() {
