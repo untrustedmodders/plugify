@@ -115,8 +115,22 @@ int main() {
 						sorcerer->Log("Package Manager is not initialized!", wizard::Severity::Error);
 						continue;
 					}
-                    if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
-						pluginManager->Initialize();
+					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+						if (pluginManager->IsInitialized()) {
+							sorcerer->Log("Plugin manager already loaded.", wizard::Severity::Error);
+						} else {
+							pluginManager->Initialize();
+							sorcerer->Log("Plugin manager was loaded.", wizard::Severity::Error);
+						}
+					}
+                } else if (args[1] == "-unload") {
+					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+						if (!pluginManager->IsInitialized()) {
+							sorcerer->Log("Plugin manager already unloaded.", wizard::Severity::Error);
+						} else {
+							pluginManager->Terminate();
+							sorcerer->Log("Plugin manager was unloaded.", wizard::Severity::Error);
+						}
 					}
                 } else if (args[1] == "-term") {
                     sorcerer->Terminate();
@@ -126,7 +140,69 @@ int main() {
 					printHelp();
                 }  else if (args[1] == "-version") {
 					std::cout << "Wizard " << sorcerer->GetVersion().ToString();
-                } else if (args[1] == "-modules") {
+                } else if (args[1] == "-module" && args.size() > 2) {
+					const char separator = ' ';
+					const int nameWidth = 20;
+					const int numWidth = 10;
+					const int fullNameWidth = 40;
+					const int statusWidth = 25;
+
+					PrintElement("Lang", numWidth, separator);
+					PrintElement("Name", nameWidth, separator);
+					PrintElement("FriendlyName", fullNameWidth, separator);
+					PrintElement("Status", statusWidth, separator);
+
+					std::cout << std::endl;
+
+					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+						if (!pluginManager->IsInitialized()) {
+							sorcerer->Log("You must load plugin manager before query any information from it.", wizard::Severity::Error);
+							continue;
+						}
+						for (auto& moduleRef : pluginManager->GetModules()) {
+							auto& module = moduleRef.get();
+							if (module.GetName() == args[2]) {
+								PrintElement(module.GetDescriptor().language, numWidth, separator);
+								PrintElement(module.GetName(), nameWidth, separator);
+								PrintElement(module.GetFriendlyName(), fullNameWidth, separator);
+								PrintElement(wizard::ModuleStateToString(module.GetState()), statusWidth, separator);
+								std::cout << std::endl;
+								break;
+							}
+						}
+					}
+				} else if (args[1] == "-plugin" && args.size() > 2) {
+					const char separator = ' ';
+					const int nameWidth = 20;
+					const int numWidth = 10;
+					const int fullNameWidth = 40;
+					const int statusWidth = 25;
+
+					PrintElement("Lang", numWidth, separator);
+					PrintElement("Name", nameWidth, separator);
+					PrintElement("FriendlyName", fullNameWidth, separator);
+					PrintElement("Status", statusWidth, separator);
+
+					std::cout << std::endl;
+
+					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+						if (!pluginManager->IsInitialized()) {
+							sorcerer->Log("You must load plugin manager before query any information from it.", wizard::Severity::Error);
+							continue;
+						}
+						for (auto& pluginRed : pluginManager->GetPlugins()) {
+							auto& plugin = pluginRed.get();
+							if (plugin.GetName() == args[2]) {
+								PrintElement(plugin.GetId(), numWidth, separator);
+								PrintElement(plugin.GetName(), nameWidth, separator);
+								PrintElement(plugin.GetFriendlyName(), fullNameWidth, separator);
+								PrintElement(wizard::PluginStateToString(plugin.GetState()), statusWidth, separator);
+								std::cout << std::endl;
+								break;
+							}
+						}
+					}
+				} else if (args[1] == "-modules") {
                     const char separator = ' ';
                     const int nameWidth = 20;
                     const int numWidth = 10;
@@ -141,6 +217,10 @@ int main() {
                     std::cout << std::endl;
 
                     if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+						if (!pluginManager->IsInitialized()) {
+							sorcerer->Log("You must load plugin manager before query any information from it.", wizard::Severity::Error);
+							continue;
+						}
                         for (auto& moduleRef : pluginManager->GetModules()) {
 							auto& module = moduleRef.get();
                             PrintElement(module.GetDescriptor().language, numWidth, separator);
@@ -165,6 +245,10 @@ int main() {
                     std::cout << std::endl;
 
                     if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+						if (!pluginManager->IsInitialized()) {
+							sorcerer->Log("You must load plugin manager before query any information from it.", wizard::Severity::Error);
+							continue;
+						}
                         for (auto& pluginRed : pluginManager->GetPlugins()) {
 							auto& plugin = pluginRed.get();
                             PrintElement(plugin.GetId(), numWidth, separator);
@@ -288,8 +372,7 @@ int main() {
 								std::cout << "\n\t Supported platforms: ";
 								if (package.descriptor->supportedPlatforms.empty())
 									std::cout << "[any]";
-								else
-								{
+								else {
 									for (const auto& platform : package.descriptor->supportedPlatforms) {
 										std::cout << "[" << platform << "] ";
 									}
