@@ -188,6 +188,10 @@ void PackageManager::LoadRemotePackages() {
 						WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package.name);
 						continue;
 					}
+					if (package.versions.empty()) {
+						WZ_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", url, name);
+						continue;
+					}
 
 					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&name](const auto& plugin) {
 						return plugin.name == name;
@@ -462,6 +466,10 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 				WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", path.string(), name, package.name);
 				continue;
 			}
+			if (package.versions.empty()) {
+				WZ_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", path.string(), name);
+				continue;
+			}
 			InstallPackage(package);
 		}
 	}, __func__);
@@ -499,6 +507,10 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 				for (const auto& [name, package] : manifest->content) {
 					if (name.empty() || package.name != name) {
 						WZ_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package.name);
+						continue;
+					}
+					if (package.versions.empty()) {
+						WZ_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", manifestUrl, name);
 						continue;
 					}
 					InstallPackage(package);
@@ -758,12 +770,23 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 		return false;
 	}*/
 
+	if (version.mirrors.empty()) {
+		WZ_LOG_WARNING("Tried to download a package that is not have valid url, aborting");
+		return false;
+	}
+
 	WZ_LOG_VERBOSE("Start downloading: '{}'", package.name);
 
 	auto wizard = _wizard.lock();
 	WZ_ASSERT(wizard);
 
-	_httpDownloader->CreateRequest(version.mirrors[0], [&name = package.name, plugin = (package.type == "plugin"), &baseDir = wizard->GetConfig().baseDir] // should be safe to pass ref
+	// TODO: Choose valid mirror !
+
+	const auto& url = *version.mirrors.begin();
+
+	WZ_LOG_INFO("Downloading: '{}'", url);
+
+	_httpDownloader->CreateRequest(url, [&name = package.name, plugin = (package.type == "plugin"), &baseDir = wizard->GetConfig().baseDir] // should be safe to pass ref
 		(int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			WZ_LOG_VERBOSE("Done downloading: '{}'", name);
@@ -797,7 +820,10 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 				ec = FileSystem::MoveFolder(finalLocation, destinationPath);
 				if (ec) {
 					WZ_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", name, finalLocation.string(), destinationPath.string(), ec.message());
+				} else {
+
 				}
+
 			} else {
 				WZ_LOG_ERROR("Failed extracting: '{}' - {}", name, error);
 			}

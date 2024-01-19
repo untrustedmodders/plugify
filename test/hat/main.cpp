@@ -9,6 +9,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <unordered_set>
 
 std::vector<std::string> Split(const std::string& str, char sep) {
     std::vector<std::string> tokens;
@@ -46,7 +47,7 @@ void printHelp() {
 		"\nWizard"
 		"\n(c) untrustedmodders"
 		"\nhttps://github.com/untrustedmodders"
-		"\nusage: wzd -<command> [arguments]"
+		"\nusage: wizard -<command> [arguments]"
 		"\n"
 		"\nGeneral commands:"
 		"\n  -init           Initialize wizard"
@@ -64,18 +65,18 @@ void printHelp() {
 		"\n  -plugins              - List running plugins"
 		"\n"
 		"\nPackage Manager commands:"
-		"\n  -S <package-name>   - Packages to install (space separated)"
-		"\n  -Sf </path/to/file> - Packages to install (from file manifest)"
-		"\n  -Sw <link/to/file>  - Packages to install (from HTTP manifest)"
-		"\n  -R <package-name>   - Packages to uninstall (space separated)"
-		"\n  -Ra                 - Uninstall all packages"
-		"\n  -U <package-name>   - Packages to update (space separated)"
-		"\n  -Ua                 - Update all packages"
-		"\n  -Q                  - Print all local packages"
-		"\n  -Qr                 - Print all remote packages"
-		"\n  -Qi <package-name>  - Show information about local package"
-		"\n  -Qri <package-name> - Show information about remote package"
-		"\n  -Qd                 - Snapshot packages into manifest"
+		"\n  -install <name>        - Packages to install (space separated)"
+		"\n  -install --file <file> - Packages to install (from file manifest)"
+		"\n  -install --link <link> - Packages to install (from HTTP manifest)"
+		"\n  -uninstall <name>      - Packages to uninstall (space separated)"
+		"\n  -uninstall --all       - Uninstall all packages"
+		"\n  -update <name>         - Packages to update (space separated)"
+		"\n  -update --all          - Update all packages"
+		"\n  -list                  - Print all local packages"
+		"\n  -query                 - Print all remote packages"
+		"\n  -show <name>           - Show information about local package"
+		"\n  -search <name>         - Show information about remote package"
+		"\n  -snapshot              - Snapshot packages into manifest"
 	<< std::endl;
 }
 
@@ -93,12 +94,21 @@ int main() {
             if (args.empty())
                 continue;
 
+			std::unordered_set<std::string> options;
+			for (size_t i = options.size() - 1; i != static_cast<size_t>(-1); --i) {
+				auto& arg = args[i];
+				if (arg.starts_with("--")) {
+					options.emplace(std::move(args[i]));
+					args.erase(args.begin() + static_cast<intmax_t>(i));
+				}
+			}
+
             if (args[0] == "e" || args[0] == "exit" || args[0] == "q" || args[0] == "quit") {
                 running = false;
-            } else if (args[0] == "wzd" && args.size() > 1) {
+            } else if (args[0] == "wizard" && args.size() > 1) {
                 if (args[1] == "-init") {
 					if (!sorcerer->Initialize()) {
-						sorcerer->Log("No feet, no sweets!", wizard::Severity::Error);
+						std::cerr << "No feet, no sweets!" << std::endl;
 						return EXIT_FAILURE;
 					}
 					logger->SetSeverity(sorcerer->GetConfig().logSeverity);
@@ -112,24 +122,24 @@ int main() {
 							continue;
 						}
 					} else {
-						sorcerer->Log("Package Manager is not initialized!", wizard::Severity::Error);
+						std::cerr << "Package Manager is not initialized!" << std::endl;
 						continue;
 					}
 					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
 						if (pluginManager->IsInitialized()) {
-							sorcerer->Log("Plugin manager already loaded.", wizard::Severity::Error);
+							std::cerr << "Plugin manager already loaded." << std::endl;
 						} else {
 							pluginManager->Initialize();
-							sorcerer->Log("Plugin manager was loaded.", wizard::Severity::Error);
+							std::cerr << "Plugin manager was loaded." << std::endl;
 						}
 					}
                 } else if (args[1] == "-unload") {
 					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
 						if (!pluginManager->IsInitialized()) {
-							sorcerer->Log("Plugin manager already unloaded.", wizard::Severity::Error);
+							std::cerr << "Plugin manager already unloaded." << std::endl;
 						} else {
 							pluginManager->Terminate();
-							sorcerer->Log("Plugin manager was unloaded.", wizard::Severity::Error);
+							std::cerr << "Plugin manager was unloaded." << std::endl;
 						}
 					}
                 } else if (args[1] == "-term") {
@@ -139,7 +149,17 @@ int main() {
                 } else if (args[1] == "-help") {
 					printHelp();
                 }  else if (args[1] == "-version") {
-					std::cout << "Wizard " << sorcerer->GetVersion().ToString();
+					constexpr const char* year = __DATE__ + 7;
+					std::cout << R"(            .)" "\n";
+					std::cout << R"(           /:\            Wizard v)" << sorcerer->GetVersion().ToString() << "\n";
+					std::cout << R"(          /;:.\           )";
+					std::cout << "Copyright (C) 2023-" << year << " Untrusted Modders Team\n";
+					std::cout << R"(         //;:. \)" "\n";
+					std::cout << R"(        ///;:.. \         This program may be freely redistributed under)" "\n";
+					std::cout << R"(  __--"////;:... \"--__   the terms of the GNU General Public License.)" "\n";
+					std::cout << R"(--__   "--_____--"   __--)" "\n";
+					std::cout << R"(    """--_______--"""")" "\n";
+					std::cout << std::endl;
                 } else if (args[1] == "-module" && args.size() > 2) {
 					const char separator = ' ';
 					const int nameWidth = 20;
@@ -156,7 +176,7 @@ int main() {
 
 					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
 						if (!pluginManager->IsInitialized()) {
-							sorcerer->Log("You must load plugin manager before query any information from it.", wizard::Severity::Error);
+							std::cerr << "You must load plugin manager before query any information from it." << std::endl;
 							continue;
 						}
 						for (auto& moduleRef : pluginManager->GetModules()) {
@@ -187,7 +207,7 @@ int main() {
 
 					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
 						if (!pluginManager->IsInitialized()) {
-							sorcerer->Log("You must load plugin manager before query any information from it.", wizard::Severity::Error);
+							std::cerr << "You must load plugin manager before query any information from it." << std::endl;
 							continue;
 						}
 						for (auto& pluginRed : pluginManager->GetPlugins()) {
@@ -218,7 +238,7 @@ int main() {
 
                     if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
 						if (!pluginManager->IsInitialized()) {
-							sorcerer->Log("You must load plugin manager before query any information from it.", wizard::Severity::Error);
+							std::cerr << "You must load plugin manager before query any information from it." << std::endl;
 							continue;
 						}
                         for (auto& moduleRef : pluginManager->GetModules()) {
@@ -246,7 +266,7 @@ int main() {
 
                     if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
 						if (!pluginManager->IsInitialized()) {
-							sorcerer->Log("You must load plugin manager before query any information from it.", wizard::Severity::Error);
+							std::cerr << "You must load plugin manager before query any information from it." << std::endl;
 							continue;
 						}
                         for (auto& pluginRed : pluginManager->GetPlugins()) {
@@ -258,39 +278,37 @@ int main() {
                             std::cout << std::endl;
                         }
                     }
-                } else if (args[1] == "-Qd") {
+                } else if (args[1] == "-snapshot") {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
 						packageManager->SnapshotPackages(sorcerer->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", FormatTime("%Y_%m_%d_%H_%M_%S")), true);
 					}
-				} else if (args[1] == "-S" && args.size() > 2) {
+				} else if (args[1] == "-install" && (args.size() > 2 || !options.empty())) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->InstallPackages(std::span(args.begin() + 2, args.size() - 2));
+						if (options.contains("--link")) {
+							packageManager->InstallAllPackages(args[2], args.size() > 3);
+						} else if (options.contains("--file")) {
+							packageManager->InstallAllPackages(std::filesystem::path{args[2]}, args.size() > 3);
+						} else if (options.empty()) {
+							packageManager->InstallPackages(std::span(args.begin() + 2, args.size() - 2));
+						}
 					}
-				} else if (args[1] == "-Sf" && args.size() > 2) {
+				} else if (args[1] == "-uninstall" && (args.size() > 2 || !options.empty())) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->InstallAllPackages(std::filesystem::path{args[2]}, args.size() > 3);
+						if (options.contains("--all")) {
+							packageManager->UninstallAllPackages();
+						} else if (options.empty()) {
+							packageManager->UninstallPackages(std::span(args.begin() + 2, args.size() - 2));
+						}
 					}
-				} else if (args[1] == "-Sw" && args.size() > 2) {
+				}else if (args[1] == "-update" && (args.size() > 2 || !options.empty())) {
 					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->InstallAllPackages(args[2], args.size() > 3);
+						if (options.contains("--all")) {
+							packageManager->UpdateAllPackages();
+						} else if (options.empty()) {
+							packageManager->UpdatePackages(std::span(args.begin() + 2, args.size() - 2));
+						}
 					}
-				} else if (args[1] == "-R" && args.size() > 2) {
-					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->UninstallPackages(std::span(args.begin() + 2, args.size() - 2));
-					}
-				} else if (args[1] == "-Ra") {
-					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->UninstallAllPackages();
-					}
-				} else if (args[1] == "-U" && args.size() > 2) {
-					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->UpdatePackages(std::span(args.begin() + 2, args.size() - 2));
-					}
-				} else if (args[1] == "-Ua") {
-					if (auto packageManager = sorcerer->GetPackageManager().lock()) {
-						packageManager->UpdateAllPackages();
-					}
-				} else if (args[1] == "-Q") {
+				} else if (args[1] == "-list") {
 					const char separator = ' ';
 					const int nameWidth = 20;
 					const int numWidth = 6;
@@ -313,7 +331,7 @@ int main() {
 							std::cout << std::endl;
 						}
 					}
-				} else if (args[1] == "-Qr") {
+				} else if (args[1] == "-query") {
 					const char separator = ' ';
 					const int nameWidth = 20;
 					const int descWidth = 80;
@@ -336,7 +354,7 @@ int main() {
 						}
 					}
 
-				} else if (args[1] == "-Qi" && args.size() > 2) {
+				} else if (args[1] == "-show" && args.size() > 2) {
 					const char separator = ' ';
 					const int nameWidth = 20;
 					const int numWidth = 6;
@@ -382,7 +400,7 @@ int main() {
 							}
 						}
 					}
-				} else if (args[1] == "-Qri" && args.size() > 2) {
+				} else if (args[1] == "-search" && args.size() > 2) {
 					const char separator = ' ';
 					const int nameWidth = 20;
 					const int descWidth = 80;
