@@ -175,6 +175,10 @@ generate_export_header(${PROJECT_NAME}
         )
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_BINARY_DIR}/exports)
 
+if(WIZARD_BUILD_OBJECT_LIB)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_EXPORTS)
+endif()
+
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
