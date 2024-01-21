@@ -96,7 +96,7 @@ namespace wizard {
 			case ValueType::ArrayFloat:    return "float*";
 			case ValueType::ArrayDouble:   return "double*";
 			case ValueType::ArrayString:   return "string*";
-			case ValueType::ArrayEnum:    return "enum*";
+			case ValueType::ArrayEnum:     return "enum*";
 			default:                       return "unknown";
 		}
 	}
