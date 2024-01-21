@@ -30,7 +30,23 @@ struct glz::meta<wizard::ValueType> {
         "float", wizard::ValueType::Float,
         "double", wizard::ValueType::Double,
         "string", wizard::ValueType::String,
-        "function", wizard::ValueType::Function
+        "function", wizard::ValueType::Function,
+		"bool*", wizard::ValueType::ArrayBool,
+		"char8*", wizard::ValueType::ArrayChar8,
+		"char16*", wizard::ValueType::ArrayChar16,
+		"int8*", wizard::ValueType::ArrayInt8,
+		"int16*", wizard::ValueType::ArrayInt16,
+		"int32*", wizard::ValueType::ArrayInt32,
+		"int64*", wizard::ValueType::ArrayInt64,
+		"uint8*", wizard::ValueType::ArrayUint8,
+		"uint16*", wizard::ValueType::ArrayUint16,
+		"uint32*", wizard::ValueType::ArrayUint32,
+		"uint64*", wizard::ValueType::ArrayUint64,
+		"ptr64*", wizard::ValueType::ArrayPtr64,
+		"float*", wizard::ValueType::ArrayFloat,
+		"double*", wizard::ValueType::ArrayDouble,
+		"string*", wizard::ValueType::ArrayString,
+		"function*", wizard::ValueType::ArrayFunction
     );
 };
 
