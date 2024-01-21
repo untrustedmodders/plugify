@@ -40,7 +40,6 @@ namespace wizard {
 		ArrayFloat,
 		ArrayDouble,
 		ArrayString,
-		ArrayFunction,
 	};
 
 	struct Property {
@@ -94,7 +93,6 @@ namespace wizard {
 			case ValueType::ArrayFloat:    return "float*";
 			case ValueType::ArrayDouble:   return "double*";
 			case ValueType::ArrayString:   return "string*";
-			case ValueType::ArrayFunction: return "function*";
 			default:                       return "unknown";
 		}
 	}
@@ -164,8 +162,6 @@ namespace wizard {
 			return ValueType::ArrayDouble;
 		} else if (value == "string*") {
 			return ValueType::ArrayString;
-		} else if (value == "function*") {
-			return ValueType::ArrayFunction;
 		}
 		return ValueType::Invalid;
 	}
