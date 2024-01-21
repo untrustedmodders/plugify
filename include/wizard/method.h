@@ -24,6 +24,7 @@ namespace wizard {
 		Float,
 		Double,
 		String,
+		Enum,
 		Function,
 		ArrayBool,
 		ArrayChar8,
@@ -40,6 +41,7 @@ namespace wizard {
 		ArrayFloat,
 		ArrayDouble,
 		ArrayString,
+		ArrayEnum,
 	};
 
 	struct Property {
@@ -77,6 +79,7 @@ namespace wizard {
 			case ValueType::Float:         return "float";
 			case ValueType::Double:        return "double";
 			case ValueType::String:        return "string";
+			case ValueType::Enum:          return "enum";
 			case ValueType::Function:      return "function";
 			case ValueType::ArrayBool:     return "bool*";
 			case ValueType::ArrayChar8:    return "char8*";
@@ -93,6 +96,7 @@ namespace wizard {
 			case ValueType::ArrayFloat:    return "float*";
 			case ValueType::ArrayDouble:   return "double*";
 			case ValueType::ArrayString:   return "string*";
+			case ValueType::ArrayEnum:    return "enum*";
 			default:                       return "unknown";
 		}
 	}
@@ -130,6 +134,8 @@ namespace wizard {
 			return ValueType::Double;
 		} else if (value == "string") {
 			return ValueType::String;
+		}  else if (value == "enum") {
+			return ValueType::Enum;
 		} else if (value == "function") {
 			return ValueType::Function;
 		} else if (value == "bool*") {
@@ -162,6 +168,8 @@ namespace wizard {
 			return ValueType::ArrayDouble;
 		} else if (value == "string*") {
 			return ValueType::ArrayString;
+		} else if (value == "enum*") {
+			return ValueType::ArrayEnum;
 		}
 		return ValueType::Invalid;
 	}
