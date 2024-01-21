@@ -166,8 +166,3 @@ namespace wizard {
 		return ValueType::Invalid;
 	}
 }
-
-struct array_t {
-	void* data;
-	size_t size;
-};

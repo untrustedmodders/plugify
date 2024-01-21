@@ -45,8 +45,7 @@ struct glz::meta<wizard::ValueType> {
 		"ptr64*", wizard::ValueType::ArrayPtr64,
 		"float*", wizard::ValueType::ArrayFloat,
 		"double*", wizard::ValueType::ArrayDouble,
-		"string*", wizard::ValueType::ArrayString,
-		"function*", wizard::ValueType::ArrayFunction
+		"string*", wizard::ValueType::ArrayString
     );
 };
 
