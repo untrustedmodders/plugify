@@ -123,7 +123,7 @@ int main() {
 						packageManager->Initialize();
 
 						if (packageManager->HasMissedPackages()) {
-							CONPRINTE("Plugin manager has missing packages, run 'update --missing' to resolve issues.");
+							CONPRINTE("Plugin manager has missing packages, run 'install --missing' to resolve issues.");
 							continue;
 						}
 						if (packageManager->HasConflictedPackages()) {
