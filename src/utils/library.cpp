@@ -10,7 +10,8 @@ Library::Library(void* handle) : _handle{handle} {
 
 std::unique_ptr<Library> Library::LoadFromPath(const fs::path& libraryPath) {
 #if WIZARD_PLATFORM_WINDOWS
-	void* handle = static_cast<void*>(LoadLibraryW(libraryPath.c_str()));
+	void* handle = static_cast<void*>(LoadLibraryExW(libraryPath.c_str(), NULL,
+		LOAD_LIBRARY_SEARCH_USER_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR));
 #elif WIZARD_PLATFORM_LINUX || WIZARD_PLATFORM_APPLE
 	void* handle = dlopen(libraryPath.string().c_str(), RTLD_LAZY);
 #else

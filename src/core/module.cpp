@@ -2,6 +2,7 @@
 #include "plugin.h"
 #include <wizard/module.h>
 #include <wizard/package.h>
+#include <utils/library_directory.h>
 
 using namespace wizard;
 
@@ -27,7 +28,22 @@ bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
 		return false;
 	}
 
-	_library = Library::LoadFromPath(_filePath);
+	std::vector<LibraryDirectory> libraryDirectories;
+	if (const auto& libraryDirectoriesSettings = GetDescriptor().libraryDirectories) {
+		for (const std::string& rawPath : *libraryDirectoriesSettings) {
+			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath);
+			if (!fs::exists(libraryDirectory, ec) || !fs::is_directory(libraryDirectory, ec)) {
+				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
+				return false;
+			}
+			libraryDirectories.emplace_back(libraryDirectory);
+		}
+	}
+
+	_library = Library::LoadFromPath(fs::absolute(_filePath));
+
+	libraryDirectories.clear();
+
 	if (!_library) {
 		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), Library::GetError()));
 		return false;
