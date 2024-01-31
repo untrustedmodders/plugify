@@ -6,27 +6,6 @@
 #include <unordered_map>
 
 namespace wizard {
-	/*using Description = std::string;
-
-    using Syntax = std::string;
-
-    struct Argument
-    {
-        std::string name;
-        std::string description;
-    };
-    using Arguments = std::vector<Argument>;
-
-    using ReturnedValue = std::string;
-
-    struct Example
-    {
-        std::string name;
-        std::string query;
-        std::string result;
-    };
-    using Examples = std::vector<Example>;*/
-
 	enum class ValueType : std::uint8_t {
 		Invalid,
 		Void,
@@ -63,21 +42,43 @@ namespace wizard {
 		ArrayString,
 	};
 
+	/*struct Method;
+
+	// Method provided to user, which implemented in core
+	class WIZARD_API IMethod {
+	protected:
+		explicit IMethod(Method& impl);
+		~IMethod();
+
+	public:
+		const std::string& GetName() const;
+		const std::string& GetFuncName() const;
+		const std::string& GetCallConv() const;
+		ValueType GetArgument(size_t index) const;
+		ValueType GetReturn() const;
+		std::uint8_t GetVarIndex() const;
+
+	private:
+		Method& _impl;
+	}*/
+
 	struct Argument {
 		ValueType type;
 	};
 
-	struct Prototype {
+	/*struct Prototype {
 		std::string name;
 		std::string funcName;
 		std::string callConv;
 		std::vector<Argument> paramTypes;
 		Argument retType{ };
-	};
+	};*/
 
-	struct Property : public Argument {
-		/* function */
-		std::optional<Prototype> prototype;
+	struct Method;
+
+	struct Property {
+		ValueType type;
+		std::unique_ptr<Method> prototype;
 	};
 
 	struct Method {
