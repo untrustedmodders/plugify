@@ -6,6 +6,27 @@
 #include <unordered_map>
 
 namespace wizard {
+	/*using Description = std::string;
+
+    using Syntax = std::string;
+
+    struct Argument
+    {
+        std::string name;
+        std::string description;
+    };
+    using Arguments = std::vector<Argument>;
+
+    using ReturnedValue = std::string;
+
+    struct Example
+    {
+        std::string name;
+        std::string query;
+        std::string result;
+    };
+    using Examples = std::vector<Example>;*/
+
 	enum class ValueType : std::uint8_t {
 		Invalid,
 		Void,
@@ -42,8 +63,21 @@ namespace wizard {
 		ArrayString,
 	};
 
-	struct Property {
+	struct Argument {
 		ValueType type;
+	};
+
+	struct Prototype {
+		std::string name;
+		std::string funcName;
+		std::string callConv;
+		std::vector<Argument> paramTypes;
+		Argument retType{ };
+	};
+
+	struct Property : public Argument {
+		/* function */
+		std::optional<Prototype> prototype;
 	};
 
 	struct Method {
