@@ -70,16 +70,13 @@ GLZ_META(wizard::PackageVersion, version, mirrors, platforms);
 GLZ_META(wizard::RemotePackage, name, type, author, description, versions);
 GLZ_META(wizard::LocalPackage, name, type, path, version, descriptor);
 
+//LZ_META(wizard::Method_, name, funcName, callConv, paramTypes, retType, varIndex);
+//LZ_META(wizard::Method, name, funcName, callConv, paramTypes, retType, varIndex);
+
 template <>
 struct glz::meta<wizard::Property> {
 	using T = wizard::Property;
 	static constexpr auto value = object("type", &T::type, "name", skip{}, "prototype", &T::prototype);
-};
-
-template <>
-struct glz::meta<wizard::Argument> {
-	using T = wizard::Argument;
-	static constexpr auto value = object("type", &T::type, "name", skip{});
 };
 
 namespace glz::detail {
