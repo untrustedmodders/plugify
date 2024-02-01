@@ -324,41 +324,41 @@ void PackageManager::FindDependencies() {
 
 void PackageManager::InstallMissedPackages() {
 	Request([&]{
-		std::ostringstream missed;
+		std::string missed;
 		bool first = true;
 		for (const auto& [name, dependency] : _missedPackages) {
 			const auto& [package, version] = dependency;
 			InstallPackage(package, version);
 			if (first) {
-				missed << "'" << name;
+				std::format_to(std::back_inserter(missed), "'{}", name);
 				first = false;
 			} else {
-				missed << "', '" << name;
+				std::format_to(std::back_inserter(missed), "', '{}", name);
 			}
 		}
 		if (!first) {
-			missed << "'";
-			WZ_LOG_INFO("Trying install {} missing package(s) to solve dependency issues", missed.str());
+			std::format_to(std::back_inserter(missed), "'");
+			WZ_LOG_INFO("Trying install {} missing package(s) to solve dependency issues", missed);
 		}
 	}, __func__);
 }
 
 void PackageManager::UninstallConflictedPackages() {
 	Request([&]{
-		std::ostringstream conflicted;
+		std::string conflicted;
 		bool first = true;
 		for (const auto& package : _conflictedPackages) {
 			UninstallPackage(package);
 			if (first) {
-				conflicted << "'" << package.get().name;
+				std::format_to(std::back_inserter(conflicted), "'{}", package.get().name);
 				first = false;
 			} else {
-				conflicted << "', '" << package.get().name;
+				std::format_to(std::back_inserter(conflicted), "', '{}", package.get().name);
 			}
 		}
 		if (!first) {
-			conflicted << "'";
-			WZ_LOG_INFO("Trying uninstall {} conflicted package(s) to solve dependency issues", conflicted.str());
+			std::format_to(std::back_inserter(conflicted), "'");
+			WZ_LOG_INFO("Trying uninstall {} conflicted package(s) to solve dependency issues", conflicted);
 		}
 	}, __func__);
 }
@@ -404,7 +404,7 @@ void PackageManager::InstallPackages(std::span<const std::string> packageNames) 
 	std::unordered_set<std::string> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
-		std::ostringstream error;
+		std::string error;
 		bool first = true;
 		for (const auto& packageName: packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
@@ -414,17 +414,17 @@ void PackageManager::InstallPackages(std::span<const std::string> packageNames) 
 				InstallPackage(*package);
 			} else {
 				if (first) {
-					error << "'" << packageName;
+					std::format_to(std::back_inserter(error), "'{}", packageName);
 					first = false;
 				} else {
-					error << "', '" << packageName;
+					std::format_to(std::back_inserter(error), "', '{}", packageName);
 				}
 			}
 			unique.insert(packageName);
 		}
 		if (!first) {
-			error << "'";
-			WZ_LOG_ERROR("Not found {} packages(s)", error.str());
+			std::format_to(std::back_inserter(error), "'");
+			WZ_LOG_ERROR("Not found {} packages(s)", error);
 		}
 	}, __func__);
 }
@@ -573,7 +573,7 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 	std::unordered_set<std::string> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
-		std::ostringstream error;
+		std::string error;
 		bool first = true;
 		for (const auto& packageName: packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
@@ -583,17 +583,17 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 				UpdatePackage(*package);
 			} else {
 				if (first) {
-					error << "'" << packageName;
+					std::format_to(std::back_inserter(error), "'{}", packageName);
 					first = false;
 				} else {
-					error << "', '" << packageName;
+					std::format_to(std::back_inserter(error), "', '{}", packageName);
 				}
 			}
 			unique.insert(packageName);
 		}
 		if (!first) {
-			error << "'";
-			WZ_LOG_ERROR("Not found {} packages(s)", error.str());
+			std::format_to(std::back_inserter(error), "'");
+			WZ_LOG_ERROR("Not found {} packages(s)", error);
 		}
 	}, __func__);
 }
@@ -667,7 +667,7 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 	std::unordered_set<std::string> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
-		std::ostringstream error;
+		std::string error;
 		bool first = true;
 		for (const auto& packageName: packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
@@ -677,17 +677,17 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 				UninstallPackage(*package);
 			} else {
 				if (first) {
-					error << "'" << packageName;
+					std::format_to(std::back_inserter(error), "'{}", packageName);
 					first = false;
 				} else {
-					error << "', '" << packageName;
+					std::format_to(std::back_inserter(error), "', '{}", packageName);
 				}
 			}
 			unique.insert(packageName);
 		}
 		if (!first) {
-			error << "'";
-			WZ_LOG_ERROR("Not found {} packages(s)", error.str());
+			std::format_to(std::back_inserter(error), "'");
+			WZ_LOG_ERROR("Not found {} packages(s)", error);
 		}
 	}, __func__);
 }

@@ -117,13 +117,13 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 				}
 			}
 			if (!names.empty()) {
-				std::ostringstream error;
-				error << "'" << names[0];
+				std::string error;
+				std::format_to(std::back_inserter(error), "'{}", names[0]);
 				for (auto it = std::next(names.begin()); it != names.end(); ++it) {
-					error << "', '" << *it;
+					std::format_to(std::back_inserter(error), "', '{}", *it);
 				}
-				error << "'";
-				plugin->SetError(std::format("Not loaded {} dependency plugin(s)", error.str()));
+				std::format_to(std::back_inserter(error), "'");
+				plugin->SetError(std::format("Not loaded {} dependency plugin(s)", error));
 			} else {
 				plugin->GetModule().LoadPlugin(*plugin);
 			}
