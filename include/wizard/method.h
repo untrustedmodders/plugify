@@ -42,8 +42,7 @@ namespace wizard {
 		ArrayString,
 	};
 
-	/*struct Method;
-
+	/*
 	// Method provided to user, which implemented in core
 	class WIZARD_API IMethod {
 	protected:
@@ -61,43 +60,6 @@ namespace wizard {
 	private:
 		Method& _impl;
 	}*/
-
-	// Replace by interface ?
-	/*template<typename T>
-	struct Prototype {
-		std::string name;
-		std::string funcName;
-		std::string callConv;
-		std::vector<T> paramTypes;
-		T retType;
-		std::uint8_t varIndex{ kNoVarArgs };
-
-		static inline const std::uint8_t kNoVarArgs = 0xFFu;
-
-		bool operator==(const Prototype& rhs) const { return name == rhs.name; }
-
-		static_assert(sizeof(T) == 16);
-	};*/
-
-	/* Create dublicates for inner serialization */
-
-	/*struct Property_ {
-		ValueType type{};
-	private:
-		void* pad{ nullptr };
-	};
-
-	struct Method_ : public Prototype<Property_> {};
-
-	struct Property {
-		ValueType type{};
-		// only for function value type
-		std::unique_ptr<Method_> prototype;
-	};
-
-	struct Method : public Prototype<Property> {};
-
-	static_assert(sizeof(Method) == sizeof(Method_));*/
 
 	struct Method;
 
