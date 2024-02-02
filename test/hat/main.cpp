@@ -35,22 +35,21 @@ std::string FormatTime(std::string_view format = "%Y-%m-%d %H:%M:%S") {
 
 template<typename S, typename T, typename F>
 void Print(const T& t, F& f, std::string_view tab = "  ") {
-	std::stringstream ss;
-	ss << tab;
+	std::string result(tab);
 	if (t.GetState() != S::Loaded) {
-		ss << std::format("[{:02d}] <{}> {}", static_cast<int>(t.GetId()), f(t.GetState()), t.GetFriendlyName());
+		std::format_to(std::back_inserter(result), "[{:02d}] <{}> {}", static_cast<int>(t.GetId()), f(t.GetState()), t.GetFriendlyName());
 	} else {
-		ss << std::format("[{:02d}] {}", static_cast<int>(t.GetId()), t.GetFriendlyName());
+		std::format_to(std::back_inserter(result), "[{:02d}] {}", static_cast<int>(t.GetId()), t.GetFriendlyName());
 	}
 	if (!t.GetDescriptor().versionName.empty()){
-		ss << std::format(" ({})", t.GetDescriptor().versionName);
+		std::format_to(std::back_inserter(result), " ({})", t.GetDescriptor().versionName);
 	} else {
-		ss << std::format(" (v{})", t.GetDescriptor().version);
+		std::format_to(std::back_inserter(result), " (v{})", t.GetDescriptor().version);
 	}
 	if (!t.GetDescriptor().createdBy.empty()) {
-		ss << std::format(" by {}", t.GetDescriptor().createdBy);
+		std::format_to(std::back_inserter(result), " by {}", t.GetDescriptor().createdBy);
 	}
-	std::cout << ss.str() << std::endl;
+	std::cout << result << std::endl;
 }
 
 template<typename S, typename T, typename F>
@@ -450,13 +449,12 @@ int main() {
 									CONPRINTF("  Description: {}", package.description);
 								}
 								if (!package.versions.empty()) {
-									std::stringstream ss;
-									ss << "  Versions: ";
-									ss << package.versions.begin()->version;
+									std::string versions("  Versions: ");
+									std::format_to(std::back_inserter(versions), "{}", package.versions.begin()->version);
 									for (auto it = std::next(package.versions.begin()); it != package.versions.end(); ++it) {
-										ss << ", " << it->version;
+										std::format_to(std::back_inserter(versions), ", {}", it->version);
 									}
-									CONPRINT(ss.str());
+									CONPRINT(versions);
 								} else {
 									CONPRINT("");
 								}
