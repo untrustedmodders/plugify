@@ -33,6 +33,25 @@ std::string FormatTime(std::string_view format = "%Y-%m-%d %H:%M:%S") {
 #define CONPRINTE(x) std::cerr << x << std::endl
 #define CONPRINTF(...) std::cout << std::format(__VA_ARGS__) << std::endl
 
+wizard::UniqueId FormatInt(const std::string& str) {
+	try {
+		size_t pos;
+		int result = std::stoull(str, &pos);
+		if (pos != str.length()) {
+			throw std::invalid_argument("Trailing characters after the valid part");
+		}
+		return result;
+	} catch (const std::invalid_argument& e) {
+		CONPRINTE("Invalid argument: " << e.what());
+	} catch (const std::out_of_range& e) {
+		CONPRINTE("Out of range: " << e.what());
+	} catch (const std::exception& e) {
+		CONPRINTE("Conversion error: " << e.what());
+	}
+
+	return std::numeric_limits<wizard::UniqueId>().max();
+}
+
 template<typename S, typename T, typename F>
 void Print(const T& t, F& f, std::string_view tab = "  ") {
 	std::string result(tab);
@@ -160,6 +179,9 @@ int main() {
 						CONPRINT("  plugins        - List running plugins");
 						CONPRINT("  plugin <name>  - Show information about a module");
 						CONPRINT("  module <name>  - Show information about a plugin");
+						CONPRINT("Plugin Manager options:");
+						CONPRINT("  -h, --help     - Show help");
+						CONPRINT("  -u, --uuid     - Use index instead of name");
 						CONPRINT("Package Manager commands:");
 						CONPRINT("  install <name> - Packages to install (space separated)");
 						CONPRINT("  remove <name>  - Packages to remove (space separated)");
@@ -256,7 +278,7 @@ int main() {
 								CONPRINT("You must load plugin manager before query any information from it.");
 								continue;
 							}
-							auto pluginRef = pluginManager->FindPlugin(args[2]);
+							auto pluginRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
 							if (pluginRef.has_value()) {
 								auto& plugin = pluginRef->get();
 								Print<wizard::PluginState>("Plugin", plugin, wizard::PluginStateToString);
@@ -285,7 +307,7 @@ int main() {
 								CONPRINT("You must load plugin manager before query any information from it.");
 								continue;
 							}
-							auto moduleRef = pluginManager->FindModule(args[2]);
+							auto moduleRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindModuleFromId(FormatInt(args[2])) : pluginManager->FindModule(args[2]);
 							if (moduleRef.has_value()) {
 								auto& module = moduleRef->get();
 								Print<wizard::ModuleState>("Module", module, wizard::ModuleStateToString);
