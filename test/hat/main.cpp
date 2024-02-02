@@ -33,23 +33,23 @@ std::string FormatTime(std::string_view format = "%Y-%m-%d %H:%M:%S") {
 #define CONPRINTE(x) std::cerr << x << std::endl
 #define CONPRINTF(...) std::cout << std::format(__VA_ARGS__) << std::endl
 
-wizard::UniqueId FormatInt(const std::string& str) {
+uintmax_t FormatInt(const std::string& str) {
 	try {
 		size_t pos;
-		int result = std::stoull(str, &pos);
+		uintmax_t result = std::stoull(str, &pos);
 		if (pos != str.length()) {
 			throw std::invalid_argument("Trailing characters after the valid part");
 		}
 		return result;
 	} catch (const std::invalid_argument& e) {
-		CONPRINTE("Invalid argument: " << e.what());
+		META_CONPRINTF("Invalid argument: %s", e.what());
 	} catch (const std::out_of_range& e) {
-		CONPRINTE("Out of range: " << e.what());
+		META_CONPRINTF("Out of range: %s", e.what());
 	} catch (const std::exception& e) {
-		CONPRINTE("Conversion error: " << e.what());
+		META_CONPRINTF("Conversion error: %s", e.what());
 	}
 
-	return std::numeric_limits<wizard::UniqueId>().max();
+	return uintmax_t(-1);
 }
 
 template<typename S, typename T, typename F>
