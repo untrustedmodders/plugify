@@ -3,7 +3,7 @@
 #include <string>
 #include <cstdint>
 
-namespace wizard {
+namespace plugify {
 	enum class Severity : uint8_t {
 		None = 0,
 		Fatal = 1,

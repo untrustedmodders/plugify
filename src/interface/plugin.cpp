@@ -1,7 +1,7 @@
-#include <wizard/plugin.h>
+#include <plugify/plugin.h>
 #include <core/plugin.h>
 
-using namespace wizard;
+using namespace plugify;
 
 IPlugin::IPlugin(Plugin& impl) : _impl{impl} {
 }

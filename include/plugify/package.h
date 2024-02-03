@@ -1,13 +1,13 @@
 #pragma once
 
-#include <wizard/descriptor.h>
+#include <plugify/descriptor.h>
 #include <filesystem>
 #include <functional>
 #include <optional>
 #include <memory>
 #include <set>
 
-namespace wizard {
+namespace plugify {
 	struct PackageVersion {
 		std::int32_t version;
 		//std::uint32_t sdkVersion;

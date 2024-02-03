@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wizard/module.h>
-#include <wizard/language_module.h>
-#include <wizard/language_module_descriptor.h>
+#include <plugify/module.h>
+#include <plugify/language_module.h>
+#include <plugify/language_module_descriptor.h>
 #include <utils/library.h>
 
-namespace wizard {
+namespace plugify {
 	class Plugin;
 	struct LocalPackage;
 	class Module final : public IModule {
@@ -55,7 +55,7 @@ namespace wizard {
 			return _error;
 		}
 
-		bool Initialize(std::weak_ptr<IWizardProvider> provider);
+		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
 		void Terminate();
 
 		void LoadPlugin(Plugin& plugin) const;
@@ -66,7 +66,7 @@ namespace wizard {
 		// TODO: Add more interactions with ILanguageModule
 
 		ILanguageModule& GetLanguageModule() const {
-			WZ_ASSERT(_languageModule.has_value(), "Language module is not set!");
+			PL_ASSERT(_languageModule.has_value(), "Language module is not set!");
 			return _languageModule.value();
 		}
 

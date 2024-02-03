@@ -1,25 +1,25 @@
 #pragma once
 
-#include <wizard/log.h>
+#include <plugify/log.h>
 #include <mutex>
 #include <vector>
 
 namespace sorcerer {
-    class StdLogger final : public wizard::ILogger {
+    class StdLogger final : public plugify::ILogger {
     public:
         StdLogger() = default;
         ~StdLogger() override = default;
 
-        void Log(const std::string& message, wizard::Severity severity) override;
+        void Log(const std::string& message, plugify::Severity severity) override;
 
         void Push(std::string message);
         std::string Pop();
 
-        void SetSeverity(wizard::Severity severity);
+        void SetSeverity(plugify::Severity severity);
 
     private:
 		std::mutex _mutex;
 		std::vector<std::string> _log;
-        wizard::Severity _severity{ wizard::Severity::None };
+        plugify::Severity _severity{ plugify::Severity::None };
     };
 }

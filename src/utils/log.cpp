@@ -1,6 +1,6 @@
 #include "log.h"
 
-using namespace wizard;
+using namespace plugify;
 
 void LogSystem::SetLogger(std::shared_ptr<ILogger> logger) {
     _logger = std::move(logger);

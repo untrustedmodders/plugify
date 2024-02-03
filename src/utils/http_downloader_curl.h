@@ -7,7 +7,7 @@ extern "C" {
 	typedef void CURLM;
 }
 
-namespace wizard {
+namespace plugify {
 	class HTTPDownloaderCurl final : public HTTPDownloader {
 	public:
 		HTTPDownloaderCurl();

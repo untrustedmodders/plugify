@@ -1,6 +1,6 @@
 #pragma once
 
-namespace wizard {
+namespace plugify {
 	using FileHandler = std::function<void(std::span<const uint8_t>)>;
 	using PathHandler = std::function<void(const fs::path&, int)>;
 

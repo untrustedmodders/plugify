@@ -2,13 +2,13 @@
 
 #include <fstream>
 
-using namespace wizard;
+using namespace plugify;
 
 void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler) {
 	std::ifstream is(filepath, std::ios::binary);
 
 	 if (!is.is_open()) {
-		 WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
+		 PL_LOG_ERROR("File: '{}' could not be opened", filepath.string());
 		 return;
 	 }
 
@@ -23,7 +23,7 @@ std::string FileSystem::ReadText(const fs::path& filepath) {
 	std::ifstream is(filepath, std::ios::binary);
 
 	if (!is.is_open()) {
-		WZ_LOG_ERROR("File: '{}' could not be opened", filepath.string());
+		PL_LOG_ERROR("File: '{}' could not be opened", filepath.string());
 		return {};
 	}
 

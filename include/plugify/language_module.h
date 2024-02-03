@@ -5,10 +5,10 @@
 #include <vector>
 #include <memory>
 
-namespace wizard {
+namespace plugify {
 	class IPlugin;
 	class IModule;
-	class IWizardProvider;
+	class IPlugifyProvider;
 
 	using MethodData = std::pair<std::string, void*>;
 
@@ -31,7 +31,7 @@ namespace wizard {
 		~ILanguageModule() = default;
 
 	public:
-		virtual InitResult Initialize(std::weak_ptr<IWizardProvider> provider, const IModule& module) = 0;
+		virtual InitResult Initialize(std::weak_ptr<IPlugifyProvider> provider, const IModule& module) = 0;
 		virtual void Shutdown() = 0;
 		virtual LoadResult OnPluginLoad(const IPlugin& plugin) = 0;
 		virtual void OnPluginStart(const IPlugin& plugin) = 0;

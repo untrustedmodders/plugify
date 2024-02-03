@@ -5,7 +5,7 @@
 
 #include <winhttp.h>
 
-namespace wizard {
+namespace plugify {
 	class HTTPDownloaderWinHttp final : public HTTPDownloader {
 	public:
 		HTTPDownloaderWinHttp();

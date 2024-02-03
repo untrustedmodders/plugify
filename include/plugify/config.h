@@ -1,10 +1,10 @@
 #pragma once
 
-#include <wizard/log.h>
+#include <plugify/log.h>
 #include <filesystem>
 #include <vector>
 
-namespace wizard {
+namespace plugify {
 	struct Config {
 		std::filesystem::path baseDir;
 		Severity logSeverity{ Severity::Verbose };

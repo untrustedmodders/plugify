@@ -1,9 +1,9 @@
 #pragma once
 
-#include <wizard/plugin.h>
-#include <wizard/plugin_descriptor.h>
+#include <plugify/plugin.h>
+#include <plugify/plugin_descriptor.h>
 
-namespace wizard {
+namespace plugify {
 	class Module;
 	struct LocalPackage;
 	class Plugin final : public IPlugin {
@@ -60,7 +60,7 @@ namespace wizard {
 		}
 
 		const Module& GetModule() const {
-			WZ_ASSERT(_module.has_value(), "Module is not set!");
+			PL_ASSERT(_module.has_value(), "Module is not set!");
 			return _module.value().get();
 		}
 

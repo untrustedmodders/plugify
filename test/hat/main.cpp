@@ -1,11 +1,11 @@
 #include "std_logger.h"
-#include <wizard/wizard.h>
-#include <wizard/module.h>
-#include <wizard/package.h>
-#include <wizard/package_manager.h>
-#include <wizard/plugin_manager.h>
-#include <wizard/plugin.h>
-#include <wizard/plugin_descriptor.h>
+#include <plugify/plugify.h>
+#include <plugify/module.h>
+#include <plugify/package.h>
+#include <plugify/package_manager.h>
+#include <plugify/plugin_manager.h>
+#include <plugify/plugin.h>
+#include <plugify/plugin_descriptor.h>
 
 #include <chrono>
 #include <iostream>
@@ -42,11 +42,11 @@ uintmax_t FormatInt(const std::string& str) {
 		}
 		return result;
 	} catch (const std::invalid_argument& e) {
-		META_CONPRINTF("Invalid argument: %s", e.what());
+		CONPRINTF("Invalid argument: {}", e.what());
 	} catch (const std::out_of_range& e) {
-		META_CONPRINTF("Out of range: %s", e.what());
+		CONPRINTF("Out of range: {}", e.what());
 	} catch (const std::exception& e) {
-		META_CONPRINTF("Conversion error: %s", e.what());
+		CONPRINTF("Conversion error: {}", e.what());
 	}
 
 	return uintmax_t(-1);
@@ -106,11 +106,11 @@ void Print(std::string_view name, const T& t, F& f) {
 }
 
 int main() {
-    std::shared_ptr<wizard::IWizard> sorcerer = wizard::MakeWizard();
+    std::shared_ptr<plugify::IPlugify> sorcerer = plugify::MakePlugify();
     if (sorcerer) {
         auto logger = std::make_shared<sorcerer::StdLogger>();
         sorcerer->SetLogger(logger);
-		logger->SetSeverity(wizard::Severity::Debug);
+		logger->SetSeverity(plugify::Severity::Debug);
         bool running = true;
         while (running) {
             std::string command;
@@ -130,7 +130,7 @@ int main() {
 
             if (args[0] == "-e" || args[0] == "exit" || args[0] == "-q" || args[0] == "quit") {
                 running = false;
-            } else if (args[0] == "wizard" && args.size() > 1) {
+            } else if (args[0] == "plugify" && args.size() > 1) {
                 if (args[1] == "init") {
 					if (!sorcerer->Initialize()) {
 						CONPRINTE("No feet, no sweets!");
@@ -166,10 +166,10 @@ int main() {
 					}
 
 					if (args[1] == "help" || args[1] == "-h") {
-						CONPRINT("Wizard Menu");
+						CONPRINT("Plugify Menu");
 						CONPRINT("(c) untrustedmodders");
 						CONPRINT("https://github.com/untrustedmodders");
-						CONPRINT("usage: wizard <command> [options] [arguments]");
+						CONPRINT("usage: plugify <command> [options] [arguments]");
 						CONPRINT("  help           - Show help");
 						CONPRINT("  version        - Version information");
 						CONPRINT("Plugin Manager commands:");
@@ -203,7 +203,7 @@ int main() {
 
 					else if (args[1] == "version" || args[1] == "-v") {
 						CONPRINT(R"(            .)" "");
-						CONPRINT(R"(           /:\            Wizard v)" << sorcerer->GetVersion().ToString());
+						CONPRINT(R"(           /:\            Plugify v)" << sorcerer->GetVersion().ToString());
 						CONPRINT(R"(          /;:.\           )" << std::format("Copyright (C) 2023-{} Untrusted Modders Team", __DATE__ + 7));
 						CONPRINT(R"(         //;:. \)" "");
 						CONPRINT(R"(        ///;:.. \         This program may be freely redistributed under)" "");
@@ -252,7 +252,7 @@ int main() {
 							CONPRINTF("Listing {} plugin{}:", static_cast<int>(count), (count > 1) ? "s" : "");
 						}
 						for (auto& pluginRef : pluginManager->GetPlugins()) {
-							Print<wizard::PluginState>(pluginRef.get(), wizard::PluginStateToString);
+							Print<plugify::PluginState>(pluginRef.get(), plugify::PluginStateToString);
 						}
 					}
 
@@ -268,7 +268,7 @@ int main() {
 							CONPRINTF("Listing {} module{}:", static_cast<int>(count), (count > 1) ? "s" : "");
 						}
 						for (auto& moduleRef : pluginManager->GetModules()) {
-							Print<wizard::ModuleState>(moduleRef.get(), wizard::ModuleStateToString);
+							Print<plugify::ModuleState>(moduleRef.get(), plugify::ModuleStateToString);
 						}
 					}
 
@@ -281,13 +281,13 @@ int main() {
 							auto pluginRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
 							if (pluginRef.has_value()) {
 								auto& plugin = pluginRef->get();
-								Print<wizard::PluginState>("Plugin", plugin, wizard::PluginStateToString);
+								Print<plugify::PluginState>("Plugin", plugin, plugify::PluginStateToString);
 								CONPRINTF("  Language module: {}", plugin.GetDescriptor().languageModule.name);
 								CONPRINT("  Dependencies: ");
 								for (const auto& reference : plugin.GetDescriptor().dependencies) {
 									auto dependencyRef = pluginManager->FindPlugin(reference.name);
 									if (dependencyRef.has_value()) {
-										Print<wizard::PluginState>(dependencyRef->get(), wizard::PluginStateToString, "    ");
+										Print<plugify::PluginState>(dependencyRef->get(), plugify::PluginStateToString, "    ");
 									} else {
 										CONPRINTF("    {} <Missing> (v{})", reference.name, reference.requestedVersion.has_value() ? std::to_string(*reference.requestedVersion) : "[latest]");
 									}
@@ -310,7 +310,7 @@ int main() {
 							auto moduleRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindModuleFromId(FormatInt(args[2])) : pluginManager->FindModule(args[2]);
 							if (moduleRef.has_value()) {
 								auto& module = moduleRef->get();
-								Print<wizard::ModuleState>("Module", module, wizard::ModuleStateToString);
+								Print<plugify::ModuleState>("Module", module, plugify::ModuleStateToString);
 								CONPRINTF("  Language: {}", module.GetDescriptor().language);
 								CONPRINTF("  File: {}", module.GetFilePath().string());
 							} else {
@@ -490,13 +490,13 @@ int main() {
 
 					else {
 						CONPRINTF("unknown option: {}", args[1]);
-						CONPRINT("usage: wizard <command> [options] [arguments]");
-						CONPRINT("Try wizard help or -h for more information.");
+						CONPRINT("usage: plugify <command> [options] [arguments]");
+						CONPRINT("Try plugify help or -h for more information.");
 					}
 				}
 			} else {
-				CONPRINT("usage: wizard <command> [options] [arguments]");
-				CONPRINT("Try wizard help or -h for more information.");
+				CONPRINT("usage: plugify <command> [options] [arguments]");
+				CONPRINT("Try plugify help or -h for more information.");
 			}
         }
     }

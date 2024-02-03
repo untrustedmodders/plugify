@@ -3,9 +3,9 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
-#include <wizard_export.h>
+#include <plugify_export.h>
 
-namespace wizard {
+namespace plugify {
 	class PackageManager;
 	struct LocalPackage;
 	struct RemotePackage;
@@ -16,7 +16,7 @@ namespace wizard {
 	using RemotePackageOpt = std::optional<RemotePackageRef>;
 
 	// Package manager provided to user, which implemented in core
-	class WIZARD_API IPackageManager {
+	class PLUGIFY_API IPackageManager {
 	protected:
 		explicit IPackageManager(PackageManager& impl);
 		~IPackageManager() = default;

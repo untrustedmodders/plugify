@@ -1,16 +1,16 @@
-#include "wizard_provider.h"
+#include "plugify_provider.h"
 #include "plugin_manager.h"
 #include "package_manager.h"
-#include <wizard/version.h>
-#include <wizard/wizard.h>
+#include <plugify/version.h>
+#include <plugify/plugify.h>
 #include <utils/file_system.h>
 #include <utils/json.h>
 
-namespace wizard {
-	class Wizard final : public IWizard, public std::enable_shared_from_this<Wizard> {
+namespace plugify {
+	class Plugify final : public IPlugify, public std::enable_shared_from_this<Plugify> {
 	public:
-		Wizard() = default;
-		~Wizard() override {
+		Plugify() = default;
+		~Plugify() override {
 			Terminate();
 		};
 
@@ -18,11 +18,11 @@ namespace wizard {
 			if (_inited)
 				return false;
 
-			auto path = rootDir / "wizard.wconfig";
+			auto path = rootDir / "plugify.wconfig";
 			auto json = FileSystem::ReadText(path);
 			auto config = glz::read_json<Config>(json);
 			if (!config.has_value()) {
-				WZ_LOG_ERROR("Config: '{}' has JSON parsing error: {}", path.string(), glz::format_error(config.error(), json));
+				PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", path.string(), glz::format_error(config.error(), json));
 				return false;
 			}
 
@@ -31,16 +31,16 @@ namespace wizard {
 			if (!rootDir.empty())
 				_config.baseDir = rootDir / _config.baseDir;
 
-			_provider = std::make_shared<WizardProvider>(weak_from_this());
+			_provider = std::make_shared<PlugifyProvider>(weak_from_this());
 			_packageManager = std::make_shared<PackageManager>(weak_from_this());
 			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
 
 			_inited = true;
 
-			WZ_LOG_INFO("Wizard Init!");
-			WZ_LOG_INFO("Version: {}", _version.ToString());
-			WZ_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", WIZARD_GIT_COMMIT_HASH, WIZARD_GIT_TAG, WIZARD_GIT_COMMIT_SUBJECT, WIZARD_GIT_BRANCH, WIZARD_GIT_COMMIT_DATE);
-			WZ_LOG_INFO("Compiled on: {} from: {} with: '{}'", WIZARD_COMPILED_SYSTEM, WIZARD_COMPILED_GENERATOR, WIZARD_COMPILED_COMPILER);
+			PL_LOG_INFO("Plugify Init!");
+			PL_LOG_INFO("Version: {}", _version.ToString());
+			PL_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", PLUGIFY_GIT_COMMIT_HASH, PLUGIFY_GIT_TAG, PLUGIFY_GIT_COMMIT_SUBJECT, PLUGIFY_GIT_BRANCH, PLUGIFY_GIT_COMMIT_DATE);
+			PL_LOG_INFO("Compiled on: {} from: {} with: '{}'", PLUGIFY_COMPILED_SYSTEM, PLUGIFY_COMPILED_GENERATOR, PLUGIFY_COMPILED_COMPILER);
 
 			return true;
 		}
@@ -50,18 +50,18 @@ namespace wizard {
 				return;
 
 			if (_packageManager.use_count() != 1) {
-				WZ_LOG_ERROR("Lack of owning for package manager! Will not released on wizard terminate");
+				PL_LOG_ERROR("Lack of owning for package manager! Will not released on plugify terminate");
 			}
 			_packageManager.reset();
 
 			if (_pluginManager.use_count() != 1) {
-				WZ_LOG_ERROR("Lack of owning for plugin manager! Will not released on wizard terminate");
+				PL_LOG_ERROR("Lack of owning for plugin manager! Will not released on plugify terminate");
 			}
 			_pluginManager.reset();
 
 			_inited = false;
 
-			WZ_LOG_INFO("Wizard Terminated!");
+			PL_LOG_INFO("Plugify Terminated!");
 		}
 
 		bool IsInitialized() const override {
@@ -84,7 +84,7 @@ namespace wizard {
 			return _packageManager;
 		}
 
-		std::weak_ptr<IWizardProvider> GetProvider() const override {
+		std::weak_ptr<IPlugifyProvider> GetProvider() const override {
 			return _provider;
 		}
 
@@ -99,13 +99,13 @@ namespace wizard {
 	private:
 		std::shared_ptr<PluginManager> _pluginManager;
 		std::shared_ptr<PackageManager> _packageManager;
-		std::shared_ptr<WizardProvider> _provider;
-		Version _version{ WIZARD_VERSION_MAJOR, WIZARD_VERSION_MINOR, WIZARD_VERSION_PATCH, WIZARD_VERSION_TWEAK };
+		std::shared_ptr<PlugifyProvider> _provider;
+		Version _version{ PLUGIFY_VERSION_MAJOR, PLUGIFY_VERSION_MINOR, PLUGIFY_VERSION_PATCH, PLUGIFY_VERSION_TWEAK };
 		Config _config;
 		bool _inited{ false };
 	};
 
-	std::shared_ptr<IWizard> MakeWizard() {
-		return std::make_shared<Wizard>();
+	std::shared_ptr<IPlugify> MakePlugify() {
+		return std::make_shared<Plugify>();
 	}
 }

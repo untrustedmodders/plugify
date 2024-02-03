@@ -1,9 +1,9 @@
 #pragma once
 
-#include <wizard/descriptor.h>
+#include <plugify/descriptor.h>
 #include <optional>
 
-namespace wizard {
+namespace plugify {
 	struct LanguageModuleDescriptor : public Descriptor {
 		std::string language;
 		std::optional<std::vector<std::string>> libraryDirectories;

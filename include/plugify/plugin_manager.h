@@ -6,9 +6,9 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
-#include <wizard_export.h>
+#include <plugify_export.h>
 
-namespace wizard {
+namespace plugify {
 	class IModule;
 	class IPlugin;
 	class PluginManager;
@@ -21,7 +21,7 @@ namespace wizard {
 	using PluginOpt = std::optional<PluginRef>;
 
 	// Plugin manager provided to user, which implemented in core
-	class WIZARD_API IPluginManager {
+	class PLUGIFY_API IPluginManager {
 	protected:
 		explicit IPluginManager(PluginManager& impl);
 		~IPluginManager() = default;

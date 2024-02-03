@@ -18,7 +18,7 @@ file(GLOB_RECURSE HAT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 
 add_executable(${PROJECT_NAME} ${HAT_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE wizard ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE plugify ${CMAKE_DL_LIBS})
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
@@ -29,5 +29,5 @@ endif()
 
 add_custom_command(TARGET hat POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_FILE:wizard> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    $<TARGET_FILE:plugify> $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )

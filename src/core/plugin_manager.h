@@ -1,18 +1,18 @@
 #pragma once
 
-#include "wizard_context.h"
-#include <wizard/plugin_manager.h>
-#include <wizard/plugin.h>
-#include <wizard/language_module.h>
+#include "plugify_context.h"
+#include <plugify/plugin_manager.h>
+#include <plugify/plugin.h>
+#include <plugify/language_module.h>
 
-namespace wizard {
+namespace plugify {
 	class Plugin;
 	class Module;
-	class IWizard;
+	class IPlugify;
 
-	class PluginManager final : public IPluginManager, public WizardContext {
+	class PluginManager final : public IPluginManager, public PlugifyContext {
 	public:
-		explicit PluginManager(std::weak_ptr<IWizard> wizard);
+		explicit PluginManager(std::weak_ptr<IPlugify> plugify);
 		~PluginManager();
 
 	public:

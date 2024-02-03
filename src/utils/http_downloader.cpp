@@ -3,7 +3,7 @@
 
 #include <thread>
 
-using namespace wizard;
+using namespace plugify;
 
 static constexpr float DEFAULT_TIMEOUT_IN_SECONDS = 30;
 static constexpr uint32_t DEFAULT_MAX_ACTIVE_REQUESTS = 4;
@@ -70,7 +70,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 
 		bool alive = (req->state == Request::State::Started || req->state == Request::State::Receiving);
 		if (alive && currentTime >= req->startTime && (currentTime - req->startTime).AsSeconds() >= _timeout) {
-			WZ_LOG_ERROR("Request for '{}' timed out", req->url);
+			PL_LOG_ERROR("Request for '{}' timed out", req->url);
 
 			req->state.store(Request::State::Cancelled);
 			_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
@@ -83,7 +83,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 			lock.lock();
 			continue;
 		}/* else if (alive && req->progress && req->progress->IsCancelled()) {
-			WZ_LOG_ERROR("Request for '{}' cancelled", req->url);
+			PL_LOG_ERROR("Request for '{}' cancelled", req->url);
 
 			req->state.store(Request::State::Cancelled);
 			_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
@@ -112,7 +112,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 			continue;
 		}
 
-		WZ_LOG_VERBOSE("Request for '{}' complete, returned status code {} and {} bytes", req->url, req->statusCode, req->data.size());
+		PL_LOG_VERBOSE("Request for '{}' complete, returned status code {} and {} bytes", req->url, req->statusCode, req->data.size());
 		_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
 
 		// run callback with lock unheld

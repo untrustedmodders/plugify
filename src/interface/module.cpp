@@ -1,7 +1,7 @@
-#include <wizard/module.h>
+#include <plugify/module.h>
 #include <core/module.h>
 
-using namespace wizard;
+using namespace plugify;
 
 IModule::IModule(Module& impl) : _impl{impl} {
 }

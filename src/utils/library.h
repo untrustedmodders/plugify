@@ -1,6 +1,6 @@
 #pragma once
 
-namespace wizard {
+namespace plugify {
     class Library {
     public:
         static std::unique_ptr<Library> LoadFromPath(const std::filesystem::path& libraryPath);

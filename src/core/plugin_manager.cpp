@@ -3,13 +3,13 @@
 #include "plugin.h"
 #include "module.h"
 
-#include <wizard/plugin_manager.h>
-#include <wizard/wizard.h>
+#include <plugify/plugin_manager.h>
+#include <plugify/plugify.h>
 #include <utils/json.h>
 
-using namespace wizard;
+using namespace plugify;
 
-PluginManager::PluginManager(std::weak_ptr<IWizard> wizard) : IPluginManager(*this), WizardContext(std::move(wizard)) {
+PluginManager::PluginManager(std::weak_ptr<IPlugify> plugify) : IPluginManager(*this), PlugifyContext(std::move(plugify)) {
 }
 
 PluginManager::~PluginManager() {
@@ -24,7 +24,7 @@ bool PluginManager::Initialize() {
 	DiscoverAllModulesAndPlugins();
 	LoadRequiredLanguageModules();
 	LoadAndStartAvailablePlugins();
-	WZ_LOG_DEBUG("PluginManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
+	PL_LOG_DEBUG("PluginManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
 	return true;
 }
 
@@ -42,12 +42,12 @@ bool PluginManager::IsInitialized() {
 }
 
 void PluginManager::DiscoverAllModulesAndPlugins() {
-	WZ_ASSERT(_allModules.empty(), "Modules already initialized");
-	WZ_ASSERT(_allPlugins.empty(), "Plugins already initialized");
-	auto wizard = _wizard.lock();
-	WZ_ASSERT(wizard);
+	PL_ASSERT(_allModules.empty(), "Modules already initialized");
+	PL_ASSERT(_allPlugins.empty(), "Plugins already initialized");
+	auto plugify = _plugify.lock();
+	PL_ASSERT(plugify);
 
-	if (auto packageManager = wizard->GetPackageManager().lock()) {
+	if (auto packageManager = plugify->GetPackageManager().lock()) {
 		for (const auto& packageRef : packageManager->GetLocalPackages()) {
 			const auto& package = packageRef.get();
 			if (package.type == "plugin") {
@@ -67,20 +67,20 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 	}
 
 	if (HasCyclicDependencies(sortedPlugins)) {
-		WZ_LOG_WARNING("Found cyclic dependencies");
+		PL_LOG_WARNING("Found cyclic dependencies");
 	}
 
 	_allPlugins = std::move(sortedPlugins);
 
-	WZ_LOG_VERBOSE("Plugins order after topological sorting by dependency: ");
+	PL_LOG_VERBOSE("Plugins order after topological sorting by dependency: ");
 	for (const auto& plugin : _allPlugins) {
-		WZ_LOG_VERBOSE("{} - {}", plugin->GetName(), plugin->GetFriendlyName());
+		PL_LOG_VERBOSE("{} - {}", plugin->GetName(), plugin->GetFriendlyName());
 	}
 }
 
 void PluginManager::LoadRequiredLanguageModules() {
-	auto wizard = _wizard.lock();
-	WZ_ASSERT(wizard);
+	auto plugify = _plugify.lock();
+	PL_ASSERT(plugify);
 
 	std::unordered_set<UniqueId> modules;
 	modules.reserve(_allModules.size());
@@ -101,7 +101,7 @@ void PluginManager::LoadRequiredLanguageModules() {
 
 	for (const auto& module : _allModules) {
 		if (module->GetDescriptor().forceLoad || modules.contains(module->GetId())) {
-			module->Initialize(wizard->GetProvider());
+			module->Initialize(plugify->GetProvider());
 		}
 	}
 }

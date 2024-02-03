@@ -1,23 +1,23 @@
 #pragma once
 
-#include <wizard/version.h>
-#include <wizard/config.h>
-#include <wizard_export.h>
+#include <plugify/version.h>
+#include <plugify/config.h>
+#include <plugify_export.h>
 #include <filesystem>
 #include <cstdint>
 #include <memory>
 #include <span>
 
-namespace wizard {
+namespace plugify {
 	class ILogger;
-	class IWizardProvider;
+	class IPlugifyProvider;
 	class IPluginManager;
 	class IPackageManager;
 	enum class Severity : uint8_t;
 
-	class IWizard {
+	class IPlugify {
 	public:
-		virtual ~IWizard() = default;
+		virtual ~IPlugify() = default;
 
 		virtual bool Initialize(const std::filesystem::path& rootDir = {}) = 0;
 		virtual void Terminate() = 0;
@@ -26,7 +26,7 @@ namespace wizard {
 		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
 		virtual void Log(const std::string& msg, Severity severity) = 0;
 
-		virtual std::weak_ptr<IWizardProvider> GetProvider() const = 0;
+		virtual std::weak_ptr<IPlugifyProvider> GetProvider() const = 0;
 		virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
 		virtual std::weak_ptr<IPackageManager> GetPackageManager() const = 0;
 		virtual const Config& GetConfig() const = 0;
@@ -34,5 +34,5 @@ namespace wizard {
 	};
 
 	// Entry Point
-	WIZARD_API std::shared_ptr<IWizard> MakeWizard();
+	PLUGIFY_API std::shared_ptr<IPlugify> MakePlugify();
 }

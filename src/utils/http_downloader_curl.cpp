@@ -1,10 +1,10 @@
-#if !WIZARD_PLATFORM_WINDOWS
+#if !PLUGIFY_PLATFORM_WINDOWS
 
 #include "http_downloader_curl.h"
 
 #include <curl/curl.h>
 
-using namespace wizard;
+using namespace plugify;
 
 HTTPDownloaderCurl::HTTPDownloaderCurl() : HTTPDownloader() {}
 
@@ -35,14 +35,14 @@ bool HTTPDownloaderCurl::Initialize(std::string userAgent) {
 			}
 		});
 		if (!curl_initialized) {
-			WZ_LOG_ERROR("curl_global_init() failed");
+			PL_LOG_ERROR("curl_global_init() failed");
 			return false;
 		}
 	}
 
 	_multiHandle = curl_multi_init();
 	if (!_multiHandle) {
-		WZ_LOG_ERROR("curl_multi_init() failed");
+		PL_LOG_ERROR("curl_multi_init() failed");
 		return false;
 	}
 
@@ -87,12 +87,12 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 	sigemptyset(&new_block_mask);
 	sigaddset(&new_block_mask, SIGPIPE);
 	if (pthread_sigmask(SIG_BLOCK, &new_block_mask, &old_block_mask) != 0)
-		WZ_LOG_WARNING("Failed to block SIGPIPE");
+		PL_LOG_WARNING("Failed to block SIGPIPE");
 
 	int runningHandles;
 	const CURLMcode err = curl_multi_perform(_multiHandle, &runningHandles);
 	if (err != CURLM_OK)
-		WZ_LOG_ERROR("curl_multi_perform() returned {}", static_cast<int>(err));
+		PL_LOG_ERROR("curl_multi_perform() returned {}", static_cast<int>(err));
 
 	for (;;) {
 		int msgq;
@@ -101,13 +101,13 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 			break;
 
 		if (msg->msg != CURLMSG_DONE) {
-			WZ_LOG_WARNING("Unexpected multi message {}", static_cast<int>(msg->msg));
+			PL_LOG_WARNING("Unexpected multi message {}", static_cast<int>(msg->msg));
 			continue;
 		}
 
 		Request* req;
 		if (curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &req) != CURLE_OK) {
-			WZ_LOG_ERROR("curl_easy_getinfo() failed");
+			PL_LOG_ERROR("curl_easy_getinfo() failed");
 			continue;
 		}
 
@@ -120,16 +120,16 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 			if (curl_easy_getinfo(req->handle, CURLINFO_CONTENT_TYPE, &content_type) == CURLE_OK && content_type)
 				req->contentType = content_type;
 
-			WZ_LOG_VERBOSE("Request for '{}' returned status code {} and {} bytes", req->url, req->statusCode, req->data.size());
+			PL_LOG_VERBOSE("Request for '{}' returned status code {} and {} bytes", req->url, req->statusCode, req->data.size());
 		} else {
-			WZ_LOG_ERROR("Request for '{}' returned error {}", req->url, static_cast<int>(msg->data.result));
+			PL_LOG_ERROR("Request for '{}' returned error {}", req->url, static_cast<int>(msg->data.result));
 		}
 
 		req->state.store(Request::State::Complete, std::memory_order_release);
 	}
 
 	if (pthread_sigmask(SIG_UNBLOCK, &new_block_mask, &old_block_mask) != 0)
-		WZ_LOG_WARNING("Failed to unblock SIGPIPE");
+		PL_LOG_WARNING("Failed to unblock SIGPIPE");
 }
 
 bool HTTPDownloaderCurl::StartRequest(HTTPDownloader::Request* request) {
@@ -147,13 +147,13 @@ bool HTTPDownloaderCurl::StartRequest(HTTPDownloader::Request* request) {
 		curl_easy_setopt(req->handle, CURLOPT_POSTFIELDS, request->postData.c_str());
 	}
 
-	WZ_LOG_VERBOSE("Started HTTP request for '{}'", req->url.c_str());
+	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url.c_str());
 	req->state.store(Request::State::Started, std::memory_order_release);
 	req->startTime = DateTime::Now();
 
 	const CURLMcode err = curl_multi_add_handle(_multiHandle, req->handle);
 	if (err != CURLM_OK) {
-		WZ_LOG_ERROR("curl_multi_add_handle() returned {}", static_cast<int>(err));
+		PL_LOG_ERROR("curl_multi_add_handle() returned {}", static_cast<int>(err));
 		req->callback(HTTP_STATUS_ERROR, {}, req->data);
 		curl_easy_cleanup(req->handle);
 		delete req;
@@ -165,7 +165,7 @@ bool HTTPDownloaderCurl::StartRequest(HTTPDownloader::Request* request) {
 
 void HTTPDownloaderCurl::CloseRequest(HTTPDownloader::Request* request) {
 	auto req = static_cast<Request*>(request);
-	WZ_ASSERT(req->handle);
+	PL_ASSERT(req->handle);
 	curl_multi_remove_handle(_multiHandle, req->handle);
 	curl_easy_cleanup(req->handle);
 	delete req;

@@ -1,17 +1,17 @@
-#include <wizard/wizard_provider.h>
-#include <core/wizard_provider.h>
+#include <plugify/plugify_provider.h>
+#include <core/plugify_provider.h>
 
-using namespace wizard;
+using namespace plugify;
 
-IWizardProvider::IWizardProvider(WizardProvider& impl) : _impl{impl} {
+IPlugifyProvider::IPlugifyProvider(PlugifyProvider& impl) : _impl{impl} {
 }
 
-IWizardProvider::~IWizardProvider() = default;
+IPlugifyProvider::~IPlugifyProvider() = default;
 
-void IWizardProvider::Log(const std::string& msg, Severity severity) {
+void IPlugifyProvider::Log(const std::string& msg, Severity severity) {
     _impl.Log(msg, severity);
 }
 
-std::weak_ptr<IPluginManager> IWizardProvider::GetPluginManager() {
+std::weak_ptr<IPluginManager> IPlugifyProvider::GetPluginManager() {
     return _impl.GetPluginManager();
 }

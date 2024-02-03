@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wizard/method.h>
+#include <plugify/method.h>
 #include <memory>
 
 namespace asmjit {
@@ -12,7 +12,7 @@ namespace asmjit {
 	}
 }
 
-namespace wizard {
+namespace plugify {
 	struct Parameters {
 		template<typename T>
 		void SetArgument(uint8_t idx, T val) const {

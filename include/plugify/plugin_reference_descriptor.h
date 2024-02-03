@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 
-namespace wizard {
+namespace plugify {
 	struct PluginReferenceDescriptor {
 		std::string name;
 		bool optional{ false };

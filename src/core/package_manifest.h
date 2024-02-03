@@ -1,6 +1,6 @@
 #pragma once
 
-namespace wizard {
+namespace plugify {
 	struct PackageManifest {
 		std::unordered_map<std::string, RemotePackage> content;
 

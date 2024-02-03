@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <string>
 #include <filesystem>
-#include <wizard_export.h>
+#include <plugify_export.h>
 
-namespace wizard {
+namespace plugify {
 	class Plugin;
 	struct PluginDescriptor;
 
@@ -22,7 +22,7 @@ namespace wizard {
 	using MethodData = std::pair<std::string, void*>;
 
 	// Plugin provided to user, which implemented in core
-	class WIZARD_API IPlugin {
+	class PLUGIFY_API IPlugin {
 	protected:
 		explicit IPlugin(Plugin& impl);
 		~IPlugin();

@@ -3,76 +3,76 @@
 #include <glaze/glaze.hpp>
 #include <glaze/core/macros.hpp>
 
-#include <wizard/method.h>
-#include <wizard/descriptor.h>
-#include <wizard/plugin_descriptor.h>
-#include <wizard/language_module_descriptor.h>
-#include <wizard/config.h>
-#include <wizard/package.h>
+#include <plugify/method.h>
+#include <plugify/descriptor.h>
+#include <plugify/plugin_descriptor.h>
+#include <plugify/language_module_descriptor.h>
+#include <plugify/config.h>
+#include <plugify/package.h>
 
 template<>
-struct glz::meta<wizard::ValueType> {
+struct glz::meta<plugify::ValueType> {
     static constexpr auto value = enumerate(
-        "invalid", wizard::ValueType::Invalid,
-        "void", wizard::ValueType::Void,
-        "bool", wizard::ValueType::Bool,
-        "char8", wizard::ValueType::Char8,
-        "char16", wizard::ValueType::Char16,
-        "int8", wizard::ValueType::Int8,
-        "int16", wizard::ValueType::Int16,
-        "int32", wizard::ValueType::Int32,
-        "int64", wizard::ValueType::Int64,
-        "uint8", wizard::ValueType::Uint8,
-        "uint16", wizard::ValueType::Uint16,
-        "uint32", wizard::ValueType::Uint32,
-        "uint64", wizard::ValueType::Uint64,
-        "ptr64", wizard::ValueType::Ptr64,
-        "float", wizard::ValueType::Float,
-        "double", wizard::ValueType::Double,
-        "string", wizard::ValueType::String,
-        "function", wizard::ValueType::Function,
-		"bool*", wizard::ValueType::ArrayBool,
-		"char8*", wizard::ValueType::ArrayChar8,
-		"char16*", wizard::ValueType::ArrayChar16,
-		"int8*", wizard::ValueType::ArrayInt8,
-		"int16*", wizard::ValueType::ArrayInt16,
-		"int32*", wizard::ValueType::ArrayInt32,
-		"int64*", wizard::ValueType::ArrayInt64,
-		"uint8*", wizard::ValueType::ArrayUint8,
-		"uint16*", wizard::ValueType::ArrayUint16,
-		"uint32*", wizard::ValueType::ArrayUint32,
-		"uint64*", wizard::ValueType::ArrayUint64,
-		"ptr64*", wizard::ValueType::ArrayPtr64,
-		"float*", wizard::ValueType::ArrayFloat,
-		"double*", wizard::ValueType::ArrayDouble,
-		"string*", wizard::ValueType::ArrayString
+        "invalid", plugify::ValueType::Invalid,
+        "void", plugify::ValueType::Void,
+        "bool", plugify::ValueType::Bool,
+        "char8", plugify::ValueType::Char8,
+        "char16", plugify::ValueType::Char16,
+        "int8", plugify::ValueType::Int8,
+        "int16", plugify::ValueType::Int16,
+        "int32", plugify::ValueType::Int32,
+        "int64", plugify::ValueType::Int64,
+        "uint8", plugify::ValueType::Uint8,
+        "uint16", plugify::ValueType::Uint16,
+        "uint32", plugify::ValueType::Uint32,
+        "uint64", plugify::ValueType::Uint64,
+        "ptr64", plugify::ValueType::Ptr64,
+        "float", plugify::ValueType::Float,
+        "double", plugify::ValueType::Double,
+        "string", plugify::ValueType::String,
+        "function", plugify::ValueType::Function,
+		"bool*", plugify::ValueType::ArrayBool,
+		"char8*", plugify::ValueType::ArrayChar8,
+		"char16*", plugify::ValueType::ArrayChar16,
+		"int8*", plugify::ValueType::ArrayInt8,
+		"int16*", plugify::ValueType::ArrayInt16,
+		"int32*", plugify::ValueType::ArrayInt32,
+		"int64*", plugify::ValueType::ArrayInt64,
+		"uint8*", plugify::ValueType::ArrayUint8,
+		"uint16*", plugify::ValueType::ArrayUint16,
+		"uint32*", plugify::ValueType::ArrayUint32,
+		"uint64*", plugify::ValueType::ArrayUint64,
+		"ptr64*", plugify::ValueType::ArrayPtr64,
+		"float*", plugify::ValueType::ArrayFloat,
+		"double*", plugify::ValueType::ArrayDouble,
+		"string*", plugify::ValueType::ArrayString
     );
 };
 
 template<>
-struct glz::meta<wizard::Severity> {
+struct glz::meta<plugify::Severity> {
     static constexpr auto value = enumerate(
-        "none", wizard::Severity::None,
-        "fatal", wizard::Severity::Fatal,
-        "error", wizard::Severity::Error,
-        "warning", wizard::Severity::Warning,
-        "info", wizard::Severity::Info,
-        "debug", wizard::Severity::Debug,
-        "verbose", wizard::Severity::Verbose
+        "none", plugify::Severity::None,
+        "fatal", plugify::Severity::Fatal,
+        "error", plugify::Severity::Error,
+        "warning", plugify::Severity::Warning,
+        "info", plugify::Severity::Info,
+        "debug", plugify::Severity::Debug,
+        "verbose", plugify::Severity::Verbose
     );
 };
 
-GLZ_META(wizard::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, assemblyPath, languageModule, dependencies, exportedMethods);
-GLZ_META(wizard::LanguageModuleDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, language, libraryDirectories, forceLoad);
-GLZ_META(wizard::Config, baseDir, logSeverity, repositories);
+GLZ_META(plugify::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, assemblyPath, languageModule, dependencies, exportedMethods);
+GLZ_META(plugify::LanguageModuleDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, language, libraryDirectories, forceLoad);
+GLZ_META(plugify::Config, baseDir, logSeverity, repositories);
 
-GLZ_META(wizard::PackageVersion, version, mirrors, platforms);
-GLZ_META(wizard::RemotePackage, name, type, author, description, versions);
-GLZ_META(wizard::LocalPackage, name, type, path, version, descriptor);
+GLZ_META(plugify::PackageVersion, version, mirrors, platforms);
+GLZ_META(plugify::RemotePackage, name, type, author, description, versions);
+GLZ_META(plugify::LocalPackage, name, type, path, version, descriptor);
 
 template <>
-struct glz::meta<wizard::Property> {
-	using T = wizard::Property;
+struct glz::meta<plugify::Property> {
+	using T = plugify::Property;
 	static constexpr auto value = object("type", &T::type, "name", skip{}, "ref", &T::ref, "prototype", &T::prototype);
 };
 

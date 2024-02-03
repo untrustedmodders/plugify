@@ -1,12 +1,12 @@
 #pragma once
 
-#include <wizard/descriptor.h>
-#include <wizard/language_module_descriptor.h>
-#include <wizard/plugin_reference_descriptor.h>
-#include <wizard/method.h>
+#include <plugify/descriptor.h>
+#include <plugify/language_module_descriptor.h>
+#include <plugify/plugin_reference_descriptor.h>
+#include <plugify/method.h>
 #include <filesystem>
 
-namespace wizard {
+namespace plugify {
 	struct PluginDescriptor : public Descriptor {
 		std::filesystem::path assemblyPath;
 		LanguageModuleInfo languageModule;

@@ -6,7 +6,7 @@
 #include <memory>
 #include <optional>
 
-namespace wizard {
+namespace plugify {
 	enum class ValueType : std::uint8_t {
 		Invalid,
 		Void,
@@ -45,7 +45,7 @@ namespace wizard {
 
 	/*
 	// Method provided to user, which implemented in core
-	class WIZARD_API IMethod {
+	class PLUGIFY_API IMethod {
 	protected:
 		explicit IMethod(Method& impl);
 		~IMethod();

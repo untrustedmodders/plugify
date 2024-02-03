@@ -1,26 +1,26 @@
 #include "module.h"
 #include "plugin.h"
-#include <wizard/module.h>
-#include <wizard/package.h>
+#include <plugify/module.h>
+#include <plugify/package.h>
 #include <utils/library_directory.h>
 
-using namespace wizard;
+using namespace plugify;
 
 Module::Module(UniqueId id, const LocalPackage& package) : IModule(*this), _id{id}, _name{package.name}, _lang{package.type}, _descriptor{std::static_pointer_cast<LanguageModuleDescriptor>(package.descriptor)} {
-	WZ_ASSERT(package.type != "plugin", "Invalid package type for module ctor");
-	WZ_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
+	PL_ASSERT(package.type != "plugin", "Invalid package type for module ctor");
+	PL_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
 	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
 	_baseDir = package.path.parent_path();
 	_binaryDir = _baseDir / "bin";
-	_filePath = _binaryDir / std::format(WIZARD_MODULE_PREFIX "{}" WIZARD_MODULE_SUFFIX, package.name);
+	_filePath = _binaryDir / std::format(PLUGIFY_MODULE_PREFIX "{}" PLUGIFY_MODULE_SUFFIX, package.name);
 }
 
 Module::~Module() {
 	Terminate();
 }
 
-bool Module::Initialize(std::weak_ptr<IWizardProvider> provider) {
-	WZ_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
+bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
+	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
 
 	std::error_code ec;
 	if (!fs::exists(_filePath, ec) || !fs::is_regular_file(_filePath, ec)) {
@@ -129,5 +129,5 @@ void Module::EndPlugin(Plugin& plugin) const {
 void Module::SetError(std::string error) {
 	_error = std::move(error);
 	_state = ModuleState::Error;
-	WZ_LOG_ERROR("Module '{}': {}", _name, _error);
+	PL_LOG_ERROR("Module '{}': {}", _name, _error);
 }

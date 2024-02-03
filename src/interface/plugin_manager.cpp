@@ -1,7 +1,7 @@
-#include <wizard/plugin_manager.h>
+#include <plugify/plugin_manager.h>
 #include <core/plugin_manager.h>
 
-using namespace wizard;
+using namespace plugify;
 
 IPluginManager::IPluginManager(PluginManager& impl) : _impl{impl} {
 }

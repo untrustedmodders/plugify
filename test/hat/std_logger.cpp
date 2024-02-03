@@ -3,25 +3,25 @@
 #include <iostream>
 
 namespace sorcerer {
-    void StdLogger::Log(const std::string& message, wizard::Severity severity) {
+    void StdLogger::Log(const std::string& message, plugify::Severity severity) {
         if (severity <= _severity) {
             switch (severity) {
-                case wizard::Severity::Fatal:
+                case plugify::Severity::Fatal:
                     std::cerr << "[@] Fatal: " << message << std::endl;
                     break;
-                case wizard::Severity::Error:
+                case plugify::Severity::Error:
                     std::cerr << "[#] Error: " << message << std::endl;
                     break;
-                case wizard::Severity::Warning:
+                case plugify::Severity::Warning:
                     std::cout << "[!] Warning: " << message << std::endl;
                     break;
-                case wizard::Severity::Info:
+                case plugify::Severity::Info:
                     std::cout << "[+] Info: " << message << std::endl;
                     break;
-                case wizard::Severity::Debug:
+                case plugify::Severity::Debug:
                     std::cout << "[~] Debug: " << message << std::endl;
                     break;
-                case wizard::Severity::Verbose:
+                case plugify::Severity::Verbose:
                     std::cout << "[*] Verbose: " << message << std::endl;
                     break;
                 default:
@@ -48,7 +48,7 @@ namespace sorcerer {
         return {};
     }
 
-    void StdLogger::SetSeverity(wizard::Severity severity) {
+    void StdLogger::SetSeverity(plugify::Severity severity) {
 		std::lock_guard<std::mutex> lock{_mutex};
         _severity = severity;
     }

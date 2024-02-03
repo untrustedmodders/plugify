@@ -1,14 +1,14 @@
 #pragma once
 
-#include "wizard_context.h"
-#include <wizard/package_manager.h>
-#include <wizard/package.h>
+#include "plugify_context.h"
+#include <plugify/package_manager.h>
+#include <plugify/package.h>
 
-namespace wizard {
+namespace plugify {
 	class HTTPDownloader;
-	class PackageManager : public IPackageManager, public WizardContext {
+	class PackageManager : public IPackageManager, public PlugifyContext {
 	public:
-		explicit PackageManager(std::weak_ptr<IWizard> wizard);
+		explicit PackageManager(std::weak_ptr<IPlugify> plugify);
 		~PackageManager();
 
 	public:
@@ -45,7 +45,7 @@ namespace wizard {
 
 	public:
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
-			return supportedPlatforms.empty() || std::find(supportedPlatforms.begin(), supportedPlatforms.end(), WIZARD_PLATFORM) != supportedPlatforms.end();
+			return supportedPlatforms.empty() || std::find(supportedPlatforms.begin(), supportedPlatforms.end(), PLUGIFY_PLATFORM) != supportedPlatforms.end();
 		}
 
 	private:
@@ -65,7 +65,7 @@ namespace wizard {
 		/**
 		 * Retrieves the verified packages list from the central authority.
 		 *
-		 * The Wizard auto-downloading feature does not allow automatically installing
+		 * The Plugify auto-downloading feature does not allow automatically installing
 		 * all packages for various (notably security) reasons; packages that are candidate to
 		 * auto-downloading are rather listed on a GitHub repository
 		 * (https://raw.githubusercontent.com/untrustedpackageders/verified_packages/verified-packages.json),

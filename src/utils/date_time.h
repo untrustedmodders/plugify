@@ -3,7 +3,7 @@
 #include <chrono>
 #include <sstream>
 
-namespace wizard {
+namespace plugify {
     using namespace std::chrono_literals;
 
     class DateTime {

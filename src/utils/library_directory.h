@@ -1,6 +1,6 @@
 #pragma once
 
-namespace wizard {
+namespace plugify {
 	struct LibraryDirectoryHandle;
 
 	class LibraryDirectory {

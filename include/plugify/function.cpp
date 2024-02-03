@@ -1,7 +1,7 @@
-#include <wizard/function.h>
+#include <plugify/function.h>
 #include <asmjit/asmjit.h>
 
-using namespace wizard;
+using namespace plugify;
 using namespace asmjit;
 
 Function::Function(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
@@ -188,7 +188,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		return nullptr;
 	}
 
-	//WZ_LOG_VERBOSE("JIT Stub:\n{}", log.data());
+	//PL_LOG_VERBOSE("JIT Stub:\n{}", log.data());
 
 	return _callback;
 }
@@ -246,16 +246,16 @@ TypeId Function::GetTypeId(ValueType valueType) {
 }
 
 CallConvId Function::GetCallConv(const std::string& conv) {
-#if WIZARD_ARCH_X86 == 64
-#if WIZARD_PLATFORM_WINDOWS
+#if PLUGIFY_ARCH_X86 == 64
+#if PLUGIFY_PLATFORM_WINDOWS
 	if (conv == "vectorcall") {
 		return CallConvId::kVectorCall;
 	}
 	return CallConvId::kX64Windows;
 #else
 	return CallConvId::kX64SystemV;
-#endif // WIZARD_PLATFORM_WINDOWS
-#elif WIZARD_ARCH_X86 == 32
+#endif // PLUGIFY_PLATFORM_WINDOWS
+#elif PLUGIFY_ARCH_X86 == 32
 	if (conv == "cdecl") {
 		return CallConvId::kCDecl;
 	} else if (conv == "stdcall") {
@@ -268,7 +268,7 @@ CallConvId Function::GetCallConv(const std::string& conv) {
 		return CallConvId::kVectorCall;
 	}
 	return CallConvId::kHost;
-#endif // WIZARD_ARCH_X86
+#endif // PLUGIFY_ARCH_X86
 }
 
 bool Function::IsGeneralReg(TypeId typeId) {

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace wizard {
+namespace plugify {
 	struct Descriptor {
 		std::int32_t fileVersion{ 0 };
 		std::int32_t version{ 0 };

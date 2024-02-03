@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <string>
 #include <filesystem>
-#include <wizard_export.h>
+#include <plugify_export.h>
 
-namespace wizard {
+namespace plugify {
 	class Module;
 	struct LanguageModuleDescriptor;
 
@@ -19,7 +19,7 @@ namespace wizard {
 	using UniqueId = std::uintmax_t;
 
 	// Language module provided to user implemented in core !
-	class WIZARD_API IModule {
+	class PLUGIFY_API IModule {
 	protected:
 		explicit IModule(Module& impl);
 		~IModule() = default;

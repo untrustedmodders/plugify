@@ -3,7 +3,7 @@
 #include <mutex>
 #include <atomic>
 
-namespace wizard {
+namespace plugify {
 	class HTTPDownloader {
 	public:
 		enum : int32_t {

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <wizard/log.h>
-#include <wizard/compat_format.h>
+#include <plugify/log.h>
+#include <plugify/compat_format.h>
 
-namespace wizard {
+namespace plugify {
     class LogSystem {
     public:
         static void SetLogger(std::shared_ptr<ILogger> logger);
@@ -14,20 +14,20 @@ namespace wizard {
     };
 }
 
-#if WIZARD_LOGGING
-#define WZ_LOG(sev, ...)    wizard::LogSystem::Log(std::format(__VA_ARGS__), sev)
-#define WZ_LOG_VERBOSE(...) WZ_LOG(wizard::Severity::Verbose, __VA_ARGS__)
-#define WZ_LOG_DEBUG(...)   WZ_LOG(wizard::Severity::Debug, __VA_ARGS__)
-#define WZ_LOG_INFO(...)    WZ_LOG(wizard::Severity::Info, __VA_ARGS__)
-#define WZ_LOG_WARNING(...) WZ_LOG(wizard::Severity::Warning, __VA_ARGS__)
-#define WZ_LOG_ERROR(...)   WZ_LOG(wizard::Severity::Error, __VA_ARGS__)
-#define WZ_LOG_FATAL(...)   WZ_LOG(wizard::Severity::Fatal, __VA_ARGS__)
+#if PLUGIFY_LOGGING
+#define PL_LOG(sev, ...)    plugify::LogSystem::Log(std::format(__VA_ARGS__), sev)
+#define PL_LOG_VERBOSE(...) PL_LOG(plugify::Severity::Verbose, __VA_ARGS__)
+#define PL_LOG_DEBUG(...)   PL_LOG(plugify::Severity::Debug, __VA_ARGS__)
+#define PL_LOG_INFO(...)    PL_LOG(plugify::Severity::Info, __VA_ARGS__)
+#define PL_LOG_WARNING(...) PL_LOG(plugify::Severity::Warning, __VA_ARGS__)
+#define PL_LOG_ERROR(...)   PL_LOG(plugify::Severity::Error, __VA_ARGS__)
+#define PL_LOG_FATAL(...)   PL_LOG(plugify::Severity::Fatal, __VA_ARGS__)
 #else
-#define WZ_LOG(sev, ...)
-#define WZ_LOG_VERBOSE(...)
-#define WZ_LOG_DEBUG(...)
-#define WZ_LOG_INFO(...)
-#define WZ_LOG_WARNING(...)
-#define WZ_LOG_ERROR(...)
-#define WZ_LOG_FATAL(...)
+#define PL_LOG(sev, ...)
+#define PL_LOG_VERBOSE(...)
+#define PL_LOG_DEBUG(...)
+#define PL_LOG_INFO(...)
+#define PL_LOG_WARNING(...)
+#define PL_LOG_ERROR(...)
+#define PL_LOG_FATAL(...)
 #endif

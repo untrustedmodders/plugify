@@ -1,9 +1,9 @@
 #include "strings.h"
 #include "os.h"
 
-using namespace wizard;
+using namespace plugify;
 
-#if WIZARD_PLATFORM_WINDOWS
+#if PLUGIFY_PLATFORM_WINDOWS
 
 std::wstring String::UTF8StringToWideString(std::string_view str){
 	std::wstring ret;
