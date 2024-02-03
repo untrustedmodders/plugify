@@ -202,14 +202,14 @@ int main() {
 					}
 
 					else if (args[1] == "version" || args[1] == "-v") {
-						CONPRINT(R"(            .)" "");
-						CONPRINT(R"(           /:\            Plugify v)" << sorcerer->GetVersion().ToString());
-						CONPRINT(R"(          /;:.\           )" << std::format("Copyright (C) 2023-{} Untrusted Modders Team", __DATE__ + 7));
-						CONPRINT(R"(         //;:. \)" "");
-						CONPRINT(R"(        ///;:.. \         This program may be freely redistributed under)" "");
-						CONPRINT(R"(  __--"////;:... \"--__   the terms of the GNU General Public License.)" "");
-						CONPRINT(R"(--__   "--_____--"   __--)" "");
-						CONPRINT(R"(    """--_______--"""")" "");
+						const char* year = __DATE__ + 7;
+						static std::string copyright = std::format("Copyright (C) 2023-{} Untrusted Modders Team", year);
+						CONPRINT(R"(      ____)");
+						CONPRINT(R"( ____|    \         Plugify v)" << sorcerer->GetVersion().ToString());
+						CONPRINT(R"((____|     `._____  )" << copyright);
+						CONPRINT(R"( ____|       _|___)");
+						CONPRINT(R"((____|     .'       This program may be freely redistributed under)" "");
+						CONPRINT(R"(     |____/         the terms of the GNU General Public License.)" "");
 					}
 
 					else if (args[1] == "load") {

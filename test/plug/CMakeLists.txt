@@ -5,18 +5,18 @@ if(POLICY CMP0092)
 endif()
 
 
-project(hat)
+project(plug)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 #
-# Hat
+# Plug
 #
-file(GLOB_RECURSE HAT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
+file(GLOB_RECURSE PLUG_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 
-add_executable(${PROJECT_NAME} ${HAT_SOURCES})
+add_executable(${PROJECT_NAME} ${PLUG_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE plugify ${CMAKE_DL_LIBS})
 
@@ -27,7 +27,7 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
-add_custom_command(TARGET hat POST_BUILD
+add_custom_command(TARGET plug POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:plugify> $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )

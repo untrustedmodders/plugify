@@ -18,7 +18,7 @@ include(cmake/git.cmake)
 
 # ------------------------------------------------------------------------------
 # Build options for tests
-option(PLUGIFY_BUILD_TESTS "Build all tests" OFF)
+option(PLUGIFY_BUILD_TESTS "Build all tests" ON)
 
 # ------------------------------------------------------------------------------
 # Compilation options
@@ -245,5 +245,5 @@ target_compile_definitions(${PROJECT_NAME}-function PRIVATE
         PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86})
 
 if(PLUGIFY_BUILD_TESTS)
-    add_subdirectory(test/hat)
+    add_subdirectory(test/plug)
 endif()
