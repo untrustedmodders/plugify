@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <unordered_map>
+#include <optional>
 
 namespace wizard {
 	enum class ValueType : std::uint8_t {
