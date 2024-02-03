@@ -56,7 +56,7 @@ size_t HTTPDownloaderCurl::WriteCallback(char* ptr, size_t size, size_t nmemb, v
 	const size_t transferSize = size * nmemb;
 	const size_t newSize = currentSize + transferSize;
 	req->data.resize(newSize);
-	req->startTime = DateTime::Now()
+	req->startTime = DateTime::Now();
 	std::memcpy(&req->data[currentSize], ptr, transferSize);
 
 	if (req->contentLength == 0) {

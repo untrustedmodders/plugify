@@ -150,6 +150,12 @@ endif()
 # Picosha2 & Miniz
 target_link_libraries(${PROJECT_NAME} PRIVATE picosha2 miniz)
 
+include(CheckCCompilerFlag)
+check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
+if(COMPILER_SUPPORTS_FPIC)
+    target_compile_options(miniz PRIVATE -fPIC)
+endif()
+
 # ------------------------------------------------------------------------------
 # Format
 if(NOT CXX_FORMAT_SUPPORT)
