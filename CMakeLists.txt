@@ -18,7 +18,7 @@ include(cmake/git.cmake)
 
 # ------------------------------------------------------------------------------
 # Build options for tests
-option(PLUGIFY_BUILD_TESTS "Build all tests" ON)
+option(PLUGIFY_BUILD_TESTS "Build all tests" ЩАА)
 
 # ------------------------------------------------------------------------------
 # Compilation options
