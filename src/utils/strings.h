@@ -13,7 +13,7 @@ namespace wizard {
 #endif
 		}
 
-#ifdef WIZARD_PLATFORM_WINDOWS
+#if WIZARD_PLATFORM_WINDOWS
 		/// Converts the specified UTF-8 string to a wide string.
 		static std::wstring UTF8StringToWideString(std::string_view str);
 		static bool UTF8StringToWideString(std::wstring& dest, std::string_view str);

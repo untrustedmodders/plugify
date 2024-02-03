@@ -3,7 +3,7 @@
 
 using namespace wizard;
 
-#ifdef WIZARD_PLATFORM_WINDOWS
+#if WIZARD_PLATFORM_WINDOWS
 
 std::wstring String::UTF8StringToWideString(std::string_view str){
 	std::wstring ret;
