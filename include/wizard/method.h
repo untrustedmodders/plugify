@@ -66,6 +66,7 @@ namespace wizard {
 
 	struct Property {
 		ValueType type{};
+		std::optional<bool> ref;
 		// only for function value type
 		std::shared_ptr<Method> prototype; // should be unique_ptr but MSVC show error with glz::read_json
 	};
