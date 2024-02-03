@@ -224,7 +224,23 @@ TypeId Function::GetTypeId(ValueType valueType) {
 		case ValueType::Float:  return GetTypeIdx<float>();
 		case ValueType::Double: return GetTypeIdx<double>();
 		case ValueType::Ptr64:
-		case ValueType::String: return TypeId::kUIntPtr;
+		case ValueType::String:
+		case ValueType::Function:
+		case ValueType::ArrayBool:
+		case ValueType::ArrayChar8:
+		case ValueType::ArrayChar16:
+		case ValueType::ArrayInt8:
+		case ValueType::ArrayInt16:
+		case ValueType::ArrayInt32:
+		case ValueType::ArrayInt64:
+		case ValueType::ArrayUint8:
+		case ValueType::ArrayUint16:
+		case ValueType::ArrayUint32:
+		case ValueType::ArrayUint64:
+		case ValueType::ArrayPtr64:
+		case ValueType::ArrayFloat:
+		case ValueType::ArrayDouble:
+		case ValueType::ArrayString: return TypeId::kUIntPtr;
 	}
 	return TypeId::kVoid;
 }
