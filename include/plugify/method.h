@@ -43,25 +43,6 @@ namespace plugify {
 		ArrayString,
 	};
 
-	/*
-	// Method provided to user, which implemented in core
-	class PLUGIFY_API IMethod {
-	protected:
-		explicit IMethod(Method& impl);
-		~IMethod();
-
-	public:
-		const std::string& GetName() const;
-		const std::string& GetFuncName() const;
-		const std::string& GetCallConv() const;
-		ValueType GetArgument(size_t index) const;
-		ValueType GetReturn() const;
-		std::uint8_t GetVarIndex() const;
-
-	private:
-		Method& _impl;
-	}*/
-
 	struct Method;
 
 	struct Property {

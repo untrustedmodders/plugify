@@ -62,7 +62,7 @@ struct glz::meta<plugify::Severity> {
     );
 };
 
-GLZ_META(plugify::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, assemblyPath, languageModule, dependencies, exportedMethods);
+GLZ_META(plugify::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, entryPoint, languageModule, dependencies, exportedMethods);
 GLZ_META(plugify::LanguageModuleDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, language, libraryDirectories, forceLoad);
 GLZ_META(plugify::Config, baseDir, logSeverity, repositories);
 

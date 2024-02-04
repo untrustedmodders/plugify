@@ -25,16 +25,8 @@ namespace plugify {
 			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
 		}
 
-		const fs::path& GetFilePath() {
-			return _filePath;
-		}
-
 		const fs::path& GetBaseDir() {
 			return _baseDir;
-		}
-
-		const fs::path& GetContentDir() {
-			return _contentDir;
 		}
 
 		const PluginDescriptor& GetDescriptor() {
@@ -84,14 +76,12 @@ namespace plugify {
 			_state = PluginState::NotLoaded;
 		}
 
-		static inline const char* const kFileExtension = ".wplugin";
+		static inline const char* const kFileExtension = ".pplugin";
 
 	private:
 		UniqueId _id{ std::numeric_limits<UniqueId>::max() };
 		std::string _name;
-		fs::path _filePath;
 		fs::path _baseDir;
-		fs::path _contentDir;
 		std::string _error;
 		std::optional<std::reference_wrapper<const Module>> _module;
 		std::vector<MethodData> _methods;

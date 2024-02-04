@@ -31,9 +31,7 @@ namespace plugify {
 		UniqueId GetId() const;
 		const std::string& GetName() const;
 		const std::string& GetFriendlyName() const;
-		const std::filesystem::path& GetFilePath() const;
 		const std::filesystem::path& GetBaseDir() const;
-		const std::filesystem::path& GetContentDir() const;
 		const PluginDescriptor& GetDescriptor() const;
 		PluginState GetState() const;
 		const std::string& GetError() const;

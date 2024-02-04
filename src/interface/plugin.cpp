@@ -20,16 +20,8 @@ const std::string& IPlugin::GetFriendlyName() const {
     return _impl.GetFriendlyName();
 }
 
-const fs::path& IPlugin::GetFilePath() const {
-    return _impl.GetFilePath();
-}
-
 const fs::path& IPlugin::GetBaseDir() const {
     return _impl.GetBaseDir();
-}
-
-const fs::path& IPlugin::GetContentDir() const {
-    return _impl.GetContentDir();
 }
 
 const PluginDescriptor& IPlugin::GetDescriptor() const {

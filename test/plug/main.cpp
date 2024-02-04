@@ -291,7 +291,7 @@ int main() {
 										CONPRINTF("    {} <Missing> (v{})", reference.name, reference.requestedVersion.has_value() ? std::to_string(*reference.requestedVersion) : "[latest]");
 									}
 								}
-								CONPRINTF("  File: {}", plugin.GetFilePath().string());
+								CONPRINTF("  File: {}", plugin.GetDescriptor().entryPoint);
 							} else {
 								CONPRINTF("Plugin {} not found.", args[2]);
 							}

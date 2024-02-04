@@ -91,7 +91,7 @@ void Module::LoadPlugin(Plugin& plugin) const {
 
 	auto result = GetLanguageModule().OnPluginLoad(plugin);
 	if (auto data = std::get_if<ErrorData>(&result)) {
-		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error, plugin.GetFilePath().string()));
+		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error, plugin.GetBaseDir().string()));
 		return;
 	}
 

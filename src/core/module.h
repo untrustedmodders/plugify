@@ -80,7 +80,7 @@ namespace plugify {
 
 		void SetError(std::string error);
 
-		static inline const char* const kFileExtension = ".wmodule";
+		static inline const char* const kFileExtension = ".pmodule";
 
 	private:
 		UniqueId _id{ std::numeric_limits<UniqueId>::max() };

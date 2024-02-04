@@ -8,7 +8,7 @@
 
 namespace plugify {
 	struct PluginDescriptor : public Descriptor {
-		std::filesystem::path assemblyPath;
+		std::string entryPoint;
 		LanguageModuleInfo languageModule;
 		std::vector<PluginReferenceDescriptor> dependencies;
 		std::vector<Method> exportedMethods;

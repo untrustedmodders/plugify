@@ -13,9 +13,10 @@ void PlugifyProvider::Log(const std::string& msg, Severity severity) {
 	}
 }
 
-std::weak_ptr<IPluginManager> PlugifyProvider::GetPluginManager() {
+const fs::path& PlugifyProvider::GetBaseDir() {
 	if (auto locker = _plugify.lock()) {
-		return locker->GetPluginManager();
+		return locker->GetConfig().baseDir;
 	}
-	return {};
+	static fs::path _;
+	return _;
 }

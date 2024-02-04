@@ -263,15 +263,6 @@ ModuleOpt PluginManager::FindModuleFromPath(const std::filesystem::path& moduleF
 	return {};
 }
 
-ModuleOpt PluginManager::FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor) {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleDescriptor](const auto& module) {
-		return module->GetName() == moduleDescriptor.name && (!moduleDescriptor.requestedVersion || module->GetDescriptor().version == moduleDescriptor.requestedVersion);
-	});
-	if (it != _allModules.end())
-		return *(*it);
-	return {};
-}
-
 std::vector<ModuleRef> PluginManager::GetModules() {
 	std::vector<ModuleRef> modules;
 	modules.reserve(_allModules.size());
@@ -308,15 +299,6 @@ PluginOpt PluginManager::FindPluginFromId(UniqueId pluginId) {
 	return {};
 }
 
-PluginOpt PluginManager::FindPluginFromPath(const fs::path& pluginFilePath) {
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginFilePath](const auto& plugin) {
-		return plugin->GetFilePath() == pluginFilePath;
-	});
-	if (it != _allPlugins.end())
-		return *(*it);
-	return {};
-}
-
 PluginOpt PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginDescriptor](const auto& plugin) {
 		return plugin->GetName() == pluginDescriptor.name && (!pluginDescriptor.requestedVersion || plugin->GetDescriptor().version == pluginDescriptor.requestedVersion);
@@ -337,15 +319,6 @@ std::vector<PluginRef> PluginManager::GetPlugins() {
 
 bool PluginManager::GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
 	auto plugin = FindPlugin(pluginName);
-	if (plugin.has_value()) {
-		pluginDependencies = plugin->get().GetDescriptor().dependencies;
-		return true;
-	}
-	return false;
-}
-
-bool PluginManager::GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies) {
-	auto plugin = FindPluginFromPath(pluginFilePath);
 	if (plugin.has_value()) {
 		pluginDependencies = plugin->get().GetDescriptor().dependencies;
 		return true;

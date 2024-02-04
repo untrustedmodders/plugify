@@ -18,7 +18,7 @@ namespace plugify {
 			if (_inited)
 				return false;
 
-			auto path = rootDir / "plugify.wconfig";
+			auto path = rootDir / "plugify.pconfig";
 			auto json = FileSystem::ReadText(path);
 			auto config = glz::read_json<Config>(json);
 			if (!config.has_value()) {

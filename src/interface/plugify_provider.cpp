@@ -8,10 +8,10 @@ IPlugifyProvider::IPlugifyProvider(PlugifyProvider& impl) : _impl{impl} {
 
 IPlugifyProvider::~IPlugifyProvider() = default;
 
-void IPlugifyProvider::Log(const std::string& msg, Severity severity) {
+void IPlugifyProvider::Log(const std::string& msg, Severity severity) const {
     _impl.Log(msg, severity);
 }
 
-std::weak_ptr<IPluginManager> IPlugifyProvider::GetPluginManager() {
-    return _impl.GetPluginManager();
+const fs::path& IPlugifyProvider::GetBaseDir() const {
+    return _impl.GetBaseDir();
 }

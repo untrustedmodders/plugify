@@ -4,7 +4,7 @@ namespace plugify {
 	struct PackageManifest {
 		std::unordered_map<std::string, RemotePackage> content;
 
-		static inline const char* const kFileExtension = ".wpackagemanifest";
+		static inline const char* const kFileExtension = ".pmanifest";
 	};
 	struct VerifiedPackageVersion {
 		int32_t version;

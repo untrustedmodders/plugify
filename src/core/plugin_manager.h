@@ -26,18 +26,15 @@ namespace plugify {
 		ModuleOpt FindModuleFromId(UniqueId moduleId);
 		ModuleOpt FindModuleFromLang(const std::string& moduleLang);
 		ModuleOpt FindModuleFromPath(const std::filesystem::path& moduleFilePath);
-		ModuleOpt FindModuleFromDescriptor(const PluginReferenceDescriptor& moduleDescriptor);
 		std::vector<ModuleRef> GetModules();
 
 		PluginOpt FindPlugin(const std::string& pluginName);
 		PluginOpt FindPlugin(std::string_view pluginName);
 		PluginOpt FindPluginFromId(UniqueId pluginId);
-		PluginOpt FindPluginFromPath(const fs::path& pluginFilePath);
 		PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor);
 		std::vector<PluginRef> GetPlugins();
 
 		bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies);
-		bool GetPluginDependencies_FromFilePath(const fs::path& pluginFilePath, std::vector<PluginReferenceDescriptor>& pluginDependencies);
 		bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies);
 
 	private:

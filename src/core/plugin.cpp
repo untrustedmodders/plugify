@@ -9,8 +9,6 @@ Plugin::Plugin(UniqueId id, const LocalPackage& package) : IPlugin(*this), _id{i
 	PL_ASSERT(package.type == "plugin", "Invalid package type for plugin ctor");
 	PL_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
 	_baseDir = package.path.parent_path();
-	_contentDir = _baseDir / "content";
-	_filePath /= _baseDir / _descriptor->assemblyPath;
 }
 
 void Plugin::SetError(std::string error) {

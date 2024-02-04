@@ -12,6 +12,6 @@ namespace plugify {
 
 		void Log(const std::string& msg, Severity severity);
 
-		std::weak_ptr<IPluginManager> GetPluginManager();
+		const fs::path& GetBaseDir();
 	};
 }
