@@ -39,10 +39,6 @@ namespace plugify {
 			return _baseDir;
 		}
 
-		const fs::path& GetBinariesDir() {
-			return _binaryDir;
-		}
-
 		const LanguageModuleDescriptor& GetDescriptor() {
 			return *_descriptor;
 		}
@@ -88,7 +84,6 @@ namespace plugify {
 		std::string _lang;
 		fs::path _filePath;
 		fs::path _baseDir;
-		fs::path _binaryDir;
 		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
 		ModuleState _state{ ModuleState::NotLoaded };
 		std::string _error;

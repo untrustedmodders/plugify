@@ -31,7 +31,6 @@ namespace plugify {
 		const std::string& GetFriendlyName() const;
 		const std::filesystem::path& GetFilePath() const;
 		const std::filesystem::path& GetBaseDir() const;
-		const std::filesystem::path& GetBinariesDir() const;
 		const LanguageModuleDescriptor& GetDescriptor() const;
 		ModuleState GetState() const;
 		const std::string& GetError() const;

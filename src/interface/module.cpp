@@ -30,10 +30,6 @@ const fs::path& IModule::GetBaseDir() const {
     return _impl.GetBaseDir();
 }
 
-const fs::path& IModule::GetBinariesDir() const {
-    return _impl.GetBinariesDir();
-}
-
 const LanguageModuleDescriptor& IModule::GetDescriptor() const {
     return _impl.GetDescriptor();
 }
