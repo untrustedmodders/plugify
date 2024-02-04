@@ -1,6 +1,7 @@
 #pragma once
 
 #include "plugify_context.h"
+#include "package_manifest.h"
 #include <plugify/package_manager.h>
 #include <plugify/package.h>
 
@@ -61,44 +62,12 @@ namespace plugify {
 
 		[[nodiscard]] bool DownloadPackage(const Package& package, const PackageVersion& version) const;
 		static std::string ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt);
-
-		/**
-		 * Retrieves the verified packages list from the central authority.
-		 *
-		 * The Plugify auto-downloading feature does not allow automatically installing
-		 * all packages for various (notably security) reasons; packages that are candidate to
-		 * auto-downloading are rather listed on a GitHub repository
-		 * (https://raw.githubusercontent.com/untrustedpackageders/verified_packages/verified-packages.json),
-		 * which this method gets via a HTTP call to load into local state.
-		 *
-		 * If list fetching fails, local packages list will be initialized as empty, thus
-		 * preventing any package from being auto-downloaded.
-		 */
-		//void FetchPackagesListFromAPI();
-
-		/**
-		 * Checks whether a package is verified.
-		 *
-		 * A package is deemed verified/authorized through a manual validation process that is
-		 * described here: https://github.com/untrustedpackageders/verified_packages/README.md;
-		 */
-		//bool IsPackageAuthorized(const std::string& packageName, int32_t packageVersion) const;
-
-		/**
-		 * Tells if a package archive has not been corrupted. (Use after IsPackageAuthorized)
-		 *
-		 * The package validation procedure includes computing the SHA256 hash of the final
-		 * archive, which is stored in the verified packages list. This hash is used by this
-		 * very method to ensure the archive downloaded from the Internet is the exact
-		 * same that has been manually verified.
-		 */
-		//bool IsPackageLegit(const std::string& packageName, int32_t packageVersion, std::span<const uint8_t> packageData) const;
+		static bool IsPackageLegit(const std::string& checksum, std::span<const uint8_t> packageData);
 
 	private:
 		std::unique_ptr<HTTPDownloader> _httpDownloader;
 		std::vector<LocalPackage> _localPackages;
 		std::vector<RemotePackage> _remotePackages;
-		//VerifiedPackageMap _packages;
 		using Dependency = std::pair<RemotePackageRef, std::optional<int32_t>>;
 		std::unordered_map<std::string, Dependency> _missedPackages;
 		std::vector<LocalPackageRef> _conflictedPackages;

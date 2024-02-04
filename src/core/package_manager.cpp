@@ -7,8 +7,6 @@
 #include <utils/file_system.h>
 #include <utils/http_downloader.h>
 #include <utils/json.h>
-#include <mutex>
-#include <thread>
 #include <picosha2.h>
 #include <miniz.h>
 
@@ -174,8 +172,13 @@ void PackageManager::LoadRemotePackages() {
 	std::mutex mutex;
 
 	auto fetchManifest = [&](const std::string& url) {
-		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string&/* contentType*/, HTTPDownloader::Request::Data data) {
+		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
 			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
+				if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
+					PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", url);
+					return;
+				}
+
 				std::string buffer(data.begin(), data.end());
 				auto manifest = glz::read_json<PackageManifest>(buffer);
 				if (!manifest.has_value()) {
@@ -223,6 +226,8 @@ void PackageManager::LoadRemotePackages() {
 		if (!url.empty())
 			fetchManifest(url);
 	}
+
+	//FetchPackagesListFromAPI(mutex);
 
 	_httpDownloader->WaitForAllRequests();
 }
@@ -483,8 +488,13 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 
 	auto func = __func__;
 
-	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& /*contentType*/, HTTPDownloader::Request::Data data) {
+	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
+			if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
+				PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", manifestUrl);
+				return;
+			}
+
 			std::string buffer(data.begin(), data.end());
 			auto manifest = glz::read_json<PackageManifest>(buffer);
 			if (!manifest.has_value()) {
@@ -765,12 +775,7 @@ void PackageManager::Request(const std::function<void()>& action, std::string_vi
 }
 
 bool PackageManager::DownloadPackage(const Package& package, const PackageVersion& version) const {
-	/*if (!IsPackageAuthorized(package.name, version.version)) {
-		PL_LOG_WARNING("Tried to download a package that is not verified, aborting");
-		return false;
-	}*/
-
-	if (version.mirrors.empty()) {
+	if (version.download.empty()) {
 		PL_LOG_WARNING("Tried to download a package that is not have valid url, aborting");
 		return false;
 	}
@@ -780,13 +785,9 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 	auto plugify = _plugify.lock();
 	PL_ASSERT(plugify);
 
-	// TODO: Choose valid mirror !
+	PL_LOG_INFO("Downloading: '{}'", version.download);
 
-	const auto& url = *version.mirrors.begin();
-
-	PL_LOG_INFO("Downloading: '{}'", url);
-
-	_httpDownloader->CreateRequest(url, [&name = package.name, plugin = (package.type == "plugin"), &baseDir = plugify->GetConfig().baseDir] // should be safe to pass ref
+	_httpDownloader->CreateRequest(version.download, [&name = package.name, plugin = (package.type == "plugin"), &baseDir = plugify->GetConfig().baseDir, &checksum = version.checksum] // should be safe to pass ref
 		(int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			PL_LOG_VERBOSE("Done downloading: '{}'", name);
@@ -796,15 +797,15 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 				return;
 			}
 
-			/*if (!IsPackageLegit(name, version, data)) {
+			if (!IsPackageLegit(checksum, data)) {
 				PL_LOG_WARNING("Archive hash does not match expected checksum, aborting");
 				return;
-			}*/
+			}
 
 			const auto& [folder, extension] = packageTypes[plugin];
 
 			fs::path finalPath = baseDir / folder;
-			fs::path finalLocation = finalPath / std::format("{}-{}", name, plugify::DateTime::Get("%Y_%m_%d_%H_%M_%S"));
+			fs::path finalLocation = finalPath / std::format("{}-{}", name, DateTime::Get("%Y_%m_%d_%H_%M_%S"));
 
 			std::error_code ec;
 			if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
@@ -902,64 +903,16 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 	return {};
 }
 
-/*bool PackageManager::IsPackageAuthorized(const std::string& packageName, int32_t packageVersion) const {
-	if (!_config.packageVerification)
+bool PackageManager::IsPackageLegit(const std::string& checksum, std::span<const uint8_t> packageData) {
+	if (checksum.empty())
 		return true;
-
-	auto it = _packages.verified.find(packageName);
-	if (it == _packages.verified.end())
-		return false;
-
-	return std::get<VerifiedPackageDetails>(*it).versions.contains(VerifiedPackageVersion{packageVersion, ""});
-}
-
-bool PackageManager::IsPackageLegit(const std::string& packageName, int32_t packageVersion, std::span<const uint8_t> packageData) const {
-	if (!_config.packageVerification)
-		return true;
-
-	auto it = _packages.verified[packageName].versions.find(VerifiedPackageVersion{packageVersion, ""});
 
 	std::vector<uint8_t> bytes(picosha2::k_digest_size);
 	picosha2::hash256(packageData, bytes.begin(), bytes.end());
 	std::string hash = picosha2::bytes_to_hex_string(bytes.begin(), bytes.end());
 
-	PL_LOG_VERBOSE("Expected checksum: {}", it->checksum);
+	PL_LOG_VERBOSE("Expected checksum: {}", checksum);
 	PL_LOG_VERBOSE("Computed checksum: {}", hash);
 
-	return it->checksum == hash;
+	return checksum == hash;
 }
-
-void PackageManager::FetchPackagesListFromAPI() {
-	if (!_config.packageVerification)
-		return;
-
-	if (!_config.packageVerifyUrl.empty()) {
-		PL_LOG_INFO("Found custom verified packages URL in config: '{}'", _config.packageVerifyUrl);
-	} else {
-		PL_LOG_INFO("Custom verified packages URL not found in config, using default URL");
-		_config.packageVerifyUrl = kDefaultPackageList;
-	}
-
-	PL_LOG_INFO("Loading verification packages...");
-
-	auto json = FetchJsonFromURL(_config.packageVerifyUrl);
-	if (!json.has_value()) {
-		PL_LOG_ERROR("Verification packages from '{}' not found", _config.packageVerifyUrl);
-		return;
-	}
-
-	auto packages = glz::read_json<VerifiedPackageMap>(*json);
-	if (!packages.has_value()) {
-		PL_LOG_ERROR("Verification packages from '{}' has JSON parsing error: {}", _config.packageVerifyUrl, glz::format_error(packages.error(), *json));
-		return;
-	}
-
-	_packages = std::move(*packages);
-
-	if (_packages.verified.empty()) {
-		PL_LOG_WARNING("Empty verification packages list");
-	} else {
-		PL_LOG_INFO("Done loading verified packages list.");
-	}
-}
- */

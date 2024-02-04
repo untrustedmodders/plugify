@@ -10,8 +10,8 @@
 namespace plugify {
 	struct PackageVersion {
 		std::int32_t version;
-		//std::uint32_t sdkVersion;
-		std::vector<std::string> mirrors;
+		std::string checksum;
+		std::string download;
 		std::vector<std::string> platforms;
 		// TODO: dependencies, conflicts here may be?
 
@@ -39,7 +39,7 @@ namespace plugify {
 		}
 
 		PackageOpt Version(std::int32_t version) const {
-			auto it = versions.find(PackageVersion{ version, {}, {} }); // dummy key for lookup
+			auto it = versions.find(PackageVersion{ version, {}, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
 				return *it;
 			return {};
@@ -52,7 +52,7 @@ namespace plugify {
 		std::shared_ptr<Descriptor> descriptor;
 
 		explicit operator RemotePackage() const {
-			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, { descriptor->downloadURL }, descriptor->supportedPlatforms} }};
+			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, {}, descriptor->downloadURL, descriptor->supportedPlatforms} }};
 		}
 	};
 }

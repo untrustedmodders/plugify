@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mutex>
 #include <atomic>
 
 namespace plugify {

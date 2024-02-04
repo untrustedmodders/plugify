@@ -66,7 +66,7 @@ GLZ_META(plugify::PluginDescriptor, fileVersion, version, versionName, friendlyN
 GLZ_META(plugify::LanguageModuleDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, language, libraryDirectories, forceLoad);
 GLZ_META(plugify::Config, baseDir, logSeverity, repositories);
 
-GLZ_META(plugify::PackageVersion, version, mirrors, platforms);
+GLZ_META(plugify::PackageVersion, version, download, platforms);
 GLZ_META(plugify::RemotePackage, name, type, author, description, versions);
 GLZ_META(plugify::LocalPackage, name, type, path, version, descriptor);
 

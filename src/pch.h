@@ -15,6 +15,8 @@
 #include <iterator>
 #include <array>
 #include <cmath>
+#include <mutex>
+#include <thread>
 
 #include <utils/log.h>
 #include <utils/assert.h>
