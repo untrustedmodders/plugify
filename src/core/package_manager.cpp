@@ -196,8 +196,9 @@ void PackageManager::LoadRemotePackages() {
 						continue;
 					}
 
-					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&](const auto& plugin) {
-						return plugin.name == name;
+					auto& n = name; // clang fix
+					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&n](const auto& plugin) {
+						return plugin.name == n;
 					});
 					if (it == _remotePackages.end()) {
 						std::unique_lock<std::mutex> lock(mutex);
