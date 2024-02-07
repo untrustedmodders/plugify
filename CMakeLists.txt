@@ -18,7 +18,9 @@ include(cmake/git.cmake)
 
 include(CheckCCompilerFlag)
 check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
-
+if(COMPILER_SUPPORTS_FPIC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+endif()
 
 # ------------------------------------------------------------------------------
 # Build options for tests
@@ -147,19 +149,12 @@ else()
     else()
         target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
         target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
-        if(COMPILER_SUPPORTS_FPIC)
-            target_compile_options(${CURL_LIBRARIES} PRIVATE -fPIC)
-        endif()
     endif()
 endif()
 
 # ------------------------------------------------------------------------------
 # Picosha2 & Miniz
 target_link_libraries(${PROJECT_NAME} PRIVATE picosha2 miniz)
-
-if(COMPILER_SUPPORTS_FPIC)
-    target_compile_options(miniz PRIVATE -fPIC)
-endif()
 
 # ------------------------------------------------------------------------------
 # Format
