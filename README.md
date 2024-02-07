@@ -5,8 +5,10 @@
   </a>
 </h1>
 
+![Build Status](https://github.com/untrustedmodders/plugify/actions/workflows/cmake-multi-platform.yml/badge.svg)
+
 <div align="center">
-  plugify
+  Plugify
   <br />
   <a href="#about"><strong>Explore the screenshots »</strong></a>
   <br />
