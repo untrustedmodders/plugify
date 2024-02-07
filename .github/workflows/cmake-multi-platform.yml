@@ -64,9 +64,12 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt install -y libcurl4-openssl-dev
 
-    - name: Install libc++
+    - name: Install clang
       if: matrix.c_compiler == 'clang'
-      run: sudo apt install -y clang libc++-dev libc++abi-dev
+      run: |
+        sudo apt install clang-15
+        sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-15 100
+        sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-15 100
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
