@@ -66,10 +66,7 @@ jobs:
 
     - name: Install libc++
       if: matrix.c_compiler == 'clang'
-      run: |
-          sudo apt install -y clang libc++-dev libc++abi-dev
-          export CXXFLAGS=$(-stdlib=libc++)
-          export LDFLAGS=$(-stdlib=libc++)
+      run: sudo apt install -y clang libc++-dev libc++abi-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
