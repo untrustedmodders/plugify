@@ -57,12 +57,7 @@ jobs:
     - name: Initialize and Update Submodules
       run: |
         git submodule update --init --recursive
-      working-directory: https://github.com/untrustedmodders/plugify
-
-    - name: Set up CMake
-      uses: actions/setup-cmake@v2
-      with:
-        cmake-version: '3.21'
+        git submodule update --recursive --remote
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
