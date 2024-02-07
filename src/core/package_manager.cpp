@@ -7,7 +7,7 @@
 #include <utils/file_system.h>
 #include <utils/http_downloader.h>
 #include <utils/json.h>
-#include <picosha2.h>
+#include <SHA256.h>
 #include <miniz.h>
 
 using namespace plugify;
@@ -907,9 +907,10 @@ bool PackageManager::IsPackageLegit(const std::string& checksum, std::span<const
 	if (checksum.empty())
 		return true;
 
-	std::vector<uint8_t> bytes(picosha2::k_digest_size);
-	picosha2::hash256(packageData, bytes.begin(), bytes.end());
-	std::string hash = picosha2::bytes_to_hex_string(bytes.begin(), bytes.end());
+	SHA256 sha;
+	sha.update(packageData.data(), packageData.size());
+	std::array<uint8_t, 32> digest = sha.digest();
+	std::string hash = SHA256::toString(digest);
 
 	PL_LOG_VERBOSE("Expected checksum: {}", checksum);
 	PL_LOG_VERBOSE("Computed checksum: {}", hash);

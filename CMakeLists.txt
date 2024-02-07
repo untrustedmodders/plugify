@@ -81,8 +81,8 @@ if(NOT WIN32 AND NOT PLUGIFY_USE_EXTERNAL_CURL)
 endif()
 
 # ------------------------------------------------------------------------------
-# Picosha2 & Miniz
-add_subdirectory(external/picosha2)
+# SHA256 & Miniz
+add_subdirectory(external/sha256)
 add_subdirectory(external/miniz)
 
 # ------------------------------------------------------------------------------
@@ -157,8 +157,8 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# Picosha2 & Miniz
-target_link_libraries(${PROJECT_NAME} PRIVATE picosha2 miniz)
+# SHA256 & Miniz
+target_link_libraries(${PROJECT_NAME} PRIVATE sha256 miniz)
 
 # ------------------------------------------------------------------------------
 # Format
