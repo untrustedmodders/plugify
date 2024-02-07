@@ -35,7 +35,7 @@ option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library" OFF)
 
 option(PLUGIFY_LOGGING "Enable logs" ON)
 option(PLUGIFY_DEBUG "Enable debuging mode (asserts)" ON)
-option(PLUGIFY_OPENSSL "Enable OpenSSL for Curl's SSL/TLS" OFF)
+option(PLUGIFY_OPENSSL "Enable OpenSSL for Curl's SSL/TLS" ON)
 
 # ------------------------------------------------------------------------------
 # Asmjit
