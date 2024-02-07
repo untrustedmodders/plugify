@@ -16,9 +16,6 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 include(cmake/git.cmake)
 
-include(CheckCCompilerFlag)
-check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
-
 # ------------------------------------------------------------------------------
 # Build options for tests
 option(PLUGIFY_BUILD_TESTS "Build all tests" OFF)
@@ -56,7 +53,7 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Curl
-if(NOT WIN32 AND NOT)
+if(NOT WIN32 AND NOT PLUGIFY_USE_EXTERNAL_CURL)
     if(PLUGIFY_BUILD_SHARED_CURL)
         set(BUILD_SHARED_LIBS ON CACHE BOOL "")
         set(BUILD_STATIC_LIBS OFF CACHE BOOL "")
@@ -64,8 +61,13 @@ if(NOT WIN32 AND NOT)
         set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
         set(BUILD_STATIC_LIBS ON CACHE BOOL "")
     endif()
-    set(CURL_USE_OPENSSL ${PLUGIFY_OPENSSL} CACHE BOOL "")
+    set(CURL_USE_OPENSSL $<BOOL:${PLUGIFY_OPENSSL}> CACHE BOOL "")
     add_subdirectory(external/curl)
+    set(CURL_FOUND TRUE)
+    set(CURL_LIBRARIES libcurl)
+    set(CURL_INCLUDE_DIRS
+            ${CURL_SOURCE_DIR}/include
+            ${CURL_BINARY_DIR}/include/curl)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -75,8 +77,6 @@ add_subdirectory(external/miniz)
 
 # ------------------------------------------------------------------------------
 # Format
-#include(CheckIncludeFileCXX)
-#check_include_file_cxx("format" CXX_FORMAT_SUPPORT)
 try_compile(CXX_FORMAT_SUPPORT ${CMAKE_BINARY_DIR}/format_check SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/test/format_check.cpp)
 if(NOT CXX_FORMAT_SUPPORT AND NOT PLUGIFY_USE_EXTERNAL_FMT)
     add_subdirectory(external/fmt)
@@ -142,18 +142,11 @@ else()
         message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
         message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
     else()
-        if(PLUGIFY_BUILD_SHARED_CURL)
-            target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl_shared)
-            if(COMPILER_SUPPORTS_FPIC)
-                target_compile_options(CURL::libcurl_shared PRIVATE -fPIC)
-            endif()
-        else()
-            target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl_static)
-            if(COMPILER_SUPPORTS_FPIC)
-                target_compile_options(CURL::libcurl_static PRIVATE -fPIC)
-            endif()
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
+        target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
+        if(COMPILER_SUPPORTS_FPIC)
+            target_compile_options(${CURL_LIBRARIES} PRIVATE -fPIC)
         endif()
-        target_include_directories(${PROJECT_NAME} PRIVATE external/curl/include)
     endif()
 endif()
 
@@ -161,6 +154,8 @@ endif()
 # Picosha2 & Miniz
 target_link_libraries(${PROJECT_NAME} PRIVATE picosha2 miniz)
 
+include(CheckCCompilerFlag)
+check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
 if(COMPILER_SUPPORTS_FPIC)
     target_compile_options(miniz PRIVATE -fPIC)
 endif()
