@@ -7,7 +7,6 @@
 #include <utils/file_system.h>
 #include <utils/http_downloader.h>
 #include <utils/json.h>
-#include <cstdint> // for SHA256
 #include <SHA256.h>
 #include <miniz.h>
 
