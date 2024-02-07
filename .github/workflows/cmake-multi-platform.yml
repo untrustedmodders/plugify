@@ -69,7 +69,7 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DPLUGIFY_USE_EXTERNAL_CURL=OFF
-        -PLUGIFY_OPENSSL=OFF
+        -DPLUGIFY_OPENSSL=OFF
         -S ${{ github.workspace }}
 
     - name: Build
