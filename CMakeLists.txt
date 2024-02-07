@@ -16,6 +16,10 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 include(cmake/git.cmake)
 
+include(CheckCCompilerFlag)
+check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
+
+
 # ------------------------------------------------------------------------------
 # Build options for tests
 option(PLUGIFY_BUILD_TESTS "Build all tests" OFF)
@@ -113,10 +117,10 @@ endif()
 # Asmjit
 if(PLUGIFY_USE_EXTERNAL_ASMJIT)
     find_package(asmjit REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE asmjit::asmjit)
+    #target_link_libraries(${PROJECT_NAME} PRIVATE asmjit::asmjit)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE asmjit)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${ASMJIT_SRC})
+    #target_link_libraries(${PROJECT_NAME} PRIVATE asmjit)
+    #target_include_directories(${PROJECT_NAME} PRIVATE ${ASMJIT_SRC})
 
     if(MSVC)
         target_compile_options(asmjit PRIVATE /wd5054)
@@ -154,8 +158,6 @@ endif()
 # Picosha2 & Miniz
 target_link_libraries(${PROJECT_NAME} PRIVATE picosha2 miniz)
 
-include(CheckCCompilerFlag)
-check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
 if(COMPILER_SUPPORTS_FPIC)
     target_compile_options(miniz PRIVATE -fPIC)
 endif()
