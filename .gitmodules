@@ -13,3 +13,6 @@
 [submodule "external/miniz"]
 	path = external/miniz
 	url = https://github.com/richgel999/miniz
+[submodule "external/curl"]
+	path = external/curl
+	url = https://github.com/curl/curl

@@ -35,6 +35,7 @@ option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library" OFF)
 
 option(PLUGIFY_LOGGING "Enable logs" ON)
 option(PLUGIFY_DEBUG "Enable debuging mode (asserts)" ON)
+option(PLUGIFY_OPENSSL "Enable OpenSSL for Curl's SSL/TLS" OFF)
 
 # ------------------------------------------------------------------------------
 # Asmjit
@@ -60,7 +61,7 @@ if(NOT WIN32 AND NOT PLUGIFY_USE_EXTERNAL_CURL)
         set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
         set(BUILD_STATIC_LIBS ON CACHE BOOL "")
     endif()
-    set(CURL_USE_OPENSSL ON CACHE BOOL "")
+    set(CURL_USE_OPENSSL ${PLUGIFY_OPENSSL} CACHE BOOL "")
     add_subdirectory(external/curl)
 endif()
 
