@@ -13,6 +13,3 @@
 [submodule "external/curl"]
 	path = external/curl
 	url = https://github.com/curl/curl
-[submodule "external/sha256"]
-	path = external/sha256
-	url = https://github.com/System-Glitch/SHA256
