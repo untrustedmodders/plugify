@@ -196,7 +196,7 @@ void PackageManager::LoadRemotePackages() {
 						continue;
 					}
 
-					auto& n = name; // clang fix
+					const auto& n = name; // clang fix
 					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&n](const auto& plugin) {
 						return plugin.name == n;
 					});
@@ -910,8 +910,7 @@ bool PackageManager::IsPackageLegit(const std::string& checksum, std::span<const
 
 	SHA256 sha;
 	sha.update(packageData.data(), packageData.size());
-	std::array<uint8_t, 32> digest = sha.digest();
-	std::string hash = SHA256::toString(digest);
+	std::string hash(SHA256::toString(sha.digest()));
 
 	PL_LOG_VERBOSE("Expected checksum: {}", checksum);
 	PL_LOG_VERBOSE("Computed checksum: {}", hash);
