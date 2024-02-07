@@ -25,6 +25,12 @@ if(COMPILER_SUPPORTS_FPIC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif()
 
+# Add the -stdlib=libc++ flag
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+endif()
+
+
 # ------------------------------------------------------------------------------
 # Build options for tests
 option(PLUGIFY_BUILD_TESTS "Build all tests" OFF)
