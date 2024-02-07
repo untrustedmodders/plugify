@@ -230,7 +230,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
         PLUGIFY_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}")
 
-if (PLUGIFY_BUILD_FUNCTION)
+if(PLUGIFY_BUILD_FUNCTION)
     add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.h")
     target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     if(PLUGIFY_USE_EXTERNAL_ASMJIT)
