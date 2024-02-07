@@ -69,8 +69,11 @@ jobs:
       run: |
         sudo apt install clang-15
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 5
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 5
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100
         sudo update-alternatives --config clang
+        sudo update-alternatives --config clang++
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
