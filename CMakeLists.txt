@@ -16,6 +16,9 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 include(cmake/git.cmake)
 
+include(CheckCCompilerFlag)
+check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
+
 # ------------------------------------------------------------------------------
 # Build options for tests
 option(PLUGIFY_BUILD_TESTS "Build all tests" OFF)
@@ -53,7 +56,7 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Curl
-if(NOT WIN32 AND NOT PLUGIFY_USE_EXTERNAL_CURL)
+if(NOT WIN32 AND NOT)
     if(PLUGIFY_BUILD_SHARED_CURL)
         set(BUILD_SHARED_LIBS ON CACHE BOOL "")
         set(BUILD_STATIC_LIBS OFF CACHE BOOL "")
@@ -141,8 +144,14 @@ else()
     else()
         if(PLUGIFY_BUILD_SHARED_CURL)
             target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_shared)
+            if(COMPILER_SUPPORTS_FPIC)
+                target_compile_options(libcurl_shared PRIVATE -fPIC)
+            endif()
         else()
             target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_static)
+            if(COMPILER_SUPPORTS_FPIC)
+                target_compile_options(libcurl_static PRIVATE -fPIC)
+            endif()
         endif()
         target_include_directories(${PROJECT_NAME} PRIVATE external/curl/include)
     endif()
@@ -152,8 +161,6 @@ endif()
 # Picosha2 & Miniz
 target_link_libraries(${PROJECT_NAME} PRIVATE picosha2 miniz)
 
-include(CheckCCompilerFlag)
-check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
 if(COMPILER_SUPPORTS_FPIC)
     target_compile_options(miniz PRIVATE -fPIC)
 endif()
