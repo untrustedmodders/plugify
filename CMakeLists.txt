@@ -24,7 +24,6 @@ check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
 if(COMPILER_SUPPORTS_FPIC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++20")
 
 # ------------------------------------------------------------------------------
 # Build options for tests
