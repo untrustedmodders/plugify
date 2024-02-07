@@ -196,7 +196,7 @@ void PackageManager::LoadRemotePackages() {
 						continue;
 					}
 
-					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&name](const auto& plugin) {
+					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&](const auto& plugin) {
 						return plugin.name == name;
 					});
 					if (it == _remotePackages.end()) {
