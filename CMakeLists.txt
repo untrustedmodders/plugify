@@ -18,7 +18,8 @@ include(cmake/git.cmake)
 
 # ------------------------------------------------------------------------------
 # Build options for tests
-option(PLUGIFY_BUILD_TESTS "Build all tests" ЩАА)
+option(PLUGIFY_BUILD_TESTS "Build all tests" OFF)
+option(PLUGIFY_BUILD_FUNCTION "Build function library" OFF)
 
 # ------------------------------------------------------------------------------
 # Compilation options
@@ -230,19 +231,21 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
         PLUGIFY_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}")
 
-add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.h")
-target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-if(PLUGIFY_USE_EXTERNAL_ASMJIT)
-    target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
-else()
-    target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit)
-    target_include_directories(${PROJECT_NAME}-function PRIVATE ${ASMJIT_SRC})
+if (PLUGIFY_BUILD_FUNCTION)
+    add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.h")
+    target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    if(PLUGIFY_USE_EXTERNAL_ASMJIT)
+        target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
+    else()
+        target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit)
+        target_include_directories(${PROJECT_NAME}-function PRIVATE ${ASMJIT_SRC})
+    endif()
+    target_compile_definitions(${PROJECT_NAME}-function PRIVATE
+            PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
+            PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
+            PLUGIFY_PLATFORM_LINUX=$<BOOL:${UNIX}>
+            PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86})
 endif()
-target_compile_definitions(${PROJECT_NAME}-function PRIVATE
-        PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
-        PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
-        PLUGIFY_PLATFORM_LINUX=$<BOOL:${UNIX}>
-        PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86})
 
 if(PLUGIFY_BUILD_TESTS)
     add_subdirectory(test/plug)
