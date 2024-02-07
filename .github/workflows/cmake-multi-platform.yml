@@ -67,11 +67,11 @@ jobs:
     - name: Install clang
       if: matrix.c_compiler == 'clang'
       run: |
+        sudo apt-get remove clang
+        sudo apt-get update
         sudo apt install clang-15
         sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-15 100
         sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-15 100
-        sudo update-alternatives --config cc
-        sudo update-alternatives --config c++
         sudo update-alternatives --config clang
 
     - name: Configure CMake
