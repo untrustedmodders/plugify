@@ -21,10 +21,6 @@ include(cmake/git.cmake)
 # Flags
 include(CheckCCompilerFlag)
 check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
-if(COMPILER_SUPPORTS_FPIC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-endif()
-
 
 # ------------------------------------------------------------------------------
 # Build options for tests
@@ -78,6 +74,9 @@ if(NOT WIN32 AND NOT PLUGIFY_USE_EXTERNAL_CURL)
     set(CURL_INCLUDE_DIRS
             ${CURL_SOURCE_DIR}/include
             ${CURL_BINARY_DIR}/include/curl)
+    if(COMPILER_SUPPORTS_FPIC)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
@@ -159,6 +158,10 @@ endif()
 # ------------------------------------------------------------------------------
 # SHA256 & Miniz
 target_link_libraries(${PROJECT_NAME} PRIVATE sha256 miniz)
+if(COMPILER_SUPPORTS_FPIC)
+    target_compile_options(sha256 PRIVATE -fPIC)
+    target_compile_options(miniz PRIVATE -fPIC)
+endif()
 
 # ------------------------------------------------------------------------------
 # Format
