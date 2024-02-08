@@ -10,7 +10,7 @@
 ![Build Status](https://github.com/untrustedmodders/plugify/actions/workflows/cmake-multi-platform.yml/badge.svg)
 
 <div align="center">
-  Plugify
+  A Modern C++ Plugin and Package Manager with Multi-Language Support
   <br />
   <a href="#about"><strong>Explore the screenshots »</strong></a>
   <br />
@@ -56,6 +56,30 @@
 
 ## About
 
+Unlock a new era in plugin development with Plugify, a revolutionary library designed to streamline and enhance 
+the way plugins are created and utilized. Plugify goes beyond traditional plugin management by introducing innovative language modules, 
+redefining the boundaries of cross-language communication.
+
+### Key Features
+
+1. **Dynamic Language Diversity:**  
+   Embrace a dynamic programming landscape with Plugify's unique ability to effortlessly support a myriad of programming languages. Choose the languages that best suit your project, opening the door to a diverse and adaptable development environment.
+
+2. **Language Modules:**  
+   Elevate your plugin development experience by easily installing language modules for different programming languages. Plugify adapts to your preferred language, allowing you to create feature-rich plugins without language constraints.
+
+3. **Inter-Language Communication:**  
+   Enable seamless communication between plugins, transcending language barriers. Export methods and share data between plugins, fostering collaboration regardless of the underlying programming language.
+
+4. **Package Manager:**  
+   Simplify package management with Plugify's robust package manager. Install, update, downgrade, or remove packages effortlessly, ensuring your development environment remains efficient and up-to-date.
+
+5. **Versatile Packages:**  
+   The package manager supports both plugins and language modules, offering a comprehensive solution for all your development needs. Quickly share your creations with the community by packaging your plugins and modules. Easily extend the functionality of Plugify by incorporating new packages that suit your project requirements and contribute to the growing ecosystem.
+
+### Motivation
+
+
 > **[?]**
 > Provide general information about your project here.
 > What problem does it (intend to) solve?
@@ -64,6 +88,8 @@
 > You don't have to answer all the questions -- just the ones relevant to your project.
 
 <details>
+
+
 <summary>Screenshots</summary>
 <br>
 
@@ -87,6 +113,7 @@
 
 ## Getting Started
 
+
 ### Prerequisites
 
 > **[?]**
@@ -102,7 +129,7 @@
    ```sh
    git submodule update --init --recursive
    ```
-   > On Linux or Mac install CURL, otherwise build it in embedding mode with cmake options
+   > On Linux install CURL, otherwise build it in embedding mode with cmake options
    ```sh
    sudo apt-get install -y libcurl4-openssl-dev
    ```
@@ -181,8 +208,8 @@ For a full list of all authors and contributors, see [the contributors page](htt
 
 ## Security
 
-plugify follows good practices of security, but 100% security cannot be assured.
-plugify is provided **"as is"** without any **warranty**. Use at your own risk.
+Plugify follows good practices of security, but 100% security cannot be assured.
+Library is provided **"as is"** without any **warranty**. Use at your own risk.
 
 _For more information and to report security issues, please refer to our [security documentation](docs/SECURITY.md)._
 

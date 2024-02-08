@@ -1,4 +1,4 @@
-## Cmake
+## CMake
 |Feature|New in|
 |---|---|
 |C++20|3.12|
