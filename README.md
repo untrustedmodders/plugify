@@ -7,7 +7,7 @@
   </a>
 </h1>
 
-![Build Status](https://github.com/untrustedmodders/plugify/actions/workflows/build.yml/badge.svg)
+![Build Status](https://github.com/untrustedmodders/plugify/actions/workflows/cmake-multiple-platform.yml/badge.svg)
 
 <div align="center">
   A Modern C++ Plugin and Package Manager with Multi-Language Support
