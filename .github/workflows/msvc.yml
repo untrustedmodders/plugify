@@ -2,33 +2,48 @@ name: msvc
 
 on:
   push:
-    branches:
-    - main
-    paths-ignore:
-    - '**.md'
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
-    paths-ignore:
-    - '**.md'
-  workflow_dispatch:
-
-env:
-  BUILD_TYPE: Debug
+    branches: [ "main" ]
 
 jobs:
   build:
-    runs-on: windows-2022
-    timeout-minutes: 5
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os: [windows-latest]
+        build_type: [Debug, Release]
+        c_compiler: [cl]
+        cpp_version: [c++20, c++23]
 
     steps:
     - uses: actions/checkout@v3
 
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Initialize and Update Submodules
+      run: |
+        git submodule update --init --recursive
+        git submodule update --recursive --remote
+
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} --target plugify
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
 
     - name: Build
-      run: cmake --build build --config ${{env.BUILD_TYPE}} --parallel
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --target plugify --config ${{ matrix.build_type }}
 
     - name: Test
-      working-directory: build
-      run: ctest -C ${{env.BUILD_TYPE}} --parallel
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --build-config ${{ matrix.build_type }}

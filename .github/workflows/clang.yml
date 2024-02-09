@@ -2,38 +2,48 @@ name: clang
 
 on:
   push:
-    branches:
-    - main
-    paths-ignore:
-    - '**.md'
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
-    paths-ignore:
-    - '**.md'
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    
+    runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
-      matrix:
-        clang: [15]
-        build_type: [Debug, Release]
-        std: [20, 23]
 
-    env:
-      CC: clang-${{matrix.clang}}
-      CXX: clang++-${{matrix.clang}}
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        build_type: [Debug, Release]
+        c_compiler: [clang]
+        cpp_version: [c++20, c++23]
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install clang 15
-      if: matrix.clang == 15
+    - name: Set reusable strings
+      id: strings
+      shell: bash
       run: |
-        sudo apt-get update
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Initialize and Update Submodules
+      run: |
+        git submodule update --init --recursive
+        git submodule update --recursive --remote
+
+    - name: Install curl (1)
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt install -y libcurl4-openssl-dev
+
+    - name: Install curl (2)
+      if: matrix.os == 'macos-latest'
+      run: brew install curl
+
+    - name: Install clang
+      if: matrix.c_compiler == 'clang'
+      run: |
         sudo apt install clang-15
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 5
         sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 5
@@ -43,11 +53,16 @@ jobs:
         sudo update-alternatives --config clang++
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CXX_STANDARD=${{matrix.std}} --target plugify
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
 
     - name: Build
-      run: cmake --build build -j 2
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --target plugify --config ${{ matrix.build_type }}
 
     - name: Test
-      working-directory: build
-      run: ctest -j 2 --output-on-failure
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --build-config ${{ matrix.build_type }}
