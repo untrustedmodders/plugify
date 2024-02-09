@@ -41,10 +41,6 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Install curl
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt install -y libcurl4-openssl-dev
-
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
