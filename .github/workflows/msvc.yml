@@ -2,9 +2,14 @@ name: msvc
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    paths:
+      - '.github/workflows/**'
+      - 'include/**'
+      - 'src/**'
+    branches:
+      - 'master'
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -18,7 +23,6 @@ jobs:
         build_type: [Debug, Release]
         c_compiler: [cl]
         cpp_compiler: [cl]
-        cpp_version: [c++20, c++23]
 
     steps:
     - uses: actions/checkout@v3

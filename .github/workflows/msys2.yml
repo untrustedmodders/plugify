@@ -2,9 +2,14 @@ name: msys2-mingw
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    paths:
+      - '.github/workflows/**'
+      - 'include/**'
+      - 'src/**'
+    branches:
+      - 'master'
+    tags:
+      - 'v*'
 
 env:
   CMAKE_GENERATOR: Ninja
@@ -23,40 +28,23 @@ jobs:
       matrix:
         os: [windows-latest]
         build_type: [Debug, Release]
-        c_compiler: [gcc]
-        cpp_compiler: [g++]
-        cpp_version: [c++20, c++23]
-        include:
-        - { sys: mingw64, env: x86_64 }
-        - { sys: mingw32, env: i686 }
-        - { sys: ucrt64,  env: ucrt-x86_64 }
-        - { sys: clang64, env: clang-x86_64 }
 
     steps:
     - uses: actions/checkout@v3
     - uses: msys2/setup-msys2@v2
       with:
         update: true
-        msystem: ${{matrix.sys}}
-        install: mingw-w64-${{matrix.env}}-cmake mingw-w64-${{matrix.env}}-ninja mingw-w64-${{matrix.env}}-gcc mingw-w64-${{matrix.env}}-curl
-
-    - name: Set reusable strings
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        msystem: MINGW64
+        install: mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-gcc mingw-w64-x86_64-curl
 
     - name: Configure CMake
       run: >
-        cmake -G Ninja -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        cmake -G Ninja -B build
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
 
     - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --target plugify --config ${{ matrix.build_type }}
+      run: cmake --build build --target plugify --config ${{ matrix.build_type }}
 
     - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      working-directory: build
       run: ctest --build-config ${{ matrix.build_type }}
