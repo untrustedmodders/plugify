@@ -15,9 +15,6 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
-        
-    strategy:
-      fail-fast: false
 
       matrix:
         os: [windows-latest]
