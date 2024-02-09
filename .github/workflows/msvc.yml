@@ -29,11 +29,6 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Initialize and Update Submodules
-      run: |
-        git submodule update --init --recursive
-        git submodule update --recursive --remote
-
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}

@@ -36,13 +36,16 @@
 <summary>Table of Contents</summary>
 
 - [About](#about)
+  - [Key Features](#key-features)
+  - [Motivation](#motivation)
   - [Built With](#built-with)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Usage](#usage)
+- [Integration](#integration)
+  - [Requirements](#requirements)
+  - [CMake](#cmake)
 - [Documentation](#documentation)
 - [Tests](#tests)
+- [Extensions](#extensions)
+- [In Action](#in-action)
 - [Roadmap](#roadmap)
 - [Support](#support)
 - [Project assistance](#project-assistance)
@@ -58,8 +61,8 @@
 
 ## About
 
-Unlock a new era in plugin development with Plugify, a revolutionary library designed to streamline and enhance 
-the way plugins are created and utilized. Plugify goes beyond traditional plugin management by introducing innovative language modules, 
+Unlock a new era in plugin development with Plugify, a revolutionary library designed to streamline and enhance
+the way plugins are created and utilized. Plugify goes beyond traditional plugin management by introducing innovative language modules,
 redefining the boundaries of cross-language communication.
 
 ### Key Features
@@ -113,47 +116,22 @@ redefining the boundaries of cross-language communication.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Getting Started
+## Integration
 
+### Requirements
 
-### Prerequisites
+- CMake version 3.14 or later.
+- Doxygen version 1.8 or later.
+- Requires C++20 or later.
+- Only designed and tested for 64bit little-endian systems.
 
-> **[?]**
-> What are the project requirements/dependencies?
+[Actions](https://github.com/untrustedmodders/plugify/actions) build and test with [Clang](https://clang.llvm.org) (15+), [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/) (2022), and [GCC](https://gcc.gnu.org) (11+) on apple, windows, and linux.
 
-### Installation
+![clang build](https://github.com/untrustedmodders/plugify/actions/workflows/clang.yml/badge.svg) ![gcc build](https://github.com/untrustedmodders/plugify/actions/workflows/gcc.yml/badge.svg) ![msvc build](https://github.com/untrustedmodders/plugify/actions/workflows/msvc.yml/badge.svg) ![msys build](https://github.com/untrustedmodders/plugif/yactions/workflows/msys.yml/badge.svg)
 
-1. Clone the repo
-   ```sh
-   git clone https://github.com/untrustedmodders/plugify.git
-   ```
-2. Install dependencies
-   ```sh
-   git submodule update --init --recursive
-   ```
-   > On Linux install CURL, otherwise build it in embedding mode with cmake options
-   ```sh
-   sudo apt-get install -y libcurl4-openssl-dev
-   ```
-   > The dependencies can be used as external `(find_package)` and embedding `(add_subdirectory)`, you can use plugify options to choose what you suits your need.
-3. Create build folder
-   ```sh
-   mkdir build
-   cd build
-   ```
-4. Build the project
-   ```sh
-   cmake .. 
-   cmake --build . --preset Release
-   ```
+### CMake
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Usage
-
-> **[?]**
-> How does one go about using it?
-> Provide various use cases and code examples here.
+> [?] Please provide the info how integrate library.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -184,15 +162,46 @@ to the project where users can find all related documentation pages.
 
 ## Tests
 
-To build the most basic app:
+To build the basic testing app:
 
+1. Clone the repo
    ```sh
+   git clone https://github.com/untrustedmodders/plugify.git
+   ```
+2. On Linux install CURL, otherwise build it in embedding mode with cmake options
+   ```sh
+   sudo apt-get install -y libcurl4-openssl-dev
+   ```
+   > The dependencies can be used as external `(find_package)` and embedding `(add_subdirectory)`, you can use plugify options to choose what you suits your need.
+3. Create build folder
+   ```sh
+   mkdir build
    cd build
-   cmake .. -PLUGIFY_BUILD_TESTS=ON
-   cmake --build . --target plug 
+   ```
+4. Build the project
+   ```sh
+   cmake .. 
+   cmake --build . --target plug
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Extensions
+
+Here is a list of all already implemented language modules:
+- [C++ Language Module](https://github.com/untrustedmodders/cpp-lang-module)
+- [C# Language Module](https://github.com/untrustedmodders/csharp-lang-module)
+- [Python Language Module](https://github.com/untrustedmodders/py3-12-lang-module)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## In Action
+
+While Plugify is a relatively new project, it is making waves in the realm of server-side modding, 
+particularly in the Counter-Strike 2 community. As of now, Plugify is primarily utilized in the 
+ance of a new project known as [CS2-Plugify](https://github.com/cs2-plugify/), which is also being developed by our team.
+
+If you know of other resources out there that are about `Plugify`, feel free to open an issue or a PR and we will be glad to add them here.
 
 ## Roadmap
 

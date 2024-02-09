@@ -29,11 +29,6 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Initialize and Update Submodules
-      run: |
-        git submodule update --init --recursive
-        git submodule update --recursive --remote
-
     - name: Install curl (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt install -y libcurl4-openssl-dev

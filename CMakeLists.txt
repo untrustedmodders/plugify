@@ -101,7 +101,6 @@ option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
 
 option(PLUGIFY_LOGGING "Enable logging system." ON)
 option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
-option(PLUGIFY_OPENSSL "Enable OpenSSL for Curl's SSL/TLS." ON)
 
 
 # ------------------------------------------------------------------------------
@@ -126,11 +125,10 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sr
 # Glaze
 if(PLUGIFY_USE_EXTERNAL_GLAZE)
 	find_package(glaze REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 else()
-    add_subdirectory(external/glaze)
-    target_link_libraries(${PROJECT_NAME} PRIVATE glaze_glaze)
+    include(cmake/glaze.cmake)
 endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 
 # ------------------------------------------------------------------------------
 # Http
@@ -144,23 +142,7 @@ else()
         message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
         message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
     else()
-        if(PLUGIFY_BUILD_SHARED_CURL)
-            set(BUILD_SHARED_LIBS ON CACHE BOOL "")
-            set(BUILD_STATIC_LIBS OFF CACHE BOOL "")
-        else()
-            set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-            set(BUILD_STATIC_LIBS ON CACHE BOOL "")
-        endif()
-        set(CURL_USE_OPENSSL $<BOOL:${PLUGIFY_OPENSSL}> CACHE BOOL "")
-        add_subdirectory(external/curl)
-        set(CURL_FOUND TRUE)
-        set(CURL_LIBRARIES libcurl)
-        set(CURL_INCLUDE_DIRS
-                ${CURL_SOURCE_DIR}/include
-                ${CURL_BINARY_DIR}/include/curl)
-        if(COMPILER_SUPPORTS_FPIC)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-        endif()
+        include(cmake/curl.git)
         target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
         target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
     endif()
@@ -168,8 +150,8 @@ endif()
 
 # ------------------------------------------------------------------------------
 # SHA256 & Miniz
-add_subdirectory(external/sha256)
-add_subdirectory(external/miniz)
+include(cmake/sha256.cmake)
+include(cmake/miniz.cmake)
 target_link_libraries(${PROJECT_NAME} PRIVATE sha256 miniz)
 if(COMPILER_SUPPORTS_FPIC)
     target_compile_options(sha256 PRIVATE -fPIC)
@@ -191,11 +173,10 @@ cmake_pop_check_state()
 if(NOT COMPILER_SUPPORTS_FORMAT)
     if(PLUGIFY_USE_EXTERNAL_FMT)
         find_package(fmt REQUIRED)
-        target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
     else()
-        add_subdirectory(external/fmt)
-        target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
+        include(cmake/fmt.cmake)
     endif()
+	target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -281,13 +262,11 @@ if(PLUGIFY_BUILD_FUNCTION)
     target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     if(PLUGIFY_USE_EXTERNAL_ASMJIT)
         find_package(asmjit REQUIRED)
-        target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
     else()
-        set(ASMJIT_STATIC $<BOOL:${PLUGIFY_BUILD_SHARED_ASMJIT}> CACHE BOOL "")
-        add_subdirectory(external/asmjit)
-        target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit)
+		include(cmake/asmjit)
         target_include_directories(${PROJECT_NAME}-function PRIVATE ${ASMJIT_SRC})
     endif()
+	target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
     target_compile_definitions(${PROJECT_NAME}-function PRIVATE
             PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
             PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
