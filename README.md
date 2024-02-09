@@ -163,7 +163,7 @@ The documentation is based on [doxygen](http://www.doxygen.nl/). To build it:
 
    ```sh
    cd build
-   cmake .. -DENTT_BUILD_DOCS=ON
+   cmake .. -DPLUGIFY_BUILD_DOCS=ON
    cmake --build . --target docs
    ```
 
@@ -189,7 +189,7 @@ To build the most basic app:
    ```sh
    cd build
    cmake .. -PLUGIFY_BUILD_TESTS=ON
-   cmake --build . --target hat 
+   cmake --build . --target plug 
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
