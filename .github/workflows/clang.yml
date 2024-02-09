@@ -17,6 +17,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         build_type: [Debug, Release]
         c_compiler: [clang]
+        cpp_compiler: [clang++]
         cpp_version: [c++20, c++23]
 
     steps:
