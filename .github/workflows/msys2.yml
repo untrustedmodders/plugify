@@ -20,7 +20,7 @@ jobs:
         os: [windows-latest]
         build_type: [Debug, Release]
         c_compiler: [gcc]
-        c_compiler: [g++]
+        cpp_compiler: [g++]
         cpp_version: [c++20, c++23]
 
     steps:

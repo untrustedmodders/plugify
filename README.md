@@ -127,7 +127,7 @@ redefining the boundaries of cross-language communication.
 
 [Actions](https://github.com/untrustedmodders/plugify/actions) build and test with [Clang](https://clang.llvm.org) (15+), [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/) (2022), and [GCC](https://gcc.gnu.org) (11+) on apple, windows, and linux.
 
-![clang build](https://github.com/untrustedmodders/plugify/actions/workflows/clang.yml/badge.svg) ![gcc build](https://github.com/untrustedmodders/plugify/actions/workflows/gcc.yml/badge.svg) ![msvc build](https://github.com/untrustedmodders/plugify/actions/workflows/msvc.yml/badge.svg) ![msys build](https://github.com/untrustedmodders/plugif/yactions/workflows/msys.yml/badge.svg)
+![clang build](https://github.com/untrustedmodders/plugify/actions/workflows/clang.yml/badge.svg) ![gcc build](https://github.com/untrustedmodders/plugify/actions/workflows/gcc.yml/badge.svg) ![msvc build](https://github.com/untrustedmodders/plugify/actions/workflows/msvc.yml/badge.svg) ![msys build](https://github.com/untrustedmodders/plugif/yactions/workflows/msys2.yml/badge.svg)
 
 ### CMake
 
