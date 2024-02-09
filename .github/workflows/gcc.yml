@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-13-xlarge]
         build_type: [Debug, Release]
         c_compiler: [gcc]
         cpp_compiler: [g++]
@@ -29,9 +29,13 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Install curl
+    - name: Install curl (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt install -y libcurl4-openssl-dev
+
+    - name: Install curl (Macos)
+      if: matrix.os == 'macos-latest'
+      run: brew install curl
 
     - name: Configure CMake
       run: >
