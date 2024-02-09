@@ -41,6 +41,8 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Usage](#usage)
+- [Documentation](#documentation)
+- [Tests](#tests)
 - [Roadmap](#roadmap)
 - [Support](#support)
 - [Project assistance](#project-assistance)
@@ -152,6 +154,43 @@ redefining the boundaries of cross-language communication.
 > **[?]**
 > How does one go about using it?
 > Provide various use cases and code examples here.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Documentation
+
+The documentation is based on [doxygen](http://www.doxygen.nl/). To build it:
+
+   ```sh
+   cd build
+   cmake .. -DENTT_BUILD_DOCS=ON
+   cmake --build . --target docs
+   ```
+
+The API reference is created in HTML format in the `build/docs/html` directory.
+To navigate it with your favorite browser:
+
+   ```sh
+   cd build
+   your_favorite_browser docs/html/index.html
+   ```
+
+The same version is also available [online](https://github.com/untrustedmodders/plugify)
+for the latest release, that is the last stable tag.<br/>
+Moreover, there exists a [wiki](https://github.com/untrustedmodders/plugify/wiki) dedicated
+to the project where users can find all related documentation pages.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Tests
+
+To build the most basic app:
+
+   ```sh
+   cd build
+   cmake .. -PLUGIFY_BUILD_TESTS=ON
+   cmake --build . --target hat 
+   ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
