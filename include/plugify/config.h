@@ -10,4 +10,4 @@ namespace plugify {
 		Severity logSeverity{ Severity::Verbose };
 		std::vector<std::string> repositories;
 	};
-}
+} // namespace plugify

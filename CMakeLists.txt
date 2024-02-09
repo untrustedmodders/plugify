@@ -1,3 +1,5 @@
+# ------------------------------------------------------------------------------
+# Plugify
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 if(POLICY CMP0092)
@@ -5,6 +7,8 @@ if(POLICY CMP0092)
 endif()
 
 
+# ------------------------------------------------------------------------------
+# Project configuration
 project(plugify VERSION 1.0.0.0  DESCRIPTION "Plugify Core" HOMEPAGE_URL "https://github.com/untrustedmodders/plugify" LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -14,82 +18,91 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-include(cmake/git.cmake)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+message(VERBOSE "*")
+message(VERBOSE "* ${PROJECT_NAME} v${PROJECT_VERSION} (${CMAKE_BUILD_TYPE})")
+message(VERBOSE "* Copyright (c) 2023-2024 untrustedmodders <untrustedmodders@gmail.com>")
+message(VERBOSE "*")
 
 
 # ------------------------------------------------------------------------------
-# Flags
+# Includes
+include(cmake/git.cmake)
+
+include(CheckCXXSourceCompiles)
+include(CMakePushCheckState)
+
 include(CheckCCompilerFlag)
 check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
 
+
 # ------------------------------------------------------------------------------
-# Build options for tests
-option(PLUGIFY_BUILD_TESTS "Build all tests" OFF)
-option(PLUGIFY_BUILD_FUNCTION "Build function library" OFF)
+# Compiler stuff
+option(PLUGIFY_USE_LIBCPP "Use libc++ by adding -stdlib=libc++ flag if available." OFF)
+option(PLUGIFY_USE_SANITIZER "Enable sanitizers by adding -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined flags if available." OFF)
+option(PLUGIFY_USE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
+
+if(PLUGIFY_USE_LIBCPP)
+    if(NOT WIN32)
+        cmake_push_check_state()
+
+        set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -stdlib=libc++")
+
+        check_cxx_source_compiles("
+            #include<type_traits>
+            int main() { return std::is_same_v<int, char>; }
+        " PLUGIFY_HAS_LIBCPP)
+
+        cmake_pop_check_state()
+    endif()
+
+    if(NOT PLUGIFY_HAS_LIBCPP)
+        message(VERBOSE "The option PLUGIFY_HAS_LIBCPP is set but libc++ is not available.")
+    endif()
+endif()
+
+if(PLUGIFY_USE_SANITIZER)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        set(PLUGIFY_HAS_SANITIZER TRUE CACHE BOOL "" FORCE)
+        mark_as_advanced(PLUGIFY_HAS_SANITIZER)
+    endif()
+
+    if(NOT PLUGIFY_HAS_SANITIZER)
+        message(VERBOSE "The option PLUGIFY_USE_SANITIZER is set but sanitizer support is not available.")
+    endif()
+endif()
+
+if(PLUGIFY_USE_CLANG_TIDY)
+    find_program(PLUGIFY_CLANG_TIDY_EXECUTABLE "clang-tidy")
+
+    if(NOT PLUGIFY_CLANG_TIDY_EXECUTABLE)
+        message(VERBOSE "The option PLUGIFY_USE_CLANG_TIDY is set but clang-tidy executable is not available.")
+    endif()
+endif()
 
 # ------------------------------------------------------------------------------
 # Compilation options
-option(PLUGIFY_BUILD_OBJECT_LIB "Build plugify as object library" OFF)
-option(PLUGIFY_BUILD_SHARED_LIB "Build plugify as shared library" ON)
-option(PLUGIFY_BUILD_SHARED_ASMJIT "Build asmjit as shared library" OFF)
-option(PLUGIFY_BUILD_SHARED_CURL "Build curl as shared library" OFF)
+option(PLUGIFY_BUILD_TESTS "Enable building tests." ON)
+option(PLUGIFY_BUILD_FUNCTION "Build function object library." OFF)
+option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
 
-option(PLUGIFY_USE_EXTERNAL_ASMJIT "Use external asmjit library" OFF)
-option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library" OFF)
-option(PLUGIFY_USE_EXTERNAL_CURL "Use external curl library" ON)
-option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library" OFF)
+option(PLUGIFY_BUILD_OBJECT_LIB "Build plugify as object library." OFF)
+option(PLUGIFY_BUILD_SHARED_LIB "Build plugify as shared library." ON)
+option(PLUGIFY_BUILD_SHARED_ASMJIT "Build asmjit as shared library." OFF)
+option(PLUGIFY_BUILD_SHARED_CURL "Build curl as shared library." OFF)
 
-option(PLUGIFY_LOGGING "Enable logs" ON)
-option(PLUGIFY_DEBUG "Enable debuging mode (asserts)" ON)
-option(PLUGIFY_OPENSSL "Enable OpenSSL for Curl's SSL/TLS" ON)
+option(PLUGIFY_USE_EXTERNAL_ASMJIT "Use external asmjit library." OFF)
+option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library." OFF)
+option(PLUGIFY_USE_EXTERNAL_CURL "Use external curl library." ON)
+option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
 
-# ------------------------------------------------------------------------------
-# Asmjit
-if(NOT PLUGIFY_USE_EXTERNAL_ASMJIT)
-    set(ASMJIT_STATIC $<BOOL:${PLUGIFY_BUILD_SHARED_ASMJIT}> CACHE BOOL "")
+option(PLUGIFY_LOGGING "Enable logging system." ON)
+option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
+option(PLUGIFY_OPENSSL "Enable OpenSSL for Curl's SSL/TLS." ON)
 
-    add_subdirectory(external/asmjit)
-endif()
-
-# ------------------------------------------------------------------------------
-# Glaze
-if(NOT PLUGIFY_USE_EXTERNAL_GLAZE)
-    add_subdirectory(external/glaze)
-endif()
-
-# ------------------------------------------------------------------------------
-# Curl
-if(NOT WIN32 AND NOT PLUGIFY_USE_EXTERNAL_CURL)
-    if(PLUGIFY_BUILD_SHARED_CURL)
-        set(BUILD_SHARED_LIBS ON CACHE BOOL "")
-        set(BUILD_STATIC_LIBS OFF CACHE BOOL "")
-    else()
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-        set(BUILD_STATIC_LIBS ON CACHE BOOL "")
-    endif()
-    set(CURL_USE_OPENSSL $<BOOL:${PLUGIFY_OPENSSL}> CACHE BOOL "")
-    add_subdirectory(external/curl)
-    set(CURL_FOUND TRUE)
-    set(CURL_LIBRARIES libcurl)
-    set(CURL_INCLUDE_DIRS
-            ${CURL_SOURCE_DIR}/include
-            ${CURL_BINARY_DIR}/include/curl)
-    if(COMPILER_SUPPORTS_FPIC)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-    endif()
-endif()
-
-# ------------------------------------------------------------------------------
-# SHA256 & Miniz
-add_subdirectory(external/sha256)
-add_subdirectory(external/miniz)
-
-# ------------------------------------------------------------------------------
-# Format
-try_compile(CXX_FORMAT_SUPPORT ${CMAKE_BINARY_DIR}/format_check SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/test/format_check.cpp)
-if(NOT CXX_FORMAT_SUPPORT AND NOT PLUGIFY_USE_EXTERNAL_FMT)
-    add_subdirectory(external/fmt)
-endif()
 
 # ------------------------------------------------------------------------------
 # Plugify
@@ -115,27 +128,8 @@ if(PLUGIFY_USE_EXTERNAL_GLAZE)
 	find_package(glaze REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 else()
+    add_subdirectory(external/glaze)
     target_link_libraries(${PROJECT_NAME} PRIVATE glaze_glaze)
-endif()
-
-# ------------------------------------------------------------------------------
-# Asmjit
-if(PLUGIFY_USE_EXTERNAL_ASMJIT)
-    #find_package(asmjit REQUIRED)
-    #target_link_libraries(${PROJECT_NAME} PRIVATE asmjit::asmjit)
-else()
-    #target_link_libraries(${PROJECT_NAME} PRIVATE asmjit)
-    #target_include_directories(${PROJECT_NAME} PRIVATE ${ASMJIT_SRC})
-    #if(MSVC)
-    #    target_compile_options(asmjit PRIVATE /wd5054)
-    #else()
-    #    if(MINGW)
-    #        target_compile_options(asmjit PRIVATE -Wno-deprecated-enum-enum-conversion)
-    #    else()
-    #        target_compile_options(asmjit PRIVATE -Wno-deprecated-anon-enum-enum-conversion)
-    #    endif()
-    #    target_compile_options(asmjit PRIVATE -Wno-deprecated-declarations -Wno-error -Wno-pedantic -Wno-shadow)
-    #endif()
 endif()
 
 # ------------------------------------------------------------------------------
@@ -150,6 +144,23 @@ else()
         message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
         message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
     else()
+        if(PLUGIFY_BUILD_SHARED_CURL)
+            set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+            set(BUILD_STATIC_LIBS OFF CACHE BOOL "")
+        else()
+            set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+            set(BUILD_STATIC_LIBS ON CACHE BOOL "")
+        endif()
+        set(CURL_USE_OPENSSL $<BOOL:${PLUGIFY_OPENSSL}> CACHE BOOL "")
+        add_subdirectory(external/curl)
+        set(CURL_FOUND TRUE)
+        set(CURL_LIBRARIES libcurl)
+        set(CURL_INCLUDE_DIRS
+                ${CURL_SOURCE_DIR}/include
+                ${CURL_BINARY_DIR}/include/curl)
+        if(COMPILER_SUPPORTS_FPIC)
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+        endif()
         target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
         target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
     endif()
@@ -157,6 +168,8 @@ endif()
 
 # ------------------------------------------------------------------------------
 # SHA256 & Miniz
+add_subdirectory(external/sha256)
+add_subdirectory(external/miniz)
 target_link_libraries(${PROJECT_NAME} PRIVATE sha256 miniz)
 if(COMPILER_SUPPORTS_FPIC)
     target_compile_options(sha256 PRIVATE -fPIC)
@@ -165,17 +178,28 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Format
-if(NOT CXX_FORMAT_SUPPORT)
+cmake_push_check_state()
+
+check_cxx_source_compiles("
+    #include<format>
+    #include<string>
+    int main() { std::string a = std::format(\"{}.{}.{}\", \"Hello\", \"World\", \"C++\"); return 0; }
+    " COMPILER_SUPPORTS_FORMAT)
+
+cmake_pop_check_state()
+
+if(NOT COMPILER_SUPPORTS_FORMAT)
     if(PLUGIFY_USE_EXTERNAL_FMT)
         find_package(fmt REQUIRED)
         target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
     else()
+        add_subdirectory(external/fmt)
         target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
     endif()
 endif()
 
 # ------------------------------------------------------------------------------
-# System
+#
 target_link_libraries(${PROJECT_NAME} PRIVATE git-info)
 
 include(GenerateExportHeader)
@@ -201,6 +225,19 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
+if(PLUGIFY_HAS_LIBCPP)
+    target_compile_options(${PROJECT_NAME} PRIVATE -stdlib=libc++)
+endif()
+
+if(PLUGIFY_HAS_SANITIZER)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
+endif()
+
+if(PLUGIFY_CLANG_TIDY_EXECUTABLE)
+    set(CMAKE_CXX_CLANG_TIDY "${PLUGIFY_CLANG_TIDY_EXECUTABLE}; --config-file=.clang-tidy; --header-filter=src/.*; --extra-arg=/EHsc")
+endif()
+
 if(WIN32)
     set(PLUGIFY_PLATFORM "windows")
 elseif(APPLE)
@@ -216,7 +253,7 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-        PLUGIFY_FORMAT_SUPPORT=$<BOOL:${CXX_FORMAT_SUPPORT}>
+        PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
         )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -237,6 +274,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
         PLUGIFY_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}")
 
+# ------------------------------------------------------------------------------
+# Tools
 if(PLUGIFY_BUILD_FUNCTION)
     add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.h")
     target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -244,6 +283,8 @@ if(PLUGIFY_BUILD_FUNCTION)
         find_package(asmjit REQUIRED)
         target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
     else()
+        set(ASMJIT_STATIC $<BOOL:${PLUGIFY_BUILD_SHARED_ASMJIT}> CACHE BOOL "")
+        add_subdirectory(external/asmjit)
         target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit)
         target_include_directories(${PROJECT_NAME}-function PRIVATE ${ASMJIT_SRC})
     endif()
@@ -254,6 +295,18 @@ if(PLUGIFY_BUILD_FUNCTION)
             PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86})
 endif()
 
+# ------------------------------------------------------------------------------
+# Test
 if(PLUGIFY_BUILD_TESTS)
     add_subdirectory(test/plug)
+endif()
+
+# ------------------------------------------------------------------------------
+# Documentation
+if(PLUGIFY_BUILD_DOCS)
+    find_package(Doxygen REQUIRED)
+
+    if(DOXYGEN_FOUND)
+        add_subdirectory(docs)
+    endif()
 endif()

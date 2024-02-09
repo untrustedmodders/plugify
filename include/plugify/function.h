@@ -13,59 +13,117 @@ namespace asmjit {
 }
 
 namespace plugify {
+	/**
+	 * @struct Parameters
+	 * @brief Structure to represent function parameters.
+	 */
 	struct Parameters {
+		/**
+		 * @brief Set the value of the argument at the specified index.
+		 * @tparam T Type of the argument.
+		 * @param idx Index of the argument.
+		 * @param val Value to set.
+		 */
 		template<typename T>
 		void SetArgument(uint8_t idx, T val) const {
 			*(T*) GetArgumentPtr(idx) = val;
 		}
 
+		/**
+		 * @brief Get the value of the argument at the specified index.
+		 * @tparam T Type of the argument.
+		 * @param idx Index of the argument.
+		 * @return Value of the argument.
+		 */
 		template<typename T>
 		T GetArgument(uint8_t idx) const {
 			return *(T*) GetArgumentPtr(idx);
 		}
 
-		// asm depends on this specific type
-		// we the Native allocates stack space that is set to point here
-		volatile uintptr_t arguments;
+		volatile uintptr_t arguments; ///< Raw storage for function arguments.
 
-		// must be char* for aliasing rules to work when reading back out
+		/**
+		 * @brief Get a pointer to the argument at the specified index.
+		 * @param idx Index of the argument.
+		 * @return Pointer to the argument.
+		 */
 		int8_t* GetArgumentPtr(uint8_t idx) const {
 			return ((int8_t*)&arguments) + sizeof(uintptr_t) * idx;
 		}
 	};
 
+	/**
+	 * @struct ReturnValue
+	 * @brief Structure to represent the return value of a function.
+	 */
 	struct ReturnValue {
+		/**
+		 * @brief Set the return value.
+		 * @tparam T Type of the return value.
+		 * @param val Value to set as the return value.
+		 */
 		template<typename T>
 		void SetReturnPtr(T val) const {
 			*(T*) GetReturnPtr() = val;
 		}
+
+		/**
+		 * @brief Get a pointer to the return value.
+		 * @return Pointer to the return value.
+		 */
 		uint8_t* GetReturnPtr() const {
 			return (uint8_t*)&ret;
 		}
-		uintptr_t ret;
+
+		uintptr_t ret; ///< Raw storage for the return value.
 	};
 
+	/**
+	 * @class Function
+	 * @brief Class for dynamic function generation.
+	 */
 	class Function {
 	public:
+		/**
+		 * @brief Constructor.
+		 * @param rt Weak pointer to the asmjit::JitRuntime.
+		 */
 		explicit Function(std::weak_ptr<asmjit::JitRuntime> rt);
-		Function(Function&& other) noexcept;
-		~Function();
-
-		typedef void(*FuncCallback)(const Method* method, const Parameters* params, const uint8_t count, const ReturnValue* ret);
 
 		/**
-		 * Create a callback function dynamically based on the raw signature at runtime.
-		 * The "callback" parameter serves as the C stub for transfer, allowing the modification of parameters through a structure that is then written back to the parameter slots, depending on the calling convention.
+		 * @brief Move constructor.
+		 * @param other Another instance of Function.
+		 */
+		Function(Function&& other) noexcept;
+
+		/**
+		 * @brief Destructor.
+		 */
+		~Function();
+
+		typedef void(* FuncCallback)(const Method* method, const Parameters* params, const uint8_t count, const ReturnValue* ret);
+
+		/**
+		 * @brief Get a dynamically created callback function based on the raw signature.
+		 * @param sig Function signature.
+		 * @param method Reference to the method.
+		 * @param callback Callback function.
+		 * @return Pointer to the generated function.
 		 */
 		void* GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback);
 
 		/**
-		 * Create a callback function dynamically using the typedef represented as a string.
-		 * The types can be any valid C/C++ data type (basic types), and pointers to any type are simply denoted as a pointer.
-		 * The calling convention defaults to the typical convention for the compiler in use, but it can be overridden with stdcall, fastcall, or cdecl (with cdecl being the default on x86). On x64, these conventions map to the same behavior.
+		 * @brief Get a dynamically created callback function using a typedef represented as a string.
+		 * @param method Reference to the method.
+		 * @param callback Callback function.
+		 * @return Pointer to the generated function.
 		 */
 		void* GetJitFunc(const Method& method, FuncCallback callback);
 
+		/**
+		 * @brief Get the error message, if any.
+		 * @return Error message.
+		 */
 		const std::string& GetError() { return _error; }
 
 	private:
@@ -80,4 +138,4 @@ namespace plugify {
 		void* _callback{ nullptr };
 		std::string _error;
 	};
-}
+} // namespace plugify

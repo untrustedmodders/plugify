@@ -7,6 +7,10 @@
 #include <optional>
 
 namespace plugify {
+	/**
+	 * @enum ValueType
+	 * @brief Enumerates possible types of values in the reflection system.
+	 */
 	enum class ValueType : std::uint8_t {
 		Invalid,
 		Void,
@@ -45,26 +49,49 @@ namespace plugify {
 
 	struct Method;
 
+	/**
+	 * @struct Property
+	 * @brief Describes the properties of a value in the reflection system.
+	 *
+	 * The Property structure holds information about the type of a value,
+	 * whether it's a reference, and for function types, a prototype of the method.
+	 */
 	struct Property {
-		ValueType type{};
-		std::optional<bool> ref;
-		// only for function value type
-		std::shared_ptr<Method> prototype; // should be unique_ptr but MSVC show error with glz::read_json
+		ValueType type{}; ///< The type of the value.
+		std::optional<bool> ref; ///< Indicates whether the value is a reference.
+		std::shared_ptr<Method> prototype; ///< Prototype of the method for function types.
 	};
 
+	/**
+	 * @struct Method
+	 * @brief Describes a method in the reflection system.
+	 *
+	 * The Method structure holds information about the name, function name,
+	 * calling convention, parameter types, return type, and variable index.
+	 */
 	struct Method {
-		std::string name;
-		std::string funcName;
-		std::string callConv;
-		std::vector<Property> paramTypes;
-		Property retType;
-		std::uint8_t varIndex{ kNoVarArgs };
+		std::string name; ///< The name of the method.
+		std::string funcName; ///< The function name of the method.
+		std::string callConv; ///< The calling convention of the method.
+		std::vector<Property> paramTypes; ///< The parameter types of the method.
+		Property retType; ///< The return type of the method.
+		std::uint8_t varIndex{ kNoVarArgs }; ///< The variable index (0xFFu if no variable arguments).
 
-		static inline const std::uint8_t kNoVarArgs = 0xFFu;
+		static inline const std::uint8_t kNoVarArgs = 0xFFu; ///< Constant for indicating no variable arguments.
 
+		/**
+		 * @brief Overloaded equality operator for comparing Method instances.
+		 * @param rhs The right-hand side Method for comparison.
+		 * @return True if the names of this instance and rhs are equal.
+		 */
 		bool operator==(const Method& rhs) const { return name == rhs.name; }
 	};
 
+	/**
+	 * @brief Convert a ValueType enum value to its string representation.
+	 * @param value The ValueType value to convert.
+	 * @return The string representation of the ValueType.
+	 */
 	[[maybe_unused]] constexpr std::string_view ValueTypeToString(ValueType value) {
 		switch (value) {
 			case ValueType::Void:          return "void";
@@ -103,6 +130,11 @@ namespace plugify {
 		}
 	}
 
+	/**
+	 * @brief Convert a string representation to a ValueType enum value.
+	 * @param value The string representation of ValueType.
+	 * @return The corresponding ValueType enum value.
+	 */
 	[[maybe_unused]] constexpr ValueType ValueTypeFromString(std::string_view value) {
 		if (value == "void") {
 			return ValueType::Void;
@@ -171,4 +203,4 @@ namespace plugify {
 		}
 		return ValueType::Invalid;
 	}
-}
+} // namespace plugify
