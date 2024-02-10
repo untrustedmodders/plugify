@@ -116,7 +116,7 @@ if(NOT PLUGIFY_BUILD_OBJECT_LIB)
 else()
     add_library(${PROJECT_NAME} OBJECT ${PLUGIFY_CORE_SOURCES})
 endif()
-add_library(plugify::plugify ALIAS ${PROJECT_NAME})
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -260,6 +260,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 # Tools
 if(PLUGIFY_BUILD_FUNCTION)
     add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.h")
+    add_library(${PROJECT_NAME}::${PROJECT_NAME}-function ALIAS ${PROJECT_NAME}-function)
     target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     if(PLUGIFY_USE_EXTERNAL_ASMJIT)
         find_package(asmjit REQUIRED)
