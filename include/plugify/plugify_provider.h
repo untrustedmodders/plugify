@@ -15,15 +15,7 @@ namespace plugify {
 	 */
 	class PLUGIFY_API IPlugifyProvider {
 	protected:
-		/**
-		 * @brief Constructor for the IPlugifyProvider.
-		 * @param impl Reference to the underlying PlugifyProvider implementation.
-		 */
 		explicit IPlugifyProvider(PlugifyProvider& impl);
-
-		/**
-		 * @brief Destructor for the IPlugifyProvider.
-		 */
 		~IPlugifyProvider();
 
 	public:

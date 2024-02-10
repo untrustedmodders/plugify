@@ -39,15 +39,7 @@ namespace plugify {
 	 */
 	class PLUGIFY_API IModule {
 	protected:
-		/**
-		 * @brief Constructor for the IModule class.
-		 * @param impl The implementation of the language module.
-		 */
 		explicit IModule(Module& impl);
-
-		/**
-		 * @brief Destructor for the IModule class.
-		 */
 		~IModule() = default;
 
 	public:

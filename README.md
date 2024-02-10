@@ -7,13 +7,8 @@
   </a>
 </h1>
 
-![Build Status](https://github.com/untrustedmodders/plugify/actions/workflows/cmake-multiple-platform.yml/badge.svg)
-
 <div align="center">
   A Modern C++ Plugin and Package Manager with Multi-Language Support
-  <br />
-  <a href="#about"><strong>Explore the screenshots »</strong></a>
-  <br />
   <br />
   <a href="https://github.com/untrustedmodders/plugify/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
   ·
@@ -24,11 +19,6 @@
 
 <div align="center">
 <br />
-
-[![Project license](https://img.shields.io/github/license/untrustedmodders/plugify.svg?style=flat-square)](LICENSE)
-
-[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/untrustedmodders/plugify/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
-[![code with love by untrustedmodders](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-untrustedmodders-ff1414.svg?style=flat-square)](https://github.com/untrustedmodders)
 
 </div>
 
@@ -42,6 +32,7 @@
 - [Integration](#integration)
   - [Requirements](#requirements)
   - [CMake](#cmake)
+  - [Example](#example)
 - [Documentation](#documentation)
 - [Tests](#tests)
 - [Extensions](#extensions)
@@ -84,30 +75,12 @@ redefining the boundaries of cross-language communication.
 
 ### Motivation
 
-
 > **[?]**
 > Provide general information about your project here.
 > What problem does it (intend to) solve?
 > What is thwae purpose of your project?
 > Why did you undertake it?
 > You don't have to answer all the questions -- just the ones relevant to your project.
-
-<details>
-
-
-<summary>Screenshots</summary>
-<br>
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-> **[?]**
-> Please provide your screenshots here.
-
-|                               Home Page                               |                               Login Page                               |
-| :-------------------------------------------------------------------: | :--------------------------------------------------------------------: |
-| <img src="docs/images/screenshot.png" title="Home Page" width="100%"> | <img src="docs/images/screenshot.png" title="Login Page" width="100%"> |
-
-</details>
 
 ### Built With
 
@@ -131,7 +104,94 @@ redefining the boundaries of cross-language communication.
 
 ### CMake
 
-> [?] Please provide the info how integrate library.
+You can also use the `plugify::plugify` interface target in CMake.
+
+#### External
+
+To use this library from a CMake project, you can locate it directly with `find_package()` and use the namespaced imported target from the generated package configuration:
+
+```cmake
+# CMakeLists.txt
+find_package(plugify REQUIRED)
+...
+add_library(foo ...)
+...
+target_link_libraries(foo PRIVATE plugify::plugify)
+```
+
+#### Embedded
+
+To embed the library directly into an existing CMake project, place the entire source tree in a subdirectory and call `add_subdirectory()` in your `CMakeLists.txt` file:
+
+```cmake
+# Typically you don't care so much for a third party library's tests to be
+# run from your own project's code.
+set(PLUGIFY_BUILD_TESTS OFF CACHE INTERNAL "")
+
+# Don't use include(plugify/CMakeLists.txt) since that carries with it
+# unintended consequences that will break the build.  It's generally
+# discouraged (although not necessarily well documented as such) to use
+# include(...) for pulling in other CMake projects anyways.
+add_subdirectory(plugify)
+...
+add_library(foo ...)
+...
+target_link_libraries(foo PRIVATE plugify::plugify)
+```
+
+##### Embedded (FetchContent)
+
+Since CMake v3.11,
+[FetchContent](https://cmake.org/cmake/help/v3.11/module/FetchContent.html) can
+be used to automatically download a release as a dependency at configure time.
+
+Example:
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(plugify URL https://github.com/untrustedmodders/plugify/releases/download/v1.0.0/plugify.tar.xz)
+FetchContent_MakeAvailable(plugify)
+
+target_link_libraries(foo PRIVATE plugify::plugify)
+```
+
+**Note**: It is recommended to use the URL approach described above which is supported as of version 1.0.0. See
+<wiki/cmake/#fetchcontent> for more information.
+
+#### Supporting Both
+
+To allow your project to support either an externally supplied or an embedded Plugify library, you can use a pattern akin to the following:
+
+``` cmake
+# Top level CMakeLists.txt
+project(FOO)
+...
+option(FOO_USE_EXTERNAL_PLUGIFY "Use an external Plugify library" OFF)
+...
+add_subdirectory(thirdparty)
+...
+add_library(foo ...)
+...
+# Note that the namespaced target will always be available regardless of the
+# import method
+target_link_libraries(foo PRIVATE plugify::plugify)
+```
+```cmake
+# thirdparty/CMakeLists.txt
+...
+if(FOO_USE_EXTERNAL_PLUGIFY)
+  find_package(plugify REQUIRED)
+else()
+  add_subdirectory(plugify)
+endif()
+...
+```
+
+`thirdparty/plugify` is then a complete copy of this source tree.
+
+### Example
+
+> **[?]**
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

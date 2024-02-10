@@ -7,7 +7,7 @@
 
 namespace plugify {
 	class HTTPDownloader;
-	class PackageManager : public IPackageManager, public PlugifyContext {
+	class PackageManager final : public IPackageManager, public PlugifyContext {
 	public:
 		explicit PackageManager(std::weak_ptr<IPlugify> plugify);
 		~PackageManager();

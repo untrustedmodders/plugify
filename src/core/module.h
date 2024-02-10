@@ -88,7 +88,6 @@ namespace plugify {
 		ModuleState _state{ ModuleState::NotLoaded };
 		std::string _error;
 		std::unique_ptr<Library> _library;
-		//std::vector<std::weak_ptr<Plugin>> _loadedPlugins;
 		std::optional<std::reference_wrapper<ILanguageModule>> _languageModule;
 	};
 }

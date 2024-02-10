@@ -9,7 +9,7 @@ struct plugify::LibraryDirectoryHandle {
 #endif
 };
 
-static LibraryDirectoryHandle AddLibraryDirectory([[maybe_unused]] const std::filesystem::path& directoryPath) {
+static LibraryDirectoryHandle AddLibraryDirectory([[maybe_unused]] const fs::path& directoryPath) {
 #if PLUGIFY_PLATFORM_WINDOWS
 	return { AddDllDirectory(directoryPath.c_str()) };
 #else
@@ -23,10 +23,10 @@ static void RemoveLibraryDirectory([[maybe_unused]] LibraryDirectoryHandle handl
 #endif
 }
 
-LibraryDirectory::LibraryDirectory(const std::filesystem::path& directoryPath) : _handle{std::make_unique<LibraryDirectoryHandle>(AddLibraryDirectory(directoryPath))} {
+LibraryDirectory::LibraryDirectory(const fs::path& directoryPath) : _handle{std::make_unique<LibraryDirectoryHandle>(AddLibraryDirectory(directoryPath))} {
 }
 
-LibraryDirectory::LibraryDirectory(LibraryDirectory&& other) = default;
+LibraryDirectory::LibraryDirectory(LibraryDirectory&& other) noexcept = default;
 
 LibraryDirectory::~LibraryDirectory() {
 	RemoveLibraryDirectory(*_handle);

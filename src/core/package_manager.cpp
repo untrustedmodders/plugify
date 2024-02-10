@@ -28,6 +28,7 @@ PackageManager::~PackageManager() {
 bool PackageManager::Initialize() {
 	if (IsInitialized())
 		return false;
+
 	auto debugStart = DateTime::Now();
 	_httpDownloader = HTTPDownloader::Create();
 	LoadLocalPackages();
@@ -116,8 +117,6 @@ void PackageManager::LoadLocalPackages()  {
 	PL_LOG_DEBUG("Loading local packages");
 
 	_localPackages.clear();
-
-	// TODO: add threads
 
 	FileSystem::ReadDirectory(plugify->GetConfig().baseDir, [&](const fs::path& path, int depth) {
 		if (depth != 1)
@@ -487,7 +486,7 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 
 	PL_LOG_INFO("Read package manifest from '{}'", manifestUrl);
 
-	auto func = __func__;
+	const char* func = __func__;
 
 	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
@@ -840,8 +839,8 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt) {
 	PL_LOG_VERBOSE("Start extracting....");
 
-	auto zip_close = [](mz_zip_archive* zipArchive){ mz_zip_reader_end(zipArchive); delete zipArchive; };
-	std::unique_ptr<mz_zip_archive, decltype(zip_close)> zipArchive(new mz_zip_archive, zip_close);
+	auto zipClose = [](mz_zip_archive* zipArchive){ mz_zip_reader_end(zipArchive); delete zipArchive; };
+	std::unique_ptr<mz_zip_archive, decltype(zipClose)> zipArchive(new mz_zip_archive, zipClose);
 	std::memset(zipArchive.get(), 0, sizeof(mz_zip_archive));
 
 	mz_zip_reader_init_mem(zipArchive.get(), packageData.data(), packageData.size(), 0);

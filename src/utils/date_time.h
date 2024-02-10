@@ -33,8 +33,8 @@ namespace plugify {
         constexpr auto AsMicroseconds() const { return static_cast<T>(_value.count()); }
 
         static DateTime Now() {
-            static const auto LocalEpoch = std::chrono::high_resolution_clock::now();
-            return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - LocalEpoch);
+            static const auto localEpoch = std::chrono::high_resolution_clock::now();
+            return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - localEpoch);
         }
 
         static std::string Get(std::string_view format = "%Y-%m-%d %H:%M:%S") {

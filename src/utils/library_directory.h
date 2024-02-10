@@ -5,8 +5,8 @@ namespace plugify {
 
 	class LibraryDirectory {
 	public:
-		LibraryDirectory(const std::filesystem::path& directoryPath);
-		LibraryDirectory(LibraryDirectory&& other);
+		explicit LibraryDirectory(const fs::path& directoryPath);
+		LibraryDirectory(LibraryDirectory&& other) noexcept;
 		~LibraryDirectory();
 
 	private:

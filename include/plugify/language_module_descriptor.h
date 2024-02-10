@@ -12,7 +12,7 @@ namespace plugify {
 	 * additional information specific to language modules, such as the programming language,
 	 * library directories, and whether to force load the module.
 	 */
-	struct LanguageModuleDescriptor : public Descriptor {
+	struct LanguageModuleDescriptor final : public Descriptor {
 		std::string language; ///< The programming language of the module.
 		std::optional<std::vector<std::string>> libraryDirectories; ///< Optional library directories for the module.
 		bool forceLoad{false}; ///< Indicates whether to force load the module.
@@ -25,7 +25,7 @@ namespace plugify {
 	 * The LanguageModuleInfo structure provides basic information about a language module,
 	 * including its name.
 	 */
-	struct LanguageModuleInfo {
+	struct LanguageModuleInfo final {
 		std::string name; ///< The name of the language module.
 	};
 } // namespace plugify

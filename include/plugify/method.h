@@ -56,7 +56,7 @@ namespace plugify {
 	 * The Property structure holds information about the type of a value,
 	 * whether it's a reference, and for function types, a prototype of the method.
 	 */
-	struct Property {
+	struct Property final {
 		ValueType type{}; ///< The type of the value.
 		std::optional<bool> ref; ///< Indicates whether the value is a reference.
 		std::shared_ptr<Method> prototype; ///< Prototype of the method for function types.
@@ -69,7 +69,7 @@ namespace plugify {
 	 * The Method structure holds information about the name, function name,
 	 * calling convention, parameter types, return type, and variable index.
 	 */
-	struct Method {
+	struct Method final {
 		std::string name; ///< The name of the method.
 		std::string funcName; ///< The function name of the method.
 		std::string callConv; ///< The calling convention of the method.

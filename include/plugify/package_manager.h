@@ -40,15 +40,7 @@ namespace plugify {
 	 */
 	class PLUGIFY_API IPackageManager {
 	protected:
-		/**
-		 * @brief Constructor.
-		 * @param impl Reference to the underlying PackageManager implementation.
-		 */
 		explicit IPackageManager(PackageManager& impl);
-
-		/**
-		 * @brief Destructor.
-		 */
 		~IPackageManager() = default;
 
 	public:

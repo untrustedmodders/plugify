@@ -12,7 +12,7 @@ namespace plugify {
 	 * The PluginReferenceDescriptor structure holds information about a plugin reference,
 	 * including the name, whether it is optional, supported platforms, and an optional requested version.
 	 */
-	struct PluginReferenceDescriptor {
+	struct PluginReferenceDescriptor final {
 		std::string name; ///< The name of the plugin reference.
 		bool optional{false}; ///< Indicates whether the plugin reference is optional.
 		//std::string description; ///< The description of the plugin reference.

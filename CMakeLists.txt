@@ -85,7 +85,7 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Compilation options
-option(PLUGIFY_BUILD_TESTS "Enable building tests." ON)
+option(PLUGIFY_BUILD_TESTS "Enable building tests." OFF)
 option(PLUGIFY_BUILD_FUNCTION "Build function object library." OFF)
 option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
 
@@ -116,6 +116,7 @@ if(NOT PLUGIFY_BUILD_OBJECT_LIB)
 else()
     add_library(${PROJECT_NAME} OBJECT ${PLUGIFY_CORE_SOURCES})
 endif()
+add_library(plugify::plugify ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -211,8 +212,8 @@ if(PLUGIFY_HAS_LIBCPP)
 endif()
 
 if(PLUGIFY_HAS_SANITIZER)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
-    target_link_libraries(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>: -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>: -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
 endif()
 
 if(PLUGIFY_CLANG_TIDY_EXECUTABLE)

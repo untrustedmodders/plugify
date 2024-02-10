@@ -7,7 +7,7 @@ namespace plugify {
 	/**
 	 * @brief Represents a version number with major, minor, patch, and tweak components.
 	 */
-	class PLUGIFY_API Version {
+	class PLUGIFY_API Version final {
 	public:
 		/**
 		 * @brief Constructor to initialize a Version object with individual components.

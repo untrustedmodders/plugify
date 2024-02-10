@@ -6,22 +6,7 @@
 #include <plugify_export.h>
 
 namespace plugify {
-	/**
-	 * @class Plugin
-	 * @brief Represents a plugin in the PLUGIFY system.
-	 *
-	 * The Plugin class is a base class for plugin implementation. It provides basic
-	 * functionality and methods that plugins must implement to interact with the PLUGIFY framework.
-	 */
 	class Plugin;
-
-	/**
-	 * @struct PluginDescriptor
-	 * @brief Describes the properties of a plugin.
-	 *
-	 * The PluginDescriptor structure holds information about a plugin, such as its name,
-	 * version, and author. Plugins use this structure to provide metadata about themselves.
-	 */
 	struct PluginDescriptor;
 
 	/**
@@ -65,15 +50,7 @@ namespace plugify {
 	 */
 	class PLUGIFY_API IPlugin {
 	protected:
-		/**
-		 * @brief Constructor for the IPlugin class.
-		 * @param impl The implementation of the plugin.
-		 */
 		explicit IPlugin(Plugin& impl);
-
-		/**
-		 * @brief Destructor for the IPlugin class.
-		 */
 		~IPlugin();
 
 	public:

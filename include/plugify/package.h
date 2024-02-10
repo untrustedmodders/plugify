@@ -16,7 +16,7 @@ namespace plugify {
 	 * the version number, checksum, download URL, supported platforms, and optional
 	 * dependencies and conflicts.
 	 */
-	struct PackageVersion {
+	struct PackageVersion final {
 		std::int32_t version; ///< The version number of the package.
 		std::string checksum; ///< The checksum of the package.
 		std::string download; ///< The download URL for the package.
@@ -64,7 +64,7 @@ namespace plugify {
 	 * information such as author, description, and available versions. It also provides
 	 * methods to retrieve the latest version or a specific version of the package.
 	 */
-	struct RemotePackage : public Package {
+	struct RemotePackage final : public Package {
 		std::string author; ///< The author of the package.
 		std::string description; ///< The description of the package.
 		std::set<PackageVersion> versions; ///< The set of available versions for the package.
@@ -100,7 +100,7 @@ namespace plugify {
 	 * about the local installation, such as the file path, version, and descriptor.
 	 * It also provides a conversion operator to convert to a RemotePackage for compatibility.
 	 */
-	struct LocalPackage : public Package {
+	struct LocalPackage final : public Package {
 		std::filesystem::path path; ///< The file path to the locally installed package.
 		std::int32_t version; ///< The version number of the locally installed package.
 		std::shared_ptr<Descriptor> descriptor; ///< A shared pointer to the package descriptor.

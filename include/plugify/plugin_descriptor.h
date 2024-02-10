@@ -15,7 +15,7 @@ namespace plugify {
 	 * information specific to plugins, such as the entry point, language module info,
 	 * dependencies, and exported methods.
 	 */
-	struct PluginDescriptor : public Descriptor {
+	struct PluginDescriptor final : public Descriptor {
 		std::string entryPoint; ///< The entry point of the plugin.
 		LanguageModuleInfo languageModule; ///< Information about the language module.
 		std::vector<PluginReferenceDescriptor> dependencies; ///< The dependencies of the plugin.

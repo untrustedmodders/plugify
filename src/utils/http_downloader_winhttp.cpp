@@ -106,14 +106,14 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 				req->contentLength = 0;
 			}
 
-			DWORD content_type_length = 0;
+			DWORD contentTypeLength = 0;
 			if (!WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_CONTENT_TYPE, WINHTTP_HEADER_NAME_BY_INDEX,
-									 WINHTTP_NO_OUTPUT_BUFFER, &content_type_length, WINHTTP_NO_HEADER_INDEX) &&
-				GetLastError() == ERROR_INSUFFICIENT_BUFFER && content_type_length >= sizeof(content_type_length)) {
+									 WINHTTP_NO_OUTPUT_BUFFER, &contentTypeLength, WINHTTP_NO_HEADER_INDEX) &&
+				GetLastError() == ERROR_INSUFFICIENT_BUFFER && contentTypeLength >= sizeof(contentTypeLength)) {
 				std::wstring contentTypeWstring;
-				contentTypeWstring.resize((content_type_length / sizeof(wchar_t)) - 1);
+				contentTypeWstring.resize((contentTypeLength / sizeof(wchar_t)) - 1);
 				if (WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_CONTENT_TYPE, WINHTTP_HEADER_NAME_BY_INDEX,
-										contentTypeWstring.data(), &content_type_length, WINHTTP_NO_HEADER_INDEX)) {
+										contentTypeWstring.data(), &contentTypeLength, WINHTTP_NO_HEADER_INDEX)) {
 					req->contentType = String::WideStringToUTF8String(contentTypeWstring);
 				}
 			}
@@ -221,8 +221,8 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 		return false;
 	}
 
-	const DWORD request_flags = uc.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
-	req->hRequest = WinHttpOpenRequest(req->hConnection, (req->type == HTTPDownloader::Request::Type::Post) ? L"POST" : L"GET", req->objectName.c_str(), NULL, NULL, NULL, request_flags);
+	const DWORD requestFlags = uc.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
+	req->hRequest = WinHttpOpenRequest(req->hConnection, (req->type == HTTPDownloader::Request::Type::Post) ? L"POST" : L"GET", req->objectName.c_str(), NULL, NULL, NULL, requestFlags);
 	if (!req->hRequest) {
 		PL_LOG_ERROR("WinHttpOpenRequest() failed: {}", GetLastError());
 		WinHttpCloseHandle(req->hConnection);

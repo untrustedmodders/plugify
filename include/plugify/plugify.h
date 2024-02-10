@@ -16,12 +16,12 @@ namespace plugify {
 	enum class Severity : uint8_t;
 
 	/**
- * @class IPlugify
- * @brief Interface for the Plugify system.
- *
- * The IPlugify interface provides methods to initialize and terminate the Plugify system,
- * set a logger, get various components, and retrieve configuration information.
- */
+	 * @class IPlugify
+	 * @brief Interface for the Plugify system.
+	 *
+	 * The IPlugify interface provides methods to initialize and terminate the Plugify system,
+	 * set a logger, get various components, and retrieve configuration information.
+	 */
 	class IPlugify {
 	public:
 		virtual ~IPlugify() = default;
