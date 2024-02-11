@@ -71,7 +71,7 @@ namespace plugify {
 	 */
 	class ILanguageModule {
 	protected:
-		virtual ~ILanguageModule() = default;
+		~ILanguageModule() = default;
 
 	public:
 		/**
