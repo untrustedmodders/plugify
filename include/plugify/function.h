@@ -93,7 +93,7 @@ namespace plugify {
 		 */
 		~Function();
 
-		typedef void(* FuncCallback)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
+		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
 
 		/**
 		 * @brief Get a dynamically created callback function based on the raw signature.

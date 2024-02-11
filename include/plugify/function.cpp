@@ -83,7 +83,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	const uint32_t alignment = 16;
 
 	// setup the stack structure to hold arguments for user callback
-	uint32_t stackSize = (uint32_t)(sizeof(uintptr_t) * sig.argCount());
+	uint32_t stackSize = static_cast<uint32_t>(sizeof(uintptr_t) * sig.argCount());
 	x86::Mem argsStack = cc.newStack(stackSize, alignment);
 	x86::Mem argsStackIdx{argsStack};
 
@@ -152,12 +152,12 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 	// mov from arguments stack structure into regs
 	cc.mov(i, 0); // reset idx
-	for (uint32_t arg_idx = 0; arg_idx < sig.argCount(); ++arg_idx) {
-		const auto& argType = sig.args()[arg_idx];
+	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
+		const auto& argType = sig.args()[argIdx];
 		if (IsGeneralReg(argType)) {
-			cc.mov(argRegisters.at(arg_idx).as<x86::Gp>(), argsStackIdx);
+			cc.mov(argRegisters.at(argIdx).as<x86::Gp>(), argsStackIdx);
 		}else if (IsXmmReg(argType)) {
-			cc.movq(argRegisters.at(arg_idx).as<x86::Xmm>(), argsStackIdx);
+			cc.movq(argRegisters.at(argIdx).as<x86::Xmm>(), argsStackIdx);
 		}else {
 			_error = "Parameters wider than 64bits not supported";
 			return nullptr;
