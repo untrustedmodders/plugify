@@ -93,24 +93,26 @@ namespace plugify {
 		 */
 		~Function();
 
-		typedef void(* FuncCallback)(const Method* method, const Parameters* params, const uint8_t count, const ReturnValue* ret);
+		typedef void(* FuncCallback)(const Method* method, const Parameters* params, const uint8_t count, const ReturnValue* ret, void* data);
 
 		/**
 		 * @brief Get a dynamically created callback function based on the raw signature.
 		 * @param sig Function signature.
 		 * @param method Reference to the method.
 		 * @param callback Callback function.
+		 * @param data User data.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback);
+		void* GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, void* data = nullptr);
 
 		/**
 		 * @brief Get a dynamically created callback function using a typedef represented as a string.
 		 * @param method Reference to the method.
 		 * @param callback Callback function.
+		 * @param data User data.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const Method& method, FuncCallback callback);
+		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr);
 
 		/**
 		 * @brief Get the error message, if any.

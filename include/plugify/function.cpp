@@ -17,7 +17,7 @@ Function::~Function() {
 	}
 }
 
-void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback) {
+void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, void* data) {
 	if (_callback)
 		return _callback;
 
@@ -116,9 +116,9 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		cc.add(i, sizeof(uintptr_t));
 	}
 
-	// fill reg to pass method data to callback
-	x86::Gp methodStruct = cc.newUIntPtr("methodStruct");
-	cc.mov(methodStruct, (uintptr_t)&method);
+	// fill reg to pass method ptr to callback
+	x86::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
+	cc.mov(methodPtrParam, (uintptr_t)&method);
 
 	// get pointer to stack structure and pass it to the user callback
 	x86::Gp argStruct = cc.newUIntPtr("argStruct");
@@ -133,17 +133,22 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	x86::Gp retStruct = cc.newUIntPtr("retStruct");
 	cc.lea(retStruct, retStack);
 
+	// fill reg to pass data ptr to callback
+	x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
+	cc.mov(dataPtrParam, (uintptr_t)data);
+
 	InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
 			  (uintptr_t)callback,
-			  FuncSignature::build<void, Method*, Parameters*, uint8_t, ReturnValue*>()
+			  FuncSignature::build<void, Method*, Parameters*, uint8_t, ReturnValue*, void*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)
-	invokeNode->setArg(0, methodStruct);
+	invokeNode->setArg(0, methodPtrParam);
 	invokeNode->setArg(1, argStruct);
 	invokeNode->setArg(2, argCountParam);
 	invokeNode->setArg(3, retStruct);
+	invokeNode->setArg(4, dataPtrParam);
 
 	// mov from arguments stack structure into regs
 	cc.mov(i, 0); // reset idx
@@ -192,12 +197,12 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	return _callback;
 }
 
-void* Function::GetJitFunc(const Method& method, FuncCallback callback) {
+void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data) {
 	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetTypeId(method.retType.type));
 	for (const auto& type : method.paramTypes) {
 		sig.addArg(GetTypeId(type.type));
 	}
-	return GetJitFunc(sig, method, callback);
+	return GetJitFunc(sig, method, callback, data);
 }
 
 template<typename T>
