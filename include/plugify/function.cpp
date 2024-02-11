@@ -1,5 +1,4 @@
 #include <plugify/function.h>
-#include <asmjit/asmjit.h>
 
 using namespace plugify;
 using namespace asmjit;

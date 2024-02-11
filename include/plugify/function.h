@@ -1,16 +1,8 @@
 #pragma once
 
 #include <plugify/method.h>
+#include <asmjit/asmjit.h>
 #include <memory>
-
-namespace asmjit {
-	inline namespace _abi_1_12 {
-		class JitRuntime;
-		struct FuncSignature;
-		enum class CallConvId : uint8_t;
-		enum class TypeId : uint8_t;
-	}
-}
 
 namespace plugify {
 	/**
