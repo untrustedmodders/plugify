@@ -118,7 +118,11 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 	// fill reg to pass method ptr to callback
 	x86::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
-	cc.mov(methodPtrParam, (uintptr_t)&method);
+	cc.mov(methodPtrParam, reinterpret_cast<uintptr_t>(&method));
+
+	// fill reg to pass data ptr to callback
+	x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
+	cc.mov(dataPtrParam, reinterpret_cast<uintptr_t>(data));
 
 	// get pointer to stack structure and pass it to the user callback
 	x86::Gp argStruct = cc.newUIntPtr("argStruct");
@@ -126,29 +130,25 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 	// fill reg to pass struct arg count to callback
 	x86::Gp argCountParam = cc.newUInt8("argCountParam");
-	cc.mov(argCountParam, (uint8_t)sig.argCount());
+	cc.mov(argCountParam, static_cast<uint8_t>(sig.argCount()));
 
 	// create buffer for ret val
 	x86::Mem retStack = cc.newStack(sizeof(uintptr_t), alignment);
 	x86::Gp retStruct = cc.newUIntPtr("retStruct");
 	cc.lea(retStruct, retStack);
 
-	// fill reg to pass data ptr to callback
-	x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
-	cc.mov(dataPtrParam, (uintptr_t)data);
-
 	InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
-			  (uintptr_t)callback,
-			  FuncSignature::build<void, Method*, Parameters*, uint8_t, ReturnValue*, void*>()
+			  reinterpret_cast<uintptr_t>(callback),
+			  FuncSignature::build<void, Method*, void*, Parameters*, uint8_t, ReturnValue*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)
 	invokeNode->setArg(0, methodPtrParam);
-	invokeNode->setArg(1, argStruct);
-	invokeNode->setArg(2, argCountParam);
-	invokeNode->setArg(3, retStruct);
-	invokeNode->setArg(4, dataPtrParam);
+	invokeNode->setArg(1, dataPtrParam);
+	invokeNode->setArg(2, argStruct);
+	invokeNode->setArg(3, argCountParam);
+	invokeNode->setArg(4, retStruct);
 
 	// mov from arguments stack structure into regs
 	cc.mov(i, 0); // reset idx
