@@ -115,6 +115,12 @@ namespace plugify {
 		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr);
 
 		/**
+		 * @brief Get a dynamically created callback function.
+		 * @return Pointer to the already generated function.
+		 */
+		void* GetCallback() { return _callback; }
+
+		/**
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */

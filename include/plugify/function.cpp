@@ -207,7 +207,7 @@ void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* da
 
 template<typename T>
 constexpr TypeId GetTypeIdx() {
-	return TypeId(TypeUtils::TypeIdOfT<T>::kTypeId);
+	return static_cast<TypeId>(TypeUtils::TypeIdOfT<T>::kTypeId);
 }
 
 TypeId Function::GetTypeId(ValueType valueType) {
