@@ -58,7 +58,7 @@ namespace plugify {
 	 */
 	struct Property final {
 		ValueType type{}; ///< The type of the value.
-		std::optional<bool> ref; ///< Indicates whether the value is a reference.
+		bool ref{ false }; ///< Indicates whether the value is a reference.
 		std::shared_ptr<Method> prototype; ///< Prototype of the method for function types.
 	};
 
