@@ -13,6 +13,7 @@ namespace plugify {
 	 */
 	enum class ValueType : std::uint8_t {
 		Invalid,
+		// C types
 		Void,
 		Bool,
 		Char8,
@@ -28,8 +29,10 @@ namespace plugify {
 		Ptr64,
 		Float,
 		Double,
-		String,
 		Function,
+		// std::string
+		String,
+		// std::vector
 		ArrayBool,
 		ArrayChar8,
 		ArrayChar16,
@@ -109,8 +112,8 @@ namespace plugify {
 			case ValueType::Ptr64:         return "ptr64";
 			case ValueType::Float:         return "float";
 			case ValueType::Double:        return "double";
-			case ValueType::String:        return "string";
 			case ValueType::Function:      return "function";
+			case ValueType::String:        return "string";
 			case ValueType::ArrayBool:     return "bool*";
 			case ValueType::ArrayChar8:    return "char8*";
 			case ValueType::ArrayChar16:   return "char16*";
@@ -166,10 +169,10 @@ namespace plugify {
 			return ValueType::Float;
 		} else if (value == "double") {
 			return ValueType::Double;
-		} else if (value == "string") {
-			return ValueType::String;
 		} else if (value == "function") {
 			return ValueType::Function;
+		} else if (value == "string") {
+			return ValueType::String;
 		} else if (value == "bool*") {
 			return ValueType::ArrayBool;
 		} else if (value == "char8*") {
