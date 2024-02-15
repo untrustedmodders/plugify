@@ -100,7 +100,7 @@ namespace plugify {
 		 *
 		 * @return True if the return type and all parameter types are primitive, false otherwise.
 		 */
-		bool IsPrimitive() {
+		bool IsPrimitive() const {
 			if (retType.type > ValueType::LastPrimitive)
 				return false;
 
