@@ -125,7 +125,7 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sr
 # ------------------------------------------------------------------------------
 # Glaze
 if(PLUGIFY_USE_EXTERNAL_GLAZE)
-	find_package(glaze REQUIRED)
+    find_package(glaze REQUIRED)
 else()
     include(cmake/glaze.cmake)
 endif()
@@ -177,7 +177,7 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
     else()
         include(cmake/fmt.cmake)
     endif()
-	target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
+    target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -265,10 +265,10 @@ if(PLUGIFY_BUILD_FUNCTION)
     if(PLUGIFY_USE_EXTERNAL_ASMJIT)
         find_package(asmjit REQUIRED)
     else()
-		include(cmake/asmjit.cmake)
+        include(cmake/asmjit.cmake)
         target_include_directories(${PROJECT_NAME}-function PRIVATE ${ASMJIT_SRC})
     endif()
-	target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
+    target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
     target_compile_definitions(${PROJECT_NAME}-function PRIVATE
             PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
             PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
