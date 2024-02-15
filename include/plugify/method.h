@@ -48,6 +48,8 @@ namespace plugify {
 		ArrayFloat,
 		ArrayDouble,
 		ArrayString,
+
+		LastPrimitive = Function
 	};
 
 	struct Method;
@@ -88,6 +90,27 @@ namespace plugify {
 		 * @return True if the names of this instance and rhs are equal.
 		 */
 		bool operator==(const Method& rhs) const { return name == rhs.name; }
+
+		/**
+		 * @brief Checks if the return type and all parameter types are primitive.
+		 *
+		 * This method examines the return type and parameter types to determine
+		 * whether they are primitive types. It returns true if both the return type
+		 * and all parameter types are primitive, and false otherwise.
+		 *
+		 * @return True if the return type and all parameter types are primitive, false otherwise.
+		 */
+		bool IsPrimitive() {
+			if (retType.type > ValueType::LastPrimitive)
+				return false;
+
+			for (const auto& param : paramTypes) {
+				if (param.type > ValueType::LastPrimitive)
+					return false;
+			}
+
+			return true;
+		}
 	};
 
 	/**
