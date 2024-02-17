@@ -74,7 +74,7 @@ namespace plugify {
 	 * @class Function
 	 * @brief Class for dynamic function generation.
 	 */
-	class Function {
+	class Function : public IFunction {
 	public:
 		/**
 		 * @brief Constructor.
@@ -91,7 +91,7 @@ namespace plugify {
 		/**
 		 * @brief Destructor.
 		 */
-		~Function();
+		~Function() override;
 
 		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
 
@@ -115,10 +115,10 @@ namespace plugify {
 		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr);
 
 		/**
-		 * @brief Get a dynamically created callback function.
+		 * @brief Get a dynamically created function.
 		 * @return Pointer to the already generated function.
 		 */
-		void* GetCallback() { return _callback; }
+		void* GetFunction() const override { return _function; }
 
 		/**
 		 * @brief Get the error message, if any.
@@ -135,7 +135,7 @@ namespace plugify {
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
-		void* _callback{ nullptr };
+		void* _function{ nullptr };
 		std::string _error;
 	};
 } // namespace plugify

@@ -6,20 +6,20 @@ using namespace asmjit;
 Function::Function(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
-Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _callback{other._callback}, _error{std::move(other._error)} {
-	other._callback = nullptr;
+Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _function{other._function}, _error{std::move(other._error)} {
+	other._function = nullptr;
 }
 
 Function::~Function() {
 	if (auto rt = _rt.lock()) {
-		if (_callback)
-			rt->release(_callback);
+		if (_function)
+			rt->release(_function);
 	}
 }
 
 void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, void* data) {
-	if (_callback)
-		return _callback;
+	if (_function)
+		return _function;
 
 	auto rt = _rt.lock();
 	if (!rt) {
@@ -186,7 +186,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	// write to buffer
 	cc.finalize();
 
-	Error err = rt->add(&_callback, &code);
+	Error err = rt->add(&_function, &code);
 	if (err) {
 		_error = DebugUtils::errorAsString(err);
 		return nullptr;
@@ -194,7 +194,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 	//PL_LOG_VERBOSE("JIT Stub:\n{}", log.data());
 
-	return _callback;
+	return _function;
 }
 
 void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data) {
