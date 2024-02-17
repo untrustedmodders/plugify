@@ -1,3 +1,0 @@
-CompileFlags:
-  Add: [ '-D_Float32=float',
-         '-D_Float64=double']
