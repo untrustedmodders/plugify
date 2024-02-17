@@ -35,7 +35,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
 				return false;
 			}
-			libraryDirectories.emplace_back(libraryDirectory);
+			libraryDirectories.emplace_back(std::move(libraryDirectory));
 		}
 	}
 
@@ -64,7 +64,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	}
 
 	InitResult result = languageModulePtr->Initialize(std::move(provider), *this);
-	if (auto data = std::get_if<ErrorData>(&result)) {
+	if (auto* data = std::get_if<ErrorData>(&result)) {
 		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", _name, data->error, _filePath.string()));
 		Terminate();
 		return false;
@@ -89,7 +89,7 @@ void Module::LoadPlugin(Plugin& plugin) const {
 		return;
 
 	auto result = GetLanguageModule().OnPluginLoad(plugin);
-	if (auto data = std::get_if<ErrorData>(&result)) {
+	if (auto* data = std::get_if<ErrorData>(&result)) {
 		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error, plugin.GetBaseDir().string()));
 		return;
 	}

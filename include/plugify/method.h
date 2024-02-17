@@ -22,13 +22,14 @@ namespace plugify {
 		Int16,
 		Int32,
 		Int64,
-		Uint8,
-		Uint16,
-		Uint32,
-		Uint64,
+		UInt8,
+		UInt16,
+		UInt32,
+		UInt64,
 		Ptr64,
 		Float,
 		Double,
+		// std::shared_ptr
 		Function,
 		// std::string
 		String,
@@ -40,16 +41,24 @@ namespace plugify {
 		ArrayInt16,
 		ArrayInt32,
 		ArrayInt64,
-		ArrayUint8,
-		ArrayUint16,
-		ArrayUint32,
-		ArrayUint64,
+		ArrayUInt8,
+		ArrayUInt16,
+		ArrayUInt32,
+		ArrayUInt64,
 		ArrayPtr64,
 		ArrayFloat,
 		ArrayDouble,
 		ArrayString,
+		ArrayWString,
 
-		LastPrimitive = Function
+		LastPrimitive = Double
+	};
+
+	class IFunction {
+	public:
+		virtual ~IFunction() = default;
+
+		virtual void* GetFunction() const = 0;
 	};
 
 	struct Method;
@@ -82,7 +91,7 @@ namespace plugify {
 		Property retType; ///< The return type of the method.
 		std::uint8_t varIndex{ kNoVarArgs }; ///< The variable index (0xFFu if no variable arguments).
 
-		static inline const std::uint8_t kNoVarArgs = 0xFFu; ///< Constant for indicating no variable arguments.
+		static inline const std::uint8_t kNoVarArgs = 0xFFU; ///< Constant for indicating no variable arguments.
 
 		/**
 		 * @brief Overloaded equality operator for comparing Method instances.
@@ -128,10 +137,10 @@ namespace plugify {
 			case ValueType::Int16:         return "int16";
 			case ValueType::Int32:         return "int32";
 			case ValueType::Int64:         return "int64";
-			case ValueType::Uint8:         return "uint8";
-			case ValueType::Uint16:        return "uint16";
-			case ValueType::Uint32:        return "uint32";
-			case ValueType::Uint64:        return "uint64";
+			case ValueType::UInt8:         return "uint8";
+			case ValueType::UInt16:        return "uint16";
+			case ValueType::UInt32:        return "uint32";
+			case ValueType::UInt64:        return "uint64";
 			case ValueType::Ptr64:         return "ptr64";
 			case ValueType::Float:         return "float";
 			case ValueType::Double:        return "double";
@@ -144,14 +153,15 @@ namespace plugify {
 			case ValueType::ArrayInt16:    return "int16*";
 			case ValueType::ArrayInt32:    return "int32*";
 			case ValueType::ArrayInt64:    return "int64*";
-			case ValueType::ArrayUint8:    return "uint8*";
-			case ValueType::ArrayUint16:   return "uint16*";
-			case ValueType::ArrayUint32:   return "uint32*";
-			case ValueType::ArrayUint64:   return "uint64*";
+			case ValueType::ArrayUInt8:    return "uint8*";
+			case ValueType::ArrayUInt16:   return "uint16*";
+			case ValueType::ArrayUInt32:   return "uint32*";
+			case ValueType::ArrayUInt64:   return "uint64*";
 			case ValueType::ArrayPtr64:    return "ptr64*";
 			case ValueType::ArrayFloat:    return "float*";
 			case ValueType::ArrayDouble:   return "double*";
 			case ValueType::ArrayString:   return "string*";
+			case ValueType::ArrayWString:  return "wstring*";
 			default:                       return "unknown";
 		}
 	}
@@ -179,13 +189,13 @@ namespace plugify {
 		} else if (value == "int64") {
 			return ValueType::Int64;
 		} else if (value == "uint8") {
-			return ValueType::Uint8;
+			return ValueType::UInt8;
 		} else if (value == "uint16") {
-			return ValueType::Uint16;
+			return ValueType::UInt16;
 		} else if (value == "uint32") {
-			return ValueType::Uint32;
+			return ValueType::UInt32;
 		} else if (value == "uint64") {
-			return ValueType::Uint64;
+			return ValueType::UInt64;
 		} else if (value == "ptr64") {
 			return ValueType::Ptr64;
 		} else if (value == "float") {
@@ -211,13 +221,13 @@ namespace plugify {
 		} else if (value == "int64*") {
 			return ValueType::ArrayInt64;
 		} else if (value == "uint8*") {
-			return ValueType::ArrayUint8;
+			return ValueType::ArrayUInt8;
 		} else if (value == "uint16*") {
-			return ValueType::ArrayUint16;
+			return ValueType::ArrayUInt16;
 		} else if (value == "uint32*") {
-			return ValueType::ArrayUint32;
+			return ValueType::ArrayUInt32;
 		} else if (value == "uint64*") {
-			return ValueType::ArrayUint64;
+			return ValueType::ArrayUInt64;
 		} else if (value == "ptr64*") {
 			return ValueType::ArrayPtr64;
 		} else if (value == "float*") {
@@ -226,6 +236,8 @@ namespace plugify {
 			return ValueType::ArrayDouble;
 		} else if (value == "string*") {
 			return ValueType::ArrayString;
+		} else if (value == "wstring*") {
+			return ValueType::ArrayWString;
 		}
 		return ValueType::Invalid;
 	}
