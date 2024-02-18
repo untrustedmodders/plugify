@@ -29,7 +29,6 @@ namespace plugify {
 		Ptr64,
 		Float,
 		Double,
-		// std::shared_ptr
 		Function,
 		// std::string
 		String,
@@ -51,14 +50,7 @@ namespace plugify {
 		ArrayString,
 		ArrayWString,
 
-		LastPrimitive = Double
-	};
-
-	class IFunction {
-	public:
-		virtual ~IFunction() = default;
-
-		virtual void* GetFunction() const = 0;
+		LastPrimitive = Function
 	};
 
 	struct Method;

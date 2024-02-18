@@ -74,7 +74,7 @@ namespace plugify {
 	 * @class Function
 	 * @brief Class for dynamic function generation.
 	 */
-	class Function : public IFunction {
+	class Function {
 	public:
 		/**
 		 * @brief Constructor.
@@ -91,7 +91,7 @@ namespace plugify {
 		/**
 		 * @brief Destructor.
 		 */
-		~Function() override;
+		~Function();
 
 		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
 
@@ -118,7 +118,7 @@ namespace plugify {
 		 * @brief Get a dynamically created function.
 		 * @return Pointer to the already generated function.
 		 */
-		void* GetFunction() const override { return _function; }
+		void* GetFunction() const { return _function; }
 
 		/**
 		 * @brief Get the error message, if any.
