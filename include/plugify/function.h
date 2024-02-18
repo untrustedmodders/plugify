@@ -97,7 +97,7 @@ namespace plugify {
 		~Function();
 
 		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
-		using DoneCallback = std::function<void(void* data)>;
+		using DoneCallback = void(*)(void* data);
 
 		/**
 		 * @brief Get a dynamically created callback function based on the raw signature.
