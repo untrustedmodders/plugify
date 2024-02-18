@@ -221,10 +221,10 @@ TypeId Function::GetTypeId(ValueType valueType) {
 		case ValueType::Int16:  return GetTypeIdx<int16_t>();
 		case ValueType::Int32:  return GetTypeIdx<int32_t>();
 		case ValueType::Int64:  return GetTypeIdx<int64_t>();
-		case ValueType::Uint8:  return GetTypeIdx<uint8_t>();
-		case ValueType::Uint16: return GetTypeIdx<uint16_t>();
-		case ValueType::Uint32: return GetTypeIdx<uint32_t>();
-		case ValueType::Uint64: return GetTypeIdx<uint64_t>();
+		case ValueType::UInt8:  return GetTypeIdx<uint8_t>();
+		case ValueType::UInt16: return GetTypeIdx<uint16_t>();
+		case ValueType::UInt32: return GetTypeIdx<uint32_t>();
+		case ValueType::UInt64: return GetTypeIdx<uint64_t>();
 		case ValueType::Float:  return GetTypeIdx<float>();
 		case ValueType::Double: return GetTypeIdx<double>();
 		case ValueType::Ptr64:
@@ -237,10 +237,10 @@ TypeId Function::GetTypeId(ValueType valueType) {
 		case ValueType::ArrayInt16:
 		case ValueType::ArrayInt32:
 		case ValueType::ArrayInt64:
-		case ValueType::ArrayUint8:
-		case ValueType::ArrayUint16:
-		case ValueType::ArrayUint32:
-		case ValueType::ArrayUint64:
+		case ValueType::ArrayUInt8:
+		case ValueType::ArrayUInt16:
+		case ValueType::ArrayUInt32:
+		case ValueType::ArrayUInt64:
 		case ValueType::ArrayPtr64:
 		case ValueType::ArrayFloat:
 		case ValueType::ArrayDouble:
