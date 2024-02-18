@@ -17,7 +17,7 @@ Function::~Function() {
 		if (_function)
 			rt->release(_function);
 	}
-	if (_doneCallback) {
+	if (_doneCallback && _userData) {
 		_doneCallback(_userData);
 	}
 }
@@ -31,6 +31,8 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		_error = "JitRuntime invalid";
 		return nullptr;
 	}
+
+	_userData = data;
 
 	/*
 	  AsmJit is smart enough to track register allocations and will forward
@@ -196,8 +198,6 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		_error = DebugUtils::errorAsString(err);
 		return nullptr;
 	}
-
-	_userData = data;
 
 	//PL_LOG_VERBOSE("JIT Stub:\n{}", log.data());
 
