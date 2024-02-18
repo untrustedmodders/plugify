@@ -3,6 +3,7 @@
 #include <plugify/method.h>
 #include <asmjit/asmjit.h>
 #include <memory>
+#include <functional>
 
 namespace plugify {
 	/**
@@ -15,6 +16,7 @@ namespace plugify {
 		 * @tparam T Type of the argument.
 		 * @param idx Index of the argument.
 		 * @param val Value to set.
+		 * @noreturn
 		 */
 		template<typename T>
 		void SetArgument(uint8_t idx, T val) const {
@@ -53,6 +55,7 @@ namespace plugify {
 		 * @brief Set the return value.
 		 * @tparam T Type of the return value.
 		 * @param val Value to set as the return value.
+		 * @noreturn
 		 */
 		template<typename T>
 		void SetReturnPtr(T val) const {
@@ -94,6 +97,7 @@ namespace plugify {
 		~Function();
 
 		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
+		using DoneCallback = void(*)(void* data);
 
 		/**
 		 * @brief Get a dynamically created callback function based on the raw signature.
@@ -121,6 +125,17 @@ namespace plugify {
 		void* GetFunction() const { return _function; }
 
 		/**
+		 * @brief Sets a callback function to be called when the class is destroy.
+		 *
+		 * @param doneCallback A function pointer with the signature `void callback(void* userData)`.
+		 *                     This function will be invoked upon class destroy.
+		 *
+		 * @note The provided callback should handle any necessary cleanup or post-processing.
+		 * @noreturn
+		 */
+		void SetDoneCallback(DoneCallback doneCallback) { _doneCallback = doneCallback; }
+
+		/**
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */
@@ -135,7 +150,9 @@ namespace plugify {
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
+		DoneCallback _doneCallback{ nullptr };
 		void* _function{ nullptr };
+		void* _userData{ nullptr };
 		std::string _error;
 	};
 } // namespace plugify

@@ -6,14 +6,19 @@ using namespace asmjit;
 Function::Function(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
-Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _function{other._function}, _error{std::move(other._error)} {
+Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _doneCallback{other._doneCallback}, _function{other._function}, _userData{other._userData}, _error{std::move(other._error)} {
+	other._doneCallback = nullptr;
 	other._function = nullptr;
+	other._userData = nullptr;
 }
 
 Function::~Function() {
 	if (auto rt = _rt.lock()) {
 		if (_function)
 			rt->release(_function);
+	}
+	if (_doneCallback) {
+		_doneCallback(_userData);
 	}
 }
 
@@ -191,6 +196,8 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		_error = DebugUtils::errorAsString(err);
 		return nullptr;
 	}
+
+	_userData = data;
 
 	//PL_LOG_VERBOSE("JIT Stub:\n{}", log.data());
 

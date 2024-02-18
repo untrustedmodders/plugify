@@ -47,6 +47,7 @@ namespace plugify {
 		/**
 		 * @brief Set the logger for the Plugify system.
 		 * @param logger The logger to set.
+		 * @noreturn
 		 */
 		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
 
