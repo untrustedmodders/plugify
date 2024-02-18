@@ -89,7 +89,7 @@ namespace plugify {
 		 * @brief Move constructor.
 		 * @param other Another instance of Function.
 		 */
-		Function(Function&& other) noexcept;
+		Function(Function&& other) noexcept = default;
 
 		/**
 		 * @brief Destructor.
@@ -97,7 +97,7 @@ namespace plugify {
 		~Function();
 
 		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
-		using DoneCallback = void(*)(void* data);
+		using DoneCallback = std::function<void(void* data)>;
 
 		/**
 		 * @brief Get a dynamically created callback function based on the raw signature.
@@ -133,7 +133,7 @@ namespace plugify {
 		 * @note The provided callback should handle any necessary cleanup or post-processing.
 		 * @noreturn
 		 */
-		void SetDoneCallback(DoneCallback doneCallback) { _doneCallback = doneCallback; }
+		void SetDoneCallback(DoneCallback doneCallback) { _doneCallback = std::make_unique<DoneCallback>(std::move(doneCallback)); }
 
 		/**
 		 * @brief Get the error message, if any.
@@ -150,7 +150,7 @@ namespace plugify {
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
-		DoneCallback _doneCallback{ nullptr };
+		std::unique_ptr<DoneCallback> _doneCallback;
 		void* _function{ nullptr };
 		void* _userData{ nullptr };
 		std::string _error;
