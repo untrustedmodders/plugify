@@ -12,24 +12,24 @@
 
 template<>
 struct glz::meta<plugify::ValueType> {
-    static constexpr auto value = enumerate(
-        "invalid", plugify::ValueType::Invalid,
-        "void", plugify::ValueType::Void,
-        "bool", plugify::ValueType::Bool,
-        "char8", plugify::ValueType::Char8,
-        "char16", plugify::ValueType::Char16,
-        "int8", plugify::ValueType::Int8,
-        "int16", plugify::ValueType::Int16,
-        "int32", plugify::ValueType::Int32,
-        "int64", plugify::ValueType::Int64,
-        "uint8", plugify::ValueType::Uint8,
-        "uint16", plugify::ValueType::Uint16,
-        "uint32", plugify::ValueType::Uint32,
-        "uint64", plugify::ValueType::Uint64,
-        "ptr64", plugify::ValueType::Ptr64,
-        "float", plugify::ValueType::Float,
-        "double", plugify::ValueType::Double,
-        "function", plugify::ValueType::Function,
+	static constexpr auto value = enumerate(
+		"invalid", plugify::ValueType::Invalid,
+		"void", plugify::ValueType::Void,
+		"bool", plugify::ValueType::Bool,
+		"char8", plugify::ValueType::Char8,
+		"char16", plugify::ValueType::Char16,
+		"int8", plugify::ValueType::Int8,
+		"int16", plugify::ValueType::Int16,
+		"int32", plugify::ValueType::Int32,
+		"int64", plugify::ValueType::Int64,
+		"uint8", plugify::ValueType::UInt8,
+		"uint16", plugify::ValueType::UInt16,
+		"uint32", plugify::ValueType::UInt32,
+		"uint64", plugify::ValueType::UInt64,
+		"ptr64", plugify::ValueType::Ptr64,
+		"float", plugify::ValueType::Float,
+		"double", plugify::ValueType::Double,
+		"function", plugify::ValueType::Function,
 		"string", plugify::ValueType::String,
 		"bool*", plugify::ValueType::ArrayBool,
 		"char8*", plugify::ValueType::ArrayChar8,
@@ -38,15 +38,15 @@ struct glz::meta<plugify::ValueType> {
 		"int16*", plugify::ValueType::ArrayInt16,
 		"int32*", plugify::ValueType::ArrayInt32,
 		"int64*", plugify::ValueType::ArrayInt64,
-		"uint8*", plugify::ValueType::ArrayUint8,
-		"uint16*", plugify::ValueType::ArrayUint16,
-		"uint32*", plugify::ValueType::ArrayUint32,
-		"uint64*", plugify::ValueType::ArrayUint64,
+		"uint8*", plugify::ValueType::ArrayUInt8,
+		"uint16*", plugify::ValueType::ArrayUInt16,
+		"uint32*", plugify::ValueType::ArrayUInt32,
+		"uint64*", plugify::ValueType::ArrayUInt64,
 		"ptr64*", plugify::ValueType::ArrayPtr64,
 		"float*", plugify::ValueType::ArrayFloat,
 		"double*", plugify::ValueType::ArrayDouble,
 		"string*", plugify::ValueType::ArrayString
-    );
+	);
 };
 
 template<>
