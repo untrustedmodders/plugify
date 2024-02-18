@@ -97,7 +97,6 @@ namespace plugify {
 		~Function();
 
 		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
-		using DoneCallback = void(*)(void* data);
 
 		/**
 		 * @brief Get a dynamically created callback function based on the raw signature.
@@ -125,17 +124,6 @@ namespace plugify {
 		void* GetFunction() const { return _function; }
 
 		/**
-		 * @brief Sets a callback function to be called when the class is destroy.
-		 *
-		 * @param doneCallback A function pointer with the signature `void callback(void* userData)`.
-		 *                     This function will be invoked upon class destroy.
-		 *
-		 * @note The provided callback should handle any necessary cleanup or post-processing.
-		 * @noreturn
-		 */
-		void SetDoneCallback(DoneCallback doneCallback) { _doneCallback = doneCallback; }
-
-		/**
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */
@@ -150,9 +138,7 @@ namespace plugify {
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
-		DoneCallback _doneCallback{ nullptr };
 		void* _function{ nullptr };
-		void* _userData{ nullptr };
 		std::string _error;
 	};
 } // namespace plugify
