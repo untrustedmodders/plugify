@@ -89,7 +89,7 @@ namespace plugify {
 		 * @brief Move constructor.
 		 * @param other Another instance of Function.
 		 */
-		Function(Function&& other) noexcept = default;
+		Function(Function&& other) noexcept;
 
 		/**
 		 * @brief Destructor.
@@ -133,7 +133,7 @@ namespace plugify {
 		 * @note The provided callback should handle any necessary cleanup or post-processing.
 		 * @noreturn
 		 */
-		void SetDoneCallback(DoneCallback doneCallback) { _doneCallback = std::make_unique<DoneCallback>(std::move(doneCallback)); }
+		void SetDoneCallback(DoneCallback doneCallback) { _doneCallback = doneCallback; }
 
 		/**
 		 * @brief Get the error message, if any.
@@ -150,7 +150,7 @@ namespace plugify {
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
-		std::unique_ptr<DoneCallback> _doneCallback;
+		DoneCallback _doneCallback{ nullptr };
 		void* _function{ nullptr };
 		void* _userData{ nullptr };
 		std::string _error;
