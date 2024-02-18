@@ -48,7 +48,6 @@ namespace plugify {
 		ArrayFloat,
 		ArrayDouble,
 		ArrayString,
-		ArrayWString,
 
 		LastPrimitive = Function
 	};
@@ -153,7 +152,6 @@ namespace plugify {
 			case ValueType::ArrayFloat:    return "float*";
 			case ValueType::ArrayDouble:   return "double*";
 			case ValueType::ArrayString:   return "string*";
-			case ValueType::ArrayWString:  return "wstring*";
 			default:                       return "unknown";
 		}
 	}
@@ -228,8 +226,6 @@ namespace plugify {
 			return ValueType::ArrayDouble;
 		} else if (value == "string*") {
 			return ValueType::ArrayString;
-		} else if (value == "wstring*") {
-			return ValueType::ArrayWString;
 		}
 		return ValueType::Invalid;
 	}
