@@ -120,8 +120,17 @@ namespace plugify {
 		/**
 		 * @brief Get a dynamically created function.
 		 * @return Pointer to the already generated function.
+		 * @note The returned pointer can be nullptr if function is not generate.
 		 */
 		void* GetFunction() const { return _function; }
+
+		/**
+		 * @brief Get the user data associated with the object.
+		 * @details This function returns a pointer to the user data associated with the object.
+		 * @return A void pointer to the user data.
+		 * @note The returned pointer can be nullptr if no user data is set.
+		 */
+		void* GetUserData() const { return _userData; }
 
 		/**
 		 * @brief Get the error message, if any.
@@ -139,6 +148,7 @@ namespace plugify {
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
 		void* _function{ nullptr };
+		void* _userData{ nullptr };
 		std::string _error;
 	};
 } // namespace plugify

@@ -6,8 +6,9 @@ using namespace asmjit;
 Function::Function(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
-Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _function{other._function}, _error{std::move(other._error)} {
+Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _function{other._function}, _userData{other._userData}, _error{std::move(other._error)} {
 	other._function = nullptr;
+	other._userData = nullptr;
 }
 
 Function::~Function() {
@@ -26,6 +27,8 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		_error = "JitRuntime invalid";
 		return nullptr;
 	}
+
+	_userData = data;
 
 	/*
 	  AsmJit is smart enough to track register allocations and will forward
