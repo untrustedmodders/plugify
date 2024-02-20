@@ -11,7 +11,9 @@
 #define FMT_FORMAT_H <fmt/format.h>
 #endif
 
+#ifndef FMT_HEADER_ONLY
 #define FMT_HEADER_ONLY
+#endif
 #include FMT_FORMAT_H
 
 namespace std {
