@@ -2,6 +2,5 @@
     "baseDir": "res",
     "logSeverity": "debug",
     "repositories": [
-        "https://raw.githubusercontent.com/untrustedmodders/sample_plugins/main/snapshot_2024_01_13_16_10_05.wpackagemanifest"
     ]
 }
