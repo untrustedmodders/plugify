@@ -177,7 +177,7 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
     else()
         include(cmake/fmt.cmake)
     endif()
-    target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
+    target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
 endif()
 
 # ------------------------------------------------------------------------------
