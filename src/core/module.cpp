@@ -2,7 +2,7 @@
 #include "plugin.h"
 #include <plugify/module.h>
 #include <plugify/package.h>
-#include <utils/library_directory.h>
+#include <utils/library_search_dirs.h>
 
 using namespace plugify;
 
@@ -27,7 +27,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		return false;
 	}
 
-	std::vector<LibraryDirectory> libraryDirectories;
+	std::vector<fs::path> libraryDirectories;
 	if (const auto& libraryDirectoriesSettings = GetDescriptor().libraryDirectories) {
 		for (const std::string& rawPath : *libraryDirectoriesSettings) {
 			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath);
@@ -39,9 +39,9 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		}
 	}
 
-	_library = Library::LoadFromPath(fs::absolute(_filePath));
+	LibrarySearchDirs::Add(libraryDirectories);
 
-	libraryDirectories.clear();
+	_library = Library::LoadFromPath(fs::absolute(_filePath));
 
 	if (!_library) {
 		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), Library::GetError()));
