@@ -44,9 +44,11 @@ if (Git_FOUND)
             ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     # remove # from subject
-    string(REGEX REPLACE "[\#\"]+"
-            "" GIT_COMMIT_SUBJECT
-            ${GIT_COMMIT_SUBJECT})
+    if (DEFINED ${GIT_COMMIT_SUBJECT})
+        string(REGEX REPLACE "[\#\"]+"
+                "" GIT_COMMIT_SUBJECT
+                ${GIT_COMMIT_SUBJECT})
+    endif()
 else()
     message(STATUS "Git not installed")
     set(GIT_SHA1 "UNKNOWN")
