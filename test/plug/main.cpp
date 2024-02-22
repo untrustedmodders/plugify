@@ -1,4 +1,5 @@
 #include "std_logger.h"
+#include <plugify/compat_format.h>
 #include <plugify/plugify.h>
 #include <plugify/module.h>
 #include <plugify/package.h>

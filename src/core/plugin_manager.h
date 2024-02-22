@@ -25,7 +25,7 @@ namespace plugify {
 		ModuleOpt FindModule(std::string_view moduleName);
 		ModuleOpt FindModuleFromId(UniqueId moduleId);
 		ModuleOpt FindModuleFromLang(const std::string& moduleLang);
-		ModuleOpt FindModuleFromPath(const std::filesystem::path& moduleFilePath);
+		ModuleOpt FindModuleFromPath(const fs::path& moduleFilePath);
 		std::vector<ModuleRef> GetModules();
 
 		PluginOpt FindPlugin(const std::string& pluginName);

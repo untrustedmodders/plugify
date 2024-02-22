@@ -254,7 +254,7 @@ ModuleOpt PluginManager::FindModuleFromLang(const std::string& moduleLang) {
 	return {};
 }
 
-ModuleOpt PluginManager::FindModuleFromPath(const std::filesystem::path& moduleFilePath) {
+ModuleOpt PluginManager::FindModuleFromPath(const fs::path& moduleFilePath) {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleFilePath](const auto& module) {
 		return module->GetFilePath() == moduleFilePath;
 	});

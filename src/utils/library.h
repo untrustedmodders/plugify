@@ -3,7 +3,7 @@
 namespace plugify {
     class Library {
     public:
-        static std::unique_ptr<Library> LoadFromPath(const std::filesystem::path& libraryPath);
+        static std::unique_ptr<Library> LoadFromPath(const fs::path& libraryPath);
         static std::string GetError();
 
         ~Library();
