@@ -1,12 +1,12 @@
 #include "library_search_dirs.h"
+#include "platform.h"
+#include "os.h"
 
 using namespace plugify;
 
 inline LibrarySearchDirs::~LibrarySearchDirs() = default;
 
 #if PLUGIFY_PLATFORM_WINDOWS
-
-#include "os.h"
 
 class LibrarySearchDirsWin final : public LibrarySearchDirs {
 public:
@@ -40,10 +40,11 @@ class LibrarySearchDirsLinux final : public LibrarySearchDirs {
 			return;
 		_curLibPath = GetEnvVariable("LD_LIBRARY_PATH");
 		if (_curLibPath.has_value()) {
-			auto newLibPath = *_curLibPath;
+			std::string newLibPath;
 			for (const auto& directory : directories) {
-				std::format_to(std::back_inserter(newLibPath), ":{}", directory.string());
+				std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
 			}
+			std::format_to(std::back_inserter(newLibPath), "{}", *_curLibPath);
 			SetEnvVariable("LD_LIBRARY_PATH", newLibPath);
 		}
 	}
@@ -67,19 +68,20 @@ class LibrarySearchDirsApple final : public LibrarySearchDirs {
 	explicit LibrarySearchDirsApple(const std::vector<fs::path>& directories) {
 		if (directories.empty())
 			return;
-		_curLibPath = getEnvVariable("DYLD_LIBRARY_PATH");
+		_curLibPath = GetEnvVariable("DYLD_LIBRARY_PATH");
 		if (_curLibPath.has_value()) {
-			auto newLibPath = *_curLibPath;
+			std::string newLibPath;
 			for (const auto& directory : directories) {
-				std::format_to(std::back_inserter(newLibPath), ":{}", directory.string());
+				std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
 			}
-			setEnvVariable("DYLD_LIBRARY_PATH", newLibPath);
+			std::format_to(std::back_inserter(newLibPath), "{}", *_curLibPath);
+			SetEnvVariable("DYLD_LIBRARY_PATH", newLibPath);
 		}
 	}
 
 	~LibrarySearchDirsApple() override {
 		if(_curLibPath.has_value()) {
-			setEnvVariable("DYLD_LIBRARY_PATH", *_curLibPath);
+			SetEnvVariable("DYLD_LIBRARY_PATH", *_curLibPath);
 		}
 	}
 
