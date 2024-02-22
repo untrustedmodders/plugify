@@ -1,9 +1,12 @@
 #include "library_search_dirs.h"
-#include <utils/platform.h>
 
 using namespace plugify;
 
+inline LibrarySearchDirs::~LibrarySearchDirs() = default;
+
 #if PLUGIFY_PLATFORM_WINDOWS
+
+#include "os.h"
 
 class LibrarySearchDirsWin final : public LibrarySearchDirs {
 public:
