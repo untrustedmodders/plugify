@@ -1,12 +1,13 @@
 #include "platform.h"
+#include "os.h"
 
 using namespace plugify;
 
 #if PLUGIFY_PLATFORM_WINDOWS
 std::optional<std::wstring> GetEnvVariable(std::wstring_view varName) {
-	size_t size = GetEnvironmentVariableW(varName.data(), NULL, 0);
+	DWORD size = GetEnvironmentVariableW(varName.data(), NULL, 0);
 	std::wstring buffer(size, 0);
-	GetEnvironmentVariableW(varName.data(), buffer.data(), buffer.size());
+	GetEnvironmentVariableW(varName.data(), buffer.data(), size);
 	return { std::move(buffer) };
 }
 

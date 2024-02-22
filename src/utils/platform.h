@@ -1,7 +1,5 @@
 #pragma once
 
-#include "os.h"
-
 namespace plugify {
 #if PLUGIFY_PLATFORM_WINDOWS
 	std::optional<std::string> GetEnvVariable(std::string_view varName);
