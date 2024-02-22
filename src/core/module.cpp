@@ -39,7 +39,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		}
 	}
 
-	LibrarySearchDirs::Add(libraryDirectories);
+	auto scopedDirs = LibrarySearchDirs::Add(libraryDirectories);
 
 	_library = Library::LoadFromPath(fs::absolute(_filePath));
 
