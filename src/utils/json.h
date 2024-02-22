@@ -62,18 +62,103 @@ struct glz::meta<plugify::Severity> {
     );
 };
 
-GLZ_META(plugify::PluginDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, entryPoint, languageModule, dependencies, exportedMethods);
-GLZ_META(plugify::LanguageModuleDescriptor, fileVersion, version, versionName, friendlyName, description, createdBy, createdByURL, docsURL, downloadURL, updateURL, supportedPlatforms, language, libraryDirectories, forceLoad);
-GLZ_META(plugify::Config, baseDir, logSeverity, repositories);
+template <>
+struct glz::meta<plugify::PluginDescriptor> {
+	using T = plugify::PluginDescriptor;
+	static constexpr auto value = object(
+		"fileVersion", &T::fileVersion,
+		"version", &T::version,
+		"versionName", &T::versionName,
+		"friendlyName", &T::friendlyName,
+		"description", &T::description,
+		"createdBy", &T::createdBy,
+		"createdByURL", &T::createdByURL,
+		"docsURL", &T::docsURL,
+		"downloadURL", &T::downloadURL,
+		"updateURL", &T::updateURL,
+		"supportedPlatforms", &T::supportedPlatforms,
+		"entryPoint", &T::entryPoint,
+		"languageModule", &T::languageModule,
+		"dependencies", &T::dependencies,
+		"exportedMethods", &T::exportedMethods
+	);
+};
 
-GLZ_META(plugify::PackageVersion, version, download, platforms);
-GLZ_META(plugify::RemotePackage, name, type, author, description, versions);
-GLZ_META(plugify::LocalPackage, name, type, path, version, descriptor);
+template <>
+struct glz::meta<plugify::LanguageModuleDescriptor> {
+	using T = plugify::LanguageModuleDescriptor;
+	static constexpr auto value = object(
+		"fileVersion", &T::fileVersion,
+		"version", &T::version,
+		"versionName", &T::versionName,
+		"friendlyName", &T::friendlyName,
+		"description", &T::description,
+		"createdBy", &T::createdBy,
+		"createdByURL", &T::createdByURL,
+		"docsURL", &T::docsURL,
+		"downloadURL", &T::downloadURL,
+		"updateURL", &T::updateURL,
+		"supportedPlatforms", &T::supportedPlatforms,
+		"language", &T::language,
+		"libraryDirectories", &T::libraryDirectories,
+		"forceLoad", &T::forceLoad
+	);
+};
+
+template <>
+struct glz::meta<plugify::Config> {
+	using T = plugify::Config;
+	static constexpr auto value = object(
+		"baseDir", &T::baseDir,
+		"logSeverity", &T::logSeverity,
+		"repositories", &T::repositories
+	);
+};
+
+template <>
+struct glz::meta<plugify::PackageVersion> {
+	using T = plugify::PackageVersion;
+	static constexpr auto value = object(
+		"version", &T::version,
+		"checksum", &T::checksum,
+		"download", &T::download,
+		"platforms", &T::platforms
+	);
+};
+
+template <>
+struct glz::meta<plugify::RemotePackage> {
+	using T = plugify::RemotePackage;
+	static constexpr auto value = object(
+		"name", &T::name,
+		"type", &T::type,
+		"author", &T::author,
+		"description", &T::description,
+		"versions", &T::versions
+	);
+};
+
+template <>
+struct glz::meta<plugify::LocalPackage> {
+	using T = plugify::LocalPackage;
+	static constexpr auto value = object(
+		"name", &T::name,
+		"type", &T::type,
+		"path", &T::path,
+		"version", &T::version,
+		"descriptor", &T::descriptor
+	);
+};
 
 template <>
 struct glz::meta<plugify::Property> {
 	using T = plugify::Property;
-	static constexpr auto value = object("type", &T::type, "name", skip{}, "ref", &T::ref, "prototype", &T::prototype);
+	static constexpr auto value = object(
+		"type", &T::type,
+		"name", skip{},
+		"ref", &T::ref,
+		"prototype", &T::prototype
+	);
 };
 
 namespace glz::detail {
