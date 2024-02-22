@@ -8,8 +8,6 @@ using namespace plugify;
 class LibrarySearchDirsWin final : public LibrarySearchDirs {
 public:
 	explicit LibrarySearchDirsWin(const std::vector<fs::path>& directories) {
-		if (directories.empty())
-			return;
 		for (const auto& directory : directories) {
 			auto* cookie = AddDllDirectory(directory.c_str());
 			if (cookie == nullptr)
@@ -37,19 +35,19 @@ class LibrarySearchDirsLinux final : public LibrarySearchDirs {
 	explicit LibrarySearchDirsLinux(const std::vector<fs::path>& directories) {
 		if (directories.empty())
 			return;
-		_curLibPath = getEnvVariable("LD_LIBRARY_PATH");
+		_curLibPath = GetEnvVariable("LD_LIBRARY_PATH");
 		if (_curLibPath.has_value()) {
 			auto newLibPath = *_curLibPath;
 			for (const auto& directory : directories) {
 				std::format_to(std::back_inserter(newLibPath), ":{}", directory.string());
 			}
-			setEnvVariable("LD_LIBRARY_PATH", newLibPath);
+			SetEnvVariable("LD_LIBRARY_PATH", newLibPath);
 		}
 	}
 
 	~LibrarySearchDirsLinux() override {
 		if(_curLibPath.has_value()) {
-			setEnvVariable("LD_LIBRARY_PATH", *_curLibPath);
+			SetEnvVariable("LD_LIBRARY_PATH", *_curLibPath);
 		}
 	}
 
