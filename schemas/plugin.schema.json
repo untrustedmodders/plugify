@@ -70,7 +70,7 @@
       "items": {
         "type": "string",
         "title": "Platform name.",
-        "pattern": "^(windows|linux|apple)?$"
+        "enum": ["windows", "linux", "apple"]
       }
     },
     "languageModule": {
