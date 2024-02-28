@@ -1,0 +1,287 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/untrustedmodders/plugify/main/schemas/plugin.schema.json",
+  "type": "object",
+  "required": [
+    "fileVersion",
+    "version",
+    "versionName",
+    "friendlyName",
+    "entryPoint",
+    "languageModule"
+  ],
+  "properties": {
+    "fileVersion": {
+      "type": "number",
+      "title": "The version number of the configuration file format.",
+      "minimum": 1
+    },
+    "version": {
+      "type": "number",
+      "title": "The version number of the plugin.",
+      "minimum": 0
+    },
+    "versionName": {
+      "type": "string",
+      "title": "A human-readable version name.",
+      "minLength": 1
+    },
+    "friendlyName": {
+      "type": "string",
+      "title": "A user-friendly name for the plugin.",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "title": " A brief description or overview of the plugin."
+    },
+    "createdBy": {
+      "type": "string",
+      "title": "The creator or author of the plugin."
+    },
+    "createdByURL": {
+      "type": "string",
+      "title": "The URL linking to the creator's profile or information.",
+      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+    },
+    "docsURL": {
+      "type": "string",
+      "title": "The URL linking to the documentation for the plugin.",
+      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+    },
+    "downloadURL": {
+      "type": "string",
+      "title": "The URL for downloading the plugin, typically a release package or ZIP file.",
+      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+    },
+    "updateURL": {
+      "type": "string",
+      "title": "The URL for checking and fetching updates for the plugin.",
+      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+    },
+    "entryPoint": {
+      "type": "string",
+      "title": "The entry point or main executable for the plugin.",
+      "minLength": 1
+    },
+    "supportedPlatforms": {
+      "type": "array",
+      "title": "An array listing the platforms supported by the plugin.",
+      "items": {
+        "type": "string",
+        "title": "Platform name.",
+        "pattern": "^(windows|linux|apple)?$"
+      }
+    },
+    "languageModule": {
+      "type": "object",
+      "title": "Information about the programming language module used.",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Language name.",
+          "pattern": "^(?!plugin$).*",
+          "minLength": 1,
+          "examples": [
+            "cpp",
+            "csharp",
+            "python",
+            "javascript"
+          ]
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "title": "A list of plugin references specifying the dependencies required for the plugin.",
+      "items": {
+        "type": "string",
+        "title": "Dependency plugin name.",
+        "minLength": 1
+      }
+    },
+    "exportedMethods": {
+      "type": "array",
+      "title": "An array describing functions/methods exposed by the plugin.",
+      "items": {
+        "type": "object",
+        "title": "An object describing single function/method exposed by the plugin.",
+        "required": [
+          "name",
+          "funcName",
+          "paramTypes",
+          "retType"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Function name to export to the other plugins.",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+          },
+          "funcName": {
+            "type": "string",
+            "title": "Internal function name in plugin's assembly.",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+          },
+          "paramTypes": {
+            "type": "array",
+            "title": "Parameters list.",
+            "items": {
+              "type": "object",
+              "title": "Parameter's information.",
+              "required": [
+                "type"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "title": "Parameter's type.",
+                  "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "float", "double", "function", "string", "bool*", "char8*", "char16*", "int8*", "int16*", "int32*", "int64*", "uint8*", "uint16*", "uint32*", "uint64*", "ptr64*", "float*", "double*", "string*"]
+                },
+                "name": {
+                  "type": "string",
+                  "title": "Parameter's name.",
+                  "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                },
+                "prototype": {
+                  "type": "object",
+                  "title": "An object describing function prototype.",
+                  "required": [
+                    "paramTypes",
+                    "retType"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "title": "Function name.",
+                      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                    },
+                    "paramTypes": {
+                      "type": "array",
+                      "title": "Parameters list.",
+                      "items": {
+                        "type": "object",
+                        "title": "Parameter's information.",
+                        "required": [
+                          "type"
+                        ],
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "title": "Parameter's type.",
+                            "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "float", "double", "function", "string", "bool*", "char8*", "char16*", "int8*", "int16*", "int32*", "int64*", "uint8*", "uint16*", "uint32*", "uint64*", "ptr64*", "float*", "double*", "string*"]
+                          },
+                          "name": {
+                            "type": "string",
+                            "title": "Parameter's name.",
+                            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                          }
+                        }
+                      }
+                    },
+                    "retType": {
+                      "type": "object",
+                      "title": "Return's information.",
+                      "required": [
+                        "type"
+                      ],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "title": "Return's type.",
+                          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "float", "double", "function", "string", "bool*", "char8*", "char16*", "int8*", "int16*", "int32*", "int64*", "uint8*", "uint16*", "uint32*", "uint64*", "ptr64*", "float*", "double*", "string*"]
+                        },
+                        "name": {
+                          "type": "string",
+                          "title": "Return's name.",
+                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "retType": {
+            "type": "object",
+            "title": "Return's information.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "title": "Return's type.",
+                "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "float", "double", "function", "string", "bool*", "char8*", "char16*", "int8*", "int16*", "int32*", "int64*", "uint8*", "uint16*", "uint32*", "uint64*", "ptr64*", "float*", "double*", "string*"]
+              },
+              "name": {
+                "type": "string",
+                "title": "Return's name.",
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+              },
+              "prototype": {
+                "type": "object",
+                "title": "An object describing function prototype.",
+                "required": [
+                  "paramTypes",
+                  "retType"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "title": "Function name.",
+                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                  },
+                  "paramTypes": {
+                    "type": "array",
+                    "title": "Parameters list.",
+                    "items": {
+                      "type": "object",
+                      "title": "Parameter's information.",
+                      "required": [
+                        "type"
+                      ],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "title": "Parameter's type.",
+                          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "float", "double", "function", "string", "bool*", "char8*", "char16*", "int8*", "int16*", "int32*", "int64*", "uint8*", "uint16*", "uint32*", "uint64*", "ptr64*", "float*", "double*", "string*"]
+                        },
+                        "name": {
+                          "type": "string",
+                          "title": "Parameter's name.",
+                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                        }
+                      }
+                    }
+                  },
+                  "retType": {
+                    "type": "object",
+                    "title": "Return's information.",
+                    "required": [
+                      "type"
+                    ],
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "title": "Return's type.",
+                        "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "float", "double", "function", "string", "bool*", "char8*", "char16*", "int8*", "int16*", "int32*", "int64*", "uint8*", "uint16*", "uint32*", "uint64*", "ptr64*", "float*", "double*", "string*"]
+                      },
+                      "name": {
+                        "type": "string",
+                        "title": "Return's name.",
+                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

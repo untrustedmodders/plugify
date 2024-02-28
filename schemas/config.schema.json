@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/untrustedmodders/plugify/main/schemas/config.schema.json",
+  "type": "object",
+  "required": [
+  ],
+  "properties": {
+	"baseDir": {
+      "type": "string",
+      "title": "Relative base folder path.",
+      "minLength": 1
+    },
+	"logSeverity": {
+      "type": "string",
+      "title": "Log severity.",
+	  "enum": ["none", "fatal", "error", "warning", "info", "debug", "verbose"]
+    },
+    "repositories": {
+      "type": "array",
+      "title": "Specifies additional links where the language modules and plugins can search for download or updates.",
+      "items": {
+        "type": "string",
+        "title": "The URL linking to the repository.",
+        "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+      }
+    }
+  }
+}
