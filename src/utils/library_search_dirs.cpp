@@ -35,6 +35,7 @@ std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::
 #elif PLUGIFY_PLATFORM_LINUX
 
 class LibrarySearchDirsLinux final : public LibrarySearchDirs {
+public:
 	explicit LibrarySearchDirsLinux(const std::vector<fs::path>& directories) {
 		if (directories.empty())
 			return;
@@ -65,6 +66,7 @@ std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::
 #elif PLUGIFY_PLATFORM_APPLE
 
 class LibrarySearchDirsApple final : public LibrarySearchDirs {
+public:
 	explicit LibrarySearchDirsApple(const std::vector<fs::path>& directories) {
 		if (directories.empty())
 			return;
