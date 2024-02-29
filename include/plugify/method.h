@@ -59,9 +59,9 @@ namespace plugify {
 		//Mat4x3,
 		//Mat4x4,
 		// glm:vec
-		Vec2,
-		Vec3,
-		Vec4,
+		//Vec2,
+		//Vec3,
+		//Vec4,
 
 		LastPrimitive = Function
 	};
