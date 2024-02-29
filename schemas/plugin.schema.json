@@ -96,9 +96,36 @@
       "type": "array",
       "title": "A list of plugin references specifying the dependencies required for the plugin.",
       "items": {
-        "type": "string",
-        "title": "Dependency plugin name.",
-        "minLength": 1
+        "type": "object",
+        "title": "Describes the properties of a plugin dependency.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "The name of the plugin reference.",
+            "minLength": 1
+          },
+          "optional": {
+            "type": "boolean",
+            "title": "Indicates whether the plugin reference is optional."
+          },
+          "supportedPlatforms": {
+            "type": "array",
+            "title": "The platforms supported by the plugin reference.",
+            "items": {
+              "type": "string",
+              "title": "Platform name.",
+              "enum": ["windows", "linux", "apple"]
+            }
+          },
+          "requestedVersion": {
+            "type": "integer",
+            "title": "Optional requested version of the plugin reference.",
+            "minimum": 0
+          }
+        }
       }
     },
     "exportedMethods": {
@@ -148,6 +175,7 @@
                   "type": "object",
                   "title": "An object describing function prototype.",
                   "required": [
+                    "name",
                     "paramTypes",
                     "retType"
                   ],
@@ -225,6 +253,7 @@
                 "type": "object",
                 "title": "An object describing function prototype.",
                 "required": [
+                  "name",
                   "paramTypes",
                   "retType"
                 ],
