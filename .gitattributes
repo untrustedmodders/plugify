@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Exclude a folder from being detected as a specific programming language
+schemas/* linuguist-vendored
