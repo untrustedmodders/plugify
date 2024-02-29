@@ -31,6 +31,7 @@ message(VERBOSE "*")
 # ------------------------------------------------------------------------------
 # Includes
 include(cmake/git.cmake)
+include(cmake/vcheck.cmake)
 
 include(CheckCXXSourceCompiles)
 include(CMakePushCheckState)
@@ -255,6 +256,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_COMPILED_GENERATOR="${CMAKE_GENERATOR}"
         PLUGIFY_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
         PLUGIFY_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}")
+
+if(COMPILER_SUPPORTS_VERSION_SCRIPT)
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/plugify.ver")
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/plugify.ver)
+endif()
 
 # ------------------------------------------------------------------------------
 # Tools
