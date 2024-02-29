@@ -31,7 +31,6 @@ message(VERBOSE "*")
 # ------------------------------------------------------------------------------
 # Includes
 include(cmake/git.cmake)
-include(cmake/vcheck.cmake)
 
 include(CheckCXXSourceCompiles)
 include(CMakePushCheckState)
@@ -257,9 +256,25 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
         PLUGIFY_MODULE_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}")
 
-if(COMPILER_SUPPORTS_VERSION_SCRIPT)
+
     set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/plugify.ver")
     set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/plugify.ver)
+endif()
+
+if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
+    if(${CMAKE_VERSION} VERSION_GREATER 3.13 OR ${CMAKE_VERSION} VERSION_EQUAL 3.13)
+        if(APPLE)
+            target_link_options(${PROJECT_NAME} PRIVATE "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/src/exported_symbols.lds")
+        elseif(UNIX)
+            target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/src/version_script.lds")
+        endif()
+    else()
+        if(APPLE)
+            target_link_libraries(${PROJECT_NAME} PRIVATE "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/src/exported_symbols.lds")
+        elseif(UNIX)
+            target_link_libraries(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/src/version_script.lds")
+        endif()
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
