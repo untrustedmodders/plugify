@@ -3,8 +3,5 @@
         extern "C++" {
             plugify::*;
         };
-    local: 
-        extern "C++" {
-            std::*;
-        };
+    local:
 };
