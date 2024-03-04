@@ -13,6 +13,7 @@ namespace plugify {
 	 */
 	enum class ValueType : std::uint8_t {
 		Invalid,
+
 		// C types
 		Void,
 		Bool,
@@ -30,8 +31,10 @@ namespace plugify {
 		Float,
 		Double,
 		Function,
+
 		// std::string
 		String,
+
 		// std::vector
 		ArrayBool,
 		ArrayChar8,
@@ -48,20 +51,22 @@ namespace plugify {
 		ArrayFloat,
 		ArrayDouble,
 		ArrayString,
+
+		// glm:vec
+		Vector2,
+		Vector3,
+		Vector4,
+
 		// glm:mat
 		//Mat2x2,
 		//Mat2x3,
 		//Mat2x4,
-		//Mat3x2,
+		Matrix3x2,
 		//Mat3x3,
 		//Mat3x4,
 		//Mat4x2,
 		//Mat4x3,
-		//Mat4x4,
-		// glm:vec
-		//Vec2,
-		//Vec3,
-		//Vec4,
+		Matrix4x4,
 
 		LastPrimitive = Function
 	};
@@ -166,6 +171,11 @@ namespace plugify {
 			case ValueType::ArrayFloat:    return "float*";
 			case ValueType::ArrayDouble:   return "double*";
 			case ValueType::ArrayString:   return "string*";
+			case ValueType::Vector2:       return "vec2";
+			case ValueType::Vector3:       return "vec3";
+			case ValueType::Vector4:       return "vec4";
+			case ValueType::Matrix3x2:     return "mat3x2";
+			case ValueType::Matrix4x4:     return "mat4x4";
 			default:                       return "unknown";
 		}
 	}
@@ -240,6 +250,16 @@ namespace plugify {
 			return ValueType::ArrayDouble;
 		} else if (value == "string*") {
 			return ValueType::ArrayString;
+		} else if (value == "vec2") {
+			return ValueType::Vector2;
+		} else if (value == "vec3") {
+			return ValueType::Vector3;
+		} else if (value == "vec4") {
+			return ValueType::Vector4;
+		} else if (value == "mat3x2") {
+			return ValueType::Matrix3x2;
+		} else if (value == "mat4x4") {
+			return ValueType::Matrix4x4;
 		}
 		return ValueType::Invalid;
 	}
