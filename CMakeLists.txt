@@ -44,6 +44,7 @@ check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
 option(PLUGIFY_USE_LIBCPP "Use libc++ by adding -stdlib=libc++ flag if available." OFF)
 option(PLUGIFY_USE_SANITIZER "Enable sanitizers by adding -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined flags if available." OFF)
 option(PLUGIFY_USE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
+option(PLUGIFY_USE_ABI0 "Enable use of the older C++ ABI, which was the default in GCC versions before GCC 5" ON)
 
 if(PLUGIFY_USE_LIBCPP)
     if(NOT WIN32)
@@ -218,6 +219,14 @@ endif()
 
 if(PLUGIFY_CLANG_TIDY_EXECUTABLE)
     set(CMAKE_CXX_CLANG_TIDY "${PLUGIFY_CLANG_TIDY_EXECUTABLE}; --config-file=.clang-tidy; --header-filter=src/.*; --extra-arg=/EHsc")
+endif()
+
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    if(PLUGIFY_USE_ABI0)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=0)
+    else()
+        target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=1)
+    endif()
 endif()
 
 if(WIN32)
