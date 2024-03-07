@@ -38,7 +38,6 @@ The following lists how the types are exposed to the C++ API.
 | vector2                | vec2     | true  |
 | vector3                | vec3     | true  |
 | vector4                | vec4     | true  |
-| matrix3x2              | mat3x2   | true  |
 | matrix4x4              | mat4x4   | true  |
 
 ## Exported Functions

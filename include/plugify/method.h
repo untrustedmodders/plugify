@@ -58,17 +58,18 @@ namespace plugify {
 		Vector4,
 
 		// glm:mat
-		//Mat2x2,
-		//Mat2x3,
-		//Mat2x4,
-		Matrix3x2,
-		//Mat3x3,
-		//Mat3x4,
-		//Mat4x2,
-		//Mat4x3,
+		//Matrix2x2,
+		//Matrix2x3,
+		//Matrix2x4,
+		//Matrix3x2,
+		//Matrix3x3,
+		//Matrix3x4,
+		//Matrix4x2,
+		//Matrix4x3,
 		Matrix4x4,
 
-		LastPrimitive = Function
+		LastPrimitive = Function,
+		FirstPOD = Vector2
 	};
 
 	struct Method;
@@ -109,27 +110,6 @@ namespace plugify {
 		 * @return True if the names of this instance and rhs are equal.
 		 */
 		[[nodiscard]] bool operator==(const Method& rhs) const { return name == rhs.name; }
-
-		/**
-		 * @brief Checks if the return type and all parameter types are primitive.
-		 *
-		 * This method examines the return type and parameter types to determine
-		 * whether they are primitive types. It returns true if both the return type
-		 * and all parameter types are primitive, and false otherwise.
-		 *
-		 * @return True if the return type and all parameter types are primitive, false otherwise.
-		 */
-		[[nodiscard]] bool IsPrimitive() const {
-			if (retType.type >= ValueType::LastPrimitive)
-				return false;
-
-			for (const auto& param : paramTypes) {
-				if (param.type >= ValueType::LastPrimitive)
-					return false;
-			}
-
-			return true;
-		}
 	};
 
 	/**
@@ -174,7 +154,6 @@ namespace plugify {
 			case ValueType::Vector2:       return "vec2";
 			case ValueType::Vector3:       return "vec3";
 			case ValueType::Vector4:       return "vec4";
-			case ValueType::Matrix3x2:     return "mat3x2";
 			case ValueType::Matrix4x4:     return "mat4x4";
 			default:                       return "unknown";
 		}
@@ -256,8 +235,6 @@ namespace plugify {
 			return ValueType::Vector3;
 		} else if (value == "vec4") {
 			return ValueType::Vector4;
-		} else if (value == "mat3x2") {
-			return ValueType::Matrix3x2;
 		} else if (value == "mat4x4") {
 			return ValueType::Matrix4x4;
 		}

@@ -118,36 +118,6 @@ namespace plugify {
 		 */
 		Matrix4x4& operator=(const Matrix4x4& other) = default;
 	};
-
-	/**
-	 * @struct Matrix3x2
-	 * @brief Represents a 3x2 matrix using Vector3 rows.
-	 */
-	struct Matrix3x2 {
-		union {
-			struct {
-				float m11, m12;
-				float m21, m22;
-				float m31, m32;
-			};
-			Vector2 rows[3]; ///< Rows of the matrix represented by Vector3.
-			std::array<float, 6> data; ///< Array representation of the matrix.
-		};
-
-		/**
-		 * @brief Default constructor. Initializes the matrix to the identity matrix.
-		 */
-		Matrix3x2() : m11{1.0f}, m12{0.0f},
-					  m21{0.0f}, m22{1.0f},
-					  m31{0.0f}, m32{0.0f} {}
-
-		/**
-		 * @brief Assignment operator for Matrix3x2.
-		 * @param other The Matrix3x2 to assign values from.
-		 * @return Reference to the modified Matrix3x2.
-		 */
-		Matrix3x2& operator=(const Matrix3x2& other) = default;
-	};
 }
 
 #if defined(__clang__)

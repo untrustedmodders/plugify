@@ -49,7 +49,6 @@ struct glz::meta<plugify::ValueType> {
 		"vec2", plugify::ValueType::Vector2,
 		"vec3", plugify::ValueType::Vector3,
 		"vec4", plugify::ValueType::Vector4,
-		"mat3x2", plugify::ValueType::Matrix3x2,
 		"mat4x4", plugify::ValueType::Matrix4x4
 	);
 };
