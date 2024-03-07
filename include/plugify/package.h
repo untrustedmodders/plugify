@@ -28,7 +28,7 @@ namespace plugify {
 		 * @param rhs The right-hand side PackageVersion for comparison.
 		 * @return True if the version of this instance is less than the version of rhs.
 		 */
-		bool operator <(const PackageVersion& rhs) const { return version > rhs.version; }
+		[[nodiscard]] bool operator <(const PackageVersion& rhs) const { return version > rhs.version; }
 	};
 
 	/**
@@ -53,7 +53,7 @@ namespace plugify {
 		 * @param rhs The right-hand side Package for comparison.
 		 * @return True if the name and type of this instance are equal to those of rhs.
 		 */
-		bool operator==(const Package& rhs) const { return name == rhs.name && type == rhs.type; }
+		[[nodiscard]] bool operator==(const Package& rhs) const { return name == rhs.name && type == rhs.type; }
 	};
 
 	/**
@@ -73,7 +73,7 @@ namespace plugify {
 		 * @brief Get the latest available version of the package.
 		 * @return An optional reference to the latest PackageVersion.
 		 */
-		PackageOpt LatestVersion() const {
+		[[nodiscard]] PackageOpt LatestVersion() const {
 			if (!versions.empty())
 				return *versions.begin();
 			return {};
@@ -84,7 +84,7 @@ namespace plugify {
 		 * @param version The version number to retrieve.
 		 * @return An optional reference to the specified PackageVersion.
 		 */
-		PackageOpt Version(std::int32_t version) const {
+		[[nodiscard]] PackageOpt Version(std::int32_t version) const {
 			auto it = versions.find(PackageVersion{ version, {}, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
 				return *it;

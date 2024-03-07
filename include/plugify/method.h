@@ -108,7 +108,7 @@ namespace plugify {
 		 * @param rhs The right-hand side Method for comparison.
 		 * @return True if the names of this instance and rhs are equal.
 		 */
-		bool operator==(const Method& rhs) const { return name == rhs.name; }
+		[[nodiscard]] bool operator==(const Method& rhs) const { return name == rhs.name; }
 
 		/**
 		 * @brief Checks if the return type and all parameter types are primitive.
@@ -119,7 +119,7 @@ namespace plugify {
 		 *
 		 * @return True if the return type and all parameter types are primitive, false otherwise.
 		 */
-		bool IsPrimitive() const {
+		[[nodiscard]] bool IsPrimitive() const {
 			if (retType.type >= ValueType::LastPrimitive)
 				return false;
 

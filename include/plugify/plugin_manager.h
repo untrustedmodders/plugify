@@ -65,82 +65,82 @@ namespace plugify {
 		 * @brief Check if the plugin manager is initialized.
 		 * @return True if the plugin manager is initialized, false otherwise.
 		 */
-		bool IsInitialized() const;
+		[[nodiscard]] bool IsInitialized() const;
 
 		/**
 		 * @brief Find a module by name.
 		 * @param moduleName Name of the module to find.
 		 * @return Optional reference to the found module.
 		 */
-		ModuleOpt FindModule(const std::string& moduleName) const;
+		[[nodiscard]] ModuleOpt FindModule(const std::string& moduleName) const;
 
 		/**
 		 * @brief Find a module by name (string view version).
 		 * @param moduleName Name of the module to find.
 		 * @return Optional reference to the found module.
 		 */
-		ModuleOpt FindModule(std::string_view moduleName) const;
+		[[nodiscard]] ModuleOpt FindModule(std::string_view moduleName) const;
 
 		/**
 		 * @brief Find a module by unique identifier.
 		 * @param moduleId Unique identifier of the module to find.
 		 * @return Optional reference to the found module.
 		 */
-		ModuleOpt FindModuleFromId(UniqueId moduleId) const;
+		[[nodiscard]] ModuleOpt FindModuleFromId(UniqueId moduleId) const;
 
 		/**
 		 * @brief Find a module by language.
 		 * @param moduleLang Language of the module to find.
 		 * @return Optional reference to the found module.
 		 */
-		ModuleOpt FindModuleFromLang(const std::string& moduleLang) const;
+		[[nodiscard]] ModuleOpt FindModuleFromLang(const std::string& moduleLang) const;
 
 		/**
 		 * @brief Find a module by file path.
 		 * @param moduleFilePath File path of the module to find.
 		 * @return Optional reference to the found module.
 		 */
-		ModuleOpt FindModuleFromPath(const std::filesystem::path& moduleFilePath) const;
+		[[nodiscard]] ModuleOpt FindModuleFromPath(const std::filesystem::path& moduleFilePath) const;
 
 		/**
 		 * @brief Get a vector of references to all modules.
 		 * @return Vector of module references.
 		 */
-		std::vector<ModuleRef> GetModules() const;
+		[[nodiscard]] std::vector<ModuleRef> GetModules() const;
 
 		/**
 		 * @brief Find a plugin by name.
 		 * @param pluginName Name of the plugin to find.
 		 * @return Optional reference to the found plugin.
 		 */
-		PluginOpt FindPlugin(const std::string& pluginName) const;
+		[[nodiscard]] PluginOpt FindPlugin(const std::string& pluginName) const;
 
 		/**
 		 * @brief Find a plugin by name (string view version).
 		 * @param pluginName Name of the plugin to find.
 		 * @return Optional reference to the found plugin.
 		 */
-		PluginOpt FindPlugin(std::string_view pluginName) const;
+		[[nodiscard]] PluginOpt FindPlugin(std::string_view pluginName) const;
 
 		/**
 		 * @brief Find a plugin by unique identifier.
 		 * @param pluginId Unique identifier of the plugin to find.
 		 * @return Optional reference to the found plugin.
 		 */
-		PluginOpt FindPluginFromId(UniqueId pluginId) const;
+		[[nodiscard]] PluginOpt FindPluginFromId(UniqueId pluginId) const;
 
 		/**
 		 * @brief Find a plugin by its descriptor.
 		 * @param pluginDescriptor Descriptor of the plugin to find.
 		 * @return Optional reference to the found plugin.
 		 */
-		PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) const;
+		[[nodiscard]] PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor) const;
 
 		/**
 		 * @brief Get a vector of references to all plugins.
 		 * @return Vector of plugin references.
 		 */
-		std::vector<PluginRef> GetPlugins() const;
+		[[nodiscard]] std::vector<PluginRef> GetPlugins() const;
 
 		/**
 		 * @brief Get the dependencies of a specific plugin.

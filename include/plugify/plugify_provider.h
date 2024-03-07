@@ -30,7 +30,7 @@ namespace plugify {
 		 * @brief Get the base directory of the Plugify system.
 		 * @return Reference to the base directory path.
 		 */
-		const std::filesystem::path& GetBaseDir() const;
+		[[nodiscard]] const std::filesystem::path& GetBaseDir() const;
 
 	private:
 		PlugifyProvider& _impl; ///< Reference to the underlying PlugifyProvider implementation.

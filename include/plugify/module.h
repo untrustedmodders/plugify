@@ -47,55 +47,55 @@ namespace plugify {
 		 * @brief Get the unique identifier of the language module.
 		 * @return The unique identifier.
 		 */
-		UniqueId GetId() const;
+		[[nodiscard]] UniqueId GetId() const;
 
 		/**
 		 * @brief Get the name of the language module.
 		 * @return The name of the language module.
 		 */
-		const std::string& GetName() const;
+		[[nodiscard]] const std::string& GetName() const;
 
 		/**
 		 * @brief Get the language of the language module.
 		 * @return The language of the language module.
 		 */
-		const std::string& GetLanguage() const;
+		[[nodiscard]] const std::string& GetLanguage() const;
 
 		/**
 		 * @brief Get the friendly name of the language module.
 		 * @return The friendly name of the language module.
 		 */
-		const std::string& GetFriendlyName() const;
+		[[nodiscard]] const std::string& GetFriendlyName() const;
 
 		/**
 		 * @brief Get the file path of the language module.
 		 * @return The file path as a filesystem path.
 		 */
-		const std::filesystem::path& GetFilePath() const;
+		[[nodiscard]] const std::filesystem::path& GetFilePath() const;
 
 		/**
 		 * @brief Get the base directory of the language module.
 		 * @return The base directory as a filesystem path.
 		 */
-		const std::filesystem::path& GetBaseDir() const;
+		[[nodiscard]] const std::filesystem::path& GetBaseDir() const;
 
 		/**
 		 * @brief Get the descriptor of the language module.
 		 * @return The descriptor of the language module.
 		 */
-		const LanguageModuleDescriptor& GetDescriptor() const;
+		[[nodiscard]] const LanguageModuleDescriptor& GetDescriptor() const;
 
 		/**
 		 * @brief Get the state of the language module.
 		 * @return The state of the language module.
 		 */
-		ModuleState GetState() const;
+		[[nodiscard]] ModuleState GetState() const;
 
 		/**
 		 * @brief Get the error message associated with the language module.
 		 * @return The error message.
 		 */
-		const std::string& GetError() const;
+		[[nodiscard]] const std::string& GetError() const;
 
 	private:
 		Module& _impl; ///< The implementation of the language module.

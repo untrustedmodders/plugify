@@ -59,7 +59,7 @@ namespace plugify {
 		 * @brief Check if the package manager is initialized.
 		 * @return True if the package manager is initialized, false otherwise.
 		 */
-		bool IsInitialized() const;
+		[[nodiscard]] bool IsInitialized() const;
 
 		/**
 		 * @brief Install a package.
@@ -134,13 +134,13 @@ namespace plugify {
 		 * @brief Check if there are missed packages (not installed but required by other packages).
 		 * @return True if there are missed packages, false otherwise.
 		 */
-		bool HasMissedPackages() const;
+		[[nodiscard]] bool HasMissedPackages() const;
 
 		/**
 		 * @brief Check if there are conflicted packages (installed with conflicting versions).
 		 * @return True if there are conflicted packages, false otherwise.
 		 */
-		bool HasConflictedPackages() const;
+		[[nodiscard]] bool HasConflictedPackages() const;
 
 		/**
 		 * @brief Install missed packages.
@@ -157,26 +157,26 @@ namespace plugify {
 		 * @param packageName Name of the package to find.
 		 * @return Optional reference to the found local package.
 		 */
-		LocalPackageOpt FindLocalPackage(const std::string& packageName) const;
+		[[nodiscard]] LocalPackageOpt FindLocalPackage(const std::string& packageName) const;
 
 		/**
 		 * @brief Find a remote package by name.
 		 * @param packageName Name of the package to find.
 		 * @return Optional reference to the found remote package.
 		 */
-		RemotePackageOpt FindRemotePackage(const std::string& packageName) const;
+		[[nodiscard]] RemotePackageOpt FindRemotePackage(const std::string& packageName) const;
 
 		/**
 		 * @brief Get a vector of references to all local packages.
 		 * @return Vector of local package references.
 		 */
-		std::vector<LocalPackageRef> GetLocalPackages() const;
+		[[nodiscard]] std::vector<LocalPackageRef> GetLocalPackages() const;
 
 		/**
 		 * @brief Get a vector of references to all remote packages.
 		 * @return Vector of remote package references.
 		 */
-		std::vector<RemotePackageRef> GetRemotePackages() const;
+		[[nodiscard]] std::vector<RemotePackageRef> GetRemotePackages() const;
 
 	private:
 		PackageManager& _impl; ///< Reference to the underlying PackageManager implementation.

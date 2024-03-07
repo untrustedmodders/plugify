@@ -25,6 +25,6 @@ namespace plugify {
 		 * @param rhs The right-hand side PluginReferenceDescriptor for comparison.
 		 * @return True if the names of this instance and rhs are equal.
 		 */
-		bool operator==(const PluginReferenceDescriptor& rhs) const { return name == rhs.name; }
+		[[nodiscard]] bool operator==(const PluginReferenceDescriptor& rhs) const { return name == rhs.name; }
 	};
 } // namespace plugify

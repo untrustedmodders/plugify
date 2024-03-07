@@ -30,7 +30,7 @@ namespace plugify {
 		 * @return Value of the argument.
 		 */
 		template<typename T>
-		T GetArgument(uint8_t idx) const {
+		[[nodiscard]] T GetArgument(uint8_t idx) const {
 			return *(T*) GetArgumentPtr(idx);
 		}
 
@@ -41,7 +41,7 @@ namespace plugify {
 		 * @param idx Index of the argument.
 		 * @return Pointer to the argument.
 		 */
-		int8_t* GetArgumentPtr(uint8_t idx) const {
+		[[nodiscard]] int8_t* GetArgumentPtr(uint8_t idx) const {
 			return ((int8_t*)&arguments) + sizeof(uintptr_t) * idx;
 		}
 	};
@@ -66,7 +66,7 @@ namespace plugify {
 		 * @brief Get a pointer to the return value.
 		 * @return Pointer to the return value.
 		 */
-		uint8_t* GetReturnPtr() const {
+		[[nodiscard]] uint8_t* GetReturnPtr() const {
 			return (uint8_t*)&ret;
 		}
 
@@ -122,7 +122,7 @@ namespace plugify {
 		 * @return Pointer to the already generated function.
 		 * @note The returned pointer can be nullptr if function is not generate.
 		 */
-		void* GetFunction() const { return _function; }
+		[[nodiscard]] void* GetFunction() const { return _function; }
 
 		/**
 		 * @brief Get the user data associated with the object.
@@ -130,13 +130,13 @@ namespace plugify {
 		 * @return A void pointer to the user data.
 		 * @note The returned pointer can be nullptr if no user data is set.
 		 */
-		void* GetUserData() const { return _userData; }
+		[[nodiscard]] void* GetUserData() const { return _userData; }
 
 		/**
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */
-		const std::string& GetError() { return _error; }
+		[[nodiscard]] const std::string& GetError() { return _error; }
 
 	private:
 		static asmjit::CallConvId GetCallConv(const std::string& conv);

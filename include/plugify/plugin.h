@@ -58,49 +58,49 @@ namespace plugify {
 		 * @brief Get the unique identifier of the plugin.
 		 * @return The unique identifier.
 		 */
-		UniqueId GetId() const;
+		[[nodiscard]] UniqueId GetId() const;
 
 		/**
 		 * @brief Get the name of the plugin.
 		 * @return The name of the plugin.
 		 */
-		const std::string& GetName() const;
+		[[nodiscard]] const std::string& GetName() const;
 
 		/**
 		 * @brief Get the friendly name of the plugin.
 		 * @return The friendly name of the plugin.
 		 */
-		const std::string& GetFriendlyName() const;
+		[[nodiscard]] const std::string& GetFriendlyName() const;
 
 		/**
 		 * @brief Get the base directory of the plugin.
 		 * @return The base directory as a filesystem path.
 		 */
-		const std::filesystem::path& GetBaseDir() const;
+		[[nodiscard]] const std::filesystem::path& GetBaseDir() const;
 
 		/**
 		 * @brief Get the descriptor of the plugin.
 		 * @return The descriptor of the plugin.
 		 */
-		const PluginDescriptor& GetDescriptor() const;
+		[[nodiscard]] const PluginDescriptor& GetDescriptor() const;
 
 		/**
 		 * @brief Get the state of the plugin.
 		 * @return The state of the plugin.
 		 */
-		PluginState GetState() const;
+		[[nodiscard]] PluginState GetState() const;
 
 		/**
 		 * @brief Get the error message associated with the plugin.
 		 * @return The error message.
 		 */
-		const std::string& GetError() const;
+		[[nodiscard]] const std::string& GetError() const;
 
 		/**
 		 * @brief Get the list of methods supported by the plugin.
 		 * @return The list of method data.
 		 */
-		const std::vector<MethodData>& GetMethods() const;
+		[[nodiscard]] const std::vector<MethodData>& GetMethods() const;
 
 	private:
 		Plugin& _impl; ///< The implementation of the plugin.

@@ -48,7 +48,7 @@ namespace plugify {
 		 * @brief Get a string representation of the Version object.
 		 * @return A string representing the Version object.
 		 */
-		std::string ToString() const;
+		[[nodiscard]] std::string ToString() const;
 
 	private:
 		uint8_t _major; ///< The major version component.
