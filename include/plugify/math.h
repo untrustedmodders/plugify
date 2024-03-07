@@ -2,6 +2,24 @@
 
 #include <array>
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#endif  // defined(__GNUC__)
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpedantic"
+#pragma clang diagnostic ignored "-Wignored-qualifiers"
+#pragma clang diagnostic ignored "-Wfloat-equal"
+#endif  // defined(__clang__)
+
+#if defined(_MSC_VER)
+#pragma warning( push )
+#pragma warning( disable : 4201 )
+#endif // defined(_MSC_VER)
+
 namespace plugify {
 	/**
 	 * @struct Vector2
@@ -131,3 +149,15 @@ namespace plugify {
 		Matrix3x2& operator=(const Matrix3x2& other) = default;
 	};
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif  // defined(__clang__)
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif  // defined(__GNUC__)
+
+#if defined(_MSC_VER)
+#pragma warning( pop )
+#endif // defined(_MSC_VER)
