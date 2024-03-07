@@ -158,6 +158,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE sha256 miniz)
 if(COMPILER_SUPPORTS_FPIC)
     target_compile_options(sha256 PRIVATE -fPIC)
     target_compile_options(miniz PRIVATE -fPIC)
+    if(UNIX AND NOT APPLE)
+        target_compile_definitions(sha256 PRIVATE _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
@@ -223,10 +226,6 @@ endif()
 
 if(UNIX AND NOT APPLE)
     target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
-    get_target_property(TARGET_LIBS ${PROJECT_NAME} LINK_LIBRARIES)
-    foreach(LIB_NAME ${TARGET_LIBS})
-        target_compile_definitions(${LIB_NAME} PRIVATE _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
-    endforeach()
 endif()
 
 if(WIN32)
