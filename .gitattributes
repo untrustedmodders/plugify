@@ -2,4 +2,4 @@
 * text=auto
 
 # Exclude a folder from being detected as a specific programming language
-schemas/* linuguist-vendored
+schemas/* linguist-vendored
