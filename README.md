@@ -28,7 +28,6 @@
 - [About](#about)
   - [Key Features](#key-features)
   - [Motivation](#motivation)
-  - [Built With](#built-with)
 - [Integration](#integration)
   - [Requirements](#requirements)
   - [CMake](#cmake)
@@ -59,35 +58,23 @@ redefining the boundaries of cross-language communication.
 ### Key Features
 
 1. **Dynamic Language Diversity:**  
-   Embrace a dynamic programming landscape with Plugify's unique ability to effortlessly support a myriad of programming languages. Choose the languages that best suit your project, opening the door to a diverse and adaptable development environment.
+Plugify’s power is in its flexibility. It allows you to use multiple programming languages. Choose the languages you need for the project, and go. This will make your development environment more diverse and flexible.
 
 2. **Language Modules:**  
-   Elevate your plugin development experience by easily installing language modules for different programming languages. Plugify adapts to your preferred language, allowing you to create feature-rich plugins without language constraints.
+Plugify allows you to install language modules for various programming languages, so you can use the language of your choice and develop plugins with the core without any doubt about language incompatibilities.
 
 3. **Inter-Language Communication:**  
-   Enable seamless communication between plugins, transcending language barriers. Export methods and share data between plugins, fostering collaboration regardless of the underlying programming language.
+Make plugins communicate to each other in any existing language. Export methods, and share data between plugins, without regard for the programming language used.
 
-4. **Package Manager:**  
-   Simplify package management with Plugify's robust package manager. Install, update, downgrade, or remove packages effortlessly, ensuring your development environment remains efficient and up-to-date.
+5. **Package Manager:**  
+Lets your system manage packages. It has a robust package manager. Install, remove, update, downgrade packages easily and make your development environment keep up with the latest packages to read.
 
-5. **Versatile Packages:**  
-   The package manager supports both plugins and language modules, offering a comprehensive solution for all your development needs. Quickly share your creations with the community by packaging your plugins and modules. Easily extend the functionality of Plugify by incorporating new packages that suit your project requirements and contribute to the growing ecosystem.
+6. **Versatile Packages:**  
+The package system handles plugins and language modules, and covers most of a developer’s needs. Package your plugins and modules for easy sharing. Easily extend Plugify with new packages that meet the requirements of your project and fit the ecosystem.
 
 ### Motivation
 
-> **[?]**
-> Provide general information about your project here.
-> What problem does it (intend to) solve?
-> What is thwae purpose of your project?
-> Why did you undertake it?
-> You don't have to answer all the questions -- just the ones relevant to your project.
-
-### Built With
-
-> **[?]**
-> Please provide the technologies that are used in the project.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+The plan was to build a new plugin system for CS in C#, but some of the decisions that were made in the early version led to a decision to ‘remove the training wheels’, unshackle the system from any game or embeddable language and create a system which allows the developers of plugins to build them in whatever language they like. For as long as that language module is installed, the system is able to support it. So by no longer trying to force it to be deemed a ‘good’ solution to be embedded in a variety of games, Plugify now goes far beyond the logical limitations a C#-specific solution has. What this means is that Plugify not only has the potential to have a larger community of developers, but is now flexible from the beginning to last a long time. Longevity was always a selling point, since if it was to work, it always had to be a ‘forever’ feature. It’s not just games development that stands to benefit. The flexibility of Plugify should mean it has uses in many projects, not just in games.
 
 ## Integration
 
