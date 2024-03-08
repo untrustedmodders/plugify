@@ -156,7 +156,7 @@ target_link_libraries(foo PRIVATE plugify::plugify)
 ```
 
 **Note**: It is recommended to use the URL approach described above which is supported as of version 1.0.0. See
-<wiki/cmake/#fetchcontent> for more information.
+[wiki](https://github.com/untrustedmodders/plugify/wiki/cmake/#fetchcontent) for more information.
 
 #### Supporting Both
 
@@ -191,7 +191,40 @@ endif()
 
 ### Example
 
-> **[?]**
+This code creates an instance of the object implementing the plugify::IPlugify interface. It sets up logging, initializes the instance, and then interacts with a package manager and a plugin manager if they are available. Error handling is included for initialization failures.
+
+```c++
+std::shared_ptr<plugify::IPlugify> instance = plugify::MakePlugify();
+if (instance) {
+	auto logger = std::make_shared<StdLogger>();
+	instance->SetLogger(logger);
+	logger->SetSeverity(plugify::Severity::Debug);
+	
+	if (!instance->Initialize()) {
+		std::cout << "No feet, no sweets!");
+		return EXIT_FAILURE;
+	}
+
+	if (auto packageManager = instance->GetPackageManager().lock()) {
+		packageManager->Initialize();
+
+		if (packageManager->HasMissedPackages()) {
+			std::cerr << "Plugin manager has missing packages." << std::endl;
+			packageManager->InstallMissedPackages();
+			continue;
+		}
+		if (packageManager->HasConflictedPackages()) {
+			std::cerr << "Plugin manager has conflicted packages." << std::endl;
+			packageManager->UninstallConflictedPackages();
+			continue;
+		}
+	}
+
+	if (auto pluginManager = instance->GetPluginManager().lock()) {
+		pluginManager->Initialize();
+	}
+}
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
