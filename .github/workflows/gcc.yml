@@ -7,7 +7,7 @@ on:
       - 'include/**'
       - 'src/**'
     branches:
-      - 'master'
+      - 'main'
     tags:
       - 'v*'
 
