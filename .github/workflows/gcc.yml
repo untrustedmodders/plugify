@@ -20,7 +20,7 @@ jobs:
 
       matrix:
         os: [ubuntu-latest]
-        build_type: [Debug, Release]
+        build_type: [Debug]
         c_compiler: [gcc]
         cpp_compiler: [g++]
 

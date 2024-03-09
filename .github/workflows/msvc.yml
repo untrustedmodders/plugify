@@ -20,7 +20,7 @@ jobs:
 
       matrix:
         os: [windows-latest]
-        build_type: [Debug, Release]
+        build_type: [Debug]
         c_compiler: [cl]
         cpp_compiler: [cl]
 

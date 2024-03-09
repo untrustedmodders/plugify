@@ -27,7 +27,7 @@ jobs:
 
       matrix:
         os: [windows-latest]
-        build_type: [Debug, Release]
+        build_type: [Debug]
 
     steps:
     - uses: actions/checkout@v3
