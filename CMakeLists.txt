@@ -35,9 +35,6 @@ include(cmake/git.cmake)
 include(CheckCXXSourceCompiles)
 include(CMakePushCheckState)
 
-include(CheckCCompilerFlag)
-check_c_compiler_flag("-fPIC" COMPILER_SUPPORTS_FPIC)
-
 
 # ------------------------------------------------------------------------------
 # Compiler stuff
@@ -155,12 +152,10 @@ endif()
 include(cmake/sha256.cmake)
 include(cmake/miniz.cmake)
 target_link_libraries(${PROJECT_NAME} PRIVATE sha256 miniz)
-if(COMPILER_SUPPORTS_FPIC)
-    target_compile_options(sha256 PRIVATE -fPIC)
-    target_compile_options(miniz PRIVATE -fPIC)
-    if(UNIX AND NOT APPLE)
-        target_compile_definitions(sha256 PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
-    endif()
+set_property(TARGET sha256 PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
+if(UNIX AND NOT APPLE)
+    target_compile_definitions(sha256 PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
 endif()
 
 # ------------------------------------------------------------------------------
