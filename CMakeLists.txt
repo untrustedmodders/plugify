@@ -159,7 +159,7 @@ if(COMPILER_SUPPORTS_FPIC)
     target_compile_options(sha256 PRIVATE -fPIC)
     target_compile_options(miniz PRIVATE -fPIC)
     if(UNIX AND NOT APPLE)
-        target_compile_definitions(sha256 PRIVATE _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+        target_compile_definitions(sha256 PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
     endif()
 endif()
 
