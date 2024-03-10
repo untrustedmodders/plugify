@@ -247,7 +247,12 @@ TypeId Function::GetTypeId(ValueType valueType) {
 		case ValueType::ArrayPtr64:
 		case ValueType::ArrayFloat:
 		case ValueType::ArrayDouble:
-		case ValueType::ArrayString: return TypeId::kUIntPtr;
+		case ValueType::ArrayString:
+		case ValueType::Vector2:
+		case ValueType::Vector3:
+		case ValueType::Vector4:
+		case ValueType::Matrix4x4:
+			return TypeId::kUIntPtr;
 	}
 	return TypeId::kVoid;
 }
