@@ -60,6 +60,12 @@ namespace plugify {
 		 * @return True if the package manager is initialized, false otherwise.
 		 */
 		[[nodiscard]] bool IsInitialized() const;
+		
+		/**
+		 * @brief Reload the package manager.
+		 * @return True if was initializated, false otherwise.
+		 */
+		bool Reload() const;
 
 		/**
 		 * @brief Install a package.

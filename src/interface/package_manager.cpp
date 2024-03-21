@@ -18,6 +18,10 @@ bool IPackageManager::IsInitialized() const {
 	return _impl.IsInitialized();
 }
 
+bool IPackageManager::Reload() const {
+	return _impl.Reload();
+}
+
 void IPackageManager::InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) const {
 	_impl.InstallPackage(packageName, requiredVersion);
 }

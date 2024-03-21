@@ -17,6 +17,7 @@ namespace plugify {
 		bool Initialize();
 		void Terminate();
 		bool IsInitialized();
+		bool Reload();
 
 		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
 		void InstallPackages(std::span<const std::string> packageNames);

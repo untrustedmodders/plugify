@@ -171,6 +171,11 @@ void PackageManager::LoadRemotePackages() {
 	std::mutex mutex;
 
 	auto fetchManifest = [&](const std::string& url) {
+		if (!HTTPDownloader::IsValidURL(url)) {
+			PL_LOG_WARNING("Tried to fetch a package that is not have valid url: \"{}\", aborting", url);
+			return;
+		}
+		
 		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
 			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 				if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
@@ -217,14 +222,11 @@ void PackageManager::LoadRemotePackages() {
 	};
 
 	for (const auto& url : plugify->GetConfig().repositories) {
-		if (!url.empty())
-			fetchManifest(url);
+		fetchManifest(url);
 	}
 
 	for (const auto& package : _localPackages) {
-		const auto& url = package.descriptor->updateURL;
-		if (!url.empty())
-			fetchManifest(url);
+		fetchManifest(package.descriptor->updateURL);
 	}
 
 	//FetchPackagesListFromAPI(mutex);
@@ -481,8 +483,10 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 }
 
 void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool reinstall) {
-	if (manifestUrl.empty())
+	if (!HTTPDownloader::IsValidURL(manifestUrl)) {
+		PL_LOG_WARNING("Tried to install packages from manifest which is not have valid url: \"{}\", aborting", manifestUrl);
 		return;
+	}
 
 	PL_LOG_INFO("Read package manifest from '{}'", manifestUrl);
 
@@ -774,9 +778,20 @@ void PackageManager::Request(const std::function<void()>& action, std::string_vi
 	PL_LOG_DEBUG("{} processed in {}ms", function, (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
+bool PackageManager::Reload() {
+	if (!IsInitialized())
+		return false;
+	
+	LoadLocalPackages();
+	LoadRemotePackages();
+	FindDependencies();
+	
+	return true;
+}
+
 bool PackageManager::DownloadPackage(const Package& package, const PackageVersion& version) const {
-	if (version.download.empty()) {
-		PL_LOG_WARNING("Tried to download a package that is not have valid url, aborting");
+	if (!HTTPDownloader::IsValidURL(version.download)) {
+		PL_LOG_WARNING("Tried to download a package that is not have valid url: \"{}\", aborting", version.download);
 		return false;
 	}
 
