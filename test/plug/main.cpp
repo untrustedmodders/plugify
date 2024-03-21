@@ -69,7 +69,7 @@ void Print(const T& t, F& f, std::string_view tab = "  ") {
 	if (!t.GetDescriptor().createdBy.empty()) {
 		std::format_to(std::back_inserter(result), " by {}", t.GetDescriptor().createdBy);
 	}
-	std::cout << result << std::endl;
+	CONPRINT(result);
 }
 
 template<typename S, typename T, typename F>
@@ -107,10 +107,10 @@ void Print(std::string_view name, const T& t, F& f) {
 }
 
 int main() {
-    std::shared_ptr<plugify::IPlugify> sorcerer = plugify::MakePlugify();
-    if (sorcerer) {
-        auto logger = std::make_shared<sorcerer::StdLogger>();
-        sorcerer->SetLogger(logger);
+    std::shared_ptr<plugify::IPlugify> plug = plugify::MakePlugify();
+    if (plug) {
+        auto logger = std::make_shared<plug::StdLogger>();
+        plug->SetLogger(logger);
 		logger->SetSeverity(plugify::Severity::Debug);
         bool running = true;
         while (running) {
@@ -133,12 +133,12 @@ int main() {
                 running = false;
             } else if (args[0] == "plugify" && args.size() > 1) {
                 if (args[1] == "init") {
-					if (!sorcerer->Initialize()) {
+					if (!plug->Initialize()) {
 						CONPRINTE("No feet, no sweets!");
 						return EXIT_FAILURE;
 					}
-					logger->SetSeverity(sorcerer->GetConfig().logSeverity);
-                    if (auto packageManager = sorcerer->GetPackageManager().lock()) {
+					logger->SetSeverity(plug->GetConfig().logSeverity);
+                    if (auto packageManager = plug->GetPackageManager().lock()) {
 						packageManager->Initialize();
 
 						if (packageManager->HasMissedPackages()) {
@@ -151,16 +151,16 @@ int main() {
 						}
 					}
 
-					if (auto pluginManager = sorcerer->GetPluginManager().lock()) {
+					if (auto pluginManager = plug->GetPluginManager().lock()) {
 						pluginManager->Initialize();
 					}
                 } else if (args[1] == "term") {
-                    sorcerer->Terminate();
+                    plug->Terminate();
                 } else if (args[1] == "exit") {
 					running = false;
                 } else {
-					auto packageManager = sorcerer->GetPackageManager().lock();
-					auto pluginManager = sorcerer->GetPluginManager().lock();
+					auto packageManager = plug->GetPackageManager().lock();
+					auto pluginManager = plug->GetPluginManager().lock();
 					if (!packageManager || !pluginManager) {
 						CONPRINTE("Initialize system before use.");
 						continue;
@@ -192,6 +192,7 @@ int main() {
 						CONPRINT("  show  <name>   - Show information about local package");
 						CONPRINT("  search <name>  - Search information about remote package");
 						CONPRINT("  snapshot       - Snapshot packages into manifest");
+						CONPRINT("  repo <url>     - Add repository to config");
 						CONPRINT("Package Manager options:");
 						CONPRINT("  -h, --help     - Show help");
 						CONPRINT("  -a, --all      - Install/remove/update all packages");
@@ -205,7 +206,7 @@ int main() {
 					else if (args[1] == "version" || args[1] == "-v") {
 						static std::string copyright = std::format("Copyright (C) 2023-{} Untrusted Modders Team", __DATE__ + 7);
 						CONPRINT(R"(      ____)" "");
-						CONPRINT(R"( ____|    \         Plugify v)" << sorcerer->GetVersion().ToString());
+						CONPRINT(R"( ____|    \         Plugify v)" << plug->GetVersion().ToString());
 						CONPRINT(R"((____|     `._____  )" << copyright);
 						CONPRINT(R"( ____|       _|___)" "");
 						CONPRINT(R"((____|     .'       This program may be freely redistributed under)" "");
@@ -280,7 +281,7 @@ int main() {
 							}
 							auto pluginRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
 							if (pluginRef.has_value()) {
-								auto& plugin = pluginRef->get();
+								const auto& plugin = pluginRef->get();
 								Print<plugify::PluginState>("Plugin", plugin, plugify::PluginStateToString);
 								CONPRINTF("  Language module: {}", plugin.GetDescriptor().languageModule.name);
 								CONPRINT("  Dependencies: ");
@@ -309,7 +310,7 @@ int main() {
 							}
 							auto moduleRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindModuleFromId(FormatInt(args[2])) : pluginManager->FindModule(args[2]);
 							if (moduleRef.has_value()) {
-								auto& module = moduleRef->get();
+								const auto& module = moduleRef->get();
 								Print<plugify::ModuleState>("Module", module, plugify::ModuleStateToString);
 								CONPRINTF("  Language: {}", module.GetDescriptor().language);
 								CONPRINTF("  File: {}", module.GetFilePath().string());
@@ -326,7 +327,7 @@ int main() {
 							CONPRINT("You must unload plugin manager before bring any change with package manager.");
 							continue;
 						}
-						packageManager->SnapshotPackages(sorcerer->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", FormatTime("%Y_%m_%d_%H_%M_%S")), true);
+						packageManager->SnapshotPackages(plug->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", FormatTime("%Y_%m_%d_%H_%M_%S")), true);
 					}
 
 					else if (args[1] == "install") {
@@ -352,6 +353,25 @@ int main() {
 							} else {
 								CONPRINT("You must give at least one requirement to install.");
 							}
+						}
+					}
+					
+					else if (args[1] == "repo") {
+						if (pluginManager->IsInitialized()) {
+							CONPRINT("You must unload plugin manager before bring any change with package manager.");
+							continue;
+						}
+						
+						if (args.size() > 2) {
+							bool success = false;
+							for (const auto& repository : std::span(args.begin() + 2, args.size() - 2)) {
+								success |= plug->AddRepository(repository);
+							}
+							if (success) {
+								packageManager->Reload();
+							}
+						} else {
+							CONPRINT("You must give at least one repository to add.");
 						}
 					}
 
@@ -439,7 +459,7 @@ int main() {
 						if (args.size() > 2) {
 							auto packageRef = packageManager->FindLocalPackage(args[2]);
 							if (packageRef.has_value()) {
-								auto& package = packageRef->get();
+								const auto& package = packageRef->get();
 								CONPRINTF("  Name: {}", package.name);
 								CONPRINTF("  Type: {}", package.type);
 								CONPRINTF("  Version: {}", package.version);
@@ -461,7 +481,7 @@ int main() {
 						if (args.size() > 2) {
 							auto packageRef = packageManager->FindRemotePackage(args[2]);
 							if (packageRef.has_value()) {
-								auto& package = packageRef->get();
+								const auto& package = packageRef->get();
 								CONPRINTF("  Name: {}", package.name);
 								CONPRINTF("  Type: {}", package.type);
 								if (!package.author.empty()) {

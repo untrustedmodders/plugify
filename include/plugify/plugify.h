@@ -57,6 +57,17 @@ namespace plugify {
 		 * @param severity The severity level of the log message.
 		 */
 		virtual void Log(const std::string& msg, Severity severity) = 0;
+		
+		/**
+		 * @brief Add a repository to the config.
+		 * 
+		 * This method adds a new repository to the config, allowing it to search for
+		 * packages in the specified repository when performing package-related operations.
+		 * 
+		 * @param repository The URL or path of the repository to add.
+		 * @return True if the repository was successfully added, false otherwise.
+		 */
+		virtual bool AddRepository(const std::string& repository) = 0;
 
 		/**
 		 * @brief Get a weak pointer to the Plugify provider.
@@ -71,7 +82,7 @@ namespace plugify {
 		[[nodiscard]] virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
 
 		/**
-		 * @brief Get a weak pointer to the Package Manager.
+		 * D@brief Get a weak pointer to the Package Manager.
 		 * @return Weak pointer to the Package Manager.
 		 */
 		[[nodiscard]] virtual std::weak_ptr<IPackageManager> GetPackageManager() const = 0;

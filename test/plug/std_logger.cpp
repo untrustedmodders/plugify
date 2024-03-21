@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace sorcerer {
+namespace plug {
     void StdLogger::Log(const std::string& message, plugify::Severity severity) {
         if (severity <= _severity) {
             switch (severity) {

@@ -4,7 +4,7 @@
 #include <mutex>
 #include <vector>
 
-namespace sorcerer {
+namespace plug {
     class StdLogger final : public plugify::ILogger {
     public:
         StdLogger() = default;

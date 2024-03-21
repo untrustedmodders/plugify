@@ -4,6 +4,7 @@
 #include <plugify/version.h>
 #include <plugify/plugify.h>
 #include <utils/file_system.h>
+#include <utils/http_downloader.h>
 #include <utils/json.h>
 
 namespace plugify {
@@ -18,11 +19,11 @@ namespace plugify {
 			if (_inited)
 				return false;
 
-			auto path = rootDir / "plugify.pconfig";
-			auto json = FileSystem::ReadText(path);
+			_configPath = rootDir / "plugify.pconfig";
+			auto json = FileSystem::ReadText(_configPath);
 			auto config = glz::read_json<Config>(json);
 			if (!config.has_value()) {
-				PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", path.string(), glz::format_error(config.error(), json));
+				PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", _configPath.string(), glz::format_error(config.error(), json));
 				return false;
 			}
 
@@ -75,6 +76,18 @@ namespace plugify {
 		void SetLogger(std::shared_ptr<ILogger> logger) override {
 			LogSystem::SetLogger(std::move(logger));
 		}
+		
+		bool AddRepository(const std::string& repository) override {
+			if (!HTTPDownloader::IsValidURL(repository))
+				return false;
+			
+			auto [it, result] = _config.repositories.emplace(repository);
+			if (result) {
+				return FileSystem::WriteText(_configPath, glz::write_json(_config));
+			}
+
+			return false;
+		}
 
 		std::weak_ptr<IPluginManager> GetPluginManager() const override {
 			return _pluginManager;
@@ -102,6 +115,7 @@ namespace plugify {
 		std::shared_ptr<PlugifyProvider> _provider;
 		Version _version{ PLUGIFY_VERSION_MAJOR, PLUGIFY_VERSION_MINOR, PLUGIFY_VERSION_PATCH, PLUGIFY_VERSION_TWEAK };
 		Config _config;
+		fs::path _configPath;
 		bool _inited{ false };
 	};
 
