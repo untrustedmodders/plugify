@@ -13,5 +13,9 @@ namespace plugify {
 		void Log(const std::string& msg, Severity severity);
 
 		const fs::path& GetBaseDir();
+		
+		bool IsPluginLoaded(const std::string& name, std::optional<int32_t> requiredVersion = {}, bool minimum = false);
+		
+		bool IsModuleLoaded(const std::string& name, std::optional<int32_t> requiredVersion = {}, bool minimum = false);
 	};
 }

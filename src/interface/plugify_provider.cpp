@@ -15,3 +15,11 @@ void IPlugifyProvider::Log(const std::string& msg, Severity severity) const {
 const fs::path& IPlugifyProvider::GetBaseDir() const {
     return _impl.GetBaseDir();
 }
+
+bool IPlugifyProvider::IsPluginLoaded(const std::string& name, std::optional<int32_t> requiredVersion, bool minimum) const {
+    return _impl.IsPluginLoaded(name, requiredVersion, minimum);
+}
+
+bool IPlugifyProvider::IsModuleLoaded(const std::string& name, std::optional<int32_t> requiredVersion, bool minimum) const {
+    return _impl.IsModuleLoaded(name, requiredVersion, minimum);
+}
