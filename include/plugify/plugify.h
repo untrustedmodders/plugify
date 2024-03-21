@@ -82,7 +82,7 @@ namespace plugify {
 		[[nodiscard]] virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
 
 		/**
-		 * D@brief Get a weak pointer to the Package Manager.
+		 * @brief Get a weak pointer to the Package Manager.
 		 * @return Weak pointer to the Package Manager.
 		 */
 		[[nodiscard]] virtual std::weak_ptr<IPackageManager> GetPackageManager() const = 0;
