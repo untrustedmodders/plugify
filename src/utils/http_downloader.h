@@ -49,6 +49,7 @@ namespace plugify {
 
 		static std::unique_ptr<HTTPDownloader> Create(std::string userAgent = kDefaultUserAgent);
 		static std::string_view GetExtensionForContentType(std::string_view contentType);
+		static bool IsValidURL(const std::string& url);
 
 		void CreateRequest(std::string url, Request::Callback callback/*, ProgressCallback* progress = nullptr*/);
 		void CreatePostRequest(std::string url, std::string postData, Request::Callback callback/*, ProgressCallback* progress = nullptr*/);
