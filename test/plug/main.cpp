@@ -330,6 +330,25 @@ int main() {
 						packageManager->SnapshotPackages(plug->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", FormatTime("%Y_%m_%d_%H_%M_%S")), true);
 					}
 
+					else if (args[1] == "repo") {
+						if (pluginManager->IsInitialized()) {
+							CONPRINT("You must unload plugin manager before bring any change with package manager.");
+							continue;
+						}
+
+						if (args.size() > 2) {
+							bool success = false;
+							for (const auto& repository : std::span(args.begin() + 2, args.size() - 2)) {
+								success |= plug->AddRepository(repository);
+							}
+							if (success) {
+								packageManager->Reload();
+							}
+						} else {
+							CONPRINT("You must give at least one repository to add.");
+						}
+					}
+
 					else if (args[1] == "install") {
 						if (pluginManager->IsInitialized()) {
 							CONPRINT("You must unload plugin manager before bring any change with package manager.");
@@ -353,25 +372,6 @@ int main() {
 							} else {
 								CONPRINT("You must give at least one requirement to install.");
 							}
-						}
-					}
-					
-					else if (args[1] == "repo") {
-						if (pluginManager->IsInitialized()) {
-							CONPRINT("You must unload plugin manager before bring any change with package manager.");
-							continue;
-						}
-						
-						if (args.size() > 2) {
-							bool success = false;
-							for (const auto& repository : std::span(args.begin() + 2, args.size() - 2)) {
-								success |= plug->AddRepository(repository);
-							}
-							if (success) {
-								packageManager->Reload();
-							}
-						} else {
-							CONPRINT("You must give at least one repository to add.");
 						}
 					}
 
