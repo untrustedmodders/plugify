@@ -4,7 +4,6 @@
 using namespace plugify;
 
 #if PLUGIFY_PLATFORM_WINDOWS
-
 std::wstring String::UTF8StringToWideString(std::string_view str){
 	std::wstring ret;
 	if (!UTF8StringToWideString(ret, str))
@@ -42,5 +41,4 @@ bool String::WideStringToUTF8String(std::string& dest, std::wstring_view str) {
 
 	return true;
 }
-
 #endif
