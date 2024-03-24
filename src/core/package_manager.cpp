@@ -178,10 +178,10 @@ void PackageManager::LoadRemotePackages() {
 		
 		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
 			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
-				if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
+				/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
 					PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", url);
 					return;
-				}
+				}*/
 
 				std::string buffer(data.begin(), data.end());
 				auto manifest = glz::read_json<PackageManifest>(buffer);
@@ -494,10 +494,10 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 
 	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
-			if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
+			/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
 				PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", manifestUrl);
 				return;
-			}
+			}*/
 
 			std::string buffer(data.begin(), data.end());
 			auto manifest = glz::read_json<PackageManifest>(buffer);
