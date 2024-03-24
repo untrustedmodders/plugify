@@ -35,6 +35,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
 				return false;
 			}
+			libraryDirectory.make_preferred();
 			libraryDirectories.emplace_back(std::move(libraryDirectory));
 		}
 	}
