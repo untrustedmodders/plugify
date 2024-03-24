@@ -176,7 +176,7 @@ void PackageManager::LoadRemotePackages() {
 			return;
 		}
 		
-		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
+		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string&, HTTPDownloader::Request::Data data) {
 			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 				/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
 					PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", url);
@@ -492,7 +492,7 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 
 	const char* func = __func__;
 
-	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
+	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string&, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
 				PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", manifestUrl);
