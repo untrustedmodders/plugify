@@ -803,14 +803,14 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 	PL_LOG_INFO("Downloading: '{}'", version.download);
 
 	_httpDownloader->CreateRequest(version.download, [&name = package.name, plugin = (package.type == "plugin"), &baseDir = plugify->GetConfig().baseDir, &checksum = version.checksum] // should be safe to pass ref
-		(int32_t statusCode, const std::string& contentType, HTTPDownloader::Request::Data data) {
+		(int32_t statusCode, const std::string&, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			PL_LOG_VERBOSE("Done downloading: '{}'", name);
 
-			if (contentType != "application/zip") {
+			/*if (contentType != "application/zip") {
 				PL_LOG_ERROR("Package: '{}' should be in *.zip format to be extracted correctly", name);
 				return;
-			}
+			}*/
 
 			if (!IsPackageLegit(checksum, data)) {
 				PL_LOG_WARNING("Archive hash does not match expected checksum, aborting");
