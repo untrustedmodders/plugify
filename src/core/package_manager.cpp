@@ -894,25 +894,30 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 			return std::format("Failed extracting file: '{}'", fileStat.m_filename);
 		}
 
-		fs::path finalPath = extractPath / fileStat.m_filename;
-		fs::path finalDir = finalPath.parent_path();
-
 		std::error_code ec;
-		if (!fs::exists(finalDir, ec) || !fs::is_directory(finalDir, ec)) {
+		fs::path finalPath = extractPath / fileStat.m_filename;
+
+		if (fileStat.m_is_directory) {
+			if (!fs::create_directories(finalPath, ec)) {
+				return std::format("Error creating output directory '{}'", finalPath.string());
+			}
+		} else {
+			fs::path finalDir = finalPath.parent_path();
+
 			if (!fs::create_directories(finalDir, ec)) {
 				return std::format("Error creating output directory '{}'", finalDir.string());
 			}
-		}
 
-		std::ofstream outputFile(finalPath, std::ios::binary);
-		if (outputFile.is_open()) {
-			outputFile.write(fileData.data(), static_cast<std::streamsize>(fileData.size()));
-		} else {
-			return std::format("Failed creating destination file: '{}'", fileStat.m_filename);
-		}
+			std::ofstream outputFile(finalPath, std::ios::binary);
+			if (outputFile.is_open()) {
+				outputFile.write(fileData.data(), static_cast<std::streamsize>(fileData.size()));
+			} else {
+				return std::format("Failed creating destination file: '{}'", fileStat.m_filename);
+			}
 
-		//state.progress += fileStat.m_comp_size;
-		//state.ratio = std::roundf(static_cast<float>(_packageState.progress) / static_cast<float>(_packageState.total) * 100.0f);
+			//state.progress += fileStat.m_comp_size;
+			//state.ratio = std::roundf(static_cast<float>(_packageState.progress) / static_cast<float>(_packageState.total) * 100.0f);
+		}
 	}
 
 	return {};
