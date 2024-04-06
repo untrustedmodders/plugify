@@ -898,15 +898,9 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 		fs::path finalPath = extractPath / fileStat.m_filename;
 
 		if (fileStat.m_is_directory) {
-			if (!fs::create_directories(finalPath, ec)) {
-				return std::format("Error creating output directory '{}'", finalPath.string());
-			}
+			fs::create_directories(finalPath, ec);
 		} else {
-			fs::path finalDir = finalPath.parent_path();
-
-			if (!fs::create_directories(finalDir, ec)) {
-				return std::format("Error creating output directory '{}'", finalDir.string());
-			}
+			fs::create_directories(finalPath.parent_path(), ec);
 
 			std::ofstream outputFile(finalPath, std::ios::binary);
 			if (outputFile.is_open()) {
