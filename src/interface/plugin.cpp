@@ -39,3 +39,7 @@ const std::string& IPlugin::GetError() const {
 const std::vector<MethodData>& IPlugin::GetMethods() const {
     return _impl.GetMethods();
 }
+
+std::optional<fs::path> IPlugin::FindResource(const fs::path& path) const {
+	return _impl.FindResource(path);
+}

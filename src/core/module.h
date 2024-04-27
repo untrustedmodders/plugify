@@ -51,6 +51,8 @@ namespace plugify {
 			return _error;
 		}
 
+		std::optional<fs::path> FindResource(const fs::path& path);
+
 		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
 		void Terminate();
 
@@ -85,6 +87,7 @@ namespace plugify {
 		fs::path _filePath;
 		fs::path _baseDir;
 		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
+		std::unordered_map<fs::path, fs::path, PathHash> _resources;
 		ModuleState _state{ ModuleState::NotLoaded };
 		std::string _error;
 		std::unique_ptr<Library> _library;

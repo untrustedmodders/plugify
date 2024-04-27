@@ -25,5 +25,6 @@ namespace plugify {
 		std::string downloadURL; ///< The download URL of the object.
 		std::string updateURL; ///< The update URL of the object.
 		std::vector<std::string> supportedPlatforms; ///< The platforms supported by the object.
+		std::optional<std::vector<std::string>> resourceDirectories; ///< Optional resource directories for the object.
 	};
 } // namespace plugify

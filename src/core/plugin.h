@@ -6,10 +6,11 @@
 namespace plugify {
 	class Module;
 	struct LocalPackage;
+	class IPlugifyProvider;
 	class Plugin final : public IPlugin {
 	public:
 		Plugin(UniqueId id, const LocalPackage& package);
-		~Plugin() = default;
+		~Plugin();
 
 	public:
 		/* IPlugin interface */
@@ -45,6 +46,8 @@ namespace plugify {
 			return _methods;
 		}
 
+		std::optional<fs::path> FindResource(const fs::path& path);
+
 		void SetError(std::string error);
 
 		void SetMethods(std::vector<MethodData> methods) {
@@ -76,6 +79,9 @@ namespace plugify {
 			_state = PluginState::NotLoaded;
 		}
 
+		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
+		void Terminate();
+
 		static inline const char* const kFileExtension = ".pplugin";
 
 	private:
@@ -86,6 +92,7 @@ namespace plugify {
 		std::optional<std::reference_wrapper<const Module>> _module;
 		std::vector<MethodData> _methods;
 		std::shared_ptr<PluginDescriptor> _descriptor;
+		std::unordered_map<fs::path, fs::path, PathHash> _resources;
 		PluginState _state{ PluginState::NotLoaded };
 	};
 }

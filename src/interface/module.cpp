@@ -41,3 +41,7 @@ ModuleState IModule::GetState() const {
 const std::string& IModule::GetError() const {
     return _impl.GetError();
 }
+
+std::optional<fs::path> IModule::FindResource(const fs::path& path) const {
+	return _impl.FindResource(path);
+}

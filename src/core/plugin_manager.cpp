@@ -95,6 +95,7 @@ void PluginManager::LoadRequiredLanguageModules() {
 			continue;
 		}
 		auto& module = *it;
+		plugin->Initialize(plugify->GetProvider());
 		plugin->SetModule(*module);
 		modules.emplace(module->GetId());
 	}

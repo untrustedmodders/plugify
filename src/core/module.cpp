@@ -2,6 +2,7 @@
 #include "plugin.h"
 #include <plugify/module.h>
 #include <plugify/package.h>
+#include <plugify/plugify_provider.h>
 #include <utils/library_search_dirs.h>
 
 using namespace plugify;
@@ -22,15 +23,34 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
 
 	std::error_code ec;
-	if (!fs::exists(_filePath, ec) || !fs::is_regular_file(_filePath, ec)) {
+	if (!fs::exists(_filePath, ec) || !fs::is_regular_file(_filePath, ec) || fs::is_symlink(_filePath, ec)) {
 		SetError(std::format("Module binary '{}' not exist!.", _filePath.string()));
 		return false;
+	}
+
+	const fs::path& baseDir = provider.lock()->GetBaseDir();
+	if (const auto& resourceDirectoriesSettings = GetDescriptor().resourceDirectories) {
+		for (const std::string& rawPath : *resourceDirectoriesSettings) {
+			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
+			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
+				if (entry.is_regular_file(ec) && !entry.is_symlink(ec)) {
+					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
+					fs::path absPath = baseDir / relPath;
+
+					if (!fs::exists(absPath, ec) || !fs::is_regular_file(absPath, ec) || fs::is_symlink(absPath, ec)) {
+						absPath = entry.path();
+					}
+
+					_resources.emplace(std::move(relPath), std::move(absPath));
+				}
+			}
+		}
 	}
 
 	std::vector<fs::path> libraryDirectories;
 	if (const auto& libraryDirectoriesSettings = GetDescriptor().libraryDirectories) {
 		for (const std::string& rawPath : *libraryDirectoriesSettings) {
-			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath);
+			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath, ec);
 			if (!fs::exists(libraryDirectory, ec) || !fs::is_directory(libraryDirectory, ec)) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
 				return false;
@@ -42,7 +62,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	auto scopedDirs = LibrarySearchDirs::Add(libraryDirectories);
 
-	_library = Library::LoadFromPath(fs::absolute(_filePath));
+	_library = Library::LoadFromPath(fs::absolute(_filePath, ec));
 
 	if (!_library) {
 		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), Library::GetError()));
@@ -124,6 +144,13 @@ void Module::EndPlugin(Plugin& plugin) const {
 	GetLanguageModule().OnPluginEnd(plugin);
 
 	plugin.SetTerminating();
+}
+
+std::optional<fs::path> Module::FindResource(const fs::path& path) {
+	auto it = _resources.find(path);
+	if (it != _resources.end())
+		return std::get<fs::path>(*it);
+	return {};
 }
 
 void Module::SetError(std::string error) {

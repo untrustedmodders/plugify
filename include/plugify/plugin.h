@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <optional>
 #include <filesystem>
 #include <plugify_export.h>
 
@@ -101,6 +102,29 @@ namespace plugify {
 		 * @return The list of method data.
 		 */
 		[[nodiscard]] const std::vector<MethodData>& GetMethods() const;
+
+		/**
+		 * @brief Find a resource file associated with the plugin.
+		 *
+		 * This method attempts to find a resource file located within the plugin's directory structure.
+		 * If the resource file is found, its path is returned. If the resource file does not exist
+		 * within the plugin's directory, std::nullopt is returned.
+		 *
+		 * If a user-overridden file exists in the base directory of Plugify with the same name and path,
+		 * the path returned by this function will direct to that overridden file.
+		 *
+		 * @param path The relative path to the resource file.
+		 * @return An optional containing the absolute path to the resource file if found, or std::nullopt otherwise.
+		 *
+		 * @code
+		 * Example:
+		 * // Assuming the plugin name is "sample_plugin"
+		 * // File located at: plugify/plugins/sample_plugin/configs/core.cfg
+		 * // User-overridden file could be located at: plugify/configs/core.cfg
+		 * auto resourcePath = plugin.FindResource("configs/core.cfg");
+		 * @endcode
+		 */
+		[[nodiscard]] std::optional<std::filesystem::path> FindResource(const std::filesystem::path& path) const;
 
 	private:
 		Plugin& _impl; ///< The implementation of the plugin.
