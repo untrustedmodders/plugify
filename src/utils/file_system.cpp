@@ -63,7 +63,7 @@ std::vector<fs::path> FileSystem::GetFiles(const fs::path& root, bool recursive,
 		auto iterate = [&](auto iterator) {
 			for (auto const& entry : iterator) {
 				const auto& path = entry.path();
-				if (fs::is_regular_file(entry, ec) && (ext.empty() || path.extension().string() == ext)) {
+				if (entry.is_regular_file(ec) && !entry.is_symlink(ec) && (ext.empty() || path.extension().string() == ext)) {
 					paths.push_back(path);
 				}
 			}
@@ -86,9 +86,9 @@ void FileSystem::ReadDirectory(const fs::path& directory, const PathHandler& han
 	std::error_code ec;
 	for (const auto& entry : fs::directory_iterator(directory, ec)) {
 		const auto& path = entry.path();
-		if (fs::is_directory(entry, ec)) {
+		if (entry.is_directory(ec)) {
 			ReadDirectory(path, handler, depth - 1);
-		} else if (fs::is_regular_file(entry, ec)) {
+		} else if (entry.is_regular_file(ec) && !entry.is_symlink(ec)) {
 			handler(path, depth);
 		}
 	}
