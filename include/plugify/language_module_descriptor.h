@@ -1,7 +1,6 @@
 #pragma once
 
 #include <plugify/descriptor.h>
-#include <optional>
 
 namespace plugify {
 	/**
