@@ -21,7 +21,6 @@ namespace plugify {
 		std::string checksum; ///< The checksum of the package.
 		std::string download; ///< The download URL for the package.
 		std::vector<std::string> platforms; ///< The platforms supported by the package.
-		// TODO: Add dependencies and conflicts here as needed.
 
 		/**
 		 * @brief Overloaded less-than operator for comparing PackageVersion instances.

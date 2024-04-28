@@ -61,8 +61,6 @@ namespace plugify {
 		void EndPlugin(Plugin& plugin) const;
 		void MethodExport(Plugin& plugin) const;
 
-		// TODO: Add more interactions with ILanguageModule
-
 		ILanguageModule& GetLanguageModule() const {
 			PL_ASSERT(_languageModule.has_value(), "Language module is not set!");
 			return _languageModule.value();
