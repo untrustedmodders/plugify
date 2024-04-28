@@ -11,7 +11,7 @@
 	  "displayName": "Default Config",
 	  "description": "Default build using Ninja generator",
 	  "generator": "Ninja",
-	  "binaryDir": "${sourceDir}/build/${presetName}",
+	  "binaryDir": "${sourceDir}/build/${hostSystemName}/${presetName}",
 	  "hidden": true
 	},
 	{
