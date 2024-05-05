@@ -113,9 +113,10 @@ namespace plugify {
 		 * @param method Reference to the method.
 		 * @param callback Callback function.
 		 * @param data User data.
+		 * @param obj If true, return will be pass as first argument.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr);
+		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, bool obj = true);
 
 		/**
 		 * @brief Get a dynamically created function.

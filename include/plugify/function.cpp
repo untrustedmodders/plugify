@@ -200,8 +200,8 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	return _function;
 }
 
-void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data) {
-	const bool objectReturn = method.retType.type > ValueType::LastPrimitive;
+void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data, bool obj) {
+	const bool objectReturn = obj && method.retType.type > ValueType::LastPrimitive;
 	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetTypeId(!objectReturn ? method.retType.type : ValueType::Void));
 	if (objectReturn) {
 		sig.addArg(GetTypeId(method.retType.type));
