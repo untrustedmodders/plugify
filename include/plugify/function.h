@@ -24,6 +24,19 @@ namespace plugify {
 		}
 
 		/**
+		 * @brief Set the value of the argument at the specified index and position within a multi-dimensional array.
+		 * @tparam T Type of the argument.
+		 * @param idx Index of the argument.
+		 * @param val Value to set.
+		 * @param i Position within the array (optional, default is 0).
+		 * @noreturn
+		 */
+		template<typename T>
+		void SetArgumentAt(uint8_t idx, T val, uint8_t i = 0) const {
+			(*(T**) GetArgumentPtr(idx))[i] = val;
+		}
+
+		/**
 		 * @brief Get the value of the argument at the specified index.
 		 * @tparam T Type of the argument.
 		 * @param idx Index of the argument.
