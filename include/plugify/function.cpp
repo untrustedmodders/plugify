@@ -201,13 +201,14 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 }
 
 void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data, bool obj) {
-	const bool objectReturn = obj && method.retType.type > ValueType::LastPrimitive;
-	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetTypeId(!objectReturn ? method.retType.type : ValueType::Void));
+	bool objectReturn = obj && method.retType.type > ValueType::LastPrimitive;
+	ValueType retType = !objectReturn ? (method.retType.ref ? ValueType::Ptr64 : method.retType.type) : ValueType::Void;
+	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetTypeId(retType));
 	if (objectReturn) {
 		sig.addArg(GetTypeId(method.retType.type));
 	}
 	for (const auto& type : method.paramTypes) {
-		sig.addArg(GetTypeId(type.type));
+		sig.addArg(GetTypeId(type.ref ? ValueType::Ptr64 : type.type));
 	}
 	return GetJitFunc(sig, method, callback, data);
 }
