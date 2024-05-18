@@ -54,12 +54,12 @@ namespace plugify {
 			_methods = std::move(methods);
 		}
 
-		const Module& GetModule() const {
+		Module& GetModule() const {
 			PL_ASSERT(_module.has_value(), "Module is not set!");
 			return _module.value().get();
 		}
 
-		void SetModule(const Module& module) {
+		void SetModule(Module& module) {
 			_module = module;
 		}
 
@@ -89,7 +89,7 @@ namespace plugify {
 		std::string _name;
 		fs::path _baseDir;
 		std::string _error;
-		std::optional<std::reference_wrapper<const Module>> _module;
+		std::optional<std::reference_wrapper<Module>> _module;
 		std::vector<MethodData> _methods;
 		std::shared_ptr<PluginDescriptor> _descriptor;
 		std::unordered_map<fs::path, fs::path, PathHash> _resources;
