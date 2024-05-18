@@ -111,7 +111,7 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 	for (const auto& plugin : _allPlugins) {
 		if (plugin->GetState() == PluginState::NotLoaded) {
 			if (plugin->GetModule().GetState() != ModuleState::Loaded) {
-				plugin->SetError(std::format("Language module: {} missing", plugin->GetModule().GetFriendlyName()));
+				plugin->SetError(std::format("Language module: '{}' missing", plugin->GetModule().GetFriendlyName()));
 				continue;
 			}
 			std::vector<std::string_view> names;
