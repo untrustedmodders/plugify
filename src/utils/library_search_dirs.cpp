@@ -51,7 +51,18 @@ public:
 				newLibPath.pop_back();
 			}
 		}
-		SetEnvVariable("LD_LIBRARY_PATH", newLibPath.data());
+		if (!SetEnvVariable("LD_LIBRARY_PATH", newLibPath.data())) {
+			switch (errno) {
+				case ENOMEM:
+					PL_LOG_ERROR("Error setting LD_LIBRARY_PATH env. variable. Insufficient memory to add the new environment variable.");
+					break;
+				case EINVAL:
+					PL_LOG_ERROR("Error setting LD_LIBRARY_PATH env. variable. Invalid name for the environment variable (contains '=' or is NULL).");
+					break;
+				default:
+					PL_LOG_ERROR("Error setting LD_LIBRARY_PATH env. variable. Unknown error occurred while setting the environment variable.");
+			}
+		}
 	}
 
 	~LibrarySearchDirsLinux() override {
@@ -88,7 +99,18 @@ public:
 				newLibPath.pop_back();
 			}
 		}
-		SetEnvVariable("DYLD_LIBRARY_PATH", newLibPath.data());
+		if (!SetEnvVariable("DYLD_LIBRARY_PATH", newLibPath.data())) {
+			switch (errno) {
+				case ENOMEM:
+					PL_LOG_ERROR("Error setting DYLD_LIBRARY_PATH env. variable. Insufficient memory to add the new environment variable.");
+					break;
+				case EINVAL:
+					PL_LOG_ERROR("Error setting DYLD_LIBRARY_PATH env. variable. Invalid name for the environment variable (contains '=' or is NULL).");
+					break;
+				default:
+					PL_LOG_ERROR("Error setting DYLD_LIBRARY_PATH env. variable. Unknown error occurred while setting the environment variable.");
+			}
+		}
 	}
 
 	~LibrarySearchDirsApple() override {
