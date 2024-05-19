@@ -13,7 +13,7 @@
 template<>
 struct glz::meta<plugify::ValueType> {
 	static constexpr auto value = enumerate(
-		plugify::ValueName::Invalid, plugify::ValueType::Invalid,
+		//plugify::ValueName::Invalid, plugify::ValueType::Invalid,
 		plugify::ValueName::Void, plugify::ValueType::Void,
 		plugify::ValueName::Bool, plugify::ValueType::Bool,
 		plugify::ValueName::Char8, plugify::ValueType::Char8,
