@@ -15,7 +15,7 @@
 std::vector<std::string> Split(const std::string& str, char sep) {
     std::vector<std::string> tokens;
     std::string token;
-    std::istringstream is{str};
+    std::istringstream is(str);
 
     while (std::getline(is, token, sep))
         tokens.emplace_back(token);
