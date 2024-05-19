@@ -39,20 +39,26 @@ public:
 	explicit LibrarySearchDirsLinux(const std::vector<fs::path>& directories) {
 		if (directories.empty())
 			return;
+		std::string newLibPath;
+		for (const auto& directory : directories) {
+			std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
+		}
 		_curLibPath = GetEnvVariable("LD_LIBRARY_PATH");
 		if (_curLibPath.has_value()) {
-			std::string newLibPath;
-			for (const auto& directory : directories) {
-				std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
-			}
 			std::format_to(std::back_inserter(newLibPath), "{}", *_curLibPath);
-			SetEnvVariable("LD_LIBRARY_PATH", newLibPath);
+		} else {
+			if (!newLibPath.empty()) {
+				newLibPath.pop_back();
+			}
 		}
+		SetEnvVariable("LD_LIBRARY_PATH", newLibPath.data());
 	}
 
 	~LibrarySearchDirsLinux() override {
 		if(_curLibPath.has_value()) {
-			SetEnvVariable("LD_LIBRARY_PATH", *_curLibPath);
+			SetEnvVariable("LD_LIBRARY_PATH", _curLibPath->data());
+		} else {
+			UnsetEnvVariable("LD_LIBRARY_PATH");
 		}
 	}
 
@@ -70,20 +76,26 @@ public:
 	explicit LibrarySearchDirsApple(const std::vector<fs::path>& directories) {
 		if (directories.empty())
 			return;
+		std::string newLibPath;
+		for (const auto& directory : directories) {
+			std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
+		}
 		_curLibPath = GetEnvVariable("DYLD_LIBRARY_PATH");
 		if (_curLibPath.has_value()) {
-			std::string newLibPath;
-			for (const auto& directory : directories) {
-				std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
-			}
 			std::format_to(std::back_inserter(newLibPath), "{}", *_curLibPath);
-			SetEnvVariable("DYLD_LIBRARY_PATH", newLibPath);
+		} else {
+			if (!newLibPath.empty()) {
+				newLibPath.pop_back();
+			}
 		}
+		SetEnvVariable("DYLD_LIBRARY_PATH", newLibPath.data());
 	}
 
 	~LibrarySearchDirsApple() override {
 		if(_curLibPath.has_value()) {
-			SetEnvVariable("DYLD_LIBRARY_PATH", *_curLibPath);
+			SetEnvVariable("DYLD_LIBRARY_PATH", _curLibPath->data());
+		} else {
+			UnsetEnvVariable("DYLD_LIBRARY_PATH");
 		}
 	}
 

@@ -2,25 +2,29 @@
 #include "os.h"
 
 #if PLUGIFY_PLATFORM_WINDOWS
-std::optional<std::wstring> plugify::GetEnvVariable(std::wstring_view varName) {
-	DWORD size = GetEnvironmentVariableW(varName.data(), NULL, 0);
+std::optional<std::wstring> plugify::GetEnvVariable(const wchar_t* varName) {
+	DWORD size = GetEnvironmentVariableW(varName, NULL, 0);
 	std::wstring buffer(size, 0);
-	GetEnvironmentVariableW(varName.data(), buffer.data(), size);
+	GetEnvironmentVariableW(varName, buffer.data(), size);
 	return { std::move(buffer) };
 }
 
-bool plugify::SetEnvVariable(std::wstring_view varName, std::wstring_view value) {
-	return SetEnvironmentVariableW(varName.data(), value.data()) != 0;
+bool plugify::SetEnvVariable(const wchar_t* varName, const wchar_t* value) {
+	return SetEnvironmentVariableW(varName, value) != 0;
 }
 #else
-std::optional<std::string> plugify::GetEnvVariable(std::string_view varName) {
-	char* val = getenv(varName.data());
+std::optional<std::string> plugify::GetEnvVariable(const char* varName) {
+	char* val = getenv(varName);
 	if (!val)
 		return {};
 	return val;
 }
 
-bool plugify::SetEnvVariable(std::string_view varName, std::string_view value) {
-	return setenv(varName.data(), value.data(), 1) == 0;
+bool plugify::SetEnvVariable(const char* varName, const char* value) {
+	return setenv(varName, value, 1) == 0;
+}
+
+bool plugify::UnsetEnvVariable(const char* varName) {
+	return unsetenv(varName) == 0;
 }
 #endif
