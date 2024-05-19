@@ -36,44 +36,10 @@ std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::
 
 class LibrarySearchDirsLinux final : public LibrarySearchDirs {
 public:
+	// Cannot set LD_LIBRARY_PATH at runtime, so use rpath flag
 	explicit LibrarySearchDirsLinux(const std::vector<fs::path>& directories) {
-		if (directories.empty())
-			return;
-		std::string newLibPath;
-		for (const auto& directory : directories) {
-			std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
-		}
-		_curLibPath = GetEnvVariable("LD_LIBRARY_PATH");
-		if (_curLibPath.has_value()) {
-			std::format_to(std::back_inserter(newLibPath), "{}", *_curLibPath);
-		} else {
-			if (!newLibPath.empty()) {
-				newLibPath.pop_back();
-			}
-		}
-		if (!SetEnvVariable("LD_LIBRARY_PATH", newLibPath.data())) {
-			switch (errno) {
-				case ENOMEM:
-					PL_LOG_ERROR("Error setting LD_LIBRARY_PATH env. variable. Insufficient memory to add the new environment variable.");
-					break;
-				case EINVAL:
-					PL_LOG_ERROR("Error setting LD_LIBRARY_PATH env. variable. Invalid name for the environment variable (contains '=' or is NULL).");
-					break;
-				default:
-					PL_LOG_ERROR("Error setting LD_LIBRARY_PATH env. variable. Unknown error occurred while setting the environment variable.");
-			}
-		}
 	}
-
-	~LibrarySearchDirsLinux() override {
-		if(_curLibPath.has_value()) {
-			SetEnvVariable("LD_LIBRARY_PATH", _curLibPath->data());
-		} else {
-			UnsetEnvVariable("LD_LIBRARY_PATH");
-		}
-	}
-
-	std::optional<std::string> _curLibPath;
+	~LibrarySearchDirsLinux() override = default;
 };
 
 std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::path>& additionalSearchDirectories) {
@@ -91,7 +57,7 @@ public:
 		for (const auto& directory : directories) {
 			std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
 		}
-		_curLibPath = GetEnvVariable("DYLD_LIBRARY_PATH");
+		_curLibPath = GetEnvVariable("DYLD_FALLBACK_LIBRARY_PATH");
 		if (_curLibPath.has_value()) {
 			std::format_to(std::back_inserter(newLibPath), "{}", *_curLibPath);
 		} else {
@@ -99,25 +65,25 @@ public:
 				newLibPath.pop_back();
 			}
 		}
-		if (!SetEnvVariable("DYLD_LIBRARY_PATH", newLibPath.data())) {
+		if (!SetEnvVariable("DYLD_FALLBACK_LIBRARY_PATH", newLibPath.data())) {
 			switch (errno) {
 				case ENOMEM:
-					PL_LOG_ERROR("Error setting DYLD_LIBRARY_PATH env. variable. Insufficient memory to add the new environment variable.");
+					PL_LOG_ERROR("Error setting DYLD_FALLBACK_LIBRARY_PATH env. variable. Insufficient memory to add the new environment variable.");
 					break;
 				case EINVAL:
-					PL_LOG_ERROR("Error setting DYLD_LIBRARY_PATH env. variable. Invalid name for the environment variable (contains '=' or is NULL).");
+					PL_LOG_ERROR("Error setting DYLD_FALLBACK_LIBRARY_PATH env. variable. Invalid name for the environment variable (contains '=' or is NULL).");
 					break;
 				default:
-					PL_LOG_ERROR("Error setting DYLD_LIBRARY_PATH env. variable. Unknown error occurred while setting the environment variable.");
+					PL_LOG_ERROR("Error setting DYLD_FALLBACK_LIBRARY_PATH env. variable. Unknown error occurred while setting the environment variable.");
 			}
 		}
 	}
 
 	~LibrarySearchDirsApple() override {
 		if(_curLibPath.has_value()) {
-			SetEnvVariable("DYLD_LIBRARY_PATH", _curLibPath->data());
+			SetEnvVariable("DYLD_FALLBACK_LIBRARY_PATH", _curLibPath->data());
 		} else {
-			UnsetEnvVariable("DYLD_LIBRARY_PATH");
+			UnsetEnvVariable("DYLD_FALLBACK_LIBRARY_PATH");
 		}
 	}
 
