@@ -67,6 +67,15 @@
         "enum": ["windows", "linux", "apple"]
       }
     },
+    "resourceDirectories": {
+      "type": "array",
+      "title": "Specifies additional directories where the language module can search for resources.",
+      "items": {
+        "type": "string",
+        "title": "Relative folder path.",
+        "minLength": 1
+      }
+    },
     "language": {
       "type": "string",
       "title": "The identifier for the programming language supported by the module.",

@@ -73,6 +73,15 @@
         "enum": ["windows", "linux", "apple"]
       }
     },
+    "resourceDirectories": {
+      "type": "array",
+      "title": "Specifies additional directories where the plugin can search for resources.",
+      "items": {
+        "type": "string",
+        "title": "Relative folder path.",
+        "minLength": 1
+      }
+    },
     "languageModule": {
       "type": "object",
       "title": "Information about the programming language module used.",
