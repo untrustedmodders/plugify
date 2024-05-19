@@ -27,7 +27,7 @@ namespace plugify {
 		UInt16,
 		UInt32,
 		UInt64,
-		Ptr64,
+		Pointer,
 		Float,
 		Double,
 		Function,
@@ -47,7 +47,7 @@ namespace plugify {
 		ArrayUInt16,
 		ArrayUInt32,
 		ArrayUInt64,
-		ArrayPtr64,
+		ArrayPointer,
 		ArrayFloat,
 		ArrayDouble,
 		ArrayString,
@@ -71,6 +71,56 @@ namespace plugify {
 		LastPrimitive = Function,
 		FirstPOD = Vector2
 	};
+
+	/**
+	 * @brief Namespace containing string representations of ValueType enum values.
+	 */
+	namespace ValueName {
+		static constexpr std::string_view Void = "void";
+		static constexpr std::string_view Bool = "bool";
+		static constexpr std::string_view Char8 = "char8";
+		static constexpr std::string_view Char16 = "char16";
+		static constexpr std::string_view Int8 = "int8";
+		static constexpr std::string_view Int16 = "int16";
+		static constexpr std::string_view Int32 = "int32";
+		static constexpr std::string_view Int64 = "int64";
+		static constexpr std::string_view UInt8 = "uint8";
+		static constexpr std::string_view UInt16 = "uint16";
+		static constexpr std::string_view UInt32 = "uint32";
+		static constexpr std::string_view UInt64 = "uint64";
+		static constexpr std::string_view Float = "float";
+		static constexpr std::string_view Double = "double";
+		static constexpr std::string_view Function = "function";
+		static constexpr std::string_view String = "string";
+		static constexpr std::string_view ArrayBool = "bool*";
+		static constexpr std::string_view ArrayChar8 = "char8*";
+		static constexpr std::string_view ArrayChar16 = "char16*";
+		static constexpr std::string_view ArrayInt8 = "int8*";
+		static constexpr std::string_view ArrayInt16 = "int16*";
+		static constexpr std::string_view ArrayInt32 = "int32*";
+		static constexpr std::string_view ArrayInt64 = "int64*";
+		static constexpr std::string_view ArrayUInt8 = "uint8*";
+		static constexpr std::string_view ArrayUInt16 = "uint16*";
+		static constexpr std::string_view ArrayUInt32 = "uint32*";
+		static constexpr std::string_view ArrayUInt64 = "uint64*";
+		static constexpr std::string_view ArrayFloat = "float*";
+		static constexpr std::string_view ArrayDouble = "double*";
+		static constexpr std::string_view ArrayString = "string*";
+		static constexpr std::string_view Vec2 = "vec2";
+		static constexpr std::string_view Vec3 = "vec3";
+		static constexpr std::string_view Vec4 = "vec4";
+		static constexpr std::string_view Mat4x4 = "mat4x4";
+		static constexpr std::string_view Invalid = "invalid";
+#if INTPTR_MAX == INT32_MAX
+		static constexpr std::string_view Pointer = "ptr32";
+		static constexpr std::string_view ArrayPointer = "ptr32*";
+#elif INTPTR_MAX == INT64_MAX
+		static constexpr std::string_view Pointer = "ptr64";
+		static constexpr std::string_view ArrayPointer = "ptr64*";
+#else
+	#error "Environment not 32 or 64-bit."
+#endif
+	}
 
 	struct Method;
 
@@ -119,43 +169,43 @@ namespace plugify {
 	 */
 	[[maybe_unused]] constexpr std::string_view ValueTypeToString(ValueType value) {
 		switch (value) {
-			case ValueType::Void:          return "void";
-			case ValueType::Bool:          return "bool";
-			case ValueType::Char8:         return "char8";
-			case ValueType::Char16:        return "char16";
-			case ValueType::Int8:          return "int8";
-			case ValueType::Int16:         return "int16";
-			case ValueType::Int32:         return "int32";
-			case ValueType::Int64:         return "int64";
-			case ValueType::UInt8:         return "uint8";
-			case ValueType::UInt16:        return "uint16";
-			case ValueType::UInt32:        return "uint32";
-			case ValueType::UInt64:        return "uint64";
-			case ValueType::Ptr64:         return "ptr64";
-			case ValueType::Float:         return "float";
-			case ValueType::Double:        return "double";
-			case ValueType::Function:      return "function";
-			case ValueType::String:        return "string";
-			case ValueType::ArrayBool:     return "bool*";
-			case ValueType::ArrayChar8:    return "char8*";
-			case ValueType::ArrayChar16:   return "char16*";
-			case ValueType::ArrayInt8:     return "int8*";
-			case ValueType::ArrayInt16:    return "int16*";
-			case ValueType::ArrayInt32:    return "int32*";
-			case ValueType::ArrayInt64:    return "int64*";
-			case ValueType::ArrayUInt8:    return "uint8*";
-			case ValueType::ArrayUInt16:   return "uint16*";
-			case ValueType::ArrayUInt32:   return "uint32*";
-			case ValueType::ArrayUInt64:   return "uint64*";
-			case ValueType::ArrayPtr64:    return "ptr64*";
-			case ValueType::ArrayFloat:    return "float*";
-			case ValueType::ArrayDouble:   return "double*";
-			case ValueType::ArrayString:   return "string*";
-			case ValueType::Vector2:       return "vec2";
-			case ValueType::Vector3:       return "vec3";
-			case ValueType::Vector4:       return "vec4";
-			case ValueType::Matrix4x4:     return "mat4x4";
-			default:                       return "unknown";
+			case ValueType::Void:          return ValueName::Void;
+			case ValueType::Bool:          return ValueName::Bool;
+			case ValueType::Char8:         return ValueName::Char8;
+			case ValueType::Char16:        return ValueName::Char16;
+			case ValueType::Int8:          return ValueName::Int8;
+			case ValueType::Int16:         return ValueName::Int16;
+			case ValueType::Int32:         return ValueName::Int32;
+			case ValueType::Int64:         return ValueName::Int64;
+			case ValueType::UInt8:         return ValueName::UInt8;
+			case ValueType::UInt16:        return ValueName::UInt16;
+			case ValueType::UInt32:        return ValueName::UInt32;
+			case ValueType::UInt64:        return ValueName::UInt64;
+			case ValueType::Pointer:       return ValueName::Pointer;
+			case ValueType::Float:         return ValueName::Float;
+			case ValueType::Double:        return ValueName::Double;
+			case ValueType::Function:      return ValueName::Function;
+			case ValueType::String:        return ValueName::String;
+			case ValueType::ArrayBool:     return ValueName::ArrayBool;
+			case ValueType::ArrayChar8:    return ValueName::ArrayChar8;
+			case ValueType::ArrayChar16:   return ValueName::ArrayChar16;
+			case ValueType::ArrayInt8:     return ValueName::ArrayInt8;
+			case ValueType::ArrayInt16:    return ValueName::ArrayInt16;
+			case ValueType::ArrayInt32:    return ValueName::ArrayInt32;
+			case ValueType::ArrayInt64:    return ValueName::ArrayInt64;
+			case ValueType::ArrayUInt8:    return ValueName::ArrayUInt8;
+			case ValueType::ArrayUInt16:   return ValueName::ArrayUInt16;
+			case ValueType::ArrayUInt32:   return ValueName::ArrayUInt32;
+			case ValueType::ArrayUInt64:   return ValueName::ArrayUInt64;
+			case ValueType::ArrayPointer:  return ValueName::ArrayPointer;
+			case ValueType::ArrayFloat:    return ValueName::ArrayFloat;
+			case ValueType::ArrayDouble:   return ValueName::ArrayDouble;
+			case ValueType::ArrayString:   return ValueName::ArrayString;
+			case ValueType::Vector2:       return ValueName::Vec2;
+			case ValueType::Vector3:       return ValueName::Vec3;
+			case ValueType::Vector4:       return ValueName::Vec4;
+			case ValueType::Matrix4x4:     return ValueName::Mat4x4;
+			default:                       return ValueName::Invalid;
 		}
 	}
 
@@ -165,77 +215,77 @@ namespace plugify {
 	 * @return The corresponding ValueType enum value.
 	 */
 	[[maybe_unused]] constexpr ValueType ValueTypeFromString(std::string_view value) {
-		if (value == "void") {
+		if (value == ValueName::Void) {
 			return ValueType::Void;
-		} else if (value == "bool") {
+		} else if (value == ValueName::Bool) {
 			return ValueType::Bool;
-		} else if (value == "char8") {
+		} else if (value == ValueName::Char8) {
 			return ValueType::Char8;
-		} else if (value == "char16") {
+		} else if (value == ValueName::Char16) {
 			return ValueType::Char16;
-		} else if (value == "int8") {
+		} else if (value == ValueName::Int8) {
 			return ValueType::Int8;
-		} else if (value == "int16") {
+		} else if (value == ValueName::Int16) {
 			return ValueType::Int16;
-		} else if (value == "int32") {
+		} else if (value == ValueName::Int32) {
 			return ValueType::Int32;
-		} else if (value == "int64") {
+		} else if (value == ValueName::Int64) {
 			return ValueType::Int64;
-		} else if (value == "uint8") {
+		} else if (value == ValueName::UInt8) {
 			return ValueType::UInt8;
-		} else if (value == "uint16") {
+		} else if (value == ValueName::UInt16) {
 			return ValueType::UInt16;
-		} else if (value == "uint32") {
+		} else if (value == ValueName::UInt32) {
 			return ValueType::UInt32;
-		} else if (value == "uint64") {
+		} else if (value == ValueName::UInt64) {
 			return ValueType::UInt64;
-		} else if (value == "ptr64") {
-			return ValueType::Ptr64;
-		} else if (value == "float") {
+		} else if (value == ValueName::Pointer) {
+			return ValueType::Pointer;
+		} else if (value == ValueName::Float) {
 			return ValueType::Float;
-		} else if (value == "double") {
+		} else if (value == ValueName::Double) {
 			return ValueType::Double;
-		} else if (value == "function") {
+		} else if (value == ValueName::Function) {
 			return ValueType::Function;
-		} else if (value == "string") {
+		} else if (value == ValueName::String) {
 			return ValueType::String;
-		} else if (value == "bool*") {
+		} else if (value == ValueName::ArrayBool) {
 			return ValueType::ArrayBool;
-		} else if (value == "char8*") {
+		} else if (value == ValueName::ArrayChar8) {
 			return ValueType::ArrayChar8;
-		} else if (value == "char16*") {
+		} else if (value == ValueName::ArrayChar16) {
 			return ValueType::ArrayChar16;
-		} else if (value == "int8*") {
+		} else if (value == ValueName::ArrayInt8) {
 			return ValueType::ArrayInt8;
-		} else if (value == "int16*") {
+		} else if (value == ValueName::ArrayInt16) {
 			return ValueType::ArrayInt16;
-		} else if (value == "int32*") {
+		} else if (value == ValueName::ArrayInt32) {
 			return ValueType::ArrayInt32;
-		} else if (value == "int64*") {
+		} else if (value == ValueName::ArrayInt64) {
 			return ValueType::ArrayInt64;
-		} else if (value == "uint8*") {
+		} else if (value == ValueName::ArrayUInt8) {
 			return ValueType::ArrayUInt8;
-		} else if (value == "uint16*") {
+		} else if (value == ValueName::ArrayUInt16) {
 			return ValueType::ArrayUInt16;
-		} else if (value == "uint32*") {
+		} else if (value == ValueName::ArrayUInt32) {
 			return ValueType::ArrayUInt32;
-		} else if (value == "uint64*") {
+		} else if (value == ValueName::ArrayUInt64) {
 			return ValueType::ArrayUInt64;
-		} else if (value == "ptr64*") {
-			return ValueType::ArrayPtr64;
-		} else if (value == "float*") {
+		} else if (value == ValueName::ArrayPointer) {
+			return ValueType::ArrayPointer;
+		} else if (value == ValueName::ArrayFloat) {
 			return ValueType::ArrayFloat;
-		} else if (value == "double*") {
+		} else if (value == ValueName::ArrayDouble) {
 			return ValueType::ArrayDouble;
-		} else if (value == "string*") {
+		} else if (value == ValueName::ArrayString) {
 			return ValueType::ArrayString;
-		} else if (value == "vec2") {
+		} else if (value == ValueName::Vec2) {
 			return ValueType::Vector2;
-		} else if (value == "vec3") {
+		} else if (value == ValueName::Vec3) {
 			return ValueType::Vector3;
-		} else if (value == "vec4") {
+		} else if (value == ValueName::Vec4) {
 			return ValueType::Vector4;
-		} else if (value == "mat4x4") {
+		} else if (value == ValueName::Mat4x4) {
 			return ValueType::Matrix4x4;
 		}
 		return ValueType::Invalid;

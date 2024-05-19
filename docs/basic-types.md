@@ -17,6 +17,7 @@ The following lists how the types are exposed to the C++ API.
 | uint32_t               | uint32   | true  |
 | uint64_t               | uint64   | true  |
 | uintptr_t              | ptr64    | true  |
+| uintptr_t              | ptr32    | true  |
 | float                  | float    | true  |
 | double                 | double   | true  |
 | void*                  | function | false |
@@ -33,6 +34,7 @@ The following lists how the types are exposed to the C++ API.
 | std::vector<uint32_t>  | uint32*  | true  |
 | std::vector<uint64_t>  | uint64*  | true  |
 | std::vector<uintptr_t> | ptr64*   | true  |
+| std::vector<uintptr_t> | ptr32*   | true  |
 | std::vector<float>     | float*   | true  |
 | std::vector<double>    | double*  | true  |
 | vector2                | vec2     | true  |

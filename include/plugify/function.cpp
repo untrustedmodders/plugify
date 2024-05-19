@@ -202,13 +202,13 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data, bool obj) {
 	bool objectReturn = obj && method.retType.type > ValueType::LastPrimitive;
-	ValueType retType = !objectReturn ? (method.retType.ref ? ValueType::Ptr64 : method.retType.type) : ValueType::Void;
+	ValueType retType = !objectReturn ? (method.retType.ref ? ValueType::Pointer : method.retType.type) : ValueType::Void;
 	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetTypeId(retType));
 	if (objectReturn) {
 		sig.addArg(GetTypeId(method.retType.type));
 	}
 	for (const auto& type : method.paramTypes) {
-		sig.addArg(GetTypeId(type.ref ? ValueType::Ptr64 : type.type));
+		sig.addArg(GetTypeId(type.ref ? ValueType::Pointer : type.type));
 	}
 	return GetJitFunc(sig, method, callback, data);
 }
@@ -235,7 +235,7 @@ TypeId Function::GetTypeId(ValueType valueType) {
 		case ValueType::UInt64: return GetTypeIdx<uint64_t>();
 		case ValueType::Float:  return GetTypeIdx<float>();
 		case ValueType::Double: return GetTypeIdx<double>();
-		case ValueType::Ptr64:
+		case ValueType::Pointer:
 		case ValueType::String:
 		case ValueType::Function:
 		case ValueType::ArrayBool:
@@ -249,7 +249,7 @@ TypeId Function::GetTypeId(ValueType valueType) {
 		case ValueType::ArrayUInt16:
 		case ValueType::ArrayUInt32:
 		case ValueType::ArrayUInt64:
-		case ValueType::ArrayPtr64:
+		case ValueType::ArrayPointer:
 		case ValueType::ArrayFloat:
 		case ValueType::ArrayDouble:
 		case ValueType::ArrayString:
