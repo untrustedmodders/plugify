@@ -74,6 +74,86 @@ bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
 	return std::size(cnt) != size;
 }
 
+void ValidateDependencies(const std::string& name, std::vector<std::string>& errors, std::vector<PluginReferenceDescriptor>& dependencies) {
+	if (RemoveDuplicates(dependencies)) {
+		PL_LOG_WARNING("Package: '{}' has multiple dependencies with same name!", name);
+	}
+
+	for (size_t i = 0; i < dependencies.size(); ++i) {
+		const auto& dependency = dependencies[i];
+
+		if (dependency.name.empty()) {
+			errors.emplace_back(std::format("Missing dependency name at: {}", i));
+		}
+
+		if (dependency.requestedVersion.has_value() && *dependency.requestedVersion < 0) {
+			errors.emplace_back(std::format("Invalid dependency version at: {}", i));
+		}
+	}
+}
+
+void ValidateParameters(std::vector<std::string>& errors, const Method& method, size_t i) {
+	for (const auto& property : method.paramTypes) {
+		if (property.type == ValueType::Void) {
+			errors.emplace_back(std::format("Parameter cannot be void type at: {}", method.name.empty() ? std::to_string(i) : method.name));
+		} else if (property.type == ValueType::Function && property.ref) {
+			errors.emplace_back(std::format("Parameter with function type cannot be reference at: {}", method.name.empty() ? std::to_string(i) : method.name));
+		}
+
+		if (property.prototype) {
+			ValidateParameters(errors, *property.prototype, i);
+		}
+	}
+
+	if (method.retType.ref) {
+		errors.emplace_back("Return cannot be reference");
+	}
+}
+
+void ValidateMethods(const std::string& name, std::vector<std::string>& errors, std::vector<Method>& methods) {
+	if (RemoveDuplicates(methods)) {
+		PL_LOG_WARNING("Package: '{}' has multiple method with same name!", name);
+	}
+
+	for (size_t i = 0; i < methods.size(); ++i) {
+		const auto& method = methods[i];
+
+		if (method.name.empty()) {
+			errors.emplace_back(std::format("Missing method name at: {}", i));
+		}
+
+		if (method.funcName.empty()) {
+			errors.emplace_back(std::format("Missing function name at: {}", method.name.empty() ? std::to_string(i) : method.name));
+		}
+
+		if (!method.callConv.empty()) {
+#if PLUGIFY_ARCH_X86 == 64 && PLUGIFY_PLATFORM_WINDOWS
+			if (method.callConv != "vectorcall")
+#elif PLUGIFY_ARCH_X86 == 32
+			if (method.callConv != "cdecl" && method.callConv != "stdcall" && method.callConv != "fastcall" && method.callConv != "thiscall" && method.callConv != "vectorcall")
+#endif // PLUGIFY_ARCH_X86
+			{
+				errors.emplace_back(std::format("Invalid calling convention: '{}' at: {}", method.callConv, method.name.empty() ? std::to_string(i) : method.name));
+			}
+		}
+
+		ValidateParameters(errors, method, i);
+
+		if (method.varIndex != Method::kNoVarArgs && method.varIndex >= method.paramTypes.size()) {
+			errors.emplace_back("Invalid variable argument index");
+		}
+	}
+}
+
+void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std::string>& directories) {
+	for (size_t i = 0; i < directories.size(); ++i) {
+		const auto& directory = directories[i];
+		if (directory.empty()) {
+			errors.emplace_back(std::format("Missing directory at: {}", i));
+		}
+	}
+}
+
 template<typename T>
 std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
 	auto json = FileSystem::ReadText(path);
@@ -82,30 +162,62 @@ std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const
 		PL_LOG_ERROR("Package: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
 		return {};
 	}
+
 	if (!PackageManager::IsSupportsPlatform(descriptor->supportedPlatforms))
 		return {};
+
+	std::vector<std::string> errors;
+
+	if (descriptor->fileVersion < 1) {
+		errors.emplace_back("Invalid file version");
+	}
+
+	if (descriptor->version < 0) {
+		errors.emplace_back("Invalid version");
+	}
+
+	if (descriptor->friendlyName.empty()) {
+		errors.emplace_back("Missing friendly name");
+	}
+
+	if (descriptor->resourceDirectories.has_value()) {
+		ValidateDirectories(errors, *descriptor->resourceDirectories);
+	}
+
 	std::string type;
 	if constexpr (std::is_same_v<T, LanguageModuleDescriptor>) {
 		if (descriptor->language.empty() || descriptor->language == "plugin") {
-			PL_LOG_ERROR("Module descriptor: '{}' has JSON parsing error: Forbidden language name", name);
-			return {};
+			errors.emplace_back("Missing/invalid language name");
 		}
+
+		if (descriptor->libraryDirectories.has_value()) {
+			ValidateDirectories(errors, *descriptor->libraryDirectories);
+		}
+
 		type = descriptor->language;
 	} else {
+		if (descriptor->entryPoint.empty()) {
+			errors.emplace_back("Missing entry point");
+		}
 		if (descriptor->languageModule.name.empty()) {
-			PL_LOG_ERROR("Plugin descriptor: '{}' has JSON parsing error: Missing language name", name);
-			return {};
+			errors.emplace_back("Missing language name");
 		}
+
+		ValidateDependencies(name, errors, descriptor->dependencies);
+		ValidateMethods(name, errors, descriptor->exportedMethods);
+
 		type = "plugin";
-
-		if (RemoveDuplicates(descriptor->dependencies)) {
-			PL_LOG_WARNING("Plugin descriptor: '{}' has multiple dependencies with same name!", name);
-		}
-
-		if (RemoveDuplicates(descriptor->exportedMethods)) {
-			PL_LOG_WARNING("Plugin descriptor: '{}' has multiple method with same name!", name);
-		}
 	}
+
+	if (!errors.empty()) {
+		std::string error(errors[0]);
+		for (auto it = std::next(errors.begin()); it != errors.end(); ++it) {
+			std::format_to(std::back_inserter(error), ", {}", *it);
+		}
+		PL_LOG_ERROR("Package: '{}' has error(s): {}", name, error);
+		return {};
+	}
+
 	auto version = descriptor->version;
 	return { {Package{name, type}, path, version, std::make_unique<T>(std::move(*descriptor))} };
 }
