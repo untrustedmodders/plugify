@@ -204,7 +204,7 @@ int main() {
 					}
 
 					else if (args[1] == "version" || args[1] == "-v") {
-						static std::string copyright = std::format("Copyright (C) 2023-{} Untrusted Modders Team", __DATE__[7]);
+						static std::string copyright = std::format("Copyright (C) 2023-{}{}{}{} Untrusted Modders Team", __DATE__[7], __DATE__[8], __DATE__[9], __DATE__[10]);
 						CONPRINT(R"(      ____)" "");
 						CONPRINT(R"( ____|    \         Plugify v)" << plug->GetVersion().ToString());
 						CONPRINT(R"((____|     `._____  )" << copyright);
