@@ -37,7 +37,7 @@ std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::
 class LibrarySearchDirsLinux final : public LibrarySearchDirs {
 public:
 	// Cannot set LD_LIBRARY_PATH at runtime, so use rpath flag
-	explicit LibrarySearchDirsLinux(const std::vector<fs::path>& directories) {
+	explicit LibrarySearchDirsLinux(const std::vector<fs::path>& /*directories*/) {
 	}
 	~LibrarySearchDirsLinux() override = default;
 };
