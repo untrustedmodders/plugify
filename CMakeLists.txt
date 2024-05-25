@@ -285,6 +285,9 @@ if(PLUGIFY_BUILD_FUNCTION)
             PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
             PLUGIFY_PLATFORM_LINUX=$<BOOL:${UNIX}>
             PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86})
+    if(UNIX AND NOT APPLE)
+        target_compile_definitions(${PROJECT_NAME}-function PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
