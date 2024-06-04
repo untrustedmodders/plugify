@@ -1000,7 +1000,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 	for (uint32_t i = 0; i < numFiles; ++i) {
 		mz_zip_archive_file_stat& fileStat = fileStats[i];
 
-		std::vector<char> fileData(fileStat.m_uncomp_size);
+		std::vector<char> fileData(static_cast<size_t>(fileStat.m_uncomp_size));
 
 		if (!mz_zip_reader_extract_to_mem(zipArchive.get(), i, fileData.data(), fileData.size(), 0)) {
 			return std::format("Failed extracting file: '{}'", fileStat.m_filename);
