@@ -29,6 +29,9 @@ jobs:
       - name: Install curl
         run: sudo apt install -y libcurl4-openssl-dev
 
+      - name: Install doxygen
+        run: sudo apt install -y doxygen
+
       - name: Build doxygen
         run: |
           mkdir -p build
