@@ -3,7 +3,7 @@
 <h1 align="center">
   <a href="https://github.com/untrustedmodders/plugify">
     <!-- Please provide path to your logo here -->
-    <img src="docs/images/logo.png" alt="Logo" width="261" height="100">
+    <img src="https://github.com/untrustedmodders/plugify/blob/main/docs/images/logo.png?raw=true" alt="Logo" width="261" height="100">
   </a>
 </h1>
 
