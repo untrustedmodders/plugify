@@ -37,3 +37,14 @@ add_custom_target(
 		plugin-manager.md
 		plugins.md
 )
+
+add_custom_target(copy_images_folder ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/docs/images
+    ${CMAKE_BINARY_DIR}/docs/html
+)
+add_custom_target(copy_umls_folder ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/docs/umls
+    ${CMAKE_BINARY_DIR}/docs/html
+)
