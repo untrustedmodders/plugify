@@ -62,19 +62,19 @@ Library& Library::operator=(Library&& rhs) noexcept {
 }
 
 std::string Library::GetError() {
-    return lastError;
+	return lastError;
 }
 
 void* Library::GetFunction(std::string_view functionName) const {
-    if (!_handle) {
-        PL_LOG_ERROR("DLL not loaded.");
-        return nullptr;
-    }
+	if (!_handle) {
+		PL_LOG_ERROR("DLL not loaded.");
+		return nullptr;
+	}
 
 #if PLUGIFY_PLATFORM_WINDOWS
-    return reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>(_handle), functionName.data()));
+	return reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>(_handle), functionName.data()));
 #elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
-    return dlsym(_handle, functionName.data());
+	return dlsym(_handle, functionName.data());
 #else
 	return nullptr;
 #endif

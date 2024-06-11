@@ -54,15 +54,15 @@ struct glz::meta<plugify::ValueType> {
 
 template<>
 struct glz::meta<plugify::Severity> {
-    static constexpr auto value = enumerate(
-        "none", plugify::Severity::None,
-        "fatal", plugify::Severity::Fatal,
-        "error", plugify::Severity::Error,
-        "warning", plugify::Severity::Warning,
-        "info", plugify::Severity::Info,
-        "debug", plugify::Severity::Debug,
-        "verbose", plugify::Severity::Verbose
-    );
+	static constexpr auto value = enumerate(
+		"none", plugify::Severity::None,
+		"fatal", plugify::Severity::Fatal,
+		"error", plugify::Severity::Error,
+		"warn", plugify::Severity::Warning,
+		"info", plugify::Severity::Info,
+		"debug", plugify::Severity::Debug,
+		"verbose", plugify::Severity::Verbose
+	);
 };
 
 template <>
@@ -167,22 +167,22 @@ struct glz::meta<plugify::Property> {
 };
 
 namespace glz::detail {
-    template <>
-    struct from_json<fs::path> {
-        template <auto Opts>
-        static void op(fs::path& value, auto&&... args) {
-            std::string str;
-            read<json>::op<Opts>(str, args...);
-            value = str;
-            if (!value.empty()) value.make_preferred();
-        }
-    };
+	template <>
+	struct from_json<fs::path> {
+		template <auto Opts>
+		static void op(fs::path& value, auto&&... args) {
+			std::string str;
+			read<json>::op<Opts>(str, args...);
+			value = str;
+			if (!value.empty()) value.make_preferred();
+		}
+	};
 
-    template <>
-    struct to_json<fs::path> {
-        template <auto Opts>
-        static void op(fs::path& value, auto&&... args) noexcept {
-            write<json>::op<Opts>(value.generic_string(), args...);
-        }
-    };
+	template <>
+	struct to_json<fs::path> {
+		template <auto Opts>
+		static void op(fs::path& value, auto&&... args) noexcept {
+			write<json>::op<Opts>(value.generic_string(), args...);
+		}
+	};
 }

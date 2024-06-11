@@ -4,14 +4,14 @@
 #include <plugify/compat_format.h>
 
 namespace plugify {
-    class LogSystem {
-    public:
-        static void SetLogger(std::shared_ptr<ILogger> logger);
-        static void Log(const std::string& msg, Severity severity);
+	class LogSystem {
+	public:
+		static void SetLogger(std::shared_ptr<ILogger> logger);
+		static void Log(const std::string& msg, Severity severity);
 
-    private:
-        static inline std::shared_ptr<ILogger> _logger = nullptr;
-    };
+	private:
+		static inline std::shared_ptr<ILogger> _logger = nullptr;
+	};
 }
 
 #if PLUGIFY_LOGGING

@@ -9,35 +9,35 @@ IPlugin::IPlugin(Plugin& impl) : _impl{impl} {
 IPlugin::~IPlugin() = default;
 
 UniqueId IPlugin::GetId() const {
-    return _impl.GetId();
+	return _impl.GetId();
 }
 
 const std::string& IPlugin::GetName() const {
-    return _impl.GetName();
+	return _impl.GetName();
 }
 
 const std::string& IPlugin::GetFriendlyName() const {
-    return _impl.GetFriendlyName();
+	return _impl.GetFriendlyName();
 }
 
 const fs::path& IPlugin::GetBaseDir() const {
-    return _impl.GetBaseDir();
+	return _impl.GetBaseDir();
 }
 
 const PluginDescriptor& IPlugin::GetDescriptor() const {
-    return _impl.GetDescriptor();
+	return _impl.GetDescriptor();
 }
 
 PluginState IPlugin::GetState() const {
-    return _impl.GetState();
+	return _impl.GetState();
 }
 
 const std::string& IPlugin::GetError() const {
-    return _impl.GetError();
+	return _impl.GetError();
 }
 
 const std::vector<MethodData>& IPlugin::GetMethods() const {
-    return _impl.GetMethods();
+	return _impl.GetMethods();
 }
 
 std::optional<fs::path> IPlugin::FindResource(const fs::path& path) const {

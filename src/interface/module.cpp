@@ -11,35 +11,35 @@ UniqueId IModule::GetId() const {
 }
 
 const std::string& IModule::GetName() const {
-    return _impl.GetName();
+	return _impl.GetName();
 }
 
 const std::string& IModule::GetLanguage() const {
-    return _impl.GetLanguage();
+	return _impl.GetLanguage();
 }
 
 const std::string& IModule::GetFriendlyName() const {
-    return _impl.GetFriendlyName();
+	return _impl.GetFriendlyName();
 }
 
 const fs::path& IModule::GetFilePath() const {
-    return _impl.GetFilePath();
+	return _impl.GetFilePath();
 }
 
 const fs::path& IModule::GetBaseDir() const {
-    return _impl.GetBaseDir();
+	return _impl.GetBaseDir();
 }
 
 const LanguageModuleDescriptor& IModule::GetDescriptor() const {
-    return _impl.GetDescriptor();
+	return _impl.GetDescriptor();
 }
 
 ModuleState IModule::GetState() const {
-    return _impl.GetState();
+	return _impl.GetState();
 }
 
 const std::string& IModule::GetError() const {
-    return _impl.GetError();
+	return _impl.GetError();
 }
 
 std::optional<fs::path> IModule::FindResource(const fs::path& path) const {
