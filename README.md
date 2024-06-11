@@ -248,9 +248,14 @@ To build the basic testing app:
    ```sh
    git clone https://github.com/untrustedmodders/plugify.git
    ```
-2. On Linux install CURL, otherwise build it in embedding mode with cmake options
+2. Install CURL, otherwise build it in embedding mode with cmake options  
+   a. Linux:
    ```sh
    sudo apt-get install -y libcurl4-openssl-dev
+   ```
+   b. Mac:
+   ```sh
+   brew install curl
    ```
    > The dependencies can be used as external `(find_package)` and embedding `(add_subdirectory)`, you can use plugify options to choose what you suits your need.
 3. Create build folder
