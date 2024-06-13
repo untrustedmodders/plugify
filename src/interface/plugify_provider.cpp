@@ -16,6 +16,10 @@ const fs::path& IPlugifyProvider::GetBaseDir() const {
 	return _impl.GetBaseDir();
 }
 
+bool IPlugifyProvider::IsPreferOwnSymbols() const {
+	return _impl.IsPreferOwnSymbols();
+}
+
 bool IPlugifyProvider::IsPluginLoaded(const std::string& name, std::optional<int32_t> requiredVersion, bool minimum) const {
 	return _impl.IsPluginLoaded(name, requiredVersion, minimum);
 }

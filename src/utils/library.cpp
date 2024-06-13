@@ -5,12 +5,21 @@ using namespace plugify;
 
 thread_local static std::string lastError;
 
-std::unique_ptr<Library> Library::LoadFromPath(fs::path libraryPath) {
+std::unique_ptr<Library> Library::LoadFromPath(fs::path libraryPath, bool preferOwnSymbols) {
 #if PLUGIFY_PLATFORM_WINDOWS
+	(void) preferOwnSymbols;
 	void* handle = static_cast<void*>(LoadLibraryExW(libraryPath.c_str(), NULL,
 		LOAD_LIBRARY_SEARCH_USER_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR));
 #elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
-	void* handle = dlopen(libraryPath.string().c_str(), RTLD_LAZY | RTLD_GLOBAL);
+	int flags = RTLD_LAZY | RTLD_GLOBAL;
+#if defined(__ANDROID__) || !defined(RTLD_DEEPBIND)
+	if (preferOwnSymbols)
+		PL_LOG_DEBUG("Prefer own symbols option is enabled, but RTLD_DEEPBIND is not supported. Proceeding without RTLD_DEEPBIND.")
+#else
+	if (preferOwnSymbols)
+		flags |= RTLD_DEEPBIND;
+#endif
+	void* handle = dlopen(libraryPath.string().c_str(), flags);
 #else
 	void* handle = nullptr;
 #endif
@@ -23,7 +32,7 @@ std::unique_ptr<Library> Library::LoadFromPath(fs::path libraryPath) {
 	if (errorCode != 0) {
 		LPSTR messageBuffer = NULL;
 		DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
 		lastError = std::string(messageBuffer, size);
 		LocalFree(messageBuffer);
 	}

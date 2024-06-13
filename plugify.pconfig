@@ -2,5 +2,6 @@
     "baseDir": "res",
     "logSeverity": "debug",
     "repositories": [
-    ]
+    ],
+    "preferOwnSymbols": false
 }

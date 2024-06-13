@@ -25,6 +25,13 @@ const fs::path& PlugifyProvider::GetBaseDir() {
 	return _;
 }
 
+bool PlugifyProvider::IsPreferOwnSymbols() const {
+	if (auto plugify = _plugify.lock()) {
+		return plugify->GetConfig().preferOwnSymbols;
+	}
+	return false;
+}
+
 bool PlugifyProvider::IsPluginLoaded(const std::string& name, std::optional<int32_t> requiredVersion, bool minimum) {
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {

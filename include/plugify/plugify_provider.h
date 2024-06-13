@@ -31,6 +31,20 @@ namespace plugify {
 		 * @return Reference to the base directory path.
 		 */
 		[[nodiscard]] const std::filesystem::path& GetBaseDir() const;
+
+		/**
+		 * @brief Checks if the preference for using own symbols is enabled.
+		 *
+		 * This function returns whether the preference for loading symbols from
+		 * the library itself (as opposed to shared libraries) is enabled. This
+		 * can be useful in environments where symbol conflicts might arise
+		 * and isolating symbols to their respective libraries is necessary.
+		 *
+		 * @note Start using RTLD_DEEPBIND flag by default.
+		 * 
+		 * @return True if the preference for using own symbols is enabled, false otherwise.
+		 */
+		[[nodiscard]] bool IsPreferOwnSymbols() const;
 		
 		/**
 		 * @brief Checks if a plugin with the specified name is loaded.
