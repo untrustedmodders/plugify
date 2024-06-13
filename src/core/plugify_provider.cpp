@@ -25,7 +25,7 @@ const fs::path& PlugifyProvider::GetBaseDir() {
 	return _;
 }
 
-bool PlugifyProvider::IsPreferOwnSymbols() const {
+bool PlugifyProvider::IsPreferOwnSymbols() {
 	if (auto plugify = _plugify.lock()) {
 		return plugify->GetConfig().preferOwnSymbols;
 	}
