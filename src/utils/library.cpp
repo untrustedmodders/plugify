@@ -14,7 +14,7 @@ std::unique_ptr<Library> Library::LoadFromPath(fs::path libraryPath, bool prefer
 	int flags = RTLD_LAZY | RTLD_GLOBAL;
 #if defined(__ANDROID__) || !defined(RTLD_DEEPBIND)
 	if (preferOwnSymbols)
-		PL_LOG_DEBUG("Prefer own symbols option is enabled, but RTLD_DEEPBIND is not supported. Proceeding without RTLD_DEEPBIND.")
+		PL_LOG_DEBUG("Prefer own symbols option is enabled, but RTLD_DEEPBIND is not supported. Proceeding without RTLD_DEEPBIND.");
 #else
 	if (preferOwnSymbols)
 		flags |= RTLD_DEEPBIND;
