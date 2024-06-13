@@ -2,14 +2,19 @@ name: msvc
 
 on:
   push:
-    paths:
-      - '.github/workflows/**'
-      - 'include/**'
-      - 'src/**'
-    branches:
-      - 'main'
     tags:
       - 'v*'
+    branches:
+      - 'main'
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - 'docs/**'
 
 jobs:
   build:
