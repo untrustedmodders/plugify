@@ -74,6 +74,16 @@ bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
 	return std::size(cnt) != size;
 }
 
+void RemoveUnsupported(RemotePackage& package) {
+	for (auto it = package.versions.begin(); it != package.versions.end(); ) {
+		if (!PackageManager::IsSupportsPlatform(it->platforms)) {
+			it = package.versions.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
 void ValidateDependencies(const std::string& name, std::vector<std::string>& errors, std::vector<PluginReferenceDescriptor>& dependencies) {
 	if (RemoveDuplicates(dependencies)) {
 		PL_LOG_WARNING("Package: '{}' has multiple dependencies with same name!", name);
@@ -307,6 +317,7 @@ void PackageManager::LoadRemotePackages() {
 						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package.name);
 						continue;
 					}
+					RemoveUnsupported(package);
 					if (package.versions.empty()) {
 						PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", url, name);
 						continue;
@@ -580,11 +591,12 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 	}
 
 	Request([&] {
-		for (const auto& [name, package]: manifest->content) {
+		for (auto& [name, package]: manifest->content) {
 			if (name.empty() || package.name != name) {
 				PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", path.string(), name, package.name);
 				continue;
 			}
+			RemoveUnsupported(package);
 			if (package.versions.empty()) {
 				PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", path.string(), name);
 				continue;
@@ -630,11 +642,12 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 			}
 
 			Request([&] {
-				for (const auto& [name, package] : manifest->content) {
+				for (auto& [name, package] : manifest->content) {
 					if (name.empty() || package.name != name) {
 						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package.name);
 						continue;
 					}
+					RemoveUnsupported(package);
 					if (package.versions.empty()) {
 						PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", manifestUrl, name);
 						continue;
