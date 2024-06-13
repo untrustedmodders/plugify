@@ -22,6 +22,10 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+if(UNIX AND NOT APPLE)
+    set(LINUX TRUE)
+endif()
+
 message(VERBOSE "*")
 message(VERBOSE "* ${PROJECT_NAME} v${PROJECT_VERSION} (${CMAKE_BUILD_TYPE})")
 message(VERBOSE "* Copyright (c) 2023-2024 untrustedmodders <untrustedmodders@gmail.com>")
@@ -169,7 +173,7 @@ include(cmake/miniz.cmake)
 target_link_libraries(${PROJECT_NAME} PRIVATE sha256 miniz)
 set_property(TARGET sha256 PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
-if(UNIX AND NOT APPLE)
+if(LINUX)
     target_compile_definitions(sha256 PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
 endif()
 if(PLUGIFY_HAS_LIBCPP)
@@ -233,7 +237,7 @@ if(PLUGIFY_CLANG_TIDY_EXECUTABLE)
     set(CMAKE_CXX_CLANG_TIDY "${PLUGIFY_CLANG_TIDY_EXECUTABLE}; --config-file=.clang-tidy; --header-filter=src/.*; --extra-arg=/EHsc")
 endif()
 
-if(UNIX AND NOT APPLE)
+if(LINUX)
     target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
 endif()
 
@@ -274,7 +278,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_PLATFORM="${PLUGIFY_PLATFORM}"
         PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
         PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
-        PLUGIFY_PLATFORM_LINUX=$<BOOL:${UNIX}>
+        PLUGIFY_PLATFORM_LINUX=$<BOOL:${LINUX}>
         PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
         PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
         PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
@@ -308,9 +312,9 @@ if(PLUGIFY_BUILD_FUNCTION)
     target_compile_definitions(${PROJECT_NAME}-function PRIVATE
             PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
             PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
-            PLUGIFY_PLATFORM_LINUX=$<BOOL:${UNIX}>
+            PLUGIFY_PLATFORM_LINUX=$<BOOL:${LINUX}>
             PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86})
-    if(UNIX AND NOT APPLE)
+    if(LINUX)
         target_compile_definitions(${PROJECT_NAME}-function PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
     endif()
     if(PLUGIFY_HAS_LIBCPP)
