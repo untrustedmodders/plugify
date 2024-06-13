@@ -33,32 +33,47 @@ message(VERBOSE "*")
 include(cmake/git.cmake)
 
 include(CheckCXXSourceCompiles)
+include(CheckCXXCompilerFlag)
 include(CMakePushCheckState)
 
 
 # ------------------------------------------------------------------------------
 # Compiler stuff
 option(PLUGIFY_USE_LIBCPP "Use libc++ by adding -stdlib=libc++ flag if available." OFF)
+option(PLUGIFY_USE_STATIC_STDLIB "Enable static std library linkage to avoid ABI issues by adding -static-* flags if available." OFF)
 option(PLUGIFY_USE_SANITIZER "Enable sanitizers by adding -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined flags if available." OFF)
 option(PLUGIFY_USE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PLUGIFY_USE_ABI0 "Enable use of the older C++ ABI, which was the default in GCC versions before GCC 5" ON)
 
-if(PLUGIFY_USE_LIBCPP)
-    if(NOT WIN32)
-        cmake_push_check_state()
-
-        set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -stdlib=libc++")
-
-        check_cxx_source_compiles("
-            #include<type_traits>
-            int main() { return std::is_same_v<int, char>; }
-        " PLUGIFY_HAS_LIBCPP)
-
-        cmake_pop_check_state()
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    if(PLUGIFY_USE_LIBCPP)
+        check_cxx_compiler_flag(-stdlib=libc++ PLUGIFY_HAS_LIBCPP)
+        if(NOT PLUGIFY_HAS_LIBCPP)
+            message(VERBOSE "The option PLUGIFY_USE_LIBCPP is set but libc++ is not available.")
+        endif()
+        
+        if(PLUGIFY_USE_STATIC_STDLIB)
+            check_cxx_compiler_flag(-static-libc++ PLUGIFY_HAS_STATIC_LIBCPP)
+            if(NOT PLUGIFY_HAS_LIBCPP)
+                message(VERBOSE "The option PLUGIFY_USE_STATIC_STDLIB is set but static-libc++ is not available.")
+            endif()
+        endif()
+    else()
+        #check_cxx_compiler_flag(-stdlib=libstdc++ PLUGIFY_HAS_LIBSTDCPP)
+        if(PLUGIFY_USE_STATIC_STDLIB)
+            check_cxx_compiler_flag(-static-libstdc++ PLUGIFY_HAS_STATIC_LIBSTDCPP)
+            if(NOT PLUGIFY_HAS_LIBCPP)
+                message(VERBOSE "The option PLUGIFY_USE_STATIC_STDLIB is set but static-libstdc++ is not available.")
+            endif()
+        endif()
     endif()
-
-    if(NOT PLUGIFY_HAS_LIBCPP)
-        message(VERBOSE "The option PLUGIFY_HAS_LIBCPP is set but libc++ is not available.")
+    
+    #check_cxx_compiler_flag(-static PLUGIFY_HAS_STATIC)
+    if(PLUGIFY_USE_STATIC_STDLIB)
+        check_cxx_compiler_flag(-static-libgcc PLUGIFY_HAS_STATIC_LIBGCC)
+        if(NOT PLUGIFY_HAS_LIBCPP)
+            message(VERBOSE "The option PLUGIFY_USE_STATIC_STDLIB is set but static-libgcc is not available.")
+        endif()
     endif()
 endif()
 
@@ -157,6 +172,9 @@ set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
 if(UNIX AND NOT APPLE)
     target_compile_definitions(sha256 PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
 endif()
+if(PLUGIFY_HAS_LIBCPP)
+    target_compile_options(sha256 PUBLIC -stdlib=libc++)
+endif()
 
 # ------------------------------------------------------------------------------
 # Format
@@ -206,10 +224,6 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
-if(PLUGIFY_HAS_LIBCPP)
-    target_compile_options(${PROJECT_NAME} PRIVATE -stdlib=libc++)
-endif()
-
 if(PLUGIFY_HAS_SANITIZER)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>: -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
     target_link_libraries(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>: -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
@@ -221,6 +235,17 @@ endif()
 
 if(UNIX AND NOT APPLE)
     target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+endif()
+
+if(PLUGIFY_HAS_LIBCPP)
+    target_compile_options(${PROJECT_NAME} PUBLIC -stdlib=libc++)
+    if(PLUGIFY_HAS_STATIC_LIBCPP)
+        target_link_libraries(${PROJECT_NAME} PUBLIC -static-libc++ -static-libgcc)
+    endif()
+else()
+    if(PLUGIFY_HAS_STATIC_LIBSTDCPP)
+        target_link_libraries(${PROJECT_NAME} PUBLIC -static-libstdc++ -static-libgcc)
+    endif()
 endif()
 
 if(WIN32)
@@ -287,6 +312,9 @@ if(PLUGIFY_BUILD_FUNCTION)
             PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86})
     if(UNIX AND NOT APPLE)
         target_compile_definitions(${PROJECT_NAME}-function PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+    endif()
+    if(PLUGIFY_HAS_LIBCPP)
+        target_compile_options(${PROJECT_NAME}-function PUBLIC -stdlib=libc++)
     endif()
 endif()
 
