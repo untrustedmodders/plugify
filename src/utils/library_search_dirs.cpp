@@ -50,33 +50,10 @@ std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::
 
 class LibrarySearchDirsApple final : public LibrarySearchDirs {
 public:
-	explicit LibrarySearchDirsApple(const std::vector<fs::path>& directories) {
-		if (directories.empty())
-			return;
-		std::string newLibPath;
-		for (const auto& directory : directories) {
-			std::format_to(std::back_inserter(newLibPath), "{}:", directory.string());
-		}
-		_curLibPath = GetEnvVariable("DYLD_FALLBACK_LIBRARY_PATH");
-		if (_curLibPath.has_value()) {
-			std::format_to(std::back_inserter(newLibPath), "{}", *_curLibPath);
-		} else {
-			if (!newLibPath.empty()) {
-				newLibPath.pop_back();
-			}
-		}
-		SetEnvVariable("DYLD_FALLBACK_LIBRARY_PATH", newLibPath.data());
+	// Cannot set DYLD_LIBRARY_PATH at runtime, so use rpath flag
+	explicit LibrarySearchDirsApple(const std::vector<fs::path>& /*directories*/) {
 	}
-
-	~LibrarySearchDirsApple() override {
-		if(_curLibPath.has_value()) {
-			SetEnvVariable("DYLD_FALLBACK_LIBRARY_PATH", _curLibPath->data());
-		} else {
-			UnsetEnvVariable("DYLD_FALLBACK_LIBRARY_PATH");
-		}
-	}
-
-	std::optional<std::string> _curLibPath;
+	~LibrarySearchDirsApple() override = default;
 };
 
 std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::path>& additionalSearchDirectories) {
