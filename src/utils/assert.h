@@ -3,7 +3,7 @@
 #ifdef PLUGIFY_DEBUG
 #if PLUGIFY_PLATFORM_WINDOWS
 	#define PL_DEBUGBREAK() __debugbreak()
-#elif PLUGIFY_PLATFORM_LINUX
+#elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
 	#include <signal.h>
 	#define PL_DEBUGBREAK() raise(SIGTRAP)
 #else
