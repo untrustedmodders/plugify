@@ -51,10 +51,10 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 		for (const auto& packageRef : packageManager->GetLocalPackages()) {
 			const auto& package = packageRef.get();
 			if (package.type == "plugin") {
-				size_t id = _allPlugins.size();
+				auto id = static_cast<ptrdiff_t>(_allPlugins.size());
 				_allPlugins.emplace_back(std::make_unique<Plugin>(id, package));
 			} else {
-				size_t id = _allModules.size();
+				auto id = static_cast<ptrdiff_t>(_allModules.size());
 				_allModules.emplace_back(std::make_unique<Module>(id, package));
 			}
 		}

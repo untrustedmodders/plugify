@@ -57,9 +57,9 @@ template<typename S, typename T, typename F>
 void Print(const T& t, F& f, std::string_view tab = "  ") {
 	std::string result(tab);
 	if (t.GetState() != S::Loaded) {
-		std::format_to(std::back_inserter(result), "[{:02d}] <{}> {}", static_cast<int>(t.GetId()), f(t.GetState()), t.GetFriendlyName());
+		std::format_to(std::back_inserter(result), "[{:02d}] <{}> {}", t.GetId(), f(t.GetState()), t.GetFriendlyName());
 	} else {
-		std::format_to(std::back_inserter(result), "[{:02d}] {}", static_cast<int>(t.GetId()), t.GetFriendlyName());
+		std::format_to(std::back_inserter(result), "[{:02d}] {}", t.GetId(), t.GetFriendlyName());
 	}
 	if (!t.GetDescriptor().versionName.empty()){
 		std::format_to(std::back_inserter(result), " ({})", t.GetDescriptor().versionName);
@@ -77,7 +77,7 @@ void Print(std::string_view name, const T& t, F& f) {
 	if (t.GetState() == S::Error) {
 		CONPRINTF("{} has error: {}.", name, t.GetError());
 	} else {
-		CONPRINTF("{} {} is {}.", name, static_cast<int>(t.GetId()), f(t.GetState()));
+		CONPRINTF("{} {} is {}.", name, t.GetId(), f(t.GetState()));
 	}
 	if (!t.GetDescriptor().createdBy.empty()) {
 		CONPRINTF("  Name: \"{}\" by {}", t.GetFriendlyName(), t.GetDescriptor().createdBy);

@@ -17,7 +17,7 @@ namespace plugify {
 	/**
 	 * @brief Represents a unique identifier used for identifying modules, plugins, or other entities.
 	 */
-	using UniqueId = std::uintmax_t;
+	using UniqueId = std::ptrdiff_t;
 
 	/**
 	 * @brief Represents a reference wrapper for a constant IModule object.

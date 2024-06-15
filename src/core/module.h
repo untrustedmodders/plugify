@@ -79,7 +79,7 @@ namespace plugify {
 		static inline const char* const kFileExtension = ".pmodule";
 
 	private:
-		UniqueId _id{ std::numeric_limits<UniqueId>::max() };
+		UniqueId _id{ -1 };
 		std::string _name;
 		std::string _lang;
 		fs::path _filePath;
