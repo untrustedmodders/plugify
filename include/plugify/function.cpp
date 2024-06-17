@@ -3,6 +3,163 @@
 using namespace plugify;
 using namespace asmjit;
 
+template<typename T>
+constexpr TypeId GetTypeIdx() {
+	return static_cast<TypeId>(TypeUtils::TypeIdOfT<T>::kTypeId);
+}
+
+TypeId GetValueTypeId(ValueType valueType) {
+	switch (valueType) {
+		case ValueType::Invalid:
+		case ValueType::Void:
+			return GetTypeIdx<void>();
+		case ValueType::Bool:
+			return GetTypeIdx<bool>();
+		case ValueType::Char8:
+			return GetTypeIdx<char>();
+		case ValueType::Char16:
+			return GetTypeIdx<wchar_t>();
+		case ValueType::Int8:
+			return GetTypeIdx<int8_t>();
+		case ValueType::Int16:
+			return GetTypeIdx<int16_t>();
+		case ValueType::Int32:
+			return GetTypeIdx<int32_t>();
+		case ValueType::Int64:
+			return GetTypeIdx<int64_t>();
+		case ValueType::UInt8:
+			return GetTypeIdx<uint8_t>();
+		case ValueType::UInt16:
+			return GetTypeIdx<uint16_t>();
+		case ValueType::UInt32:
+			return GetTypeIdx<uint32_t>();
+		case ValueType::UInt64:
+			return GetTypeIdx<uint64_t>();
+		case ValueType::Float:
+			return GetTypeIdx<float>();
+		case ValueType::Double:
+			return GetTypeIdx<double>();
+		case ValueType::Pointer:
+		case ValueType::String:
+		case ValueType::Function:
+		case ValueType::ArrayBool:
+		case ValueType::ArrayChar8:
+		case ValueType::ArrayChar16:
+		case ValueType::ArrayInt8:
+		case ValueType::ArrayInt16:
+		case ValueType::ArrayInt32:
+		case ValueType::ArrayInt64:
+		case ValueType::ArrayUInt8:
+		case ValueType::ArrayUInt16:
+		case ValueType::ArrayUInt32:
+		case ValueType::ArrayUInt64:
+		case ValueType::ArrayPointer:
+		case ValueType::ArrayFloat:
+		case ValueType::ArrayDouble:
+		case ValueType::ArrayString:
+		case ValueType::Vector2:
+		case ValueType::Vector3:
+		case ValueType::Vector4:
+		case ValueType::Matrix4x4:
+			return TypeId::kUIntPtr;
+	}
+	return TypeId::kVoid;
+}
+
+TypeId GetRetTypeId(ValueType valueType) {
+	switch (valueType) {
+		case ValueType::Invalid:
+		case ValueType::Void:
+			return GetTypeIdx<void>();
+		case ValueType::Bool:
+			return GetTypeIdx<bool>();
+		case ValueType::Char8:
+			return GetTypeIdx<char>();
+		case ValueType::Char16:
+			return GetTypeIdx<wchar_t>();
+		case ValueType::Int8:
+			return GetTypeIdx<int8_t>();
+		case ValueType::Int16:
+			return GetTypeIdx<int16_t>();
+		case ValueType::Int32:
+			return GetTypeIdx<int32_t>();
+		case ValueType::Int64:
+			return GetTypeIdx<int64_t>();
+		case ValueType::UInt8:
+			return GetTypeIdx<uint8_t>();
+		case ValueType::UInt16:
+			return GetTypeIdx<uint16_t>();
+		case ValueType::UInt32:
+			return GetTypeIdx<uint32_t>();
+		case ValueType::UInt64:
+			return GetTypeIdx<uint64_t>();
+		case ValueType::Float:
+			return GetTypeIdx<float>();
+		case ValueType::Double:
+			return GetTypeIdx<double>();
+		case ValueType::Pointer:
+		case ValueType::String:
+		case ValueType::Function:
+		case ValueType::ArrayBool:
+		case ValueType::ArrayChar8:
+		case ValueType::ArrayChar16:
+		case ValueType::ArrayInt8:
+		case ValueType::ArrayInt16:
+		case ValueType::ArrayInt32:
+		case ValueType::ArrayInt64:
+		case ValueType::ArrayUInt8:
+		case ValueType::ArrayUInt16:
+		case ValueType::ArrayUInt32:
+		case ValueType::ArrayUInt64:
+		case ValueType::ArrayPointer:
+		case ValueType::ArrayFloat:
+		case ValueType::ArrayDouble:
+		case ValueType::ArrayString:
+		case ValueType::Matrix4x4:
+			return TypeId::kUIntPtr;
+		case ValueType::Vector2:
+#if PLUGIFY_PLATFORM_WINDOWS
+			return TypeId::kInt64;
+#else
+			return TypeId::kFloat64;
+#endif
+		case ValueType::Vector3:
+		case ValueType::Vector4:
+#if PLUGIFY_PLATFORM_WINDOWS
+			return TypeId::kUIntPtr;
+#else
+			return TypeId::kFloat32x4;
+#endif
+	}
+	return TypeId::kVoid;
+}
+
+CallConvId GetCallConv(const std::string& conv) {
+#if PLUGIFY_ARCH_X86 == 64
+#if PLUGIFY_PLATFORM_WINDOWS
+	if (conv == "vectorcall") {
+		return CallConvId::kVectorCall;
+	}
+	return CallConvId::kX64Windows;
+#else
+	return CallConvId::kX64SystemV;
+#endif // PLUGIFY_PLATFORM_WINDOWS
+#elif PLUGIFY_ARCH_X86 == 32
+	if (conv == "cdecl") {
+		return CallConvId::kCDecl;
+	} else if (conv == "stdcall") {
+		return CallConvId::kStdCall;
+	} else if (conv == "fastcall") {
+		return CallConvId::kFastCall;
+	} else if (conv == "thiscall") {
+		return CallConvId::kThisCall;
+	} else if (conv == "vectorcall") {
+		return CallConvId::kVectorCall;
+	}
+	return CallConvId::kHost;
+#endif // PLUGIFY_ARCH_X86
+}
+
 Function::Function(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
@@ -70,9 +227,9 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		const auto& argType = sig.args()[argIdx];
 
 		x86::Reg arg;
-		if (IsGeneralReg(argType)) {
+		if (TypeUtils::isInt(argType)) {
 			arg = cc.newUIntPtr();
-		} else if (IsXmmReg(argType)) {
+		} else if (TypeUtils::isFloat(argType)) {
 			arg = cc.newXmm();
 		} else {
 			_error = "Parameters wider than 64bits not supported";
@@ -86,9 +243,9 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	const uint32_t alignment = 16;
 
 	// setup the stack structure to hold arguments for user callback
-	uint32_t stackSize = static_cast<uint32_t>(sizeof(uintptr_t) * sig.argCount());
+	auto stackSize = static_cast<uint32_t>(sizeof(uintptr_t) * sig.argCount());
 	x86::Mem argsStack = cc.newStack(stackSize, alignment);
-	x86::Mem argsStackIdx{argsStack};
+	x86::Mem argsStackIdx(argsStack);
 
 	// assigns some register as index reg
 	x86::Gp i = cc.newUIntPtr();
@@ -106,9 +263,9 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		const auto& argType = sig.args()[argIdx];
 
 		// have to cast back to explicit register types to gen right mov type
-		if (IsGeneralReg(argType)) {
+		if (TypeUtils::isInt(argType)) {
 			cc.mov(argsStackIdx, argRegisters.at(argIdx).as<x86::Gp>());
-		} else if(IsXmmReg(argType)) {
+		} else if(TypeUtils::isFloat(argType)) {
 			cc.movq(argsStackIdx, argRegisters.at(argIdx).as<x86::Xmm>());
 		} else {
 			_error = "Parameters wider than 64bits not supported";
@@ -135,8 +292,16 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	x86::Gp argCountParam = cc.newUInt8("argCountParam");
 	cc.mov(argCountParam, static_cast<uint8_t>(sig.argCount()));
 
+#if !PLUGIFY_PLATFORM_LINUX
+	auto retSize = static_cast<uint32_t>(sizeof(uintptr_t));
+#else
+	bool isIntPod = sig.ret() == TypeId::kInt32x4;
+	bool isFloatPod = sig.ret() == TypeId::kFloat32x4;
+	auto retSize = static_cast<uint32_t>(sizeof(uintptr_t) * ((isFloatPod || isIntPod) ? 2 : 1));
+#endif
+
 	// create buffer for ret val
-	x86::Mem retStack = cc.newStack(sizeof(uintptr_t), alignment);
+	x86::Mem retStack = cc.newStack(retSize, alignment);
 	x86::Gp retStruct = cc.newUIntPtr("retStruct");
 	cc.lea(retStruct, retStack);
 
@@ -157,11 +322,11 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	cc.mov(i, 0); // reset idx
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
 		const auto& argType = sig.args()[argIdx];
-		if (IsGeneralReg(argType)) {
+		if (TypeUtils::isInt(argType)) {
 			cc.mov(argRegisters.at(argIdx).as<x86::Gp>(), argsStackIdx);
-		}else if (IsXmmReg(argType)) {
+		} else if (TypeUtils::isFloat(argType)) {
 			cc.movq(argRegisters.at(argIdx).as<x86::Xmm>(), argsStackIdx);
-		}else {
+		} else {
 			_error = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
@@ -171,16 +336,40 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	}
 
 	if (sig.hasRet()) {
-		x86::Mem retStackIdx{retStack};
+		x86::Mem retStackIdx(retStack);
 		retStackIdx.setSize(sizeof(uintptr_t));
-		if (IsGeneralReg(sig.ret())) {
+		if (TypeUtils::isInt(sig.ret())) {
+			x86::Gp tmp = cc.newUIntPtr();
+			cc.mov(tmp, retStackIdx);
+			cc.ret(tmp);
+		}
+#if !PLUGIFY_PLATFORM_WINDOWS
+		else if (isIntPod) {
+			x86::Mem retStackIdxUpper(retStack);
+			retStackIdxUpper.addOffset(sizeof(uintptr_t));
+			retStackIdxUpper.setSize(sizeof(uintptr_t));
+
+			x86::Gp tmp1 = cc.newUIntPtr();
 			x86::Gp tmp2 = cc.newUIntPtr();
-			cc.mov(tmp2, retStackIdx);
-			cc.ret(tmp2);
-		} else {
+			cc.mov(tmp1, retStackIdx);
+			cc.mov(tmp2, retStackIdxUpper);
+			cc.ret(tmp1, tmp2);
+		} else if (isFloatPod) {
+			x86::Mem retStackIdxUpper(retStack);
+			retStackIdxUpper.addOffset(sizeof(uintptr_t));
+			retStackIdxUpper.setSize(sizeof(uintptr_t));
+
+			x86::Xmm tmp1 = cc.newXmm();
 			x86::Xmm tmp2 = cc.newXmm();
-			cc.movq(tmp2, retStackIdx);
-			cc.ret(tmp2);
+			cc.movq(tmp1, retStackIdx);
+			cc.movq(tmp2, retStackIdxUpper);
+			cc.ret(tmp1, tmp2);
+		}
+#endif
+		else {
+			x86::Xmm tmp = cc.newXmm();
+			cc.movq(tmp, retStackIdx);
+			cc.ret(tmp);
 		}
 	}
 
@@ -200,118 +389,15 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	return _function;
 }
 
-void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data, bool obj) {
-	bool objectReturn = obj && method.retType.type > ValueType::LastPrimitive;
-	ValueType retType = !objectReturn ? (method.retType.ref ? ValueType::Pointer : method.retType.type) : ValueType::Void;
-	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetTypeId(retType));
+void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data, bool hidden_object_param) {
+	bool objectReturn = hidden_object_param && ValueTypeIsHiddenObjectParam(method.retType.type);
+	ValueType retType = !objectReturn ? (method.retType.ref ? ValueType::Pointer : method.retType.type) : ValueType::Pointer;
+	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetRetTypeId(retType));
 	if (objectReturn) {
-		sig.addArg(GetTypeId(method.retType.type));
+		sig.addArg(GetValueTypeId(method.retType.type));
 	}
 	for (const auto& type : method.paramTypes) {
-		sig.addArg(GetTypeId(type.ref ? ValueType::Pointer : type.type));
+		sig.addArg(GetValueTypeId(type.ref ? ValueType::Pointer : type.type));
 	}
 	return GetJitFunc(sig, method, callback, data);
-}
-
-template<typename T>
-constexpr TypeId GetTypeIdx() {
-	return static_cast<TypeId>(TypeUtils::TypeIdOfT<T>::kTypeId);
-}
-
-TypeId Function::GetTypeId(ValueType valueType) {
-	switch (valueType) {
-		case ValueType::Invalid:
-		case ValueType::Void:   return GetTypeIdx<void>();
-		case ValueType::Bool:   return GetTypeIdx<bool>();
-		case ValueType::Char8:  return GetTypeIdx<char>();
-		case ValueType::Char16: return GetTypeIdx<wchar_t>();
-		case ValueType::Int8:   return GetTypeIdx<int8_t>();
-		case ValueType::Int16:  return GetTypeIdx<int16_t>();
-		case ValueType::Int32:  return GetTypeIdx<int32_t>();
-		case ValueType::Int64:  return GetTypeIdx<int64_t>();
-		case ValueType::UInt8:  return GetTypeIdx<uint8_t>();
-		case ValueType::UInt16: return GetTypeIdx<uint16_t>();
-		case ValueType::UInt32: return GetTypeIdx<uint32_t>();
-		case ValueType::UInt64: return GetTypeIdx<uint64_t>();
-		case ValueType::Float:  return GetTypeIdx<float>();
-		case ValueType::Double: return GetTypeIdx<double>();
-		case ValueType::Pointer:
-		case ValueType::String:
-		case ValueType::Function:
-		case ValueType::ArrayBool:
-		case ValueType::ArrayChar8:
-		case ValueType::ArrayChar16:
-		case ValueType::ArrayInt8:
-		case ValueType::ArrayInt16:
-		case ValueType::ArrayInt32:
-		case ValueType::ArrayInt64:
-		case ValueType::ArrayUInt8:
-		case ValueType::ArrayUInt16:
-		case ValueType::ArrayUInt32:
-		case ValueType::ArrayUInt64:
-		case ValueType::ArrayPointer:
-		case ValueType::ArrayFloat:
-		case ValueType::ArrayDouble:
-		case ValueType::ArrayString:
-		case ValueType::Vector2:
-		case ValueType::Vector3:
-		case ValueType::Vector4:
-		case ValueType::Matrix4x4:
-			return TypeId::kUIntPtr;
-	}
-	return TypeId::kVoid;
-}
-
-CallConvId Function::GetCallConv(const std::string& conv) {
-#if PLUGIFY_ARCH_X86 == 64
-#if PLUGIFY_PLATFORM_WINDOWS
-	if (conv == "vectorcall") {
-		return CallConvId::kVectorCall;
-	}
-	return CallConvId::kX64Windows;
-#else
-	return CallConvId::kX64SystemV;
-#endif // PLUGIFY_PLATFORM_WINDOWS
-#elif PLUGIFY_ARCH_X86 == 32
-	if (conv == "cdecl") {
-		return CallConvId::kCDecl;
-	} else if (conv == "stdcall") {
-		return CallConvId::kStdCall;
-	} else if (conv == "fastcall") {
-		return CallConvId::kFastCall;
-	} else if (conv == "thiscall") {
-		return CallConvId::kThisCall;
-	} else if (conv == "vectorcall") {
-		return CallConvId::kVectorCall;
-	}
-	return CallConvId::kHost;
-#endif // PLUGIFY_ARCH_X86
-}
-
-bool Function::IsGeneralReg(TypeId typeId) {
-	switch (typeId) {
-		case TypeId::kInt8:
-		case TypeId::kUInt8:
-		case TypeId::kInt16:
-		case TypeId::kUInt16:
-		case TypeId::kInt32:
-		case TypeId::kUInt32:
-		case TypeId::kInt64:
-		case TypeId::kUInt64:
-		case TypeId::kIntPtr:
-		case TypeId::kUIntPtr:
-			return true;
-		default:
-			return false;
-	}
-}
-
-bool Function::IsXmmReg(TypeId typeId) {
-	switch (typeId) {
-		case TypeId::kFloat32:
-		case TypeId::kFloat64:
-			return true;
-		default:
-			return false;
-	}
 }

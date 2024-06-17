@@ -83,7 +83,7 @@ namespace plugify {
 			return (uint8_t*)&ret;
 		}
 
-		uintptr_t ret; ///< Raw storage for the return value.
+		volatile uintptr_t ret; ///< Raw storage for the return value.
 	};
 
 	/**
@@ -126,10 +126,10 @@ namespace plugify {
 		 * @param method Reference to the method.
 		 * @param callback Callback function.
 		 * @param data User data.
-		 * @param obj If true, return will be pass as first argument.
+		 * @param hidden_object_param If true, return will be pass as first argument.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, bool obj = true);
+		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, bool hidden_object_param = true);
 
 		/**
 		 * @brief Get a dynamically created function.
@@ -151,13 +151,6 @@ namespace plugify {
 		 * @return Error message.
 		 */
 		[[nodiscard]] const std::string& GetError() { return _error; }
-
-	private:
-		static asmjit::CallConvId GetCallConv(const std::string& conv);
-		static asmjit::TypeId GetTypeId(ValueType type);
-
-		static bool IsGeneralReg(asmjit::TypeId typeId) ;
-		static bool IsXmmReg(asmjit::TypeId typeId) ;
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;

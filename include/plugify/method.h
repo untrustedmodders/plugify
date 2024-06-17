@@ -58,6 +58,7 @@ namespace plugify {
 		Vector4,
 
 		// glm:mat
+		Matrix4x4,
 		//Matrix2x2,
 		//Matrix2x3,
 		//Matrix2x4,
@@ -66,7 +67,6 @@ namespace plugify {
 		//Matrix3x4,
 		//Matrix4x2,
 		//Matrix4x3,
-		Matrix4x4,
 
 		LastPrimitive = Function,
 		FirstPOD = Vector2
@@ -289,5 +289,23 @@ namespace plugify {
 			return ValueType::Matrix4x4;
 		}
 		return ValueType::Invalid;
+	}
+
+	/**
+	 * @brief Checks if a given ValueType is considered a hidden object parameter.
+	 *
+	 * @param type The ValueType to check.
+	 * @return true if considered a hidden object parameter, false otherwise.
+	 *
+	 * This function determines if the provided ValueType is typically treated as a hidden object parameter.
+	 * Hidden object parameters are those where the return argument is allocated by the caller function and
+	 * passed as the first argument. This is often true for objects and large structs.
+	 */
+	[[maybe_unused]] constexpr bool ValueTypeIsHiddenObjectParam(ValueType type) {
+#if _WIN32
+		return type > ValueType::LastPrimitive && type < ValueType::FirstPOD || type >= ValueType::Vector3;
+#else
+		return type > ValueType::LastPrimitive && type < ValueType::FirstPOD || type >= ValueType::Matrix4x4;
+#endif
 	}
 } // namespace plugify
