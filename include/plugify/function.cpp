@@ -292,7 +292,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	x86::Gp argCountParam = cc.newUInt8("argCountParam");
 	cc.mov(argCountParam, static_cast<uint8_t>(sig.argCount()));
 
-#if !PLUGIFY_PLATFORM_LINUX
+#if !PLUGIFY_PLATFORM_WINDOWS
 	auto retSize = static_cast<uint32_t>(sizeof(uintptr_t));
 #else
 	bool isIntPod = sig.ret() == TypeId::kInt32x4;
