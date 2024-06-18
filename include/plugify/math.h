@@ -94,22 +94,13 @@ namespace plugify {
 	struct Matrix4x4 {
 		union {
 			struct {
-				float m11, m12, m13, m14;
-				float m21, m22, m23, m24;
-				float m31, m32, m33, m34;
-				float m41, m42, m43, m44;
+				float m00, m10, m20, m30;
+				float m01, m11, m21, m31;
+				float m02, m12, m22, m32;
+				float m03, m13, m23, m33;
 			};
-			Vector4 rows[4]; ///< Rows of the matrix represented by Vector4.
-			std::array<float, 16> data; ///< Array representation of the matrix.
+			std::array<float, 16> data{}; ///< Array representation of the matrix.
 		};
-
-		/**
-		 * @brief Default constructor. Initializes the matrix to the identity matrix.
-		 */
-		Matrix4x4() : m11{1.0f}, m12{0.0f}, m13{0.0f}, m14{0.0f},
-					  m21{0.0f}, m22{1.0f}, m23{0.0f}, m24{0.0f},
-					  m31{0.0f}, m32{0.0f}, m33{1.0f}, m34{0.0f},
-					  m41{0.0f}, m42{0.0f}, m43{0.0f}, m44{1.0f} {}
 
 		/**
 		 * @brief Assignment operator for Matrix4x4.
