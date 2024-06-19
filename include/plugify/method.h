@@ -68,8 +68,11 @@ namespace plugify {
 		//Matrix4x2,
 		//Matrix4x3,
 
+		FirstPrimitive = Void,
 		LastPrimitive = Function,
-		FirstPOD = Vector2
+
+		FirstPOD = Vector2,
+		LastPOD = Matrix4x4
 	};
 
 	/**
