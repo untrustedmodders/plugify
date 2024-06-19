@@ -68,11 +68,22 @@ namespace plugify {
 		//Matrix4x2,
 		//Matrix4x3,
 
+		//! Helpers
+
 		FirstPrimitive = Void,
 		LastPrimitive = Function,
 
+		FirstObject = String,
+		LastObject = ArrayString,
+
 		FirstPOD = Vector2,
-		LastPOD = Matrix4x4
+		LastPOD = Matrix4x4,
+
+#if _WIN32
+		HiddenParam = Vector3
+#else
+		HiddenParam = Matrix4x4
+#endif
 	};
 
 	/**
@@ -305,10 +316,6 @@ namespace plugify {
 	 * passed as the first argument. This is often true for objects and large structs.
 	 */
 	[[maybe_unused]] constexpr bool ValueTypeIsHiddenObjectParam(ValueType type) {
-#if _WIN32
-		return type > ValueType::LastPrimitive && type < ValueType::FirstPOD || type >= ValueType::Vector3;
-#else
-		return type > ValueType::LastPrimitive && type < ValueType::FirstPOD || type >= ValueType::Matrix4x4;
-#endif
+		return type > ValueType::LastPrimitive && type < ValueType::FirstPOD || type >= ValueType::HiddenParam;
 	}
 } // namespace plugify
