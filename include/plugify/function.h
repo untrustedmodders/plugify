@@ -110,6 +110,7 @@ namespace plugify {
 		~Function();
 
 		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
+		using HiddenParam = bool(*)(ValueType);
 
 		/**
 		 * @brief Get a dynamically created callback function based on the raw signature.
@@ -126,10 +127,10 @@ namespace plugify {
 		 * @param method Reference to the method.
 		 * @param callback Callback function.
 		 * @param data User data.
-		 * @param hidden_object_param If true, return will be pass as first argument.
+		 * @param hidden If true, return will be pass as first argument.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, bool hidden_object_param = true);
+		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, HiddenParam hidden = &ValueTypeIsHiddenObjectParam);
 
 		/**
 		 * @brief Get a dynamically created function.

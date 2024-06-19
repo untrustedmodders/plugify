@@ -389,11 +389,11 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	return _function;
 }
 
-void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data, bool hidden_object_param) {
-	bool objectReturn = hidden_object_param && ValueTypeIsHiddenObjectParam(method.retType.type);
-	ValueType retType = !objectReturn ? (method.retType.ref ? ValueType::Pointer : method.retType.type) : ValueType::Pointer;
+void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data, HiddenParam hidden) {
+	bool isHiddenParam = hidden(method.retType.type);
+	ValueType retType = isHiddenParam ? ValueType::Pointer : (method.retType.ref ? ValueType::Pointer : method.retType.type);
 	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetRetTypeId(retType));
-	if (objectReturn) {
+	if (isHiddenParam) {
 		sig.addArg(GetValueTypeId(method.retType.type));
 	}
 	for (const auto& type : method.paramTypes) {
