@@ -118,7 +118,7 @@ namespace plugify {
 		static constexpr std::string_view Pointer = "ptr64";
 		static constexpr std::string_view ArrayPointer = "ptr64*";
 #else
-	#error "Environment not 32 or 64-bit."
+		#error "Environment not 32 or 64-bit."
 #endif
 	}
 
