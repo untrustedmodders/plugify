@@ -33,6 +33,7 @@ void PluginManager::Terminate() {
 		return;
 
 	TerminateAllPlugins();
+	
 	_allPlugins.clear();
 	_allModules.clear();
 }
@@ -44,6 +45,7 @@ bool PluginManager::IsInitialized() {
 void PluginManager::DiscoverAllModulesAndPlugins() {
 	PL_ASSERT(_allModules.empty(), "Modules already initialized");
 	PL_ASSERT(_allPlugins.empty(), "Plugins already initialized");
+	
 	auto plugify = _plugify.lock();
 	PL_ASSERT(plugify);
 
@@ -58,6 +60,16 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 				_allModules.emplace_back(std::make_unique<Module>(id, package));
 			}
 		}
+	}
+	
+	if (_allModules.empty()) {
+		PL_LOG_WARNING("Did not find any module. Check base directory path in config: '{}'", plugify->GetConfig().baseDir.string());
+		return;
+	}
+	
+	if (_allPlugins.empty()) {
+		PL_LOG_WARNING("Did not find any plugin. Check base directory path in config: '{}'", plugify->GetConfig().baseDir.string());
+		return;
 	}
 
 	PluginList sortedPlugins;
@@ -79,6 +91,9 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 }
 
 void PluginManager::LoadRequiredLanguageModules() {
+	if (_allModules.empty())
+		return;
+	
 	auto plugify = _plugify.lock();
 	PL_ASSERT(plugify);
 
@@ -99,15 +114,27 @@ void PluginManager::LoadRequiredLanguageModules() {
 		plugin->SetModule(*module);
 		modules.emplace(module->GetId());
 	}
+	
+	bool loadedAny = false;
 
 	for (const auto& module : _allModules) {
 		if (module->GetDescriptor().forceLoad || modules.contains(module->GetId())) {
-			module->Initialize(plugify->GetProvider());
+			loadedAny |= module->Initialize(plugify->GetProvider());
 		}
+	}
+	
+	if (!loadedAny) {
+		PL_LOG_WARNING("Did not load any module");
+		return;
 	}
 }
 
 void PluginManager::LoadAndStartAvailablePlugins() {
+	if (_allPlugins.empty())
+		return;
+	
+	bool loadedAny = false;
+	
 	for (const auto& plugin : _allPlugins) {
 		if (plugin->GetState() == PluginState::NotLoaded) {
 			if (plugin->GetModule().GetState() != ModuleState::Loaded) {
@@ -130,9 +157,14 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 				std::format_to(std::back_inserter(error), "'");
 				plugin->SetError(std::format("Not loaded {} dependency plugin(s)", error));
 			} else {
-				plugin->GetModule().LoadPlugin(*plugin);
+				loadedAny |= plugin->GetModule().LoadPlugin(*plugin);
 			}
 		}
+	}
+	
+	if (!loadedAny) {
+		PL_LOG_WARNING("Did not load any plugin");
+		return;
 	}
 
 	for (const auto& plugin : _allPlugins) {
@@ -151,6 +183,9 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 }
 
 void PluginManager::TerminateAllPlugins() {
+	if (_allPlugins.empty())
+		return;
+	
 	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
 		const auto& plugin = *it;
 		if (plugin->GetState() == PluginState::Running) {

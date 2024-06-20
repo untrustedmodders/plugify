@@ -105,20 +105,22 @@ void Module::Terminate() {
 	SetUnloaded();
 }
 
-void Module::LoadPlugin(Plugin& plugin) const {
+bool Module::LoadPlugin(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
-		return;
+		return false;
 
 	auto result = GetLanguageModule().OnPluginLoad(plugin);
 	if (auto* data = std::get_if<ErrorData>(&result)) {
 		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error, plugin.GetBaseDir().string()));
-		return;
+		return false;
 	}
 
 	plugin.SetMethods(std::move(std::get<LoadResultData>(result).methods));
 	plugin.SetLoaded();
 
 	//_loadedPlugins.emplace_back(plugin);
+	
+	return true;
 }
 
 void Module::MethodExport(Plugin& plugin) const {

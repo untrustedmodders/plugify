@@ -56,7 +56,7 @@ namespace plugify {
 		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
 		void Terminate();
 
-		void LoadPlugin(Plugin& plugin) const;
+		bool LoadPlugin(Plugin& plugin) const;
 		void StartPlugin(Plugin& plugin) const;
 		void EndPlugin(Plugin& plugin) const;
 		void MethodExport(Plugin& plugin) const;

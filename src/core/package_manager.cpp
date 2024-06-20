@@ -962,7 +962,7 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 				if (ec) {
 					PL_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", name, finalLocation.string(), destinationPath.string(), ec.message());
 				} else {
-
+					PL_LOG_VERBOSE("Package: '{}' was renamed successfully from '{}' to '{}'", name, finalLocation.string(), destinationPath.string());
 				}
 
 			} else {

@@ -210,7 +210,7 @@ int main() {
 						CONPRINT(R"((____|     `._____  )" << copyright);
 						CONPRINT(R"( ____|       _|___)" "");
 						CONPRINT(R"((____|     .'       This program may be freely redistributed under)" "");
-						CONPRINT(R"(     |____/         the terms of the GNU General Public License.)" "");
+						CONPRINT(R"(     |____/         the terms of the MIT License.)" "");
 					}
 
 					else if (args[1] == "load") {

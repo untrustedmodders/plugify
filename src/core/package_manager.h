@@ -65,11 +65,12 @@ namespace plugify {
 		static std::string ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt);
 		static bool IsPackageLegit(const std::string& checksum, std::span<const uint8_t> packageData);
 
+		using Dependency = std::pair<RemotePackageRef, std::optional<int32_t>>;
+		
 	private:
 		std::unique_ptr<HTTPDownloader> _httpDownloader;
 		std::vector<LocalPackage> _localPackages;
 		std::vector<RemotePackage> _remotePackages;
-		using Dependency = std::pair<RemotePackageRef, std::optional<int32_t>>;
 		std::unordered_map<std::string, Dependency> _missedPackages;
 		std::vector<LocalPackageRef> _conflictedPackages;
 	};
