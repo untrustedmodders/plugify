@@ -18,7 +18,7 @@ TypeId GetValueTypeId(ValueType valueType) {
 		case ValueType::Char8:
 			return GetTypeIdx<char>();
 		case ValueType::Char16:
-			return GetTypeIdx<wchar_t>();
+			return GetTypeIdx<char16_t>();
 		case ValueType::Int8:
 			return GetTypeIdx<int8_t>();
 		case ValueType::Int16:
@@ -76,7 +76,7 @@ TypeId GetRetTypeId(ValueType valueType) {
 		case ValueType::Char8:
 			return GetTypeIdx<char>();
 		case ValueType::Char16:
-			return GetTypeIdx<wchar_t>();
+			return GetTypeIdx<char16_t>();
 		case ValueType::Int8:
 			return GetTypeIdx<int8_t>();
 		case ValueType::Int16:
