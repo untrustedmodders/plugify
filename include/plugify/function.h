@@ -79,8 +79,8 @@ namespace plugify {
 		 * @brief Get a pointer to the return value.
 		 * @return Pointer to the return value.
 		 */
-		[[nodiscard]] uint8_t* GetReturnPtr() const {
-			return (uint8_t*)&ret;
+		[[nodiscard]] int8_t* GetReturnPtr() const {
+			return (int8_t*)&ret;
 		}
 
 		volatile uintptr_t ret; ///< Raw storage for the return value.
