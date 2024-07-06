@@ -163,7 +163,7 @@ CallConvId GetCallConv(const std::string& conv) {
 Function::Function(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
-Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _function{other._function}, _userData{other._userData}, _error{std::move(other._error)} {
+Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _function{other._function}, _userData{other._userData} {
 	other._function = nullptr;
 	other._userData = nullptr;
 }
@@ -181,7 +181,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 	auto rt = _rt.lock();
 	if (!rt) {
-		_error = "JitRuntime invalid";
+		_errorCode = "JitRuntime invalid";
 		return nullptr;
 	}
 
@@ -232,7 +232,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		} else if (TypeUtils::isFloat(argType)) {
 			arg = cc.newXmm();
 		} else {
-			_error = "Parameters wider than 64bits not supported";
+			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
@@ -268,7 +268,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		} else if(TypeUtils::isFloat(argType)) {
 			cc.movq(argsStackIdx, argRegisters.at(argIdx).as<x86::Xmm>());
 		} else {
-			_error = "Parameters wider than 64bits not supported";
+			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
@@ -327,7 +327,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 		} else if (TypeUtils::isFloat(argType)) {
 			cc.movq(argRegisters.at(argIdx).as<x86::Xmm>(), argsStackIdx);
 		} else {
-			_error = "Parameters wider than 64bits not supported";
+			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
@@ -380,7 +380,8 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 	Error err = rt->add(&_function, &code);
 	if (err) {
-		_error = DebugUtils::errorAsString(err);
+		_function = nullptr;
+		_errorCode = DebugUtils::errorAsString(err);
 		return nullptr;
 	}
 

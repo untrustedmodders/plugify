@@ -130,7 +130,7 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as first argument.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, HiddenParam hidden = &ValueTypeIsHiddenObjectParam);
+		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, HiddenParam hidden = &TypeUtils::IsHiddenParam);
 
 		/**
 		 * @brief Get a dynamically created function.
@@ -151,12 +151,14 @@ namespace plugify {
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */
-		[[nodiscard]] const std::string& GetError() { return _error; }
+		[[nodiscard]] std::string GetError() { return !_function && _errorCode ? _errorCode : ""; }
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
 		void* _function{ nullptr };
-		void* _userData{ nullptr };
-		std::string _error;
+		union {
+			void* _userData{ nullptr };
+			const char* _errorCode;
+		};
 	};
 } // namespace plugify
