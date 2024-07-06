@@ -204,7 +204,7 @@ namespace plugify {
 		//! Tests whether a given type is a 1-bit boolean.
 		[[maybe_unused]] constexpr bool IsBool(ValueType type)    { return type == ValueType::Bool; }
 		//! Tests whether a given type is a 8-bit character.
-		[[maybe_unused]] constexpr bool IsChat8(ValueType type)   { return type == ValueType::Char8; }
+		[[maybe_unused]] constexpr bool IsChar8(ValueType type)   { return type == ValueType::Char8; }
 		//! Tests whether a given type is a 16-bit character.
 		[[maybe_unused]] constexpr bool IsChar16(ValueType type)  { return type == ValueType::Char16; }
 		//! Tests whether a given type is a 8-bit integer.
