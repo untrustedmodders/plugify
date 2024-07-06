@@ -131,38 +131,43 @@ namespace plugify {
 	};
 
 	/**
-	 * @brief Convert a PluginState enum value to its string representation.
-	 * @param state The PluginState value to convert.
-	 * @return The string representation of the PluginState.
+	 * @brief Namespace containing utility functions of PluginState enum.
 	 */
-	[[maybe_unused]] constexpr std::string_view PluginStateToString(PluginState state) {
-		switch (state) {
-			case PluginState::NotLoaded:   return "NotLoaded";
-			case PluginState::Error:       return "Error";
-			case PluginState::Loaded:      return "Loaded";
-			case PluginState::Running:     return "Running";
-			case PluginState::Terminating: return "Terminating";
-			default:                       return "Unknown";
+	namespace PluginUtils {
+		/**
+         * @brief Convert a PluginState enum value to its string representation.
+         * @param state The PluginState value to convert.
+         * @return The string representation of the PluginState.
+         */
+		[[maybe_unused]] constexpr std::string_view ToString(PluginState state) {
+			switch (state) {
+				case PluginState::NotLoaded:   return "NotLoaded";
+				case PluginState::Error:       return "Error";
+				case PluginState::Loaded:      return "Loaded";
+				case PluginState::Running:     return "Running";
+				case PluginState::Terminating: return "Terminating";
+				default:                       return "Unknown";
+			}
 		}
-	}
 
-	/**
-	 * @brief Convert a string representation to a PluginState enum value.
-	 * @param state The string representation of PluginState.
-	 * @return The corresponding PluginState enum value.
-	 */
-	[[maybe_unused]] constexpr PluginState PluginStateFromString(std::string_view state) {
-		if (state == "NotLoaded") {
-			return PluginState::NotLoaded;
-		} else if (state == "Error") {
-			return PluginState::Error;
-		} else if (state == "Loaded") {
-			return PluginState::Loaded;
-		} else if (state == "Running") {
-			return PluginState::Running;
-		} else if (state == "Terminating") {
-			return PluginState::Terminating;
+		/**
+         * @brief Convert a string representation to a PluginState enum value.
+         * @param state The string representation of PluginState.
+         * @return The corresponding PluginState enum value.
+         */
+		[[maybe_unused]] constexpr PluginState FromString(std::string_view state) {
+			if (state == "NotLoaded") {
+				return PluginState::NotLoaded;
+			} else if (state == "Error") {
+				return PluginState::Error;
+			} else if (state == "Loaded") {
+				return PluginState::Loaded;
+			} else if (state == "Running") {
+				return PluginState::Running;
+			} else if (state == "Terminating") {
+				return PluginState::Terminating;
+			}
+			return PluginState::Unknown;
 		}
-		return PluginState::Unknown;
 	}
 } // namespace plugify

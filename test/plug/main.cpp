@@ -253,7 +253,7 @@ int main() {
 							CONPRINTF("Listing {} plugin{}:", static_cast<int>(count), (count > 1) ? "s" : "");
 						}
 						for (auto& pluginRef : pluginManager->GetPlugins()) {
-							Print<plugify::PluginState>(pluginRef.get(), plugify::PluginStateToString);
+							Print<plugify::PluginState>(pluginRef.get(), plugify::PluginUtils::ToString);
 						}
 					}
 
@@ -269,7 +269,7 @@ int main() {
 							CONPRINTF("Listing {} module{}:", static_cast<int>(count), (count > 1) ? "s" : "");
 						}
 						for (auto& moduleRef : pluginManager->GetModules()) {
-							Print<plugify::ModuleState>(moduleRef.get(), plugify::ModuleStateToString);
+							Print<plugify::ModuleState>(moduleRef.get(), plugify::ModuleUtils::ToString);
 						}
 					}
 
@@ -282,13 +282,13 @@ int main() {
 							auto pluginRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
 							if (pluginRef.has_value()) {
 								const auto& plugin = pluginRef->get();
-								Print<plugify::PluginState>("Plugin", plugin, plugify::PluginStateToString);
+								Print<plugify::PluginState>("Plugin", plugin, plugify::PluginUtils::ToString);
 								CONPRINTF("  Language module: {}", plugin.GetDescriptor().languageModule.name);
 								CONPRINT("  Dependencies: ");
 								for (const auto& reference : plugin.GetDescriptor().dependencies) {
 									auto dependencyRef = pluginManager->FindPlugin(reference.name);
 									if (dependencyRef.has_value()) {
-										Print<plugify::PluginState>(dependencyRef->get(), plugify::PluginStateToString, "    ");
+										Print<plugify::PluginState>(dependencyRef->get(), plugify::PluginUtils::ToString, "    ");
 									} else {
 										CONPRINTF("    {} <Missing> (v{})", reference.name, reference.requestedVersion.has_value() ? std::to_string(*reference.requestedVersion) : "[latest]");
 									}
@@ -311,7 +311,7 @@ int main() {
 							auto moduleRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindModuleFromId(FormatInt(args[2])) : pluginManager->FindModule(args[2]);
 							if (moduleRef.has_value()) {
 								const auto& module = moduleRef->get();
-								Print<plugify::ModuleState>("Module", module, plugify::ModuleStateToString);
+								Print<plugify::ModuleState>("Module", module, plugify::ModuleUtils::ToString);
 								CONPRINTF("  Language: {}", module.GetDescriptor().language);
 								CONPRINTF("  File: {}", module.GetFilePath().string());
 							} else {

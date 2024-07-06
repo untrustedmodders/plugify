@@ -126,32 +126,37 @@ namespace plugify {
 	};
 
 	/**
-	 * @brief Convert a ModuleState enum value to its string representation.
-	 * @param state The ModuleState value to convert.
-	 * @return The string representation of the ModuleState.
+	 * @brief Namespace containing utility functions of ModuleState enum.
 	 */
-	[[maybe_unused]] constexpr std::string_view ModuleStateToString(ModuleState state) {
-		switch (state) {
-			case ModuleState::NotLoaded: return "NotLoaded";
-			case ModuleState::Error:     return "Error";
-			case ModuleState::Loaded:    return "Loaded";
-			default:                     return "Unknown";
+	namespace ModuleUtils {
+		/**
+		 * @brief Convert a ModuleState enum value to its string representation.
+		 * @param state The ModuleState value to convert.
+		 * @return The string representation of the ModuleState.
+		 */
+		[[maybe_unused]] constexpr std::string_view ToString(ModuleState state) {
+			switch (state) {
+				case ModuleState::NotLoaded: return "NotLoaded";
+				case ModuleState::Error:     return "Error";
+				case ModuleState::Loaded:    return "Loaded";
+				default:                     return "Unknown";
+			}
 		}
-	}
 
-	/**
-	 * @brief Convert a string representation to a ModuleState enum value.
-	 * @param state The string representation of ModuleState.
-	 * @return The corresponding ModuleState enum value.
-	 */
-	[[maybe_unused]] constexpr ModuleState ModuleStateFromString(std::string_view state) {
-		if (state == "NotLoaded") {
-			return ModuleState::NotLoaded;
-		} else if (state == "Error") {
-			return ModuleState::Error;
-		} else if (state == "Loaded") {
-			return ModuleState::Loaded;
+		/**
+		 * @brief Convert a string representation to a ModuleState enum value.
+		 * @param state The string representation of ModuleState.
+		 * @return The corresponding ModuleState enum value.
+		 */
+		[[maybe_unused]] constexpr ModuleState FromString(std::string_view state) {
+			if (state == "NotLoaded") {
+				return ModuleState::NotLoaded;
+			} else if (state == "Error") {
+				return ModuleState::Error;
+			} else if (state == "Loaded") {
+				return ModuleState::Loaded;
+			}
+			return ModuleState::Unknown;
 		}
-		return ModuleState::Unknown;
 	}
 } // namespace plugify
