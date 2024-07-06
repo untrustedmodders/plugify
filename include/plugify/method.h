@@ -186,7 +186,7 @@ namespace plugify {
 	/**
 	 * @brief Namespace containing utility functions of ValueType enum.
 	 */
-	namespace TypeUtils {
+	namespace ValueUtils {
 		template<typename T>
 		[[maybe_unused]] constexpr bool IsBetween(T x, T a, T b) {
 			return x >= a && x <= b;

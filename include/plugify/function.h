@@ -130,7 +130,7 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as first argument.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, HiddenParam hidden = &TypeUtils::IsHiddenParam);
+		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
 
 		/**
 		 * @brief Get a dynamically created function.
