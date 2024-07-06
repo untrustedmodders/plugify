@@ -135,10 +135,10 @@ namespace plugify {
 	 */
 	namespace PluginUtils {
 		/**
-         * @brief Convert a PluginState enum value to its string representation.
-         * @param state The PluginState value to convert.
-         * @return The string representation of the PluginState.
-         */
+		 * @brief Convert a PluginState enum value to its string representation.
+		 * @param state The PluginState value to convert.
+		 * @return The string representation of the PluginState.
+		 */
 		[[maybe_unused]] constexpr std::string_view ToString(PluginState state) {
 			switch (state) {
 				case PluginState::NotLoaded:   return "NotLoaded";
@@ -151,10 +151,10 @@ namespace plugify {
 		}
 
 		/**
-         * @brief Convert a string representation to a PluginState enum value.
-         * @param state The string representation of PluginState.
-         * @return The corresponding PluginState enum value.
-         */
+		 * @brief Convert a string representation to a PluginState enum value.
+		 * @param state The string representation of PluginState.
+		 * @return The corresponding PluginState enum value.
+		 */
 		[[maybe_unused]] constexpr PluginState FromString(std::string_view state) {
 			if (state == "NotLoaded") {
 				return PluginState::NotLoaded;
