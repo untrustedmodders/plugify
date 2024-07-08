@@ -95,10 +95,10 @@ namespace plugify {
 		struct Matrix4x4 {
 			union {
 				struct {
-					float m00, m10, m20, m30;
-					float m01, m11, m21, m31;
-					float m02, m12, m22, m32;
-					float m03, m13, m23, m33;
+					float m00, m01, m02, m03;
+					float m10, m11, m12, m13;
+					float m20, m21, m22, m23;
+					float m30, m31, m32, m33;
 				};
 				std::array<float, 16> data{}; ///< Array representation of the matrix.
 			};
