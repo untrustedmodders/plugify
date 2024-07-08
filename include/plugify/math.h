@@ -21,94 +21,96 @@
 #endif // defined(_MSC_VER)
 
 namespace plugify {
-	/**
-	 * @struct Vector2
-	 * @brief Represents a 2D vector with x and y components.
-	 */
-	struct Vector2 {
-		union {
-			struct {
-				float x; ///< x-component of the vector.
-				float y; ///< y-component of the vector.
+	extern "C" {
+		/**
+		* @struct Vector2
+		* @brief Represents a 2D vector with x and y components.
+		*/
+		struct Vector2 {
+			union {
+				struct {
+					float x; ///< x-component of the vector.
+					float y; ///< y-component of the vector.
+				};
+				std::array<float, 2> data{}; ///< Array representation of the vector.
 			};
-			std::array<float, 2> data{}; ///< Array representation of the vector.
+
+			/**
+			* @brief Assignment operator for Vector2.
+			* @param other The Vector2 to assign values from.
+			* @return Reference to the modified Vector2.
+			*/
+			Vector2& operator=(const Vector2& other) = default;
 		};
 
 		/**
-		 * @brief Assignment operator for Vector2.
-		 * @param other The Vector2 to assign values from.
-		 * @return Reference to the modified Vector2.
-		 */
-		Vector2& operator=(const Vector2& other) = default;
-	};
-
-	/**
-	 * @struct Vector3
-	 * @brief Represents a 3D vector with x, y, and z components.
-	 */
-	struct Vector3 {
-		union {
-			struct {
-				float x; ///< x-component of the vector.
-				float y; ///< y-component of the vector.
-				float z; ///< z-component of the vector.
+		* @struct Vector3
+		* @brief Represents a 3D vector with x, y, and z components.
+		*/
+		struct Vector3 {
+			union {
+				struct {
+					float x; ///< x-component of the vector.
+					float y; ///< y-component of the vector.
+					float z; ///< z-component of the vector.
+				};
+				std::array<float, 3> data{}; ///< Array representation of the vector.
 			};
-			std::array<float, 3> data{}; ///< Array representation of the vector.
+
+			/**
+			* @brief Assignment operator for Vector3.
+			* @param other The Vector3 to assign values from.
+			* @return Reference to the modified Vector3.
+			*/
+			Vector3& operator=(const Vector3& other) = default;
 		};
 
 		/**
-		 * @brief Assignment operator for Vector3.
-		 * @param other The Vector3 to assign values from.
-		 * @return Reference to the modified Vector3.
-		 */
-		Vector3& operator=(const Vector3& other) = default;
-	};
-
-	/**
-	 * @struct Vector4
-	 * @brief Represents a 4D vector with x, y, z, and w components.
-	 */
-	struct Vector4 {
-		union {
-			struct {
-				float x; ///< x-component of the vector.
-				float y; ///< y-component of the vector.
-				float z; ///< z-component of the vector.
-				float w; ///< w-component of the vector.
+		* @struct Vector4
+		* @brief Represents a 4D vector with x, y, z, and w components.
+		*/
+		struct Vector4 {
+			union {
+				struct {
+					float x; ///< x-component of the vector.
+					float y; ///< y-component of the vector.
+					float z; ///< z-component of the vector.
+					float w; ///< w-component of the vector.
+				};
+				std::array<float, 4> data{}; ///< Array representation of the vector.
 			};
-			std::array<float, 4> data{}; ///< Array representation of the vector.
+
+			/**
+			* @brief Assignment operator for Vector4.
+			* @param other The Vector4 to assign values from.
+			* @return Reference to the modified Vector4.
+			*/
+			Vector4& operator=(const Vector4& other) = default;
 		};
 
 		/**
-		 * @brief Assignment operator for Vector4.
-		 * @param other The Vector4 to assign values from.
-		 * @return Reference to the modified Vector4.
-		 */
-		Vector4& operator=(const Vector4& other) = default;
-	};
-
-	/**
-	 * @struct Matrix4x4
-	 * @brief Represents a 4x4 matrix using Vector4 rows.
-	 */
-	struct Matrix4x4 {
-		union {
-			struct {
-				float m00, m10, m20, m30;
-				float m01, m11, m21, m31;
-				float m02, m12, m22, m32;
-				float m03, m13, m23, m33;
+		* @struct Matrix4x4
+		* @brief Represents a 4x4 matrix using Vector4 rows.
+		*/
+		struct Matrix4x4 {
+			union {
+				struct {
+					float m00, m10, m20, m30;
+					float m01, m11, m21, m31;
+					float m02, m12, m22, m32;
+					float m03, m13, m23, m33;
+				};
+				std::array<float, 16> data{}; ///< Array representation of the matrix.
 			};
-			std::array<float, 16> data{}; ///< Array representation of the matrix.
-		};
 
-		/**
-		 * @brief Assignment operator for Matrix4x4.
-		 * @param other The Matrix4x4 to assign values from.
-		 * @return Reference to the modified Matrix4x4.
-		 */
-		Matrix4x4& operator=(const Matrix4x4& other) = default;
-	};
+			/**
+			* @brief Assignment operator for Matrix4x4.
+			* @param other The Matrix4x4 to assign values from.
+			* @return Reference to the modified Matrix4x4.
+			*/
+			Matrix4x4& operator=(const Matrix4x4& other) = default;
+		};
+	}
 }
 
 #if defined(__clang__)
