@@ -108,7 +108,7 @@ bool Assembly::Init(fs::path modulePath, int flags, bool sections) {
 	return true;
 }
 
-MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool decorated) const {
+MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool /*decorated*/) const {
 	if (tableName.empty())
 		return nullptr;
 
