@@ -156,10 +156,10 @@ namespace plugify {
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
-		MemAddr _function{ nullptr };
+		MemAddr _function;
 		union {
-			MemAddr _userData{ nullptr };
-			const char* _errorCode;
+			MemAddr _userData;
+			const char* _errorCode{};
 		};
 	};
 } // namespace plugify
