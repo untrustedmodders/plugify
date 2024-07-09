@@ -123,17 +123,12 @@ void* Assembly::GetHandle() const {
 	return _handle;
 }
 
-std::string_view Assembly::GetPath() const {
+const fs::path& Assembly::GetPath() const {
 	return _path;
 }
 
-std::string_view Assembly::GetName() const {
-	std::string_view modulePath(_path);
-	return modulePath.substr(modulePath.find_last_of("/\\") + 1);
-}
-
-std::string_view Assembly::GetError() const {
-	return !IsValid() ? _path : std::string_view("");
+const std::string& Assembly::GetError() const {
+	return _error;
 }
 
 #if PLUGIFY_SEPARATE_SOURCE_FILES

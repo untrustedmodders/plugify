@@ -1,7 +1,16 @@
 #if PLUGIFY_PLATFORM_WINDOWS
 
 #include <plugify/assembly.h>
+
 #include "os.h"
+
+#if PLUGIFY_ARCH_X86 == 64
+	const WORD PE_FILE_MACHINE = IMAGE_FILE_MACHINE_AMD64;
+	const WORD PE_NT_OPTIONAL_HDR_MAGIC = IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+#else
+	const WORD PE_FILE_MACHINE = IMAGE_FILE_MACHINE_I386;
+	const WORD PE_NT_OPTIONAL_HDR_MAGIC = IMAGE_NT_OPTIONAL_HDR32_MAGIC;
+#endif
 
 using namespace plugify;
 
@@ -79,7 +88,7 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, int flags, bool sections) {
 	return true;
 }
 
-bool Assembly::Init(const fs::path& modulePath, int flags, bool sections) {
+bool Assembly::Init(fs::path modulePath, int flags, bool sections) {
 	HMODULE hModule = LoadLibraryExW(modulePath.c_str(), nullptr, flags != -1 ? flags : DEFAULT_LIBRARY_LOAD_FLAGS);
 	if (!hModule) {
 		DWORD errorCode = GetLastError();
@@ -87,28 +96,49 @@ bool Assembly::Init(const fs::path& modulePath, int flags, bool sections) {
 			LPSTR messageBuffer = NULL;
 			DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 										NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
-			_path = std::string(messageBuffer, size);
+			_error = std::string(messageBuffer, size);
 			LocalFree(messageBuffer);
 		}
 		return false;
 	}
 
+	_handle = hModule;
+	_path = std::move(modulePath);
+
 	if (!sections)
 		return true;
-
+	
 	IMAGE_DOS_HEADER* pDOSHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(hModule);
-	IMAGE_NT_HEADERS64* pNTHeaders = reinterpret_cast<IMAGE_NT_HEADERS64*>(reinterpret_cast<uintptr_t>(hModule) + pDOSHeader->e_lfanew);
+	IMAGE_NT_HEADERS* pNTHeaders = reinterpret_cast<IMAGE_NT_HEADERS*>(reinterpret_cast<uintptr_t>(hModule) + pDOSHeader->e_lfanew);
+/*
+	IMAGE_FILE_HEADER* pFileHeader = &pNTHeaders->OptionalHeader;
+	IMAGE_OPTIONAL_HEADER* pOptionalHeader = &pNTHeaders->OptionalHeader;;
 
+	if (pDOSHeader->e_magic != IMAGE_DOS_SIGNATURE || pNTHeaders->Signature != IMAGE_NT_SIGNATURE || pOptionalHeader->Magic != PE_NT_OPTIONAL_HDR_MAGIC) {
+        _error = "Not a valid DLL file.";
+		return false;
+	}
+
+	if (pFileHeader->Machine != PE_FILE_MACHINE) {
+		_error = "Not a valid DLL file architecture.";
+		return false;
+	}
+
+	if ((pFileHeader->Characteristics & IMAGE_FILE_DLL) == 0) {
+		_error = "DLL file must be a dynamic library.";
+		return false;
+	}
+*/
 	const IMAGE_SECTION_HEADER* hSection = IMAGE_FIRST_SECTION(pNTHeaders);// Get first image section.
 
 	// Loop through the sections
 	for (WORD i = 0; i < pNTHeaders->FileHeader.NumberOfSections; ++i) {
-		const IMAGE_SECTION_HEADER& hCurrentSection = hSection[i];  // Get current section.
-		_sections.emplace_back(reinterpret_cast<const char*>(hCurrentSection.Name), static_cast<uintptr_t>(reinterpret_cast<uintptr_t>(hModule) + hCurrentSection.VirtualAddress), hCurrentSection.SizeOfRawData);// Push back a struct with the section data.
+		const IMAGE_SECTION_HEADER& hCurrentSection = hSection[i]; // Get current section.
+		_sections.emplace_back(
+			reinterpret_cast<const char*>(hCurrentSection.Name), 
+			reinterpret_cast<uintptr_t>(hModule) + hCurrentSection.VirtualAddress, 
+			hCurrentSection.SizeOfRawData);// Push back a struct with the section data.
 	}
-
-	_handle = hModule;
-	_path = modulePath.string();
 
 	_executableCode = GetSectionByName(".text");
 

@@ -1,7 +1,16 @@
 #if PLUGIFY_PLATFORM_LINUX
 
 #include <plugify/assembly.h>
+
 #include "os.h"
+
+#if PLUGIFY_ARCH_X86 == 64
+	const unsigned char ELF_CLASS = ELFCLASS64;
+	const uint16_t ELF_MACHINE = EM_X86_64;
+#else
+	const unsigned char ELF_CLASS = ELFCLASS32;
+	const uint16_t ELF_MACHINE = EM_386;
+#endif
 
 using namespace plugify;
 
@@ -68,30 +77,50 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, int flags, bool sections) {
 	return true;
 }
 
-bool Assembly::Init(const fs::path& modulePath, int flags, bool sections) {
+bool Assembly::Init(fs::path modulePath, int flags, bool sections) {
 	void* handle = dlopen(modulePath.c_str(), flags != -1 ? flags : DEFAULT_LIBRARY_LOAD_FLAGS);
 	if (!handle) {
-		_path = dlerror();
+		_error = dlerror();
 		return false;
 	}
 
 	_handle = handle;
-	_path = modulePath.string();
+	_path = std::move(modulePath);
 
 	if (!sections)
 		return true;
 
 	link_map* lmap;
 	if (dlinfo(handle, RTLD_DI_LINKMAP, &lmap) != 0) {
-		_path = "Failed to retrieve dynamic linker information using dlinfo.";
-		dlclose(handle);
+		_error = "Failed to retrieve dynamic linker information using dlinfo.";
+		return false;
+	}
+/*
+	ElfW(Phdr) file = lmap->l_addr;
+
+	if (memcmp(ELFMAG, file->e_ident, SELFMAG) != 0) {
+		_error = "Not a valid ELF file.";
 		return false;
 	}
 
+	if (file->e_ident[EI_VERSION] != EV_CURRENT) {
+		_error = "Not a valid ELF file version.";
+		return false;
+	}
+
+	if (file->e_ident[EI_CLASS] != ELF_CLASS || file->e_machine != ELF_MACHINE || file->e_ident[EI_DATA] != ELFDATA2LSB) {
+		_error = "Not a valid ELF file architecture.";
+		return false;
+	}
+
+	if (file->e_type != ET_DYN) {
+		_error = "ELF file must be a dynamic library.";
+		return false;
+	}
+*/
 	int fd = open(lmap->l_name, O_RDONLY);
 	if (fd == -1) {
-		_path = "Failed to open the shared object file.";
-		dlclose(handle);
+		_error = "Failed to open the shared object file.";
 		return false;
 	}
 

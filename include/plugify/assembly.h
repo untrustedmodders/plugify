@@ -82,7 +82,7 @@ namespace plugify {
 		 * @param flags Optional flags for module initialization.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(std::string& moduleName, int flags = -1, bool sections = false) : Assembly(std::string_view(moduleName), flags, sections) {}
+		explicit Assembly(const std::string& moduleName, int flags = -1, bool sections = false) : Assembly(std::string_view(moduleName), flags, sections) {}
 
 		/**
 		 * @brief Constructs an Assembly object with a filesystem path as module path.
@@ -164,19 +164,13 @@ namespace plugify {
 		 * @brief Returns the module path.
 		 * @return The path of the module.
 		 */
-		[[nodiscard]] std::string_view GetPath() const;
-
-		/**
-		 * @brief Returns the module name.
-		 * @return The name of the module.
-		 */
-		[[nodiscard]] std::string_view GetName() const;
+		[[nodiscard]] const std::filesystem::path& GetPath() const;
 
 		/**
 		 * @brief Returns the module error.
 		 * @return The error string of the module.
 		 */
-		[[nodiscard]] std::string_view GetError() const;
+		[[nodiscard]] const std::string& GetError() const;
 
 		/**
 		 * @brief Checks if the assembly is valid.
@@ -205,7 +199,7 @@ namespace plugify {
 		 * @param sections Flag indicating if sections should be initialized.
 		 * @return True if initialization was successful, false otherwise.
 		 */
-		bool Init(const std::filesystem::path& modulePath, int flags, bool sections);
+		bool Init(std::filesystem::path modulePath, int flags, bool sections);
 
 		/**
 		 * @brief Initializes the assembly from a module name.
@@ -227,7 +221,8 @@ namespace plugify {
 		bool InitFromMemory(MemAddr moduleMemory, int flags, bool sections);
 
 		void* _handle;                //!< The handle to the module.
-		std::string _path;            //!< The path of the module.
+		std::filesystem::path _path;  //!< The path of the module.
+		std::string _error;           //!< The error of the module.
 		Section _executableCode;      //!< The section representing executable code.
 		std::vector<Section> _sections; //!< A vector of sections in the module.
 	};
