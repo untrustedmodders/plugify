@@ -34,13 +34,6 @@ namespace plugify {
 				};
 				std::array<float, 2> data{}; ///< Array representation of the vector.
 			};
-
-			/**
-			* @brief Assignment operator for Vector2.
-			* @param other The Vector2 to assign values from.
-			* @return Reference to the modified Vector2.
-			*/
-			Vector2& operator=(const Vector2& other) = default;
 		};
 
 		/**
@@ -56,13 +49,6 @@ namespace plugify {
 				};
 				std::array<float, 3> data{}; ///< Array representation of the vector.
 			};
-
-			/**
-			* @brief Assignment operator for Vector3.
-			* @param other The Vector3 to assign values from.
-			* @return Reference to the modified Vector3.
-			*/
-			Vector3& operator=(const Vector3& other) = default;
 		};
 
 		/**
@@ -79,13 +65,6 @@ namespace plugify {
 				};
 				std::array<float, 4> data{}; ///< Array representation of the vector.
 			};
-
-			/**
-			* @brief Assignment operator for Vector4.
-			* @param other The Vector4 to assign values from.
-			* @return Reference to the modified Vector4.
-			*/
-			Vector4& operator=(const Vector4& other) = default;
 		};
 
 		/**
@@ -102,13 +81,6 @@ namespace plugify {
 				};
 				std::array<float, 16> data{}; ///< Array representation of the matrix.
 			};
-
-			/**
-			* @brief Assignment operator for Matrix4x4.
-			* @param other The Matrix4x4 to assign values from.
-			* @return Reference to the modified Matrix4x4.
-			*/
-			Matrix4x4& operator=(const Matrix4x4& other) = default;
 		};
 	}
 }
