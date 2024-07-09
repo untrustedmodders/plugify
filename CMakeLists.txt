@@ -302,7 +302,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Tools
 if(PLUGIFY_BUILD_FUNCTION)
-    add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.h")
+    add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.cpp")
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-function ALIAS ${PROJECT_NAME}-function)
     target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     if(PLUGIFY_USE_EXTERNAL_ASMJIT)
@@ -327,7 +327,10 @@ if(PLUGIFY_BUILD_FUNCTION)
     endif()
 endif()
 if(PLUGIFY_BUILD_ASSEMBLY)
-    add_library(${PROJECT_NAME}-assembly OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assembly.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/assembly.h")
+    add_library(${PROJECT_NAME}-assembly OBJECT 
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assembly.cpp" 
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/mem_protector.cpp" 
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/mem_accesor.cpp")
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-assembly ALIAS ${PROJECT_NAME}-assembly)
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_compile_definitions(${PROJECT_NAME}-assembly PRIVATE
