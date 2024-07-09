@@ -14,7 +14,7 @@ Assembly::~Assembly() {
 	}
 }
 
-bool Assembly::InitFromName(std::string_view moduleName, int flags, bool extension, bool sections) {
+bool Assembly::InitFromName(std::string_view /*moduleName*/, int /*flags*/, bool /*extension*/, bool /*sections*/) {
 	// TODO: Implement
 	return false;
 }
@@ -36,7 +36,7 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, int flags, bool sections) {
 	return true;
 }
 
-bool Assembly::Init(const fs::path& modulePath, int flags, bool sections) {
+bool Assembly::Init(const fs::path& modulePath, int flags, bool /*sections*/) {
 	void* handle = dlopen(modulePath.c_str(), flags != -1 ? flags : DEFAULT_LIBRARY_LOAD_FLAGS);
 	if (!handle) {
 		_path = dlerror();
@@ -46,7 +46,10 @@ bool Assembly::Init(const fs::path& modulePath, int flags, bool sections) {
 	_handle = handle;
 	_path = modulePath.string();
 
-	if (!sections)
+	return true;
+	// TODO: Implement
+
+	/*if (!sections)
 		return true;
 
 	link_map* lmap;
@@ -88,7 +91,7 @@ bool Assembly::Init(const fs::path& modulePath, int flags, bool sections) {
 
 	_executableCode = GetSectionByName(".text");
 
-	return true;
+	return true;*/
 }
 
 MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool decorated) const {
