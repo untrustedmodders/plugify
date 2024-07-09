@@ -1,9 +1,10 @@
 #pragma once
 
+#include <plugify/load_flag.h>
 #include <plugify/mem_addr.h>
+#include <filesystem>
 #include <string>
 #include <vector>
-#include <filesystem>
 
 namespace plugify {
 	/**
@@ -66,7 +67,7 @@ namespace plugify {
 		 * @param flags Optional flags for module initialization.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(std::string_view moduleName, int flags = -1, bool sections = false);
+		explicit Assembly(std::string_view moduleName, LoadFlag flags = LoadFlag::Default, bool sections = false);
 
 		/**
 		 * @brief Constructs an Assembly object with a char pointer as module name.
@@ -74,7 +75,7 @@ namespace plugify {
 		 * @param flags Optional flags for module initialization.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(const char* moduleName, int flags = -1, bool sections = false) : Assembly(std::string_view(moduleName), flags, sections) {}
+		explicit Assembly(const char* moduleName, LoadFlag flags = LoadFlag::Default, bool sections = false) : Assembly(std::string_view(moduleName), flags, sections) {}
 
 		/**
 		 * @brief Constructs an Assembly object with a string as module name.
@@ -82,7 +83,7 @@ namespace plugify {
 		 * @param flags Optional flags for module initialization.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(const std::string& moduleName, int flags = -1, bool sections = false) : Assembly(std::string_view(moduleName), flags, sections) {}
+		explicit Assembly(const std::string& moduleName, LoadFlag flags = LoadFlag::Default, bool sections = false) : Assembly(std::string_view(moduleName), flags, sections) {}
 
 		/**
 		 * @brief Constructs an Assembly object with a filesystem path as module path.
@@ -90,7 +91,7 @@ namespace plugify {
 		 * @param flags Optional flags for module initialization.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(const std::filesystem::path& modulePath, int flags = -1, bool sections = false);
+		explicit Assembly(const std::filesystem::path& modulePath, LoadFlag flags = LoadFlag::Default, bool sections = false);
 
 		/**
 		 * @brief Constructs an Assembly object with a memory address.
@@ -98,7 +99,7 @@ namespace plugify {
 		 * @param flags Optional flags for module initialization.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(MemAddr moduleMemory, int flags = -1, bool sections = false);
+		explicit Assembly(MemAddr moduleMemory, LoadFlag flags = LoadFlag::Default, bool sections = false);
 
 		/**
 		 * @brief Converts a string pattern with wildcards to an array of bytes and mask.
@@ -199,7 +200,7 @@ namespace plugify {
 		 * @param sections Flag indicating if sections should be initialized.
 		 * @return True if initialization was successful, false otherwise.
 		 */
-		bool Init(std::filesystem::path modulePath, int flags, bool sections);
+		bool Init(std::filesystem::path modulePath, LoadFlag flags, bool sections);
 
 		/**
 		 * @brief Initializes the assembly from a module name.
@@ -209,7 +210,7 @@ namespace plugify {
 		 * @param extension Indicates if an extension is used.
 		 * @return True if initialization was successful, false otherwise.
 		 */
-		bool InitFromName(std::string_view moduleName, int flags, bool sections, bool extension = false);
+		bool InitFromName(std::string_view moduleName, LoadFlag flags, bool sections, bool extension = false);
 
 		/**
 		 * @brief Initializes the assembly from memory.
@@ -218,13 +219,30 @@ namespace plugify {
 		 * @param sections Flag indicating if sections should be initialized.
 		 * @return True if initialization was successful, false otherwise.
 		 */
-		bool InitFromMemory(MemAddr moduleMemory, int flags, bool sections);
+		bool InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool sections);
 
+	private:
 		void* _handle;                //!< The handle to the module.
 		std::filesystem::path _path;  //!< The path of the module.
 		std::string _error;           //!< The error of the module.
 		Section _executableCode;      //!< The section representing executable code.
 		std::vector<Section> _sections; //!< A vector of sections in the module.
 	};
+
+	/**
+	 * @brief Translates loading flags to an integer representation.
+	 *
+	 * @param flags The loading flags to translate.
+	 * @return An integer representation of the loading flags.
+	 */
+	int TranslateLoading(LoadFlag flags);
+
+	/**
+	 * @brief Translates an integer representation of loading flags to LoadFlag.
+	 *
+	 * @param flags The integer representation of the loading flags.
+	 * @return The corresponding LoadFlag.
+	 */
+	LoadFlag TranslateLoading(int flags);
 
 } // namespace plugify

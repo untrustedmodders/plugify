@@ -1,27 +1,10 @@
 #pragma once
 
-#include <plugify/prot.h>
 #include <plugify/mem_addr.h>
+#include <plugify/prot_flag.h>
 
 namespace plugify {
 	class MemAccessor;
-
-	/**
-	 * @brief Translates protection flags to an integer representation.
-	 *
-	 * @param flags The protection flags to translate.
-	 * @return An integer representation of the protection flags.
-	 */
-	int TranslateProtection(ProtFlag flags);
-
-	/**
-	 * @brief Translates an integer representation of protection flags to ProtFlag.
-	 *
-	 * @param prot The integer representation of the protection flags.
-	 * @return The corresponding ProtFlag.
-	 */
-	ProtFlag TranslateProtection(int prot);
-
 	/**
 	 * @class MemProtector
 	 * @brief A class to manage memory protection settings.
@@ -71,4 +54,21 @@ namespace plugify {
 
 		ProtFlag _origProtection{ ProtFlag::UNSET }; /**< The original protection flags. */
 	};
+
+	/**
+	 * @brief Translates protection flags to an integer representation.
+	 *
+	 * @param flags The protection flags to translate.
+	 * @return An integer representation of the protection flags.
+	 */
+	int TranslateProtection(ProtFlag flags);
+
+	/**
+	 * @brief Translates an integer representation of protection flags to ProtFlag.
+	 *
+	 * @param prot The integer representation of the protection flags.
+	 * @return The corresponding ProtFlag.
+	 */
+	ProtFlag TranslateProtection(int prot);
+
 } // namespace plugify

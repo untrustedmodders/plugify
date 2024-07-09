@@ -14,8 +14,6 @@
 
 using namespace plugify;
 
-static constexpr int DEFAULT_LIBRARY_LOAD_FLAGS = DONT_RESOLVE_DLL_REFERENCES;
-
 Assembly::~Assembly() {
 	if (_handle) {
 		FreeLibrary(reinterpret_cast<HMODULE>(_handle));
@@ -42,7 +40,7 @@ static std::wstring GetModulePath(HMODULE hModule) {
 	return modulePath;
 }
 
-bool Assembly::InitFromName(std::string_view moduleName, int flags, bool sections, bool extension) {
+bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool sections, bool extension) {
 	if (_handle)
 		return false;
 
@@ -67,7 +65,7 @@ bool Assembly::InitFromName(std::string_view moduleName, int flags, bool section
 	return true;
 }
 
-bool Assembly::InitFromMemory(MemAddr moduleMemory, int flags, bool sections) {
+bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool sections) {
 	if (_handle)
 		return false;
 
@@ -88,8 +86,8 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, int flags, bool sections) {
 	return true;
 }
 
-bool Assembly::Init(fs::path modulePath, int flags, bool sections) {
-	HMODULE hModule = LoadLibraryExW(modulePath.c_str(), nullptr, flags != -1 ? flags : DEFAULT_LIBRARY_LOAD_FLAGS);
+bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
+	HMODULE hModule = LoadLibraryExW(modulePath.c_str(), nullptr, TranslateLoading(flags));
 	if (!hModule) {
 		DWORD errorCode = GetLastError();
 		if (errorCode != 0) {
@@ -104,6 +102,11 @@ bool Assembly::Init(fs::path modulePath, int flags, bool sections) {
 
 	_handle = hModule;
 	_path = std::move(modulePath);
+
+	if (flags & LoadFlag::PinInMemory) {
+		HMODULE hPinHandle = NULL;
+		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, (LPCWSTR)hModule, &hPinHandle);
+	}
 
 	if (!sections)
 		return true;
@@ -192,6 +195,44 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const {
 
 MemAddr Assembly::GetBase() const {
 	return _handle;
+}
+
+namespace plugify {
+	int TranslateLoading(LoadFlag flags) {
+		int winFlags = 0;
+		if (flags & LoadFlag::DontResolveDllReferences) winFlags |= DONT_RESOLVE_DLL_REFERENCES;
+		if (flags & LoadFlag::LoadAlteredSearchPath) winFlags |= LOAD_WITH_ALTERED_SEARCH_PATH;
+		if (flags & LoadFlag::LoadAsDatafile) winFlags |= LOAD_LIBRARY_AS_DATAFILE;
+		if (flags & LoadFlag::LoadAsDatafileExclusive) winFlags |= LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE;
+		if (flags & LoadFlag::LoadAsImageResource) winFlags |= LOAD_LIBRARY_AS_IMAGE_RESOURCE;
+		if (flags & LoadFlag::LoadSearchApplicationDir) winFlags |= LOAD_LIBRARY_SEARCH_APPLICATION_DIR;
+		if (flags & LoadFlag::LoadSearchDefaultDirs) winFlags |= LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+		if (flags & LoadFlag::LoadSearchDllLoadDir) winFlags |= LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
+		if (flags & LoadFlag::LoadSearchSystem32) winFlags |= LOAD_LIBRARY_SEARCH_SYSTEM32;
+		if (flags & LoadFlag::LoadSearchUserDirs) winFlags |= LOAD_LIBRARY_SEARCH_USER_DIRS;
+		if (flags & LoadFlag::LoadRequireSignedTarget) winFlags |= LOAD_LIBRARY_REQUIRE_SIGNED_TARGET;
+		if (flags & LoadFlag::LoadSafeCurrentDirs) winFlags |= LOAD_LIBRARY_SAFE_CURRENT_DIRS;
+		if (flags & LoadFlag::LoadIgnoreAuthzLevel) winFlags |= LOAD_IGNORE_CODE_AUTHZ_LEVEL;
+		return winFlags;
+	}
+
+	LoadFlag TranslateLoading(int flags) {
+		LoadFlag loadFlags = LoadFlag::Default;
+		if (flags & DONT_RESOLVE_DLL_REFERENCES) loadFlags = loadFlags | LoadFlag::DontResolveDllReferences;
+		if (flags & LOAD_WITH_ALTERED_SEARCH_PATH) loadFlags = loadFlags | LoadFlag::LoadAlteredSearchPath;
+		if (flags & LOAD_LIBRARY_AS_DATAFILE) loadFlags = loadFlags | LoadFlag::LoadAsDatafile;
+		if (flags & LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE) loadFlags = loadFlags | LoadFlag::LoadAsDatafileExclusive;
+		if (flags & LOAD_LIBRARY_AS_IMAGE_RESOURCE) loadFlags = loadFlags | LoadFlag::LoadAsImageResource;
+		if (flags & LOAD_LIBRARY_SEARCH_APPLICATION_DIR) loadFlags = loadFlags | LoadFlag::LoadSearchApplicationDir;
+		if (flags & LOAD_LIBRARY_SEARCH_DEFAULT_DIRS) loadFlags = loadFlags | LoadFlag::LoadSearchDefaultDirs;
+		if (flags & LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) loadFlags = loadFlags | LoadFlag::LoadSearchDllLoadDir;
+		if (flags & LOAD_LIBRARY_SEARCH_SYSTEM32) loadFlags = loadFlags | LoadFlag::LoadSearchSystem32;
+		if (flags & LOAD_LIBRARY_SEARCH_USER_DIRS) loadFlags = loadFlags | LoadFlag::LoadSearchUserDirs;
+		if (flags & LOAD_LIBRARY_REQUIRE_SIGNED_TARGET) loadFlags = loadFlags | LoadFlag::LoadRequireSignedTarget;
+		if (flags & LOAD_LIBRARY_SAFE_CURRENT_DIRS) loadFlags = loadFlags | LoadFlag::LoadSafeCurrentDirs;
+		if (flags & LOAD_IGNORE_CODE_AUTHZ_LEVEL) loadFlags = loadFlags | LoadFlag::LoadIgnoreAuthzLevel;
+		return loadFlags;
+	}
 }
 
 #endif

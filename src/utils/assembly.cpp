@@ -12,15 +12,15 @@
 using namespace plugify;
 namespace fs = std::filesystem;
 
-Assembly::Assembly(std::string_view moduleName, int flags, bool sections) : _handle{nullptr} {
+Assembly::Assembly(std::string_view moduleName, LoadFlag flags, bool sections) : _handle{nullptr} {
 	InitFromName(moduleName, flags, sections);
 }
 
-Assembly::Assembly(const MemAddr moduleMemory, int flags, bool sections) : _handle{nullptr} {
+Assembly::Assembly(const MemAddr moduleMemory, LoadFlag flags, bool sections) : _handle{nullptr} {
 	InitFromMemory(moduleMemory, flags, sections);
 }
 
-Assembly::Assembly(const std::filesystem::path& modulePath, int flags, bool sections) : _handle{nullptr} {
+Assembly::Assembly(const std::filesystem::path& modulePath, LoadFlag flags, bool sections) : _handle{nullptr} {
 	Init(modulePath, flags, sections);
 }
 

@@ -14,8 +14,6 @@
 
 using namespace plugify;
 
-static constexpr int DEFAULT_LIBRARY_LOAD_FLAGS = RTLD_LAZY | RTLD_NOLOAD;
-
 Assembly::~Assembly() {
 	if (_handle) {
 		dlclose(_handle);
@@ -23,7 +21,7 @@ Assembly::~Assembly() {
 	}
 }
 
-bool Assembly::InitFromName(std::string_view moduleName, int flags, bool sections, bool extension) {
+bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool sections, bool extension) {
 	if (_handle)
 		return false;
 
@@ -60,7 +58,7 @@ bool Assembly::InitFromName(std::string_view moduleName, int flags, bool section
 	return true;
 }
 
-bool Assembly::InitFromMemory(MemAddr moduleMemory, int flags, bool sections) {
+bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool sections) {
 	if (_handle)
 		return false;
 
@@ -77,8 +75,8 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, int flags, bool sections) {
 	return true;
 }
 
-bool Assembly::Init(fs::path modulePath, int flags, bool sections) {
-	void* handle = dlopen(modulePath.c_str(), flags != -1 ? flags : DEFAULT_LIBRARY_LOAD_FLAGS);
+bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
+	void* handle = dlopen(modulePath.c_str(), TranslateLoading(flags));
 	if (!handle) {
 		_error = dlerror();
 		return false;
@@ -204,6 +202,40 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const {
 
 MemAddr Assembly::GetBase() const {
 	return static_cast<link_map*>(_handle)->l_addr;
+}
+
+namespace plugify {
+	int TranslateLoading(LoadFlag flags) {
+		int unixFlags = 0;
+		if (flags & LoadFlag::LoadLazy) unixFlags |= RTLD_LAZY;
+		if (flags & LoadFlag::LoadNow) unixFlags |= RTLD_NOW;
+		if (flags & LoadFlag::LoadGlobal) unixFlags |= RTLD_GLOBAL;
+		if (flags & LoadFlag::LoadLocal) unixFlags |= RTLD_LOCAL;
+		if (flags & LoadFlag::LoadNodelete) unixFlags |= RTLD_NODELETE;
+		if (flags & LoadFlag::LoadNoload) unixFlags |= RTLD_NOLOAD;
+#if !PLUGIFY_PLATFORM_ANDROID
+	#ifdef RTLD_DEEPBIND
+		if (flags & LoadFlag::LoadDeepbind) unixFlags |= RTLD_DEEPBIND;
+	#endif
+#endif
+		return unixFlags;
+	}
+
+	LoadFlag TranslateLoading(int flags) {
+		LoadFlag loadFlags = LoadFlag::Default;
+		if (flags & RTLD_LAZY) loadFlags = loadFlags | LoadFlag::LoadLazy;
+		if (flags & RTLD_NOW) loadFlags = loadFlags | LoadFlag::LoadNow;
+		if (flags & RTLD_GLOBAL) loadFlags = loadFlags | LoadFlag::LoadGlobal;
+		if (flags & RTLD_LOCAL) loadFlags = loadFlags | LoadFlag::LoadLocal;
+		if (flags & RTLD_NODELETE) loadFlags = loadFlags | LoadFlag::LoadNodelete;
+		if (flags & RTLD_NOLOAD) loadFlags = loadFlags | LoadFlag::LoadNoload;
+#if !PLUGIFY_PLATFORM_ANDROID
+#ifdef RTLD_DEEPBIND
+		if (flags & RTLD_DEEPBIND) loadFlags = loadFlags | LoadFlag::LoadDeepbind;
+#endif
+#endif
+		return loadFlags;
+	}
 }
 
 #endif

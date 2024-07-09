@@ -22,8 +22,6 @@ namespace plugify {
 	/**
 	 * @brief Overloads the binary OR operator for ProtFlag.
 	 *
-	 * Allows combining ProtFlag values using the | operator.
-	 *
 	 * @param lhs The left-hand side ProtFlag value.
 	 * @param rhs The right-hand side ProtFlag value.
 	 * @return The combined ProtFlag value.
@@ -31,15 +29,12 @@ namespace plugify {
 	inline ProtFlag operator|(ProtFlag lhs, ProtFlag rhs) {
 		using underlying = typename std::underlying_type<ProtFlag>::type;
 		return static_cast<ProtFlag> (
-				static_cast<underlying>(lhs) |
-				static_cast<underlying>(rhs)
+				static_cast<underlying>(lhs) | static_cast<underlying>(rhs)
 		);
 	}
 
 	/**
 	 * @brief Overloads the binary AND operator for ProtFlag.
-	 *
-	 * Allows checking if a ProtFlag value contains a specific flag using the & operator.
 	 *
 	 * @param lhs The left-hand side ProtFlag value.
 	 * @param rhs The right-hand side ProtFlag value.
@@ -47,7 +42,18 @@ namespace plugify {
 	 */
 	inline bool operator&(ProtFlag lhs, ProtFlag rhs) {
 		using underlying = typename std::underlying_type<ProtFlag>::type;
-		return static_cast<underlying>(lhs) &
-			   static_cast<underlying>(rhs);
+		return static_cast<underlying>(lhs) & static_cast<underlying>(rhs);
+	}
+
+	/**
+	 * @brief Bitwise OR assignment operator for ProtFlag enum class.
+	 *
+	 * @param lhs Left-hand side ProtFlag.
+	 * @param rhs Right-hand side ProtFlag.
+	 * @return Reference to the left-hand side ProtFlag.
+	 */
+	inline ProtFlag& operator|=(ProtFlag& lhs, ProtFlag rhs) {
+		lhs = lhs | rhs;
+		return lhs;
 	}
 } // namespace plugify

@@ -4,7 +4,6 @@
 #include <plugify/package.h>
 #include <plugify/plugify_provider.h>
 #include <utils/library_search_dirs.h>
-#include <utils/os.h>
 
 #undef FindResource
 
@@ -67,23 +66,12 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	auto scopedDirs = LibrarySearchDirs::Add(libraryDirectories);
 
-#if PLUGIFY_PLATFORM_WINDOWS
-	int flags = LOAD_LIBRARY_SEARCH_USER_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
-#elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
-	int flags = RTLD_LAZY | RTLD_GLOBAL;
-	bool preferOwnSymbols = plugifyProvider->IsPreferOwnSymbols();
-#if PLUGIFY_PLATFORM_ANDROID || !defined(RTLD_DEEPBIND)
-	if (preferOwnSymbols)
-		PL_LOG_DEBUG("Prefer own symbols option is enabled, but RTLD_DEEPBIND is not supported. Proceeding without RTLD_DEEPBIND.");
-#else
-	if (preferOwnSymbols)
-		flags |= RTLD_DEEPBIND;
-#endif
-#else
-	int flags = -1;
-#endif
+	LoadFlag flags = LoadFlag::LoadLazy | LoadFlag::LoadGlobal | /**/ LoadFlag::LoadSearchUserDirs | LoadFlag::LoadSearchSystem32 | LoadFlag::LoadSearchDllLoadDir;
+	if (plugifyProvider->IsPreferOwnSymbols()) {
+		flags |= LoadFlag::LoadDeepbind;
+	}
 
-	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec), flags);
+	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec),  flags);
 	if (!assembly->IsValid()) {
 		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), assembly->GetError()));
 		return false;
