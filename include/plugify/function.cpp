@@ -282,7 +282,7 @@ MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& met
 
 	// fill reg to pass data ptr to callback
 	x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
-	cc.mov(dataPtrParam, data.RCast<uintptr_t>());
+	cc.mov(dataPtrParam, data.CCast<uintptr_t>());
 
 	// get pointer to stack structure and pass it to the user callback
 	x86::Gp argStruct = cc.newUIntPtr("argStruct");
@@ -308,7 +308,7 @@ MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& met
 	InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
 			  reinterpret_cast<uintptr_t>(callback),
-			  FuncSignature::build<void, Method*, MemAddr, Parameters*, uint8_t, ReturnValue*>()
+			  FuncSignature::build<void, Method*, void*, Parameters*, uint8_t, ReturnValue*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)

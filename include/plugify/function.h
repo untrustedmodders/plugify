@@ -152,7 +152,7 @@ namespace plugify {
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */
-		[[nodiscard]] std::string GetError() { return !_function && _errorCode ? _errorCode : ""; }
+		[[nodiscard]] std::string_view GetError() { return !_function && _errorCode ? _errorCode : ""; }
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
