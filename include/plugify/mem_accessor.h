@@ -1,7 +1,7 @@
 #pragma once
 
-#include <plugify/mem_addr.h>
 #include <plugify/prot.h>
+#include <plugify/mem_addr.h>
 
 namespace plugify {
 	/**

@@ -1,4 +1,5 @@
 #include "library_search_dirs.h"
+#include "os.h"
 
 using namespace plugify;
 

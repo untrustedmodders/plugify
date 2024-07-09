@@ -8,8 +8,8 @@ void FileSystem::ReadBytes(const fs::path& filepath, const FileHandler& handler)
 	std::ifstream is(filepath, std::ios::binary);
 
 	 if (!is.is_open()) {
-		 PL_LOG_ERROR("File: '{}' could not be opened", filepath.string());
-		 return;
+		PL_LOG_ERROR("File: '{}' could not be opened", filepath.string());
+		return;
 	 }
 
 	 // Stop eating new lines in binary mode!!!

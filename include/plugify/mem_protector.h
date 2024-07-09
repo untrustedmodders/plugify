@@ -1,3 +1,8 @@
+#pragma once
+
+#include <plugify/prot.h>
+#include <plugify/mem_addr.h>
+
 namespace plugify {
 	class MemAccessor;
 

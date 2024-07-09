@@ -4,6 +4,7 @@
 #include <plugify/package.h>
 #include <plugify/plugify_provider.h>
 #include <utils/library_search_dirs.h>
+#include <utils/os.h>
 
 #undef FindResource
 
