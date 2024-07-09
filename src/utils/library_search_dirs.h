@@ -1,5 +1,7 @@
 #pragma once
 
+#include "os.h"
+
 namespace plugify {
 	class LibrarySearchDirs {
 	public:

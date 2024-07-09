@@ -175,7 +175,7 @@ Function::~Function() {
 	}
 }
 
-void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, void* data) {
+MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, MemAddr data) {
 	if (_function)
 		return _function;
 
@@ -282,7 +282,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 
 	// fill reg to pass data ptr to callback
 	x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
-	cc.mov(dataPtrParam, reinterpret_cast<uintptr_t>(data));
+	cc.mov(dataPtrParam, data.RCast<uintptr_t>());
 
 	// get pointer to stack structure and pass it to the user callback
 	x86::Gp argStruct = cc.newUIntPtr("argStruct");
@@ -308,7 +308,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
 			  reinterpret_cast<uintptr_t>(callback),
-			  FuncSignature::build<void, Method*, void*, Parameters*, uint8_t, ReturnValue*>()
+			  FuncSignature::build<void, Method*, MemAddr, Parameters*, uint8_t, ReturnValue*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)
@@ -349,21 +349,17 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 			retStackIdxUpper.addOffset(sizeof(uintptr_t));
 			retStackIdxUpper.setSize(sizeof(uintptr_t));
 
-			x86::Gp tmp1 = cc.newUIntPtr();
-			x86::Gp tmp2 = cc.newUIntPtr();
-			cc.mov(tmp1, retStackIdx);
-			cc.mov(tmp2, retStackIdxUpper);
-			cc.ret(tmp1, tmp2);
+			cc.mov(x86::rax, retStackIdx);
+			cc.mov(x86::rdx, retStackIdxUpper);
+			cc.ret();
 		} else if (isFloatPod) {
 			x86::Mem retStackIdxUpper(retStack);
 			retStackIdxUpper.addOffset(sizeof(uintptr_t));
 			retStackIdxUpper.setSize(sizeof(uintptr_t));
 
-			x86::Xmm tmp1 = cc.newXmm();
-			x86::Xmm tmp2 = cc.newXmm();
-			cc.movq(tmp1, retStackIdx);
-			cc.movq(tmp2, retStackIdxUpper);
-			cc.ret(tmp1, tmp2);
+			cc.movq(x86::xmm0, retStackIdx);
+			cc.movq(x86::xmm1, retStackIdxUpper);
+			cc.ret();
 		}
 #endif
 		else {
@@ -390,7 +386,7 @@ void* Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& metho
 	return _function;
 }
 
-void* Function::GetJitFunc(const Method& method, FuncCallback callback, void* data, HiddenParam hidden) {
+MemAddr Function::GetJitFunc(const Method& method, FuncCallback callback, MemAddr data, HiddenParam hidden) {
 	bool isHiddenParam = hidden(method.retType.type);
 	ValueType retType = isHiddenParam ? ValueType::Pointer : (method.retType.ref ? ValueType::Pointer : method.retType.type);
 	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetRetTypeId(retType));

@@ -16,16 +16,25 @@
 #endif
 #define _WIN32_WINNT _WIN32_WINNT_WIN10
 
-#include <windows.h>
+#include <Windows.h>
 #undef ERROR
 
 #elif PLUGIFY_PLATFORM_LINUX
 
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <link.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 #elif PLUGIFY_PLATFORM_APPLE
 
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 #else
 

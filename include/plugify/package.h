@@ -17,7 +17,7 @@ namespace plugify {
 	 * dependencies and conflicts.
 	 */
 	struct PackageVersion final {
-		std::int32_t version; ///< The version number of the package.
+		int32_t version; ///< The version number of the package.
 		std::string checksum; ///< The checksum of the package.
 		std::string download; ///< The download URL for the package.
 		std::vector<std::string> platforms; ///< The platforms supported by the package.
@@ -83,7 +83,7 @@ namespace plugify {
 		 * @param version The version number to retrieve.
 		 * @return An optional reference to the specified PackageVersion.
 		 */
-		[[nodiscard]] PackageOpt Version(std::int32_t version) const {
+		[[nodiscard]] PackageOpt Version(int32_t version) const {
 			auto it = versions.find(PackageVersion{ version, {}, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
 				return *it;
@@ -101,7 +101,7 @@ namespace plugify {
 	 */
 	struct LocalPackage final : public Package {
 		std::filesystem::path path; ///< The file path to the locally installed package.
-		std::int32_t version; ///< The version number of the locally installed package.
+		int32_t version; ///< The version number of the locally installed package.
 		std::shared_ptr<Descriptor> descriptor; ///< A shared pointer to the package descriptor.
 
 		/**

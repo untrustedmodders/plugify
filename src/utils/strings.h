@@ -5,7 +5,7 @@ namespace plugify {
 	public:
 		String() = delete;
 
-		static inline int Strncasecmp(const char* s1, const char* s2, std::size_t n) {
+		static inline int Strncasecmp(const char* s1, const char* s2, size_t n) {
 #ifdef _MSC_VER
 			return _strnicmp(s1, s2, n);
 #else
@@ -15,12 +15,12 @@ namespace plugify {
 
 #if PLUGIFY_PLATFORM_WINDOWS
 		/// Converts the specified UTF-8 string to a wide string.
-		static std::wstring UTF8StringToWideString(std::string_view str);
-		static bool UTF8StringToWideString(std::wstring& dest, std::string_view str);
+		static std::wstring ConvertUtf8ToWide(std::string_view str);
+		static bool ConvertUtf8ToWide(std::wstring& dest, std::string_view str);
 
 		/// Converts the specified wide string to a UTF-8 string.
-		static std::string WideStringToUTF8String(std::wstring_view str);
-		static bool WideStringToUTF8String(std::string& dest, std::wstring_view str);
+		static std::string ConvertWideToUtf8(std::wstring_view str);
+		static bool ConvertWideToUtf8(std::string& dest, std::wstring_view str);
 #endif
 	};
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <plugify/method.h>
+#include <plugify/mem_addr.h>
 #include <asmjit/asmjit.h>
 #include <memory>
 #include <functional>
@@ -109,7 +110,7 @@ namespace plugify {
 		 */
 		~Function();
 
-		using FuncCallback = void(*)(const Method* method, void* data, const Parameters* params, uint8_t count, const ReturnValue* ret);
+		using FuncCallback = void(*)(const Method* method, MemAddr data, const Parameters* params, uint8_t count, const ReturnValue* ret);
 		using HiddenParam = bool(*)(ValueType);
 
 		/**
@@ -120,7 +121,7 @@ namespace plugify {
 		 * @param data User data.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, void* data = nullptr);
+		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, MemAddr data = nullptr);
 
 		/**
 		 * @brief Get a dynamically created callback function using a typedef represented as a string.
@@ -130,14 +131,14 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as first argument.
 		 * @return Pointer to the generated function.
 		 */
-		void* GetJitFunc(const Method& method, FuncCallback callback, void* data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
+		MemAddr GetJitFunc(const Method& method, FuncCallback callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
 
 		/**
 		 * @brief Get a dynamically created function.
 		 * @return Pointer to the already generated function.
 		 * @note The returned pointer can be nullptr if function is not generate.
 		 */
-		[[nodiscard]] void* GetFunction() const { return _function; }
+		[[nodiscard]] MemAddr GetFunction() const { return _function; }
 
 		/**
 		 * @brief Get the user data associated with the object.
@@ -145,7 +146,7 @@ namespace plugify {
 		 * @return A void pointer to the user data.
 		 * @note The returned pointer can be nullptr if no user data is set.
 		 */
-		[[nodiscard]] void* GetUserData() const { return _userData; }
+		[[nodiscard]] MemAddr GetUserData() const { return _userData; }
 
 		/**
 		 * @brief Get the error message, if any.
@@ -155,9 +156,9 @@ namespace plugify {
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;
-		void* _function{ nullptr };
+		MemAddr _function{ nullptr };
 		union {
-			void* _userData{ nullptr };
+			MemAddr _userData{ nullptr };
 			const char* _errorCode;
 		};
 	};

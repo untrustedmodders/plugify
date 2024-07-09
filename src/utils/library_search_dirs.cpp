@@ -1,6 +1,4 @@
 #include "library_search_dirs.h"
-#include "platform.h"
-#include "os.h"
 
 using namespace plugify;
 
@@ -11,6 +9,7 @@ inline LibrarySearchDirs::~LibrarySearchDirs() = default;
 class LibrarySearchDirsWin final : public LibrarySearchDirs {
 public:
 	explicit LibrarySearchDirsWin(const std::vector<fs::path>& directories) {
+		_dirCookies.reserve(directories.size());
 		for (const auto& directory : directories) {
 			auto* cookie = AddDllDirectory(directory.c_str());
 			if (cookie == nullptr)

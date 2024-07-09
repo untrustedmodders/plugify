@@ -11,7 +11,7 @@ namespace plugify {
 	 * @enum ValueType
 	 * @brief Enumerates possible types of values in the reflection system.
 	 */
-	enum class ValueType : std::uint8_t {
+	enum class ValueType : uint8_t {
 		Invalid,
 
 		// C types
@@ -171,9 +171,9 @@ namespace plugify {
 		std::string callConv; ///< The calling convention of the method.
 		std::vector<Property> paramTypes; ///< The parameter types of the method.
 		Property retType; ///< The return type of the method.
-		std::uint8_t varIndex{ kNoVarArgs }; ///< The variable index (0xFFu if no variable arguments).
+		uint8_t varIndex{ kNoVarArgs }; ///< The variable index (0xFFu if no variable arguments).
 
-		static inline const std::uint8_t kNoVarArgs = 0xFFU; ///< Constant for indicating no variable arguments.
+		static inline const uint8_t kNoVarArgs = 0xFFU; ///< Constant for indicating no variable arguments.
 
 		/**
 		 * @brief Overloaded equality operator for comparing Method instances.
@@ -187,60 +187,204 @@ namespace plugify {
 	 * @brief Namespace containing utility functions of ValueType enum.
 	 */
 	namespace ValueUtils {
+		/**
+		 * @brief Checks if a value is between two other values.
+		 *
+		 * @tparam T The type of the values.
+		 * @param x The value to check.
+		 * @param a The lower bound.
+		 * @param b The upper bound.
+		 * @return True if x is between a and b, inclusive. False otherwise.
+		 */
 		template<typename T>
 		[[maybe_unused]] constexpr bool IsBetween(T x, T a, T b) {
 			return x >= a && x <= b;
 		}
 
-		//! Tests whether a given type `type` is \ref ValueType::Void.
-		[[maybe_unused]] constexpr bool IsVoid(ValueType type)     { return type == ValueType::Void; }
-		//! Tests whether a given type `type` is a valid non-void type.
-		[[maybe_unused]] constexpr bool IsValid(ValueType type)    { return IsBetween(type, ValueType::Void, ValueType::_LastAssigned); }
-		//! Tests whether a given type `type` is scalar (has no vector part).
-		[[maybe_unused]] constexpr bool IsScalar(ValueType type)   { return IsBetween(type, ValueType::_BaseStart, ValueType::_BaseEnd); }
-		//! Tests whether a given type is a scalar floating point of any size.
-		[[maybe_unused]] constexpr bool IsFloating(ValueType type) { return IsBetween(type, ValueType::_FloatStart, ValueType::_FloatEnd); }
-		
-		//! Tests whether a given type is a 1-bit boolean.
-		[[maybe_unused]] constexpr bool IsBool(ValueType type)    { return type == ValueType::Bool; }
-		//! Tests whether a given type is a 8-bit character.
-		[[maybe_unused]] constexpr bool IsChar8(ValueType type)   { return type == ValueType::Char8; }
-		//! Tests whether a given type is a 16-bit character.
-		[[maybe_unused]] constexpr bool IsChar16(ValueType type)  { return type == ValueType::Char16; }
-		//! Tests whether a given type is a 8-bit integer.
-		[[maybe_unused]] constexpr bool IsInt8(ValueType type)    { return type == ValueType::Int8; }
-		//! Tests whether a given type is a 8-bit unsigned integer.
-		[[maybe_unused]] constexpr bool IsUInt8(ValueType type)   { return type == ValueType::UInt8; }
-		//! Tests whether a given type is a 16-bit integer.
-		[[maybe_unused]] constexpr bool IsInt16(ValueType type)   { return type == ValueType::Int16; }
-		//! Tests whether a given type is a 16-bit unsigned integer.
-		[[maybe_unused]] constexpr bool IsUInt16(ValueType type)  { return type == ValueType::UInt16; }
-		//! Tests whether a given type is a 32-bit integer.
-		[[maybe_unused]] constexpr bool IsInt32(ValueType type)   { return type == ValueType::Int32; }
-		//! Tests whether a given type is a 32-bit unsigned integer.
-		[[maybe_unused]] constexpr bool IsUInt32(ValueType type)  { return type == ValueType::UInt32; }
-		//! Tests whether a given type is a 64-bit integer.
-		[[maybe_unused]] constexpr bool IsInt64(ValueType type)   { return type == ValueType::Int64; }
-		//! Tests whether a given type is a 64-bit unsigned integer.
-		[[maybe_unused]] constexpr bool IsUInt64(ValueType type)  { return type == ValueType::UInt64; }
-		//! Tests whether a given type is a pointer.
-		[[maybe_unused]] constexpr bool IsPointer(ValueType type) { return type == ValueType::Pointer; }
-		//! Tests whether a given type is a float.
-		[[maybe_unused]] constexpr bool IsFloat(ValueType type)   { return type == ValueType::Float; }
-		//! Tests whether a given type is a double.
-		[[maybe_unused]] constexpr bool IsDouble(ValueType type)  { return type == ValueType::Double; }
+		/**
+		 * @brief Tests whether a given type is \ref ValueType::Void.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is ValueType::Void. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsVoid(ValueType type) { return type == ValueType::Void; }
 
-		//! Tests whether a given type is a C-function pointer.
+		/**
+		 * @brief Tests whether a given type is a valid non-void type.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a valid non-void type. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsValid(ValueType type) { return IsBetween(type, ValueType::Void, ValueType::_LastAssigned); }
+
+		/**
+		 * @brief Tests whether a given type is scalar (has no vector part).
+		 *
+		 * @param type The type to test.
+		 * @return True if type is scalar. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsScalar(ValueType type) { return IsBetween(type, ValueType::_BaseStart, ValueType::_BaseEnd); }
+
+		/**
+		 * @brief Tests whether a given type is a scalar floating point of any size.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a scalar floating point. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsFloating(ValueType type) { return IsBetween(type, ValueType::_FloatStart, ValueType::_FloatEnd); }
+
+		/**
+		 * @brief Tests whether a given type is a 1-bit boolean.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a 1-bit boolean. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsBool(ValueType type) { return type == ValueType::Bool; }
+
+		/**
+		 * @brief Tests whether a given type is an 8-bit character.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is an 8-bit character. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsChar8(ValueType type) { return type == ValueType::Char8; }
+
+		/**
+		 * @brief Tests whether a given type is a 16-bit character.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a 16-bit character. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsChar16(ValueType type) { return type == ValueType::Char16; }
+
+		/**
+		 * @brief Tests whether a given type is an 8-bit integer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is an 8-bit integer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsInt8(ValueType type) { return type == ValueType::Int8; }
+
+		/**
+		 * @brief Tests whether a given type is an 8-bit unsigned integer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is an 8-bit unsigned integer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsUInt8(ValueType type) { return type == ValueType::UInt8; }
+
+		/**
+		 * @brief Tests whether a given type is a 16-bit integer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a 16-bit integer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsInt16(ValueType type) { return type == ValueType::Int16; }
+
+		/**
+		 * @brief Tests whether a given type is a 16-bit unsigned integer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a 16-bit unsigned integer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsUInt16(ValueType type) { return type == ValueType::UInt16; }
+
+		/**
+		 * @brief Tests whether a given type is a 32-bit integer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a 32-bit integer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsInt32(ValueType type) { return type == ValueType::Int32; }
+
+		/**
+		 * @brief Tests whether a given type is a 32-bit unsigned integer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a 32-bit unsigned integer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsUInt32(ValueType type) { return type == ValueType::UInt32; }
+
+		/**
+		 * @brief Tests whether a given type is a 64-bit integer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a 64-bit integer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsInt64(ValueType type) { return type == ValueType::Int64; }
+
+		/**
+		 * @brief Tests whether a given type is a 64-bit unsigned integer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a 64-bit unsigned integer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsUInt64(ValueType type) { return type == ValueType::UInt64; }
+
+		/**
+		 * @brief Tests whether a given type is a pointer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a pointer. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsPointer(ValueType type) { return type == ValueType::Pointer; }
+
+		/**
+		 * @brief Tests whether a given type is a float.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a float. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsFloat(ValueType type) { return type == ValueType::Float; }
+
+		/**
+		 * @brief Tests whether a given type is a double.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a double. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsDouble(ValueType type) { return type == ValueType::Double; }
+
+		/**
+		 * @brief Tests whether a given type is a C-function pointer.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a C-function pointer. False otherwise.
+		 */
 		[[maybe_unused]] constexpr bool IsFunction(ValueType type) { return type == ValueType::Function; }
-		//! Tests whether a given type is a string.
+
+		/**
+		 * @brief Tests whether a given type is a string.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a string. False otherwise.
+		 */
 		[[maybe_unused]] constexpr bool IsString(ValueType type) { return type == ValueType::String; }
 
-		//! Tests whether a given type is a object of any size.
-		[[maybe_unused]] constexpr bool IsObject(ValueType type)  { return IsBetween(type, ValueType::_ObjectStart, ValueType::_ObjectEnd); }
-		//! Tests whether a given type is a array of any size.
-		[[maybe_unused]] constexpr bool IsArray(ValueType type)   { return IsBetween(type, ValueType::_ArrayStart, ValueType::_ArrayEnd); }
-		//! Tests whether a given type is a pod structure of any size.
-		[[maybe_unused]] constexpr bool IsStruct(ValueType type)  { return IsBetween(type, ValueType::_StructStart, ValueType::_StructEnd); }
+		/**
+		 * @brief Tests whether a given type is an object of any size.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is an object. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsObject(ValueType type) { return IsBetween(type, ValueType::_ObjectStart, ValueType::_ObjectEnd); }
+
+		/**
+		 * @brief Tests whether a given type is an array of any size.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is an array. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsArray(ValueType type) { return IsBetween(type, ValueType::_ArrayStart, ValueType::_ArrayEnd); }
+
+		/**
+		 * @brief Tests whether a given type is a POD (plain old data) structure of any size.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is a POD structure. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsStruct(ValueType type) { return IsBetween(type, ValueType::_StructStart, ValueType::_StructEnd); }
+
 
 		/**
 		 * @brief Checks if a given ValueType is considered a hidden object parameter.
@@ -384,6 +528,6 @@ namespace plugify {
 			}
 			return ValueType::Invalid;
 		}
-	}
+	} // namespace ValueUtils
 
 } // namespace plugify

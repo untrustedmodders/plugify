@@ -18,7 +18,7 @@ namespace plugify {
 		//std::string description; ///< The description of the plugin reference.
 		//std::string downloadURL; ///< The download URL of the plugin reference.
 		std::vector<std::string> supportedPlatforms; ///< The platforms supported by the plugin reference.
-		std::optional<std::int32_t> requestedVersion; ///< Optional requested version of the plugin reference.
+		std::optional<int32_t> requestedVersion; ///< Optional requested version of the plugin reference.
 
 		/**
 		 * @brief Overloaded equality operator for comparing PluginReferenceDescriptor instances.

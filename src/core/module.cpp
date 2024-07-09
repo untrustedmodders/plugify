@@ -5,6 +5,8 @@
 #include <plugify/plugify_provider.h>
 #include <utils/library_search_dirs.h>
 
+#undef FindResource
+
 using namespace plugify;
 
 Module::Module(UniqueId id, const LocalPackage& package) : IModule(*this), _id{id}, _name{package.name}, _lang{package.type}, _descriptor{std::static_pointer_cast<LanguageModuleDescriptor>(package.descriptor)} {
@@ -28,7 +30,9 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		return false;
 	}
 
-	const fs::path& baseDir = provider.lock()->GetBaseDir();
+	auto plugifyProvider = provider.lock();
+
+	const fs::path& baseDir = plugifyProvider->GetBaseDir();
 	if (const auto& resourceDirectoriesSettings = GetDescriptor().resourceDirectories) {
 		for (const std::string& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
@@ -62,15 +66,29 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	auto scopedDirs = LibrarySearchDirs::Add(libraryDirectories);
 
-	_library = Library::LoadFromPath(fs::absolute(_filePath, ec));
+#if PLUGIFY_PLATFORM_WINDOWS
+	int flags = LOAD_LIBRARY_SEARCH_USER_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
+#elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
+	int flags = RTLD_LAZY | RTLD_GLOBAL;
+	bool preferOwnSymbols = plugifyProvider->IsPreferOwnSymbols();
+#if PLUGIFY_PLATFORM_ANDROID || !defined(RTLD_DEEPBIND)
+	if (preferOwnSymbols)
+		PL_LOG_DEBUG("Prefer own symbols option is enabled, but RTLD_DEEPBIND is not supported. Proceeding without RTLD_DEEPBIND.");
+#else
+	if (preferOwnSymbols)
+		flags |= RTLD_DEEPBIND;
+#endif
+#else
+	int flags = -1;
+#endif
 
-	if (!_library) {
-		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), Library::GetError()));
+	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec), flags);
+	if (!assembly->IsValid()) {
+		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), assembly->GetError()));
 		return false;
 	}
 
-	using GetLanguageModuleFuncT = ILanguageModule*(*)();
-	auto GetLanguageModuleFunc = _library->GetFunction<GetLanguageModuleFuncT>("GetLanguageModule");
+	auto GetLanguageModuleFunc = assembly->GetFunctionByName("GetLanguageModule").RCast<ILanguageModule*(*)()>();
 	if (!GetLanguageModuleFunc) {
 		SetError(std::format("Function 'GetLanguageModule' not exist inside '{}' library", _filePath.string()));
 		Terminate();
@@ -91,6 +109,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		return false;
 	}
 
+	_assembly = std::move(assembly);
 	_languageModule = std::ref(*languageModulePtr);
 	SetLoaded();
 	return true;
@@ -101,7 +120,7 @@ void Module::Terminate() {
 		GetLanguageModule().Shutdown();
 	}
 	_languageModule.reset();
-	_library.reset();
+	_assembly.reset();
 	SetUnloaded();
 }
 

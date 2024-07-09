@@ -1,9 +1,10 @@
 #pragma once
 
+#include <plugify/mem_addr.h>
 #include <cstdint>
-#include <string>
-#include <optional>
 #include <filesystem>
+#include <optional>
+#include <string>
 #include <plugify_export.h>
 
 namespace plugify {
@@ -17,7 +18,7 @@ namespace plugify {
 	 * The PluginState enum defines the various states that a plugin can be in,
 	 * such as NotLoaded, Error, Loaded, Running, Terminating, and Unknown.
 	 */
-	enum class PluginState : std::uint8_t {
+	enum class PluginState : uint8_t {
 		NotLoaded,
 		Error,
 		Loaded,
@@ -39,7 +40,7 @@ namespace plugify {
 	 * The MethodData type is a pair consisting of a method name (string) and a
 	 * pointer to the method's address (void*).
 	 */
-	using MethodData = std::pair<std::string, void*>;
+	using MethodData = std::pair<std::string, MemAddr>;
 
 	/**
 	 * @class IPlugin
@@ -169,5 +170,6 @@ namespace plugify {
 			}
 			return PluginState::Unknown;
 		}
-	}
+	} // namespace PluginUtils
+
 } // namespace plugify

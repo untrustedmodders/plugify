@@ -3,7 +3,7 @@
 #include <plugify/module.h>
 #include <plugify/language_module.h>
 #include <plugify/language_module_descriptor.h>
-#include <utils/library.h>
+#include <plugify/assembly.h>
 
 namespace plugify {
 	class Plugin;
@@ -88,7 +88,7 @@ namespace plugify {
 		std::unordered_map<fs::path, fs::path, PathHash> _resources;
 		ModuleState _state{ ModuleState::NotLoaded };
 		std::string _error;
-		std::unique_ptr<Library> _library;
+		std::unique_ptr<Assembly> _assembly;
 		std::optional<std::reference_wrapper<ILanguageModule>> _languageModule;
 	};
 }

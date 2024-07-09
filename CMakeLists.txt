@@ -104,6 +104,7 @@ endif()
 # Compilation options
 option(PLUGIFY_BUILD_TESTS "Enable building tests." OFF)
 option(PLUGIFY_BUILD_FUNCTION "Build function object library." OFF)
+option(PLUGIFY_BUILD_ASSEMBLY "Build assembly object library." OFF)
 option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
 
 option(PLUGIFY_BUILD_OBJECT_LIB "Build plugify as object library." OFF)
@@ -279,9 +280,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
         PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
         PLUGIFY_PLATFORM_LINUX=$<BOOL:${LINUX}>
+        PLUGIFY_PLATFORM_ANDROID=$<BOOL:${ANDROID}>
         PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
         PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
         PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
+        PLUGIFY_SEPARATE_SOURCE_FILES=0
         PLUGIFY_COMPILED_COMPILER="${CMAKE_CXX_COMPILER}"
         PLUGIFY_COMPILED_SYSTEM="${CMAKE_SYSTEM}"
         PLUGIFY_COMPILED_GENERATOR="${CMAKE_GENERATOR}"
@@ -319,6 +322,23 @@ if(PLUGIFY_BUILD_FUNCTION)
     endif()
     if(PLUGIFY_HAS_LIBCPP)
         target_compile_options(${PROJECT_NAME}-function PUBLIC -stdlib=libc++)
+    endif()
+endif()
+if(PLUGIFY_BUILD_ASSEMBLY)
+    add_library(${PROJECT_NAME}-assembly OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assembly.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/assembly.h")
+    add_library(${PROJECT_NAME}::${PROJECT_NAME}-assembly ALIAS ${PROJECT_NAME}-assembly)
+    target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_compile_definitions(${PROJECT_NAME}-assembly PRIVATE
+            PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
+            PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
+            PLUGIFY_PLATFORM_LINUX=$<BOOL:${LINUX}>
+            PLUGIFY_PLATFORM_ANDROID=$<BOOL:${ANDROID}>
+            PLUGIFY_SEPARATE_SOURCE_FILES=1)
+    if(LINUX)
+        target_compile_definitions(${PROJECT_NAME}-assembly PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+    endif()
+    if(PLUGIFY_HAS_LIBCPP)
+        target_compile_options(${PROJECT_NAME}-assembly PUBLIC -stdlib=libc++)
     endif()
 endif()
 

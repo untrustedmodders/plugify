@@ -25,7 +25,7 @@ std::unique_ptr<HTTPDownloader> HTTPDownloader::Create(std::string userAgent) {
 bool HTTPDownloaderWinHttp::Initialize(std::string userAgent) {
 	static constexpr DWORD dwAccessType = WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY;
 
-	_hSession = WinHttpOpen(String::UTF8StringToWideString(userAgent).c_str(), dwAccessType, nullptr, nullptr, WINHTTP_FLAG_ASYNC);
+	_hSession = WinHttpOpen(String::ConvertUtf8ToWide(userAgent).c_str(), dwAccessType, nullptr, nullptr, WINHTTP_FLAG_ASYNC);
 	if (_hSession == NULL) {
 		PL_LOG_ERROR("WinHttpOpen() failed: {}", GetLastError());
 		return false;
@@ -114,7 +114,7 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 				contentTypeWstring.resize((contentTypeLength / sizeof(wchar_t)) - 1);
 				if (WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_CONTENT_TYPE, WINHTTP_HEADER_NAME_BY_INDEX,
 										contentTypeWstring.data(), &contentTypeLength, WINHTTP_NO_HEADER_INDEX)) {
-					req->contentType = String::WideStringToUTF8String(contentTypeWstring);
+					req->contentType = String::ConvertWideToUtf8(contentTypeWstring);
 				}
 			}
 
@@ -202,7 +202,7 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 	uc.lpszUrlPath = req->objectName.data();
 	uc.dwUrlPathLength = static_cast<DWORD>(req->objectName.size());
 
-	const std::wstring urlWide = String::UTF8StringToWideString(req->url);
+	const std::wstring urlWide = String::ConvertUtf8ToWide(req->url);
 	if (!WinHttpCrackUrl(urlWide.c_str(), static_cast<DWORD>(urlWide.size()), 0, &uc)) {
 		PL_LOG_ERROR("WinHttpCrackUrl() failed: {}", GetLastError());
 		req->callback(HTTP_STATUS_ERROR, {}, req->data);

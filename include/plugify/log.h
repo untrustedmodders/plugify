@@ -79,5 +79,6 @@ namespace plugify {
 			}
 			return Severity::None;
 		}
-	}
+	} // namespace SeverityUtils
+
 } // namespace plugify

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <plugify/mem_addr.h>
 #include <variant>
 #include <string>
 #include <vector>
@@ -17,7 +18,7 @@ namespace plugify {
 	 * The MethodData type is a pair consisting of a method name (string) and a
 	 * pointer to the method's address (void*).
 	 */
-	using MethodData = std::pair<std::string, void*>;
+	using MethodData = std::pair<std::string, MemAddr>;
 
 	/**
 	 * @struct ErrorData

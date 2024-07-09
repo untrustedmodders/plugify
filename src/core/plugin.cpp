@@ -21,7 +21,9 @@ bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	std::error_code ec;
 
-	const fs::path& baseDir = provider.lock()->GetBaseDir();
+	auto plugifyProvider = provider.lock();
+
+	const fs::path& baseDir = plugifyProvider->GetBaseDir();
 	if (const auto& resourceDirectoriesSettings = GetDescriptor().resourceDirectories) {
 		for (const std::string& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);

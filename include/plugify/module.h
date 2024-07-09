@@ -17,7 +17,7 @@ namespace plugify {
 	 * The ModuleState enum defines the various states that a module can be in,
 	 * such as NotLoaded, Error, Loaded, and Unknown.
 	 */
-	enum class ModuleState : std::uint8_t {
+	enum class ModuleState : uint8_t {
 		NotLoaded,
 		Error,
 		Loaded,
@@ -158,5 +158,5 @@ namespace plugify {
 			}
 			return ModuleState::Unknown;
 		}
-	}
+	} // namespace ModuleUtils
 } // namespace plugify

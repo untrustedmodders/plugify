@@ -1,9 +1,11 @@
 #pragma once
 
-#include <plugify_export.h>
+#include <plugify/assembly.h>
 #include <filesystem>
-#include <string>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <plugify_export.h>
 
 namespace plugify {
 	class PlugifyProvider;
