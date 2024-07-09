@@ -33,6 +33,9 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <mach-o/loader.h>
+#include <mach-o/fat.h>
+#include <mach-o/nlist.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 

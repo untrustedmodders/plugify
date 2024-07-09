@@ -128,7 +128,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const {
 }
 
 MemAddr Assembly::GetBase() const {
-	return _handle
+	return _handle;
 }
 
 #endif
