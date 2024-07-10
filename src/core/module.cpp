@@ -66,9 +66,9 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	auto scopedDirs = LibrarySearchDirs::Add(libraryDirectories);
 
-	LoadFlag flags = LoadFlag::LoadLazy | LoadFlag::LoadGlobal | /**/ LoadFlag::LoadSearchUserDirs | LoadFlag::LoadSearchSystem32 | LoadFlag::LoadSearchDllLoadDir;
+	LoadFlag flags = LoadFlag::Lazy | LoadFlag::Global | /**/ LoadFlag::SearchUserDirs | LoadFlag::SearchSystem32 | LoadFlag::SearchDllLoadDir;
 	if (plugifyProvider->IsPreferOwnSymbols()) {
-		flags |= LoadFlag::LoadDeepbind;
+		flags |= LoadFlag::Deepbind;
 	}
 
 	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec),  flags);

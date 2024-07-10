@@ -132,28 +132,28 @@ MemAddr Assembly::GetBase() const {
 namespace plugify {
 	int TranslateLoading(LoadFlag flags) {
 		int unixFlags = 0;
-		if (flags & LoadFlag::LoadLazy) unixFlags |= RTLD_LAZY;
-		if (flags & LoadFlag::LoadNow) unixFlags |= RTLD_NOW;
-		if (flags & LoadFlag::LoadGlobal) unixFlags |= RTLD_GLOBAL;
-		if (flags & LoadFlag::LoadLocal) unixFlags |= RTLD_LOCAL;
-		if (flags & LoadFlag::LoadNodelete) unixFlags |= RTLD_NODELETE;
-		if (flags & LoadFlag::LoadNoload) unixFlags |= RTLD_NOLOAD;
+		if (flags & LoadFlag::Lazy) unixFlags |= RTLD_LAZY;
+		if (flags & LoadFlag::Now) unixFlags |= RTLD_NOW;
+		if (flags & LoadFlag::Global) unixFlags |= RTLD_GLOBAL;
+		if (flags & LoadFlag::Local) unixFlags |= RTLD_LOCAL;
+		if (flags & LoadFlag::Nodelete) unixFlags |= RTLD_NODELETE;
+		if (flags & LoadFlag::Noload) unixFlags |= RTLD_NOLOAD;
 #ifdef RTLD_DEEPBIND
-		if (flags & LoadFlag::LoadDeepbind) unixFlags |= RTLD_DEEPBIND;
+		if (flags & LoadFlag::Deepbind) unixFlags |= RTLD_DEEPBIND;
 #endif
 		return unixFlags;
 	}
 
 	LoadFlag TranslateLoading(int flags) {
 		LoadFlag loadFlags = LoadFlag::Default;
-		if (flags & RTLD_LAZY) loadFlags = loadFlags | LoadFlag::LoadLazy;
-		if (flags & RTLD_NOW) loadFlags = loadFlags | LoadFlag::LoadNow;
-		if (flags & RTLD_GLOBAL) loadFlags = loadFlags | LoadFlag::LoadGlobal;
-		if (flags & RTLD_LOCAL) loadFlags = loadFlags | LoadFlag::LoadLocal;
-		if (flags & RTLD_NODELETE) loadFlags = loadFlags | LoadFlag::LoadNodelete;
-		if (flags & RTLD_NOLOAD) loadFlags = loadFlags | LoadFlag::LoadNoload;
+		if (flags & RTLD_LAZY) loadFlags = loadFlags | LoadFlag::Lazy;
+		if (flags & RTLD_NOW) loadFlags = loadFlags | LoadFlag::Now;
+		if (flags & RTLD_GLOBAL) loadFlags = loadFlags | LoadFlag::Global;
+		if (flags & RTLD_LOCAL) loadFlags = loadFlags | LoadFlag::Local;
+		if (flags & RTLD_NODELETE) loadFlags = loadFlags | LoadFlag::Nodelete;
+		if (flags & RTLD_NOLOAD) loadFlags = loadFlags | LoadFlag::Noload;
 #ifdef RTLD_DEEPBIND
-		if (flags & RTLD_DEEPBIND) loadFlags = loadFlags | LoadFlag::LoadDeepbind;
+		if (flags & RTLD_DEEPBIND) loadFlags = loadFlags | LoadFlag::Deepbind;
 #endif
 		return loadFlags;
 	}
