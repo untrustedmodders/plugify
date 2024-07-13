@@ -3,6 +3,7 @@
 #include <plugify/module.h>
 #include <plugify/package.h>
 #include <plugify/plugify_provider.h>
+#include <plugify/mem_protector.h>
 #include <utils/library_search_dirs.h>
 
 #undef FindResource
@@ -123,15 +124,12 @@ void Module::Terminate() {
 #else
 	constexpr auto name = "__BSS";
 #endif
-	for (auto& [_, holder] : _assemblyMap) {
-		auto bss = holder.GetAssembly().GetSectionByName(name);
-		if (bss.IsValid()) {
-			MemProtector protector(bss.base, bss.size, ProtFlag::RWX);
-			std::memset(bss.base, 0, bss.size);
-		}
+	auto bss = _assembly->GetSectionByName(name);
+	if (bss.IsValid()) {
+		MemProtector protector(bss.base, bss.size, ProtFlag::RWX);
+		std::memset(bss.base, 0, bss.size);
 	}
 #endif
-	
 	_assembly.reset();
 	
 	SetUnloaded();
