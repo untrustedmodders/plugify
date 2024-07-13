@@ -2,9 +2,10 @@
 
 #include <plugify/mem_addr.h>
 #include <plugify/prot_flag.h>
+#include <plugify_export.h>
 
 namespace plugify {
-	class MemAccessor;
+	class PLUGIFY_API MemAccessor;
 	/**
 	 * @class MemProtector
 	 * @brief A class to manage memory protection settings.
@@ -37,14 +38,14 @@ namespace plugify {
 		 *
 		 * @return The original protection flags.
 		 */
-		ProtFlag OriginalProt() const { return _origProtection; }
+		ProtFlag OriginalProt() const noexcept { return _origProtection; }
 
 		/**
 		 * @brief Checks if the memory protection was successfully set.
 		 *
 		 * @return True if the memory protection was successfully set, false otherwise.
 		 */
-		bool IsValid() const { return _status; }
+		bool IsValid() const noexcept { return _status; }
 
 	private:
 		MemAddr _address; /**< The memory address to protect. */
@@ -61,7 +62,7 @@ namespace plugify {
 	 * @param flags The protection flags to translate.
 	 * @return An integer representation of the protection flags.
 	 */
-	int TranslateProtection(ProtFlag flags);
+	int TranslateProtection(ProtFlag flags) noexcept;
 
 	/**
 	 * @brief Translates an integer representation of protection flags to ProtFlag.
@@ -69,6 +70,6 @@ namespace plugify {
 	 * @param prot The integer representation of the protection flags.
 	 * @return The corresponding ProtFlag.
 	 */
-	ProtFlag TranslateProtection(int prot);
+	ProtFlag TranslateProtection(int prot) noexcept;
 
 } // namespace plugify

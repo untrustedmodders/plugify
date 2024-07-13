@@ -55,7 +55,7 @@ namespace plugify {
 
 #if PLUGIFY_PLATFORM_WINDOWS
 
-	int TranslateProtection(ProtFlag flags) {
+	int TranslateProtection(ProtFlag flags) noexcept {
 		int nativeFlag = 0;
 		if (flags == ProtFlag::X)
 			nativeFlag = PAGE_EXECUTE;
@@ -77,7 +77,7 @@ namespace plugify {
 		return nativeFlag;
 	}
 
-	ProtFlag TranslateProtection(int prot) {
+	ProtFlag TranslateProtection(int prot) noexcept {
 		ProtFlag flags = ProtFlag::UNSET;
 		switch (prot) {
 			case PAGE_EXECUTE:
@@ -108,7 +108,7 @@ namespace plugify {
 
 #elif PLUGIFY_PLATFORM_LINUX
 
-	int TranslateProtection(ProtFlag flags) {
+	int TranslateProtection(ProtFlag flags) noexcept {
 		int nativeFlag = PROT_NONE;
 		if (flags & ProtFlag::X)
 			nativeFlag |= PROT_EXEC;
@@ -125,7 +125,7 @@ namespace plugify {
 		return nativeFlag;
 	}
 
-	ProtFlag TranslateProtection(int prot) {
+	ProtFlag TranslateProtection(int prot) noexcept {
 		ProtFlag flags = ProtFlag::UNSET;
 
 		if (prot & PROT_EXEC)
@@ -145,7 +145,7 @@ namespace plugify {
 
 #elif PLUGIFY_PLATFORM_APPLE
 
-	int TranslateProtection(ProtFlag flags) {
+	int TranslateProtection(ProtFlag flags) noexcept {
 		int nativeFlag = VM_PROT_NONE;
 		if (flags & ProtFlag::X)
 			nativeFlag |= PROT_EXEC;
@@ -162,7 +162,7 @@ namespace plugify {
 		return nativeFlag;
 	}
 
-	ProtFlag TranslateProtection(int prot) {
+	ProtFlag TranslateProtection(int prot) noexcept {
 		ProtFlag flags = ProtFlag::UNSET;
 
 		if (prot & VM_PROT_EXECUTE)

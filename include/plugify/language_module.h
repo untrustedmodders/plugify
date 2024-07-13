@@ -1,10 +1,10 @@
 #pragma once
 
-#include <plugify/mem_addr.h>
 #include <variant>
-#include <string>
 #include <vector>
 #include <memory>
+#include <string>
+#include <plugify/mem_addr.h>
 
 namespace plugify {
 	class IPlugin;
@@ -81,7 +81,7 @@ namespace plugify {
 		 * @param module Reference to the language module being initialized.
 		 * @return Result of the initialization, either InitResultData or ErrorData.
 		 */
-		virtual InitResult Initialize(std::weak_ptr<IPlugifyProvider> provider, const IModule& module) = 0;
+		virtual InitResult Initialize(std::weak_ptr<IPlugifyProvider> provider, IModule module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.
@@ -93,24 +93,24 @@ namespace plugify {
 		 * @param plugin Reference to the loaded plugin.
 		 * @return Result of the load event, either LoadResultData or ErrorData.
 		 */
-		virtual LoadResult OnPluginLoad(const IPlugin& plugin) = 0;
+		virtual LoadResult OnPluginLoad(IPlugin plugin) = 0;
 
 		/**
 		 * @brief Handle plugin start event.
 		 * @param plugin Reference to the started plugin.
 		 */
-		virtual void OnPluginStart(const IPlugin& plugin) = 0;
+		virtual void OnPluginStart(IPlugin plugin) = 0;
 
 		/**
 		 * @brief Handle plugin end event.
 		 * @param plugin Reference to the ended plugin.
 		 */
-		virtual void OnPluginEnd(const IPlugin& plugin) = 0;
+		virtual void OnPluginEnd(IPlugin plugin) = 0;
 
 		/**
 		 * @brief Handle method export event.
 		 * @param plugin Reference to the plugin exporting a method.
 		 */
-		virtual void OnMethodExport(const IPlugin& plugin) = 0;
+		virtual void OnMethodExport(IPlugin plugin) = 0;
 	};
 } // namespace plugify

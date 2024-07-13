@@ -18,7 +18,7 @@ static std::array<std::pair<std::string_view, std::string_view>, 2> packageTypes
 	// Might add more package types in future
 };
 
-PackageManager::PackageManager(std::weak_ptr<IPlugify> plugify) : IPackageManager(*this), PlugifyContext(std::move(plugify)) {
+PackageManager::PackageManager(std::weak_ptr<IPlugify> plugify) : PlugifyContext(std::move(plugify)) {
 }
 
 PackageManager::~PackageManager() {
@@ -49,7 +49,7 @@ void PackageManager::Terminate() {
 	_httpDownloader.reset();
 }
 
-bool PackageManager::IsInitialized() {
+bool PackageManager::IsInitialized() const {
 	return _httpDownloader != nullptr;
 }
 
@@ -292,13 +292,14 @@ void PackageManager::LoadRemotePackages() {
 
 	std::mutex mutex;
 
-	auto fetchManifest = [&](const std::string& url) {
+	auto fetchManifest = [&](const std::string& url, const std::shared_ptr<Descriptor>& descriptor = nullptr) {
 		if (!HTTPDownloader::IsValidURL(url)) {
-			PL_LOG_WARNING("Tried to fetch a package that is not have valid url: \"{}\", aborting", url);
+			PL_LOG_WARNING("Tried to fetch a package: '{}' that is not have valid url: \"{}\", aborting",
+						   descriptor ? descriptor->friendlyName : "<from config>", url.empty() ? "<empty>" : url);
 			return;
 		}
 		
-		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, const std::string&, HTTPDownloader::Request::Data data) {
+		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
 			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 				/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
 					PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", url);
@@ -323,9 +324,9 @@ void PackageManager::LoadRemotePackages() {
 						continue;
 					}
 
-					const auto& n = name; // clang fix
-					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&n](const auto& plugin) {
-						return plugin.name == n;
+					const auto& _name = name; // clang fix
+					auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&_name](const auto& plugin) {
+						return plugin.name == _name;
 					});
 					if (it == _remotePackages.end()) {
 						std::unique_lock<std::mutex> lock(mutex);
@@ -349,7 +350,7 @@ void PackageManager::LoadRemotePackages() {
 	}
 
 	for (const auto& package : _localPackages) {
-		fetchManifest(package.descriptor->updateURL);
+		fetchManifest(package.descriptor->updateURL, package.descriptor);
 	}
 
 	//FetchPackagesListFromAPI(mutex);
@@ -381,7 +382,7 @@ void PackageManager::FindDependencies() {
 				if (remotePackage.has_value()) {
 					auto it = _missedPackages.find(lang);
 					if (it == _missedPackages.end()) {
-						_missedPackages.emplace(lang, std::pair{*remotePackage, std::nullopt }); // by default prioritizing latest language modules
+						_missedPackages.emplace(lang, std::pair{ *remotePackage, std::nullopt }); // by default prioritizing latest language modules
 					}
 				} else {
 					PL_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package.name, lang);
@@ -616,7 +617,7 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 
 	const char* func = __func__;
 
-	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, const std::string&, HTTPDownloader::Request::Data data) {
+	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
 				PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", manifestUrl);
@@ -853,7 +854,7 @@ bool PackageManager::UninstallPackage(const LocalPackage& package, bool remove) 
 	return false;
 }
 
-LocalPackageOpt PackageManager::FindLocalPackage(const std::string& packageName) {
+LocalPackageOpt PackageManager::FindLocalPackage(const std::string& packageName) const {
 	auto it = std::find_if(_localPackages.begin(), _localPackages.end(), [&packageName](const auto& plugin) {
 		return plugin.name == packageName;
 	});
@@ -862,7 +863,7 @@ LocalPackageOpt PackageManager::FindLocalPackage(const std::string& packageName)
 	return {};
 }
 
-RemotePackageOpt PackageManager::FindRemotePackage(const std::string& packageName) {
+RemotePackageOpt PackageManager::FindRemotePackage(const std::string& packageName) const {
 	auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&packageName](const auto& plugin) {
 		return plugin.name == packageName;
 	});
@@ -871,7 +872,7 @@ RemotePackageOpt PackageManager::FindRemotePackage(const std::string& packageNam
 	return {};
 }
 
-std::vector<LocalPackageRef> PackageManager::GetLocalPackages() {
+std::vector<LocalPackageRef> PackageManager::GetLocalPackages() const {
 	std::vector<LocalPackageRef> localPackages;
 	localPackages.reserve(_localPackages.size());
 	for (const auto& package : _localPackages)  {
@@ -880,7 +881,7 @@ std::vector<LocalPackageRef> PackageManager::GetLocalPackages() {
 	return localPackages;
 }
 
-std::vector<RemotePackageRef> PackageManager::GetRemotePackages() {
+std::vector<RemotePackageRef> PackageManager::GetRemotePackages() const {
 	std::vector<RemotePackageRef> remotePackages;
 	remotePackages.reserve(remotePackages.size());
 	for (const auto& package : _remotePackages)  {
@@ -916,7 +917,7 @@ bool PackageManager::Reload() {
 
 bool PackageManager::DownloadPackage(const Package& package, const PackageVersion& version) const {
 	if (!HTTPDownloader::IsValidURL(version.download)) {
-		PL_LOG_WARNING("Tried to download a package that is not have valid url: \"{}\", aborting", version.download);
+		PL_LOG_WARNING("Tried to download a package: '{}' that is not have valid url: \"{}\", aborting", package.name, version.download.empty() ? "<empty>" : version.download);
 		return false;
 	}
 
@@ -928,7 +929,7 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 	PL_LOG_INFO("Downloading: '{}'", version.download);
 
 	_httpDownloader->CreateRequest(version.download, [&name = package.name, plugin = (package.type == "plugin"), &baseDir = plugify->GetConfig().baseDir, &checksum = version.checksum] // should be safe to pass ref
-		(int32_t statusCode, const std::string&, HTTPDownloader::Request::Data data) {
+		(int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			PL_LOG_VERBOSE("Done downloading: '{}'", name);
 
@@ -938,7 +939,7 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 			}*/
 
 			if (!IsPackageLegit(checksum, data)) {
-				PL_LOG_WARNING("Archive hash does not match expected checksum, aborting");
+				PL_LOG_WARNING("Archive hash '{}' does not match expected checksum, aborting", name);
 				return;
 			}
 
@@ -977,7 +978,7 @@ bool PackageManager::DownloadPackage(const Package& package, const PackageVersio
 }
 
 std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt) {
-	PL_LOG_VERBOSE("Start extracting....");
+	PL_LOG_VERBOSE("Start extracting: '{}' ....", extractPath.string());
 
 	auto zipClose = [](mz_zip_archive* zipArchive){ mz_zip_reader_end(zipArchive); delete zipArchive; };
 	std::unique_ptr<mz_zip_archive, decltype(zipClose)> zipArchive(new mz_zip_archive, zipClose);

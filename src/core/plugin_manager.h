@@ -13,29 +13,26 @@ namespace plugify {
 	class PluginManager final : public IPluginManager, public PlugifyContext {
 	public:
 		explicit PluginManager(std::weak_ptr<IPlugify> plugify);
-		~PluginManager();
+		~PluginManager() override;
 
 	public:
 		/** IPluginManager interface */
-		bool Initialize();
-		void Terminate();
-		bool IsInitialized();
+		bool Initialize() override;
+		void Terminate() override;
+		bool IsInitialized() const override;
 
-		ModuleOpt FindModule(const std::string& moduleName);
-		ModuleOpt FindModule(std::string_view moduleName);
-		ModuleOpt FindModuleFromId(UniqueId moduleId);
-		ModuleOpt FindModuleFromLang(const std::string& moduleLang);
-		ModuleOpt FindModuleFromPath(const fs::path& moduleFilePath);
-		std::vector<ModuleRef> GetModules();
+		ModuleOpt FindModule(const std::string& moduleName) const override;
+		ModuleOpt FindModule(std::string_view moduleName) const override;
+		ModuleOpt FindModuleFromId(UniqueId moduleId) const override;
+		ModuleOpt FindModuleFromLang(const std::string& moduleLang) const override;
+		ModuleOpt FindModuleFromPath(const fs::path& moduleFilePath) const override;
+		std::vector<IModule> GetModules() const override;
 
-		PluginOpt FindPlugin(const std::string& pluginName);
-		PluginOpt FindPlugin(std::string_view pluginName);
-		PluginOpt FindPluginFromId(UniqueId pluginId);
-		PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptor& pluginDescriptor);
-		std::vector<PluginRef> GetPlugins();
-
-		bool GetPluginDependencies(const std::string& pluginName, std::vector<PluginReferenceDescriptor>& pluginDependencies);
-		bool GetPluginDependencies_FromDescriptor(const PluginReferenceDescriptor& pluginDescriptor, std::vector<PluginReferenceDescriptor>& pluginDependencies);
+		PluginOpt FindPlugin(const std::string& pluginName) const override;
+		PluginOpt FindPlugin(std::string_view pluginName) const override;
+		PluginOpt FindPluginFromId(UniqueId pluginId) const override;
+		PluginOpt FindPluginFromDescriptor(const IPluginReferenceDescriptor& pluginDescriptor) const override;
+		std::vector<IPlugin> GetPlugins() const override;
 
 	private:
 		using PluginList = std::vector<std::unique_ptr<Plugin>>;

@@ -13,13 +13,13 @@ namespace plugify {
 		/**
 		 * @brief Default constructor initializing the pointer to 0.
 		 */
-		MemAddr() : _ptr{0} {}
+		MemAddr() noexcept : _ptr{0} {}
 
 		/**
 		 * @brief Constructor initializing the pointer with a uintptr_t value.
 		 * @param ptr The uintptr_t value to initialize the pointer with.
 		 */
-		MemAddr(uintptr_t ptr) : _ptr{ptr} {}
+		MemAddr(uintptr_t ptr) noexcept : _ptr{ptr} {}
 
 		/**
 		 * @brief Template constructor initializing the pointer with a typed pointer.
@@ -27,7 +27,7 @@ namespace plugify {
 		 * @param ptr The typed pointer to initialize with.
 		 */
 		template<typename T> requires (std::is_pointer_v<T> or std::is_null_pointer_v<T>)
-		MemAddr(T ptr) : _ptr{reinterpret_cast<uintptr_t>(ptr)} {}
+		MemAddr(T ptr) noexcept : _ptr{reinterpret_cast<uintptr_t>(ptr)} {}
 
 		/**
 		 * @brief Converts the MemAddr object to a uintptr_t.

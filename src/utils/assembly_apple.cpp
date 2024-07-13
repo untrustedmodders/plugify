@@ -115,7 +115,7 @@ MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool /*decor
 	return nullptr;
 }
 
-MemAddr Assembly::GetFunctionByName(std::string_view functionName) const {
+MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcept {
 	if (!_handle)
 		return nullptr;
 
@@ -125,12 +125,12 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const {
 	return dlsym(_handle, functionName.data());
 }
 
-MemAddr Assembly::GetBase() const {
+MemAddr Assembly::GetBase() const noexcept {
 	return _handle;
 }
 
 namespace plugify {
-	int TranslateLoading(LoadFlag flags) {
+	int TranslateLoading(LoadFlag flags) noexcept {
 		int unixFlags = 0;
 		if (flags & LoadFlag::Lazy) unixFlags |= RTLD_LAZY;
 		if (flags & LoadFlag::Now) unixFlags |= RTLD_NOW;
@@ -144,7 +144,7 @@ namespace plugify {
 		return unixFlags;
 	}
 
-	LoadFlag TranslateLoading(int flags) {
+	LoadFlag TranslateLoading(int flags) noexcept {
 		LoadFlag loadFlags = LoadFlag::Default;
 		if (flags & RTLD_LAZY) loadFlags = loadFlags | LoadFlag::Lazy;
 		if (flags & RTLD_NOW) loadFlags = loadFlags | LoadFlag::Now;

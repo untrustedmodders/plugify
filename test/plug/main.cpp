@@ -7,6 +7,8 @@
 #include <plugify/plugin_manager.h>
 #include <plugify/plugin.h>
 #include <plugify/plugin_descriptor.h>
+#include <plugify/plugin_reference_descriptor.h>
+#include <plugify/language_module_descriptor.h>
 
 #include <chrono>
 #include <iostream>
@@ -34,10 +36,10 @@ std::string FormatTime(std::string_view format = "%Y-%m-%d %H:%M:%S") {
 #define CONPRINTE(x) std::cerr << x << std::endl
 #define CONPRINTF(...) std::cout << std::format(__VA_ARGS__) << std::endl
 
-uintmax_t FormatInt(const std::string& str) {
+ptrdiff_t FormatInt(const std::string& str) {
 	try {
 		size_t pos;
-		uintmax_t result = std::stoull(str, &pos);
+		ptrdiff_t result = std::stoll(str, &pos);
 		if (pos != str.length()) {
 			throw std::invalid_argument("Trailing characters after the valid part");
 		}
@@ -50,59 +52,68 @@ uintmax_t FormatInt(const std::string& str) {
 		CONPRINTF("Conversion error: {}", e.what());
 	}
 
-	return uintmax_t(-1);
+	return -1;
 }
 
 template<typename S, typename T, typename F>
-void Print(const T& t, F& f, std::string_view tab = "  ") {
+void Print(T t, F&& f, std::string_view tab = "  ") {
 	std::string result(tab);
 	if (t.GetState() != S::Loaded) {
 		std::format_to(std::back_inserter(result), "[{:02d}] <{}> {}", t.GetId(), f(t.GetState()), t.GetFriendlyName());
 	} else {
 		std::format_to(std::back_inserter(result), "[{:02d}] {}", t.GetId(), t.GetFriendlyName());
 	}
-	if (!t.GetDescriptor().versionName.empty()){
-		std::format_to(std::back_inserter(result), " ({})", t.GetDescriptor().versionName);
+	auto versionName = t.GetDescriptor().GetVersionName();
+	if (!versionName.empty()){
+		std::format_to(std::back_inserter(result), " ({})", versionName);
 	} else {
-		std::format_to(std::back_inserter(result), " (v{})", t.GetDescriptor().version);
+		std::format_to(std::back_inserter(result), " (v{})", t.GetDescriptor().GetVersion());
 	}
-	if (!t.GetDescriptor().createdBy.empty()) {
-		std::format_to(std::back_inserter(result), " by {}", t.GetDescriptor().createdBy);
+	auto createdBy = t.GetDescriptor().GetCreatedBy();
+	if (!createdBy.empty()) {
+		std::format_to(std::back_inserter(result), " by {}", createdBy);
 	}
 	CONPRINT(result);
 }
 
 template<typename S, typename T, typename F>
-void Print(std::string_view name, const T& t, F& f) {
+void Print(std::string_view name, T t, F&& f) {
 	if (t.GetState() == S::Error) {
 		CONPRINTF("{} has error: {}.", name, t.GetError());
 	} else {
 		CONPRINTF("{} {} is {}.", name, t.GetId(), f(t.GetState()));
 	}
-	if (!t.GetDescriptor().createdBy.empty()) {
-		CONPRINTF("  Name: \"{}\" by {}", t.GetFriendlyName(), t.GetDescriptor().createdBy);
+	auto getCreatedBy = t.GetDescriptor().GetCreatedBy();
+	if (!getCreatedBy.empty()) {
+		CONPRINTF("  Name: \"{}\" by {}", t.GetFriendlyName(), getCreatedBy);
 	} else {
 		CONPRINTF("  Name: \"{}\"", t.GetFriendlyName());
 	}
-	if (!t.GetDescriptor().versionName.empty()) {
-		CONPRINTF("  Version: {}", t.GetDescriptor().versionName);
+	auto versionName = t.GetDescriptor().GetVersionName();
+	if (!versionName.empty()) {
+		CONPRINTF("  Version: {}", versionName);
 	} else {
-		CONPRINTF("  Version: {}", t.GetDescriptor().version);
+		CONPRINTF("  Version: {}", t.GetDescriptor().GetVersion());
 	}
-	if (!t.GetDescriptor().description.empty()) {
-		CONPRINTF("  Description: {}", t.GetDescriptor().description);
+	auto description = t.GetDescriptor().GetDescription();
+	if (!description.empty()) {
+		CONPRINTF("  Description: {}", description);
 	}
-	if (!t.GetDescriptor().createdByURL.empty()) {
-		CONPRINTF("  URL: {}", t.GetDescriptor().createdByURL);
+	auto createdByURL = t.GetDescriptor().GetCreatedByURL();
+	if (!createdByURL.empty()) {
+		CONPRINTF("  URL: {}", createdByURL);
 	}
-	if (!t.GetDescriptor().docsURL.empty()) {
-		CONPRINTF("  Docs: {}", t.GetDescriptor().docsURL);
+	auto docsURL = t.GetDescriptor().GetDocsURL();
+	if (!docsURL.empty()) {
+		CONPRINTF("  Docs: {}", docsURL);
 	}
-	if (!t.GetDescriptor().downloadURL.empty()) {
-		CONPRINTF("  Download: {}", t.GetDescriptor().downloadURL);
+	auto downloadURL = t.GetDescriptor().GetDownloadURL();
+	if (!downloadURL.empty()) {
+		CONPRINTF("  Download: {}", downloadURL);
 	}
-	if (!t.GetDescriptor().updateURL.empty()) {
-		CONPRINTF("  Update: {}", t.GetDescriptor().updateURL);
+	auto updateURL = t.GetDescriptor().GetUpdateURL();
+	if (!updateURL.empty()) {
+		CONPRINTF("  Update: {}", updateURL);
 	}
 }
 
@@ -125,7 +136,7 @@ int main() {
 				auto& arg = args[i];
 				if (i > 1 && arg.starts_with("-")) {
 					options.emplace(std::move(args[i]));
-					args.erase(args.begin() + static_cast<intmax_t>(i));
+					args.erase(args.begin() + static_cast<ptrdiff_t>(i));
 				}
 			}
 
@@ -252,8 +263,8 @@ int main() {
 						} else {
 							CONPRINTF("Listing {} plugin{}:", static_cast<int>(count), (count > 1) ? "s" : "");
 						}
-						for (auto& pluginRef : pluginManager->GetPlugins()) {
-							Print<plugify::PluginState>(pluginRef.get(), plugify::PluginUtils::ToString);
+						for (auto& plugin : pluginManager->GetPlugins()) {
+							Print<plugify::PluginState>(plugin, plugify::PluginUtils::ToString);
 						}
 					}
 
@@ -268,8 +279,8 @@ int main() {
 						} else {
 							CONPRINTF("Listing {} module{}:", static_cast<int>(count), (count > 1) ? "s" : "");
 						}
-						for (auto& moduleRef : pluginManager->GetModules()) {
-							Print<plugify::ModuleState>(moduleRef.get(), plugify::ModuleUtils::ToString);
+						for (auto& module : pluginManager->GetModules()) {
+							Print<plugify::ModuleState>(module, plugify::ModuleUtils::ToString);
 						}
 					}
 
@@ -279,21 +290,21 @@ int main() {
 								CONPRINT("You must load plugin manager before query any information from it.");
 								continue;
 							}
-							auto pluginRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
-							if (pluginRef.has_value()) {
-								const auto& plugin = pluginRef->get();
-								Print<plugify::PluginState>("Plugin", plugin, plugify::PluginUtils::ToString);
-								CONPRINTF("  Language module: {}", plugin.GetDescriptor().languageModule.name);
+							auto plugin = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
+							if (plugin.has_value()) {
+								Print<plugify::PluginState>("Plugin", *plugin, plugify::PluginUtils::ToString);
+								CONPRINTF("  Language module: {}", plugin->GetDescriptor().GetLanguageModule());
 								CONPRINT("  Dependencies: ");
-								for (const auto& reference : plugin.GetDescriptor().dependencies) {
-									auto dependencyRef = pluginManager->FindPlugin(reference.name);
-									if (dependencyRef.has_value()) {
-										Print<plugify::PluginState>(dependencyRef->get(), plugify::PluginUtils::ToString, "    ");
+								for (const auto& reference : plugin->GetDescriptor().GetDependencies()) {
+									auto dependency = pluginManager->FindPlugin(reference.GetName());
+									if (dependency.has_value()) {
+										Print<plugify::PluginState>(*dependency, plugify::PluginUtils::ToString, "    ");
 									} else {
-										CONPRINTF("    {} <Missing> (v{})", reference.name, reference.requestedVersion.has_value() ? std::to_string(*reference.requestedVersion) : "[latest]");
+										auto version = reference.GetRequestedVersion();
+										CONPRINTF("    {} <Missing> (v{})", reference.GetName(), version.has_value() ? std::to_string(*version) : "[latest]");
 									}
 								}
-								CONPRINTF("  File: {}", plugin.GetDescriptor().entryPoint);
+								CONPRINTF("  File: {}", plugin->GetDescriptor().GetEntryPoint());
 							} else {
 								CONPRINTF("Plugin {} not found.", args[2]);
 							}
@@ -308,12 +319,11 @@ int main() {
 								CONPRINT("You must load plugin manager before query any information from it.");
 								continue;
 							}
-							auto moduleRef = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindModuleFromId(FormatInt(args[2])) : pluginManager->FindModule(args[2]);
-							if (moduleRef.has_value()) {
-								const auto& module = moduleRef->get();
-								Print<plugify::ModuleState>("Module", module, plugify::ModuleUtils::ToString);
-								CONPRINTF("  Language: {}", module.GetDescriptor().language);
-								CONPRINTF("  File: {}", module.GetFilePath().string());
+							auto module = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindModuleFromId(FormatInt(args[2])) : pluginManager->FindModule(args[2]);
+							if (module.has_value()) {
+								Print<plugify::ModuleState>("Module", *module, plugify::ModuleUtils::ToString);
+								CONPRINTF("  Language: {}", module->GetLanguage());
+								CONPRINTF("  File: {}", std::filesystem::path(module->GetFilePath()).string());
 							} else {
 								CONPRINTF("Module {} not found.", args[2]);
 							}

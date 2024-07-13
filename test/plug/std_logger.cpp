@@ -3,7 +3,7 @@
 #include <iostream>
 
 namespace plug {
-    void StdLogger::Log(const std::string& message, plugify::Severity severity) {
+    void StdLogger::Log(std::string_view message, plugify::Severity severity) {
         if (severity <= _severity) {
             switch (severity) {
                 case plugify::Severity::Fatal:
@@ -29,23 +29,6 @@ namespace plug {
                     break;
             }
         }
-
-        Push(message);
-    }
-
-    void StdLogger::Push(std::string message) {
-		std::lock_guard<std::mutex> lock{_mutex};
-        _log.emplace_back(std::move(message));
-    }
-
-    std::string StdLogger::Pop() {
-		std::lock_guard<std::mutex> lock{_mutex};
-        if (!_log.empty()) {
-            std::string message = std::move(_log.back());
-            _log.pop_back();
-            return message;
-        }
-        return {};
     }
 
     void StdLogger::SetSeverity(plugify::Severity severity) {

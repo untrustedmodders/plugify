@@ -1,14 +1,17 @@
 #pragma once
 
-#include <plugify/assembly.h>
-#include <filesystem>
 #include <memory>
-#include <string>
+#include <string_view>
 #include <unordered_map>
+#include <plugify/assembly.h>
+#include <plugify/reference_wrapper.h>
 #include <plugify_export.h>
 
 namespace plugify {
 	class PlugifyProvider;
+#if PLUGIFY_CORE
+	class PlugifyProvider;
+#endif
 	enum class Severity : uint8_t;
 
 	/**
@@ -16,23 +19,20 @@ namespace plugify {
 	 *        The PlugifyProvider is responsible for managing and providing essential functionality to the Plugify system.
 	 */
 	class PLUGIFY_API IPlugifyProvider {
-	protected:
-		explicit IPlugifyProvider(PlugifyProvider& impl);
-		~IPlugifyProvider();
-
+		PLUGUFY_REFERENCE(IPlugifyProvider, PlugifyProvider)
 	public:
 		/**
 		 * @brief Log a message with a specified severity level.
 		 * @param msg The message to log.
 		 * @param severity The severity level of the log message.
 		 */
-		void Log(const std::string& msg, Severity severity) const;
+		void Log(std::string_view msg, Severity severity) const;
 
 		/**
 		 * @brief Get the base directory of the Plugify system.
 		 * @return Reference to the base directory path.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetBaseDir() const;
+		[[nodiscard]] const std::filesystem::path& GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Checks if the preference for using own symbols is enabled.
@@ -46,7 +46,7 @@ namespace plugify {
 		 * 
 		 * @return True if the preference for using own symbols is enabled, false otherwise.
 		 */
-		[[nodiscard]] bool IsPreferOwnSymbols() const;
+		[[nodiscard]] bool IsPreferOwnSymbols() const noexcept;
 		
 		/**
 		 * @brief Checks if a plugin with the specified name is loaded.
@@ -60,7 +60,7 @@ namespace plugify {
 		 * @param minimum If true, checks if the loaded version meets or exceeds the required version.
 		 * @return True if the plugin is loaded and meets the version requirements, false otherwise.
 		 */
-		[[nodiscard]] bool IsPluginLoaded(const std::string& name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const;
+		[[nodiscard]] bool IsPluginLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
 		
 		/**
 		 * @brief Checks if a language module with the specified name is loaded.
@@ -74,9 +74,7 @@ namespace plugify {
 		 * @param minimum If true, checks if the loaded version meets or exceeds the required version.
 		 * @return True if the language module is loaded and meets the version requirements, false otherwise.
 		 */
-		[[nodiscard]] bool IsModuleLoaded(const std::string& name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const;
-
-	private:
-		PlugifyProvider& _impl; ///< Reference to the underlying PlugifyProvider implementation.
+		[[nodiscard]] bool IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
 	};
+	static_assert(is_ref_v<IPlugifyProvider>);
 } // namespace plugify

@@ -20,7 +20,7 @@ Assembly::Assembly(const MemAddr moduleMemory, LoadFlag flags, bool sections) : 
 	InitFromMemory(moduleMemory, flags, sections);
 }
 
-Assembly::Assembly(const std::filesystem::path& modulePath, LoadFlag flags, bool sections) : _handle{nullptr} {
+Assembly::Assembly(const fs::path& modulePath, LoadFlag flags, bool sections) : _handle{nullptr} {
 	Init(modulePath, flags, sections);
 }
 
@@ -110,8 +110,8 @@ MemAddr Assembly::FindPattern(std::string_view pattern, MemAddr startAddress, Se
 	return FindPattern(patternInfo.first.data(), patternInfo.second, startAddress, moduleSection);
 }
 
-Assembly::Section Assembly::GetSectionByName(std::string_view sectionName) const {
-	for (const Section& section: _sections) {
+Assembly::Section Assembly::GetSectionByName(std::string_view sectionName) const noexcept {
+	for (const Section& section : _sections) {
 		if (section.name == sectionName)
 			return section;
 	}
@@ -119,15 +119,15 @@ Assembly::Section Assembly::GetSectionByName(std::string_view sectionName) const
 	return {};
 }
 
-void* Assembly::GetHandle() const {
+void* Assembly::GetHandle() const noexcept {
 	return _handle;
 }
 
-const fs::path& Assembly::GetPath() const {
+const fs::path& Assembly::GetPath() const noexcept {
 	return _path;
 }
 
-const std::string& Assembly::GetError() const {
+const std::string& Assembly::GetError() const noexcept {
 	return _error;
 }
 

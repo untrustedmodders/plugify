@@ -1,12 +1,12 @@
 #pragma once
 
+#include <span>
+#include <memory>
+#include <cstdint>
+#include <filesystem>
 #include <plugify/version.h>
 #include <plugify/config.h>
 #include <plugify_export.h>
-#include <filesystem>
-#include <cstdint>
-#include <memory>
-#include <span>
 
 namespace plugify {
 	class ILogger;
@@ -56,7 +56,7 @@ namespace plugify {
 		 * @param msg The log message.
 		 * @param severity The severity level of the log message.
 		 */
-		virtual void Log(const std::string& msg, Severity severity) = 0;
+		virtual void Log(std::string_view msg, Severity severity) = 0;
 		
 		/**
 		 * @brief Add a repository to the config.
@@ -67,7 +67,7 @@ namespace plugify {
 		 * @param repository The URL or path of the repository to add.
 		 * @return True if the repository was successfully added, false otherwise.
 		 */
-		virtual bool AddRepository(const std::string& repository) = 0;
+		virtual bool AddRepository(std::string_view repository) = 0;
 
 		/**
 		 * @brief Get a weak pointer to the Plugify provider.

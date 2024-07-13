@@ -6,7 +6,6 @@
 #include <plugify_export.h>
 
 namespace plugify {
-	class PackageManager;
 	struct LocalPackage;
 	struct RemotePackage;
 
@@ -38,154 +37,149 @@ namespace plugify {
 	 * @class IPackageManager
 	 * @brief Interface for the package manager provided to the user, implemented in the core.
 	 */
-	class PLUGIFY_API IPackageManager {
-	protected:
-		explicit IPackageManager(PackageManager& impl);
-		~IPackageManager() = default;
-
+	class IPackageManager {
 	public:
+		virtual ~IPackageManager() = default;
+
 		/**
 		 * @brief Initialize the package manager.
 		 * @return True if initialization is successful, false otherwise.
 		 */
-		bool Initialize() const;
+		virtual bool Initialize() = 0;
 
 		/**
 		 * @brief Terminate the package manager.
 		 */
-		void Terminate() const;
+		virtual void Terminate() = 0;
 
 		/**
 		 * @brief Check if the package manager is initialized.
 		 * @return True if the package manager is initialized, false otherwise.
 		 */
-		[[nodiscard]] bool IsInitialized() const;
+		[[nodiscard]] virtual bool IsInitialized() const = 0;
 		
 		/**
 		 * @brief Reload the package manager.
 		 * @return True if was initializated, false otherwise.
 		 */
-		bool Reload() const;
+		virtual bool Reload() = 0;
 
 		/**
 		 * @brief Install a package.
 		 * @param packageName Name of the package to install.
 		 * @param requiredVersion Optional required version of the package.
 		 */
-		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) const;
+		virtual void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) = 0;
 
 		/**
 		 * @brief Install multiple packages.
 		 * @param packageNames Span of package names to install.
 		 */
-		void InstallPackages(std::span<const std::string> packageNames) const;
+		virtual void InstallPackages(std::span<const std::string> packageNames) = 0;
 
 		/**
 		 * @brief Install all packages listed in a manifest file.
 		 * @param manifestFilePath Path to the manifest file.
 		 * @param reinstall True to reinstall packages, false otherwise.
 		 */
-		void InstallAllPackages(const std::filesystem::path& manifestFilePath, bool reinstall) const;
+		virtual void InstallAllPackages(const std::filesystem::path& manifestFilePath, bool reinstall) = 0;
 
 		/**
 		 * @brief Install all packages listed in a manifest file from a remote location.
 		 * @param manifestUrl URL of the manifest file.
 		 * @param reinstall True to reinstall packages, false otherwise.
 		 */
-		void InstallAllPackages(const std::string& manifestUrl, bool reinstall) const;
+		virtual void InstallAllPackages(const std::string& manifestUrl, bool reinstall) = 0;
 
 		/**
 		 * @brief Update a specific package.
 		 * @param packageName Name of the package to update.
 		 * @param requiredVersion Optional required version of the package.
 		 */
-		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) const;
+		virtual void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) = 0;
 
 		/**
 		 * @brief Update multiple packages.
 		 * @param packageNames Span of package names to update.
 		 */
-		void UpdatePackages(std::span<const std::string> packageNames) const;
+		virtual void UpdatePackages(std::span<const std::string> packageNames) = 0;
 
 		/**
 		 * @brief Update all installed packages.
 		 */
-		void UpdateAllPackages() const;
+		virtual void UpdateAllPackages() = 0;
 
 		/**
 		 * @brief Uninstall a specific package.
 		 * @param packageName Name of the package to uninstall.
 		 */
-		void UninstallPackage(const std::string& packageName) const;
+		virtual void UninstallPackage(const std::string& packageName) = 0;
 
 		/**
 		 * @brief Uninstall multiple packages.
 		 * @param packageNames Span of package names to uninstall.
 		 */
-		void UninstallPackages(std::span<const std::string> packageNames) const;
+		virtual void UninstallPackages(std::span<const std::string> packageNames) = 0;
 
 		/**
 		 * @brief Uninstall all installed packages.
 		 */
-		void UninstallAllPackages() const;
+		virtual void UninstallAllPackages() = 0;
 
 		/**
 		 * @brief Snapshot the list of installed packages to a manifest file.
 		 * @param manifestFilePath Path to the manifest file.
 		 * @param prettify True to prettify the output, false for compact format.
 		 */
-		void SnapshotPackages(const std::filesystem::path& manifestFilePath, bool prettify) const;
+		virtual void SnapshotPackages(const std::filesystem::path& manifestFilePath, bool prettify) = 0;
 
 		/**
 		 * @brief Check if there are missed packages (not installed but required by other packages).
 		 * @return True if there are missed packages, false otherwise.
 		 */
-		[[nodiscard]] bool HasMissedPackages() const;
+		[[nodiscard]] virtual bool HasMissedPackages() const = 0;
 
 		/**
 		 * @brief Check if there are conflicted packages (installed with conflicting versions).
 		 * @return True if there are conflicted packages, false otherwise.
 		 */
-		[[nodiscard]] bool HasConflictedPackages() const;
+		[[nodiscard]] virtual bool HasConflictedPackages() const = 0;
 
 		/**
 		 * @brief Install missed packages.
 		 */
-		void InstallMissedPackages() const;
+		virtual void InstallMissedPackages() = 0;
 
 		/**
 		 * @brief Uninstall conflicted packages.
 		 */
-		void UninstallConflictedPackages() const;
+		virtual void UninstallConflictedPackages() = 0;
 
 		/**
 		 * @brief Find a local package by name.
 		 * @param packageName Name of the package to find.
 		 * @return Optional reference to the found local package.
 		 */
-		[[nodiscard]] LocalPackageOpt FindLocalPackage(const std::string& packageName) const;
+		[[nodiscard]] virtual LocalPackageOpt FindLocalPackage(const std::string& packageName) const = 0;
 
 		/**
 		 * @brief Find a remote package by name.
 		 * @param packageName Name of the package to find.
 		 * @return Optional reference to the found remote package.
 		 */
-		[[nodiscard]] RemotePackageOpt FindRemotePackage(const std::string& packageName) const;
+		[[nodiscard]] virtual RemotePackageOpt FindRemotePackage(const std::string& packageName) const = 0;
 
 		/**
 		 * @brief Get a vector of references to all local packages.
 		 * @return Vector of local package references.
 		 */
-		[[nodiscard]] std::vector<LocalPackageRef> GetLocalPackages() const;
+		[[nodiscard]] virtual std::vector<LocalPackageRef> GetLocalPackages() const = 0;
 
 		/**
 		 * @brief Get a vector of references to all remote packages.
 		 * @return Vector of remote package references.
 		 */
-		[[nodiscard]] std::vector<RemotePackageRef> GetRemotePackages() const;
-
-	private:
-		PackageManager& _impl; ///< Reference to the underlying PackageManager implementation.
+		[[nodiscard]] virtual std::vector<RemotePackageRef> GetRemotePackages() const = 0;
 	};
 
 } // namespace plugify

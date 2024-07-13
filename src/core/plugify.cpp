@@ -69,7 +69,7 @@ namespace plugify {
 			return _inited;
 		}
 
-		void Log(const std::string& msg, Severity severity) override {
+		void Log(std::string_view msg, Severity severity) override {
 			LogSystem::Log(msg, severity);
 		}
 
@@ -77,11 +77,13 @@ namespace plugify {
 			LogSystem::SetLogger(std::move(logger));
 		}
 		
-		bool AddRepository(const std::string& repository) override {
-			if (!HTTPDownloader::IsValidURL(repository))
+		bool AddRepository(std::string_view repository) override {
+			std::string url(repository);
+
+			if (!HTTPDownloader::IsValidURL(url))
 				return false;
 			
-			auto [it, result] = _config.repositories.emplace(repository);
+			auto [it, result] = _config.repositories.emplace(std::move(url));
 			if (result) {
 				return FileSystem::WriteText(_configPath, glz::write_json(_config));
 			}

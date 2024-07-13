@@ -10,40 +10,40 @@ namespace plugify {
 	class PackageManager final : public IPackageManager, public PlugifyContext {
 	public:
 		explicit PackageManager(std::weak_ptr<IPlugify> plugify);
-		~PackageManager();
+		~PackageManager() override;
 
 	public:
 		/** IPackageManager interface */
-		bool Initialize();
-		void Terminate();
-		bool IsInitialized();
-		bool Reload();
+		bool Initialize() override;
+		void Terminate() override;
+		bool IsInitialized() const override;
+		bool Reload() override;
 
-		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
-		void InstallPackages(std::span<const std::string> packageNames);
-		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall);
-		void InstallAllPackages(const std::string& manifestUrl, bool reinstall);
+		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) override;
+		void InstallPackages(std::span<const std::string> packageNames) override;
+		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall) override;
+		void InstallAllPackages(const std::string& manifestUrl, bool reinstall) override;
 
-		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {});
-		void UpdatePackages(std::span<const std::string> packageNames);
-		void UpdateAllPackages();
+		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion) override;
+		void UpdatePackages(std::span<const std::string> packageNames) override;
+		void UpdateAllPackages() override;
 
-		void UninstallPackage(const std::string& packageName);
-		void UninstallPackages(std::span<const std::string> packageNames);
-		void UninstallAllPackages();
+		void UninstallPackage(const std::string& packageName) override;
+		void UninstallPackages(std::span<const std::string> packageNames) override;
+		void UninstallAllPackages() override;
 
-		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify);
+		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) override;
 
-		bool HasMissedPackages() { return !_missedPackages.empty(); }
-		bool HasConflictedPackages() { return !_conflictedPackages.empty(); }
-		void InstallMissedPackages();
-		void UninstallConflictedPackages();
+		bool HasMissedPackages() const override { return !_missedPackages.empty(); }
+		bool HasConflictedPackages() const override { return !_conflictedPackages.empty(); }
+		void InstallMissedPackages() override;
+		void UninstallConflictedPackages() override;
 
-		LocalPackageOpt FindLocalPackage(const std::string& packageName);
-		RemotePackageOpt FindRemotePackage(const std::string& packageName);
+		LocalPackageOpt FindLocalPackage(const std::string& packageName) const override;
+		RemotePackageOpt FindRemotePackage(const std::string& packageName) const override;
 
-		std::vector<LocalPackageRef> GetLocalPackages();
-		std::vector<RemotePackageRef> GetRemotePackages();
+		std::vector<LocalPackageRef> GetLocalPackages() const override;
+		std::vector<RemotePackageRef> GetRemotePackages() const override;
 
 	public:
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {

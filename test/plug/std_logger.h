@@ -10,16 +10,12 @@ namespace plug {
         StdLogger() = default;
         ~StdLogger() override = default;
 
-        void Log(const std::string& message, plugify::Severity severity) override;
-
-        void Push(std::string message);
-        std::string Pop();
+        void Log(std::string_view message, plugify::Severity severity) override;
 
         void SetSeverity(plugify::Severity severity);
 
     private:
 		std::mutex _mutex;
-		std::vector<std::string> _log;
         plugify::Severity _severity{ plugify::Severity::None };
     };
 }

@@ -16,33 +16,33 @@ namespace plugify {
 		 * @param patch The patch version component.
 		 * @param tweak The tweak version component.
 		 */
-		Version(uint8_t major, uint8_t minor, uint8_t patch, uint8_t tweak);
+		Version(uint8_t major, uint8_t minor, uint8_t patch, uint8_t tweak) noexcept;
 
 		/**
 		 * @brief Explicit constructor to initialize a Version object from a packed 32-bit version number.
 		 * @param version The packed 32-bit version number.
 		 */
-		explicit Version(uint32_t version);
+		explicit Version(uint32_t version) noexcept;
 
 		/**
 		 * @brief Assignment operator to set the Version object from a packed 32-bit version number.
 		 * @param version The packed 32-bit version number.
 		 * @return Reference to the modified Version object.
 		 */
-		Version& operator=(uint32_t version);
+		Version& operator=(uint32_t version) noexcept;
 
 		/**
 		 * @brief Conversion operator to retrieve the packed 32-bit version number.
 		 * @return The packed 32-bit version number.
 		 */
-		operator uint32_t() const;
+		operator uint32_t() const noexcept;
 
 		/**
 		 * @brief Comparison operator (<=>) for comparing two Version objects.
 		 * @param rhs The right-hand side Version object for comparison.
 		 * @return The result of the comparison.
 		 */
-		auto operator<=>(const Version& rhs) const;
+		auto operator<=>(const Version& rhs) const noexcept;
 
 		/**
 		 * @brief Get a string representation of the Version object.

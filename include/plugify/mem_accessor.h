@@ -2,13 +2,14 @@
 
 #include <plugify/mem_addr.h>
 #include <plugify/prot_flag.h>
+#include <plugify_export.h>
 
 namespace plugify {
 	/**
 	 * @class MemAccessor
 	 * @brief A class providing various memory access routines.
 	 */
-	class MemAccessor {
+	class PLUGIFY_API MemAccessor {
 	public:
 		/**
 		 * @brief Defines a memory read/write routine that may fail ungracefully.

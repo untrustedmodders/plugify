@@ -1,30 +1,35 @@
 #pragma once
 
-#include <plugify/descriptor.h>
+#include <cstdint>
+#include <vector>
+#include <string_view>
+#include <plugify/reference_wrapper.h>
+#include <plugify_export.h>
 
+// TODO: Write comments
 namespace plugify {
-	/**
-	 * @struct LanguageModuleDescriptor
-	 * @brief Describes the properties of a language module.
-	 *
-	 * The LanguageModuleDescriptor structure extends the Descriptor structure to include
-	 * additional information specific to language modules, such as the programming language,
-	 * library directories, and whether to force load the module.
-	 */
-	struct LanguageModuleDescriptor final : public Descriptor {
-		std::string language; ///< The programming language of the module.
-		std::optional<std::vector<std::string>> libraryDirectories; ///< Optional library directories for the module.
-		bool forceLoad{false}; ///< Indicates whether to force load the module.
-	};
+#if PLUGIFY_CORE
+	struct LanguageModuleDescriptor;
+#endif
 
-	/**
-	 * @struct LanguageModuleInfo
-	 * @brief Holds basic information about a language module.
-	 *
-	 * The LanguageModuleInfo structure provides basic information about a language module,
-	 * including its name.
-	 */
-	struct LanguageModuleInfo final {
-		std::string name; ///< The name of the language module.
+	class PLUGIFY_API ILanguageModuleDescriptor {
+		PLUGUFY_REFERENCE(ILanguageModuleDescriptor, const LanguageModuleDescriptor)
+	public:
+		[[nodiscard]] int32_t GetFileVersion() const noexcept;
+		[[nodiscard]] int32_t GetVersion() const noexcept;
+		[[nodiscard]] std::string_view GetVersionName() const noexcept;
+		[[nodiscard]] std::string_view GetFriendlyName() const noexcept;
+		[[nodiscard]] std::string_view GetDescription() const noexcept;
+		[[nodiscard]] std::string_view GetCreatedBy() const noexcept;
+		[[nodiscard]] std::string_view GetCreatedByURL() const noexcept;
+		[[nodiscard]] std::string_view GetDocsURL() const noexcept;
+		[[nodiscard]] std::string_view GetDownloadURL() const noexcept;
+		[[nodiscard]] std::string_view GetUpdateURL() const noexcept;
+		[[nodiscard]] std::vector<std::string_view> GetSupportedPlatforms() const;
+		[[nodiscard]] std::vector<std::string_view> GetResourceDirectories() const;
+		[[nodiscard]] std::vector<std::string_view> GetLibraryDirectories() const;
+		[[nodiscard]] std::string_view GetLanguage() const noexcept;
+		[[nodiscard]] bool IsForceLoad() const noexcept;
 	};
-} // namespace plugify
+	static_assert(is_ref_v<ILanguageModuleDescriptor>);
+}

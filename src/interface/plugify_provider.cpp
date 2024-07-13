@@ -3,27 +3,22 @@
 
 using namespace plugify;
 
-IPlugifyProvider::IPlugifyProvider(PlugifyProvider& impl) : _impl{impl} {
+void IPlugifyProvider::Log(std::string_view msg, Severity severity) const {
+	_impl->Log(msg, severity);
 }
 
-IPlugifyProvider::~IPlugifyProvider() = default;
-
-void IPlugifyProvider::Log(const std::string& msg, Severity severity) const {
-	_impl.Log(msg, severity);
+const fs::path& IPlugifyProvider::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir();
 }
 
-const fs::path& IPlugifyProvider::GetBaseDir() const {
-	return _impl.GetBaseDir();
+bool IPlugifyProvider::IsPreferOwnSymbols() const noexcept {
+	return _impl->IsPreferOwnSymbols();
 }
 
-bool IPlugifyProvider::IsPreferOwnSymbols() const {
-	return _impl.IsPreferOwnSymbols();
+bool IPlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<int32_t> requiredVersion, bool minimum) const noexcept {
+	return _impl->IsPluginLoaded(name, requiredVersion, minimum);
 }
 
-bool IPlugifyProvider::IsPluginLoaded(const std::string& name, std::optional<int32_t> requiredVersion, bool minimum) const {
-	return _impl.IsPluginLoaded(name, requiredVersion, minimum);
-}
-
-bool IPlugifyProvider::IsModuleLoaded(const std::string& name, std::optional<int32_t> requiredVersion, bool minimum) const {
-	return _impl.IsModuleLoaded(name, requiredVersion, minimum);
+bool IPlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion, bool minimum) const noexcept {
+	return _impl->IsModuleLoaded(name, requiredVersion, minimum);
 }

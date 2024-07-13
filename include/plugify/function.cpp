@@ -4,11 +4,11 @@ using namespace plugify;
 using namespace asmjit;
 
 template<typename T>
-constexpr TypeId GetTypeIdx() {
+constexpr TypeId GetTypeIdx() noexcept {
 	return static_cast<TypeId>(TypeUtils::TypeIdOfT<T>::kTypeId);
 }
 
-TypeId GetValueTypeId(ValueType valueType) {
+TypeId GetValueTypeId(ValueType valueType) noexcept {
 	switch (valueType) {
 		case ValueType::Invalid:
 		case ValueType::Void:
@@ -66,7 +66,7 @@ TypeId GetValueTypeId(ValueType valueType) {
 	return TypeId::kVoid;
 }
 
-TypeId GetRetTypeId(ValueType valueType) {
+TypeId GetRetTypeId(ValueType valueType)noexcept  {
 	switch (valueType) {
 		case ValueType::Invalid:
 		case ValueType::Void:
@@ -134,27 +134,30 @@ TypeId GetRetTypeId(ValueType valueType) {
 	return TypeId::kVoid;
 }
 
-CallConvId GetCallConv(const std::string& conv) {
+CallConvId GetCallConv(std::string_view conv) noexcept {
 #if PLUGIFY_ARCH_X86 == 64
 #if PLUGIFY_PLATFORM_WINDOWS
-	if (conv == "vectorcall") {
+	if (conv == "vectorcall") [[unlikely]] {
 		return CallConvId::kVectorCall;
+	} else {
+		return CallConvId::kX64Windows;
 	}
-	return CallConvId::kX64Windows;
 #else
 	return CallConvId::kX64SystemV;
 #endif // PLUGIFY_PLATFORM_WINDOWS
 #elif PLUGIFY_ARCH_X86 == 32
-	if (conv == "cdecl") {
-		return CallConvId::kCDecl;
-	} else if (conv == "stdcall") {
-		return CallConvId::kStdCall;
-	} else if (conv == "fastcall") {
-		return CallConvId::kFastCall;
-	} else if (conv == "thiscall") {
-		return CallConvId::kThisCall;
-	} else if (conv == "vectorcall") {
-		return CallConvId::kVectorCall;
+	if (!conv.empty) {
+		if (conv == "cdecl") {
+			return CallConvId::kCDecl;
+		} else if (conv == "stdcall") {
+			return CallConvId::kStdCall;
+		} else if (conv == "fastcall") {
+			return CallConvId::kFastCall;
+		} else if (conv == "thiscall") {
+			return CallConvId::kThisCall;
+		} else if (conv == "vectorcall") {
+			return CallConvId::kVectorCall;
+		}
 	}
 	return CallConvId::kHost;
 #endif // PLUGIFY_ARCH_X86
@@ -169,14 +172,15 @@ Function::Function(Function&& other) noexcept : _rt{std::move(other._rt)}, _func
 }
 
 Function::~Function() {
-	if (auto rt = _rt.lock()) {
-		if (_function)
+	if (_function) {
+		if (auto rt = _rt.lock()) {
 			rt->release(_function);
+		}
 	}
 }
 
-MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, MemAddr data) {
-	if (_function)
+MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, IMethod method, FuncCallback callback, MemAddr data) {
+	if (_function) 
 		return _function;
 
 	auto rt = _rt.lock();
@@ -276,9 +280,14 @@ MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& met
 		cc.add(i, sizeof(uintptr_t));
 	}
 
+	union {
+		IMethod method;
+		uintptr_t ptr;
+	} cast{ method };
+
 	// fill reg to pass method ptr to callback
 	x86::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
-	cc.mov(methodPtrParam, reinterpret_cast<uintptr_t>(&method));
+	cc.mov(methodPtrParam, cast.ptr);
 
 	// fill reg to pass data ptr to callback
 	x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
@@ -308,7 +317,7 @@ MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& met
 	InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
 			  reinterpret_cast<uintptr_t>(callback),
-			  FuncSignature::build<void, Method*, void*, Parameters*, uint8_t, ReturnValue*>()
+			  FuncSignature::build<void, void*, void*, Parameters*, uint8_t, ReturnValue*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)
@@ -386,15 +395,15 @@ MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, const Method& met
 	return _function;
 }
 
-MemAddr Function::GetJitFunc(const Method& method, FuncCallback callback, MemAddr data, HiddenParam hidden) {
-	bool isHiddenParam = hidden(method.retType.type);
-	ValueType retType = isHiddenParam ? ValueType::Pointer : (method.retType.ref ? ValueType::Pointer : method.retType.type);
-	FuncSignature sig(GetCallConv(method.callConv), method.varIndex, GetRetTypeId(retType));
+MemAddr Function::GetJitFunc(IMethod method, FuncCallback callback, MemAddr data, HiddenParam hidden) {
+	ValueType retType = method.GetReturnType().GetType();
+	bool isHiddenParam = hidden(retType);
+	FuncSignature sig(GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), GetRetTypeId(isHiddenParam ? ValueType::Pointer : retType));
 	if (isHiddenParam) {
-		sig.addArg(GetValueTypeId(method.retType.type));
+		sig.addArg(GetValueTypeId(retType));
 	}
-	for (const auto& type : method.paramTypes) {
-		sig.addArg(GetValueTypeId(type.ref ? ValueType::Pointer : type.type));
+	for (const auto& type : method.GetParamTypes()) {
+		sig.addArg(GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
 	}
 	return GetJitFunc(sig, method, callback, data);
 }

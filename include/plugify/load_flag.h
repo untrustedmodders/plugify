@@ -8,7 +8,7 @@ namespace plugify {
 	 * @brief Enum class representing various flags for dynamic library loading.
 	 */
 	enum class LoadFlag {
-		Default = 0, ///< Value means this gives no information about loading flag
+		Default = 0, ///< Value means this gives no information about loading flag.
 
 	 	// Unix specific.
 		Lazy = 1 << 0, ///< Perform lazy binding. Only resolve symbols as they are needed.
@@ -42,7 +42,7 @@ namespace plugify {
 	 * @param rhs Right-hand side LoadFlag.
 	 * @return Result of the bitwise OR operation.
 	 */
-	inline LoadFlag operator|(LoadFlag lhs, LoadFlag rhs) {
+	inline LoadFlag operator|(LoadFlag lhs, LoadFlag rhs) noexcept {
 		using underlying = typename std::underlying_type<LoadFlag>::type;
 		return static_cast<LoadFlag>(
 				static_cast<underlying>(lhs) | static_cast<underlying>(rhs)
@@ -55,7 +55,7 @@ namespace plugify {
 	 * @param rhs Right-hand side LoadFlag.
 	 * @return Result of the bitwise AND operation.
 	 */
-	inline bool operator&(LoadFlag lhs, LoadFlag rhs) {
+	inline bool operator&(LoadFlag lhs, LoadFlag rhs) noexcept {
 		using underlying = typename std::underlying_type<LoadFlag>::type;
 		return static_cast<underlying>(lhs) & static_cast<underlying>(rhs);
 	}
@@ -66,7 +66,7 @@ namespace plugify {
 	 * @param rhs Right-hand side LoadFlag.
 	 * @return Reference to the left-hand side LoadFlag.
 	 */
-	inline LoadFlag& operator|=(LoadFlag& lhs, LoadFlag rhs) {
+	inline LoadFlag& operator|=(LoadFlag& lhs, LoadFlag rhs) noexcept {
 		lhs = lhs | rhs;
 		return lhs;
 	}

@@ -1,57 +1,57 @@
 #pragma once
 
+#include "language_module_descriptor.h"
+#include <utils/path.h>
 #include <plugify/module.h>
 #include <plugify/language_module.h>
-#include <plugify/language_module_descriptor.h>
 #include <plugify/assembly.h>
 
 namespace plugify {
 	class Plugin;
 	struct LocalPackage;
-	class Module final : public IModule {
+	class Module final {
 	public:
 		Module(UniqueId id, const LocalPackage& package);
 		~Module();
 
 	public:
-		/* IModule interface */
-		UniqueId GetId() {
+		UniqueId GetId() const noexcept {
 			return _id;
 		}
 
-		const std::string& GetName() {
+		const std::string& GetName() const noexcept {
 			return _name;
 		}
 
-		const std::string& GetLanguage() {
+		const std::string& GetLanguage() const noexcept {
 			return _lang;
 		}
 
-		const std::string& GetFriendlyName() {
+		const std::string& GetFriendlyName() const noexcept {
 			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
 		}
 
-		const fs::path& GetFilePath() {
+		const fs::path& GetFilePath() const noexcept {
 			return _filePath;
 		}
 
-		const fs::path& GetBaseDir() {
+		const fs::path& GetBaseDir() const noexcept {
 			return _baseDir;
 		}
 
-		const LanguageModuleDescriptor& GetDescriptor() {
+		const LanguageModuleDescriptor& GetDescriptor() const noexcept {
 			return *_descriptor;
 		}
 
-		ModuleState GetState() {
+		ModuleState GetState() const noexcept {
 			return _state;
 		}
 
-		const std::string& GetError() {
-			return _error;
+		std::string_view GetError() const noexcept {
+			return _error ? *_error : std::string_view{};
 		}
 
-		std::optional<fs::path> FindResource(const fs::path& path);
+		std::optional<fs::path> FindResource(const fs::path& path) const;
 
 		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
 		void Terminate();
@@ -61,20 +61,20 @@ namespace plugify {
 		void EndPlugin(Plugin& plugin) const;
 		void MethodExport(Plugin& plugin) const;
 
+		void SetError(std::string error);
+
 		ILanguageModule& GetLanguageModule() const {
 			PL_ASSERT(_languageModule.has_value(), "Language module is not set!");
 			return _languageModule.value();
 		}
 
-		void SetLoaded() {
+		void SetLoaded() noexcept {
 			_state = ModuleState::Loaded;
 		}
 
-		void SetUnloaded() {
+		void SetUnloaded() noexcept {
 			_state = ModuleState::NotLoaded;
 		}
-
-		void SetError(std::string error);
 
 		static inline const char* const kFileExtension = ".pmodule";
 
@@ -85,9 +85,9 @@ namespace plugify {
 		fs::path _filePath;
 		fs::path _baseDir;
 		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
-		std::unordered_map<fs::path, fs::path, PathHash> _resources;
+		std::unordered_map<fs::path, fs::path, fs::hash> _resources;
 		ModuleState _state{ ModuleState::NotLoaded };
-		std::string _error;
+		std::unique_ptr<std::string> _error;
 		std::unique_ptr<Assembly> _assembly;
 		std::optional<std::reference_wrapper<ILanguageModule>> _languageModule;
 	};

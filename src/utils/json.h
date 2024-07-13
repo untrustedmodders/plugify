@@ -3,12 +3,12 @@
 #include <glaze/glaze.hpp>
 #include <glaze/core/macros.hpp>
 
-#include <plugify/method.h>
-#include <plugify/descriptor.h>
-#include <plugify/plugin_descriptor.h>
-#include <plugify/language_module_descriptor.h>
 #include <plugify/config.h>
+#include <plugify/descriptor.h>
 #include <plugify/package.h>
+#include <core/language_module_descriptor.h>
+#include <core/plugin_descriptor.h>
+#include <core/method.h>
 
 template<>
 struct glz::meta<plugify::ValueType> {
@@ -45,10 +45,10 @@ struct glz::meta<plugify::ValueType> {
 		plugify::ValueName::ArrayFloat, plugify::ValueType::ArrayFloat,
 		plugify::ValueName::ArrayDouble, plugify::ValueType::ArrayDouble,
 		plugify::ValueName::ArrayString, plugify::ValueType::ArrayString,
-		plugify::ValueName::Vec2, plugify::ValueType::Vector2,
-		plugify::ValueName::Vec3, plugify::ValueType::Vector3,
-		plugify::ValueName::Vec4, plugify::ValueType::Vector4,
-		plugify::ValueName::Mat4x4, plugify::ValueType::Matrix4x4
+		plugify::ValueName::Vector2, plugify::ValueType::Vector2,
+		plugify::ValueName::Vector3, plugify::ValueType::Vector3,
+		plugify::ValueName::Vector4, plugify::ValueType::Vector4,
+		plugify::ValueName::Matrix4x4, plugify::ValueType::Matrix4x4
 	);
 };
 

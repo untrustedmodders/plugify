@@ -1,10 +1,10 @@
 #pragma once
 
-#include <plugify/method.h>
-#include <plugify/mem_addr.h>
-#include <asmjit/asmjit.h>
 #include <memory>
-#include <functional>
+#include <string_view>
+#include <asmjit/asmjit.h>
+#include <plugify/mem_addr.h>
+#include <plugify/method.h>
 
 namespace plugify {
 	/**
@@ -110,7 +110,7 @@ namespace plugify {
 		 */
 		~Function();
 
-		using FuncCallback = void(*)(const Method* method, MemAddr data, const Parameters* params, uint8_t count, const ReturnValue* ret);
+		using FuncCallback = void(*)(IMethod method, MemAddr data, const Parameters* params, uint8_t count, const ReturnValue* ret);
 		using HiddenParam = bool(*)(ValueType);
 
 		/**
@@ -121,7 +121,7 @@ namespace plugify {
 		 * @param data User data.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, const Method& method, FuncCallback callback, MemAddr data = nullptr);
+		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, IMethod method, FuncCallback callback, MemAddr data = nullptr);
 
 		/**
 		 * @brief Get a dynamically created callback function using a typedef represented as a string.
@@ -131,7 +131,7 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as first argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(const Method& method, FuncCallback callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
+		MemAddr GetJitFunc(IMethod method, FuncCallback callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
 
 		/**
 		 * @brief Get a dynamically created function.
@@ -152,7 +152,7 @@ namespace plugify {
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */
-		[[nodiscard]] std::string_view GetError() { return !_function && _errorCode ? _errorCode : ""; }
+		[[nodiscard]] std::string_view GetError() { return !_function && _errorCode ? _errorCode : std::string_view{}; }
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;

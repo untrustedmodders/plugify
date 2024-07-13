@@ -1,10 +1,11 @@
 #pragma once
 
+#include <vector>
+#include <string>
+#include <filesystem>
 #include <plugify/load_flag.h>
 #include <plugify/mem_addr.h>
-#include <filesystem>
-#include <string>
-#include <vector>
+#include <plugify_export.h>
 
 namespace plugify {
 	/**
@@ -36,7 +37,7 @@ namespace plugify {
 			 * @brief Checks if the section is valid.
 			 * @return True if the section is valid, false otherwise.
 			 */
-			[[nodiscard]] bool IsValid() const { return base; }
+			[[nodiscard]] bool IsValid() const noexcept { return base; }
 
 			std::string name{}; //!< The name of the section.
 			MemAddr base;       //!< The base address of the section.
@@ -140,57 +141,57 @@ namespace plugify {
 		 * @param functionName The name of the function.
 		 * @return The memory address of the function, or nullptr if not found.
 		 */
-		[[nodiscard]] MemAddr GetFunctionByName(std::string_view functionName) const;
+		[[nodiscard]] MemAddr GetFunctionByName(std::string_view functionName) const noexcept;
 
 		/**
 		 * @brief Gets a module section by name.
 		 * @param sectionName The name of the section (e.g., ".rdata", ".text").
 		 * @return The Section object representing the module section.
 		 */
-		[[nodiscard]] Section GetSectionByName(std::string_view sectionName) const;
+		[[nodiscard]] Section GetSectionByName(std::string_view sectionName) const noexcept;
 
 		/**
 		 * @brief Returns the module handle.
 		 * @return The module handle.
 		 */
-		[[nodiscard]] void* GetHandle() const;
+		[[nodiscard]] void* GetHandle() const noexcept;
 
 		/**
 		 * @brief Returns the module base address.
 		 * @return The base address of the module.
 		 */
-		[[nodiscard]] MemAddr GetBase() const;
+		[[nodiscard]] MemAddr GetBase() const noexcept;
 
 		/**
 		 * @brief Returns the module path.
 		 * @return The path of the module.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetPath() const;
+		[[nodiscard]] const std::filesystem::path& GetPath() const noexcept;
 
 		/**
 		 * @brief Returns the module error.
 		 * @return The error string of the module.
 		 */
-		[[nodiscard]] const std::string& GetError() const;
+		[[nodiscard]] const std::string& GetError() const noexcept;
 
 		/**
 		 * @brief Checks if the assembly is valid.
 		 * @return True if the assembly is valid, false otherwise.
 		 */
-		[[nodiscard]] bool IsValid() const { return _handle != nullptr; }
+		[[nodiscard]] bool IsValid() const noexcept { return _handle != nullptr; }
 
 		/**
 		 * @brief Conversion operator to check if the assembly is valid.
 		 * @return True if the assembly is valid, false otherwise.
 		 */
-		explicit operator bool() const { return _handle != nullptr; }
+		explicit operator bool() const noexcept { return _handle != nullptr; }
 
 		/**
 		 * @brief Equality operator.
 		 * @param assembly The other Assembly object to compare with.
 		 * @return True if both Assembly objects are equal, false otherwise.
 		 */
-		bool operator==(const Assembly& assembly) const { return _handle == assembly._handle; }
+		bool operator==(const Assembly& assembly) const noexcept { return _handle == assembly._handle; }
 
 	private:
 		/**
@@ -235,7 +236,7 @@ namespace plugify {
 	 * @param flags The loading flags to translate.
 	 * @return An integer representation of the loading flags.
 	 */
-	int TranslateLoading(LoadFlag flags);
+	int TranslateLoading(LoadFlag flags) noexcept;
 
 	/**
 	 * @brief Translates an integer representation of loading flags to LoadFlag.
@@ -243,6 +244,6 @@ namespace plugify {
 	 * @param flags The integer representation of the loading flags.
 	 * @return The corresponding LoadFlag.
 	 */
-	LoadFlag TranslateLoading(int flags);
+	LoadFlag TranslateLoading(int flags) noexcept;
 
 } // namespace plugify

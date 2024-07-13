@@ -1,47 +1,45 @@
 #include <plugify/module.h>
+#include <plugify/language_module_descriptor.h>
 #include <core/module.h>
 
 using namespace plugify;
 
-IModule::IModule(Module& impl) : _impl{impl} {
+UniqueId IModule::GetId() const noexcept {
+	return _impl->GetId();
 }
 
-UniqueId IModule::GetId() const {
-	return _impl.GetId();
+std::string_view IModule::GetName() const noexcept {
+	return _impl->GetName();
 }
 
-const std::string& IModule::GetName() const {
-	return _impl.GetName();
+std::string_view IModule::GetLanguage() const noexcept {
+	return _impl->GetLanguage();
 }
 
-const std::string& IModule::GetLanguage() const {
-	return _impl.GetLanguage();
+std::string_view IModule::GetFriendlyName() const noexcept {
+	return _impl->GetFriendlyName();
 }
 
-const std::string& IModule::GetFriendlyName() const {
-	return _impl.GetFriendlyName();
+const fs::path& IModule::GetFilePath() const noexcept {
+	return _impl->GetFilePath();
 }
 
-const fs::path& IModule::GetFilePath() const {
-	return _impl.GetFilePath();
+const fs::path& IModule::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir();
 }
 
-const fs::path& IModule::GetBaseDir() const {
-	return _impl.GetBaseDir();
+ILanguageModuleDescriptor IModule::GetDescriptor() const noexcept {
+	return { _impl->GetDescriptor() };
 }
 
-const LanguageModuleDescriptor& IModule::GetDescriptor() const {
-	return _impl.GetDescriptor();
+ModuleState IModule::GetState() const noexcept {
+	return _impl->GetState();
 }
 
-ModuleState IModule::GetState() const {
-	return _impl.GetState();
-}
-
-const std::string& IModule::GetError() const {
-	return _impl.GetError();
+std::string_view IModule::GetError() const noexcept {
+	return _impl->GetError();
 }
 
 std::optional<fs::path> IModule::FindResource(const fs::path& path) const {
-	return _impl.FindResource(path);
+	return _impl->FindResource(path);
 }

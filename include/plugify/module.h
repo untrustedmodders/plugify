@@ -1,14 +1,16 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <optional>
 #include <filesystem>
+#include <plugify/reference_wrapper.h>
 #include <plugify_export.h>
 
 namespace plugify {
+#if PLUGIFY_CORE
 	class Module;
-	struct LanguageModuleDescriptor;
+#endif
+	class ILanguageModuleDescriptor;
 
 	/**
 	 * @enum ModuleState
@@ -39,64 +41,61 @@ namespace plugify {
 	 * the PLUGIFY framework.
 	 */
 	class PLUGIFY_API IModule {
-	protected:
-		explicit IModule(Module& impl);
-		~IModule() = default;
-
+		PLUGUFY_REFERENCE(IModule, const Module)
 	public:
 		/**
 		 * @brief Get the unique identifier of the language module.
 		 * @return The unique identifier.
 		 */
-		[[nodiscard]] UniqueId GetId() const;
+		[[nodiscard]] UniqueId GetId() const noexcept;
 
 		/**
 		 * @brief Get the name of the language module.
 		 * @return The name of the language module.
 		 */
-		[[nodiscard]] const std::string& GetName() const;
+		[[nodiscard]] std::string_view GetName() const noexcept;
 
 		/**
 		 * @brief Get the language of the language module.
 		 * @return The language of the language module.
 		 */
-		[[nodiscard]] const std::string& GetLanguage() const;
+		[[nodiscard]] std::string_view GetLanguage() const noexcept;
 
 		/**
 		 * @brief Get the friendly name of the language module.
 		 * @return The friendly name of the language module.
 		 */
-		[[nodiscard]] const std::string& GetFriendlyName() const;
+		[[nodiscard]] std::string_view GetFriendlyName() const noexcept;
 
 		/**
 		 * @brief Get the file path of the language module.
 		 * @return The file path as a filesystem path.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetFilePath() const;
+		[[nodiscard]] const std::filesystem::path& GetFilePath() const noexcept;
 
 		/**
 		 * @brief Get the base directory of the language module.
 		 * @return The base directory as a filesystem path.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetBaseDir() const;
+		[[nodiscard]] const std::filesystem::path& GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Get the descriptor of the language module.
 		 * @return The descriptor of the language module.
 		 */
-		[[nodiscard]] const LanguageModuleDescriptor& GetDescriptor() const;
+		[[nodiscard]] ILanguageModuleDescriptor GetDescriptor() const noexcept;
 
 		/**
 		 * @brief Get the state of the language module.
 		 * @return The state of the language module.
 		 */
-		[[nodiscard]] ModuleState GetState() const;
+		[[nodiscard]] ModuleState GetState() const noexcept;
 
 		/**
 		 * @brief Get the error message associated with the language module.
 		 * @return The error message.
 		 */
-		[[nodiscard]] const std::string& GetError() const;
+		[[nodiscard]] std::string_view GetError() const noexcept;
 
 		/**
 		 * @brief Find a resource file associated with the module.
@@ -120,10 +119,8 @@ namespace plugify {
 		 * @endcode
 		 */
 		[[nodiscard]] std::optional<std::filesystem::path> FindResource(const std::filesystem::path& path) const;
-
-	private:
-		Module& _impl; ///< The implementation of the language module.
 	};
+	static_assert(is_ref_v<IModule>);
 
 	/**
 	 * @brief Namespace containing utility functions of ModuleState enum.
@@ -134,7 +131,7 @@ namespace plugify {
 		 * @param state The ModuleState value to convert.
 		 * @return The string representation of the ModuleState.
 		 */
-		[[maybe_unused]] constexpr std::string_view ToString(ModuleState state) {
+		[[maybe_unused]] constexpr std::string_view ToString(ModuleState state) noexcept {
 			switch (state) {
 				case ModuleState::NotLoaded: return "NotLoaded";
 				case ModuleState::Error:     return "Error";
@@ -148,7 +145,7 @@ namespace plugify {
 		 * @param state The string representation of ModuleState.
 		 * @return The corresponding ModuleState enum value.
 		 */
-		[[maybe_unused]] constexpr ModuleState FromString(std::string_view state) {
+		[[maybe_unused]] constexpr ModuleState FromString(std::string_view state) noexcept {
 			if (state == "NotLoaded") {
 				return ModuleState::NotLoaded;
 			} else if (state == "Error") {
@@ -159,4 +156,5 @@ namespace plugify {
 			return ModuleState::Unknown;
 		}
 	} // namespace ModuleUtils
+
 } // namespace plugify

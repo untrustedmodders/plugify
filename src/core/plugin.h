@@ -1,52 +1,52 @@
 #pragma once
 
+#include "plugin_descriptor.h"
+#include <utils/path.h>
 #include <plugify/plugin.h>
-#include <plugify/plugin_descriptor.h>
 
 namespace plugify {
 	class Module;
 	struct LocalPackage;
 	class IPlugifyProvider;
-	class Plugin final : public IPlugin {
+	class Plugin final {
 	public:
 		Plugin(UniqueId id, const LocalPackage& package);
 		~Plugin();
 
 	public:
-		/* IPlugin interface */
-		UniqueId GetId() {
+		UniqueId GetId() const noexcept {
 			return _id;
 		}
 
-		const std::string& GetName() {
+		const std::string& GetName() const noexcept {
 			return _name;
 		}
 
-		const std::string& GetFriendlyName() {
+		const std::string& GetFriendlyName() const noexcept {
 			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
 		}
 
-		const fs::path& GetBaseDir() {
+		const fs::path& GetBaseDir() const noexcept {
 			return _baseDir;
 		}
 
-		const PluginDescriptor& GetDescriptor() {
+		const PluginDescriptor& GetDescriptor() const noexcept {
 			return *_descriptor;
 		}
 
-		PluginState GetState() {
+		PluginState GetState() const noexcept {
 			return _state;
 		}
 
-		const std::string& GetError() {
-			return _error;
-		}
-
-		const std::vector<MethodData>& GetMethods() {
+		std::span<const MethodData> GetMethods() const noexcept {
 			return _methods;
 		}
 
-		std::optional<fs::path> FindResource(const fs::path& path);
+		std::string_view GetError() const noexcept {
+			return  _error ? *_error : std::string_view{};
+		}
+
+		std::optional<fs::path> FindResource(const fs::path& path) const;
 
 		void SetError(std::string error);
 
@@ -59,23 +59,23 @@ namespace plugify {
 			return _module.value().get();
 		}
 
-		void SetModule(Module& module) {
+		void SetModule(Module& module) noexcept {
 			_module = module;
 		}
 
-		void SetLoaded() {
+		void SetLoaded() noexcept {
 			_state = PluginState::Loaded;
 		}
 
-		void SetRunning() {
+		void SetRunning() noexcept {
 			_state = PluginState::Running;
 		}
 
-		void SetTerminating() {
+		void SetTerminating() noexcept {
 			_state = PluginState::Terminating;
 		}
 
-		void SetUnloaded() {
+		void SetUnloaded() noexcept {
 			_state = PluginState::NotLoaded;
 		}
 
@@ -88,11 +88,11 @@ namespace plugify {
 		UniqueId _id{ -1 };
 		std::string _name;
 		fs::path _baseDir;
-		std::string _error;
-		std::optional<std::reference_wrapper<Module>> _module;
 		std::vector<MethodData> _methods;
+		std::unique_ptr<std::string> _error;
 		std::shared_ptr<PluginDescriptor> _descriptor;
-		std::unordered_map<fs::path, fs::path, PathHash> _resources;
+		std::unordered_map<fs::path, fs::path, fs::hash> _resources;
+		std::optional<std::reference_wrapper<Module>> _module;
 		PluginState _state{ PluginState::NotLoaded };
 	};
 }

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <plugify/log.h>
-#include <filesystem>
 #include <set>
+#include <filesystem>
+#include <plugify/log.h>
 
 namespace plugify {
 	/**

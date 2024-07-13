@@ -14,7 +14,7 @@ namespace plugify {
 
 		struct Request {
 			using Data = std::vector<uint8_t>;
-			using Callback = std::function<void(int32_t statusCode, const std::string& contentType, Data data)>;
+			using Callback = std::function<void(int32_t statusCode, std::string_view contentType, Data data)>;
 
 			enum class Type : uint8_t {
 				Get,

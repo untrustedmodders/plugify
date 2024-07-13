@@ -27,7 +27,7 @@ namespace plugify {
 		 * @param rhs The right-hand side PackageVersion for comparison.
 		 * @return True if the version of this instance is less than the version of rhs.
 		 */
-		[[nodiscard]] bool operator <(const PackageVersion& rhs) const { return version > rhs.version; }
+		[[nodiscard]] bool operator <(const PackageVersion& rhs) const noexcept { return version > rhs.version; }
 	};
 
 	/**
@@ -52,7 +52,7 @@ namespace plugify {
 		 * @param rhs The right-hand side Package for comparison.
 		 * @return True if the name and type of this instance are equal to those of rhs.
 		 */
-		[[nodiscard]] bool operator==(const Package& rhs) const { return name == rhs.name && type == rhs.type; }
+		[[nodiscard]] bool operator==(const Package& rhs) const noexcept { return name == rhs.name && type == rhs.type; }
 	};
 
 	/**
@@ -72,7 +72,7 @@ namespace plugify {
 		 * @brief Get the latest available version of the package.
 		 * @return An optional reference to the latest PackageVersion.
 		 */
-		[[nodiscard]] PackageOpt LatestVersion() const {
+		[[nodiscard]] PackageOpt LatestVersion() const noexcept {
 			if (!versions.empty())
 				return *versions.begin();
 			return {};
@@ -108,7 +108,7 @@ namespace plugify {
 		 * @brief Conversion operator to convert LocalPackage to RemotePackage.
 		 * @return A RemotePackage instance representing the local package.
 		 */
-		explicit operator RemotePackage() const {
+		explicit operator RemotePackage() const noexcept {
 			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, {}, descriptor->downloadURL, descriptor->supportedPlatforms} }};
 		}
 	};

@@ -76,7 +76,7 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool section
 	if (!VirtualQuery(moduleMemory, &mbi, sizeof(mbi)))
 		return false;
 
-	fs::path modulePath = ::GetModulePath(reinterpret_cast<HMODULE>(mbi.AllocationBase));
+	std::wstring modulePath = ::GetModulePath(reinterpret_cast<HMODULE>(mbi.AllocationBase));
 	if (modulePath.empty())
 		return false;
 
@@ -183,7 +183,7 @@ MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool decorat
 	return nullptr;
 }
 
-MemAddr Assembly::GetFunctionByName(std::string_view functionName) const {
+MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcept {
 	if (!_handle)
 		return nullptr;
 
@@ -193,12 +193,12 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const {
 	return GetProcAddress(reinterpret_cast<HMODULE>(_handle), functionName.data());
 }
 
-MemAddr Assembly::GetBase() const {
+MemAddr Assembly::GetBase() const noexcept {
 	return _handle;
 }
 
 namespace plugify {
-	int TranslateLoading(LoadFlag flags) {
+	int TranslateLoading(LoadFlag flags) noexcept {
 		int winFlags = 0;
 		if (flags & LoadFlag::DontResolveDllReferences) winFlags |= DONT_RESOLVE_DLL_REFERENCES;
 		if (flags & LoadFlag::AlteredSearchPath) winFlags |= LOAD_WITH_ALTERED_SEARCH_PATH;
@@ -216,7 +216,7 @@ namespace plugify {
 		return winFlags;
 	}
 
-	LoadFlag TranslateLoading(int flags) {
+	LoadFlag TranslateLoading(int flags) noexcept {
 		LoadFlag loadFlags = LoadFlag::Default;
 		if (flags & DONT_RESOLVE_DLL_REFERENCES) loadFlags = loadFlags | LoadFlag::DontResolveDllReferences;
 		if (flags & LOAD_WITH_ALTERED_SEARCH_PATH) loadFlags = loadFlags | LoadFlag::AlteredSearchPath;

@@ -1,15 +1,19 @@
 #pragma once
 
-#include <plugify/mem_addr.h>
 #include <cstdint>
-#include <filesystem>
 #include <optional>
+#include <span>
 #include <string>
+#include <filesystem>
+#include <plugify/mem_addr.h>
+#include <plugify/reference_wrapper.h>
 #include <plugify_export.h>
 
 namespace plugify {
+#if PLUGIFY_CORE
 	class Plugin;
-	struct PluginDescriptor;
+#endif
+	class IPluginDescriptor;
 
 	/**
 	 * @enum PluginState
@@ -51,58 +55,55 @@ namespace plugify {
 	 * with the PLUGIFY framework.
 	 */
 	class PLUGIFY_API IPlugin {
-	protected:
-		explicit IPlugin(Plugin& impl);
-		~IPlugin();
-
+		PLUGUFY_REFERENCE(IPlugin, const Plugin)
 	public:
 		/**
 		 * @brief Get the unique identifier of the plugin.
 		 * @return The unique identifier.
 		 */
-		[[nodiscard]] UniqueId GetId() const;
+		[[nodiscard]] UniqueId GetId() const noexcept;
 
 		/**
 		 * @brief Get the name of the plugin.
 		 * @return The name of the plugin.
 		 */
-		[[nodiscard]] const std::string& GetName() const;
+		[[nodiscard]] std::string_view GetName() const noexcept;
 
 		/**
 		 * @brief Get the friendly name of the plugin.
 		 * @return The friendly name of the plugin.
 		 */
-		[[nodiscard]] const std::string& GetFriendlyName() const;
+		[[nodiscard]] std::string_view GetFriendlyName() const noexcept;
 
 		/**
 		 * @brief Get the base directory of the plugin.
 		 * @return The base directory as a filesystem path.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetBaseDir() const;
+		[[nodiscard]] const std::filesystem::path& GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Get the descriptor of the plugin.
 		 * @return The descriptor of the plugin.
 		 */
-		[[nodiscard]] const PluginDescriptor& GetDescriptor() const;
+		[[nodiscard]] IPluginDescriptor GetDescriptor() const noexcept;
 
 		/**
 		 * @brief Get the state of the plugin.
 		 * @return The state of the plugin.
 		 */
-		[[nodiscard]] PluginState GetState() const;
+		[[nodiscard]] PluginState GetState() const noexcept;
 
 		/**
 		 * @brief Get the error message associated with the plugin.
 		 * @return The error message.
 		 */
-		[[nodiscard]] const std::string& GetError() const;
+		[[nodiscard]] std::string_view GetError() const noexcept;
 
 		/**
 		 * @brief Get the list of methods supported by the plugin.
 		 * @return The list of method data.
 		 */
-		[[nodiscard]] const std::vector<MethodData>& GetMethods() const;
+		[[nodiscard]] std::span<const MethodData> GetMethods() const noexcept;
 
 		/**
 		 * @brief Find a resource file associated with the plugin.
@@ -126,10 +127,8 @@ namespace plugify {
 		 * @endcode
 		 */
 		[[nodiscard]] std::optional<std::filesystem::path> FindResource(const std::filesystem::path& path) const;
-
-	private:
-		Plugin& _impl; ///< The implementation of the plugin.
 	};
+	static_assert(is_ref_v<IPlugin>);
 
 	/**
 	 * @brief Namespace containing utility functions of PluginState enum.

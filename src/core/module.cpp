@@ -9,7 +9,7 @@
 
 using namespace plugify;
 
-Module::Module(UniqueId id, const LocalPackage& package) : IModule(*this), _id{id}, _name{package.name}, _lang{package.type}, _descriptor{std::static_pointer_cast<LanguageModuleDescriptor>(package.descriptor)} {
+Module::Module(UniqueId id, const LocalPackage& package) : _id{id}, _name{package.name}, _lang{package.type}, _descriptor{std::static_pointer_cast<LanguageModuleDescriptor>(package.descriptor)} {
 	PL_ASSERT(package.type != "plugin", "Invalid package type for module ctor");
 	PL_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
 	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
@@ -33,8 +33,9 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	auto plugifyProvider = provider.lock();
 
 	const fs::path& baseDir = plugifyProvider->GetBaseDir();
+
 	if (const auto& resourceDirectoriesSettings = GetDescriptor().resourceDirectories) {
-		for (const std::string& rawPath : *resourceDirectoriesSettings) {
+		for (const auto& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
 				if (entry.is_regular_file(ec) && !entry.is_symlink(ec)) {
@@ -53,7 +54,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	std::vector<fs::path> libraryDirectories;
 	if (const auto& libraryDirectoriesSettings = GetDescriptor().libraryDirectories) {
-		for (const std::string& rawPath : *libraryDirectoriesSettings) {
+		for (const auto& rawPath : *libraryDirectoriesSettings) {
 			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath, ec);
 			if (!fs::exists(libraryDirectory, ec) || !fs::is_directory(libraryDirectory, ec)) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
@@ -71,7 +72,13 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		flags |= LoadFlag::Deepbind;
 	}
 
-	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec),  flags);
+#if CPPLM_PLATFORM_LINUX || CPPLM_PLATFORM_APPLE
+	const bool sections = true;
+#else
+	const bool sections = false;
+#endif
+
+	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec), flags, sections);
 	if (!assembly->IsValid()) {
 		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), assembly->GetError()));
 		return false;
@@ -109,7 +116,24 @@ void Module::Terminate() {
 		GetLanguageModule().Shutdown();
 	}
 	_languageModule.reset();
+	
+#if PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
+#if PLUGIFY_PLATFORM_LINUX
+	constexpr auto name = ".bss";
+#else
+	constexpr auto name = "__BSS";
+#endif
+	for (auto& [_, holder] : _assemblyMap) {
+		auto bss = holder.GetAssembly().GetSectionByName(name);
+		if (bss.IsValid()) {
+			MemProtector protector(bss.base, bss.size, ProtFlag::RWX);
+			std::memset(bss.base, 0, bss.size);
+		}
+	}
+#endif
+	
 	_assembly.reset();
+	
 	SetUnloaded();
 }
 
@@ -118,7 +142,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 		return false;
 
 	auto result = GetLanguageModule().OnPluginLoad(plugin);
-	if (auto* data = std::get_if<ErrorData>(&result)) {
+	if (auto* data =  std::get_if<ErrorData>(&result)) {
 		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error, plugin.GetBaseDir().string()));
 		return false;
 	}
@@ -156,7 +180,7 @@ void Module::EndPlugin(Plugin& plugin) const {
 	plugin.SetTerminating();
 }
 
-std::optional<fs::path> Module::FindResource(const fs::path& path) {
+std::optional<fs::path> Module::FindResource(const fs::path& path) const {
 	auto it = _resources.find(path);
 	if (it != _resources.end())
 		return std::get<fs::path>(*it);
@@ -164,7 +188,7 @@ std::optional<fs::path> Module::FindResource(const fs::path& path) {
 }
 
 void Module::SetError(std::string error) {
-	_error = std::move(error);
+	_error = std::make_unique<std::string>(std::move(error));
 	_state = ModuleState::Error;
-	PL_LOG_ERROR("Module '{}': {}", _name, _error);
+	PL_LOG_ERROR("Module '{}': {}", _name, *_error);
 }

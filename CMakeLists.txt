@@ -285,7 +285,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
         PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
         PLUGIFY_SEPARATE_SOURCE_FILES=0
-        PLUGIFY_COMPILED_COMPILER="${CMAKE_CXX_COMPILER}"
+        PLUGIFY_CORE=1
+        PLUGIFY_COMPILED_COMPILER="${CMAKE_CXX_COMPILER_ID}"
         PLUGIFY_COMPILED_SYSTEM="${CMAKE_SYSTEM}"
         PLUGIFY_COMPILED_GENERATOR="${CMAKE_GENERATOR}"
         PLUGIFY_MODULE_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}"
@@ -319,6 +320,7 @@ if(PLUGIFY_BUILD_FUNCTION)
             PLUGIFY_PLATFORM_ANDROID=$<BOOL:${ANDROID}>
             PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
             PLUGIFY_SEPARATE_SOURCE_FILES=1)
+    target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_BINARY_DIR}/exports)
     if(LINUX)
         target_compile_definitions(${PROJECT_NAME}-function PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
     endif()
@@ -327,10 +329,7 @@ if(PLUGIFY_BUILD_FUNCTION)
     endif()
 endif()
 if(PLUGIFY_BUILD_ASSEMBLY)
-    add_library(${PROJECT_NAME}-assembly OBJECT 
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assembly.cpp" 
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/mem_protector.cpp" 
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/mem_accesor.cpp")
+    add_library(${PROJECT_NAME}-assembly OBJECT  "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assembly.cpp")
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-assembly ALIAS ${PROJECT_NAME}-assembly)
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_compile_definitions(${PROJECT_NAME}-assembly PRIVATE
@@ -340,6 +339,7 @@ if(PLUGIFY_BUILD_ASSEMBLY)
             PLUGIFY_PLATFORM_ANDROID=$<BOOL:${ANDROID}>
             PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
             PLUGIFY_SEPARATE_SOURCE_FILES=1)
+    target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_BINARY_DIR}/exports)
     if(LINUX)
         target_compile_definitions(${PROJECT_NAME}-assembly PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
     endif()
