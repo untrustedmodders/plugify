@@ -1,5 +1,6 @@
 #include <plugify/method.h>
 #include <core/method.h>
+#include <utils/pointer.h>
 
 using namespace plugify;
 
@@ -33,9 +34,13 @@ std::string_view MethodRef::GetCallingConvention() const noexcept {
 
 std::span<const plugify::PropertyRef> MethodRef::GetParamTypes() const noexcept {
 	if (!_impl->_paramTypes) {
-		_impl->_paramTypes = std::make_shared<std::vector<PropertyRef>>(_impl->paramTypes.begin(), _impl->paramTypes.end());
+		_impl->_paramTypes = make_shared_nothrow<std::vector<PropertyRef>>(_impl->paramTypes.begin(), _impl->paramTypes.end());
 	}
-	return *_impl->_paramTypes;
+	if (_impl->_paramTypes) {
+		return *_impl->_paramTypes;
+	} else {
+		return {};
+	}
 }
 
 plugify::PropertyRef MethodRef::GetReturnType() const noexcept {

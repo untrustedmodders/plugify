@@ -50,15 +50,17 @@ std::span<const std::string> LanguageModuleDescriptorRef::GetSupportedPlatforms(
 std::span<const std::string> LanguageModuleDescriptorRef::GetResourceDirectories() const noexcept {
 	if (_impl->resourceDirectories.has_value()) {
 		return *_impl->resourceDirectories;
+	} else {
+		return {};
 	}
-	return {};
 }
 
 std::span<const std::string> LanguageModuleDescriptorRef::GetLibraryDirectories() const noexcept {
 	if (_impl->libraryDirectories.has_value()) {
 		return *_impl->libraryDirectories;
+	} else {
+		return {};
 	}
-	return {};
 }
 
 std::string_view LanguageModuleDescriptorRef::GetLanguage() const noexcept {
