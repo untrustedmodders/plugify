@@ -31,8 +31,8 @@ namespace plugify {
 		SearchSystem32 = 1 << 15, ///< Search the System32 directory.
 		SearchUserDirs = 1 << 16, ///< Search directories added using the AddDllDirectory function.
 		RequireSignedTarget = 1 << 17, ///< Require that the loaded target is signed.
-		SafeCurrentDirs = 1 << 18, ///< Use safe current directories for library search.
-		IgnoreAuthzLevel = 1 << 19, ///< Ignore the authorization level of the calling process.
+		IgnoreAuthzLevel = 1 << 18, ///< Ignore the authorization level of the calling process.
+		SafeCurrentDirs = 1 << 19, ///< Use safe current directories for library search.
 		PinInMemory = 1 << 20 ///< Do not unload the library during FreeLibrary.
 	};
 

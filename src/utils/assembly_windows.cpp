@@ -211,8 +211,10 @@ namespace plugify {
 		if (flags & LoadFlag::SearchSystem32) winFlags |= LOAD_LIBRARY_SEARCH_SYSTEM32;
 		if (flags & LoadFlag::SearchUserDirs) winFlags |= LOAD_LIBRARY_SEARCH_USER_DIRS;
 		if (flags & LoadFlag::RequireSignedTarget) winFlags |= LOAD_LIBRARY_REQUIRE_SIGNED_TARGET;
-		if (flags & LoadFlag::SafeCurrentDirs) winFlags |= LOAD_LIBRARY_SAFE_CURRENT_DIRS;
 		if (flags & LoadFlag::IgnoreAuthzLevel) winFlags |= LOAD_IGNORE_CODE_AUTHZ_LEVEL;
+#ifdef LOAD_LIBRARY_SAFE_CURRENT_DIRS
+		if (flags & LoadFlag::SafeCurrentDirs) winFlags |= LOAD_LIBRARY_SAFE_CURRENT_DIRS;
+#endif
 		return winFlags;
 	}
 
@@ -229,8 +231,10 @@ namespace plugify {
 		if (flags & LOAD_LIBRARY_SEARCH_SYSTEM32) loadFlags = loadFlags | LoadFlag::SearchSystem32;
 		if (flags & LOAD_LIBRARY_SEARCH_USER_DIRS) loadFlags = loadFlags | LoadFlag::SearchUserDirs;
 		if (flags & LOAD_LIBRARY_REQUIRE_SIGNED_TARGET) loadFlags = loadFlags | LoadFlag::RequireSignedTarget;
-		if (flags & LOAD_LIBRARY_SAFE_CURRENT_DIRS) loadFlags = loadFlags | LoadFlag::SafeCurrentDirs;
 		if (flags & LOAD_IGNORE_CODE_AUTHZ_LEVEL) loadFlags = loadFlags | LoadFlag::IgnoreAuthzLevel;
+#ifdef LOAD_LIBRARY_SAFE_CURRENT_DIRS
+		if (flags & LOAD_LIBRARY_SAFE_CURRENT_DIRS) loadFlags = loadFlags | LoadFlag::SafeCurrentDirs;
+#endif
 		return loadFlags;
 	}
 }
