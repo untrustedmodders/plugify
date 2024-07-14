@@ -79,7 +79,7 @@ namespace plugify {
          * @param module Reference to the language module being initialized.
          * @return Result of the initialization, either InitResultData or ErrorData.
          */
-        virtual InitResult Initialize(std::weak_ptr<IPlugifyProvider> provider, IModule module) = 0;
+        virtual InitResult Initialize(std::weak_ptr<IPlugifyProvider> provider, ModuleRef module) = 0;
 
         /**
          * @brief Shutdown the language module.
@@ -91,25 +91,25 @@ namespace plugify {
          * @param plugin Reference to the loaded plugin.
          * @return Result of the load event, either LoadResultData or ErrorData.
          */
-        virtual LoadResult OnPluginLoad(IPlugin plugin) = 0;
+        virtual LoadResult OnPluginLoad(PluginRef plugin) = 0;
 
         /**
          * @brief Handle plugin start event.
          * @param plugin Reference to the started plugin.
          */
-        virtual void OnPluginStart(IPlugin plugin) = 0;
+        virtual void OnPluginStart(PluginRef plugin) = 0;
 
         /**
          * @brief Handle plugin end event.
          * @param plugin Reference to the ended plugin.
          */
-        virtual void OnPluginEnd(IPlugin plugin) = 0;
+        virtual void OnPluginEnd(PluginRef plugin) = 0;
 
         /**
          * @brief Handle method export event.
          * @param plugin Reference to the plugin exporting a method.
          */
-        virtual void OnMethodExport(IPlugin plugin) = 0;
+        virtual void OnMethodExport(PluginRef plugin) = 0;
     };
 
 } // namespace plugify

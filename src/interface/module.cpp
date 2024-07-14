@@ -4,42 +4,42 @@
 
 using namespace plugify;
 
-UniqueId IModule::GetId() const noexcept {
+UniqueId ModuleRef::GetId() const noexcept {
 	return _impl->GetId();
 }
 
-std::string_view IModule::GetName() const noexcept {
+std::string_view ModuleRef::GetName() const noexcept {
 	return _impl->GetName();
 }
 
-std::string_view IModule::GetLanguage() const noexcept {
+std::string_view ModuleRef::GetLanguage() const noexcept {
 	return _impl->GetLanguage();
 }
 
-std::string_view IModule::GetFriendlyName() const noexcept {
+std::string_view ModuleRef::GetFriendlyName() const noexcept {
 	return _impl->GetFriendlyName();
 }
 
-const fs::path& IModule::GetFilePath() const noexcept {
+const fs::path& ModuleRef::GetFilePath() const noexcept {
 	return _impl->GetFilePath();
 }
 
-const fs::path& IModule::GetBaseDir() const noexcept {
+const fs::path& ModuleRef::GetBaseDir() const noexcept {
 	return _impl->GetBaseDir();
 }
 
-ILanguageModuleDescriptor IModule::GetDescriptor() const noexcept {
+LanguageModuleDescriptorRef ModuleRef::GetDescriptor() const noexcept {
 	return { _impl->GetDescriptor() };
 }
 
-ModuleState IModule::GetState() const noexcept {
+ModuleState ModuleRef::GetState() const noexcept {
 	return _impl->GetState();
 }
 
-std::string_view IModule::GetError() const noexcept {
+std::string_view ModuleRef::GetError() const noexcept {
 	return _impl->GetError();
 }
 
-std::optional<fs::path> IModule::FindResource(const fs::path& path) const {
+std::optional<fs::path> ModuleRef::FindResource(const fs::path& path) const {
 	return _impl->FindResource(path);
 }

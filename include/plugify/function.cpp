@@ -179,7 +179,7 @@ Function::~Function() {
 	}
 }
 
-MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, IMethod method, FuncCallback callback, MemAddr data) {
+MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef method, FuncCallback callback, MemAddr data) {
 	if (_function) 
 		return _function;
 
@@ -262,6 +262,7 @@ MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, IMethod method, F
 
 	// set i = 0
 	cc.mov(i, 0);
+
 	//// mov from arguments registers into the stack structure
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
 		const auto& argType = sig.args()[argIdx];
@@ -281,7 +282,7 @@ MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, IMethod method, F
 	}
 
 	union {
-		IMethod method;
+		MethodRef method;
 		uintptr_t ptr;
 	} cast{ method };
 
@@ -395,7 +396,7 @@ MemAddr Function::GetJitFunc(const asmjit::FuncSignature& sig, IMethod method, F
 	return _function;
 }
 
-MemAddr Function::GetJitFunc(IMethod method, FuncCallback callback, MemAddr data, HiddenParam hidden) {
+MemAddr Function::GetJitFunc(MethodRef method, FuncCallback callback, MemAddr data, HiddenParam hidden) {
 	ValueType retType = method.GetReturnType().GetType();
 	bool isHiddenParam = hidden(retType);
 	FuncSignature sig(GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), GetRetTypeId(isHiddenParam ? ValueType::Pointer : retType));

@@ -4,38 +4,38 @@
 
 using namespace plugify;
 
-UniqueId IPlugin::GetId() const noexcept {
+UniqueId PluginRef::GetId() const noexcept {
 	return _impl->GetId();
 }
 
-std::string_view IPlugin::GetName() const noexcept {
+std::string_view PluginRef::GetName() const noexcept {
 	return _impl->GetName();
 }
 
-std::string_view IPlugin::GetFriendlyName() const noexcept {
+std::string_view PluginRef::GetFriendlyName() const noexcept {
 	return _impl->GetFriendlyName();
 }
 
-const fs::path& IPlugin::GetBaseDir() const noexcept {
+const fs::path& PluginRef::GetBaseDir() const noexcept {
 	return _impl->GetBaseDir();
 }
 
-IPluginDescriptor IPlugin::GetDescriptor() const noexcept {
+PluginDescriptorRef PluginRef::GetDescriptor() const noexcept {
 	return { _impl->GetDescriptor() };
 }
 
-PluginState IPlugin::GetState() const noexcept {
+PluginState PluginRef::GetState() const noexcept {
 	return _impl->GetState();
 }
 
-std::string_view IPlugin::GetError() const noexcept {
+std::string_view PluginRef::GetError() const noexcept {
 	return _impl->GetError();
 }
 
-std::span<const MethodData> IPlugin::GetMethods() const noexcept {
+std::span<const MethodData> PluginRef::GetMethods() const noexcept {
 	return _impl->GetMethods();
 }
 
-std::optional<fs::path> IPlugin::FindResource(const fs::path& path) const {
+std::optional<fs::path> PluginRef::FindResource(const fs::path& path) const {
 	return _impl->FindResource(path);
 }

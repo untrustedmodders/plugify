@@ -110,7 +110,7 @@ namespace plugify {
 		 */
 		~Function();
 
-		using FuncCallback = void(*)(IMethod method, MemAddr data, const Parameters* params, uint8_t count, const ReturnValue* ret);
+		using FuncCallback = void(*)(MethodRef method, MemAddr data, const Parameters* params, uint8_t count, const ReturnValue* ret);
 		using HiddenParam = bool(*)(ValueType);
 
 		/**
@@ -121,7 +121,7 @@ namespace plugify {
 		 * @param data User data.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, IMethod method, FuncCallback callback, MemAddr data = nullptr);
+		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, MethodRef method, FuncCallback callback, MemAddr data = nullptr);
 
 		/**
 		 * @brief Get a dynamically created callback function using a typedef represented as a string.
@@ -131,7 +131,7 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as first argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(IMethod method, FuncCallback callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
+		MemAddr GetJitFunc(MethodRef method, FuncCallback callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
 
 		/**
 		 * @brief Get a dynamically created function.

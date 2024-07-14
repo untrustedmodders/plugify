@@ -12,8 +12,8 @@ namespace plugify {
 	struct LanguageModuleDescriptor;
 #endif
 
-	class PLUGIFY_API ILanguageModuleDescriptor {
-		PLUGUFY_REFERENCE(ILanguageModuleDescriptor, const LanguageModuleDescriptor)
+	class PLUGIFY_API LanguageModuleDescriptorRef {
+		PLUGUFY_REFERENCE(LanguageModuleDescriptorRef, const LanguageModuleDescriptor)
 	public:
 		[[nodiscard]] int32_t GetFileVersion() const noexcept;
 		[[nodiscard]] int32_t GetVersion() const noexcept;
@@ -31,5 +31,5 @@ namespace plugify {
 		[[nodiscard]] std::string_view GetLanguage() const noexcept;
 		[[nodiscard]] bool IsForceLoad() const noexcept;
 	};
-	static_assert(is_ref_v<ILanguageModuleDescriptor>);
+	static_assert(is_ref_v<LanguageModuleDescriptorRef>);
 }

@@ -26,13 +26,13 @@ namespace plugify {
 		ModuleOpt FindModuleFromId(UniqueId moduleId) const override;
 		ModuleOpt FindModuleFromLang(const std::string& moduleLang) const override;
 		ModuleOpt FindModuleFromPath(const fs::path& moduleFilePath) const override;
-		std::vector<IModule> GetModules() const override;
+		std::vector<ModuleRef> GetModules() const override;
 
 		PluginOpt FindPlugin(const std::string& pluginName) const override;
 		PluginOpt FindPlugin(std::string_view pluginName) const override;
 		PluginOpt FindPluginFromId(UniqueId pluginId) const override;
-		PluginOpt FindPluginFromDescriptor(const IPluginReferenceDescriptor& pluginDescriptor) const override;
-		std::vector<IPlugin> GetPlugins() const override;
+		PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptorRef& pluginDescriptor) const override;
+		std::vector<PluginRef> GetPlugins() const override;
 
 	private:
 		using PluginList = std::vector<std::unique_ptr<Plugin>>;

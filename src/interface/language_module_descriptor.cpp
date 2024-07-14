@@ -3,68 +3,68 @@
 
 using namespace plugify;
 
-int32_t ILanguageModuleDescriptor::GetFileVersion() const noexcept {
+int32_t LanguageModuleDescriptorRef::GetFileVersion() const noexcept {
 	return _impl->fileVersion;
 }
 
-int32_t ILanguageModuleDescriptor::GetVersion() const noexcept {
+int32_t LanguageModuleDescriptorRef::GetVersion() const noexcept {
 	return _impl->version;
 }
 
-std::string_view ILanguageModuleDescriptor::GetVersionName() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetVersionName() const noexcept {
 	return _impl->versionName;
 }
 
-std::string_view ILanguageModuleDescriptor::GetFriendlyName() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetFriendlyName() const noexcept {
 	return _impl->friendlyName;
 }
 
-std::string_view ILanguageModuleDescriptor::GetDescription() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetDescription() const noexcept {
 	return _impl->description;
 }
 
-std::string_view ILanguageModuleDescriptor::GetCreatedBy() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetCreatedBy() const noexcept {
 	return _impl->createdBy;
 }
 
-std::string_view ILanguageModuleDescriptor::GetCreatedByURL() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetCreatedByURL() const noexcept {
 	return _impl->createdByURL;
 }
 
-std::string_view ILanguageModuleDescriptor::GetDocsURL() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetDocsURL() const noexcept {
 	return _impl->docsURL;
 }
 
-std::string_view ILanguageModuleDescriptor::GetDownloadURL() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetDownloadURL() const noexcept {
 	return _impl->downloadURL;
 }
 
-std::string_view ILanguageModuleDescriptor::GetUpdateURL() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetUpdateURL() const noexcept {
 	return _impl->updateURL;
 }
 
-std::vector<std::string_view> ILanguageModuleDescriptor::GetSupportedPlatforms() const {
+std::vector<std::string_view> LanguageModuleDescriptorRef::GetSupportedPlatforms() const {
 	return { _impl->supportedPlatforms.begin(), _impl->supportedPlatforms.end() };
 }
 
-std::vector<std::string_view> ILanguageModuleDescriptor::GetResourceDirectories() const {
+std::vector<std::string_view> LanguageModuleDescriptorRef::GetResourceDirectories() const {
 	if (_impl->resourceDirectories.has_value()) {
 		return { _impl->resourceDirectories->begin(), _impl->resourceDirectories->end() };
 	}
 	return {};
 }
 
-std::vector<std::string_view> ILanguageModuleDescriptor::GetLibraryDirectories() const {
+std::vector<std::string_view> LanguageModuleDescriptorRef::GetLibraryDirectories() const {
 	if (_impl->libraryDirectories.has_value()) {
 		return { _impl->libraryDirectories->begin(), _impl->libraryDirectories->end() };
 	}
 	return {};
 }
 
-std::string_view ILanguageModuleDescriptor::GetLanguage() const noexcept {
+std::string_view LanguageModuleDescriptorRef::GetLanguage() const noexcept {
 	return _impl->language;
 }
 
-bool ILanguageModuleDescriptor::IsForceLoad() const noexcept {
+bool LanguageModuleDescriptorRef::IsForceLoad() const noexcept {
 	return _impl->forceLoad;
 }

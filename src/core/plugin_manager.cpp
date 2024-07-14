@@ -305,8 +305,8 @@ ModuleOpt PluginManager::FindModuleFromPath(const fs::path& moduleFilePath) cons
 	return {};
 }
 
-std::vector<IModule> PluginManager::GetModules() const {
-	std::vector<IModule> modules;
+std::vector<ModuleRef> PluginManager::GetModules() const {
+	std::vector<ModuleRef> modules;
 	modules.reserve(_allModules.size());
 	for (const auto& module : _allModules)  {
 		modules.emplace_back(*module);
@@ -341,7 +341,7 @@ PluginOpt PluginManager::FindPluginFromId(UniqueId pluginId) const {
 	return {};
 }
 
-PluginOpt PluginManager::FindPluginFromDescriptor(const IPluginReferenceDescriptor& pluginDescriptor) const {
+PluginOpt PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptorRef& pluginDescriptor) const {
 	auto name = pluginDescriptor.GetName();
 	auto version = pluginDescriptor.GetRequestedVersion();
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&](const auto& plugin) {
@@ -352,8 +352,8 @@ PluginOpt PluginManager::FindPluginFromDescriptor(const IPluginReferenceDescript
 	return {};
 }
 
-std::vector<IPlugin> PluginManager::GetPlugins() const {
-	std::vector<IPlugin> plugins;
+std::vector<PluginRef> PluginManager::GetPlugins() const {
+	std::vector<PluginRef> plugins;
 	plugins.reserve(_allPlugins.size());
 	for (const auto& plugin : _allPlugins)  {
 		plugins.emplace_back(*plugin);

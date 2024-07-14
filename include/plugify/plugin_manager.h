@@ -8,9 +8,9 @@
 #include <plugify_export.h>
 
 namespace plugify {
-	class IModule;
-	class IPlugin;
-	class IPluginReferenceDescriptor;
+	class ModuleRef;
+	class PluginRef;
+	class PluginReferenceDescriptorRef;
 
 	/**
 	 * @brief Represents a unique identifier used for identifying modules, plugins, or other entities.
@@ -21,13 +21,13 @@ namespace plugify {
 	 * @brief Represents an optional reference to an IModule.
 	 *        Used to indicate the possibility of not finding a module.
 	 */
-	using ModuleOpt = std::optional<IModule>;
+	using ModuleOpt = std::optional<ModuleRef>;
 
 	/**
 	 * @brief Represents an optional reference to an IPlugin.
 	 *        Used to indicate the possibility of not finding a plugin.
 	 */
-	using PluginOpt = std::optional<IPlugin>;
+	using PluginOpt = std::optional<PluginRef>;
 
 	/**
 	 * @class IPluginManager
@@ -93,7 +93,7 @@ namespace plugify {
 		 * @brief Get a vector of references to all modules.
 		 * @return Vector of module references.
 		 */
-		[[nodiscard]] virtual std::vector<IModule> GetModules() const = 0;
+		[[nodiscard]] virtual std::vector<ModuleRef> GetModules() const = 0;
 
 		/**
 		 * @brief Find a plugin by name.
@@ -121,12 +121,12 @@ namespace plugify {
 		 * @param pluginDescriptor Descriptor of the plugin to find.
 		 * @return Optional reference to the found plugin.
 		 */
-		[[nodiscard]] virtual PluginOpt FindPluginFromDescriptor(const IPluginReferenceDescriptor& pluginDescriptor) const = 0;
+		[[nodiscard]] virtual PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptorRef& pluginDescriptor) const = 0;
 
 		/**
 		 * @brief Get a vector of references to all plugins.
 		 * @return Vector of plugin references.
 		 */
-		[[nodiscard]] virtual std::vector<IPlugin> GetPlugins() const = 0;
+		[[nodiscard]] virtual std::vector<PluginRef> GetPlugins() const = 0;
 	};
 } // namespace plugify

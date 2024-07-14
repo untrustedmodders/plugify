@@ -10,7 +10,7 @@ namespace plugify {
 #if PLUGIFY_CORE
 	class Module;
 #endif
-	class ILanguageModuleDescriptor;
+	class LanguageModuleDescriptorRef;
 
 	/**
 	 * @enum ModuleState
@@ -40,8 +40,8 @@ namespace plugify {
 	 * functionality and methods that language modules must implement to interact with
 	 * the PLUGIFY framework.
 	 */
-	class PLUGIFY_API IModule {
-		PLUGUFY_REFERENCE(IModule, const Module)
+	class PLUGIFY_API ModuleRef {
+		PLUGUFY_REFERENCE(ModuleRef, const Module)
 	public:
 		/**
 		 * @brief Get the unique identifier of the language module.
@@ -83,7 +83,7 @@ namespace plugify {
 		 * @brief Get the descriptor of the language module.
 		 * @return The descriptor of the language module.
 		 */
-		[[nodiscard]] ILanguageModuleDescriptor GetDescriptor() const noexcept;
+		[[nodiscard]] LanguageModuleDescriptorRef GetDescriptor() const noexcept;
 
 		/**
 		 * @brief Get the state of the language module.
@@ -120,7 +120,7 @@ namespace plugify {
 		 */
 		[[nodiscard]] std::optional<std::filesystem::path> FindResource(const std::filesystem::path& path) const;
 	};
-	static_assert(is_ref_v<IModule>);
+	static_assert(is_ref_v<ModuleRef>);
 
 	/**
 	 * @brief Namespace containing utility functions of ModuleState enum.

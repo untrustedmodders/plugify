@@ -13,7 +13,7 @@ namespace plugify {
 #if PLUGIFY_CORE
 	class Plugin;
 #endif
-	class IPluginDescriptor;
+	class PluginDescriptorRef;
 
 	/**
 	 * @enum PluginState
@@ -54,8 +54,8 @@ namespace plugify {
 	 * Plugins should inherit from this class and implement its methods to be compatible
 	 * with the PLUGIFY framework.
 	 */
-	class PLUGIFY_API IPlugin {
-		PLUGUFY_REFERENCE(IPlugin, const Plugin)
+	class PLUGIFY_API PluginRef {
+		PLUGUFY_REFERENCE(PluginRef, const Plugin)
 	public:
 		/**
 		 * @brief Get the unique identifier of the plugin.
@@ -85,7 +85,7 @@ namespace plugify {
 		 * @brief Get the descriptor of the plugin.
 		 * @return The descriptor of the plugin.
 		 */
-		[[nodiscard]] IPluginDescriptor GetDescriptor() const noexcept;
+		[[nodiscard]] PluginDescriptorRef GetDescriptor() const noexcept;
 
 		/**
 		 * @brief Get the state of the plugin.
@@ -128,7 +128,7 @@ namespace plugify {
 		 */
 		[[nodiscard]] std::optional<std::filesystem::path> FindResource(const std::filesystem::path& path) const;
 	};
-	static_assert(is_ref_v<IPlugin>);
+	static_assert(is_ref_v<PluginRef>);
 
 	/**
 	 * @brief Namespace containing utility functions of PluginState enum.

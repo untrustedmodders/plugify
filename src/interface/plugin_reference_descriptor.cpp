@@ -3,18 +3,18 @@
 
 using namespace plugify;
 
-std::string_view IPluginReferenceDescriptor::GetName() const noexcept {
+std::string_view PluginReferenceDescriptorRef::GetName() const noexcept {
 	return _impl->name;
 }
 
-bool IPluginReferenceDescriptor::IsOptional() const noexcept {
+bool PluginReferenceDescriptorRef::IsOptional() const noexcept {
 	return _impl->optional;
 }
 
-std::vector<std::string_view> IPluginReferenceDescriptor::GetSupportedPlatforms() const {
+std::vector<std::string_view> PluginReferenceDescriptorRef::GetSupportedPlatforms() const {
 	return { _impl->supportedPlatforms.begin(), _impl->supportedPlatforms.end() };
 }
 
-std::optional<int32_t> IPluginReferenceDescriptor::GetRequestedVersion() const noexcept {
+std::optional<int32_t> PluginReferenceDescriptorRef::GetRequestedVersion() const noexcept {
 	return _impl->requestedVersion;
 }

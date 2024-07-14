@@ -12,13 +12,13 @@ namespace plugify {
 	struct PluginReferenceDescriptor;
 #endif
 
-	class PLUGIFY_API IPluginReferenceDescriptor  {
-		PLUGUFY_REFERENCE(IPluginReferenceDescriptor, const PluginReferenceDescriptor)
+	class PLUGIFY_API PluginReferenceDescriptorRef {
+		PLUGUFY_REFERENCE(PluginReferenceDescriptorRef, const PluginReferenceDescriptor)
 	public:
 		std::string_view GetName() const noexcept;
 		bool IsOptional() const noexcept;
 		std::vector<std::string_view> GetSupportedPlatforms() const;
 		std::optional<int32_t> GetRequestedVersion() const noexcept;
 	};
-	static_assert(is_ref_v<IPluginReferenceDescriptor>);
+	static_assert(is_ref_v<PluginReferenceDescriptorRef>);
 }
