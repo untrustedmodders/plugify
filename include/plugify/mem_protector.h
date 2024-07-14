@@ -48,7 +48,7 @@ namespace plugify {
 		bool IsValid() const noexcept { return _status; }
 
 	private:
-		MemAddr _address; /**< The memory address to protect. */
+		void* _address; /**< The memory address to protect. */
 		size_t _length; /**< The length of the memory region to protect. */
 		bool _status; /**< The status of the memory protection operation. */
 		bool _unsetLater; /**< Whether to unset the protection on destruction. */
