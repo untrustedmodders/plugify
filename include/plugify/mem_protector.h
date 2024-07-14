@@ -5,7 +5,7 @@
 #include <plugify_export.h>
 
 namespace plugify {
-	class PLUGIFY_API MemAccessor;
+	class MemAccessor;
 	/**
 	 * @class MemProtector
 	 * @brief A class to manage memory protection settings.
@@ -14,7 +14,7 @@ namespace plugify {
 	 * memory region. It ensures that the original protection settings are restored
 	 * when the object is destroyed.
 	 */
-	class MemProtector {
+	class PLUGIFY_API MemProtector {
 	public:
 		MemProtector() = delete; /**< Deleted default constructor. */
 
