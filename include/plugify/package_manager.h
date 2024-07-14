@@ -69,7 +69,7 @@ namespace plugify {
 		 * @param packageName Name of the package to install.
 		 * @param requiredVersion Optional required version of the package.
 		 */
-		virtual void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) = 0;
+		virtual void InstallPackage(std::string_view packageName, std::optional<int32_t> requiredVersion = {}) = 0;
 
 		/**
 		 * @brief Install multiple packages.
@@ -96,7 +96,7 @@ namespace plugify {
 		 * @param packageName Name of the package to update.
 		 * @param requiredVersion Optional required version of the package.
 		 */
-		virtual void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion = {}) = 0;
+		virtual void UpdatePackage(std::string_view packageName, std::optional<int32_t> requiredVersion = {}) = 0;
 
 		/**
 		 * @brief Update multiple packages.
@@ -113,7 +113,7 @@ namespace plugify {
 		 * @brief Uninstall a specific package.
 		 * @param packageName Name of the package to uninstall.
 		 */
-		virtual void UninstallPackage(const std::string& packageName) = 0;
+		virtual void UninstallPackage(std::string_view packageName) = 0;
 
 		/**
 		 * @brief Uninstall multiple packages.
@@ -160,14 +160,14 @@ namespace plugify {
 		 * @param packageName Name of the package to find.
 		 * @return Optional reference to the found local package.
 		 */
-		[[nodiscard]] virtual LocalPackageOpt FindLocalPackage(const std::string& packageName) const = 0;
+		[[nodiscard]] virtual LocalPackageOpt FindLocalPackage(std::string_view packageName) const = 0;
 
 		/**
 		 * @brief Find a remote package by name.
 		 * @param packageName Name of the package to find.
 		 * @return Optional reference to the found remote package.
 		 */
-		[[nodiscard]] virtual RemotePackageOpt FindRemotePackage(const std::string& packageName) const = 0;
+		[[nodiscard]] virtual RemotePackageOpt FindRemotePackage(std::string_view packageName) const = 0;
 
 		/**
 		 * @brief Get a vector of references to all local packages.

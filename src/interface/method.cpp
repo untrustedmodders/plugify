@@ -31,8 +31,11 @@ std::string_view MethodRef::GetCallingConvention() const noexcept {
 	return _impl->callConv;
 }
 
-std::vector<plugify::PropertyRef> MethodRef::GetParamTypes() const {
-	return { _impl->paramTypes.begin(), _impl->paramTypes.end() };
+std::span<const plugify::PropertyRef> MethodRef::GetParamTypes() const {
+	if (!_impl->_paramTypes) {
+		_impl->_paramTypes = std::make_shared<std::vector<PropertyRef>>(_impl->paramTypes.begin(), _impl->paramTypes.end());
+	}
+	return *_impl->_paramTypes;
 }
 
 plugify::PropertyRef MethodRef::GetReturnType() const noexcept {

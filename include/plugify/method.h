@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <span>
 #include <optional>
 #include <string_view>
 #include <plugify/reference_wrapper.h>
@@ -31,7 +31,7 @@ namespace plugify {
 		[[nodiscard]] std::string_view GetName() const noexcept;
 		[[nodiscard]] std::string_view GetFunctionName() const noexcept;
 		[[nodiscard]] std::string_view GetCallingConvention() const noexcept;
-		[[nodiscard]] std::vector<PropertyRef> GetParamTypes() const;
+		[[nodiscard]] std::span<const PropertyRef> GetParamTypes() const;
 		[[nodiscard]] PropertyRef GetReturnType() const noexcept;
 		[[nodiscard]] uint8_t GetVarIndex() const noexcept;
 	};

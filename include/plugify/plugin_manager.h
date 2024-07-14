@@ -59,13 +59,6 @@ namespace plugify {
 		 * @param moduleName Name of the module to find.
 		 * @return Optional reference to the found module.
 		 */
-		[[nodiscard]] virtual ModuleOpt FindModule(const std::string& moduleName) const = 0;
-
-		/**
-		 * @brief Find a module by name (string view version).
-		 * @param moduleName Name of the module to find.
-		 * @return Optional reference to the found module.
-		 */
 		[[nodiscard]] virtual ModuleOpt FindModule(std::string_view moduleName) const = 0;
 
 		/**
@@ -80,7 +73,7 @@ namespace plugify {
 		 * @param moduleLang Language of the module to find.
 		 * @return Optional reference to the found module.
 		 */
-		[[nodiscard]] virtual ModuleOpt FindModuleFromLang(const std::string& moduleLang) const = 0;
+		[[nodiscard]] virtual ModuleOpt FindModuleFromLang(const std::string_view moduleLang) const = 0;
 
 		/**
 		 * @brief Find a module by file path.
@@ -97,13 +90,6 @@ namespace plugify {
 
 		/**
 		 * @brief Find a plugin by name.
-		 * @param pluginName Name of the plugin to find.
-		 * @return Optional reference to the found plugin.
-		 */
-		[[nodiscard]] virtual PluginOpt FindPlugin(const std::string& pluginName) const = 0;
-
-		/**
-		 * @brief Find a plugin by name (string view version).
 		 * @param pluginName Name of the plugin to find.
 		 * @return Optional reference to the found plugin.
 		 */

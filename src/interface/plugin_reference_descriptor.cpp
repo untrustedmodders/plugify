@@ -11,8 +11,8 @@ bool PluginReferenceDescriptorRef::IsOptional() const noexcept {
 	return _impl->optional;
 }
 
-std::vector<std::string_view> PluginReferenceDescriptorRef::GetSupportedPlatforms() const {
-	return { _impl->supportedPlatforms.begin(), _impl->supportedPlatforms.end() };
+std::span<const std::string> PluginReferenceDescriptorRef::GetSupportedPlatforms() const {
+	return _impl->supportedPlatforms;
 }
 
 std::optional<int32_t> PluginReferenceDescriptorRef::GetRequestedVersion() const noexcept {

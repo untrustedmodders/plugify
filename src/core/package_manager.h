@@ -19,16 +19,16 @@ namespace plugify {
 		bool IsInitialized() const override;
 		bool Reload() override;
 
-		void InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) override;
+		void InstallPackage(std::string_view packageName, std::optional<int32_t> requiredVersion) override;
 		void InstallPackages(std::span<const std::string> packageNames) override;
 		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall) override;
 		void InstallAllPackages(const std::string& manifestUrl, bool reinstall) override;
 
-		void UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion) override;
+		void UpdatePackage(std::string_view packageName, std::optional<int32_t> requiredVersion) override;
 		void UpdatePackages(std::span<const std::string> packageNames) override;
 		void UpdateAllPackages() override;
 
-		void UninstallPackage(const std::string& packageName) override;
+		void UninstallPackage(std::string_view packageName) override;
 		void UninstallPackages(std::span<const std::string> packageNames) override;
 		void UninstallAllPackages() override;
 
@@ -39,8 +39,8 @@ namespace plugify {
 		void InstallMissedPackages() override;
 		void UninstallConflictedPackages() override;
 
-		LocalPackageOpt FindLocalPackage(const std::string& packageName) const override;
-		RemotePackageOpt FindRemotePackage(const std::string& packageName) const override;
+		LocalPackageOpt FindLocalPackage(std::string_view packageName) const override;
+		RemotePackageOpt FindRemotePackage(std::string_view packageName) const override;
 
 		std::vector<LocalPackageRef> GetLocalPackages() const override;
 		std::vector<RemotePackageRef> GetRemotePackages() const override;
@@ -63,7 +63,7 @@ namespace plugify {
 
 		[[nodiscard]] bool DownloadPackage(const Package& package, const PackageVersion& version) const;
 		static std::string ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt);
-		static bool IsPackageLegit(const std::string& checksum, std::span<const uint8_t> packageData);
+		static bool IsPackageLegit(std::string_view checksum, std::span<const uint8_t> packageData);
 
 		using Dependency = std::pair<RemotePackageRef, std::optional<int32_t>>;
 		

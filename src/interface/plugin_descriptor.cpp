@@ -45,13 +45,13 @@ std::string_view PluginDescriptorRef::GetUpdateURL() const noexcept {
 	return _impl->updateURL;
 }
 
-std::vector<std::string_view> PluginDescriptorRef::GetSupportedPlatforms() const {
-	return { _impl->supportedPlatforms.begin(), _impl->supportedPlatforms.end() };
+std::span<const std::string> PluginDescriptorRef::GetSupportedPlatforms() const {
+	return _impl->supportedPlatforms;
 }
 
-std::vector<std::string_view> PluginDescriptorRef::GetResourceDirectories() const {
+std::span<const std::string> PluginDescriptorRef::GetResourceDirectories() const {
 	if (_impl->resourceDirectories.has_value()) {
-		return { _impl->resourceDirectories->begin(), _impl->resourceDirectories->end() };
+		return *_impl->resourceDirectories;
 	}
 	return {};
 }
@@ -64,10 +64,16 @@ std::string_view PluginDescriptorRef::GetLanguageModule() const noexcept {
 	return _impl->languageModule.name;
 }
 
-std::vector<PluginReferenceDescriptorRef> PluginDescriptorRef::GetDependencies() const {
-	return { _impl->dependencies.begin(), _impl->dependencies.end() };
+std::span<const PluginReferenceDescriptorRef> PluginDescriptorRef::GetDependencies() const {
+	if (!_impl->_dependencies) {
+		_impl->_dependencies = std::make_shared<std::vector<PluginReferenceDescriptorRef>>(_impl->dependencies.begin(), _impl->dependencies.end());
+	}
+	return *_impl->_dependencies;
 }
 
-std::vector<MethodRef> PluginDescriptorRef::GetExportedMethods() const {
-	return { _impl->exportedMethods.begin(), _impl->exportedMethods.end() };
+std::span<const MethodRef> PluginDescriptorRef::GetExportedMethods() const {
+	if (!_impl->_exportedMethods) {
+		_impl->_exportedMethods = std::make_shared<std::vector<MethodRef>>(_impl->exportedMethods.begin(), _impl->exportedMethods.end());
+	}
+	return *_impl->_exportedMethods;
 }

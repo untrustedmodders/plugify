@@ -517,7 +517,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	PL_LOG_DEBUG("Snapshot '{}' created in {}ms", manifestFilePath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
-void PackageManager::InstallPackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
+void PackageManager::InstallPackage(std::string_view packageName, std::optional<int32_t> requiredVersion) {
 	if (packageName.empty())
 		return;
 
@@ -695,7 +695,7 @@ bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<
 	return DownloadPackage(package, newVersion->get());
 }
 
-void PackageManager::UpdatePackage(const std::string& packageName, std::optional<int32_t> requiredVersion) {
+void PackageManager::UpdatePackage(std::string_view packageName, std::optional<int32_t> requiredVersion) {
 	if (packageName.empty())
 		return;
 
@@ -789,7 +789,7 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 	return DownloadPackage(package, newVersion->get());
 }
 
-void PackageManager::UninstallPackage(const std::string& packageName) {
+void PackageManager::UninstallPackage(std::string_view packageName) {
 	if (packageName.empty())
 		return;
 
@@ -854,7 +854,7 @@ bool PackageManager::UninstallPackage(const LocalPackage& package, bool remove) 
 	return false;
 }
 
-LocalPackageOpt PackageManager::FindLocalPackage(const std::string& packageName) const {
+LocalPackageOpt PackageManager::FindLocalPackage(std::string_view packageName) const {
 	auto it = std::find_if(_localPackages.begin(), _localPackages.end(), [&packageName](const auto& plugin) {
 		return plugin.name == packageName;
 	});
@@ -863,7 +863,7 @@ LocalPackageOpt PackageManager::FindLocalPackage(const std::string& packageName)
 	return {};
 }
 
-RemotePackageOpt PackageManager::FindRemotePackage(const std::string& packageName) const {
+RemotePackageOpt PackageManager::FindRemotePackage(std::string_view packageName) const {
 	auto it = std::find_if(_remotePackages.begin(), _remotePackages.end(), [&packageName](const auto& plugin) {
 		return plugin.name == packageName;
 	});
@@ -1043,7 +1043,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 	return {};
 }
 
-bool PackageManager::IsPackageLegit(const std::string& checksum, std::span<const uint8_t> packageData) {
+bool PackageManager::IsPackageLegit(std::string_view checksum, std::span<const uint8_t> packageData) {
 	if (checksum.empty())
 		return true;
 

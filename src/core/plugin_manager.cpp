@@ -260,15 +260,6 @@ bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& 
 	return false;
 }
 
-ModuleOpt PluginManager::FindModule(const std::string& moduleName) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
-		return module->GetName() == moduleName;
-	});
-	if (it != _allModules.end())
-		return *(*it);
-	return {};
-}
-
 ModuleOpt PluginManager::FindModule(std::string_view moduleName) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
 		return module->GetName() == moduleName;
@@ -287,7 +278,7 @@ ModuleOpt PluginManager::FindModuleFromId(UniqueId moduleId) const {
 	return {};
 }
 
-ModuleOpt PluginManager::FindModuleFromLang(const std::string& moduleLang) const {
+ModuleOpt PluginManager::FindModuleFromLang(std::string_view moduleLang) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleLang](const auto& module) {
 		return module->GetLanguage() == moduleLang;
 	});
@@ -312,15 +303,6 @@ std::vector<ModuleRef> PluginManager::GetModules() const {
 		modules.emplace_back(*module);
 	}
 	return modules;
-}
-
-PluginOpt PluginManager::FindPlugin(const std::string& pluginName) const {
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginName](const auto& plugin) {
-		return plugin->GetName() == pluginName;
-	});
-	if (it != _allPlugins.end())
-		return *(*it);
-	return {};
 }
 
 PluginOpt PluginManager::FindPlugin(std::string_view pluginName) const {

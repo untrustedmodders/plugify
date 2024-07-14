@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
-#include <string_view>
+#include <span>
+#include <string>
 #include <plugify/method.h>
 #include <plugify/reference_wrapper.h>
 #include <plugify_export.h>
@@ -27,12 +27,12 @@ namespace plugify {
 		[[nodiscard]] std::string_view GetDocsURL() const noexcept;
 		[[nodiscard]] std::string_view GetDownloadURL() const noexcept;
 		[[nodiscard]] std::string_view GetUpdateURL() const noexcept;
-		[[nodiscard]] std::vector<std::string_view> GetSupportedPlatforms() const;
-		[[nodiscard]] std::vector<std::string_view> GetResourceDirectories() const;
+		[[nodiscard]] std::span<const std::string> GetSupportedPlatforms() const;
+		[[nodiscard]] std::span<const std::string> GetResourceDirectories() const;
 		[[nodiscard]] std::string_view GetEntryPoint() const noexcept;
 		[[nodiscard]] std::string_view GetLanguageModule() const noexcept;
-		[[nodiscard]] std::vector<PluginReferenceDescriptorRef> GetDependencies() const;
-		[[nodiscard]] std::vector<MethodRef> GetExportedMethods() const;
+		[[nodiscard]] std::span<const PluginReferenceDescriptorRef> GetDependencies() const;
+		[[nodiscard]] std::span<const MethodRef> GetExportedMethods() const;
 	};
 	static_assert(is_ref_v<PluginDescriptorRef>);
 }

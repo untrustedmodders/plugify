@@ -1,5 +1,6 @@
 #pragma once
 
+#include <plugify/method.h>
 #include <plugify/value_type.h>
 
 namespace plugify {
@@ -18,6 +19,10 @@ namespace plugify {
 		std::vector<Property> paramTypes;
 		Property retType;
 		uint8_t varIndex{ kNoVarArgs };
+
+	private:
+		mutable std::shared_ptr<std::vector<PropertyRef>> _paramTypes;
+		friend class MethodRef;
 
 	public:
 		static inline const uint8_t kNoVarArgs = 0xFFU;

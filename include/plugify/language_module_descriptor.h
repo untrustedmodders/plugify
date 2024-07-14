@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
-#include <string_view>
+#include <span>
+#include <string>
 #include <plugify/reference_wrapper.h>
 #include <plugify_export.h>
 
@@ -25,9 +25,9 @@ namespace plugify {
 		[[nodiscard]] std::string_view GetDocsURL() const noexcept;
 		[[nodiscard]] std::string_view GetDownloadURL() const noexcept;
 		[[nodiscard]] std::string_view GetUpdateURL() const noexcept;
-		[[nodiscard]] std::vector<std::string_view> GetSupportedPlatforms() const;
-		[[nodiscard]] std::vector<std::string_view> GetResourceDirectories() const;
-		[[nodiscard]] std::vector<std::string_view> GetLibraryDirectories() const;
+		[[nodiscard]] std::span<const std::string> GetSupportedPlatforms() const;
+		[[nodiscard]] std::span<const std::string> GetResourceDirectories() const;
+		[[nodiscard]] std::span<const std::string> GetLibraryDirectories() const;
 		[[nodiscard]] std::string_view GetLanguage() const noexcept;
 		[[nodiscard]] bool IsForceLoad() const noexcept;
 	};

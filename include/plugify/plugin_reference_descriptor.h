@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
+#include <span>
+#include <string>
 #include <optional>
-#include <string_view>
 #include <plugify/reference_wrapper.h>
 #include <plugify_export.h>
 
@@ -17,7 +17,7 @@ namespace plugify {
 	public:
 		std::string_view GetName() const noexcept;
 		bool IsOptional() const noexcept;
-		std::vector<std::string_view> GetSupportedPlatforms() const;
+		std::span<const std::string> GetSupportedPlatforms() const;
 		std::optional<int32_t> GetRequestedVersion() const noexcept;
 	};
 	static_assert(is_ref_v<PluginReferenceDescriptorRef>);
