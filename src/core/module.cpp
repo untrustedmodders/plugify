@@ -73,13 +73,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		flags |= LoadFlag::Deepbind;
 	}
 
-#if CPPLM_PLATFORM_LINUX || CPPLM_PLATFORM_APPLE
-	const bool sections = true;
-#else
-	const bool sections = false;
-#endif
-
-	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec), flags, sections);
+	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec), flags);
 	if (!assembly->IsValid()) {
 		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), assembly->GetError()));
 		return false;
@@ -117,19 +111,6 @@ void Module::Terminate() {
 		GetLanguageModule().Shutdown();
 	}
 	_languageModule.reset();
-	
-#if PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
-#if PLUGIFY_PLATFORM_LINUX
-	constexpr auto name = ".bss";
-#else
-	constexpr auto name = "__BSS";
-#endif
-	auto bss = _assembly->GetSectionByName(name);
-	if (bss.IsValid()) {
-		MemProtector protector(bss.base, bss.size, ProtFlag::RWX);
-		std::memset(bss.base, 0, bss.size);
-	}
-#endif
 	_assembly.reset();
 	
 	SetUnloaded();

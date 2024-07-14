@@ -213,11 +213,9 @@ namespace plugify {
 		if (flags & LoadFlag::Local) unixFlags |= RTLD_LOCAL;
 		if (flags & LoadFlag::Nodelete) unixFlags |= RTLD_NODELETE;
 		if (flags & LoadFlag::Noload) unixFlags |= RTLD_NOLOAD;
-#if !PLUGIFY_PLATFORM_ANDROID
 	#ifdef RTLD_DEEPBIND
 		if (flags & LoadFlag::Deepbind) unixFlags |= RTLD_DEEPBIND;
 	#endif
-#endif
 		return unixFlags;
 	}
 
@@ -229,10 +227,8 @@ namespace plugify {
 		if (flags & RTLD_LOCAL) loadFlags = loadFlags | LoadFlag::Local;
 		if (flags & RTLD_NODELETE) loadFlags = loadFlags | LoadFlag::Nodelete;
 		if (flags & RTLD_NOLOAD) loadFlags = loadFlags | LoadFlag::Noload;
-#if !PLUGIFY_PLATFORM_ANDROID
 #ifdef RTLD_DEEPBIND
 		if (flags & RTLD_DEEPBIND) loadFlags = loadFlags | LoadFlag::Deepbind;
-#endif
 #endif
 		return loadFlags;
 	}
