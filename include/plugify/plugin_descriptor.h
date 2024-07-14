@@ -27,12 +27,12 @@ namespace plugify {
 		[[nodiscard]] std::string_view GetDocsURL() const noexcept;
 		[[nodiscard]] std::string_view GetDownloadURL() const noexcept;
 		[[nodiscard]] std::string_view GetUpdateURL() const noexcept;
-		[[nodiscard]] std::span<const std::string> GetSupportedPlatforms() const;
-		[[nodiscard]] std::span<const std::string> GetResourceDirectories() const;
+		[[nodiscard]] std::span<const std::string> GetSupportedPlatforms() const noexcept;
+		[[nodiscard]] std::span<const std::string> GetResourceDirectories() const noexcept;
 		[[nodiscard]] std::string_view GetEntryPoint() const noexcept;
 		[[nodiscard]] std::string_view GetLanguageModule() const noexcept;
-		[[nodiscard]] std::span<const PluginReferenceDescriptorRef> GetDependencies() const;
-		[[nodiscard]] std::span<const MethodRef> GetExportedMethods() const;
+		[[nodiscard]] std::span<const PluginReferenceDescriptorRef> GetDependencies() const noexcept;
+		[[nodiscard]] std::span<const MethodRef> GetExportedMethods() const noexcept;
 	};
 	static_assert(is_ref_v<PluginDescriptorRef>);
 }

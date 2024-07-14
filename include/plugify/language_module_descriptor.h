@@ -25,9 +25,9 @@ namespace plugify {
 		[[nodiscard]] std::string_view GetDocsURL() const noexcept;
 		[[nodiscard]] std::string_view GetDownloadURL() const noexcept;
 		[[nodiscard]] std::string_view GetUpdateURL() const noexcept;
-		[[nodiscard]] std::span<const std::string> GetSupportedPlatforms() const;
-		[[nodiscard]] std::span<const std::string> GetResourceDirectories() const;
-		[[nodiscard]] std::span<const std::string> GetLibraryDirectories() const;
+		[[nodiscard]] std::span<const std::string> GetSupportedPlatforms() const noexcept;
+		[[nodiscard]] std::span<const std::string> GetResourceDirectories() const noexcept;
+		[[nodiscard]] std::span<const std::string> GetLibraryDirectories() const noexcept;
 		[[nodiscard]] std::string_view GetLanguage() const noexcept;
 		[[nodiscard]] bool IsForceLoad() const noexcept;
 	};

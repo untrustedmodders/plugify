@@ -45,11 +45,11 @@ std::string_view PluginDescriptorRef::GetUpdateURL() const noexcept {
 	return _impl->updateURL;
 }
 
-std::span<const std::string> PluginDescriptorRef::GetSupportedPlatforms() const {
+std::span<const std::string> PluginDescriptorRef::GetSupportedPlatforms() const noexcept {
 	return _impl->supportedPlatforms;
 }
 
-std::span<const std::string> PluginDescriptorRef::GetResourceDirectories() const {
+std::span<const std::string> PluginDescriptorRef::GetResourceDirectories() const noexcept {
 	if (_impl->resourceDirectories.has_value()) {
 		return *_impl->resourceDirectories;
 	}
@@ -64,14 +64,14 @@ std::string_view PluginDescriptorRef::GetLanguageModule() const noexcept {
 	return _impl->languageModule.name;
 }
 
-std::span<const PluginReferenceDescriptorRef> PluginDescriptorRef::GetDependencies() const {
+std::span<const PluginReferenceDescriptorRef> PluginDescriptorRef::GetDependencies() const noexcept {
 	if (!_impl->_dependencies) {
 		_impl->_dependencies = std::make_shared<std::vector<PluginReferenceDescriptorRef>>(_impl->dependencies.begin(), _impl->dependencies.end());
 	}
 	return *_impl->_dependencies;
 }
 
-std::span<const MethodRef> PluginDescriptorRef::GetExportedMethods() const {
+std::span<const MethodRef> PluginDescriptorRef::GetExportedMethods() const noexcept {
 	if (!_impl->_exportedMethods) {
 		_impl->_exportedMethods = std::make_shared<std::vector<MethodRef>>(_impl->exportedMethods.begin(), _impl->exportedMethods.end());
 	}

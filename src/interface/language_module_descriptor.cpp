@@ -43,18 +43,18 @@ std::string_view LanguageModuleDescriptorRef::GetUpdateURL() const noexcept {
 	return _impl->updateURL;
 }
 
-std::span<const std::string> LanguageModuleDescriptorRef::GetSupportedPlatforms() const {
+std::span<const std::string> LanguageModuleDescriptorRef::GetSupportedPlatforms() const noexcept {
 	return _impl->supportedPlatforms;
 }
 
-std::span<const std::string> LanguageModuleDescriptorRef::GetResourceDirectories() const {
+std::span<const std::string> LanguageModuleDescriptorRef::GetResourceDirectories() const noexcept {
 	if (_impl->resourceDirectories.has_value()) {
 		return *_impl->resourceDirectories;
 	}
 	return {};
 }
 
-std::span<const std::string> LanguageModuleDescriptorRef::GetLibraryDirectories() const {
+std::span<const std::string> LanguageModuleDescriptorRef::GetLibraryDirectories() const noexcept {
 	if (_impl->libraryDirectories.has_value()) {
 		return *_impl->libraryDirectories;
 	}

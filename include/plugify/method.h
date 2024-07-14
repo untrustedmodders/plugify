@@ -31,7 +31,7 @@ namespace plugify {
 		[[nodiscard]] std::string_view GetName() const noexcept;
 		[[nodiscard]] std::string_view GetFunctionName() const noexcept;
 		[[nodiscard]] std::string_view GetCallingConvention() const noexcept;
-		[[nodiscard]] std::span<const PropertyRef> GetParamTypes() const;
+		[[nodiscard]] std::span<const PropertyRef> GetParamTypes() const noexcept;
 		[[nodiscard]] PropertyRef GetReturnType() const noexcept;
 		[[nodiscard]] uint8_t GetVarIndex() const noexcept;
 	};
