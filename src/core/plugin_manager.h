@@ -41,6 +41,7 @@ namespace plugify {
 		void LoadRequiredLanguageModules();
 		void LoadAndStartAvailablePlugins();
 		void TerminateAllPlugins();
+		void TerminateAllModules();
 
 		static void SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList);
 		static bool HasCyclicDependencies(PluginList& plugins);

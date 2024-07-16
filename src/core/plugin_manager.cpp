@@ -35,9 +35,7 @@ void PluginManager::Terminate() {
 		return;
 
 	TerminateAllPlugins();
-	
-	_allPlugins.clear();
-	_allModules.clear();
+	TerminateAllModules();
 }
 
 bool PluginManager::IsInitialized() const {
@@ -195,10 +193,24 @@ void PluginManager::TerminateAllPlugins() {
 		}
 	}
 
-	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
+	/*for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
 		const auto& plugin = *it;
-		plugin->SetUnloaded();
-	}
+		plugin->Terminate();
+	}*/
+
+	_allPlugins.clear();
+}
+
+void PluginManager::TerminateAllModules() {
+	if (_allModules.empty())
+		return;
+
+	/*for (auto it = _allModules.rbegin(); it != _allModules.rend(); ++it) {
+		const auto& module = *it;
+		module->Terminate();
+	}*/
+
+	_allModules.clear();
 }
 
 void PluginManager::SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList) {
@@ -326,7 +338,7 @@ PluginOpt PluginManager::FindPluginFromId(UniqueId pluginId) const {
 PluginOpt PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptorRef& pluginDescriptor) const {
 	auto name = pluginDescriptor.GetName();
 	auto version = pluginDescriptor.GetRequestedVersion();
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&](const auto& plugin) {
+	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name, &version](const auto& plugin) {
 		return plugin->GetName() == name && (!version || plugin->GetDescriptor().version == version);
 	});
 	if (it != _allPlugins.end())

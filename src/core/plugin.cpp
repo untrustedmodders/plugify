@@ -47,6 +47,7 @@ bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 }
 
 void Plugin::Terminate() {
+	SetUnloaded();
 }
 
 std::optional<fs::path> Plugin::FindResource(const fs::path& path) const {
