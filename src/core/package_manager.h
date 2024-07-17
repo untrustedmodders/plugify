@@ -4,6 +4,7 @@
 #include "package_manifest.h"
 #include <plugify/package_manager.h>
 #include <plugify/package.h>
+#include <utils/hash.h>
 
 namespace plugify {
 	class HTTPDownloader;
@@ -42,8 +43,8 @@ namespace plugify {
 		LocalPackageOpt FindLocalPackage(std::string_view packageName) const override;
 		RemotePackageOpt FindRemotePackage(std::string_view packageName) const override;
 
-		std::vector<LocalPackageRef> GetLocalPackages() const override;
-		std::vector<RemotePackageRef> GetRemotePackages() const override;
+		std::vector<LocalPackage> GetLocalPackages() const override;
+		std::vector<RemotePackage> GetRemotePackages() const override;
 
 	public:
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
@@ -65,13 +66,13 @@ namespace plugify {
 		static std::string ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt);
 		static bool IsPackageLegit(std::string_view checksum, std::span<const uint8_t> packageData);
 
-		using Dependency = std::pair<RemotePackageRef, std::optional<int32_t>>;
+		using Dependency = std::pair<const RemotePackage*, std::optional<int32_t>>;
 		
 	private:
 		std::unique_ptr<HTTPDownloader> _httpDownloader;
-		std::vector<LocalPackage> _localPackages;
-		std::vector<RemotePackage> _remotePackages;
+		std::unordered_map<std::string, LocalPackage, string_hash, std::equal_to<>> _localPackages;
+		std::unordered_map<std::string, RemotePackage, string_hash, std::equal_to<>> _remotePackages;
 		std::unordered_map<std::string, Dependency> _missedPackages;
-		std::vector<LocalPackageRef> _conflictedPackages;
+		std::vector<const LocalPackage*> _conflictedPackages;
 	};
 }

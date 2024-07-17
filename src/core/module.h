@@ -1,10 +1,10 @@
 #pragma once
 
 #include "language_module_descriptor.h"
-#include <utils/path.h>
-#include <plugify/module.h>
-#include <plugify/language_module.h>
 #include <plugify/assembly.h>
+#include <plugify/language_module.h>
+#include <plugify/module.h>
+#include <utils/hash.h>
 
 namespace plugify {
 	class Plugin;
@@ -85,7 +85,7 @@ namespace plugify {
 		fs::path _filePath;
 		fs::path _baseDir;
 		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
-		std::unordered_map<fs::path, fs::path, fs::hash> _resources;
+		std::unordered_map<fs::path, fs::path, path_hash> _resources;
 		ModuleState _state{ ModuleState::NotLoaded };
 		std::unique_ptr<std::string> _error;
 		std::unique_ptr<Assembly> _assembly;

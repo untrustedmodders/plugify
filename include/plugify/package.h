@@ -32,9 +32,9 @@ namespace plugify {
 
 	/**
 	 * @typedef PackageOpt
-	 * @brief Represents an optional reference to a const PackageVersion.
+	 * @brief Represents an const pointer to a PackageVersion.
 	 */
-	using PackageOpt = std::optional<std::reference_wrapper<const PackageVersion>>;
+	using PackageOpt = const PackageVersion*;
 
 	/**
 	 * @struct Package
@@ -70,23 +70,23 @@ namespace plugify {
 
 		/**
 		 * @brief Get the latest available version of the package.
-		 * @return An optional reference to the latest PackageVersion.
+		 * @return A pointer to the latest PackageVersion.
 		 */
 		[[nodiscard]] PackageOpt LatestVersion() const noexcept {
 			if (!versions.empty())
-				return *versions.begin();
+				return &(*versions.begin());
 			return {};
 		}
 
 		/**
 		 * @brief Get a specific version of the package.
 		 * @param version The version number to retrieve.
-		 * @return An optional reference to the specified PackageVersion.
+		 * @return A pointer to the specified PackageVersion.
 		 */
 		[[nodiscard]] PackageOpt Version(int32_t version) const {
 			auto it = versions.find(PackageVersion{ version, {}, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
-				return *it;
+				return &(*it);
 			return {};
 		}
 	};

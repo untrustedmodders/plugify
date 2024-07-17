@@ -137,7 +137,7 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 			std::memcpy(&bytesAvailable, lpvStatusInformation, sizeof(bytesAvailable));
 			if (bytesAvailable == 0) {
 				// end of request
-				PL_LOG_VERBOSE("End of request '{}', {} bytes received", req->url.c_str(), req->data.size());
+				PL_LOG_VERBOSE("End of request '{}', {} bytes received", req->url, req->data.size());
 				req->state.store(Request::State::Complete);
 				return;
 			}

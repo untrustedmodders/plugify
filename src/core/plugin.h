@@ -1,8 +1,8 @@
 #pragma once
 
 #include "plugin_descriptor.h"
-#include <utils/path.h>
 #include <plugify/plugin.h>
+#include <utils/hash.h>
 
 namespace plugify {
 	class Module;
@@ -91,7 +91,7 @@ namespace plugify {
 		std::vector<MethodData> _methods;
 		std::unique_ptr<std::string> _error;
 		std::shared_ptr<PluginDescriptor> _descriptor;
-		std::unordered_map<fs::path, fs::path, fs::hash> _resources;
+		std::unordered_map<fs::path, fs::path, path_hash> _resources;
 		std::optional<std::reference_wrapper<Module>> _module;
 		PluginState _state{ PluginState::NotLoaded };
 	};

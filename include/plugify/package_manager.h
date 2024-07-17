@@ -10,28 +10,16 @@ namespace plugify {
 	struct RemotePackage;
 
 	/**
-	 * @typedef LocalPackageRef
-	 * @brief Reference wrapper for constant LocalPackage.
-	 */
-	using LocalPackageRef = std::reference_wrapper<const LocalPackage>;
-
-	/**
-	 * @typedef RemotePackageRef
-	 * @brief Reference wrapper for constant RemotePackage.
-	 */
-	using RemotePackageRef = std::reference_wrapper<const RemotePackage>;
-
-	/**
 	 * @typedef LocalPackageOpt
-	 * @brief Optional reference to a constant LocalPackage.
+	 * @brief Optional of a LocalPackage.
 	 */
-	using LocalPackageOpt = std::optional<LocalPackageRef>;
+	using LocalPackageOpt = std::optional<LocalPackage>;
 
 	/**
 	 * @typedef RemotePackageOpt
-	 * @brief Optional reference to a constant RemotePackage.
+	 * @brief Optional of a RemotePackage.
 	 */
-	using RemotePackageOpt = std::optional<RemotePackageRef>;
+	using RemotePackageOpt = std::optional<RemotePackage>;
 
 	/**
 	 * @class IPackageManager
@@ -170,16 +158,16 @@ namespace plugify {
 		[[nodiscard]] virtual RemotePackageOpt FindRemotePackage(std::string_view packageName) const = 0;
 
 		/**
-		 * @brief Get a vector of references to all local packages.
-		 * @return Vector of local package references.
+		 * @brief Get a vector of all local packages.
+		 * @return Vector of local packages.
 		 */
-		[[nodiscard]] virtual std::vector<LocalPackageRef> GetLocalPackages() const = 0;
+		[[nodiscard]] virtual std::vector<LocalPackage> GetLocalPackages() const = 0;
 
 		/**
-		 * @brief Get a vector of references to all remote packages.
-		 * @return Vector of remote package references.
+		 * @brief Get a vector of all remote packages.
+		 * @return Vector of remote packages.
 		 */
-		[[nodiscard]] virtual std::vector<RemotePackageRef> GetRemotePackages() const = 0;
+		[[nodiscard]] virtual std::vector<RemotePackage> GetRemotePackages() const = 0;
 	};
 
 } // namespace plugify
