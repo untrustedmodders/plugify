@@ -3,9 +3,16 @@
 
 #if defined(_MSC_VER)
 #include <intrin.h>
-#else
+#endif // defined(_MSC_VER)
+
+#if defined(__clang__)
+#include <cpuid.h>
 #include <immintrin.h>
-#endif
+#endif  // defined(__clang__)
+
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
+#include <immintrin.h>
+#endif// defined(__GNUC__)
 
 /*
  * Detect if the processor supports SHA-256 acceleration. We only check for
@@ -31,9 +38,16 @@ bool DetectSHA256Acceleration() {
 	}
 
 	return (regs1[2] /*ECX*/ & SSSE3_BIT) && (regs1[2] /*ECX*/ & SSE41_BIT) && (regs7[1] /*EBX*/ & SHA_BIT);
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(__GNUC__)
 	/* __builtin_cpu_supports available in GCC 4.8.1 and above */
 	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && __builtin_cpu_supports("sha");
+#elif defined(__clang__)
+	// FIXME: Use __builtin_cpu_supports("sha") when compilers support it
+	constexpr uint32_t cpuid_sha_ebx = 1 << 29;
+	uint32_t eax, ebx, ecx, edx;
+	__cpuid_count(7, 0, eax, ebx, ecx, edx);
+	const uint32_t cpu_supports_sha = (ebx & cpuid_sha_ebx);
+	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && cpu_supports_sha;
 #elif defined(__INTEL_COMPILER)
 	/* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_may_i_use_cpu_feature */
 	return _may_i_use_cpu_feature(_FEATURE_SSSE3|_FEATURE_SSE4_1|_FEATURE_SHA);
@@ -90,7 +104,7 @@ namespace {
 
 	constexpr std::array<uint32_t, 8> H{0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
 
-	void compress_default(std::span<uint32_t, 8> h, std::span<const uint8_t, 64> in) {
+	void transform_impl_base(Sha256& sha, std::span<const uint8_t, 64> in) {
 		std::array<uint32_t, 8> S;
 		std::array<uint32_t, 64> W;
 
@@ -102,7 +116,7 @@ namespace {
 		for (size_t i = 16; i < 64; ++i)
 			W[i] = r1(W[i - 2]) + W[i - 7] + r0(W[i - 15]) + W[i - 16];
 
-		memcpy(S.data(), h.data(), 32);
+		memcpy(S.data(), sha._h.data(), 32);
 
 		for (size_t i = 0; i < 64; i++) {
 			uint32_t t1 = S[7] + s1(S[4]) + ch(S[4], S[5], S[6]) + K.dw[i] + W[i];
@@ -118,10 +132,13 @@ namespace {
 		}
 
 		for (size_t i = 0; i < 8; ++i)
-			h[i] += S[i];
+			sha._h[i] += S[i];
 	}
 
-	void compress_sha(Sha256::Hash& hash, std::span<const uint8_t, 64> in) {
+	/**
+	 * Based on: https://github.com/stong/bruteforce/tree/master
+	 */
+	void transform_impl_sha(Sha256& sha, std::span<const uint8_t, 64> in) {
 		// Cyclic W array
 		// We keep the W array content cyclically in 4 variables
 		// Initially:
@@ -152,8 +169,8 @@ namespace {
 	CW0 = _mm_add_epi32(CW0, _mm_alignr_epi8(CW3, CW2, 4)); /* add w[t-4]:w[t-5]:w[t-6]:w[t-7]*/ \
 	CW0 = _mm_sha256msg2_epu32(CW0, CW3);
 
-		__m128i state1 = hash.h0145;// a:b:e:f
-		__m128i state2 = hash.h2367;// c:d:g:h
+		__m128i state1 = sha._h0145;// a:b:e:f
+		__m128i state2 = sha._h2367;// c:d:g:h
 		__m128i tmp;
 
 		/* w0 - w3 */
@@ -209,8 +226,8 @@ namespace {
 		SHA256_ROUNDS_4(cw3, 15);
 
 		// Add to the intermediate hash
-		hash.h0145 = _mm_add_epi32(state1, hash.h0145);
-		hash.h2367 = _mm_add_epi32(state2, hash.h2367);
+		sha._h0145 = _mm_add_epi32(state1, sha._h0145);
+		sha._h2367 = _mm_add_epi32(state2, sha._h2367);
 	}
 
 }// namespace
@@ -218,10 +235,18 @@ namespace {
 static bool has_sha256_acceleration = false;
 static std::once_flag sha256_once_flag;
 
+static decltype(&transform_impl_base) transform_impl;
+#define transform(i) transform_impl(*this, i);
+
 Sha256::Sha256() {
 	std::call_once(sha256_once_flag, []{
 		has_sha256_acceleration = DetectSHA256Acceleration();
-		PL_LOG_VERBOSE("Detect SHA256 Acceleration!");
+		if (has_sha256_acceleration) {
+			transform_impl = transform_impl_sha;
+			PL_LOG_VERBOSE("Detect SHA256 Acceleration!");
+		} else {
+			transform_impl =  transform_impl_base;
+		}
 	});
 	clear();
 }
@@ -230,8 +255,8 @@ void Sha256::clear() {
 	_len = 0;
 
 	if (has_sha256_acceleration) {
-		_hash.h0145 = _mm_set_epi32(int(H[0]), int(H[1]), int(H[4]), int(H[5]));
-		_hash.h2367 = _mm_set_epi32(int(H[2]), int(H[3]), int(H[6]), int(H[7]));
+		_h0145 = _mm_set_epi32(int(H[0]), int(H[1]), int(H[4]), int(H[5]));
+		_h2367 = _mm_set_epi32(int(H[2]), int(H[3]), int(H[6]), int(H[7]));
 	} else {
 		_h = H;
 	}
@@ -248,20 +273,21 @@ void Sha256::update(std::span<const uint8_t> in) {
 			return;
 		}
 		memcpy(_buf.data() + off, in.data(), rem);
-		process(_buf);
+		transform(_buf);
 		in = in.subspan(rem);
 	}
 
 	while (in.size() >= 64) {
-		process(in.subspan<0, 64>());
+		auto block = in.subspan<0, 64>();
+		transform(block);
 		in = in.subspan<64>();
 	}
 
 	memcpy(_buf.data(), in.data(), in.size());
 }
 
-std::array<uint8_t, 32> Sha256::digest() {
-	uint64_t off = _len % 64;
+Digest Sha256::digest() {
+	auto off = _len % 64;
 
 	// When we reach here, the block is supposed to be unfullfilled.
 	// Add the terminating bit
@@ -272,14 +298,14 @@ std::array<uint8_t, 32> Sha256::digest() {
 	if (off > 56) {
 		// Fill zeros and compress
 		memset(_buf.data() + off, 0, 64 - off);
-		process(_buf);
+		transform(_buf);
 		off = 0;
 	}
 
 	// Fill zeros before the last 8-byte of the block
 	memset(_buf.data() + off, 0, 56 - off);
 
-	std::array<uint8_t, 32> digest;
+	Digest digest;
 
 	if (has_sha256_acceleration) {
 		// Set the length of the message in big-endian
@@ -290,7 +316,7 @@ std::array<uint8_t, 32> Sha256::digest() {
 		_mm_storel_epi64((__m128i*) (_buf.data() + 56), tmp);
 
 		// Process the last block
-		process(_buf);
+		transform(_buf);
 
 		// Get the resulting hash value.
 		// h0:h1:h4:h5
@@ -299,49 +325,37 @@ std::array<uint8_t, 32> Sha256::digest() {
 		//      V
 		// h0:h1:h2:h3
 		// h4:h5:h6:h7
-		__m128i h0123 = _mm_unpackhi_epi64(_hash.h2367, _hash.h0145);
-		__m128i h4567 = _mm_unpacklo_epi64(_hash.h2367, _hash.h0145);
+		digest.h0123 = _mm_unpackhi_epi64(_h2367, _h0145);
+		digest.h4567 = _mm_unpacklo_epi64(_h2367, _h0145);
 
 		// Swap the byte order
 		const __m128i byteswapindex = _mm_set_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
-		h0123 = _mm_shuffle_epi8(h0123, byteswapindex);
-		h4567 = _mm_shuffle_epi8(h4567, byteswapindex);
-
-		__m128i* digestX = reinterpret_cast<__m128i*>(digest.data());
-		_mm_storeu_si128(digestX, h0123);
-		_mm_storeu_si128(digestX + 1, h4567);
+		digest.h0123 = _mm_shuffle_epi8(digest.h0123, byteswapindex);
+		digest.h4567 = _mm_shuffle_epi8(digest.h4567, byteswapindex);
 	} else {
 		// Set the length of the message in big-endian
 		const uint64_t l = htobe64(_len * 8);
 		memcpy(_buf.data() + 56, &l, 8);
 
 		// Process the last block
-		process(_buf);
+		transform(_buf);
 
 		for (auto& v : _h)
 			v = htobe32(v);
 
-		memcpy(digest.data(), _h.data(), digest.size());
+		memcpy(digest.h.data(), _h.data(), 32);
 	}
 
 	return digest;
 }
 
-void Sha256::process(std::span<const uint8_t, 64> in) {
-	if (has_sha256_acceleration) {
-		compress_sha(_hash, in);
-	} else {
-		compress_default(_h, in);
-	}
-}
-
-std::string Sha256::ToString(const std::array<uint8_t, 32>& digest) {
+std::string Sha256::ToString(const Digest& digest) {
 	std::stringstream s;
 	s << std::setfill('0') << std::hex;
 	
 	for(uint8_t i = 0 ; i < 32 ; i++) {
-		s << std::setw(2) << static_cast<uint32_t>(digest[i]);
+		s << std::setw(2) << static_cast<uint32_t>(digest.h[i]);
 	}
 
 	return s.str();
