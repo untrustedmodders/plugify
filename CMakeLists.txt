@@ -55,7 +55,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         if(NOT PLUGIFY_HAS_LIBCPP)
             message(VERBOSE "The option PLUGIFY_USE_LIBCPP is set but libc++ is not available.")
         endif()
-        
+
         if(PLUGIFY_USE_STATIC_STDLIB)
             check_cxx_compiler_flag(-static-libc++ PLUGIFY_HAS_STATIC_LIBCPP)
             if(NOT PLUGIFY_HAS_LIBCPP)
@@ -71,7 +71,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
             endif()
         endif()
     endif()
-    
+
     #check_cxx_compiler_flag(-static PLUGIFY_HAS_STATIC)
     if(PLUGIFY_USE_STATIC_STDLIB)
         check_cxx_compiler_flag(-static-libgcc PLUGIFY_HAS_STATIC_LIBGCC)
@@ -168,18 +168,10 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# SHA256 & Miniz
-include(cmake/sha256.cmake)
+# Miniz
 include(cmake/miniz.cmake)
-target_link_libraries(${PROJECT_NAME} PRIVATE sha256 miniz)
-set_property(TARGET sha256 PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
 set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
-if(LINUX)
-    target_compile_definitions(sha256 PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
-endif()
-if(PLUGIFY_HAS_LIBCPP)
-    target_compile_options(sha256 PUBLIC -stdlib=libc++)
-endif()
 
 # ------------------------------------------------------------------------------
 # Format
@@ -213,7 +205,7 @@ generate_export_header(${PROJECT_NAME}
         NO_EXPORT_MACRO_NAME PLUGIFY_PRIVATE
         EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/${PROJECT_NAME}_export.h
         STATIC_DEFINE PLUGIFY_STATIC
-        )
+)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_BINARY_DIR}/exports)
 
 if(PLUGIFY_BUILD_OBJECT_LIB)
@@ -267,9 +259,15 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(PLUGIFY_ARCH_X86 32)
 endif()
 
+if(CMAKE_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
+    set(PLUGIFY_IS_BIG_ENDIAN 1)
+else()
+    set(PLUGIFY_IS_BIG_ENDIAN 0)
+endif()
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
-        )
+)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
@@ -282,6 +280,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_PLATFORM_LINUX=$<BOOL:${LINUX}>
         PLUGIFY_PLATFORM_ANDROID=$<BOOL:${ANDROID}>
         PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
+        PLUGIFY_IS_BIG_ENDIAN=${PLUGIFY_IS_BIG_ENDIAN}
         PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
         PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
         PLUGIFY_SEPARATE_SOURCE_FILES=0

@@ -7,7 +7,7 @@
 #include <utils/file_system.h>
 #include <utils/http_downloader.h>
 #include <utils/json.h>
-#include <SHA256.h>
+#include <utils/sha256.h>
 #include <miniz.h>
 
 using namespace plugify;
@@ -1039,9 +1039,9 @@ bool PackageManager::IsPackageLegit(std::string_view checksum, std::span<const u
 	if (checksum.empty())
 		return true;
 
-	SHA256 sha;
-	sha.update(packageData.data(), packageData.size());
-	std::string hash(SHA256::toString(sha.digest()));
+	Sha256 sha;
+	sha.update(packageData);
+	std::string hash(Sha256::ToString(sha.digest()));
 
 	PL_LOG_VERBOSE("Expected checksum: {}", checksum);
 	PL_LOG_VERBOSE("Computed checksum: {}", hash);

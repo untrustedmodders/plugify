@@ -6,7 +6,7 @@ namespace plugify {
 		String() = delete;
 
 		static inline int Strncasecmp(const char* s1, const char* s2, size_t n) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 			return _strnicmp(s1, s2, n);
 #else
 			return strncasecmp(s1, s2, n);

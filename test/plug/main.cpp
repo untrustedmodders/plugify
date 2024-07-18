@@ -434,8 +434,7 @@ int main() {
 						} else {
 							CONPRINTF("Listing {} local package{}:", static_cast<int>(count), (count > 1) ? "s" : "");
 						}
-						for (auto& localPackageRef : packageManager->GetLocalPackages()) {
-							auto& localPackage = localPackageRef.get();
+						for (const auto& localPackage : packageManager->GetLocalPackages()) {
 							CONPRINTF("  {} [{}] (v{}) at {}", localPackage.name, localPackage.type, localPackage.version, localPackage.path.string());
 						}
 					}
@@ -451,8 +450,7 @@ int main() {
 						} else {
 							CONPRINTF("Listing {} remote package{}:", static_cast<int>(count), (count > 1) ? "s" : "");
 						}
-						for (auto& remotePackageRef : packageManager->GetRemotePackages()) {
-							auto& remotePackage = remotePackageRef.get();
+						for (const auto& remotePackage : packageManager->GetRemotePackages()) {
 							if (remotePackage.author.empty() || remotePackage.description.empty()) {
 								CONPRINTF("  {} [{}]", remotePackage.name, remotePackage.type);
 							} else {
@@ -467,13 +465,12 @@ int main() {
 							continue;
 						}
 						if (args.size() > 2) {
-							auto packageRef = packageManager->FindLocalPackage(args[2]);
-							if (packageRef.has_value()) {
-								const auto& package = packageRef->get();
-								CONPRINTF("  Name: {}", package.name);
-								CONPRINTF("  Type: {}", package.type);
-								CONPRINTF("  Version: {}", package.version);
-								CONPRINTF("  File: {}", package.path.string());
+							auto package = packageManager->FindLocalPackage(args[2]);
+							if (package.has_value()) {
+								CONPRINTF("  Name: {}", package->name);
+								CONPRINTF("  Type: {}", package->type);
+								CONPRINTF("  Version: {}", package->version);
+								CONPRINTF("  File: {}", package->path.string());
 
 							} else {
 								CONPRINTF("Package {} not found.", args[2]);
@@ -489,21 +486,20 @@ int main() {
 							continue;
 						}
 						if (args.size() > 2) {
-							auto packageRef = packageManager->FindRemotePackage(args[2]);
-							if (packageRef.has_value()) {
-								const auto& package = packageRef->get();
-								CONPRINTF("  Name: {}", package.name);
-								CONPRINTF("  Type: {}", package.type);
-								if (!package.author.empty()) {
-									CONPRINTF("  Author: {}", package.author);
+							auto package = packageManager->FindRemotePackage(args[2]);
+							if (package.has_value()) {
+								CONPRINTF("  Name: {}", package->name);
+								CONPRINTF("  Type: {}", package->type);
+								if (!package->author.empty()) {
+									CONPRINTF("  Author: {}", package->author);
 								}
-								if (!package.description.empty()) {
-									CONPRINTF("  Description: {}", package.description);
+								if (!package->description.empty()) {
+									CONPRINTF("  Description: {}", package->description);
 								}
-								if (!package.versions.empty()) {
+								if (!package->versions.empty()) {
 									std::string versions("  Versions: ");
-									std::format_to(std::back_inserter(versions), "{}", package.versions.begin()->version);
-									for (auto it = std::next(package.versions.begin()); it != package.versions.end(); ++it) {
+									std::format_to(std::back_inserter(versions), "{}", package->versions.begin()->version);
+									for (auto it = std::next(package->versions.begin()); it != package->versions.end(); ++it) {
 										std::format_to(std::back_inserter(versions), ", {}", it->version);
 									}
 									CONPRINT(versions);

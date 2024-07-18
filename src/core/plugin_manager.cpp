@@ -50,8 +50,7 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 	PL_ASSERT(plugify);
 
 	if (auto packageManager = plugify->GetPackageManager().lock()) {
-		for (const auto& packageRef : packageManager->GetLocalPackages()) {
-			const auto& package = packageRef.get();
+		for (const auto& package : packageManager->GetLocalPackages()) {
 			if (package.type == "plugin") {
 				auto id = static_cast<UniqueId>(_allPlugins.size());
 				_allPlugins.emplace_back(std::make_unique<Plugin>(id, package));
