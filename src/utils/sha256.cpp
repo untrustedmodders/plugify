@@ -38,9 +38,6 @@ bool DetectSHA256Acceleration() {
 	}
 
 	return (regs1[2] /*ECX*/ & SSSE3_BIT) && (regs1[2] /*ECX*/ & SSE41_BIT) && (regs7[1] /*EBX*/ & SHA_BIT);
-#elif defined(__GNUC__)
-	/* __builtin_cpu_supports available in GCC 4.8.1 and above */
-	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && __builtin_cpu_supports("sha");
 #elif defined(__clang__)
 	// FIXME: Use __builtin_cpu_supports("sha") when compilers support it
 	constexpr uint32_t cpuid_sha_ebx = 1 << 29;
@@ -48,6 +45,9 @@ bool DetectSHA256Acceleration() {
 	__cpuid_count(7, 0, eax, ebx, ecx, edx);
 	const uint32_t cpu_supports_sha = (ebx & cpuid_sha_ebx);
 	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && cpu_supports_sha;
+#elif defined(__GNUC__)
+	/* __builtin_cpu_supports available in GCC 4.8.1 and above */
+	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && __builtin_cpu_supports("sha");
 #elif defined(__INTEL_COMPILER)
 	/* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_may_i_use_cpu_feature */
 	return _may_i_use_cpu_feature(_FEATURE_SSSE3|_FEATURE_SSE4_1|_FEATURE_SHA);
