@@ -1,5 +1,8 @@
 #pragma once
 
+#if defined(__GNUC__) && !defined(__clang__) && !defined(NDEBUG)
+#undef __OPTIMIZE__
+#endif
 #include <emmintrin.h>
 
 namespace plugify {

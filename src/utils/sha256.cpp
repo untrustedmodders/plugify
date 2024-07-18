@@ -3,9 +3,7 @@
 
 #if defined(_MSC_VER)
 #include <intrin.h>
-#elif defined(__GNUC__) || defined(__clang__)
-#include <immintrin.h>
-#elif defined(__INTEL_COMPILER)
+#else
 #include <immintrin.h>
 #endif
 

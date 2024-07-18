@@ -100,6 +100,22 @@ if(PLUGIFY_USE_CLANG_TIDY)
     endif()
 endif()
 
+# Define compiler-specific flags
+set(GCC_CLANG_FLAGS -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -msha)
+set(MSVC_FLAGS /arch:SSE /arch:SSE2 /arch:AVX /arch:AVX2)
+set(INTEL_FLAGS -xSSE2 -xSSE3 -xSSSE3 -xSSE4.1 -xSSE4.2 -xSHA)
+
+# Determine the compiler and set the appropriate flags
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    set(PLUGIFY_SIMD_FLAGS ${GCC_CLANG_FLAGS})
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(PLUGIFY_SIMD_FLAGS ${MSVC_FLAGS})
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    set(PLUGIFY_SIMD_FLAGS ${INTEL_FLAGS})
+else()
+    message(WARNING "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
+endif()
+
 # ------------------------------------------------------------------------------
 # Compilation options
 option(PLUGIFY_BUILD_TESTS "Enable building tests." OFF)
@@ -119,7 +135,6 @@ option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
 
 option(PLUGIFY_LOGGING "Enable logging system." ON)
 option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
-
 
 # ------------------------------------------------------------------------------
 # Plugify
@@ -243,6 +258,28 @@ else()
     if(PLUGIFY_HAS_STATIC_LIBSTDCPP)
         target_link_libraries(${PROJECT_NAME} PUBLIC -static-libstdc++ -static-libgcc)
     endif()
+endif()
+
+# Check and add each flag
+if(PLUGIFY_SIMD_FLAGS)
+    foreach(FLAG ${PLUGIFY_SIMD_FLAGS})
+        string(REPLACE "-" "" FLAG_NAME ${FLAG})
+        string(REPLACE "/" "" FLAG_NAME ${FLAG_NAME})
+        string(TOUPPER ${FLAG_NAME} FLAG_VAR)
+        set(CHECK_VAR "COMPILER_SUPPORTS_${FLAG_VAR}")
+
+        include(CheckCXXCompilerFlag)
+        check_cxx_compiler_flag(${FLAG} ${CHECK_VAR})
+
+        if(${${CHECK_VAR}})
+            message(STATUS "Compiler supports ${FLAG}")
+            target_compile_options(${PROJECT_NAME} PUBLIC ${FLAG})
+            string(REPLACE "." "_" FLAG_VAR2 ${FLAG_VAR})
+            target_compile_definitions(${PROJECT_NAME} PRIVATE PLUGIFY_${FLAG_VAR2}_SUPPORT=1)
+        else()
+            message(WARNING "Compiler does not support ${FLAG}")
+        endif()
+    endforeach()
 endif()
 
 if(WIN32)
