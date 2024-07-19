@@ -1,56 +1,48 @@
 #pragma once
 
-#ifdef __linux__
-#include <endian.h>
+/*
+ * General byte order swapping functions.
+ */
+#if defined(_MSC_VER)
+#define	bswap16(x)	_byteswap_ushort(x)
+#define	bswap32(x)	_byteswap_ulong(x)
+#define	bswap64(x)	_byteswap_uint64(x)
+#elif defined(__GNUC__) || defined(__clang__)
+#define	bswap16(x)	__builtin_bswap16(x)
+#define	bswap32(x)	__builtin_bswap32(x)
+#define	bswap64(x)	__builtin_bswap64(x)
 #endif
-#ifdef __FreeBSD__
-#include <sys/endian.h>
-#endif
-#ifdef __NetBSD__
-#include <sys/endian.h>
-#endif
-#ifdef __OpenBSD__
-#include <sys/types.h>
-#define be16toh(x) betoh16(x)
-#define be32toh(x) betoh32(x)
-#if PLUGIFY_ARCH_X86 == 64
-#define be64toh(x) betoh64(x)
-#endif
-#endif
-#ifdef __APPLE__
-#define be16toh(x) ntohs(x)
-#define be32toh(x) ntohl(x)
-#if PLUGIFY_ARCH_X86 == 64
-#define be64toh(x) ntohll(x)
-#endif
-#define htobe16(x) htons(x)
-#define htobe32(x) htonl(x)
-#if PLUGIFY_ARCH_X86 == 64
-#define htobe64(x) htonll(x)
-#endif
-#endif
-#ifdef _WIN32
+
+/*
+ * Host to big endian, host to little endian, big endian to host, and little
+ * endian to host byte order functions as detailed in byteorder(9).
+ */
 #if PLUGIFY_IS_BIG_ENDIAN
-#define be16toh(x) (x)
-#define be32toh(x) (x)
-#if PLUGIFY_ARCH_X86 == 64
-#define be64toh(x) (x)
-#endif
-#define htobe16(x) (x)
-#define htobe32(x) (x)
-#if PLUGIFY_ARCH_X86 == 64
-#define htobe64(x) (x)
-#endif
+#define	htobe16(x)	((x))
+#define	htobe32(x)	((x))
+#define	htobe64(x)	((x))
+#define	htole16(x)	bswap16((x))
+#define	htole32(x)	bswap32((x))
+#define	htole64(x)	bswap64((x))
+
+#define	be16toh(x)	((x))
+#define	be32toh(x)	((x))
+#define	be64toh(x)	((x))
+#define	le16toh(x)	bswap16((x))
+#define	le32toh(x)	bswap32((x))
+#define	le64toh(x)	bswap64((x))
 #else
-#define be16toh(x) _byteswap_ushort(x)
-#define be32toh(x) _byteswap_ulong(x)
-#if PLUGIFY_ARCH_X86 == 64
-#define be64toh(x) _byteswap_uint64(x)
-#endif
-#define htobe16(x) _byteswap_ushort(x)
-#define htobe32(x) _byteswap_ulong(x)
-#if PLUGIFY_ARCH_X86 == 64
-#define htobe64(x) _byteswap_uint64(x)
-#endif
-#endif
+#define	htobe16(x)	bswap16((x))
+#define	htobe32(x)	bswap32((x))
+#define	htobe64(x)	bswap64((x))
+#define	htole16(x)	((x))
+#define	htole32(x)	((x))
+#define	htole64(x)	((x))
+
+#define	be16toh(x)	bswap16((x))
+#define	be32toh(x)	bswap32((x))
+#define	be64toh(x)	bswap64((x))
+#define	le16toh(x)	((x))
+#define	le32toh(x)	((x))
+#define	le64toh(x)	((x))
 #endif

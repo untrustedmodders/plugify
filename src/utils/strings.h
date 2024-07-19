@@ -10,7 +10,7 @@ namespace plugify {
 			return _strnicmp(s1, s2, n);
 #else
 			return strncasecmp(s1, s2, n);
-#endif
+#endif // defined(_MSC_VER)
 		}
 
 #if PLUGIFY_PLATFORM_WINDOWS
