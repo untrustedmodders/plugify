@@ -33,12 +33,8 @@ namespace plugify {
 	using UniqueId = std::ptrdiff_t;
 
 	/**
-	 * @class IModule
-	 * @brief Interface for language modules in the PLUGIFY system.
-	 *
-	 * The IModule class is a base class for language modules. It provides basic
-	 * functionality and methods that language modules must implement to interact with
-	 * the PLUGIFY framework.
+	 * @class ModuleRef
+	 * @brief Reference wrapper to access language module's information.
 	 */
 	class PLUGIFY_API ModuleRef {
 		PLUGUFY_REFERENCE(ModuleRef, const Module)

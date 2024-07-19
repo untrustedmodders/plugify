@@ -47,12 +47,8 @@ namespace plugify {
 	using MethodData = std::pair<std::string, MemAddr>;
 
 	/**
-	 * @class IPlugin
-	 * @brief Interface for plugin functionality.
-	 *
-	 * The IPlugin class defines an interface for plugins in the PLUGIFY system.
-	 * Plugins should inherit from this class and implement its methods to be compatible
-	 * with the PLUGIFY framework.
+	 * @class PluginRef
+	 * @brief Reference wrapper to access for plugin's information.
 	 */
 	class PLUGIFY_API PluginRef {
 		PLUGUFY_REFERENCE(PluginRef, const Plugin)
