@@ -14,13 +14,13 @@ HTTPDownloader::HTTPDownloader() : _timeout{DEFAULT_TIMEOUT_IN_SECONDS}, _maxAct
 
 HTTPDownloader::~HTTPDownloader() = default;
 
-void HTTPDownloader::CreateRequest(std::string url, Request::Callback callback/*, ProgressCallback* progress*/) {
+void HTTPDownloader::CreateRequest(std::string url, Request::Callback callback, ProgressCallback progress) {
 	Request* req = InternalCreateRequest();
 	req->parent = this;
 	req->type = Request::Type::Get;
 	req->url = std::move(url);
 	req->callback = std::move(callback);
-	//req->progress = progress;
+	req->progress = std::move(progress);
 	req->startTime = DateTime::Now();
 
 	std::unique_lock<std::mutex> lock(_pendingRequestLock);
@@ -32,14 +32,14 @@ void HTTPDownloader::CreateRequest(std::string url, Request::Callback callback/*
 	LockedAddRequest(req);
 }
 
-void HTTPDownloader::CreatePostRequest(std::string url, std::string postData, Request::Callback callback/*, ProgressCallback* progress*/) {
+void HTTPDownloader::CreatePostRequest(std::string url, std::string postData, Request::Callback callback, ProgressCallback progress) {
 	Request* req = InternalCreateRequest();
 	req->parent = this;
 	req->type = Request::Type::Post;
 	req->url = std::move(url);
 	req->postData = std::move(postData);
 	req->callback = std::move(callback);
-	//req->progress = progress;
+	req->progress = std::move(progress);
 	req->startTime = DateTime::Now();
 
 	std::unique_lock<std::mutex> lock(_pendingRequestLock);
@@ -70,51 +70,43 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 		}
 
 		bool alive = (req->state == Request::State::Started || req->state == Request::State::Receiving);
-		if (alive && currentTime >= req->startTime && (currentTime - req->startTime).AsSeconds() >= _timeout) {
-			PL_LOG_ERROR("Request for '{}' timed out", req->url);
+		if (alive) {
+			if (currentTime >= req->startTime && (currentTime - req->startTime).AsSeconds() >= _timeout) {
+				PL_LOG_ERROR("Request for '{}' timed out", req->url);
 
-			req->state.store(Request::State::Cancelled);
-			_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
-			lock.unlock();
+				req->state.store(Request::State::Cancelled);
+				_pendingRequests.erase(_pendingRequests.begin() + static_cast<ptrdiff_t>(index));
+				
+				// run callback with lock unheld
+				lock.unlock();
+				req->callback(HTTP_STATUS_TIMEOUT, {}, {});
+				CloseRequest(req);
+				lock.lock();
+				continue;
+			} else if (req->progress && !req->progress(req->lastProgressUpdate, req->contentLength)) {
+				PL_LOG_ERROR("Request for '{}' cancelled", req->url);
 
-			req->callback(HTTP_STATUS_TIMEOUT, {}, {});
-
-			CloseRequest(req);
-
-			lock.lock();
-			continue;
-		}/* else if (alive && req->progress && req->progress->IsCancelled()) {
-			PL_LOG_ERROR("Request for '{}' cancelled", req->url);
-
-			req->state.store(Request::State::Cancelled);
-			_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
-			lock.unlock();
-
-			req->callback(HTTP_STATUS_CANCELLED, {}, {});
-
-			CloseRequest(req);
-
-			lock.lock();
-			continue;
-		}*/
+				req->state.store(Request::State::Cancelled);
+				_pendingRequests.erase(_pendingRequests.begin() + static_cast<ptrdiff_t>(index));
+				
+				// run callback with lock unheld
+				lock.unlock();
+				req->callback(HTTP_STATUS_CANCELLED, {}, {});
+				CloseRequest(req);
+				lock.lock();
+				continue;
+			}
+		}
 
 		if (req->state != Request::State::Complete) {
-			/*if (req->progress) {
-				auto size = static_cast<uint32_t>(req->data.size());
-				if (size != req->lastProgressUpdate) {
-					req->lastProgressUpdate = size;
-					req->progress->SetProgressRange(req->contentLength);
-					req->progress->SetProgressValue(req->lastProgressUpdate);
-				}
-			}*/
-
+			req->lastProgressUpdate = static_cast<uint32_t>(req->data.size());
 			activeRequests++;
 			index++;
 			continue;
 		}
 
 		PL_LOG_VERBOSE("Request for '{}' complete, returned status code {} and {} bytes", req->url, req->statusCode, req->data.size());
-		_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
+		_pendingRequests.erase(_pendingRequests.begin() + static_cast<ptrdiff_t>(index));
 
 		// run callback with lock unheld
 		lock.unlock();
@@ -133,7 +125,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 			}
 
 			if (!StartRequest(req)) {
-				_pendingRequests.erase(_pendingRequests.begin() + static_cast<intmax_t>(index));
+				_pendingRequests.erase(_pendingRequests.begin() + static_cast<ptrdiff_t>(index));
 				continue;
 			}
 

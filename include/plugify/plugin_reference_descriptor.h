@@ -17,7 +17,7 @@ namespace plugify {
 	public:
 		std::string_view GetName() const noexcept;
 		bool IsOptional() const noexcept;
-		std::span<const std::string> GetSupportedPlatforms() const;
+		std::span<const std::string> GetSupportedPlatforms() const noexcept;
 		std::optional<int32_t> GetRequestedVersion() const noexcept;
 	};
 	static_assert(is_ref_v<PluginReferenceDescriptorRef>);

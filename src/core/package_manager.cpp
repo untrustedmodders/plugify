@@ -331,6 +331,7 @@ void PackageManager::LoadRemotePackages() {
 						_remotePackages.emplace(name, std::move(package));
 					} else {
 						auto& existingPackage = std::get<RemotePackage>(*it);
+
 						if (existingPackage == package) {
 							std::unique_lock<std::mutex> lock(mutex);
 							existingPackage.versions.merge(package.versions);

@@ -14,7 +14,7 @@ HTTPDownloaderCurl::~HTTPDownloaderCurl() {
 }
 
 std::unique_ptr<HTTPDownloader> HTTPDownloader::Create(std::string userAgent) {
-	std::unique_ptr<HTTPDownloaderCurl> instance(std::make_unique<HTTPDownloaderCurl>());
+	auto instance = std::make_unique<HTTPDownloaderCurl>());
 	if (!instance->Initialize(std::move(userAgent)))
 		return {};
 	return instance;

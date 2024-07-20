@@ -197,6 +197,7 @@ void PluginManager::TerminateAllPlugins() {
 		plugin->Terminate();
 	}*/
 
+	// Dtor will terminate
 	_allPlugins.clear();
 }
 
@@ -209,6 +210,7 @@ void PluginManager::TerminateAllModules() {
 		module->Terminate();
 	}*/
 
+	// Dtor will terminate
 	_allModules.clear();
 }
 

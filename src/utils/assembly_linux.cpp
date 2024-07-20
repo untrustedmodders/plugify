@@ -171,7 +171,7 @@ MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool decorat
 
 	MemAddr typeInfo = referenceTypeName.Offset(-0x8);// Offset -0x8 to typeinfo.
 
-	for (const auto& sectionName: {std::string_view(".data.rel.ro"), std::string_view(".data.rel.ro.local")}) {
+	for (const auto& sectionName : {std::string_view(".data.rel.ro"), std::string_view(".data.rel.ro.local")}) {
 		Assembly::Section section = GetSectionByName(sectionName);
 		if (!section.IsValid())
 			continue;

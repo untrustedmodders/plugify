@@ -108,7 +108,7 @@ namespace plugify {
 		 * @brief Conversion operator to convert LocalPackage to RemotePackage.
 		 * @return A RemotePackage instance representing the local package.
 		 */
-		explicit operator RemotePackage() const noexcept {
+		explicit operator RemotePackage() const {
 			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, {}, descriptor->downloadURL, descriptor->supportedPlatforms} }};
 		}
 	};

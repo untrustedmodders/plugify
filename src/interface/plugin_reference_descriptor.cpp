@@ -11,7 +11,7 @@ bool PluginReferenceDescriptorRef::IsOptional() const noexcept {
 	return _impl->optional;
 }
 
-std::span<const std::string> PluginReferenceDescriptorRef::GetSupportedPlatforms() const {
+std::span<const std::string> PluginReferenceDescriptorRef::GetSupportedPlatforms() const noexcept {
 	return _impl->supportedPlatforms;
 }
 

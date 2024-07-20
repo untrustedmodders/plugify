@@ -12,7 +12,7 @@ public:
 	explicit LibrarySearchDirsWin(const std::vector<fs::path>& directories) {
 		_dirCookies.reserve(directories.size());
 		for (const auto& directory : directories) {
-			auto* cookie = AddDllDirectory(directory.c_str());
+			DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(directory.c_str());
 			if (cookie == nullptr)
 				continue;
 			_dirCookies.push_back(cookie);
@@ -20,7 +20,7 @@ public:
 	}
 
 	~LibrarySearchDirsWin() override {
-		for (auto* cookie : _dirCookies) {
+		for (DLL_DIRECTORY_COOKIE cookie : _dirCookies) {
 			RemoveDllDirectory(cookie);
 		}
 	}

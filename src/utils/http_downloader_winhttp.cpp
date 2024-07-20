@@ -16,7 +16,7 @@ HTTPDownloaderWinHttp::~HTTPDownloaderWinHttp() {
 }
 
 std::unique_ptr<HTTPDownloader> HTTPDownloader::Create(std::string userAgent) {
-	std::unique_ptr<HTTPDownloaderWinHttp> instance(std::make_unique<HTTPDownloaderWinHttp>());
+	auto instance = std::make_unique<HTTPDownloaderWinHttp>();
 	if (!instance->Initialize(std::move(userAgent)))
 		return {};
 	return instance;
@@ -31,8 +31,8 @@ bool HTTPDownloaderWinHttp::Initialize(std::string userAgent) {
 		return false;
 	}
 
-	const DWORD notification_flags = WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS | WINHTTP_CALLBACK_FLAG_REQUEST_ERROR | WINHTTP_CALLBACK_FLAG_HANDLES | WINHTTP_CALLBACK_FLAG_SECURE_FAILURE;
-	if (WinHttpSetStatusCallback(_hSession, HTTPStatusCallback, notification_flags, 0) == WINHTTP_INVALID_STATUS_CALLBACK) {
+	const DWORD notificationFlags = WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS | WINHTTP_CALLBACK_FLAG_REQUEST_ERROR | WINHTTP_CALLBACK_FLAG_HANDLES | WINHTTP_CALLBACK_FLAG_SECURE_FAILURE;
+	if (WinHttpSetStatusCallback(_hSession, HTTPStatusCallback, notificationFlags, 0) == WINHTTP_INVALID_STATUS_CALLBACK) {
 		PL_LOG_ERROR("WinHttpSetStatusCallback() failed: {}", GetLastError());
 		return false;
 	}
@@ -54,8 +54,7 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 
 			PL_ASSERT(hRequest == req->hRequest);
 
-			auto parent = dynamic_cast<HTTPDownloaderWinHttp*>(req->parent);
-			PL_ASSERT(parent != nullptr);
+			auto parent = static_cast<HTTPDownloaderWinHttp*>(req->parent);
 			std::unique_lock<std::mutex> lock(parent->_pendingRequestLock);
 			PL_ASSERT(std::none_of(parent->_pendingRequests.begin(), parent->_pendingRequests.end(), [req](HTTPDownloader::Request* it) { return it == req; }));
 
@@ -185,7 +184,7 @@ plugify::HTTPDownloader::Request* HTTPDownloaderWinHttp::InternalCreateRequest()
 }
 
 void HTTPDownloaderWinHttp::InternalPollRequests() {
-	// noop - it uses windows's worker threads
+	// it uses windows's worker threads
 }
 
 bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
@@ -215,7 +214,7 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 
 	req->hConnection = WinHttpConnect(_hSession, hostName.c_str(), uc.nPort, 0);
 	if (!req->hConnection) {
-		PL_LOG_ERROR("Failed to start HTTP request for '{}': {}", req->url.c_str(), GetLastError());
+		PL_LOG_ERROR("Failed to start HTTP request for '{}': {}", req->url, GetLastError());
 		req->callback(HTTP_STATUS_ERROR, {}, req->data);
 		delete req;
 		return false;
@@ -243,7 +242,7 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 		req->state.store(Request::State::Complete);
 	}
 
-	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url.c_str());
+	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url);
 	req->state = Request::State::Started;
 	req->startTime = DateTime::Now();
 	return true;

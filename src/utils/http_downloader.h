@@ -12,6 +12,9 @@ namespace plugify {
 			HTTP_STATUS_OK = 200
 		};
 
+		// Progress callback. If you return false, then the operation is cancelled
+		using ProgressCallback = std::function<bool(uint32_t bytesDone, uint32_t bytesTotal)>;
+
 		struct Request {
 			using Data = std::vector<uint8_t>;
 			using Callback = std::function<void(int32_t statusCode, std::string_view contentType, Data data)>;
@@ -31,7 +34,7 @@ namespace plugify {
 
 			HTTPDownloader* parent;
 			Callback callback;
-			//ProgressCallback* progress;
+			ProgressCallback progress;
 			std::string url;
 			std::string postData;
 			std::string contentType;
@@ -51,8 +54,8 @@ namespace plugify {
 		static std::string_view GetExtensionForContentType(std::string_view contentType);
 		static bool IsValidURL(const std::string& url);
 
-		void CreateRequest(std::string url, Request::Callback callback/*, ProgressCallback* progress = nullptr*/);
-		void CreatePostRequest(std::string url, std::string postData, Request::Callback callback/*, ProgressCallback* progress = nullptr*/);
+		void CreateRequest(std::string url, Request::Callback callback, ProgressCallback progress = nullptr);
+		void CreatePostRequest(std::string url, std::string postData, Request::Callback callback, ProgressCallback progress = nullptr);
 		void PollRequests();
 		void WaitForAllRequests();
 		bool HasAnyRequests();
