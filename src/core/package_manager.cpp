@@ -845,7 +845,7 @@ bool PackageManager::UninstallPackage(const LocalPackage& package, bool remove) 
 	if (!ec) {
 		if (remove)
 			_localPackages.erase(package.name);
-		PL_LOG_ERROR("Package: '{}' (v{}) was removed from: '{}'", package.name, package.version, packagePath.string());
+		PL_LOG_INFO("Package: '{}' (v{}) was removed from: '{}'", package.name, package.version, packagePath.string());
 		return true;
 	}
 	return false;
