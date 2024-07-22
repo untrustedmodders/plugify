@@ -14,6 +14,22 @@
 #endif
 
 /*
+ * Newer Linux and BSD may already define htole* and htobe* as macros.
+ */
+#undef htobe16
+#undef htobe32
+#undef htobe64
+#undef htole16
+#undef htole32
+#undef htole64
+#undef be16toh
+#undef be32toh
+#undef be64toh
+#undef le16toh
+#undef le32toh
+#undef le64toh
+
+/*
  * Host to big endian, host to little endian, big endian to host, and little
  * endian to host byte order functions as detailed in byteorder(9).
  */
