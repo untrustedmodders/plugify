@@ -40,7 +40,7 @@ bool DetectSHA256Acceleration() {
 	return (regs1[2] /*ECX*/ & SSSE3_BIT) && (regs1[2] /*ECX*/ & SSE41_BIT) && (regs7[1] /*EBX*/ & SHA_BIT);
 #elif defined(__clang__)
 	// FIXME: Use __builtin_cpu_supports("sha") when compilers support it
-	constexpr uint32_t cpuid_sha_ebx = 1 << 29;
+	constexpr uint32_t cpuid_sha_ebx = (1 << 29);
 	uint32_t eax, ebx, ecx, edx;
 	__cpuid_count(7, 0, eax, ebx, ecx, edx);
 	const uint32_t cpu_supports_sha = (ebx & cpuid_sha_ebx);
@@ -232,22 +232,11 @@ namespace {
 
 }// namespace
 
-static bool has_sha256_acceleration = false;
-static std::once_flag sha256_once_flag;
-
-static decltype(&transform_impl_base) transform_impl;
+static bool has_sha256_acceleration = DetectSHA256Acceleration();
+static decltype(&transform_impl_base) transform_impl = has_sha256_acceleration ? transform_impl_sha : transform_impl_base;
 #define transform(i) transform_impl(*this, i);
 
 Sha256::Sha256() {
-	std::call_once(sha256_once_flag, []{
-		has_sha256_acceleration = DetectSHA256Acceleration();
-		if (has_sha256_acceleration) {
-			transform_impl = transform_impl_sha;
-			PL_LOG_VERBOSE("Detect SHA256 Acceleration!");
-		} else {
-			transform_impl =  transform_impl_base;
-		}
-	});
 	clear();
 }
 
