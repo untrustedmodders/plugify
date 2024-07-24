@@ -9,16 +9,17 @@
 namespace plugify {
 	class PluginRef;
 	class ModuleRef;
+	class MethodRef;
 	class IPlugifyProvider;
 
 	/**
 	 * @typedef MethodData
 	 * @brief Represents data related to a plugin method.
 	 *
-	 * The MethodData type is a pair consisting of a method name (string) and a
+	 * The MethodData type is a pair consisting of a method reference and a
 	 * pointer to the method's address (void*).
 	 */
-	using MethodData = std::pair<std::string, MemAddr>;
+	using MethodData = std::pair<MethodRef, MemAddr>;
 
 	/**
 	 * @struct ErrorData
@@ -112,5 +113,11 @@ namespace plugify {
 		 * @param plugin Reference to the plugin exporting a method.
 		 */
 		virtual void OnMethodExport(PluginRef plugin) = 0;
+
+		/**
+		* @brief Determine if language module is build with debugging mode.
+		* @return True if the assembly is build with debugging, false otherwise.
+		*/
+		virtual bool IsDebugBuild() = 0;
 	};
 } // namespace plugify

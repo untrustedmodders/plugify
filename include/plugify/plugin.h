@@ -14,6 +14,7 @@ namespace plugify {
 	class Plugin;
 #endif
 	class PluginDescriptorRef;
+	class MethodRef;
 
 	/**
 	 * @enum PluginState
@@ -41,10 +42,10 @@ namespace plugify {
 	 * @typedef MethodData
 	 * @brief Represents data related to a plugin method.
 	 *
-	 * The MethodData type is a pair consisting of a method name (string) and a
+	 * The MethodData type is a pair consisting of a method reference and a
 	 * pointer to the method's address (void*).
 	 */
-	using MethodData = std::pair<std::string, MemAddr>;
+	using MethodData = std::pair<MethodRef, MemAddr>;
 
 	/**
 	 * @class PluginRef

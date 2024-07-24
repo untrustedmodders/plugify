@@ -3,9 +3,9 @@
 #include <type_traits>
 
 #if PLUGIFY_CORE
-#define PLUGUFY_REFERENCE(C, I) public: C() noexcept = default; C(I& impl) noexcept : _impl{std::addressof(impl)} {} private: I* _impl;
+#define PLUGUFY_REFERENCE(C, I) public: C() noexcept = default; C(I& impl) noexcept : _impl{std::addressof(impl)} {} bool operator==(const C& other) const noexcept { return _impl == other._impl; } bool operator==(I* other) const noexcept { return _impl == other; } private: I* _impl;
 #else
-#define PLUGUFY_REFERENCE(C, I) private: C() noexcept = default; C(void* impl) noexcept : _impl{impl} {} private: void* _impl;
+#define PLUGUFY_REFERENCE(C, I) private: C() noexcept = default; C(void* impl) noexcept : _impl{impl} {} void* _impl;
 #endif
 
 namespace plugify {
