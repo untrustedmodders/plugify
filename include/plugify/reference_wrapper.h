@@ -2,16 +2,25 @@
 
 #include <type_traits>
 
+// TODO: Write comments
 template<typename T>
 class Ref {
 public:
 	Ref() noexcept = default;
 	Ref(T& impl) noexcept : _impl{std::addressof(impl)} {}
 
+	Ref(Ref const&) = default;
+	Ref(Ref&&) = default;
+	
 	bool operator==(const Ref& other) const noexcept { return _impl == other._impl; }
 	bool operator==(const T* impl) const noexcept { return _impl == impl; }
 
-private:
+	Ref& operator=(const Ref&) & = default;
+	Ref& operator=(const Ref&) && = delete;
+	Ref& operator=(Ref&&) & = default;
+	Ref& operator=(Ref&&) && = delete;
+
+protected:
 	T* _impl;
 };
 
