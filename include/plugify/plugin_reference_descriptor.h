@@ -8,12 +8,10 @@
 
 // TODO: Write comments
 namespace plugify {
-#if PLUGIFY_CORE
 	struct PluginReferenceDescriptor;
-#endif
 
-	class PLUGIFY_API PluginReferenceDescriptorRef {
-		PLUGUFY_REFERENCE(PluginReferenceDescriptorRef, const PluginReferenceDescriptor)
+	class PLUGIFY_API PluginReferenceDescriptorRef : public Ref<const PluginReferenceDescriptor> {
+		using Ref::Ref;
 	public:
 		std::string_view GetName() const noexcept;
 		bool IsOptional() const noexcept;

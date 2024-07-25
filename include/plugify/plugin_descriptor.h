@@ -8,14 +8,12 @@
 
 // TODO: Write comments
 namespace plugify {
-#if PLUGIFY_CORE
 	struct PluginDescriptor;
-#endif
 	class PluginReferenceDescriptorRef;
 	class MethodRef;
 
-	class PLUGIFY_API PluginDescriptorRef {
-		PLUGUFY_REFERENCE(PluginDescriptorRef, const PluginDescriptor)
+	class PLUGIFY_API PluginDescriptorRef : public Ref<const PluginDescriptor> {
+		using Ref::Ref;
 	public:
 		[[nodiscard]] int32_t GetFileVersion() const noexcept;
 		[[nodiscard]] int32_t GetVersion() const noexcept;

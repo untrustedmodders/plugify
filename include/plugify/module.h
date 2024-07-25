@@ -7,9 +7,7 @@
 #include <plugify_export.h>
 
 namespace plugify {
-#if PLUGIFY_CORE
 	class Module;
-#endif
 	class LanguageModuleDescriptorRef;
 
 	/**
@@ -36,8 +34,8 @@ namespace plugify {
 	 * @class ModuleRef
 	 * @brief Reference wrapper to access language module's information.
 	 */
-	class PLUGIFY_API ModuleRef {
-		PLUGUFY_REFERENCE(ModuleRef, const Module)
+	class PLUGIFY_API ModuleRef : public Ref<const Module> {
+		using Ref::Ref;
 	public:
 		/**
 		 * @brief Get the unique identifier of the language module.

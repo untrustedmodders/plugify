@@ -8,12 +8,10 @@
 
 // TODO: Write comments
 namespace plugify {
-#if PLUGIFY_CORE
 	struct LanguageModuleDescriptor;
-#endif
 
-	class PLUGIFY_API LanguageModuleDescriptorRef {
-		PLUGUFY_REFERENCE(LanguageModuleDescriptorRef, const LanguageModuleDescriptor)
+	class PLUGIFY_API LanguageModuleDescriptorRef : public Ref<const LanguageModuleDescriptor> {
+		using Ref::Ref;
 	public:
 		[[nodiscard]] int32_t GetFileVersion() const noexcept;
 		[[nodiscard]] int32_t GetVersion() const noexcept;

@@ -10,9 +10,7 @@
 #include <plugify_export.h>
 
 namespace plugify {
-#if PLUGIFY_CORE
 	class Plugin;
-#endif
 	class PluginDescriptorRef;
 	class MethodRef;
 
@@ -51,8 +49,8 @@ namespace plugify {
 	 * @class PluginRef
 	 * @brief Reference wrapper to access for plugin's information.
 	 */
-	class PLUGIFY_API PluginRef {
-		PLUGUFY_REFERENCE(PluginRef, const Plugin)
+	class PLUGIFY_API PluginRef : public Ref<const Plugin> {
+		using Ref::Ref;
 	public:
 		/**
 		 * @brief Get the unique identifier of the plugin.

@@ -149,7 +149,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 		}
 
 		auto it = std::find_if(exportedMethods.begin(), exportedMethods.end(), [method](const auto& m) {
-			return method == &m;
+			return method == MethodRef(m);
 		});
 
 		if (it == exportedMethods.end()) {

@@ -9,17 +9,15 @@
 
 namespace plugify {
 	class PlugifyProvider;
-#if PLUGIFY_CORE
 	class PlugifyProvider;
-#endif
 	enum class Severity : uint8_t;
 
 	/**
  	 * @brief Interface class for the PlugifyProvider, which is provided to the user and implemented in the core.
 	 *        The PlugifyProvider is responsible for managing and providing essential functionality to the Plugify system.
 	 */
-	class PLUGIFY_API IPlugifyProvider {
-		PLUGUFY_REFERENCE(IPlugifyProvider, PlugifyProvider)
+	class PLUGIFY_API IPlugifyProvider : public Ref<PlugifyProvider> {
+		using Ref::Ref;
 	public:
 		/**
 		 * @brief Log a message with a specified severity level.

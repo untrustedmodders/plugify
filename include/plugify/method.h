@@ -9,15 +9,12 @@
 
 // TODO: Write comments
 namespace plugify {
-#if PLUGIFY_CORE
 	struct Method;
 	struct Property;
-#endif
-
 	class MethodRef;
 
-	class PLUGIFY_API PropertyRef {
-		PLUGUFY_REFERENCE(PropertyRef, const Property)
+	class PLUGIFY_API PropertyRef : public Ref<const Property> {
+		using Ref::Ref;
 	public:
 		[[nodiscard]] ValueType GetType() const noexcept;
 		[[nodiscard]] bool IsReference() const noexcept;
@@ -25,8 +22,8 @@ namespace plugify {
 	};
 	static_assert(is_ref_v<PropertyRef>);
 
-	class PLUGIFY_API MethodRef {
-		PLUGUFY_REFERENCE(MethodRef, const Method)
+	class PLUGIFY_API MethodRef : public Ref<const Method> {
+		using Ref::Ref;
 	public:
 		[[nodiscard]] std::string_view GetName() const noexcept;
 		[[nodiscard]] std::string_view GetFunctionName() const noexcept;
