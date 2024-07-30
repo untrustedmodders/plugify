@@ -87,6 +87,12 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool section
 }
 
 bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
+	std::error_code ec;
+	if (!fs::exists(modulePath, ec)) {
+		_error = std::format("File: '{}' not exists", modulePath.string());
+		return false;
+	}
+
 	HMODULE hModule = LoadLibraryExW(modulePath.c_str(), nullptr, TranslateLoading(flags));
 	if (!hModule) {
 		DWORD errorCode = GetLastError();
