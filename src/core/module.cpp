@@ -93,10 +93,15 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		return false;
 	}
 
-	if (languageModulePtr->IsDebugBuild() != PLUGIFY_IS_DEBUG)
-	{
-		// TODO: Show warning or error
+#if PLUGIFY_PLATFORM_WINDOWS
+	constexpr bool plugifyBuildType = PLUGIFY_IS_DEBUG;
+	bool moduleBuildType = languageModulePtr->IsDebugBuild();
+	if (moduleBuildType != plugifyBuildType) {
+		SetError(std::format("Mismatch between plugify ({}) build type and module ({}) build type.", (plugifyBuildType ? "debug" : "release"), (moduleBuildType ? "debug" : "release")));
+		Terminate();
+		return false;
 	}
+#endif
 
 	InitResult result = languageModulePtr->Initialize(std::move(provider), *this);
 	if (auto* data = std::get_if<ErrorData>(&result)) {
@@ -142,23 +147,12 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 
 	std::vector<std::string_view> errors;
 
-	for (const auto& [method, addr] : methods) {
-		if (method == nullptr) {
-			plugin.SetError("Found invalid method");
-			return false;
-		}
+	for (size_t i = 0; i < methods.size(); ++i) {
+		const auto& [method, addr] = methods[i];
+		const auto& exportedMethod = exportedMethods[i];
 
-		auto it = std::find_if(exportedMethods.begin(), exportedMethods.end(), [method](const auto& m) {
-			return method == MethodRef(m);
-		});
-
-		if (it == exportedMethods.end()) {
-			plugin.SetError("Found invalid method");
-			return false;
-		}
-
-		if (addr.GetValue<void*>() == nullptr) {
-			errors.emplace_back(method.GetName());
+		if (method != MethodRef(exportedMethod) || !addr) {
+			errors.emplace_back(exportedMethod.name);
 		}
 	}
 
@@ -168,23 +162,6 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 			std::format_to(std::back_inserter(error), ", {}", *it);
 		}
 		plugin.SetError(std::format("Found invalid {} method(s)", error));
-		return false;
-	}
-
-	for (auto it1 = methods.begin(); it1 != methods.end(); ++it1) {
-		for (auto it2 = it1 + 1; it2 != methods.end(); ++it2) {
-			if (it1->first == it2->first) {
-				errors.emplace_back(it1->first.GetName());
-			}
-		}
-	}
-
-	if (!errors.empty()) {
-		std::string error(errors[0]);
-		for (auto it = std::next(errors.begin()); it != errors.end(); ++it) {
-			std::format_to(std::back_inserter(error), ", {}", *it);
-		}
-		plugin.SetError(std::format("Found duplicate {} method(s)", error));
 		return false;
 	}
 
