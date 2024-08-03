@@ -295,9 +295,10 @@ int main() {
 							auto plugin = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
 							if (plugin.has_value()) {
 								Print<plugify::PluginState>("Plugin", *plugin, plugify::PluginUtils::ToString);
-								CONPRINTF("  Language module: {}", plugin->GetDescriptor().GetLanguageModule());
+								auto descriptor = plugin->GetDescriptor();
+								CONPRINTF("  Language module: {}", descriptor.GetLanguageModule());
 								CONPRINT("  Dependencies: ");
-								for (const auto& reference : plugin->GetDescriptor().GetDependencies()) {
+								for (const auto& reference : descriptor.GetDependencies()) {
 									auto dependency = pluginManager->FindPlugin(reference.GetName());
 									if (dependency.has_value()) {
 										Print<plugify::PluginState>(*dependency, plugify::PluginUtils::ToString, "    ");
@@ -306,7 +307,7 @@ int main() {
 										CONPRINTF("    {} <Missing> (v{})", reference.GetName(), version.has_value() ? std::to_string(*version) : "[latest]");
 									}
 								}
-								CONPRINTF("  File: {}", plugin->GetDescriptor().GetEntryPoint());
+								CONPRINTF("  File: {}", descriptor.GetEntryPoint());
 							} else {
 								CONPRINTF("Plugin {} not found.", args[2]);
 							}
