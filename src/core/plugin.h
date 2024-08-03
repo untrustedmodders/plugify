@@ -3,6 +3,7 @@
 #include "plugin_descriptor.h"
 #include <plugify/plugin.h>
 #include <utils/hash.h>
+#include <utils/pointer.h>
 
 namespace plugify {
 	class Module;
@@ -42,8 +43,8 @@ namespace plugify {
 			return _methods;
 		}
 
-		std::string_view GetError() const noexcept {
-			return  _error ? *_error : std::string_view{};
+		const std::string& GetError() const noexcept {
+			return *_error;
 		}
 
 		std::optional<fs::path> FindResource(const fs::path& path) const;

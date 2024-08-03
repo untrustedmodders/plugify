@@ -14,35 +14,35 @@ int32_t PluginDescriptorRef::GetVersion() const noexcept {
 	return _impl->version;
 }
 
-std::string_view PluginDescriptorRef::GetVersionName() const noexcept {
+const std::string& PluginDescriptorRef::GetVersionName() const noexcept {
 	return _impl->versionName;
 }
 
-std::string_view PluginDescriptorRef::GetFriendlyName() const noexcept {
+const std::string& PluginDescriptorRef::GetFriendlyName() const noexcept {
 	return _impl->friendlyName;
 }
 
-std::string_view PluginDescriptorRef::GetDescription() const noexcept {
+const std::string& PluginDescriptorRef::GetDescription() const noexcept {
 	return _impl->description;
 }
 
-std::string_view PluginDescriptorRef::GetCreatedBy() const noexcept {
+const std::string& PluginDescriptorRef::GetCreatedBy() const noexcept {
 	return _impl->createdBy;
 }
 
-std::string_view PluginDescriptorRef::GetCreatedByURL() const noexcept {
+const std::string& PluginDescriptorRef::GetCreatedByURL() const noexcept {
 	return _impl->createdByURL;
 }
 
-std::string_view PluginDescriptorRef::GetDocsURL() const noexcept {
+const std::string& PluginDescriptorRef::GetDocsURL() const noexcept {
 	return _impl->docsURL;
 }
 
-std::string_view PluginDescriptorRef::GetDownloadURL() const noexcept {
+const std::string& PluginDescriptorRef::GetDownloadURL() const noexcept {
 	return _impl->downloadURL;
 }
 
-std::string_view PluginDescriptorRef::GetUpdateURL() const noexcept {
+const std::string& PluginDescriptorRef::GetUpdateURL() const noexcept {
 	return _impl->updateURL;
 }
 
@@ -58,11 +58,11 @@ std::span<const std::string> PluginDescriptorRef::GetResourceDirectories() const
 	}
 }
 
-std::string_view PluginDescriptorRef::GetEntryPoint() const noexcept {
+const std::string& PluginDescriptorRef::GetEntryPoint() const noexcept {
 	return _impl->entryPoint;
 }
 
-std::string_view PluginDescriptorRef::GetLanguageModule() const noexcept {
+const std::string& PluginDescriptorRef::GetLanguageModule() const noexcept {
 	return _impl->languageModule.name;
 }
 

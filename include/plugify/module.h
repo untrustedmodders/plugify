@@ -47,19 +47,19 @@ namespace plugify {
 		 * @brief Get the name of the language module.
 		 * @return The name of the language module.
 		 */
-		[[nodiscard]] std::string_view GetName() const noexcept;
+		[[nodiscard]] const std::string& GetName() const noexcept;
 
 		/**
 		 * @brief Get the language of the language module.
 		 * @return The language of the language module.
 		 */
-		[[nodiscard]] std::string_view GetLanguage() const noexcept;
+		[[nodiscard]] const std::string& GetLanguage() const noexcept;
 
 		/**
 		 * @brief Get the friendly name of the language module.
 		 * @return The friendly name of the language module.
 		 */
-		[[nodiscard]] std::string_view GetFriendlyName() const noexcept;
+		[[nodiscard]] const std::string& GetFriendlyName() const noexcept;
 
 		/**
 		 * @brief Get the file path of the language module.
@@ -89,7 +89,7 @@ namespace plugify {
 		 * @brief Get the error message associated with the language module.
 		 * @return The error message.
 		 */
-		[[nodiscard]] std::string_view GetError() const noexcept;
+		[[nodiscard]] const std::string& GetError() const noexcept;
 
 		/**
 		 * @brief Find a resource file associated with the module.

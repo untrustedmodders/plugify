@@ -73,7 +73,7 @@ namespace plugify {
 		 * @param moduleLang Language of the module to find.
 		 * @return Optional reference to the found module.
 		 */
-		[[nodiscard]] virtual ModuleOpt FindModuleFromLang(const std::string_view moduleLang) const = 0;
+		[[nodiscard]] virtual ModuleOpt FindModuleFromLang(std::string_view moduleLang) const = 0;
 
 		/**
 		 * @brief Find a module by file path.

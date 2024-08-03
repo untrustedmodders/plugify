@@ -8,11 +8,11 @@ UniqueId PluginRef::GetId() const noexcept {
 	return _impl->GetId();
 }
 
-std::string_view PluginRef::GetName() const noexcept {
+const std::string& PluginRef::GetName() const noexcept {
 	return _impl->GetName();
 }
 
-std::string_view PluginRef::GetFriendlyName() const noexcept {
+const std::string& PluginRef::GetFriendlyName() const noexcept {
 	return _impl->GetFriendlyName();
 }
 
@@ -28,7 +28,7 @@ PluginState PluginRef::GetState() const noexcept {
 	return _impl->GetState();
 }
 
-std::string_view PluginRef::GetError() const noexcept {
+const std::string& PluginRef::GetError() const noexcept {
 	return _impl->GetError();
 }
 

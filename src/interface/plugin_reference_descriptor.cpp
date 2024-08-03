@@ -3,7 +3,7 @@
 
 using namespace plugify;
 
-std::string_view PluginReferenceDescriptorRef::GetName() const noexcept {
+const std::string& PluginReferenceDescriptorRef::GetName() const noexcept {
 	return _impl->name;
 }
 

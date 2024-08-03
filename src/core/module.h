@@ -47,8 +47,8 @@ namespace plugify {
 			return _state;
 		}
 
-		std::string_view GetError() const noexcept {
-			return _error ? *_error : std::string_view{};
+		const std::string& GetError() const noexcept {
+			return *_error;
 		}
 
 		std::optional<fs::path> FindResource(const fs::path& path) const;

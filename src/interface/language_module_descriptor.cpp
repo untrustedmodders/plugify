@@ -11,35 +11,35 @@ int32_t LanguageModuleDescriptorRef::GetVersion() const noexcept {
 	return _impl->version;
 }
 
-std::string_view LanguageModuleDescriptorRef::GetVersionName() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetVersionName() const noexcept {
 	return _impl->versionName;
 }
 
-std::string_view LanguageModuleDescriptorRef::GetFriendlyName() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetFriendlyName() const noexcept {
 	return _impl->friendlyName;
 }
 
-std::string_view LanguageModuleDescriptorRef::GetDescription() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetDescription() const noexcept {
 	return _impl->description;
 }
 
-std::string_view LanguageModuleDescriptorRef::GetCreatedBy() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetCreatedBy() const noexcept {
 	return _impl->createdBy;
 }
 
-std::string_view LanguageModuleDescriptorRef::GetCreatedByURL() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetCreatedByURL() const noexcept {
 	return _impl->createdByURL;
 }
 
-std::string_view LanguageModuleDescriptorRef::GetDocsURL() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetDocsURL() const noexcept {
 	return _impl->docsURL;
 }
 
-std::string_view LanguageModuleDescriptorRef::GetDownloadURL() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetDownloadURL() const noexcept {
 	return _impl->downloadURL;
 }
 
-std::string_view LanguageModuleDescriptorRef::GetUpdateURL() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetUpdateURL() const noexcept {
 	return _impl->updateURL;
 }
 
@@ -63,7 +63,7 @@ std::span<const std::string> LanguageModuleDescriptorRef::GetLibraryDirectories(
 	}
 }
 
-std::string_view LanguageModuleDescriptorRef::GetLanguage() const noexcept {
+const std::string& LanguageModuleDescriptorRef::GetLanguage() const noexcept {
 	return _impl->language;
 }
 

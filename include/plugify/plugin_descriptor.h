@@ -17,18 +17,18 @@ namespace plugify {
 	public:
 		[[nodiscard]] int32_t GetFileVersion() const noexcept;
 		[[nodiscard]] int32_t GetVersion() const noexcept;
-		[[nodiscard]] std::string_view GetVersionName() const noexcept;
-		[[nodiscard]] std::string_view GetFriendlyName() const noexcept;
-		[[nodiscard]] std::string_view GetDescription() const noexcept;
-		[[nodiscard]] std::string_view GetCreatedBy() const noexcept;
-		[[nodiscard]] std::string_view GetCreatedByURL() const noexcept;
-		[[nodiscard]] std::string_view GetDocsURL() const noexcept;
-		[[nodiscard]] std::string_view GetDownloadURL() const noexcept;
-		[[nodiscard]] std::string_view GetUpdateURL() const noexcept;
+		[[nodiscard]] const std::string& GetVersionName() const noexcept;
+		[[nodiscard]] const std::string& GetFriendlyName() const noexcept;
+		[[nodiscard]] const std::string& GetDescription() const noexcept;
+		[[nodiscard]] const std::string& GetCreatedBy() const noexcept;
+		[[nodiscard]] const std::string& GetCreatedByURL() const noexcept;
+		[[nodiscard]] const std::string& GetDocsURL() const noexcept;
+		[[nodiscard]] const std::string& GetDownloadURL() const noexcept;
+		[[nodiscard]] const std::string& GetUpdateURL() const noexcept;
 		[[nodiscard]] std::span<const std::string> GetSupportedPlatforms() const noexcept;
 		[[nodiscard]] std::span<const std::string> GetResourceDirectories() const noexcept;
-		[[nodiscard]] std::string_view GetEntryPoint() const noexcept;
-		[[nodiscard]] std::string_view GetLanguageModule() const noexcept;
+		[[nodiscard]] const std::string& GetEntryPoint() const noexcept;
+		[[nodiscard]] const std::string& GetLanguageModule() const noexcept;
 		[[nodiscard]] std::span<const PluginReferenceDescriptorRef> GetDependencies() const noexcept;
 		[[nodiscard]] std::span<const MethodRef> GetExportedMethods() const noexcept;
 	};
