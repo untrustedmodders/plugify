@@ -326,7 +326,7 @@ int main() {
 							if (module.has_value()) {
 								Print<plugify::ModuleState>("Module", *module, plugify::ModuleUtils::ToString);
 								CONPRINTF("  Language: {}", module->GetLanguage());
-								CONPRINTF("  File: {}", std::filesystem::path(module->GetFilePath()).string());
+								CONPRINTF("  File: {}", module->GetFilePath().string());
 							} else {
 								CONPRINTF("Module {} not found.", args[2]);
 							}
