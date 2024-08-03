@@ -63,13 +63,14 @@ void Print(T t, F&& f, std::string_view tab = "  ") {
 	} else {
 		std::format_to(std::back_inserter(result), "[{:02d}] {}", t.GetId(), t.GetFriendlyName());
 	}
-	const auto& versionName = t.GetDescriptor().GetVersionName();
+	auto descriptor = t.GetDescriptor();
+	const auto& versionName = descriptor.GetVersionName();
 	if (!versionName.empty()){
 		std::format_to(std::back_inserter(result), " ({})", versionName);
 	} else {
-		std::format_to(std::back_inserter(result), " (v{})", t.GetDescriptor().GetVersion());
+		std::format_to(std::back_inserter(result), " (v{})", descriptor.GetVersion());
 	}
-	const auto& createdBy = t.GetDescriptor().GetCreatedBy();
+	const auto& createdBy = descriptor.GetCreatedBy();
 	if (!createdBy.empty()) {
 		std::format_to(std::back_inserter(result), " by {}", createdBy);
 	}
@@ -83,35 +84,36 @@ void Print(std::string_view name, T t, F&& f) {
 	} else {
 		CONPRINTF("{} {} is {}.", name, t.GetId(), f(t.GetState()));
 	}
-	const auto& getCreatedBy = t.GetDescriptor().GetCreatedBy();
+	auto descriptor = t.GetDescriptor();
+	const auto& getCreatedBy = descriptor.GetCreatedBy();
 	if (!getCreatedBy.empty()) {
 		CONPRINTF("  Name: \"{}\" by {}", t.GetFriendlyName(), getCreatedBy);
 	} else {
 		CONPRINTF("  Name: \"{}\"", t.GetFriendlyName());
 	}
-	const auto& versionName = t.GetDescriptor().GetVersionName();
+	const auto& versionName = descriptor.GetVersionName();
 	if (!versionName.empty()) {
 		CONPRINTF("  Version: {}", versionName);
 	} else {
-		CONPRINTF("  Version: {}", t.GetDescriptor().GetVersion());
+		CONPRINTF("  Version: {}", descriptor.GetVersion());
 	}
-	const auto& description = t.GetDescriptor().GetDescription();
+	const auto& description = descriptor.GetDescription();
 	if (!description.empty()) {
 		CONPRINTF("  Description: {}", description);
 	}
-	const auto& createdByURL = t.GetDescriptor().GetCreatedByURL();
+	const auto& createdByURL = descriptor.GetCreatedByURL();
 	if (!createdByURL.empty()) {
 		CONPRINTF("  URL: {}", createdByURL);
 	}
-	const auto& docsURL = t.GetDescriptor().GetDocsURL();
+	const auto& docsURL = descriptor.GetDocsURL();
 	if (!docsURL.empty()) {
 		CONPRINTF("  Docs: {}", docsURL);
 	}
-	const auto& downloadURL = t.GetDescriptor().GetDownloadURL();
+	const auto& downloadURL = descriptor.GetDownloadURL();
 	if (!downloadURL.empty()) {
 		CONPRINTF("  Download: {}", downloadURL);
 	}
-	const auto& updateURL = t.GetDescriptor().GetUpdateURL();
+	const auto& updateURL = descriptor.GetUpdateURL();
 	if (!updateURL.empty()) {
 		CONPRINTF("  Update: {}", updateURL);
 	}
