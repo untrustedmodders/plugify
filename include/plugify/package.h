@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <memory>
+#include <tuple>
 #include <set>
 
 namespace plugify {
@@ -27,7 +28,7 @@ namespace plugify {
 		 * @param rhs The right-hand side PackageVersion for comparison.
 		 * @return True if the version of this instance is less than the version of rhs.
 		 */
-		[[nodiscard]] bool operator <(const PackageVersion& rhs) const noexcept { return version > rhs.version; }
+		[[nodiscard]] bool operator <(const PackageVersion& rhs) const noexcept { return version > rhs.version || (version == rhs.version && std::tie(checksum, download, platforms) < std::tie(rhs.checksum, rhs.download, rhs.platforms)); }
 	};
 
 	/**
