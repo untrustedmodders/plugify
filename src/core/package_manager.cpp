@@ -512,8 +512,12 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 
 	PackageManifest manifest{ std::move(packages) };
 	std::string buffer;
-	glz::write_json(manifest, buffer);
-	FileSystem::WriteText(manifestFilePath, prettify ? glz::prettify(buffer) : buffer);
+	const auto ec = glz::write_json(manifest, buffer);
+	if (ec) {
+		PL_LOG_ERROR("Snapshot packages: JSON writing error: {}", glz::format_error(ec));
+		return;
+	}
+	FileSystem::WriteText(manifestFilePath, prettify ? glz::prettify_json(buffer) : buffer);
 
 	PL_LOG_DEBUG("Snapshot '{}' created in {}ms", manifestFilePath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }

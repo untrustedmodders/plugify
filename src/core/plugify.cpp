@@ -85,7 +85,12 @@ namespace plugify {
 			
 			auto [it, result] = _config.repositories.emplace(std::move(url));
 			if (result) {
-				return FileSystem::WriteText(_configPath, glz::write_json(_config));
+				const auto config = glz::write_json(_config);
+				if (!config) {
+					PL_LOG_ERROR("Add repository: JSON writing error: {}", glz::format_error(config));
+					return false;
+				}
+				return FileSystem::WriteText(_configPath, config.value());
 			}
 
 			return false;
