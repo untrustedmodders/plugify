@@ -59,8 +59,8 @@ else()
     set(GIT_TAG "UNKNOWN")
 endif()
 
-add_library(git-info INTERFACE)
-target_compile_definitions(git-info INTERFACE
+add_library(plugify-git INTERFACE)
+target_compile_definitions(plugify-git INTERFACE
         PLUGIFY_GIT_COMMIT_HASH="${GIT_SHA1}"
         PLUGIFY_GIT_COMMIT_DATE="${GIT_DATE}"
         PLUGIFY_GIT_TAG="${GIT_TAG}"

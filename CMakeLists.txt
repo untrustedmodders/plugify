@@ -187,7 +187,7 @@ endif()
 
 # ------------------------------------------------------------------------------
 #
-target_link_libraries(${PROJECT_NAME} PRIVATE git-info)
+target_link_libraries(${PROJECT_NAME} PRIVATE plugify-git)
 
 include(GenerateExportHeader)
 generate_export_header(${PROJECT_NAME}
