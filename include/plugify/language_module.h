@@ -1,9 +1,9 @@
 #pragma once
 
-#include <variant>
-#include <vector>
 #include <memory>
 #include <string>
+#include <variant>
+#include <vector>
 #include <plugify/mem_addr.h>
 
 namespace plugify {
@@ -28,7 +28,13 @@ namespace plugify {
 	 * The ErrorData structure contains a string describing an error.
 	 */
 	struct ErrorData {
-		std::string error; ///< Description of the error.
+		//string error; ///< Description of the error.
+
+		std::array<char, 256> error{}; ///< Description of the error.
+
+		ErrorData(std::string_view str) {
+			memcpy(error.data(), str.data(), std::min(str.length(), error.size() - 1));
+		}
 	};
 
 	/**

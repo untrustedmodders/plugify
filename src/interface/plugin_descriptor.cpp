@@ -14,55 +14,69 @@ int32_t PluginDescriptorRef::GetVersion() const noexcept {
 	return _impl->version;
 }
 
-const std::string& PluginDescriptorRef::GetVersionName() const noexcept {
+std::string_view PluginDescriptorRef::GetVersionName() const noexcept {
 	return _impl->versionName;
 }
 
-const std::string& PluginDescriptorRef::GetFriendlyName() const noexcept {
+std::string_view PluginDescriptorRef::GetFriendlyName() const noexcept {
 	return _impl->friendlyName;
 }
 
-const std::string& PluginDescriptorRef::GetDescription() const noexcept {
+std::string_view PluginDescriptorRef::GetDescription() const noexcept {
 	return _impl->description;
 }
 
-const std::string& PluginDescriptorRef::GetCreatedBy() const noexcept {
+std::string_view PluginDescriptorRef::GetCreatedBy() const noexcept {
 	return _impl->createdBy;
 }
 
-const std::string& PluginDescriptorRef::GetCreatedByURL() const noexcept {
+std::string_view PluginDescriptorRef::GetCreatedByURL() const noexcept {
 	return _impl->createdByURL;
 }
 
-const std::string& PluginDescriptorRef::GetDocsURL() const noexcept {
+std::string_view PluginDescriptorRef::GetDocsURL() const noexcept {
 	return _impl->docsURL;
 }
 
-const std::string& PluginDescriptorRef::GetDownloadURL() const noexcept {
+std::string_view PluginDescriptorRef::GetDownloadURL() const noexcept {
 	return _impl->downloadURL;
 }
 
-const std::string& PluginDescriptorRef::GetUpdateURL() const noexcept {
+std::string_view PluginDescriptorRef::GetUpdateURL() const noexcept {
 	return _impl->updateURL;
 }
 
-std::span<const std::string> PluginDescriptorRef::GetSupportedPlatforms() const noexcept {
-	return _impl->supportedPlatforms;
-}
-
-std::span<const std::string> PluginDescriptorRef::GetResourceDirectories() const noexcept {
-	if (_impl->resourceDirectories.has_value()) {
-		return *_impl->resourceDirectories;
+std::span<std::string_view> PluginDescriptorRef::GetSupportedPlatforms() const noexcept {
+	if (!_impl->_supportedPlatforms) {
+		_impl->_supportedPlatforms = make_shared_nothrow<std::vector<std::string_view>>(_impl->supportedPlatforms.begin(), _impl->supportedPlatforms.end());
+	}
+	if (_impl->_supportedPlatforms) {
+		return *_impl->_supportedPlatforms;
 	} else {
 		return {};
 	}
 }
 
-const std::string& PluginDescriptorRef::GetEntryPoint() const noexcept {
+std::span<std::string_view> PluginDescriptorRef::GetResourceDirectories() const noexcept {
+	if (_impl->resourceDirectories.has_value()) {
+		if (!_impl->_resourceDirectories) {
+			_impl->_resourceDirectories = make_shared_nothrow<std::vector<std::string_view>>(_impl->resourceDirectories->begin(), _impl->resourceDirectories->end());
+		}
+		if (_impl->_resourceDirectories) {
+			return *_impl->_resourceDirectories;
+		} else {
+			return {};
+		}
+	} else {
+		return {};
+	}
+}
+
+std::string_view PluginDescriptorRef::GetEntryPoint() const noexcept {
 	return _impl->entryPoint;
 }
 
-const std::string& PluginDescriptorRef::GetLanguageModule() const noexcept {
+std::string_view PluginDescriptorRef::GetLanguageModule() const noexcept {
 	return _impl->languageModule.name;
 }
 

@@ -1,9 +1,10 @@
-#include <plugify/plugin_reference_descriptor.h>
 #include <core/plugin_reference_descriptor.h>
+#include <plugify/plugin_reference_descriptor.h>
+#include <utils/pointer.h>
 
 using namespace plugify;
 
-const std::string& PluginReferenceDescriptorRef::GetName() const noexcept {
+std::string_view PluginReferenceDescriptorRef::GetName() const noexcept {
 	return _impl->name;
 }
 
@@ -11,8 +12,15 @@ bool PluginReferenceDescriptorRef::IsOptional() const noexcept {
 	return _impl->optional;
 }
 
-std::span<const std::string> PluginReferenceDescriptorRef::GetSupportedPlatforms() const noexcept {
-	return _impl->supportedPlatforms;
+std::span<std::string_view> PluginReferenceDescriptorRef::GetSupportedPlatforms() const noexcept {
+	if (!_impl->_supportedPlatforms) {
+		_impl->_supportedPlatforms = make_shared_nothrow<std::vector<std::string_view>>(_impl->supportedPlatforms.begin(), _impl->supportedPlatforms.end());
+	}
+	if (_impl->_supportedPlatforms) {
+		return *_impl->_supportedPlatforms;
+	} else {
+		return {};
+	}
 }
 
 std::optional<int32_t> PluginReferenceDescriptorRef::GetRequestedVersion() const noexcept {

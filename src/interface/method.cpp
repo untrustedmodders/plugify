@@ -20,15 +20,15 @@ std::optional<MethodRef> PropertyRef::GetPrototype() const noexcept {
 	}
 }
 
-const std::string& MethodRef::GetName() const noexcept {
+std::string_view MethodRef::GetName() const noexcept {
 	return _impl->name;
 }
 
-const std::string& MethodRef::GetFunctionName() const noexcept {
+std::string_view MethodRef::GetFunctionName() const noexcept {
 	return _impl->funcName;
 }
 
-const std::string& MethodRef::GetCallingConvention() const noexcept {
+std::string_view MethodRef::GetCallingConvention() const noexcept {
 	return _impl->callConv;
 }
 

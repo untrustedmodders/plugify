@@ -16,6 +16,8 @@ namespace plugify {
 		std::vector<Method> exportedMethods;
 
 	private:
+		mutable std::shared_ptr<std::vector<std::string_view>> _supportedPlatforms;
+		mutable std::shared_ptr<std::vector<std::string_view>> _resourceDirectories;
 		mutable std::shared_ptr<std::vector<PluginReferenceDescriptorRef>> _dependencies;
 		mutable std::shared_ptr<std::vector<MethodRef>> _exportedMethods;
 

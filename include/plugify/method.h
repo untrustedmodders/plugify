@@ -25,9 +25,9 @@ namespace plugify {
 	class PLUGIFY_API MethodRef : public Ref<const Method> {
 		using Ref::Ref;
 	public:
-		[[nodiscard]] const std::string& GetName() const noexcept;
-		[[nodiscard]] const std::string& GetFunctionName() const noexcept;
-		[[nodiscard]] const std::string& GetCallingConvention() const noexcept;
+		[[nodiscard]] std::string_view GetName() const noexcept;
+		[[nodiscard]] std::string_view GetFunctionName() const noexcept;
+		[[nodiscard]] std::string_view GetCallingConvention() const noexcept;
 		[[nodiscard]] std::span<const PropertyRef> GetParamTypes() const noexcept;
 		[[nodiscard]] PropertyRef GetReturnType() const noexcept;
 		[[nodiscard]] uint8_t GetVarIndex() const noexcept;

@@ -8,15 +8,15 @@ UniqueId ModuleRef::GetId() const noexcept {
 	return _impl->GetId();
 }
 
-const std::string& ModuleRef::GetName() const noexcept {
+std::string_view ModuleRef::GetName() const noexcept {
 	return _impl->GetName();
 }
 
-const std::string& ModuleRef::GetLanguage() const noexcept {
+std::string_view ModuleRef::GetLanguage() const noexcept {
 	return _impl->GetLanguage();
 }
 
-const std::string& ModuleRef::GetFriendlyName() const noexcept {
+std::string_view ModuleRef::GetFriendlyName() const noexcept {
 	return _impl->GetFriendlyName();
 }
 
@@ -36,7 +36,7 @@ ModuleState ModuleRef::GetState() const noexcept {
 	return _impl->GetState();
 }
 
-const std::string& ModuleRef::GetError() const noexcept {
+std::string_view ModuleRef::GetError() const noexcept {
 	return _impl->GetError();
 }
 

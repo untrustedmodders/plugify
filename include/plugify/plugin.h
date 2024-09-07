@@ -62,13 +62,13 @@ namespace plugify {
 		 * @brief Get the name of the plugin.
 		 * @return The name of the plugin.
 		 */
-		[[nodiscard]] const std::string& GetName() const noexcept;
+		[[nodiscard]] std::string_view GetName() const noexcept;
 
 		/**
 		 * @brief Get the friendly name of the plugin.
 		 * @return The friendly name of the plugin.
 		 */
-		[[nodiscard]] const std::string& GetFriendlyName() const noexcept;
+		[[nodiscard]] std::string_view GetFriendlyName() const noexcept;
 
 		/**
 		 * @brief Get the base directory of the plugin.
@@ -92,7 +92,7 @@ namespace plugify {
 		 * @brief Get the error message associated with the plugin.
 		 * @return The error message.
 		 */
-		[[nodiscard]] const std::string& GetError() const noexcept;
+		[[nodiscard]] std::string_view GetError() const noexcept;
 
 		/**
 		 * @brief Get the list of methods supported by the plugin.

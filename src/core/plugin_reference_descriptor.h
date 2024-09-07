@@ -10,5 +10,9 @@ namespace plugify {
 		std::optional<int32_t> requestedVersion;
 
 		[[nodiscard]] bool operator==(const PluginReferenceDescriptor& rhs) const noexcept { return name == rhs.name; }
+
+	private:
+		mutable std::shared_ptr<std::vector<std::string_view>> _supportedPlatforms;
+		friend class PluginReferenceDescriptorRef;
 	};
 }
