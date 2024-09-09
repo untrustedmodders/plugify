@@ -674,7 +674,7 @@ namespace plg {
 	basic_string<Alloc>& basic_string<Alloc>::assign(const basic_string &str, size_type pos, size_type n) {
 		return assign(
 				str.begin() + pos,
-				str.begin() + pos + std::min(n, str.length() - pos));
+				str.begin() + pos + std::min(n, str.size() - pos));
 	}
 
 	template<class Alloc>
@@ -1069,11 +1069,12 @@ namespace plg {
 		if (n <= capacity())
 			return;
 
+		const auto len = length();
+
 		auto a = get_allocator();
 		auto ptr = a.allocate(n);
-		std::memcpy(ptr, data(), (size() + 1) * sizeof(value_type));
 
-		const auto len = n - 1;
+		std::memcpy(ptr, data(), (len + 1) * sizeof(value_type));
 
 		deallocate_self();
 
@@ -1128,10 +1129,10 @@ namespace plg {
 	void basic_string<Alloc>::construct(const basic_string &str) {
 		switch (str.category()) {
 			case Category::Short:
-				construct_string_short(str.c_str(), str.length(), __max_short_size);
+				construct_string_short(str.c_str(), str.size(), __max_short_size);
 				break;
 			case Category::Mid:
-				construct_string_mid(str.c_str(), str.length(), str.capacity());
+				construct_string_mid(str.c_str(), str.size(), str.capacity());
 				break;
 			case Category::Long:
 				_members._long._cbptr = str._members._long._cbptr->acquire();
@@ -1167,10 +1168,6 @@ namespace plg {
 
 		switch (cat) {
 			case Category::Short:
-				/*for (size_type i = 0; i < len; ++i, ++first) {
-					std::construct_at(_members._short._data + i, *first);
-				}
-				std::construct_at(_members._short._data + len, '\0');*/
 				if constexpr (is_random) {
 					std::memmove(_members._short._data, *first, len);
 				} else {
@@ -1183,10 +1180,6 @@ namespace plg {
 				break;
 			case Category::Mid:
 				_members._mid._ptr = get_allocator().allocate(cap);
-				/*for (size_type i = 0; i < len; ++i, ++first) {
-					std::construct_at(_members._mid._ptr + i, *first);
-				}
-				std::construct_at(_members._mid._ptr + len, '\0');*/
 				if constexpr (is_random) {
 					std::memmove(_members._mid._ptr, *first, len);
 				} else {
@@ -1201,10 +1194,6 @@ namespace plg {
 			case Category::Long:
 				auto a = get_allocator();
 				auto ptr = a.allocate(cap);
-				/*for (size_type i = 0; i < len; ++i, ++first) {
-					std::construct_at(ptr + i, *first);
-				}
-				std::construct_at(ptr + len, '\0');*/
 				if constexpr (is_random) {
 					std::memmove(ptr, *first, len);
 				} else {
@@ -1228,10 +1217,6 @@ namespace plg {
 		switch (cat) {
 			case Category::Short: {
 				assert(n < __max_short_size);
-				/*for (size_type i = 0; i < n; i++) {
-					std::construct_at(_members._short._data + i, c);
-				}
-				std::construct_at(_members._short._data + n, '\0');*/
 				std::memset(_members._short._data, c, n);
 				_members._short._data[n] = value_type{'\0'};
 				set_length(n, Category::Short);
@@ -1239,10 +1224,6 @@ namespace plg {
 			}
 			case Category::Mid:
 				_members._mid._ptr = get_allocator().allocate(cap);
-				/*for (size_type i = 0; i < n; i++) {
-					std::construct_at(_members._mid._ptr + i, c);
-				}
-				std::construct_at(_members._mid._ptr + n, '\0');*/
 				std::memset(_members._mid._ptr, c, n);
 				_members._mid._ptr[n] = value_type{'\0'};
 				set_length(n, Category::Mid);
@@ -1251,10 +1232,6 @@ namespace plg {
 			case Category::Long:
 				auto a = get_allocator();
 				auto ptr = a.allocate(cap);
-				/*for (size_type i = 0; i < n; i++) {
-					std::construct_at(ptr + i, c);
-				}
-				std::construct_at(ptr + n, '\0');*/
 				std::memset(ptr, c, n);
 				ptr[n] = value_type{'\0'};
 				set_length(n, Category::Long);
@@ -1266,7 +1243,6 @@ namespace plg {
 
 	template<class Alloc>
 	void basic_string<Alloc>::construct_string_empty() {
-		//std::construct_at(_members._short._data, '\0');
 		_members._short._data[0] = value_type{'\0'};
 		set_length(0, Category::Short);
 	}
@@ -1275,10 +1251,6 @@ namespace plg {
 	void basic_string<Alloc>::construct_string_short(const basic_string::value_type *s, basic_string::size_type len,
 													 basic_string::size_type /*cap*/) {
 		assert(len < __max_short_size);
-		/*for (size_type i = 0; i < len; i++) {
-			std::construct_at(_members._short._data + i, s[i]);
-		}
-		std::construct_at(_members._short._data + len, '\0');*/
 		std::memmove(_members._short._data, s, len * sizeof(value_type));
 		_members._short._data[len] = value_type{'\0'};
 
@@ -1290,11 +1262,6 @@ namespace plg {
 												   basic_string::size_type cap) {
 		assert(len < cap);
 		_members._mid._ptr = get_allocator().allocate(cap);
-		// use placement new to construct each character at the allocated memory
-		/*for (size_type i = 0; i < len; i++) {
-			std::construct_at(_members._mid._ptr + i, s[i]);
-		}
-		std::construct_at(_members._mid._ptr + len, '\0');*/
 		std::memcpy(_members._mid._ptr, s, len * sizeof(value_type));
 		_members._mid._ptr[len] = value_type{'\0'};
 
@@ -1308,10 +1275,6 @@ namespace plg {
 		assert(len < cap);
 		auto a = get_allocator();
 		auto ptr = a.allocate(cap);
-		/*for (size_type i = 0; i < len; i++) {
-			std::construct_at(ptr + i, s[i]);
-		}
-		std::construct_at(ptr + len, '\0');*/
 		std::memcpy(ptr, s, len * sizeof(value_type));
 		ptr[len] = value_type{'\0'};
 
@@ -1402,12 +1365,8 @@ namespace plg {
 		auto cat = category();
 		switch (cat) {
 			case Category::Short:
-				//std::destroy_at(_members._short._data);
 				break;
 			case Category::Mid:
-				/*for (size_type i = 0; i < _members._mid._len; i++) {
-					std::destroy_at(_members._mid._ptr + i);
-				}*/
 				get_allocator().deallocate(_members._mid._ptr, _members._mid._cap);
 				break;
 			case Category::Long:
@@ -1526,10 +1485,6 @@ namespace plg {
 	basic_string<Alloc>::ControlBlock::ControlBlock(const ControlBlock& other)
 		: _ptr{nullptr}, _count{1}, _len{other._len}, _cap{other._cap}, _allocator{other._allocator} {
 		_ptr = _allocator.allocate(_cap);
-		/*for (size_type i = 0; i < _len; i++) {
-			std::construct_at(_ptr + i, other._ptr[i]);
-		}
-		std::construct_at(_ptr + _len, '\0');*/
 		std::memcpy(_ptr, other._ptr, (_len + 1) * sizeof(value_type));
 	}
 
