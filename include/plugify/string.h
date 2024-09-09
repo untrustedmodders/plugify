@@ -813,14 +813,15 @@ namespace plg {
 		if (n > 0) {
 			const auto len = length();
 			const auto cap = capacity();
-			const auto newCap = len + n;
+			const auto newLen = len + n;
+			const auto newCap = newLen + 1;
 
 			if (newCap > cap)
-				reserve(gen_capacity(newCap + 1));
+				reserve(gen_capacity(newCap));
 
 			pointer newEnd = Fill(end(), n, c);
 			*newEnd = 0;
-			set_length(newCap, category());
+			set_length(newLen, category());
 		}
 		return *this;
 	}
