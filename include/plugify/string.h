@@ -34,6 +34,7 @@ namespace plg {
 		typedef const_pointer const_iterator;
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+		typedef std::basic_string_view<value_type> basic_string_view;
 
 		static const size_type npos = static_cast<size_type>(-1);
 
@@ -62,7 +63,7 @@ namespace plg {
 		allocator_type& get_allocator() noexcept;
 		void set_allocator(const allocator_type& allocator);
 
-		//operator std::string_view() const noexcept;
+		operator basic_string_view() const noexcept;
 
 		bool empty() const noexcept;
 		size_type size() const noexcept;
@@ -343,18 +344,19 @@ namespace plg {
 	template <typename Alloc>
 	template <class T>
 	basic_string<Alloc>::basic_string(const T &t, size_type pos, size_type n, const allocator_type &a) : _members{ ._allocator = a } {
-		if (pos > t.size()) {
+		const basic_string_view str = t;
+		if (pos > str.size()) {
 			throw std::out_of_range("basic_string::basic_string -- out of range");
 		}
-
-		const auto len_to_assign = (n == npos || pos + n > t.size()) ? t.size() - pos : n;
-		construct(t.data() + pos, len_to_assign);
+		const auto len_to_assign = (n == npos || pos + n > str.size()) ? str.size() - pos : n;
+		construct(str.data() + pos, len_to_assign);
 	}
 
 	template <typename Alloc>
 	template <class T>
 	basic_string<Alloc>::basic_string(const T& t, const allocator_type& a) : _members{ ._allocator = a } {
-		construct(t.data(), t.size());
+		const basic_string_view str = t;
+		construct(str.data(), str.size());
 	}
 
 	template <typename Alloc>
@@ -687,15 +689,17 @@ namespace plg {
 
 	template<class Alloc>
 	template<typename T> basic_string<Alloc>& basic_string<Alloc>::assign(const T &t) {
-		return assign(t.data(), t.data() + t.size());
+		const basic_string_view str = t;
+		return assign(str.data(), str.data() + str.size());
 	}
 
 	template<class Alloc>
 	template<typename T>
 	basic_string<Alloc>& basic_string<Alloc>::assign(const T& t, size_type pos, size_type n) {
+		const basic_string_view str = t;
 		return assign(
-				t.begin() + pos,
-				t.begin() + pos + std::min(n, t.size() - pos));
+				str.begin() + pos,
+				str.begin() + pos + std::min(n, str.size() - pos));
 	}
 
 	template<class Alloc>
@@ -776,7 +780,8 @@ namespace plg {
 	template<class Alloc>
 	template <class T>
 	basic_string<Alloc> &basic_string<Alloc>::append(const T &t) {
-		return append(t.begin(), t.end());
+		const basic_string_view str = t;
+		return append(str.begin(), str.end());
 	}
 
 	template<class Alloc>
@@ -788,8 +793,9 @@ namespace plg {
 	template<class Alloc>
 	template <class T>
 	basic_string<Alloc> &basic_string<Alloc>::append(const T &t, size_type pos, size_type n) {
-		return append(t.begin() + pos,
-					  t.begin() + pos + std::min(n, t.size() - pos));
+		const basic_string_view str = t;
+		return append(str.begin() + pos,
+					  str.begin() + pos + std::min(n, str.size() - pos));
 	}
 
 	template<class Alloc>
@@ -893,7 +899,8 @@ namespace plg {
 	template<class Alloc>
 	template <class T>
 	int basic_string<Alloc>::compare(const T &t) const noexcept {
-		return compare(begin(), end(), t.begin(), t.end());
+		const basic_string_view str = t;
+		return compare(begin(), end(), str.begin(), str.end());
 	}
 	template<class Alloc>
 	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const basic_string &str) const {
@@ -906,10 +913,11 @@ namespace plg {
 	template<class Alloc>
 	template <class T>
 	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const T &t) const {
+		const basic_string_view str = t;
 		return compare(
 				begin() + pos1,
 				begin() + pos1 + std::min(n1, size() - pos1),
-				t.begin(), t.end());
+				str.begin(), str.end());
 
 	}
 	template<class Alloc>
@@ -923,10 +931,11 @@ namespace plg {
 	template<class Alloc>
 	template <class T>
 	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const T &t, size_type pos2, size_type n2) const {
+		const basic_string_view str = t;
 		return compare(begin() + pos1,
 					   begin() + pos1 + std::min(n1, size() - pos1),
-					   t.begin() + pos2,
-					   t.begin() + pos2 + std::min(n2, t.size() - pos2));
+					   str.begin() + pos2,
+					   str.begin() + pos2 + std::min(n2, str.size() - pos2));
 	}
 
 	template<class Alloc>
@@ -962,6 +971,11 @@ namespace plg {
 #pragma endregion Compare
 
 #pragma region Operators
+	template<class Alloc>
+	basic_string<Alloc>::operator basic_string_view() const noexcept {
+		return { data(), length() };
+	}
+
 	template<class Alloc>
 	basic_string<Alloc>& basic_string<Alloc>::operator=(const basic_string& str) {
 		return assign(str);
@@ -1036,9 +1050,10 @@ namespace plg {
 	template <class Alloc>
 	template<typename T>
 	bool basic_string<Alloc>::operator==(const T &t) const noexcept {
+		const basic_string_view str = t;
 		auto s1 = size();
-		auto s2 = t.size();
-		return s1 == s2 && Compare(data(), t.data(), s2) == 0;
+		auto s2 = str.size();
+		return s1 == s2 && Compare(data(), str.data(), s2) == 0;
 	}
 
 #pragma endregion Operators
