@@ -813,14 +813,15 @@ namespace plg {
 		if (n > 0) {
 			const auto len = length();
 			const auto cap = capacity();
-			const auto newCap = len + n;
+			const auto newLen = len + n;
+			const auto newCap = newLen + 1;
 
 			if (newCap > cap)
-				reserve(gen_capacity(newCap + 1));
+				reserve(gen_capacity(newCap));
 
 			pointer newEnd = Fill(end(), n, c);
 			*newEnd = 0;
-			set_length(newCap, category());
+			set_length(newLen, category());
 		}
 		return *this;
 	}
@@ -1070,10 +1071,9 @@ namespace plg {
 
 		auto a = get_allocator();
 		auto ptr = a.allocate(n);
-		std::memcpy(ptr, data(), size() * sizeof(value_type));
+		std::memcpy(ptr, data(), (size() + 1) * sizeof(value_type));
 
 		const auto len = n - 1;
-		ptr[len] = value_type{'\0'};
 
 		deallocate_self();
 
@@ -1530,8 +1530,7 @@ namespace plg {
 			std::construct_at(_ptr + i, other._ptr[i]);
 		}
 		std::construct_at(_ptr + _len, '\0');*/
-		std::memcpy(_ptr, other._ptr, _len * sizeof(value_type));
-		_ptr[_len] = value_type{'\0'};
+		std::memcpy(_ptr, other._ptr, (_len + 1) * sizeof(value_type));
 	}
 
 	template<class Alloc>
