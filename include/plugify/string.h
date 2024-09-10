@@ -1880,12 +1880,14 @@ namespace plg {
 }// namespace plg
 
 // format support
-template<>
-struct std::formatter<plg::string> : std::formatter<std::string_view> {
+template <>
+struct std::formatter<plg::string> {
+	constexpr auto parse(std::format_parse_context& ctx) {
+		return ctx.begin();
+	}
+
 	auto format(const plg::string& str, std::format_context& ctx) const {
-		std::string temp;
-		std::format_to(std::back_inserter(temp), "{}", std::string_view(str.data(), str.size()));
-		return std::formatter<string_view>::format(temp, ctx);
+		return std::format_to(ctx.out(), "{}", str.c_str());
 	}
 };
 
