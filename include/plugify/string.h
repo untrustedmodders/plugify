@@ -1,21 +1,21 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <string>
 #include <type_traits>
-#include <cassert>
-#include <format>
 
 // Adapted from https://github.com/klementtan/string_cpp/
 
 namespace plg {
 	// Memory layout for the different type of strings
 	// clang-format off
-		// byte     [00] [01] [02] [03] [04] [05] [06] [07] [08] [09] [10] [11] [12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22] [23]
-		// small:   [value0                                                                                                   value22] [l ]
-		// medium:  [pointer                              ] [len                                  ] [cap                                  ]
-		// large:   [cb_pointer                           ] [len                                  ] [cap                                  ]
+    // byte     [00] [01] [02] [03] [04] [05] [06] [07] [08] [09] [10] [11] [12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22] [23]
+    // small:   [value0                                                                                                   value22] [l ]
+    // medium:  [pointer                              ] [len                                  ] [cap                                  ]
+    // large:   [cb_pointer                           ] [len                                  ] [cap                                  ]
 	// clang-format on
 
 	template<class Alloc>
@@ -42,36 +42,35 @@ namespace plg {
 		explicit basic_string(const allocator_type& a);
 		basic_string(const basic_string& str);
 		basic_string(const value_type* s, const allocator_type& a = allocator_type());
-		basic_string(basic_string &&str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value);
-		//basic_string(const basic_string &str, size_type pos,const allocator_type &a = allocator_type());
-		//basic_string(const basic_string &str, size_type pos, size_type n, const allocator_type &a = allocator_type());
-		template <class T>
-		basic_string(const T &t, size_type pos, size_type n, const allocator_type &a = allocator_type());
-		template <class T>
-		basic_string(const T &t, const allocator_type &a = allocator_type());
-		basic_string(const value_type *s, size_type n, const allocator_type &a = allocator_type());
-		basic_string(size_type n, value_type c, const allocator_type &a = allocator_type());
-		template <class InputIterator>
-		basic_string(InputIterator first, InputIterator last, const allocator_type &a = allocator_type());
-		basic_string(std::initializer_list<value_type>, const allocator_type & = allocator_type());
-		basic_string(const basic_string &, const allocator_type &);
-		//basic_string(basic_string &&, const allocator_type &);
+		basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value);
+		basic_string(const basic_string& str, size_type pos, size_type n = npos, const allocator_type& a = allocator_type());
+		template<class T>
+		basic_string(const T& t, size_type pos, size_type n, const allocator_type& a = allocator_type());
+		template<class T>
+		basic_string(const T& t, const allocator_type& a = allocator_type());
+		basic_string(const value_type* s, size_type n, const allocator_type& a = allocator_type());
+		basic_string(size_type n, value_type c, const allocator_type& a = allocator_type());
+		template<class InputIterator>
+		basic_string(InputIterator first, InputIterator last, const allocator_type& a = allocator_type());
+		basic_string(std::initializer_list<value_type>, const allocator_type& = allocator_type());
+		basic_string(const basic_string&, const allocator_type&);
+		basic_string(basic_string&&, const allocator_type&);
 		~basic_string();
 
 		// Allocator
-		const allocator_type& get_allocator() const noexcept;
-		allocator_type& get_allocator() noexcept;
+		[[nodiscard]] const allocator_type& get_allocator() const noexcept;
+		[[nodiscard]] allocator_type& get_allocator() noexcept;
 		void set_allocator(const allocator_type& allocator);
 
-		operator basic_string_view() const noexcept;
+		[[nodiscard]] operator basic_string_view() const noexcept;
 
-		bool empty() const noexcept;
-		size_type size() const noexcept;
-		size_type length() const noexcept;
-		size_type capacity() const noexcept;
-		const_reference operator[](size_type pos) const;
-		reference operator[](size_type pos);
-		value_type *data() noexcept; // C++17
+		[[nodiscard]] bool empty() const noexcept;
+		[[nodiscard]] size_type size() const noexcept;
+		[[nodiscard]] size_type length() const noexcept;
+		[[nodiscard]] size_type capacity() const noexcept;
+		[[nodiscard]] const_reference operator[](size_type pos) const;
+		[[nodiscard]] reference operator[](size_type pos);
+		[[nodiscard]] value_type* data() noexcept;// C++17
 		[[nodiscard]] const value_type* data() const noexcept;
 		[[nodiscard]] const value_type* c_str() const noexcept;
 
@@ -101,75 +100,102 @@ namespace plg {
 		void push_back(value_type c);
 		void pop_back();
 
+		size_type copy(value_type* s, size_type n, size_type pos = 0) const;
+		basic_string substr(size_type pos = 0, size_type n = npos) const;
+
 		/** Most std:: namespace containers never shrink. I want to point out that this may be an anti-feature. **/
 		/* void shrink_to_fit(); */
 		void reserve(size_type n = 0);
+		void resize(size_type n, value_type c);
+		void resize(size_type n);
+		void swap(basic_string& str) noexcept(std::allocator_traits<allocator_type>::propagate_on_container_swap::value || std::allocator_traits<allocator_type>::is_always_equal::value);// C++17
 
-		basic_string &erase(size_type pos = 0, size_type n = npos);
+		basic_string& erase(size_type pos = 0, size_type n = npos);
 		iterator erase(const_iterator position);
 		iterator erase(const_iterator first, const_iterator last);
 		reverse_iterator erase(reverse_iterator position);
 		reverse_iterator erase(reverse_iterator first, reverse_iterator last);
 		void clear() noexcept;
 
-		basic_string &assign(const basic_string &str);
+		basic_string& assign(const basic_string& str);
 		template<typename T>
-		basic_string &assign(const T &t); // C++17 */
-		basic_string &assign(basic_string &&str);
-		basic_string &assign(const basic_string &str, size_type pos, size_type n = npos); // C++14 */
+		basic_string& assign(const T& t);
+		basic_string& assign(basic_string&& str);
+		basic_string& assign(const basic_string& str, size_type pos, size_type n = npos);
 		template<typename T>
-		basic_string &assign(const T &t, size_type pos, size_type n = npos); // C++17 */
-		basic_string &assign(const value_type *s, size_type n);
-		basic_string &assign(const value_type *s);
-		basic_string &assign(size_type n, value_type c);
+		basic_string& assign(const T& t, size_type pos, size_type n = npos);
+		basic_string& assign(const value_type* s, size_type n);
+		basic_string& assign(const value_type* s);
+		basic_string& assign(size_type n, value_type c);
 		//template<class InputIterator>
-		//basic_string &assign(InputIterator first, InputIterator last); TODO: Fix (not works as bellow)
-		basic_string &assign(const value_type* first, const value_type* last);
-		basic_string &assign(std::initializer_list<value_type>);
+		//basic_string& assign(InputIterator first, InputIterator last); TODO: Fix
+		basic_string& assign(const value_type* first, const value_type* last);
+		basic_string& assign(std::initializer_list<value_type>);
 
-		basic_string &operator=(const basic_string &str);
-		template <class T> basic_string &operator=(const T &t); // C++17 */
-		basic_string &operator=(basic_string &&str) noexcept(allocator_type::propagate_on_container_move_assignment::value || allocator_type::is_always_equal::value); // C++17 */
-		basic_string &operator=(const value_type *s);
-		basic_string &operator=(value_type c);
-		basic_string &operator=(std::initializer_list<value_type>);
-
-		bool operator==(const value_type* str) const noexcept;
-		bool operator==(const basic_string& str) const noexcept;
-		template<typename T>
-		bool operator==(const T &t) const noexcept;
-
-		basic_string &operator+=(const basic_string &str);
-		template <class T> basic_string &operator+=(const T &t); // C++17
-		basic_string &operator+=(const value_type *s);
-		basic_string &operator+=(value_type c);
-		basic_string &operator+=(std::initializer_list<value_type>);
-
-		basic_string &append(const basic_string &str);
-		template <class T> basic_string &append(const T &t); // C++17
-		basic_string &append(const basic_string &str, size_type pos, size_type n = npos); // C++14
+		// TODO: Implement
+		/*basic_string &insert(size_type pos1, const basic_string &str);
 		template <class T>
-		basic_string &append(const T &t, size_type pos, size_type n = npos); // C++17
-		basic_string &append(const value_type *s, size_type n);
-		basic_string &append(const value_type *s);
-		basic_string &append(size_type n, value_type c);
+		basic_string &insert(size_type pos1, const T &t);
+		basic_string &insert(size_type pos1, const basic_string &str, size_type pos2, size_type n);
+		template <class T>
+		basic_string &insert(size_type pos1, const T &t, size_type pos2, size_type n); // C++17
+		basic_string &insert(size_type pos, const value_type *s, size_type n = npos); // C++14
+		basic_string &insert(size_type pos, const value_type *s);
+		basic_string &insert(size_type pos, size_type n, value_type c);
+		iterator insert(const_iterator p, value_type c);
+		iterator insert(const_iterator p, size_type n, value_type c);
 		template <class InputIterator>
-		basic_string &append(InputIterator first, InputIterator last);
-		basic_string &append(std::initializer_list<value_type>);
+		iterator insert(const_iterator p, InputIterator first, InputIterator last);
+		iterator insert(const_iterator p, std::initializer_list<value_type>);*/
 
-		int compare(const basic_string &str) const noexcept;
-		template <class T>
-		int compare(const T &t) const noexcept; // C++17
-		int compare(size_type pos1, size_type n1, const basic_string &str) const;
-		template <class T>
-		int compare(size_type pos1, size_type n1, const T &t) const; // C++17
-		int compare(size_type pos1, size_type n1, const basic_string &str, size_type pos2, size_type n2 = npos) const; // C++14
-		template <class T>
-		int compare(size_type pos1, size_type n1, const T &t, size_type pos2, size_type n2 = npos) const; // C++17
-		int compare(const value_type *s) const noexcept;
-		int compare(size_type pos1, size_type n1, const value_type *s) const;
-		int compare(size_type pos1, size_type n1, const value_type *s, size_type pos2, size_type n2 = npos) const;
-		static int compare(const value_type* begin1, const value_type* end1, const value_type* begin2, const value_type* end2);
+		// TODO: Implement replace + find methods
+
+		basic_string& operator=(const basic_string& str);
+		template<class T>
+		basic_string& operator=(const T& t);
+		basic_string& operator=(basic_string&& str) noexcept(allocator_type::propagate_on_container_move_assignment::value || allocator_type::is_always_equal::value);
+		basic_string& operator=(const value_type* s);
+		basic_string& operator=(value_type c);
+		basic_string& operator=(std::initializer_list<value_type>);
+
+		[[nodiscard]] bool operator==(const value_type* str) const noexcept;
+		[[nodiscard]] bool operator==(const basic_string& str) const noexcept;
+		template<typename T>
+		[[nodiscard]] bool operator==(const T& t) const noexcept;
+
+		basic_string& operator+=(const basic_string& str);
+		template<class T>
+		basic_string& operator+=(const T& t);// C++17
+		basic_string& operator+=(const value_type* s);
+		basic_string& operator+=(value_type c);
+		basic_string& operator+=(std::initializer_list<value_type>);
+
+		basic_string& append(const basic_string& str);
+		template<class T>
+		basic_string& append(const T& t);
+		basic_string& append(const basic_string& str, size_type pos, size_type n = npos);
+		template<class T>
+		basic_string& append(const T& t, size_type pos, size_type n = npos);// C++17
+		basic_string& append(const value_type* s, size_type n);
+		basic_string& append(const value_type* s);
+		basic_string& append(size_type n, value_type c);
+		template<class InputIterator>
+		basic_string& append(InputIterator first, InputIterator last);
+		basic_string& append(std::initializer_list<value_type>);
+
+		[[nodiscard]] int compare(const basic_string& str) const noexcept;
+		template<class T>
+		[[nodiscard]] int compare(const T& t) const noexcept;
+		[[nodiscard]] int compare(size_type pos1, size_type n1, const basic_string& str) const;
+		template<class T>
+		[[nodiscard]] int compare(size_type pos1, size_type n1, const T& t) const;
+		[[nodiscard]] int compare(size_type pos1, size_type n1, const basic_string& str, size_type pos2, size_type n2 = npos) const;
+		template<class T>
+		[[nodiscard]] int compare(size_type pos1, size_type n1, const T& t, size_type pos2, size_type n2 = npos) const;
+		[[nodiscard]] int compare(const value_type* s) const noexcept;
+		[[nodiscard]] int compare(size_type pos1, size_type n1, const value_type* s) const;
+		[[nodiscard]] int compare(size_type pos1, size_type n1, const value_type* s, size_type pos2, size_type n2 = npos) const;
+		[[nodiscard]] static int compare(const value_type* begin1, const value_type* end1, const value_type* begin2, const value_type* end2);
 
 	private:
 		static constexpr size_type __string_max_size = sizeof(size_type) * 2 + sizeof(pointer);
@@ -183,9 +209,7 @@ namespace plg {
 		};
 
 #if _MSC_VER
-#define nounique msvc::no_unique_address
-#else
-#define nounique no_unique_address
+#define no_unique_address msvc::no_unique_address
 #endif
 
 		class ControlBlock {
@@ -193,7 +217,7 @@ namespace plg {
 			std::atomic<size_type> _count;
 			size_type _len;
 			size_type _cap;
-			[[nounique]] allocator_type _allocator;
+			[[no_unique_address]] allocator_type _allocator;
 
 		public:
 			ControlBlock(pointer p, size_type len, size_type cap, const allocator_type& a = allocator_type());
@@ -204,10 +228,10 @@ namespace plg {
 			ControlBlock& operator=(ControlBlock&& p) = delete;
 			~ControlBlock();
 
-			ControlBlock* acquire();
+			ControlBlock* acquire() noexcept;
+			pointer get() const noexcept;
+			size_type count() const noexcept;
 			void release();
-			pointer get() const;
-			size_type count() const;
 		};
 
 		struct Short {
@@ -240,38 +264,41 @@ namespace plg {
 				Mid _mid;
 				Long _long;
 			};
-			[[nounique]] allocator_type _allocator{};
+			[[no_unique_address]] allocator_type _allocator{};
 		} _members;
 
 		static_assert(sizeof(Members) <= __string_max_size,
 					  "Layout struct is larger than max size");
 
-		Category category() const;
-		static Category get_category(size_type cap);
+		Category category() const noexcept;
+		static Category get_category(size_type cap) noexcept;
 
-		[[nodiscard]] bool msb() const;
+		[[nodiscard]] bool msb() const noexcept;
 
-		uint8_t& msbyte();
-		uint8_t cmsbyte() const;
+		[[nodiscard]] uint8_t& msbyte() noexcept;
+		[[nodiscard]] uint8_t cmsbyte() const noexcept;
 
-		value_type* begin_ptr();
-		const value_type* begin_ptr() const;
-		value_type* end_ptr();
-		const value_type* end_ptr() const;
+		[[nodiscard]] value_type* begin_ptr() noexcept;
+		[[nodiscard]] const value_type* begin_ptr() const noexcept;
+		[[nodiscard]] value_type* end_ptr() noexcept;
+		[[nodiscard]] const value_type* end_ptr() const noexcept;
 
+		[[nodiscard]] pointer allocate(size_type n);
+		void deallocate(pointer ptr, size_type n);
 		void deallocate_self();
 
+		[[nodiscard]] size_type remaining_capacity() const noexcept;
+		[[nodiscard]] static size_type gen_capacity(size_type len) noexcept;
 		void set_capacity(size_type cap);
-		static size_type gen_capacity(size_type len);
 		void set_length(size_type len, Category cat);
-		//void print_mem() const;
+		void set_heap(pointer ptr, size_type len, size_type cap);
 
-		void construct(const value_type *s);
-		void construct(const value_type *s, size_type len);
-		void construct(const basic_string &str);
+		void construct_internal(const value_type* s);
+		void construct_internal(const value_type* s, size_type len);
+		void construct_internal(const basic_string& str);
 		template<class InputIterator>
-		void construct(InputIterator first, InputIterator last);
-		void construct(size_type n, value_type c);
+		void construct_internal(InputIterator first, InputIterator last);
+		void construct_internal(size_type n, value_type c);
 
 		void construct_string_empty();
 		void construct_string_short(const value_type* s, size_type len, size_type cap);
@@ -282,18 +309,19 @@ namespace plg {
 	};
 
 	template<class Alloc>
-	void basic_string<Alloc>::set_allocator(const allocator_type &allocator) {
+	void basic_string<Alloc>::set_allocator(const allocator_type& allocator) {
 		_members._allocator = allocator;
+		// TODO: What if new allocator was set ?
 	}
 
 	template<class Alloc>
-	typename basic_string<Alloc>::allocator_type &
+	typename basic_string<Alloc>::allocator_type&
 	basic_string<Alloc>::get_allocator() noexcept {
 		return _members._allocator;
 	}
 
 	template<class Alloc>
-	const typename basic_string<Alloc>::allocator_type &
+	const typename basic_string<Alloc>::allocator_type&
 	basic_string<Alloc>::get_allocator() const noexcept {
 		return _members._allocator;
 	}
@@ -308,8 +336,8 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	basic_string<Alloc>::basic_string(const value_type* s, const allocator_type& a) : _members{ ._allocator = a } {
-		construct(s);
+	basic_string<Alloc>::basic_string(const value_type* s, const allocator_type& a) : _members{._allocator = a} {
+		construct_internal(s);
 	}
 
 	template<class Alloc>
@@ -318,7 +346,7 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	basic_string<Alloc>::basic_string(const allocator_type& a) : _members{ ._allocator = a } {
+	basic_string<Alloc>::basic_string(const allocator_type& a) : _members{._allocator = a} {
 		construct_string_empty();
 	}
 
@@ -326,69 +354,72 @@ namespace plg {
 	basic_string<Alloc>::basic_string(const basic_string& str) : basic_string(str, allocator_type()) {
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	basic_string<Alloc>::basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value) : _members{str._members} {
 		str._members = {};
 	}
 
-	/*template <typename Alloc>
-	basic_string<Alloc>::basic_string(const basic_string& str, size_type pos, const allocator_type& a) : _members{ ._allocator = a } {
-		// TODO:
+	template<typename Alloc>
+	basic_string<Alloc>::basic_string(const basic_string& str, size_type pos, size_type n, const allocator_type& a) : _members{._allocator = a} {
+		construct_internal(
+				str.begin() + pos,
+				str.begin() + pos + std::min(n, str.size() - pos));
 	}
 
-	template <typename Alloc>
-	basic_string<Alloc>::basic_string(const basic_string& str, size_type pos, size_type n, const allocator_type& a) : _members{ ._allocator = a } {
-	   // TODO:
-	}*/
-
-	template <typename Alloc>
-	template <class T>
-	basic_string<Alloc>::basic_string(const T &t, size_type pos, size_type n, const allocator_type &a) : _members{ ._allocator = a } {
+	template<typename Alloc>
+	template<class T>
+	basic_string<Alloc>::basic_string(const T& t, size_type pos, size_type n, const allocator_type& a) : _members{._allocator = a} {
 		const basic_string_view str = t;
 		if (pos > str.size()) {
 			throw std::out_of_range("basic_string::basic_string -- out of range");
 		}
 		const auto len_to_assign = (n == npos || pos + n > str.size()) ? str.size() - pos : n;
-		construct(str.data() + pos, len_to_assign);
+		construct_internal(str.data() + pos, len_to_assign);
 	}
 
-	template <typename Alloc>
-	template <class T>
-	basic_string<Alloc>::basic_string(const T& t, const allocator_type& a) : _members{ ._allocator = a } {
+	template<typename Alloc>
+	template<class T>
+	basic_string<Alloc>::basic_string(const T& t, const allocator_type& a) : _members{._allocator = a} {
 		const basic_string_view str = t;
-		construct(str.data(), str.size());
+		construct_internal(str.data(), str.size());
 	}
 
-	template <typename Alloc>
-	basic_string<Alloc>::basic_string(const value_type* s, size_type n, const allocator_type& a) : _members{ ._allocator = a } {
-		construct(s, n);
+	template<typename Alloc>
+	basic_string<Alloc>::basic_string(const value_type* s, size_type n, const allocator_type& a) : _members{._allocator = a} {
+		construct_internal(s, n);
 	}
 
-	template <typename Alloc>
-	basic_string<Alloc>::basic_string(size_type n, value_type c, const allocator_type& a) : _members{ ._allocator = a } {
-		construct(n, c);
+	template<typename Alloc>
+	basic_string<Alloc>::basic_string(size_type n, value_type c, const allocator_type& a) : _members{._allocator = a} {
+		construct_internal(n, c);
 	}
 
-	template <typename Alloc>
-	template <class InputIterator>
-	basic_string<Alloc>::basic_string(InputIterator first, InputIterator last, const allocator_type& a) : _members{ ._allocator = a } {
-		construct(first, last);
+	template<typename Alloc>
+	template<class InputIterator>
+	basic_string<Alloc>::basic_string(InputIterator first, InputIterator last, const allocator_type& a) : _members{._allocator = a} {
+		construct_internal(first, last);
 	}
 
-	template <typename Alloc>
-	basic_string<Alloc>::basic_string(std::initializer_list<value_type> ilist, const allocator_type& a) : _members{ ._allocator = a } {
-		construct(ilist.begin(), ilist.size());
+	template<typename Alloc>
+	basic_string<Alloc>::basic_string(std::initializer_list<value_type> ilist, const allocator_type& a) : _members{._allocator = a} {
+		construct_internal(ilist.begin(), ilist.size());
 	}
 
-	template <typename Alloc>
-	basic_string<Alloc>::basic_string(const basic_string& str, const allocator_type& a) : _members{ ._allocator = a } {
-		construct(str);
+	template<typename Alloc>
+	basic_string<Alloc>::basic_string(const basic_string& str, const allocator_type& a) : _members{._allocator = a} {
+		construct_internal(str);
 	}
 
-	/*template <typename Alloc>
-	basic_string<Alloc>::basic_string(basic_string&& str, const allocator_type& a) : _members{ ._allocator = a } {
-		// TODO:
-	}*/
+	template<typename Alloc>
+	basic_string<Alloc>::basic_string(basic_string&& str, const allocator_type& a) : _members{._allocator = a} {
+		if (get_allocator() == str.get_allocator()) {
+			_members = str._members;
+			str._members = {};
+		} else if (str.begin()) {
+			construct_internal(str);
+		}
+	}
+
 #pragma endregion Constructors
 
 #pragma region Basic
@@ -428,12 +459,6 @@ namespace plg {
 
 	template<class Alloc>
 	typename basic_string<Alloc>::size_type
-	basic_string<Alloc>::size() const noexcept {
-		return length();
-	}
-
-	template<class Alloc>
-	typename basic_string<Alloc>::size_type
 	basic_string<Alloc>::length() const noexcept {
 		switch (category()) {
 			case Category::Short:
@@ -444,6 +469,12 @@ namespace plg {
 				return _members._long._len;
 		}
 		return npos;
+	}
+
+	template<class Alloc>
+	typename basic_string<Alloc>::size_type
+	basic_string<Alloc>::size() const noexcept {
+		return length();
 	}
 
 	template<class Alloc>
@@ -505,73 +536,73 @@ namespace plg {
 
 #pragma region Iterators
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::iterator
 	basic_string<Alloc>::begin() noexcept {
 		return begin_ptr();
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::iterator
 	basic_string<Alloc>::end() noexcept {
 		return end_ptr();
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::const_iterator
 	basic_string<Alloc>::begin() const noexcept {
 		return begin_ptr();
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::const_iterator
 	basic_string<Alloc>::cbegin() const noexcept {
 		return begin_ptr();
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::const_iterator
 	basic_string<Alloc>::end() const noexcept {
 		return end_ptr();
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::const_iterator
 	basic_string<Alloc>::cend() const noexcept {
 		return end_ptr();
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::reverse_iterator
 	basic_string<Alloc>::rbegin() noexcept {
 		return reverse_iterator(end_ptr());
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::reverse_iterator
 	basic_string<Alloc>::rend() noexcept {
 		return reverse_iterator(begin_ptr());
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::const_reverse_iterator
 	basic_string<Alloc>::rbegin() const noexcept {
 		return const_reverse_iterator(end_ptr());
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::const_reverse_iterator
 	basic_string<Alloc>::crbegin() const noexcept {
 		return const_reverse_iterator(end_ptr());
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::const_reverse_iterator
 	basic_string<Alloc>::rend() const noexcept {
 		return const_reverse_iterator(begin_ptr());
 	}
 
-	template <typename Alloc>
+	template<typename Alloc>
 	typename basic_string<Alloc>::const_reverse_iterator
 	basic_string<Alloc>::crend() const noexcept {
 		return const_reverse_iterator(begin_ptr());
@@ -605,18 +636,18 @@ namespace plg {
 
 	template<class Alloc>
 	void basic_string<Alloc>::push_back(value_type c) {
-		append((size_t)1, c);
+		append((size_t) 1, c);
 	}
 
 	template<class Alloc>
 	void basic_string<Alloc>::pop_back() {
-		end()[-1] = '\0';
+		end()[-1] = 0;
 		set_length(length() - 1, category());
 	}
 
 #pragma region Erase
 	template<class Alloc>
-	basic_string<Alloc> &basic_string<Alloc>::erase(size_type pos, size_type n) {
+	basic_string<Alloc>& basic_string<Alloc>::erase(size_type pos, size_type n) {
 		erase(begin() + pos,
 			  begin() + pos + std::min(n, length() - pos));
 		return *this;
@@ -624,7 +655,7 @@ namespace plg {
 
 	template<class Alloc>
 	basic_string<Alloc>::iterator basic_string<Alloc>::erase(const_iterator p) {
-		std::memmove(const_cast<value_type*>(p), p + 1, (size_t)(end() - p) * sizeof(value_type));
+		std::memmove(const_cast<value_type*>(p), p + 1, (size_t) (end() - p) * sizeof(value_type));
 		set_length(length() - 1, category());
 		return const_cast<value_type*>(p);
 	}
@@ -632,8 +663,8 @@ namespace plg {
 	template<class Alloc>
 	basic_string<Alloc>::iterator basic_string<Alloc>::erase(const_iterator first, const_iterator last) {
 		if (first != last) {
-			std::memmove(const_cast<value_type*>(first), last, (size_t)((end() - last) + 1) * sizeof(value_type));
-			const size_type n = (size_type)(last - first);
+			std::memmove(const_cast<value_type*>(first), last, (size_t) ((end() - last) + 1) * sizeof(value_type));
+			const auto n = (size_type) (last - first);
 			set_length(length() - n, category());
 		}
 		return const_cast<value_type*>(first);
@@ -658,20 +689,31 @@ namespace plg {
 #pragma endregion Erase
 
 #pragma region Assign
-	inline char* Assign(char* dest, size_t n, char c)  {
+	inline char* Assign(char* dest, size_t n, char c) {
 		if (n) {
-			return reinterpret_cast<char*>(std::memset(dest, c, (size_t)n));
+			return reinterpret_cast<char*>(std::memset(dest, c, (size_t) n));
 		}
 		return dest;
 	}
 
 	template<class Alloc>
 	basic_string<Alloc>& basic_string<Alloc>::assign(const basic_string& str) {
-		return assign(str.begin(), str.end());
+		if (this == &str) {
+			return *this;
+		}
+
+		if (get_allocator() == str.get_allocator() && str.category() == Category::Long) {
+			_members._long._cbptr = str._members._long._cbptr->acquire();
+			_members._long._len = str._members._long._len;
+			_members._long._cap = str._members._long._cap;
+			return *this;
+		} else {
+			return assign(str.begin(), str.end());
+		}
 	}
 
 	template<class Alloc>
-	basic_string<Alloc>& basic_string<Alloc>::assign(const basic_string &str, size_type pos, size_type n) {
+	basic_string<Alloc>& basic_string<Alloc>::assign(const basic_string& str, size_type pos, size_type n) {
 		return assign(
 				str.begin() + pos,
 				str.begin() + pos + std::min(n, str.size() - pos));
@@ -688,7 +730,8 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	template<typename T> basic_string<Alloc>& basic_string<Alloc>::assign(const T &t) {
+	template<typename T>
+	basic_string<Alloc>& basic_string<Alloc>::assign(const T& t) {
 		const basic_string_view str = t;
 		return assign(str.data(), str.data() + str.size());
 	}
@@ -731,24 +774,24 @@ namespace plg {
 	}
 
 	/*template<class Alloc>
-	template<class InputIterator>
-	basic_string<Alloc>& basic_string<Alloc>::assign(InputIterator first, InputIterator last) {
-		const auto n = std::distance(first, last);
-		const auto len = length();
-		if (n <= len) {
-			if (n)
-				std::memmove(begin(), first, (size_t)n * sizeof(value_type));
-			erase(begin() + n, end());
-		} else {
-			std::memmove(begin(), first, (size_t)(len) * sizeof(value_type));
-			append(first + len, last);
-		}
-		return *this;
-	}*/
+    template<class InputIterator>
+    basic_string<Alloc>& basic_string<Alloc>::assign(InputIterator first, InputIterator last) {
+        const auto n = std::distance(first, last);
+        const auto len = length();
+        if (n <= len) {
+            if (n)
+                std::memmove(begin(), first, (size_t)n * sizeof(value_type));
+            erase(begin() + n, end());
+        } else {
+            std::memmove(begin(), first, (size_t)(len) * sizeof(value_type));
+            append(first + len, last);
+        }
+        return *this;
+    }*/
 
 	template<class Alloc>
 	basic_string<Alloc>& basic_string<Alloc>::assign(const value_type* first, const value_type* last) {
-		const auto n = (size_t)(last - first);
+		const auto n = (size_t) (last - first);
 		const auto len = length();
 		if (n <= len) {
 			if (n) {
@@ -756,7 +799,7 @@ namespace plg {
 			}
 			erase(begin() + n, end());
 		} else {
-			std::memmove(begin(), first, (size_t)(len) * sizeof(value_type));
+			std::memmove(begin(), first, (size_t) (len) * sizeof(value_type));
 			append(first + len, last);
 		}
 		return *this;
@@ -767,49 +810,49 @@ namespace plg {
 #pragma region Append
 	inline char* Fill(char* dest, size_t n, const char c) {
 		if (n) {
-			std::memset(dest, (uint8_t)c, (size_t)n);
+			std::memset(dest, (uint8_t) c, (size_t) n);
 		}
 		return dest + n;
 	}
 
 	template<class Alloc>
-	basic_string<Alloc> &basic_string<Alloc>::append(const basic_string &str) {
+	basic_string<Alloc>& basic_string<Alloc>::append(const basic_string& str) {
 		return append(str.begin(), str.end());
 	}
 
 	template<class Alloc>
-	template <class T>
-	basic_string<Alloc> &basic_string<Alloc>::append(const T &t) {
+	template<class T>
+	basic_string<Alloc>& basic_string<Alloc>::append(const T& t) {
 		const basic_string_view str = t;
 		return append(str.begin(), str.end());
 	}
 
 	template<class Alloc>
-	basic_string<Alloc> &basic_string<Alloc>::append(const basic_string &str, size_type pos, size_type n) {
+	basic_string<Alloc>& basic_string<Alloc>::append(const basic_string& str, size_type pos, size_type n) {
 		return append(str.begin() + pos,
 					  str.begin() + pos + std::min(n, str.size() - pos));
 	}
 
 	template<class Alloc>
-	template <class T>
-	basic_string<Alloc> &basic_string<Alloc>::append(const T &t, size_type pos, size_type n) {
+	template<class T>
+	basic_string<Alloc>& basic_string<Alloc>::append(const T& t, size_type pos, size_type n) {
 		const basic_string_view str = t;
 		return append(str.begin() + pos,
 					  str.begin() + pos + std::min(n, str.size() - pos));
 	}
 
 	template<class Alloc>
-	basic_string<Alloc> &basic_string<Alloc>::append(const value_type *s, size_type n) {
+	basic_string<Alloc>& basic_string<Alloc>::append(const value_type* s, size_type n) {
 		return append(s, s + n);
 	}
 
 	template<class Alloc>
-	basic_string<Alloc> &basic_string<Alloc>::append(const value_type *s) {
+	basic_string<Alloc>& basic_string<Alloc>::append(const value_type* s) {
 		return append(s, s + std::strlen(s));
 	}
 
 	template<class Alloc>
-	basic_string<Alloc> &basic_string<Alloc>::append(size_type n, value_type c) {
+	basic_string<Alloc>& basic_string<Alloc>::append(size_type n, value_type c) {
 		if (n > 0) {
 			const auto len = length();
 			const auto cap = capacity();
@@ -827,56 +870,36 @@ namespace plg {
 	}
 
 	template<typename T>
-	inline T* UninitializedCopy(const T* first, const T* last, T* dest) {
-		std::memmove(dest, first, (size_t)(last - first) * sizeof(T));
+	inline T* Copy(const T* first, const T* last, T* dest) {
+		std::memmove(dest, first, (size_t) (last - first) * sizeof(T));
 		return dest + (last - first);
 	}
 
 	template<class Alloc>
-	template <class InputIterator>
-	basic_string<Alloc> &basic_string<Alloc>::append(InputIterator first, InputIterator last) {
-		if(first != last) {
+	template<class InputIterator>
+	basic_string<Alloc>& basic_string<Alloc>::append(InputIterator first, InputIterator last) {
+		if (first != last) {
 			const auto n = std::distance(first, last);
-			const auto len = length() + n;
-			auto cap = capacity();
+			const auto cap = capacity();
+			const auto len = length();
+			const auto newLen = len + n;
 
-			if (len > cap) {
-				cap = gen_capacity(len + 1);
+			if (newLen > cap) {
+				const auto newCap = gen_capacity(newLen + 1);
+				pointer newBegin = allocate(newCap);
 
-				auto a = get_allocator();
-				pointer newBegin = a.allocate(cap);
-
-				pointer newEnd = UninitializedCopy(begin(), end(), newBegin);
-				newEnd = UninitializedCopy(first, last, newEnd);
+				pointer newEnd = Copy(begin(), end(), newBegin);
+				newEnd = Copy(first, last, newEnd);
 				*newEnd = 0;
 
 				deallocate_self();
 
-				const auto cat = get_category(cap);
-				switch (cat) {
-					case Category::Short: {
-						assert(n < __max_short_size);
-						std::memcpy(_members._short._data, newBegin, n * sizeof(value_type));
-						set_length(len, Category::Short);
-						a.deallocate(newBegin, n);
-						break;
-					}
-					case Category::Mid:
-						_members._mid._ptr = newBegin;
-						set_length(len, Category::Mid);
-						set_capacity(cap);
-						break;
-					case Category::Long:
-						_members._long._cbptr = new ControlBlock(newBegin, n, cap, a);
-						set_length(len, Category::Long);
-						set_capacity(cap);
-						break;
-				}
+				set_heap(newBegin, newLen, newCap);
 
 			} else {
-				pointer newEnd = UninitializedCopy(first, last, end());
+				pointer newEnd = Copy(first, last, end());
 				*newEnd = 0;
-				set_length(len, category());
+				set_length(newLen, category());
 			}
 		}
 
@@ -884,45 +907,44 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	basic_string<Alloc> &basic_string<Alloc>::append(std::initializer_list<value_type> ilist) {
+	basic_string<Alloc>& basic_string<Alloc>::append(std::initializer_list<value_type> ilist) {
 		append(ilist.begin(), ilist.end());
 	}
 #pragma endregion Append
 
 #pragma region Compare
-	// All main compilers offer a constexpr __builtin_memcmp as soon as C++17 was available.
-	constexpr int Compare(const char* p1, const char* p2, size_t n) { return __builtin_memcmp(p1, p2, n); }
+	constexpr int Compare(const char* p1, const char* p2, size_t n) {
+		return __builtin_memcmp(p1, p2, n);
+	}
 
 	template<class Alloc>
-	int basic_string<Alloc>::compare(const basic_string &str) const noexcept {
+	int basic_string<Alloc>::compare(const basic_string& str) const noexcept {
 		return compare(begin(), end(), str.begin(), str.end());
 	}
 	template<class Alloc>
-	template <class T>
-	int basic_string<Alloc>::compare(const T &t) const noexcept {
+	template<class T>
+	int basic_string<Alloc>::compare(const T& t) const noexcept {
 		const basic_string_view str = t;
 		return compare(begin(), end(), str.begin(), str.end());
 	}
 	template<class Alloc>
-	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const basic_string &str) const {
+	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const basic_string& str) const {
 		return compare(
 				begin() + pos1,
 				begin() + pos1 + std::min(n1, size() - pos1),
 				str.begin(), str.end());
-
 	}
 	template<class Alloc>
-	template <class T>
-	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const T &t) const {
+	template<class T>
+	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const T& t) const {
 		const basic_string_view str = t;
 		return compare(
 				begin() + pos1,
 				begin() + pos1 + std::min(n1, size() - pos1),
 				str.begin(), str.end());
-
 	}
 	template<class Alloc>
-	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const basic_string &str, size_type pos2, size_type n2) const {
+	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const basic_string& str, size_type pos2, size_type n2) const {
 		return compare(begin() + pos1,
 					   begin() + pos1 + std::min(n1, size() - pos1),
 					   str.begin() + pos2,
@@ -930,8 +952,8 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	template <class T>
-	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const T &t, size_type pos2, size_type n2) const {
+	template<class T>
+	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const T& t, size_type pos2, size_type n2) const {
 		const basic_string_view str = t;
 		return compare(begin() + pos1,
 					   begin() + pos1 + std::min(n1, size() - pos1),
@@ -940,13 +962,12 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	int basic_string<Alloc>::compare(const value_type *s) const noexcept {
+	int basic_string<Alloc>::compare(const value_type* s) const noexcept {
 		return compare(begin(), end(), s, s + std::strlen(s));
-
 	}
 
 	template<class Alloc>
-	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const value_type *s) const {
+	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const value_type* s) const {
 		return compare(begin() + pos1,
 					   begin() + pos1 + std::min(n1, size() - pos1),
 					   s,
@@ -954,7 +975,7 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const value_type *s, size_type pos2, size_type n2) const {
+	int basic_string<Alloc>::compare(size_type pos1, size_type n1, const value_type* s, size_type pos2, size_type n2) const {
 		return compare(begin() + pos1,
 					   begin() + pos1 + std::min(n1, size() - pos1),
 					   s,
@@ -966,15 +987,88 @@ namespace plg {
 		const difference_type n1 = end1 - begin1;
 		const difference_type n2 = end2 - begin2;
 		const difference_type min = std::min(n1, n2);
-		const int cmp  = Compare(begin1, begin2, (size_t)min);
+		const int cmp = Compare(begin1, begin2, (size_t) min);
 		return (cmp != 0 ? cmp : (n1 < n2 ? -1 : (n1 > n2 ? 1 : 0)));
 	}
 #pragma endregion Compare
 
+#pragma region Insert
+	/*template<class Alloc>
+	basic_string<Alloc> &basic_string<Alloc>::insert(size_type pos1, const basic_string &str) {
+		insert(begin() + pos1, str.begin(), str.end());
+		return *this;
+	}
+
+	template<class Alloc>
+	template <class T>
+	basic_string<Alloc> &basic_string<Alloc>::insert(size_type pos1, const T &t) {
+		const basic_string_view str = t;
+		insert(begin() + pos1, str.begin(), str.end());
+		return *this;
+	}
+	template<class Alloc>
+	basic_string<Alloc> &basic_string<Alloc>::insert(size_type pos1, const basic_string &str, size_type pos2, size_type n) {
+		insert(begin() + pos1,
+			   str.begin() + pos2,
+			   str.begin() + pos2 + std::min(n, str.size() - pos2));
+	}
+	template<class Alloc>
+	template <class T>
+	basic_string<Alloc> &basic_string<Alloc>::insert(size_type pos1, const T &t, size_type pos2, size_type n) {
+		const basic_string_view str = t;
+		insert(begin() + pos1,
+			   str.begin() + pos2,
+			   str.begin() + pos2 + std::min(n, str.size() - pos2));
+	}
+	template<class Alloc>
+	basic_string<Alloc> &basic_string<Alloc>::insert(size_type pos, const value_type *s, size_type n) {
+		insert(begin() + pos, s, s + n);
+		return *this;
+	}
+	template<class Alloc>
+	basic_string<Alloc> &basic_string<Alloc>::insert(size_type pos, const value_type *s) {
+		insert(begin() + pos, s, s + std::strlen(s));
+		return *this;
+	}
+	template<class Alloc>
+	basic_string<Alloc> &basic_string<Alloc>::insert(size_type pos, size_type n, value_type c) {
+		insert(begin() + pos, n, c);
+		return *this;
+	}
+	template<class Alloc>
+	typename basic_string<Alloc>::iterator
+	basic_string<Alloc>::insert(const_iterator p, value_type c) {
+		if (p == end()) {
+			push_back(c);
+			return end() - 1;
+		}
+		// TODO:
+		//return insert_internal(p, c);
+	}
+	template<class Alloc>
+	typename basic_string<Alloc>::iterator
+	basic_string<Alloc>::insert(const_iterator p, size_type n, value_type c) {
+		// TODO:
+	}
+
+	template<class Alloc>
+	template <class InputIterator>
+	typename basic_string<Alloc>::iterator
+	basic_string<Alloc>::insert(const_iterator p, InputIterator first, InputIterator last) {
+		// TODO:
+	}
+
+	template<class Alloc>
+	typename basic_string<Alloc>::iterator
+	basic_string<Alloc>::insert(const_iterator p, std::initializer_list<value_type> ilist) {
+		return insert(p, ilist.begin(), ilist.end());
+	}*/
+#pragma endregion Insert
+
 #pragma region Operators
 	template<class Alloc>
 	basic_string<Alloc>::operator basic_string_view() const noexcept {
-		return { data(), length() };
+		return {data(), size()};
 	}
 
 	template<class Alloc>
@@ -988,69 +1082,74 @@ namespace plg {
 		return assign(t);
 	}
 
-	template <class Alloc>
+	template<class Alloc>
 	basic_string<Alloc>& basic_string<Alloc>::operator=(basic_string&& str) noexcept(allocator_type::propagate_on_container_move_assignment::value || allocator_type::is_always_equal::value) {
 		return assign(std::move(str));
 	}
 
-	template <class Alloc>
+	template<class Alloc>
 	basic_string<Alloc>& basic_string<Alloc>::operator=(const value_type* s) {
 		return assign(s);
 	}
 
-	template <class Alloc>
+	template<class Alloc>
 	basic_string<Alloc>& basic_string<Alloc>::operator=(value_type c) {
 		return assign(1, c);
 	}
 
-	template <class Alloc>
+	template<class Alloc>
 	basic_string<Alloc>& basic_string<Alloc>::operator=(std::initializer_list<value_type> ilist) {
 		return assign(ilist);
 	}
 
-	template <class Alloc>
-	basic_string<Alloc>&  basic_string<Alloc>::operator+=(const basic_string &str) {
+	template<class Alloc>
+	basic_string<Alloc>& basic_string<Alloc>::operator+=(const basic_string& str) {
 		return append(str);
 	}
-	template <class Alloc>
-	template <class T>
-	basic_string<Alloc> &basic_string<Alloc>::operator+=(const T &t) {
+	template<class Alloc>
+	template<class T>
+	basic_string<Alloc>& basic_string<Alloc>::operator+=(const T& t) {
 		return append(t);
 	}
-	template <class Alloc>
-	basic_string<Alloc>&  basic_string<Alloc>::operator+=(const value_type *s) {
+	template<class Alloc>
+	basic_string<Alloc>& basic_string<Alloc>::operator+=(const value_type* s) {
 		return append(s);
 	}
-	template <class Alloc>
-	basic_string<Alloc>&  basic_string<Alloc>::operator+=(value_type c) {
+	template<class Alloc>
+	basic_string<Alloc>& basic_string<Alloc>::operator+=(value_type c) {
 		return append(c);
 	}
-	template <class Alloc>
-	basic_string<Alloc>&  basic_string<Alloc>::operator+=(std::initializer_list<value_type> ilist) {
+	template<class Alloc>
+	basic_string<Alloc>& basic_string<Alloc>::operator+=(std::initializer_list<value_type> ilist) {
 		return append(ilist);
 	}
 
-	template <class Alloc>
+	template<class Alloc>
 	bool basic_string<Alloc>::operator==(const value_type* str) const noexcept {
 		auto s1 = size();
 		auto s2 = std::strlen(str);
 		return s1 == s2 && Compare(data(), str, s2) == 0;
 	}
 
-	template <class Alloc>
+	template<class Alloc>
 	bool basic_string<Alloc>::operator==(const basic_string& str) const noexcept {
 		if (this == &str) {
 			return true;
 		}
+
+		// TODO:
+		/*if (str.category() == Category::Long && _members == str._members) {
+			return true;
+		}*/
 
 		auto s1 = size();
 		auto s2 = str.size();
 		return s1 == s2 && Compare(data(), str.data(), s2) == 0;
 	}
 
-	template <class Alloc>
+	template<class Alloc>
 	template<typename T>
-	bool basic_string<Alloc>::operator==(const T &t) const noexcept {
+	bool basic_string<Alloc>::operator==(const T& t) const noexcept {
 		const basic_string_view str = t;
 		auto s1 = size();
 		auto s2 = str.size();
@@ -1058,8 +1157,6 @@ namespace plg {
 	}
 
 #pragma endregion Operators
-
-#pragma region Helpers
 
 	template<class Alloc>
 	void basic_string<Alloc>::reserve(size_type n) {
@@ -1070,46 +1167,71 @@ namespace plg {
 			return;
 
 		const auto len = length();
+		const auto cap = gen_capacity(n);
 
-		auto a = get_allocator();
-		auto ptr = a.allocate(n);
-
+		auto ptr = allocate(cap);
 		std::memcpy(ptr, data(), (len + 1) * sizeof(value_type));
 
 		deallocate_self();
 
-		const auto cap = gen_capacity(n);
-		const auto cat = get_category(cap);
+		set_heap(ptr, len, cap);
+	}
 
-		switch (cat) {
-			case Category::Short: {
-				assert(n < __max_short_size);
-				std::memcpy(_members._short._data, ptr, n * sizeof(value_type));
-				set_length(len, Category::Short);
-				a.deallocate(ptr, n);
-				break;
-			}
-			case Category::Mid:
-				_members._mid._ptr = ptr;
-				set_length(len, Category::Mid);
-				set_capacity(cap);
-				break;
-			case Category::Long:
-				_members._long._cbptr = new ControlBlock(ptr, n, cap, a);
-				set_length(len, Category::Long);
-				set_capacity(cap);
-				break;
+	template<typename Alloc>
+	void basic_string<Alloc>::resize(size_type n, value_type c) {
+		const auto len = length();
+		if (n < len) {
+			erase(begin() + n, end());
+		} else if (n > len) {
+			append(n - len, c);
+		}
+	}
+
+	template<typename Alloc>
+	void basic_string<Alloc>::resize(size_type n) {
+		const auto len = length();
+		if (n < len) {
+			erase(begin() + n, end());
+		} else if (n > len) {
+			append(n - len, value_type());
 		}
 	}
 
 	template<class Alloc>
-	void basic_string<Alloc>::construct(const value_type *s) {
-		const auto len = std::strlen(s);
-		construct(s, len);
+	basic_string<Alloc> basic_string<Alloc>::substr(basic_string::size_type pos, basic_string::size_type n) const {
+		return basic_string(
+				begin() + pos,
+				begin() + pos + std::min(n, size() - pos), get_allocator());
 	}
 
 	template<class Alloc>
-	void basic_string<Alloc>::construct(const value_type *s, size_type len) {
+	basic_string<Alloc>::size_type basic_string<Alloc>::copy(basic_string::value_type* s, basic_string::size_type n,
+															 basic_string::size_type pos) const {
+		const auto length = std::min(n, size() - pos);
+		Copy(begin() + pos, begin() + pos + length, s);
+		return length;
+	}
+
+	template<class Alloc>
+	void basic_string<Alloc>::swap(basic_string& str) noexcept(std::allocator_traits<allocator_type>::propagate_on_container_swap::value || std::allocator_traits<allocator_type>::is_always_equal::value) {
+		if (get_allocator() == str.get_allocator()) {
+			std::swap(_members, str._members);
+		} else {
+			const basic_string temp(*this);
+			*this = str;
+			str = std::move(temp);
+		}
+	}
+
+#pragma region Constructs
+	template<class Alloc>
+	void basic_string<Alloc>::construct_internal(const value_type* s) {
+		const auto len = std::strlen(s);
+		construct_internal(s, len);
+	}
+
+	template<class Alloc>
+	void basic_string<Alloc>::construct_internal(const value_type* s, size_type len) {
 		const auto cap = gen_capacity(len + 1);
 		const auto cat = get_category(cap);
 		switch (cat) {
@@ -1126,7 +1248,7 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	void basic_string<Alloc>::construct(const basic_string &str) {
+	void basic_string<Alloc>::construct_internal(const basic_string& str) {
 		switch (str.category()) {
 			case Category::Short:
 				construct_string_short(str.c_str(), str.size(), __max_short_size);
@@ -1135,177 +1257,171 @@ namespace plg {
 				construct_string_mid(str.c_str(), str.size(), str.capacity());
 				break;
 			case Category::Long:
-				_members._long._cbptr = str._members._long._cbptr->acquire();
-				_members._long._len = str._members._long._len;
-				_members._long._cap = str._members._long._cap;
+				if (get_allocator() == str.get_allocator()) {
+					_members._long._cbptr = str._members._long._cbptr->acquire();
+					_members._long._len = str._members._long._len;
+					_members._long._cap = str._members._long._cap;
+				} else {
+					construct_string_long(str.c_str(), str.size(), str.capacity());
+				}
 				break;
 		}
 	}
 
-	/*namespace details {
-		template<typename T>
-		struct is_reverse_iterator : std::false_type { };
-
-		template<typename T>
-		struct is_reverse_iterator<std::reverse_iterator<T>> : std::true_type { };
-
-		template<typename T>
-		struct is_const_reverse_iterator : std::false_type { };
-
-		template<typename T>
-		struct is_const_reverse_iterator<const std::reverse_iterator<T>> : std::true_type { };
-	}*/
-
 	template<class Alloc>
 	template<class InputIterator>
-	void basic_string<Alloc>::construct(InputIterator first, InputIterator last) {
+	void basic_string<Alloc>::construct_internal(InputIterator first, InputIterator last) {
 		const auto len = std::distance(first, last);
 		const auto cap = gen_capacity(len + 1);
 		const auto cat = get_category(cap);
 
-		constexpr bool is_random = std::random_access_iterator<InputIterator>;
-		//constexpr bool is_reverse = details::is_reverse_iterator<InputIterator>::value || details::is_const_reverse_iterator<InputIterator>::value;
+		static_assert(std::random_access_iterator<InputIterator>, "Only random iterators are supported!");
 
+		pointer end;
 		switch (cat) {
 			case Category::Short:
-				if constexpr (is_random) {
-					std::memmove(_members._short._data, *first, len);
-				} else {
-					for (size_type i = 0; i < len; ++i, ++first) {
-						_members._short._data[i] = *first;
-					}
-				}
-				_members._short._data[len] = value_type{'\0'};
+				end = Copy(first, last, _members._short._data);
+				*end = 0;
 				set_length(len, Category::Short);
 				break;
 			case Category::Mid:
-				_members._mid._ptr = get_allocator().allocate(cap);
-				if constexpr (is_random) {
-					std::memmove(_members._mid._ptr, *first, len);
-				} else {
-					for (size_type i = 0; i < len; ++i, ++first) {
-						_members._mid._ptr[i] = *first;
-					}
-				}
-				_members._short._data[len] = value_type{'\0'};
+				_members._mid._ptr = allocate(cap);
+				end = Copy(first, last, _members._mid._ptr);
+				*end = 0;
 				set_length(len, Category::Mid);
 				set_capacity(cap);
 				break;
 			case Category::Long:
-				auto a = get_allocator();
-				auto ptr = a.allocate(cap);
-				if constexpr (is_random) {
-					std::memmove(ptr, *first, len);
-				} else {
-					for (size_type i = 0; i < len; ++i, ++first) {
-						ptr[i] = *first;
-					}
-				}
-				ptr[len] = value_type{'\0'};
+				auto ptr = allocate(cap);
+				end = Copy(first, last, ptr);
+				*end = 0;
 				set_length(len, Category::Long);
 				set_capacity(cap);
-				_members._long._cbptr = new ControlBlock(ptr, len + 1, cap, a);
+				_members._long._cbptr = new ControlBlock(ptr, len + 1, cap, get_allocator());
 				break;
 		}
 	}
 
 	template<class Alloc>
-	void basic_string<Alloc>::construct(size_type n, value_type c) {
+	void basic_string<Alloc>::construct_internal(size_type n, value_type c) {
 		const auto cap = gen_capacity(n + 1);
 		const auto cat = get_category(cap);
-
+		pointer end;
 		switch (cat) {
-			case Category::Short: {
+			case Category::Short:
 				assert(n < __max_short_size);
-				std::memset(_members._short._data, c, n);
-				_members._short._data[n] = value_type{'\0'};
+				end = Fill(_members._short._data, n, c);
+				*end = 0;
 				set_length(n, Category::Short);
 				break;
-			}
 			case Category::Mid:
-				_members._mid._ptr = get_allocator().allocate(cap);
-				std::memset(_members._mid._ptr, c, n);
-				_members._mid._ptr[n] = value_type{'\0'};
+				_members._mid._ptr = allocate(cap);
+				end = Fill(_members._mid._ptr, n, c);
+				*end = 0;
 				set_length(n, Category::Mid);
 				set_capacity(cap);
 				break;
 			case Category::Long:
-				auto a = get_allocator();
-				auto ptr = a.allocate(cap);
-				std::memset(ptr, c, n);
-				ptr[n] = value_type{'\0'};
+				auto ptr = allocate(cap);
+				end = Fill(ptr, n, c);
+				*end = 0;
 				set_length(n, Category::Long);
 				set_capacity(cap);
-				_members._long._cbptr = new ControlBlock(ptr, n + 1, cap, a);
+				_members._long._cbptr = new ControlBlock(ptr, n + 1, cap, get_allocator());
 				break;
 		}
 	}
 
 	template<class Alloc>
 	void basic_string<Alloc>::construct_string_empty() {
-		_members._short._data[0] = value_type{'\0'};
+		_members._short._data[0] = 0;
 		set_length(0, Category::Short);
 	}
 
 	template<class Alloc>
-	void basic_string<Alloc>::construct_string_short(const basic_string::value_type *s, basic_string::size_type len,
-													 basic_string::size_type /*cap*/) {
+	void basic_string<Alloc>::construct_string_short(const value_type* s, size_type len, size_type /*cap*/) {
 		assert(len < __max_short_size);
-		std::memmove(_members._short._data, s, len * sizeof(value_type));
-		_members._short._data[len] = value_type{'\0'};
+
+		pointer end = Copy(s, s + len, _members._short._data);
+		*end = 0;
 
 		set_length(len, Category::Short);
 	}
 
 	template<class Alloc>
-	void basic_string<Alloc>::construct_string_mid(const basic_string::value_type *s, basic_string::size_type len,
-												   basic_string::size_type cap) {
+	void basic_string<Alloc>::construct_string_mid(const value_type* s, size_type len, size_type cap) {
 		assert(len < cap);
-		_members._mid._ptr = get_allocator().allocate(cap);
-		std::memcpy(_members._mid._ptr, s, len * sizeof(value_type));
-		_members._mid._ptr[len] = value_type{'\0'};
+		_members._mid._ptr = allocate(cap);
+
+		pointer end = Copy(s, s + len, _members._mid._ptr);
+		*end = 0;
 
 		set_length(len, Category::Mid);
 		set_capacity(cap);
 	}
 
 	template<class Alloc>
-	void basic_string<Alloc>::construct_string_long(const basic_string::value_type *s, basic_string::size_type len,
-													basic_string::size_type cap) {
+	void basic_string<Alloc>::construct_string_long(const value_type* s, size_type len, size_type cap) {
 		assert(len < cap);
-		auto a = get_allocator();
-		auto ptr = a.allocate(cap);
-		std::memcpy(ptr, s, len * sizeof(value_type));
-		ptr[len] = value_type{'\0'};
+		auto ptr = allocate(cap);
+
+		pointer end = Copy(s, s + len, ptr);
+		*end = 0;
 
 		set_length(len, Category::Long);
 		set_capacity(cap);
-		_members._long._cbptr = new ControlBlock(ptr, len + 1, cap, a);
+		_members._long._cbptr = new ControlBlock(ptr, len + 1, cap, get_allocator());
+	}
+
+#pragma endregion Constructs
+
+#pragma region Helpers
+	template<class Alloc>
+	void basic_string<Alloc>::set_heap(pointer ptr, size_type len, size_type cap) {
+		const auto cat = get_category(cap);
+		switch (cat) {
+			case Category::Short:
+				assert(len < __max_short_size);
+				std::memcpy(_members._short._data, ptr, (len + 1) * sizeof(value_type));
+				set_length(len, Category::Short);
+				deallocate(ptr, cap);
+				break;
+			case Category::Mid:
+				_members._mid._ptr = ptr;
+				set_length(len, Category::Mid);
+				set_capacity(cap);
+				break;
+			case Category::Long:
+				_members._long._cbptr = new ControlBlock(ptr, len + 1, cap, get_allocator());
+				set_length(len, Category::Long);
+				set_capacity(cap);
+				break;
+		}
 	}
 
 	template<class Alloc>
-	uint8_t& basic_string<Alloc>::msbyte() {
+	uint8_t& basic_string<Alloc>::msbyte() noexcept {
 		return *reinterpret_cast<uint8_t*>(this + 23);
 	}
 
 	/*template<class Alloc>
-	void basic_string<Alloc>::print_mem() const {
-		uint8_t mem[24];
-		memcpy(mem, this, 24);
-		std::cerr << "Mem: ";
-		for (int i = 0; i < 24; i++)
-			std::cerr << std::hex << uint32_t{mem[i]} << " ";
-		std::cerr << std::endl;
-	}*/
+    void basic_string<Alloc>::print_mem() const {
+        uint8_t mem[24];
+        memcpy(mem, this, 24);
+        std::cerr << "Mem: ";
+        for (int i = 0; i < 24; i++)
+            std::cerr << std::hex << uint32_t{mem[i]} << " ";
+        std::cerr << std::endl;
+    }*/
 
 	template<class Alloc>
-	uint8_t basic_string<Alloc>::cmsbyte() const {
+	uint8_t basic_string<Alloc>::cmsbyte() const noexcept {
 		return reinterpret_cast<const uint8_t*>(this)[23];
 	}
 
 	template<class Alloc>
-	typename basic_string<Alloc>::value_type *
-	basic_string<Alloc>::begin_ptr() {
+	typename basic_string<Alloc>::value_type*
+	basic_string<Alloc>::begin_ptr() noexcept {
 		switch (category()) {
 			case Category::Short:
 				return _members._short._data;
@@ -1318,8 +1434,8 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	typename basic_string<Alloc>::value_type *
-	basic_string<Alloc>::end_ptr() {
+	typename basic_string<Alloc>::value_type*
+	basic_string<Alloc>::end_ptr() noexcept {
 		switch (category()) {
 			case Category::Short:
 				return _members._short._data + (_members._short._len ^ (1 << 7));
@@ -1332,8 +1448,8 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	const typename basic_string<Alloc>::value_type *
-	basic_string<Alloc>::begin_ptr() const {
+	const typename basic_string<Alloc>::value_type*
+	basic_string<Alloc>::begin_ptr() const noexcept {
 		switch (category()) {
 			case Category::Short:
 				return _members._short._data;
@@ -1346,8 +1462,8 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	const typename basic_string<Alloc>::value_type *
-	basic_string<Alloc>::end_ptr() const {
+	const typename basic_string<Alloc>::value_type*
+	basic_string<Alloc>::end_ptr() const noexcept {
 		switch (category()) {
 			case Category::Short:
 				return _members._short._data + (_members._short._len ^ (1 << 7));
@@ -1357,17 +1473,26 @@ namespace plg {
 				return _members._long._cbptr->get() + _members._long._len;
 		}
 		return nullptr;
+	}
+
+	template<class Alloc>
+	typename basic_string<Alloc>::pointer basic_string<Alloc>::allocate(size_type n) {
+		return get_allocator().allocate(n * sizeof(value_type));
+	}
+
+	template<class Alloc>
+	void basic_string<Alloc>::deallocate(pointer ptr, size_type n) {
+		return get_allocator().deallocate(ptr, n * sizeof(value_type));
 	}
 
 	template<class Alloc>
 	void basic_string<Alloc>::deallocate_self() {
-		// TODO: What if invalid/freed after move
 		auto cat = category();
 		switch (cat) {
 			case Category::Short:
 				break;
 			case Category::Mid:
-				get_allocator().deallocate(_members._mid._ptr, _members._mid._cap);
+				deallocate(_members._mid._ptr, _members._mid._cap);
 				break;
 			case Category::Long:
 				_members._long._cbptr->release();
@@ -1377,7 +1502,13 @@ namespace plg {
 
 	template<class Alloc>
 	typename basic_string<Alloc>::size_type
-	basic_string<Alloc>::gen_capacity(size_type len) {
+	basic_string<Alloc>::remaining_capacity() const noexcept {
+		return capacity() - length();
+	}
+
+	template<class Alloc>
+	typename basic_string<Alloc>::size_type
+	basic_string<Alloc>::gen_capacity(size_type len) noexcept {
 		if (len <= __max_short_size)
 			return len;
 		size_type ret{1};
@@ -1387,7 +1518,7 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	bool basic_string<Alloc>::msb() const {
+	bool basic_string<Alloc>::msb() const noexcept {
 		return (cmsbyte() & (static_cast<uint8_t>(1 << 7)));
 	}
 
@@ -1434,7 +1565,7 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	typename basic_string<Alloc>::Category basic_string<Alloc>::category() const {
+	typename basic_string<Alloc>::Category basic_string<Alloc>::category() const noexcept {
 		if (msb()) {
 			return Category::Short;
 		} else {
@@ -1449,7 +1580,7 @@ namespace plg {
 
 	template<class Alloc>
 	typename basic_string<Alloc>::Category
-	basic_string<Alloc>::get_category(size_type cap) {
+	basic_string<Alloc>::get_category(size_type cap) noexcept {
 		if (cap <= __max_short_size) {
 			return Category::Short;
 		} else if (cap <= __max_mid_size) {
@@ -1474,6 +1605,227 @@ namespace plg {
 
 #pragma endregion Helpers
 
+#pragma region Convertions
+	inline int stoi(const string& str, std::size_t* pos = nullptr, int base = 10) {
+		auto cstr = str.c_str();
+		char* ptr = const_cast<char*>(cstr);
+
+		auto ret = strtol(cstr, &ptr, base);
+		if (pos != nullptr)
+			*pos = cstr - ptr;
+
+		return ret;
+	}
+
+	inline long stol(const string& str, std::size_t* pos = nullptr, int base = 10) {
+		auto cstr = str.c_str();
+		char* ptr = const_cast<char*>(cstr);
+
+		auto ret = strtol(cstr, &ptr, base);
+		if (pos != nullptr)
+			*pos = cstr - ptr;
+
+		return ret;
+	}
+
+	inline long long stoll(const string& str, std::size_t* pos = nullptr, int base = 10) {
+		auto cstr = str.c_str();
+		char* ptr = const_cast<char*>(cstr);
+
+		auto ret = strtoll(cstr, &ptr, base);
+		if (pos != nullptr)
+			*pos = cstr - ptr;
+
+		return ret;
+	}
+
+	inline unsigned long stoul(const string& str, std::size_t* pos = nullptr, int base = 10) {
+		auto cstr = str.c_str();
+		char* ptr = const_cast<char*>(cstr);
+
+		auto ret = strtoul(cstr, &ptr, base);
+		if (pos != nullptr)
+			*pos = cstr - ptr;
+
+		return ret;
+	}
+
+	inline unsigned long long stoull(const string& str, std::size_t* pos = nullptr, int base = 10) {
+		auto cstr = str.c_str();
+		char* ptr = const_cast<char*>(cstr);
+
+		auto ret = strtoull(cstr, &ptr, base);
+		if (pos != nullptr)
+			*pos = cstr - ptr;
+
+		return ret;
+	}
+
+	inline float stof(const string& str, std::size_t* pos = nullptr) {
+		auto cstr = str.c_str();
+		char* ptr = const_cast<char*>(cstr);
+
+		auto ret = strtof(cstr, &ptr);
+		if (pos != nullptr)
+			*pos = cstr - ptr;
+
+		return ret;
+	}
+
+	inline double stod(const string& str, std::size_t* pos = nullptr) {
+		auto cstr = str.c_str();
+		char* ptr = const_cast<char*>(cstr);
+
+		auto ret = strtod(cstr, &ptr);
+		if (pos != nullptr)
+			*pos = cstr - ptr;
+
+		return ret;
+	}
+
+	inline long double stold(const string& str, std::size_t* pos = nullptr) {
+		auto cstr = str.c_str();
+		char* ptr = const_cast<char*>(cstr);
+
+		auto ret = strtold(cstr, &ptr);
+		if (pos != nullptr)
+			*pos = cstr - ptr;
+
+		return ret;
+	}
+
+	namespace detail {
+		template<typename Type>
+		constexpr std::size_t to_chars_len(Type value) {
+			constexpr Type b1 = 10;
+			constexpr Type b2 = 100;
+			constexpr Type b3 = 1000;
+			constexpr Type b4 = 10000;
+
+			for (std::size_t i = 1;; i += 4, value /= b4) {
+				if (value < b1)
+					return i;
+				if (value < b2)
+					return i + 1;
+				if (value < b3)
+					return i + 2;
+				if (value < b4)
+					return i + 3;
+			}
+		}
+
+		static constexpr char digits[201] =
+				"0001020304050607080910111213141516171819"
+				"2021222324252627282930313233343536373839"
+				"4041424344454647484950515253545556575859"
+				"6061626364656667686970717273747576777879"
+				"8081828384858687888990919293949596979899";
+
+		constexpr void to_chars(char* first, std::size_t len, auto val) {
+			std::size_t pos = len - 1;
+			while (val >= 100) {
+				auto const num = (val % 100) * 2;
+				val /= 100;
+				first[pos] = digits[num + 1];
+				first[pos - 1] = digits[num];
+				pos -= 2;
+			}
+			if (val >= 10) {
+				auto const num = val * 2;
+				first[1] = digits[num + 1];
+				first[0] = digits[num];
+			} else {
+				first[0] = '0' + val;
+			}
+		}
+
+		template<std::signed_integral Type, std::unsigned_integral UType = std::make_unsigned_t<Type>>
+		inline string to_string(Type value) {
+			const auto negative = value < 0;
+			const UType uvalue = negative ? static_cast<UType>(~value) + static_cast<UType>(1) : value;
+			const auto length = to_chars_len(uvalue);
+			string str(length + negative, '-');
+			to_chars(&str[negative], length, uvalue);
+			return str;
+		}
+
+		template<std::unsigned_integral Type>
+		inline string to_string(Type value) {
+			string str(to_chars_len(value), '\0');
+			to_chars(&str[0], str.length(), value);
+			return str;
+		}
+	}// namespace detail
+#pragma endregion Convertions
+
+#pragma region Hash
+	// hash support
+	namespace detail {
+		constexpr uint64_t MurmurHash2_64A(const void* key, uint64_t len, uint64_t seed) {
+			const uint64_t m = 0xC6A4A7935BD1E995;
+			const int r = 47;
+
+			uint64_t h = seed ^ (len * m);
+
+			const uint64_t* data = static_cast<const uint64_t*>(key);
+			const uint64_t* end = data + (len / 8);
+
+			while (data != end) {
+				uint64_t k = 0;
+				k = *(data++);
+
+				k *= m;
+				k ^= k >> r;
+				k *= m;
+
+				h ^= k;
+				h *= m;
+			}
+
+			auto data2 = static_cast<const uint8_t*>(static_cast<const void*>(data));
+
+			switch (len & 7) {
+				case 7:
+					h ^= static_cast<uint64_t>(data2[6]) << 48;
+					[[fallthrough]];
+				case 6:
+					h ^= static_cast<uint64_t>(data2[5]) << 40;
+					[[fallthrough]];
+				case 5:
+					h ^= static_cast<uint64_t>(data2[4]) << 32;
+					[[fallthrough]];
+				case 4:
+					h ^= static_cast<uint64_t>(data2[3]) << 24;
+					[[fallthrough]];
+				case 3:
+					h ^= static_cast<uint64_t>(data2[2]) << 16;
+					[[fallthrough]];
+				case 2:
+					h ^= static_cast<uint64_t>(data2[1]) << 8;
+					[[fallthrough]];
+				case 1:
+					h ^= static_cast<uint64_t>(data2[0]);
+					h *= m;
+			};
+
+			h ^= h >> r;
+			h *= m;
+			h ^= h >> r;
+
+			return h;
+		}
+
+		static const uint32_t SEED = 0xE17A1465;
+
+		template<typename Alloc, typename String = basic_string<Alloc>>
+		struct string_hash_base {
+			[[nodiscard]] constexpr std::size_t operator()(const String& str) const noexcept {
+				return MurmurHash2_64A(str.c_str(), str.length(), SEED);
+			}
+		};
+	}// namespace detail
+#pragma endregion Hash
+
 #pragma region ControlBlock
 	template<class Alloc>
 	basic_string<Alloc>::ControlBlock::ControlBlock(pointer p, size_type len, size_type cap, const allocator_type& a)
@@ -1484,7 +1836,7 @@ namespace plg {
 	template<class Alloc>
 	basic_string<Alloc>::ControlBlock::ControlBlock(const ControlBlock& other)
 		: _ptr{nullptr}, _count{1}, _len{other._len}, _cap{other._cap}, _allocator{other._allocator} {
-		_ptr = _allocator.allocate(_cap);
+		_ptr = _allocator.allocate(_cap * sizeof(value_type));
 		std::memcpy(_ptr, other._ptr, (_len + 1) * sizeof(value_type));
 	}
 
@@ -1492,28 +1844,25 @@ namespace plg {
 	basic_string<Alloc>::ControlBlock::~ControlBlock() {
 		assert(_count == 0);
 		assert(_ptr);
-		/*for (size_type i = 0; i < _len; i++) {
-			std::destroy_at(_ptr + i);
-		}*/
-		_allocator.deallocate(_ptr, _cap);
+		_allocator.deallocate(_ptr, _cap * sizeof(value_type));
 	}
 
 	template<class Alloc>
 	typename basic_string<Alloc>::ControlBlock*
-	basic_string<Alloc>::ControlBlock::acquire() {
+	basic_string<Alloc>::ControlBlock::acquire() noexcept {
 		_count++;
 		return this;
 	}
 
 	template<class Alloc>
 	typename basic_string<Alloc>::pointer
-	basic_string<Alloc>::ControlBlock::get() const {
+	basic_string<Alloc>::ControlBlock::get() const noexcept {
 		return _ptr;
 	}
 
 	template<class Alloc>
 	typename basic_string<Alloc>::size_type
-	basic_string<Alloc>::ControlBlock::count() const {
+	basic_string<Alloc>::ControlBlock::count() const noexcept {
 		return _count;
 	}
 
@@ -1525,9 +1874,10 @@ namespace plg {
 		}
 	}
 #pragma endregion ControlBlock
-}// namespace plugify
+}// namespace plg
 
-template <>
+// format support
+template<>
 struct std::formatter<plg::string> : std::formatter<std::string_view> {
 	auto format(const plg::string& str, std::format_context& ctx) const {
 		std::string temp;
@@ -1536,30 +1886,13 @@ struct std::formatter<plg::string> : std::formatter<std::string_view> {
 	}
 };
 
+// hash support
+template<typename Alloc>
+struct std::hash<plg::basic_string<Alloc>> : plg::detail::string_hash_base<Alloc> {};
+
 // TODO: implement the following API
 
 /* size_type max_size() const noexcept; */
-
-/* void resize(size_type n, value_type c); */
-/* void resize(size_type n); */
-
-/* basic_string &insert(size_type pos1, const basic_string &str); */
-/* template <class T> basic_string &insert(size_type pos1, const T &t); */
-/* basic_string &insert(size_type pos1, const basic_string &str, */
-/*					   size_type pos2, size_type n); */
-/* template <class T> */
-/* basic_string &insert(size_type pos1, const T &t, size_type pos2, */
-/*					   size_type n); // C++17 */
-/* basic_string &insert(size_type pos, const value_type *s, */
-/*					   size_type n = npos); // C++14 */
-/* basic_string &insert(size_type pos, const value_type *s); */
-/* basic_string &insert(size_type pos, size_type n, value_type c); */
-/* iterator insert(const_iterator p, value_type c); */
-/* iterator insert(const_iterator p, size_type n, value_type c); */
-/* template <class InputIterator> */
-/* iterator insert(const_iterator p, InputIterator first, InputIterator last);
- */
-/* iterator insert(const_iterator p, std::initializer_list<value_type>); */
 
 /**  I don't think replace should live inside the class. They should be non-member-functions that provide this functionality generically.*/
 
@@ -1598,15 +1931,6 @@ struct std::formatter<plg::string> : std::formatter<std::string_view> {
 /*						InputIterator j2); */
 /* basic_string &replace(const_iterator i1, const_iterator i2, */
 /*						std::initializer_list<value_type>); */
-
-/* size_type copy(value_type *s, size_type n, size_type pos = 0) const; */
-/* basic_string substr(size_type pos = 0, size_type n = npos) const; */
-
-/* void swap(basic_string &str) noexcept( */
-/*	 std::allocator_traits< */
-/*		 allocator_type>::propagate_on_container_swap::value || */
-/*	 std::allocator_traits<allocator_type>::is_always_equal::value); //
- * C++17 */
 
 /* size_type find(const basic_string &str, size_type pos = 0) const noexcept;
  */
