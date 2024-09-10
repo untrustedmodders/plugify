@@ -37,6 +37,7 @@ namespace plg {
 		typedef std::basic_string_view<value_type> basic_string_view;
 
 		static const size_type npos = static_cast<size_type>(-1);
+		static value_type _; // for no-return
 
 		basic_string() noexcept(std::is_nothrow_default_constructible<allocator_type>::value);
 		explicit basic_string(const allocator_type& a);
@@ -502,6 +503,7 @@ namespace plg {
 			case Category::Long:
 				return _members._long._cbptr->get()[pos];
 		}
+		return _;
 	}
 
 	template<class Alloc>
@@ -530,6 +532,7 @@ namespace plg {
 			case Category::Long:
 				return _members._long._cbptr->get()[pos];
 		}
+		return _;
 	}
 
 #pragma endregion Basic
@@ -1735,7 +1738,7 @@ namespace plg {
 				first[1] = digits[num + 1];
 				first[0] = digits[num];
 			} else {
-				first[0] = '0' + val;
+				first[0] = '0' + (char)val;
 			}
 		}
 
