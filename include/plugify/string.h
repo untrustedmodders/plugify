@@ -1880,13 +1880,13 @@ namespace plg {
 }// namespace plg
 
 // format support
-template <>
-struct std::formatter<plg::string> {
+template<typename Alloc>
+struct std::formatter<plg::basic_string<Alloc>> {
 	constexpr auto parse(std::format_parse_context& ctx) {
 		return ctx.begin();
 	}
 
-	auto format(const plg::string& str, std::format_context& ctx) const {
+	auto format(const plg::basic_string<Alloc>& str, std::format_context& ctx) const {
 		return std::format_to(ctx.out(), "{}", str.c_str());
 	}
 };
