@@ -37,7 +37,7 @@ namespace plg {
 		typedef std::basic_string_view<value_type> basic_string_view;
 
 		static const size_type npos = static_cast<size_type>(-1);
-		static value_type _; // for no-return
+		static inline value_type _ = {}; // for no-return
 
 		basic_string() noexcept(std::is_nothrow_default_constructible<allocator_type>::value);
 		explicit basic_string(const allocator_type& a);
