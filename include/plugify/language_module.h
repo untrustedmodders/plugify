@@ -5,6 +5,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <cstring>
 #include <plugify/mem_addr.h>
 
 namespace plugify {
@@ -34,7 +35,7 @@ namespace plugify {
 		std::array<char, 256> error{}; ///< Description of the error.
 
 		ErrorData(std::string_view str) {
-			memcpy(error.data(), str.data(), std::min(str.length(), error.size() - 1));
+			std::memcpy(error.data(), str.data(), std::min(str.length(), error.size() - 1));
 		}
 	};
 
