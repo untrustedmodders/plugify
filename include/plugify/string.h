@@ -1778,8 +1778,7 @@ namespace plg {
 		}
 
 		template<std::signed_integral Type, std::unsigned_integral UType = std::make_unsigned_t<Type>>
-		_PLUGIFY_ALWAYS_INLINE
-		constexpr inline string to_string(Type value) {
+		constexpr _PLUGIFY_ALWAYS_INLINE string to_string(Type value) {
 			const auto negative = value < 0;
 			const UType uvalue = negative ? static_cast<UType>(~value) + static_cast<UType>(1) : static_cast<UType>(value);
 			const auto length = to_chars_len(uvalue);
@@ -1789,8 +1788,7 @@ namespace plg {
 		}
 
 		template<std::unsigned_integral Type>
-		_PLUGIFY_ALWAYS_INLINE
-		constexpr inline string to_string(Type value) {
+		constexpr _PLUGIFY_ALWAYS_INLINE string to_string(Type value) {
 			string str(to_chars_len(value), '\0');
 			to_chars(&str[0], str.length(), value);
 			return str;
