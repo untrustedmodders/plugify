@@ -274,7 +274,7 @@ namespace plg {
 
 		struct Members {
 			union {
-				Short _short{};
+				Short _short;
 				Mid _mid;
 				Long _long;
 			};
@@ -350,17 +350,17 @@ namespace plg {
 	}
 
 	template<class Alloc>
-	basic_string<Alloc>::basic_string(const value_type* s, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(const value_type* s, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_internal(s);
 	}
 
 	template<class Alloc>
-	basic_string<Alloc>::basic_string() noexcept(std::is_nothrow_default_constructible<allocator_type>::value) {
+	basic_string<Alloc>::basic_string() noexcept(std::is_nothrow_default_constructible<allocator_type>::value) : _members{{}, allocator_type()} {
 		construct_string_empty();
 	}
 
 	template<class Alloc>
-	basic_string<Alloc>::basic_string(const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_string_empty();
 	}
 
@@ -374,7 +374,7 @@ namespace plg {
 	}
 
 	template<typename Alloc>
-	basic_string<Alloc>::basic_string(const basic_string& str, size_type pos, size_type n, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(const basic_string& str, size_type pos, size_type n, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_internal(
 				str.begin() + pos,
 				str.begin() + pos + std::min(n, str.size() - pos));
@@ -382,7 +382,7 @@ namespace plg {
 
 	template<typename Alloc>
 	template<class T>
-	basic_string<Alloc>::basic_string(const T& t, size_type pos, size_type n, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(const T& t, size_type pos, size_type n, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		const basic_string_view str = t;
 		if (pos > str.size()) {
 			throw std::out_of_range("basic_string::basic_string -- out of range");
@@ -393,39 +393,39 @@ namespace plg {
 
 	template<typename Alloc>
 	template<class T>
-	basic_string<Alloc>::basic_string(const T& t, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(const T& t, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		const basic_string_view str = t;
 		construct_internal(str.data(), str.size());
 	}
 
 	template<typename Alloc>
-	basic_string<Alloc>::basic_string(const value_type* s, size_type n, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(const value_type* s, size_type n, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_internal(s, n);
 	}
 
 	template<typename Alloc>
-	basic_string<Alloc>::basic_string(size_type n, value_type c, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(size_type n, value_type c, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_internal(n, c);
 	}
 
 	template<typename Alloc>
 	template<class InputIterator>
-	basic_string<Alloc>::basic_string(InputIterator first, InputIterator last, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(InputIterator first, InputIterator last, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_internal(first, last);
 	}
 
 	template<typename Alloc>
-	basic_string<Alloc>::basic_string(std::initializer_list<value_type> ilist, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(std::initializer_list<value_type> ilist, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_internal(ilist.begin(), ilist.size());
 	}
 
 	template<typename Alloc>
-	basic_string<Alloc>::basic_string(const basic_string& str, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(const basic_string& str, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_internal(str);
 	}
 
 	template<typename Alloc>
-	basic_string<Alloc>::basic_string(basic_string&& str, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(basic_string&& str, const allocator_type& a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		if (get_allocator() == str.get_allocator()) {
 			_members = str._members;
 			str._members = {};
@@ -435,7 +435,7 @@ namespace plg {
 	}
 
 	template<typename Alloc>
-	basic_string<Alloc>::basic_string(detail::uninitialized_size_tag, size_type size, const allocator_type &a) requires (detail::is_allocator_v<Alloc>) : _members{._allocator = a} {
+	basic_string<Alloc>::basic_string(detail::uninitialized_size_tag, size_type size, const allocator_type &a) requires (detail::is_allocator_v<Alloc>) : _members{{}, a} {
 		construct_string_empty();
 		reserve(size);
 	}
