@@ -17,9 +17,7 @@
 #include FMT_FORMAT_H
 
 namespace std {
-	using fmt::format;
-	using fmt::format_to;
-	using fmt::format_to_n;
+	using namespace fmt;
 }
 
 #endif // PLUGIFY_FORMAT_SUPPORT
