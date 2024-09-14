@@ -29,7 +29,7 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool se
 		return false;
 
 	std::string name(moduleName);
-	if (!extension)
+	if (!extension && !(name.find(".so.") != std::string::npos || name.find_last_of(".so") == name.length() - 3))
 		name.append(".so");
 
 	struct dl_data {

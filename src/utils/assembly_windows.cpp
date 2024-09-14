@@ -1,4 +1,4 @@
-#if PLUGIFY_PLATFORM_WINDOWS
+#if! PLUGIFY_PLATFORM_WINDOWS
 
 #include <plugify/assembly.h>
 
@@ -47,11 +47,11 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool se
 	if (moduleName.empty())
 		return false;
 
-	std::string name(moduleName);
-	if (!extension)
-		name.append(".dll");
+	fs::path name(moduleName);
+	if (!extension && !name.has_extension())
+		name += ".dll";
 
-	HMODULE handle = GetModuleHandleA(name.c_str());
+	HMODULE handle = GetModuleHandleW(name.c_str());
 	if (!handle)
 		return false;
 
