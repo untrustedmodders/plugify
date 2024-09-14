@@ -1,4 +1,4 @@
-#if! PLUGIFY_PLATFORM_WINDOWS
+#if PLUGIFY_PLATFORM_WINDOWS
 
 #include <plugify/assembly.h>
 
