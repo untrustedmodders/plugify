@@ -3,7 +3,16 @@
 #include <type_traits>
 
 namespace plugify {
-	// TODO: Write comments
+	/**
+	 * @class Ref
+	 * @brief A lightweight reference wrapper for objects of type `T`.
+	 *
+	 * This template class provides a reference-like wrapper around an object of type `T`, ensuring
+	 * the object can be safely referenced and compared. It handles copying and moving references, while
+	 * maintaining a non-owning pointer to the wrapped object.
+	 *
+	 * @tparam T The type of the object to be referenced.
+	 */
 	template<typename T>
 	class Ref {
 	public:
@@ -25,6 +34,15 @@ namespace plugify {
 		T* _impl;
 	};
 
+	/**
+	 * @var is_ref_v
+	 * @brief A type trait that checks if a type `T` is a reference type.
+	 *
+	 * This type trait ensures that `T` follows the standard layout and has the size of a pointer, making
+	 * it compatible for use with `Ref` wrappers.
+	 *
+	 * @tparam T The type to check.
+	 */
 	template<typename T> static constexpr bool is_ref_v = std::is_standard_layout_v<T> and sizeof(T) == sizeof(void*);
 }
 
