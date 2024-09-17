@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <optional>
-#include <filesystem>
+#include <plugify/path.h>
 #include <plugify/reference_wrapper.h>
 #include <plugify_export.h>
 
@@ -65,13 +65,13 @@ namespace plugify {
 		 * @brief Get the file path of the language module.
 		 * @return The file path as a filesystem path.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetFilePath() const noexcept;
+		[[nodiscard]] std::filesystem::path_view GetFilePath() const noexcept;
 
 		/**
 		 * @brief Get the base directory of the language module.
 		 * @return The base directory as a filesystem path.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetBaseDir() const noexcept;
+		[[nodiscard]] std::filesystem::path_view GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Get the descriptor of the language module.
@@ -112,7 +112,7 @@ namespace plugify {
 		 * auto resourcePath = module.FindResource("configs/core.cfg");
 		 * @endcode
 		 */
-		[[nodiscard]] std::optional<std::filesystem::path> FindResource(const std::filesystem::path& path) const;
+		[[nodiscard]] std::optional<std::filesystem::path_view> FindResource(std::filesystem::path_view path) const;
 	};
 	static_assert(is_ref_v<ModuleRef>);
 

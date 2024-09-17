@@ -16,8 +16,8 @@ std::string_view PluginRef::GetFriendlyName() const noexcept {
 	return _impl->GetFriendlyName();
 }
 
-const fs::path& PluginRef::GetBaseDir() const noexcept {
-	return _impl->GetBaseDir();
+fs::path_view PluginRef::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir().c_str();
 }
 
 PluginDescriptorRef PluginRef::GetDescriptor() const noexcept {
@@ -36,6 +36,10 @@ std::span<const MethodData> PluginRef::GetMethods() const noexcept {
 	return _impl->GetMethods();
 }
 
-std::optional<fs::path> PluginRef::FindResource(const fs::path& path) const {
-	return _impl->FindResource(path);
+std::optional<fs::path_view> PluginRef::FindResource(fs::path_view path) const {
+	auto res = _impl->FindResource(path);
+	if (res.has_value()) {
+		return res->c_str();
+	}
+	return {};
 }

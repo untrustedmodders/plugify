@@ -7,8 +7,8 @@ void IPlugifyProvider::Log(std::string_view msg, Severity severity) const {
 	_impl->Log(msg, severity);
 }
 
-const fs::path& IPlugifyProvider::GetBaseDir() const noexcept {
-	return _impl->GetBaseDir();
+fs::path_view IPlugifyProvider::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir().c_str();
 }
 
 bool IPlugifyProvider::IsPreferOwnSymbols() const noexcept {

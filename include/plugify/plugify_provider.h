@@ -3,6 +3,7 @@
 #include <memory>
 #include <string_view>
 #include <unordered_map>
+#include <plugify/path.h>
 #include <plugify/assembly.h>
 #include <plugify/reference_wrapper.h>
 #include <plugify_export.h>
@@ -30,7 +31,7 @@ namespace plugify {
 		 * @brief Get the base directory of the Plugify system.
 		 * @return Reference to the base directory path.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetBaseDir() const noexcept;
+		[[nodiscard]] std::filesystem::path_view GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Checks if the preference for using own symbols is enabled.

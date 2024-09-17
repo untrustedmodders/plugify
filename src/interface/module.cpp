@@ -20,12 +20,12 @@ std::string_view ModuleRef::GetFriendlyName() const noexcept {
 	return _impl->GetFriendlyName();
 }
 
-const fs::path& ModuleRef::GetFilePath() const noexcept {
-	return _impl->GetFilePath();
+fs::path_view ModuleRef::GetFilePath() const noexcept {
+	return _impl->GetFilePath().c_str();
 }
 
-const fs::path& ModuleRef::GetBaseDir() const noexcept {
-	return _impl->GetBaseDir();
+fs::path_view ModuleRef::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir().c_str();
 }
 
 LanguageModuleDescriptorRef ModuleRef::GetDescriptor() const noexcept {
@@ -40,6 +40,10 @@ std::string_view ModuleRef::GetError() const noexcept {
 	return _impl->GetError();
 }
 
-std::optional<fs::path> ModuleRef::FindResource(const fs::path& path) const {
-	return _impl->FindResource(path);
+std::optional<fs::path_view> ModuleRef::FindResource(fs::path_view path) const {
+	auto res = _impl->FindResource(path);
+	if (res.has_value()) {
+		return res->c_str();
+	}
+	return {};
 }

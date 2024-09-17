@@ -25,7 +25,6 @@ namespace plugify {
 		T* _impl;
 	};
 
-	//template<typename T> static constexpr bool is_pod_v = std::is_standard_layout_v<T> and std::is_trivial_v<T>; // C++20 deprecated std::is_pod_v so we must do this
 	template<typename T> static constexpr bool is_ref_v = std::is_standard_layout_v<T> and sizeof(T) == sizeof(void*);
 }
 
