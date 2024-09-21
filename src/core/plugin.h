@@ -47,7 +47,7 @@ namespace plugify {
 			return *_error;
 		}
 
-		std::optional<fs::path> FindResource(const fs::path& path) const;
+		std::optional<fs::path_view> FindResource(const fs::path& path) const;
 
 		void SetError(std::string error);
 

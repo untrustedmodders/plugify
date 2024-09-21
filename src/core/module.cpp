@@ -198,10 +198,10 @@ void Module::EndPlugin(Plugin& plugin) const {
 	plugin.SetTerminating();
 }
 
-std::optional<fs::path> Module::FindResource(const fs::path& path) const {
+std::optional<fs::path_view> Module::FindResource(const fs::path& path) const {
 	auto it = _resources.find(path);
 	if (it != _resources.end())
-		return std::get<fs::path>(*it);
+		return std::get<fs::path>(*it).c_str();
 	return {};
 }
 

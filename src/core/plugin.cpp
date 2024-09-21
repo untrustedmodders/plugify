@@ -50,10 +50,10 @@ void Plugin::Terminate() {
 	SetUnloaded();
 }
 
-std::optional<fs::path> Plugin::FindResource(const fs::path& path) const {
+std::optional<fs::path_view> Plugin::FindResource(const fs::path& path) const {
 	auto it = _resources.find(path);
 	if (it != _resources.end())
-		return std::get<fs::path>(*it);
+		return std::get<fs::path>(*it).c_str();
 	return {};
 }
 

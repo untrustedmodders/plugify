@@ -51,7 +51,7 @@ namespace plugify {
 			return *_error;
 		}
 
-		std::optional<fs::path> FindResource(const fs::path& path) const;
+		std::optional<fs::path_view> FindResource(const fs::path& path) const;
 
 		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
 		void Terminate();

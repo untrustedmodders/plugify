@@ -37,9 +37,5 @@ std::span<const MethodData> PluginRef::GetMethods() const noexcept {
 }
 
 std::optional<fs::path_view> PluginRef::FindResource(fs::path_view path) const {
-	auto res = _impl->FindResource(path);
-	if (res.has_value()) {
-		return res->c_str();
-	}
-	return {};
+	return _impl->FindResource(path);
 }

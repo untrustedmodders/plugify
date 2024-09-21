@@ -41,9 +41,5 @@ std::string_view ModuleRef::GetError() const noexcept {
 }
 
 std::optional<fs::path_view> ModuleRef::FindResource(fs::path_view path) const {
-	auto res = _impl->FindResource(path);
-	if (res.has_value()) {
-		return res->c_str();
-	}
-	return {};
+	return _impl->FindResource(path);
 }
