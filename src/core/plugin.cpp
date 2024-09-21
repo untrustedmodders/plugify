@@ -19,21 +19,25 @@ Plugin::~Plugin() {
 bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	PL_ASSERT(GetState() != PluginState::Loaded, "Plugin already was initialized");
 
+	auto is_regular_file = [](const fs::path& path, std::error_code ec) {
+		return fs::exists(path, ec) && (fs::is_regular_file(path, ec) || (fs::is_symlink(path, ec) && fs::is_regular_file(fs::symlink_status(path, ec))));
+	};
+
 	std::error_code ec;
 
 	auto plugifyProvider = provider.lock();
 
-	const fs::path& baseDir = plugifyProvider->GetBaseDir();
+	fs::path_view baseDir = plugifyProvider->GetBaseDir();
 
 	if (const auto& resourceDirectoriesSettings = GetDescriptor().resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
-				if (entry.is_regular_file(ec) && !entry.is_symlink(ec)) {
+				if (entry.is_regular_file(ec) || (entry.is_symlink(ec) && fs::is_regular_file(entry.symlink_status(ec)))) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
-					if (!fs::exists(absPath, ec) || !fs::is_regular_file(absPath, ec) || fs::is_symlink(absPath, ec)) {
+					if (!is_regular_file(absPath, ec)) {
 						absPath = entry.path();
 					}
 

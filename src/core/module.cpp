@@ -25,25 +25,29 @@ Module::~Module() {
 bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
 
+	auto is_regular_file = [](const fs::path& path, std::error_code ec) {
+		return fs::exists(path, ec) && (fs::is_regular_file(path, ec) || (fs::is_symlink(path, ec) && fs::is_regular_file(fs::symlink_status(path, ec))));
+	};
+
 	std::error_code ec;
-	if (!fs::exists(_filePath, ec) || !fs::is_regular_file(_filePath, ec) || fs::is_symlink(_filePath, ec)) {
+	if (!is_regular_file(_filePath, ec)) {
 		SetError(std::format("Module binary '{}' not exist!.", _filePath.string()));
 		return false;
 	}
 
 	auto plugifyProvider = provider.lock();
 
-	const fs::path& baseDir = plugifyProvider->GetBaseDir();
+	fs::path_view baseDir = plugifyProvider->GetBaseDir();
 
 	if (const auto& resourceDirectoriesSettings = GetDescriptor().resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
-				if (entry.is_regular_file(ec) && !entry.is_symlink(ec)) {
+				if (entry.is_regular_file(ec) || (entry.is_symlink(ec) && fs::is_regular_file(entry.symlink_status(ec)))) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
-					if (!fs::exists(absPath, ec) || !fs::is_regular_file(absPath, ec) || fs::is_symlink(absPath, ec)) {
+					if (!is_regular_file(absPath, ec)) {
 						absPath = entry.path();
 					}
 
@@ -53,13 +57,20 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		}
 	}
 
+	auto is_directory = [](const fs::path& path, std::error_code ec) {
+		return fs::exists(path, ec) && (fs::is_directory(path, ec) || (fs::is_symlink(path, ec) && fs::is_directory(fs::symlink_status(path, ec))));
+	};
+
 	std::vector<fs::path> libraryDirectories;
 	if (const auto& libraryDirectoriesSettings = GetDescriptor().libraryDirectories) {
 		for (const auto& rawPath : *libraryDirectoriesSettings) {
 			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath, ec);
-			if (!fs::exists(libraryDirectory, ec) || !fs::is_directory(libraryDirectory, ec)) {
+			if (!is_directory(libraryDirectory, ec)) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
 				return false;
+			}
+			if (fs::is_symlink(libraryDirectory, ec)) {
+				libraryDirectory = fs::read_symlink(libraryDirectory, ec);
 			}
 			libraryDirectory.make_preferred();
 			libraryDirectories.emplace_back(std::move(libraryDirectory));
