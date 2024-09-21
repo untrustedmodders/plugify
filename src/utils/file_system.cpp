@@ -63,7 +63,7 @@ std::vector<fs::path> FileSystem::GetFiles(const fs::path& root, bool recursive,
 		auto iterate = [&](auto iterator) {
 			for (auto const& entry : iterator) {
 				const auto& path = entry.path();
-				if ((entry.is_regular_file(ec) || (entry.is_symlink(ec) && fs::is_regular_file(entry.symlink_status(ec)))) && (ext.empty() || path.extension().string() == ext)) {
+				if (entry.is_regular_file(ec) && (ext.empty() || path.extension().string() == ext)) {
 					paths.push_back(path);
 				}
 			}
@@ -86,9 +86,9 @@ void FileSystem::ReadDirectory(const fs::path& directory, const PathHandler& han
 	std::error_code ec;
 	for (const auto& entry : fs::directory_iterator(directory, ec)) {
 		const auto& path = entry.path();
-		if (entry.is_directory(ec) || (entry.is_symlink(ec) && fs::is_directory(entry.symlink_status(ec)))) {
+		if (entry.is_directory(ec)) {
 			ReadDirectory(path, handler, depth - 1);
-		} else if (entry.is_regular_file(ec) || (entry.is_symlink(ec) && fs::is_regular_file(entry.symlink_status(ec)))) {
+		} else if (entry.is_regular_file(ec)) {
 			handler(path, depth);
 		}
 	}
@@ -104,12 +104,8 @@ std::error_code FileSystem::MoveFolder(const fs::path& from, const fs::path& to)
 
 std::error_code FileSystem::RemoveFolder(const fs::path& at) {
 	std::error_code ec;
-	if (fs::exists(at, ec)) {
-		if (fs::is_directory(at, ec)) {
-			fs::remove_all(at, ec);
-		} else if (fs::is_symlink(at, ec)) {
-			fs::remove(at, ec);
-		}
+	if (fs::exists(at, ec) && fs::is_directory(at, ec)) {
+		fs::remove_all(at, ec);
 	}
 	return ec;
 }

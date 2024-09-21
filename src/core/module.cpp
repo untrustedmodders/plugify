@@ -28,7 +28,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	std::error_code ec;
 
 	auto is_regular_file = [&](const fs::path& path) {
-		return fs::exists(path, ec) && (fs::is_regular_file(path, ec) || (fs::is_symlink(path, ec) && fs::is_regular_file(fs::symlink_status(path, ec))));
+		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
 	};
 
 	if (!is_regular_file(_filePath)) {
@@ -44,7 +44,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
-				if (entry.is_regular_file(ec) || (entry.is_symlink(ec) && fs::is_regular_file(entry.symlink_status(ec)))) {
+				if (entry.is_regular_file(ec)) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
@@ -59,7 +59,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	}
 
 	auto is_directory = [&](const fs::path& path) {
-		return fs::exists(path, ec) && (fs::is_directory(path, ec) || (fs::is_symlink(path, ec) && fs::is_directory(fs::symlink_status(path, ec))));
+		return fs::exists(path, ec) && fs::is_directory(path, ec);
 	};
 
 	std::vector<fs::path> libraryDirectories;
