@@ -19,11 +19,11 @@ Plugin::~Plugin() {
 bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	PL_ASSERT(GetState() != PluginState::Loaded, "Plugin already was initialized");
 
-	auto is_regular_file = [](const fs::path& path, std::error_code ec) {
+	std::error_code ec;
+
+	auto is_regular_file = [&](const fs::path& path) {
 		return fs::exists(path, ec) && (fs::is_regular_file(path, ec) || (fs::is_symlink(path, ec) && fs::is_regular_file(fs::symlink_status(path, ec))));
 	};
-
-	std::error_code ec;
 
 	auto plugifyProvider = provider.lock();
 
@@ -37,7 +37,7 @@ bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
-					if (!is_regular_file(absPath, ec)) {
+					if (!is_regular_file(absPath)) {
 						absPath = entry.path();
 					}
 

@@ -25,12 +25,13 @@ Module::~Module() {
 bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
 
-	auto is_regular_file = [](const fs::path& path, std::error_code ec) {
+	std::error_code ec;
+
+	auto is_regular_file = [&](const fs::path& path) {
 		return fs::exists(path, ec) && (fs::is_regular_file(path, ec) || (fs::is_symlink(path, ec) && fs::is_regular_file(fs::symlink_status(path, ec))));
 	};
 
-	std::error_code ec;
-	if (!is_regular_file(_filePath, ec)) {
+	if (!is_regular_file(_filePath)) {
 		SetError(std::format("Module binary '{}' not exist!.", _filePath.string()));
 		return false;
 	}
@@ -47,7 +48,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
-					if (!is_regular_file(absPath, ec)) {
+					if (!is_regular_file(absPath)) {
 						absPath = entry.path();
 					}
 
@@ -57,7 +58,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		}
 	}
 
-	auto is_directory = [](const fs::path& path, std::error_code ec) {
+	auto is_directory = [&](const fs::path& path) {
 		return fs::exists(path, ec) && (fs::is_directory(path, ec) || (fs::is_symlink(path, ec) && fs::is_directory(fs::symlink_status(path, ec))));
 	};
 
@@ -65,7 +66,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	if (const auto& libraryDirectoriesSettings = GetDescriptor().libraryDirectories) {
 		for (const auto& rawPath : *libraryDirectoriesSettings) {
 			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath, ec);
-			if (!is_directory(libraryDirectory, ec)) {
+			if (!is_directory(libraryDirectory)) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
 				return false;
 			}
