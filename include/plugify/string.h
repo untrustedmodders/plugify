@@ -189,8 +189,6 @@ namespace plg {
 	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
 	class basic_string {
 		using alloc_traits = std::allocator_traits<Allocator>;
-		using sview_type = std::basic_string_view<Char, Traits>;
-
 	public:
 		using traits_type = Traits;
 		using value_type = typename traits_type::char_type;
@@ -205,6 +203,7 @@ namespace plg {
 		using const_iterator = const value_type*;
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+		using sview_type = std::basic_string_view<Char, Traits>;
 
 		constexpr static size_type npos = static_cast<size_t>(-1);
 
@@ -1831,64 +1830,10 @@ namespace plg {
 #if PLUGIFY_STRING_STD_HASH
 	// hash support
 	namespace detail {
-		constexpr uint64_t MurmurHash2_64A(const void* key, uint64_t len, uint64_t seed) {
-			const uint64_t m = 0xC6A4A7935BD1E995;
-			const int r = 47;
-
-			uint64_t h = seed ^ (len * m);
-
-			const uint64_t* data = static_cast<const uint64_t*>(key);
-			const uint64_t* end = data + (len / 8);
-
-			while (data != end) {
-				uint64_t k = 0;
-				k = *(data++);
-
-				k *= m;
-				k ^= k >> r;
-				k *= m;
-
-				h ^= k;
-				h *= m;
-			}
-
-			auto data2 = static_cast<const uint8_t*>(static_cast<const void*>(data));
-
-			switch (len & 7) {
-				case 7:
-					h ^= static_cast<uint64_t>(data2[6]) << 48;
-					[[fallthrough]];
-				case 6:
-					h ^= static_cast<uint64_t>(data2[5]) << 40;
-					[[fallthrough]];
-				case 5:
-					h ^= static_cast<uint64_t>(data2[4]) << 32;
-					[[fallthrough]];
-				case 4:
-					h ^= static_cast<uint64_t>(data2[3]) << 24;
-					[[fallthrough]];
-				case 3:
-					h ^= static_cast<uint64_t>(data2[2]) << 16;
-					[[fallthrough]];
-				case 2:
-					h ^= static_cast<uint64_t>(data2[1]) << 8;
-					[[fallthrough]];
-				case 1:
-					h ^= static_cast<uint64_t>(data2[0]);
-					h *= m;
-			};
-
-			h ^= h >> r;
-			h *= m;
-			h ^= h >> r;
-
-			return h;
-		}
-
 		template<typename Char, typename Allocator, typename String = basic_string<Char, std::char_traits<Char>, Allocator>>
 		struct string_hash_base {
 			[[nodiscard]] constexpr std::size_t operator()(const String& str) const noexcept {
-				return MurmurHash2_64A(str.c_str(), str.length() * sizeof(Char), 0xE17A1465);
+				return std::hash<typename String::sview_type>{}(String::sview_type(str));
 			}
 		};
 	}// namespace detail
