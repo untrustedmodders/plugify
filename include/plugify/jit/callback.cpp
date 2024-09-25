@@ -200,21 +200,17 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 			retStackIdxUpper.addOffset(sizeof(uintptr_t));
 			retStackIdxUpper.setSize(sizeof(uintptr_t));
 
-			asmjit::x86::Gp tmp1 = cc.newUIntPtr();
-			asmjit::x86::Gp tmp2 = cc.newUIntPtr();
-			cc.mov(tmp1, retStackIdx);
-			cc.mov(tmp2, retStackIdxUpper);
-			cc.ret(tmp1, tmp2);
+			cc.mov(asmjit::x86::rax, retStackIdx);
+			cc.mov(asmjit::x86::rdx, retStackIdxUpper);
+			cc.ret();
 		} else if (isFloatPod) {
 			asmjit::x86::Mem retStackIdxUpper(retStack);
 			retStackIdxUpper.addOffset(sizeof(uintptr_t));
 			retStackIdxUpper.setSize(sizeof(uintptr_t));
 
-			asmjit::x86::Xmm tmp1 = cc.newXmm();
-			asmjit::x86::Xmm tmp2 = cc.newXmm();
-			cc.movq(tmp1, retStackIdx);
-			cc.movq(tmp2, retStackIdxUpper);
-			cc.ret(tmp1, tmp2);
+			cc.movq(asmjit::x86::xmm0, retStackIdx);
+			cc.movq(asmjit::x86::xmm1, retStackIdxUpper);
+			cc.ret();
 		}
 #endif
 		else {
