@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cstdarg>
 
 #ifndef PLUGIFY_STRING_STD_HASH
 #  define PLUGIFY_STRING_STD_HASH 1
@@ -228,6 +229,26 @@ namespace plg {
 		_PLUGIFY_STRING_DIAG_IGN(4200)
 #endif
 
+		template <typename CharT, size_t = sizeof(CharT)>
+		struct padding {
+			[[maybe_unused]] char padding[sizeof(CharT) - sizeof(char)];
+		};
+
+		template <typename CharT>
+		struct padding<CharT, 1> {
+			// template specialization to remove the padding structure to avoid warnings on zero length arrays
+			// also, this allows us to take advantage of the empty-base-class optimization.
+		};
+
+		// size must correspond to the last byte of long_data.cap, so we don't want the compiler to insert
+		// padding after size if sizeof(value_type) != 1; Also ensures both layouts are the same size.
+		struct sso_size : padding<value_type> {
+			_PLUGIFY_STRING_PACK(struct {
+				unsigned char spare_size : 7;
+				unsigned char is_long : 1;
+			});
+		};
+
 		static constexpr int char_bit = std::numeric_limits<char>::digits + std::numeric_limits<char>::is_signed;
 
 		static_assert(char_bit == 8, "assumes an 8 bit byte.");
@@ -241,23 +262,21 @@ namespace plg {
 			});
 		};
 
-		enum { min_cap = (sizeof(long_data) - 1) / sizeof(value_type) > 2 ? (sizeof(long_data) - 1) / sizeof(value_type) : 2 };
+		static constexpr size_type min_cap = (sizeof(long_data) - sizeof(char)) / sizeof(value_type) > 2 ? (sizeof(long_data) - sizeof(char)) / sizeof(value_type) : 2;
+
 		struct short_data {
 			value_type data[min_cap];
-			_PLUGIFY_STRING_PACK(struct {
-				unsigned char size : 7;
-				unsigned char is_long : 1;
-			});
-			//char padding[sizeof(value_type) - 1];
+			sso_size size;
 		};
 
 		_PLUGIFY_STRING_DIAG_POP()
 
-		static_assert(sizeof(short_data) == (sizeof(value_type) * (min_cap + 1)), "short_data has an unexpected size.");
+		static_assert(sizeof(short_data) == (sizeof(value_type) * (min_cap + sizeof(char))), "short has an unexpected size.");
+		static_assert(sizeof(short_data) == sizeof(long_data), "short and long layout structures must be the same size");
 
 		union storage_t {
 			long_data _long;
-			short_data _short{{}, {false, 0}};
+			short_data _short{};
 		} storage;
 
 		constexpr static bool fits_in_sso(size_type size) {
@@ -265,20 +284,20 @@ namespace plg {
 		}
 
 		constexpr void long_init() {
-			this->storage._long.is_long = true;
-			this->storage._long.data = nullptr;
-			this->storage._long.size = 0;
-			this->storage._long.cap = 0;
+			this->is_long(true);
+			this->set_long_data(nullptr);
+			this->set_long_size(0);
+			this->set_long_cap(0);
 		}
 
 		constexpr void short_init() {
-			if (auto& buffer = this->storage._long.data; this->is_long() && buffer != nullptr) {
-				this->_allocator.deallocate(buffer, this->storage._long.cap + 1);
+			if (auto& buffer = this->get_long_data(); this->is_long() && buffer != nullptr) {
+				this->_allocator.deallocate(buffer, this->get_long_cap() + 1);
 				buffer = nullptr;
 			}
 
-			this->storage._short.is_long = false;
-			this->storage._short.size = 0;
+			this->is_long(false);
+			this->set_short_size(0);
 		}
 
 		constexpr void default_init(size_type size) {
@@ -288,32 +307,80 @@ namespace plg {
 				this->long_init();
 		}
 
+		constexpr auto& get_long_data() noexcept {
+			return this->storage._long.data;
+		}
+
+		constexpr const auto& get_long_data() const noexcept {
+			return this->storage._long.data;
+		}
+
+		constexpr auto& get_short_data() noexcept {
+			return this->storage._short.data;
+		}
+
+		constexpr const auto& get_short_data() const noexcept {
+			return this->storage._short.data;
+		}
+
+		constexpr void set_short_size(size_type size) noexcept {
+			this->storage._short.size.spare_size = min_cap - (size & 0x7F);
+		}
+
+		constexpr size_type get_short_size() const noexcept {
+			return min_cap - this->storage._short.size.spare_size;
+		}
+
+		constexpr void set_long_size(size_type size) noexcept {
+			this->storage._long.size = size;
+		}
+
+		constexpr size_type get_long_size() const noexcept {
+			return this->storage._long.size;
+		}
+
+		constexpr void set_long_cap(size_type cap) noexcept {
+			this->storage._long.cap = cap;
+		}
+
+		constexpr size_type get_long_cap() const noexcept {
+			return this->storage._long.cap;
+		}
+
+		constexpr void set_long_data(value_type* data) {
+			this->storage._long.data = data;
+		}
+
+		constexpr void is_long(bool l)  noexcept {
+			this->storage._long.is_long = l;
+		}
+
 		constexpr bool is_long() const noexcept {
-			return this->storage._short.is_long == true;
+			return this->storage._long.is_long == true;
 		}
 
 		constexpr pointer get_data() noexcept {
-			return this->is_long() ? this->storage._long.data : this->storage._short.data;
+			return this->is_long() ? this->get_long_data() : this->get_short_data();
 		}
 
 		constexpr const_pointer get_data() const noexcept {
-			return this->is_long() ? this->storage._long.data : this->storage._short.data;
+			return this->is_long() ? this->get_long_data() : this->get_short_data();
 		}
 
 		constexpr size_type get_size() const noexcept {
-			return this->is_long() ? this->storage._long.size : this->storage._short.size;
+			return this->is_long() ? this->get_long_size() : this->get_short_size();
 		}
 
 		constexpr void set_size(size_type size) noexcept {
 			if (this->is_long())
-				this->storage._long.size = size;
+				this->set_long_size(size);
 			else
-				this->storage._short.size = size & 0x7F;
+				this->set_short_size(size);
 		}
 
 		constexpr size_type get_cap() const noexcept {
 			if (this->is_long())
-				return this->storage._long.cap;
+				return this->get_long_cap();
 			else
 				return min_cap;
 		}
@@ -323,12 +390,12 @@ namespace plg {
 		}
 
 		constexpr void reallocate(std::size_t new_cap, bool copy_old) {
-			if (new_cap == this->storage._long.cap)
+			if (new_cap == this->get_long_cap())
 				return;
 
-			auto old_len = this->storage._long.size;
-			auto old_cap = this->storage._long.cap;
-			auto& old_buffer = this->storage._long.data;
+			auto old_len = this->get_long_size();
+			auto old_cap = this->get_long_cap();
+			auto& old_buffer = this->get_long_data();
 
 			auto new_len = std::min(new_cap, old_len);
 			auto new_buffer = this->_allocator.allocate(new_cap + 1);
@@ -339,9 +406,9 @@ namespace plg {
 				this->_allocator.deallocate(old_buffer, old_cap + 1);
 			}
 
-			this->storage._long.size = new_len;
-			this->storage._long.data = new_buffer;
-			this->storage._long.cap = new_cap;
+			this->set_long_data(new_buffer);
+			this->set_long_size(new_len);
+			this->set_long_cap(new_cap);
 		}
 
 		constexpr void grow_to(size_type new_cap) {
@@ -351,15 +418,15 @@ namespace plg {
 			}
 
 			auto buffer = this->_allocator.allocate(new_cap + 1);
-			auto len = this->storage._short.size;
+			auto len = this->get_short_size();
 
-			Traits::copy(buffer, this->storage._short.data, len);
+			Traits::copy(buffer, this->get_short_data(), len);
 			Traits::assign(buffer[len], _terminator);
 
 			this->long_init();
-			this->storage._long.data = buffer;
-			this->storage._long.size = len;
-			this->storage._long.cap = new_cap;
+			this->set_long_data(buffer);
+			this->set_long_size(len);
+			this->set_long_cap(new_cap);
 		}
 
 		constexpr void null_terminate() noexcept {
@@ -466,17 +533,17 @@ namespace plg {
 				if (this->is_long() == true)
 					this->short_init();
 
-				this->storage._short.size = static_cast<unsigned char>(size);
-				func(this->storage._short.data);
+				this->set_short_size(size);
+				func(this->get_short_data());
 				this->null_terminate();
 			} else {
 				if (this->is_long() == false)
 					this->long_init();
-				if (this->storage._long.cap < size)
+				if (this->get_long_cap() < size)
 					this->reallocate(size, copy_old);
 
-				func(this->storage._long.data);
-				this->storage._long.size = size;
+				func(this->get_long_data());
+				this->set_long_size(size);
 				this->null_terminate();
 			}
 		}
@@ -531,7 +598,7 @@ namespace plg {
 		template<std::input_iterator InputIterator>
 		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			auto len = std::distance(first, last);
-			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			_PLUGIFY_STRING_ASSERT((size_t) len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(first), len);
 		}
 
@@ -543,8 +610,8 @@ namespace plg {
 
 		constexpr basic_string(basic_string&& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _allocator(a), storage(std::move(str.storage)) {
 			if (str.is_long() && a != str._allocator) {
-				auto len = str.storage._long.size;
-				this->internal_assign(str.storage._long.data, len);
+				auto len = str.get_long_size();
+				this->internal_assign(str.get_long_data(), len);
 			} else {
 				this->storage = str.storage;
 				str.short_init();
@@ -599,8 +666,8 @@ namespace plg {
 
 		constexpr ~basic_string() {
 			if (this->is_long())
-				if (auto& buffer = this->storage._long.data; buffer != nullptr)
-					this->_allocator.deallocate(buffer, this->storage._long.cap + 1);
+				if (auto& buffer = this->get_long_data(); buffer != nullptr)
+					this->_allocator.deallocate(buffer, this->get_long_cap() + 1);
 		}
 
 		constexpr basic_string& operator=(const basic_string& str) {
@@ -679,7 +746,7 @@ namespace plg {
 		template<typename InputIterator>
 		constexpr basic_string& assign(InputIterator first, InputIterator last) {
 			auto len = std::distance(first, last);
-			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			_PLUGIFY_STRING_ASSERT((size_t) len <= this->max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(first), len);
 			return *this;
 		}
@@ -1739,20 +1806,41 @@ namespace plg {
 			//  numeric_limits::digits10 returns value less on 1 than desired for unsigned numbers.
 			//  For example, for 1-byte unsigned value digits10 is 2 (999 can not be represented),
 			//  so we need +1 here.
-			constexpr size_t bufsize = std::numeric_limits<V>::digits10 + 2; // +1 for minus, +1 for digits10
-			char buf[bufsize];
-			const auto res = std::to_chars(buf, buf + bufsize, v);
+			constexpr size_t bufSize = std::numeric_limits<V>::digits10 + 2; // +1 for minus, +1 for digits10
+			char buf[bufSize];
+			const auto res = std::to_chars(buf, buf + bufSize, v);
 			return S(buf, res.ptr);
 		}
 
-		template<typename S, typename V>
-		_PLUGIFY_ALWAYS_INLINE S as_string(const typename S::value_type* fmt, V v) {
+		typedef int (*wide_printf)(wchar_t* __restrict, size_t, const wchar_t* __restrict, ...);
+
+#if defined(_MSC_VER)
+		inline int truncate_snwprintf(wchar_t* __restrict buffer, size_t count, const wchar_t* __restrict format, ...) {
+			int r;
+			va_list args;
+			va_start(args, format);
+			r = _vsnwprintf_s(buffer, count, _TRUNCATE, format, args);
+			va_end(args);
+			return r;
+		}
+#endif
+
+		constexpr wide_printf get_swprintf() {
+#if defined(_MSC_VER)
+			return static_cast<int(__cdecl*)(wchar_t* __restrict, size_t, const wchar_t* __restrict, ...)>(truncate_snwprintf);
+#else
+			return swprintf;
+#endif
+		}
+
+		template<typename S, typename P, typename V>
+		_PLUGIFY_ALWAYS_INLINE S as_string(P sprintf_like, const typename S::value_type* fmt, V v) {
 			typedef typename S::size_type size_type;
 			S s;
 			s.resize(s.capacity());
 			size_type available = s.size();
 			while (true) {
-				int status = std::swprintf(&s[0], available + 1, fmt, v);
+				int status = sprintf_like(&s[0], available + 1, fmt, v);
 				if (status >= 0) {
 					auto used = static_cast<size_type>(status);
 					if (used <= available) {
@@ -1769,35 +1857,35 @@ namespace plg {
 		}
 	}// namespace detail
 
-	constexpr string to_string(int val) { return detail::to_string<string>(val); }
-	constexpr string to_string(unsigned val) { return detail::to_string<string>(val); }
-	constexpr string to_string(long val) { return detail::to_string<string>(val); }
-	constexpr string to_string(unsigned long val) { return detail::to_string<string>(val); }
-	constexpr string to_string(long long val) { return detail::to_string<string>(val); }
-	constexpr string to_string(unsigned long long val) { return detail::to_string<string>(val); }
+	inline string to_string(int val) { return detail::to_string<string>(val); }
+	inline string to_string(unsigned val) { return detail::to_string<string>(val); }
+	inline string to_string(long val) { return detail::to_string<string>(val); }
+	inline string to_string(unsigned long val) { return detail::to_string<string>(val); }
+	inline string to_string(long long val) { return detail::to_string<string>(val); }
+	inline string to_string(unsigned long long val) { return detail::to_string<string>(val); }
 
 #if PLUGIFY_STRING_FLOAT
-	constexpr string to_string(float val) { return detail::as_string<string>("%f", val); }
-	constexpr string to_string(double val) { return detail::as_string<string>("%f", val); }
+	inline string to_string(float val) { return detail::as_string<string>(snprintf, "%f", val); }
+	inline string to_string(double val) { return detail::as_string<string>(snprintf, "%f", val); }
 
 #if PLUGIFY_STRING_LONG_DOUBLE
-	constexpr string to_string(long double val) { return detail::as_string<string>("%Lf", val); }
+	inline string to_string(long double val) { return detail::as_string<string>(snprintf, "%Lf", val); }
 #endif
 #endif
 
-	constexpr wstring to_wstring(int val) { return detail::to_string<wstring>(val); }
-	constexpr wstring to_wstring(unsigned val) { return detail::to_string<wstring>(val); }
-	constexpr wstring to_wstring(long val) { return detail::to_string<wstring>(val); }
-	constexpr wstring to_wstring(unsigned long val) { return detail::to_string<wstring>(val); }
-	constexpr wstring to_wstring(long long val) { return detail::to_string<wstring>(val); }
-	constexpr wstring to_wstring(unsigned long long val) { return detail::to_string<wstring>(val); }
+	inline wstring to_wstring(int val) { return detail::to_string<wstring>(val); }
+	inline wstring to_wstring(unsigned val) { return detail::to_string<wstring>(val); }
+	inline wstring to_wstring(long val) { return detail::to_string<wstring>(val); }
+	inline wstring to_wstring(unsigned long val) { return detail::to_string<wstring>(val); }
+	inline wstring to_wstring(long long val) { return detail::to_string<wstring>(val); }
+	inline wstring to_wstring(unsigned long long val) { return detail::to_string<wstring>(val); }
 
 #if PLUGIFY_STRING_FLOAT
-	constexpr wstring to_wstring(float val) { return detail::as_string<wstring>(L"%f", val); }
-	constexpr wstring to_wstring(double val) { return detail::as_string<wstring>(L"%f", val); }
+	inline wstring to_wstring(float val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%f", val); }
+	inline wstring to_wstring(double val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%f", val); }
 
 #if PLUGIFY_STRING_LONG_DOUBLE
-	constexpr wstring to_wstring(long double val) { return detail::as_string<wstring>(L"%Lf", val); }
+	inline wstring to_wstring(long double val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%Lf", val); }
 #endif
 #endif
 #endif
