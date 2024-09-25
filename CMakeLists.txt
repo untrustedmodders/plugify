@@ -117,7 +117,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Compilation options
 option(PLUGIFY_BUILD_TESTS "Enable building tests." OFF)
-option(PLUGIFY_BUILD_FUNCTION "Build function object library." OFF)
+option(PLUGIFY_BUILD_JIT "Build jit object library." OFF)
 option(PLUGIFY_BUILD_ASSEMBLY "Build assembly object library." OFF)
 option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
 
@@ -332,34 +332,36 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Tools
-if(PLUGIFY_BUILD_FUNCTION)
-    add_library(${PROJECT_NAME}-function OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/function.cpp")
-    add_library(${PROJECT_NAME}::${PROJECT_NAME}-function ALIAS ${PROJECT_NAME}-function)
-    target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+if(PLUGIFY_BUILD_JIT)
+    add_library(${PROJECT_NAME}-jit OBJECT
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call.cpp")
+    add_library(${PROJECT_NAME}::${PROJECT_NAME}-jit ALIAS ${PROJECT_NAME}-jit)
+    target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     if(PLUGIFY_USE_EXTERNAL_ASMJIT)
         find_package(asmjit REQUIRED)
     else()
         include(cmake/asmjit.cmake)
-        target_include_directories(${PROJECT_NAME}-function PRIVATE ${ASMJIT_SRC})
+        target_include_directories(${PROJECT_NAME}-jit PRIVATE ${ASMJIT_SRC})
     endif()
-    target_link_libraries(${PROJECT_NAME}-function PRIVATE asmjit::asmjit)
-    target_compile_definitions(${PROJECT_NAME}-function PRIVATE
+    target_link_libraries(${PROJECT_NAME}-jit PRIVATE asmjit::asmjit)
+    target_compile_definitions(${PROJECT_NAME}-jit PRIVATE
             PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
             PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
             PLUGIFY_PLATFORM_LINUX=$<BOOL:${LINUX}>
             PLUGIFY_PLATFORM_ANDROID=$<BOOL:${ANDROID}>
             PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
             PLUGIFY_SEPARATE_SOURCE_FILES=1)
-    target_include_directories(${PROJECT_NAME}-function PUBLIC ${CMAKE_BINARY_DIR}/exports)
+    target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_BINARY_DIR}/exports)
     if(LINUX)
-        target_compile_definitions(${PROJECT_NAME}-function PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+        target_compile_definitions(${PROJECT_NAME}-jit PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
     endif()
     if(PLUGIFY_HAS_LIBCPP)
-        target_compile_options(${PROJECT_NAME}-function PUBLIC -stdlib=libc++)
+        target_compile_options(${PROJECT_NAME}-jit PUBLIC -stdlib=libc++)
     endif()
 endif()
 if(PLUGIFY_BUILD_ASSEMBLY)
-    add_library(${PROJECT_NAME}-assembly OBJECT  "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assembly.cpp")
+    add_library(${PROJECT_NAME}-assembly OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assembly.cpp")
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-assembly ALIAS ${PROJECT_NAME}-assembly)
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_compile_definitions(${PROJECT_NAME}-assembly PRIVATE
