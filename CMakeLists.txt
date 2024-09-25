@@ -335,7 +335,8 @@ endif()
 if(PLUGIFY_BUILD_JIT)
     add_library(${PROJECT_NAME}-jit OBJECT
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call.cpp")
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers.cpp")
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-jit ALIAS ${PROJECT_NAME}-jit)
     target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     if(PLUGIFY_USE_EXTERNAL_ASMJIT)
