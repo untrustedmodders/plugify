@@ -1,15 +1,7 @@
-#pragma once
+#include "helpers.h"
 
-#include <asmjit/asmjit.h>
-#include <plugify/method.h>
-
-namespace plugify {
-	template<typename T>
-	[[nodiscard]] constexpr asmjit::TypeId GetTypeIdx() noexcept {
-		return static_cast<asmjit::TypeId>(asmjit::TypeUtils::TypeIdOfT<T>::kTypeId);
-	}
-
-	[[nodiscard]] constexpr asmjit::TypeId GetValueTypeId(ValueType valueType) noexcept {
+namespace plugify::JitUtils {
+	asmjit::TypeId GetValueTypeId(ValueType valueType) noexcept {
 		switch (valueType) {
 			case ValueType::Invalid:
 			case ValueType::Void:
@@ -67,7 +59,7 @@ namespace plugify {
 		return asmjit::TypeId::kVoid;
 	}
 
-	[[nodiscard]] constexpr asmjit::TypeId GetRetTypeId(ValueType valueType) noexcept {
+	asmjit::TypeId GetRetTypeId(ValueType valueType) noexcept {
 		switch (valueType) {
 			case ValueType::Invalid:
 			case ValueType::Void:
@@ -135,7 +127,7 @@ namespace plugify {
 		return asmjit::TypeId::kVoid;
 	}
 
-	[[nodiscard]] constexpr asmjit::CallConvId GetCallConv([[maybe_unused]] std::string_view conv) noexcept {
+	asmjit::CallConvId GetCallConv([[maybe_unused]] std::string_view conv) noexcept {
 #if PLUGIFY_ARCH_X86 == 64
 #if PLUGIFY_PLATFORM_WINDOWS
 		if (conv == "vectorcall") [[unlikely]] {
@@ -164,4 +156,4 @@ namespace plugify {
 #endif // PLUGIFY_ARCH_X86
 	}
 
-} // namespace plugify::jit
+} // namespace plugify

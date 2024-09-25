@@ -1,5 +1,5 @@
 #include <plugify/jit/callback.h>
-#include <plugify/jit/utils.hpp>
+#include <plugify/jit/helpers.h>
 
 using namespace plugify;
 
@@ -240,12 +240,12 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 MemAddr JitCallback::GetJitFunc(MethodRef method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
 	ValueType retType = method.GetReturnType().GetType();
 	bool isHiddenParam = hidden(retType);
-	asmjit::FuncSignature sig(GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), GetRetTypeId(isHiddenParam ? ValueType::Pointer : retType));
+	asmjit::FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(isHiddenParam ? ValueType::Pointer : retType));
 	if (isHiddenParam) {
-		sig.addArg(GetValueTypeId(retType));
+		sig.addArg(JitUtils::GetValueTypeId(retType));
 	}
 	for (const auto& type : method.GetParamTypes()) {
-		sig.addArg(GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
+		sig.addArg(JitUtils::GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
 	}
 	return GetJitFunc(sig, method, callback, data);
 }
