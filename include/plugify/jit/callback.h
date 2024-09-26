@@ -92,7 +92,7 @@ namespace plugify {
 		 * @struct ReturnValue
 		 * @brief Structure to represent the return value of a function.
 		 */
-		struct ReturnValue {
+		struct Return {
 			/**
 			 * @brief Set the return value.
 			 * @tparam T Type of the return value.
@@ -126,7 +126,7 @@ namespace plugify {
 			volatile uintptr_t ret; ///< Raw storage for the return value.
 		};
 
-		using CallbackHandler = void(*)(MethodRef method, MemAddr data, const Parameters* params, uint8_t count, const ReturnValue* ret);
+		using CallbackHandler = void(*)(MethodRef method, MemAddr data, const Parameters* params, uint8_t count, const Return* ret);
 		using HiddenParam = bool(*)(ValueType);
 
 		/**

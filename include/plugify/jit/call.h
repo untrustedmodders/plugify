@@ -67,7 +67,7 @@ namespace plugify{
 			 * @brief Get a pointer to the argument storage.
 			 * @return Pointer to the arguments storage.
 			 */
-			Data GetDataPtr() noexcept {
+			Data GetDataPtr() const noexcept {
 				return arguments.data();
 			}
 			

@@ -67,6 +67,8 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 	// map argument slots to registers, following abi.
 	std::vector<asmjit::x86::Reg> argRegisters;
+	argRegisters.reserve(sig.argCount());
+
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); argIdx++) {
 		const auto& argType = sig.args()[argIdx];
 
@@ -159,7 +161,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	asmjit::InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
 			  (uint64_t) callback,
-			  asmjit::FuncSignature::build<void, void*, void*, Parameters*, uint8_t, ReturnValue*>()
+			  asmjit::FuncSignature::build<void, void*, void*, Parameters*, uint8_t, Return*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)
