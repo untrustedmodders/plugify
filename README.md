@@ -274,9 +274,9 @@ To build the basic testing app:
 ## Extensions
 
 Here is a list of all already implemented language modules:
-- [C++ Language Module](https://github.com/untrustedmodders/cpp-lang-module)
+- [C++ Language Module](https://github.com/untrustedmodders/plugify-module-cpp)
 - [C# Language Module](https://github.com/untrustedmodders/csharp-lang-module)
-- [Python Language Module](https://github.com/untrustedmodders/py3-12-lang-module)
+- [Python Language Module](https://github.com/untrustedmodders/plugify-module-python3.12)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -284,7 +284,7 @@ Here is a list of all already implemented language modules:
 
 While Plugify is a relatively new project, it is making waves in the realm of server-side modding, 
 particularly in the Counter-Strike 2 community. As of now, Plugify is primarily utilized in the 
-ance of a new project known as [CS2-Plugify](https://github.com/cs2-plugify/), which is also being developed by our team.
+ance of a new project known as [CS2-Plugify](https://github.com/mms2-plugify/), which is also being developed by our team.
 
 If you know of other resources out there that are about `Plugify`, feel free to open an issue or a PR and we will be glad to add them here.
 

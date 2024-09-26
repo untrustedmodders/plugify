@@ -18,9 +18,9 @@ Example .pmodule file:
     "description": "Adds support for C++ plugins",
     "createdBy": "untrustedmodders",
     "createdByURL": "https://github.com/untrustedmodders/",
-    "docsURL": "https://github.com/untrustedmodders/cpp-lang-module/README.md",
-    "downloadURL": "https://github.com/untrustedmodders/cpp-lang-module/releases/download/v1.0/cpp-lang-module.zip",
-    "updateURL": "https://raw.githubusercontent.com/untrustedmodders/cpp-lang-module/main/cpp-lang-module.json",
+    "docsURL": "https://github.com/untrustedmodders/plugify-module-cpp/README.md",
+    "downloadURL": "https://github.com/untrustedmodders/plugify-module-cpp/releases/download/v1.0/plugify-module-cpp.zip",
+    "updateURL": "https://raw.githubusercontent.com/untrustedmodders/plugify-module-cpp/main/plugify-module-cpp.json",
     "supportedPlatforms": [],
     "forceLoad": false
 }
