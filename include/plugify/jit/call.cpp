@@ -118,20 +118,12 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 		}
 #if !PLUGIFY_PLATFORM_WINDOWS
 		else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2)) {
-			asmjit::x86::Gp tmp1 = cc.newUIntPtr();
-			asmjit::x86::Gp tmp2 = cc.newUIntPtr();
-			invokeNode->setRet(0, tmp1);
-			invokeNode->setRet(1, tmp2);
-			cc.mov(ptr(returnImm), tmp1);
-			cc.mov(ptr(returnImm, sizeof(uintptr_t)), tmp2); // TODO: does it correct?
+			cc.mov(ptr(returnImm), asmjit::x86::rax);
+			cc.mov(ptr(returnImm, sizeof(uintptr_t)), asmjit::x86::rdx);
 
 		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2)) {
-			asmjit::x86::Xmm tmp1 = cc.newXmm();
-			asmjit::x86::Xmm tmp2 = cc.newXmm();
-			invokeNode->setRet(0, tmp1);
-			invokeNode->setRet(1, tmp2);
-			cc.movq(ptr(returnImm), tmp1);
-			cc.movq(ptr(returnImm, sizeof(uintptr_t)), tmp2); // TODO: does it correct?
+			cc.movq(ptr(returnImm), asmjit::x86::xmm0);
+			cc.movq(ptr(returnImm, sizeof(uintptr_t)), asmjit::x86::xmm1);
 		}
 #endif
 		else {
