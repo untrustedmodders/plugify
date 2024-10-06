@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install curl
         run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
@@ -37,7 +37,7 @@ jobs:
           mkdir -p build
           cd build
           cmake -DPLUGIFY_BUILD_DOCS=ON ..
-          cmake --build . --target docs -- -j16
+          cmake --build . --target docs -- -j
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
