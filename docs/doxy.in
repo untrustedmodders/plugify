@@ -1325,7 +1325,8 @@ HTML_FOOTER            =
 # obsolete.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_STYLESHEET        = @DOXY_CSS_DIRECTORY@/doxygen-awesome.css
+HTML_STYLESHEET        = @DOXY_CSS_DIRECTORY@/doxygen-awesome.css \
+                         @DOXY_CSS_DIRECTORY@/doxygen-awesome-sidebar-only.css
 
 # The HTML_EXTRA_STYLESHEET tag can be used to specify additional user-defined
 # cascading style sheets that are included after the standard style sheets
@@ -1343,7 +1344,7 @@ HTML_STYLESHEET        = @DOXY_CSS_DIRECTORY@/doxygen-awesome.css
 # documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = doxygen-awesome-css/doxygen-awesome.css
+HTML_EXTRA_STYLESHEET  =
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
