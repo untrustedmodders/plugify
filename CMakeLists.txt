@@ -116,7 +116,7 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Compilation options
-option(PLUGIFY_BUILD_TESTS "Enable building tests." OFF)
+option(PLUGIFY_BUILD_TESTS "Enable building tests." ON)
 option(PLUGIFY_BUILD_JIT "Build jit object library." OFF)
 option(PLUGIFY_BUILD_ASSEMBLY "Build assembly object library." OFF)
 option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
