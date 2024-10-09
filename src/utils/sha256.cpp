@@ -59,36 +59,36 @@ bool DetectSHA256Acceleration() {
 using namespace plugify;
 
 namespace {
-	inline uint32_t ror(uint32_t n, int k) {
+	uint32_t ror(uint32_t n, int k) {
 		return (n >> k) | (n << (32 - k));
 	}
 
-	inline uint32_t ch(uint32_t x, uint32_t y, uint32_t z) {
+	uint32_t ch(uint32_t x, uint32_t y, uint32_t z) {
 		return z ^ (x & (y ^ z));
 	}
 
-	inline uint32_t maj(uint32_t x, uint32_t y, uint32_t z) {
+	uint32_t maj(uint32_t x, uint32_t y, uint32_t z) {
 		return (x & y) | (z & (x | y));
 	}
 
-	inline uint32_t s0(uint32_t x) {
+	uint32_t s0(uint32_t x) {
 		return ror(x, 2) ^ ror(x, 13) ^ ror(x, 22);
 	}
 
-	inline uint32_t s1(uint32_t x) {
+	uint32_t s1(uint32_t x) {
 		return ror(x, 6) ^ ror(x, 11) ^ ror(x, 25);
 	}
 
-	inline uint32_t r0(uint32_t x) {
+	uint32_t r0(uint32_t x) {
 		return ror(x, 7) ^ ror(x, 18) ^ (x >> 3);
 	}
 
-	inline uint32_t r1(uint32_t x) {
+	uint32_t r1(uint32_t x) {
 		return ror(x, 17) ^ ror(x, 19) ^ (x >> 10);
 	}
 
 	// K Array
-	constexpr const union {
+	constexpr union {
 		uint32_t dw[64];
 		__m128i x[16];
 	} K = {
@@ -261,10 +261,10 @@ void Sha256::update(std::span<const uint8_t> in) {
 	if (off) {
 		const auto rem = 64 - off;
 		if (in.size() < rem) {
-			memcpy(_buf.data() + off, in.data(), in.size());
+			std::memcpy(_buf.data() + off, in.data(), in.size());
 			return;
 		}
-		memcpy(_buf.data() + off, in.data(), rem);
+		std::memcpy(_buf.data() + off, in.data(), rem);
 		transform(_buf);
 		in = in.subspan(rem);
 	}
@@ -278,7 +278,7 @@ void Sha256::update(std::span<const uint8_t> in) {
 	}
 
 	// Leave the remaining bytes in the message buffer
-	memcpy(_buf.data(), in.data(), in.size());
+	std::memcpy(_buf.data(), in.data(), in.size());
 }
 
 Digest Sha256::digest() {
@@ -292,17 +292,17 @@ Digest Sha256::digest() {
 	// If there is no room for the length, process this block first
 	if (off > 56) {
 		// Fill zeros and compress
-		memset(_buf.data() + off, 0, 64 - off);
+		std::memset(_buf.data() + off, 0, 64 - off);
 		transform(_buf);
 		off = 0;
 	}
 
 	// Fill zeros before the last 8-byte of the block
-	memset(_buf.data() + off, 0, 56 - off);
+	std::memset(_buf.data() + off, 0, 56 - off);
 
 	// Set the length of the message in big-endian
 	const auto l = htobe64(_len * 8);
-	memcpy(_buf.data() + 56, &l, 8);
+	std::memcpy(_buf.data() + 56, &l, 8);
 
 	// Process the last block
 	transform(_buf);
@@ -333,7 +333,7 @@ Digest Sha256::digest() {
 		for (auto& v : _h)
 			v = htobe32(v);
 
-		memcpy(digest.h.data(), _h.data(), 32);
+		std::memcpy(digest.h.data(), _h.data(), 32);
 	}
 
 	return digest;

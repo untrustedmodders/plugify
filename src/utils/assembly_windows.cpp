@@ -34,7 +34,7 @@ Assembly::~Assembly() {
 }
 
 static std::wstring GetModulePath(HMODULE hModule) {
-	std::wstring modulePath(MAX_PATH, 0);
+	std::wstring modulePath(MAX_PATH, '\0');
 	while (true) {
 		size_t len = GetModuleFileNameW(hModule, modulePath.data(), static_cast<DWORD>(modulePath.length()));
 		if (len == 0) {
