@@ -26,7 +26,12 @@ using namespace plugify;
 
 Assembly::~Assembly() {
 	if (_handle) {
-		dlclose(_handle);
+		[[maybe_unused]] int error = dlclose(_handle);
+#if PLUGIFY_LOGGING
+		if (error) {
+			PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.c_str(), dlerror());
+		}
+#endif
 		_handle = nullptr;
 	}
 }
@@ -122,7 +127,13 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 	if (functionName.empty())
 		return nullptr;
 
-	return dlsym(_handle, functionName.data());
+	void* address = dlsym(_handle, functionName.data());
+#if PLUGIFY_LOGGING
+	if (!address) {
+		PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': {}", functionName, dlerror());
+	}
+#endif
+	return address;
 }
 
 MemAddr Assembly::GetBase() const noexcept {

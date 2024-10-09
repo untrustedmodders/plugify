@@ -3,6 +3,7 @@
 #include "http_downloader_curl.h"
 
 #include <curl/curl.h>
+#include <csignal>
 
 using namespace plugify;
 

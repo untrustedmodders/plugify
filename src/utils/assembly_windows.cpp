@@ -16,13 +16,25 @@ using namespace plugify;
 
 Assembly::~Assembly() {
 	if (_handle) {
-		FreeLibrary(reinterpret_cast<HMODULE>(_handle));
+		[[maybe_unused]] BOOL success = FreeLibrary(static_cast<HMODULE>(_handle));
+#if PLUGIFY_LOGGING
+		if (!success) {
+			DWORD errorCode = GetLastError();
+			if (errorCode != 0) {
+				LPSTR messageBuffer = NULL;
+				DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+											NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
+				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.string(), messageBuffer);
+				LocalFree(messageBuffer);
+			}
+		}
+#endif
 		_handle = nullptr;
 	}
 }
 
 static std::wstring GetModulePath(HMODULE hModule) {
-	std::wstring modulePath(MAX_PATH, '\0');
+	std::wstring modulePath(MAX_PATH, 0);
 	while (true) {
 		size_t len = GetModuleFileNameW(hModule, modulePath.data(), static_cast<DWORD>(modulePath.length()));
 		if (len == 0) {
@@ -87,12 +99,6 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool section
 }
 
 bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
-	std::error_code ec;
-	if (!fs::exists(modulePath, ec)) {
-		_error = std::format("File: '{}' not exists", modulePath.string());
-		return false;
-	}
-
 	HMODULE hModule = LoadLibraryExW(modulePath.c_str(), nullptr, TranslateLoading(flags));
 	if (!hModule) {
 		DWORD errorCode = GetLastError();
@@ -111,7 +117,7 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
 
 	if (flags & LoadFlag::PinInMemory) {
 		HMODULE hPinHandle = NULL;
-		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, (LPCWSTR)hModule, &hPinHandle);
+		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, reinterpret_cast<LPCWSTR>(hModule), &hPinHandle);
 	}
 
 	if (!sections)
@@ -196,7 +202,20 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 	if (functionName.empty())
 		return nullptr;
 
-	return GetProcAddress(reinterpret_cast<HMODULE>(_handle), functionName.data());
+	FARPROC pAddress = GetProcAddress(static_cast<HMODULE>(_handle), functionName.data());
+#if PLUGIFY_LOGGING
+	if (!pAddress) {
+		DWORD errorCode = GetLastError();
+		if (errorCode != 0) {
+			LPSTR messageBuffer = NULL;
+			DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+										NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
+			PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': {}", functionName, messageBuffer);
+			LocalFree(messageBuffer);
+		}
+	}
+#endif
+	return pAddress;
 }
 
 MemAddr Assembly::GetBase() const noexcept {

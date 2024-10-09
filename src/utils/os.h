@@ -1,5 +1,6 @@
 // This file is used to not include os specific functions that might break other projects
 // You should use it in sources
+#pragma once
 
 #if PLUGIFY_PLATFORM_WINDOWS
 
@@ -40,6 +41,15 @@
 #include <mach-o/nlist.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+
+#elif PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
+
+#include <kernel.h>
+
+#elif PLUGIFY_PLATFORM_SWITCH
+
+#include <nn/ro.h>
+#include <nn/fs.h>
 
 #else
 

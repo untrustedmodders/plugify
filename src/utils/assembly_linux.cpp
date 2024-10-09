@@ -16,7 +16,12 @@ using namespace plugify;
 
 Assembly::~Assembly() {
 	if (_handle) {
-		dlclose(_handle);
+		[[maybe_unused]] int error = dlclose(_handle);
+#if PLUGIFY_LOGGING
+		if (error) {
+			PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.c_str(), dlerror());
+		}
+#endif
 		_handle = nullptr;
 	}
 }
@@ -30,7 +35,7 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool se
 
 	std::string name(moduleName);
 	if (!extension && !(name.find(".so.") != std::string::npos || name.find_last_of(".so") == name.length() - 3))
-		name.append(".so");
+		name += ".so";
 
 	struct dl_data {
 		ElfW(Addr) addr;
@@ -39,7 +44,7 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool se
 	} dldata{0, name.c_str(), {}};
 
 	dl_iterate_phdr([](dl_phdr_info* info, size_t /* size */, void* data) {
-		dl_data* _dldata = reinterpret_cast<dl_data*>(data);
+		dl_data* _dldata = static_cast<dl_data*>(data);
 
 		if (std::strstr(info->dlpi_name, _dldata->moduleName) != nullptr) {
 			_dldata->addr = info->dlpi_addr;
@@ -133,10 +138,10 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
 			// Loop through the sections.
 			for (auto i = 0; i < ehdr->e_shnum; ++i) {
 				ElfW(Shdr)* shdr = reinterpret_cast<ElfW(Shdr)*>(reinterpret_cast<uintptr_t>(shdrs) + static_cast<uintptr_t>(i * ehdr->e_shentsize));
-				if (*(strTab + shdr->sh_name) == '\0')
+				if (*(strTab + shdr->sh_name) == 0)
 					continue;
 
-				_sections.emplace_back(strTab + shdr->sh_name, static_cast<uintptr_t>(lmap->l_addr + shdr->sh_addr), shdr->sh_size);
+				_sections.emplace_back(strTab + shdr->sh_name, lmap->l_addr + shdr->sh_addr, shdr->sh_size);
 			}
 
 			munmap(map, static_cast<size_t>(st.st_size));
@@ -197,7 +202,13 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 	if (functionName.empty())
 		return nullptr;
 
-	return dlsym(_handle, functionName.data());
+	void* address = dlsym(_handle, functionName.data());
+#if PLUGIFY_LOGGING
+	if (!address) {
+		PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': {}", functionName, dlerror());
+	}
+#endif
+	return address;
 }
 
 MemAddr Assembly::GetBase() const noexcept {

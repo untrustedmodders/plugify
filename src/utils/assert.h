@@ -1,13 +1,16 @@
 #pragma once
 
 #ifdef PLUGIFY_DEBUG
-#if PLUGIFY_PLATFORM_WINDOWS
-	#define PL_DEBUGBREAK() __debugbreak()
+#if defined(_MSC_VER)
+	#define PL_DEBUGBREAK() __debugbreak();
+#elif defined(__GNUC__) || PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
+	#define PL_DEBUGBREAK() __builtin_trap();
+#elif defined(__clang__)
+	#define PL_DEBUGBREAK() __builtin_debugtrap();
 #elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
-	#include <signal.h>
-	#define PL_DEBUGBREAK() raise(SIGTRAP)
+	#define PL_DEBUGBREAK() raise(SIGTRAP);
 #else
-	#error "Platform doesn't support debugbreak yet!"
+	#error "Asserts not supported on this platform!"
 #endif
 	#define PLUGIFY_ENABLE_ASSERTS
 #else
