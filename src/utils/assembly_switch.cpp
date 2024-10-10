@@ -10,60 +10,50 @@ namespace {
 	struct Handle {
 		nn::ro::Module module{};
 		std::unique_ptr<uint8_t> data;
-		size_t size{};
+		int64_t size{};
 		std::unique_ptr<uint8_t> bssData;
 		size_t bssSize{};
 
-		Handle(const fs::path& path, LoadFlag flags, std::string& error) {
+		Handle(const std::filesystem::path& path, LoadFlag flags, std::string& error) {
 			nn::fs::FileHandle file;
 			nn::Result ret = nn::fs::OpenFile(&file, path.c_str(), nn::fs::OpenMode_Read);
 			if (ret.IsFailure()) {
-				error = "nn::fs::OpenFile failed. module = %d desc = %d inner_value = 0x%08x", ret.GetModule(), ret.GetDescription(), ret.GetInnerValueForDebug());
+				error = std::format("nn::fs::OpenFile failed. module = {} desc = {} inner_value = 0x{:08x}", ret.GetModule(), ret.GetDescription(), ret.GetInnerValueForDebug());
 				return;
 			}
 
 			ret = nn::fs::GetFileSize(&size, file);
 			if (ret.IsFailure()) {
-				error = "nn::fs::GetFileSize failed. module = %d desc = %d inner_value = 0x%08x", ret.GetModule(), ret.GetDescription(), ret.GetInnerValueForDebug());
+				error = std::format("nn::fs::GetFileSize failed. module = {} desc = {} inner_value = 0x{:08x}", ret.GetModule(), ret.GetDescription(), ret.GetInnerValueForDebug());
 				return;
 			}
 
-			constexpr auto alignment = 0x1000;
-
-			data = std::unique_ptr<uint8_t>(static_cast<uint8_t*>(std::aligned_alloc(alignment, size)));
+			data = std::unique_ptr<uint8_t>(static_cast<uint8_t*>(std::aligned_alloc(nn::os::MemoryPageSize, size)));
 			nn::fs::CloseFile(file);
 
 			ret = nn::ro::GetBufferSize(&bssSize, data.get());
 			if (ret.IsFailure()) {
-				error = "nn::ro::GetBufferSize failed. module = %d desc = %d inner_value = 0x%08x", ret.GetModule(), ret.GetDescription(), ret.GetInnerValueForDebug());
+				error = std::format("nn::ro::GetBufferSize failed. module = {} desc = {} inner_value = 0x{:08x}", ret.GetModule(), ret.GetDescription(), ret.GetInnerValueForDebug());
 				return;
 			}
-			bssData = std::unique_ptr<uint8_t>(static_cast<uint8_t*>(std::aligned_alloc(alignment, bssSize)));
+			bssData = std::unique_ptr<uint8_t>(static_cast<uint8_t*>(std::aligned_alloc(nn::os::MemoryPageSize, bssSize)));
 
-			ret = nn::ro::LoadModule(&module, data.get(), bssData.get(), bssSize, static_cast<nn::ro::BindFlag>(TranslateLoading(flags)));
-			switch (ret) {
-				case nn::ro::ResultInvalidNroImage:
+			ret = nn::ro::LoadModule(&module, data.get(), bssData.get(), bssSize, TranslateLoading(flags));
+			if (ret.IsFailure()) {
+				if (nn::ro::ResultInvalidNroImage::Includes(ret)) {
 					error = "Data other than an NRO file has been loaded into the specified memory area.";
-					size = bssSize = 0;
-					break;
-				case nn::ro::ResultOutOfAddressSpace:
+				} else if(nn::ro::ResultOutOfAddressSpace::Includes(ret)) {
 					error = "There is insufficient free memory area to load the NRO file.";
-					size = bssSize = 0;
-					break;
-				case nn::ro::ResultNroAlreadyLoaded:
+				} else if(nn::ro::ResultNroAlreadyLoaded::Includes(ret)) {
 					error = "The target NRO file has already been loaded by nn::ro::LoadModule().";
-					size = bssSize = 0;
-					break;
-				case nn::ro::ResultMaxModule:
+				} else if(nn::ro::ResultMaxModule::Includes(ret)) {
 					error = "The maximum limit has been reached for the number of modules that can be loaded.";
-					size = bssSize = 0;
-					break;
-				case nn::ro::ResultNotAuthorized:
+				} else if(nn::ro::ResultNotAuthorized::Includes(ret)) {
 					error = "Authentication failed while loading the file.";
-					size = bssSize = 0;
-					break;
-				default:
-					break;
+				} else {
+					error = "Unknown error.";
+				}
+				size = bssSize = 0;
 			}
 		}
 
@@ -92,7 +82,7 @@ bool Assembly::InitFromMemory(MemAddr /*moduleMemory*/, LoadFlag /*flags*/, bool
 	return false;
 }
 
-bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool /*sections*/) {
+bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
 	auto* handle = new Handle(modulePath, flags, _error);
 	if (!_error.empty()) {
 		delete handle;
@@ -102,7 +92,11 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool /*sections*/) {
 	_handle = handle;
 	_path = std::move(modulePath);
 
-	// TODO: Implement sections
+	if (!sections)
+		return true;
+
+	_sections.emplace_back(".bss", reinterpret_cast<uintptr_t>(handle->bssData.get()), handle->bssSize);
+	// TODO: extract other segments too
 
 	return true;
 }
@@ -134,7 +128,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 }
 
 MemAddr Assembly::GetBase() const noexcept {
-	return static_cast<const Handle*>(_handle)->module;
+	return static_cast<const Handle*>(_handle)->data.get();
 }
 
 namespace plugify {
