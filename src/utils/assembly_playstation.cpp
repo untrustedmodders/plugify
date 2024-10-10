@@ -8,7 +8,7 @@ using namespace plugify;
 
 Assembly::~Assembly() {
 	if (_handle) {
-		[[maybe_unused]] int ret = sceKernelStopUnloadModule(static_cast<SceKernelModule>(_handle), 0, nullptr, 0, nullptr, nullptr);
+		[[maybe_unused]] int ret = sceKernelStopUnloadModule(reinterpret_cast<SceKernelModule>(_handle), 0, nullptr, 0, nullptr, nullptr);
 #if PLUGIFY_LOGGING
 		switch (ret) {
 			case SCE_KERNEL_ERROR_EINVAL:
@@ -74,7 +74,7 @@ bool Assembly::Init(fs::path modulePath, LoadFlag /*flags*/, bool /*sections*/) 
 		default:
 			break;
 	}
-	_handle = static_cast<void*>(handle);
+	_handle = reinterpret_cast<void*>(handle);
 	_path = std::move(modulePath);
 
 	// TODO: Implement
@@ -99,7 +99,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 		return nullptr;
 
 	void* address = nullptr;
-	[[maybe_unused]] int ret = sceKernelDlsym(static_cast<SceKernelModule>(_handle), functionName.data(), &address);
+	[[maybe_unused]] int ret = sceKernelDlsym(reinterpret_cast<SceKernelModule>(_handle), functionName.data(), &address);
 #if PLUGIFY_LOGGING
 	switch(ret) {
 		case SCE_KERNEL_ERROR_ESRCH:
