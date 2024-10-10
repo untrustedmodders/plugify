@@ -48,7 +48,7 @@ jobs:
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
     - name: Build
-      run: cmake --build build --target plugify --config ${{ matrix.build_type }} -- -j
+      run: cmake --build build --target plugify --config ${{ matrix.build_type }} -- -m
 
     - name: Test
       working-directory: build
