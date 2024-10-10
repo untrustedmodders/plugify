@@ -24,7 +24,7 @@ Assembly::~Assembly() {
 				LPSTR messageBuffer = NULL;
 				DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 											NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
-				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.string(), messageBuffer);
+				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.string(), std::string_view(messageBuffer, size));
 				LocalFree(messageBuffer);
 			}
 		}
@@ -210,7 +210,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 			LPSTR messageBuffer = NULL;
 			DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 										NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
-			PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': {}", functionName, messageBuffer);
+			PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': {}", functionName, std::string_view(messageBuffer, size));
 			LocalFree(messageBuffer);
 		}
 	}
