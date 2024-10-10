@@ -133,15 +133,15 @@ const std::string& Assembly::GetError() const noexcept {
 
 #if PLUGIFY_SEPARATE_SOURCE_FILES
 #if PLUGIFY_PLATFORM_WINDOWS
-#include "assembly/assembly_windows.cpp"
+#include "assembly_windows.cpp"
 #elif PLUGIFY_PLATFORM_LINUX
-#include "assembly/assembly_linux.cpp"
+#include "assembly_linux.cpp"
 #elif PLUGIFY_PLATFORM_APPLE
-#include "assembly/assembly_apple.cpp"
+#include "assembly_apple.cpp"
 #elif PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
-#include "assembly/assembly_playstation.cpp"
+#include "assembly_playstation.cpp"
 #elif PLUGIFY_PLATFORM_SWITCH
-#include "assembly/assembly_switch.cpp"
+#include "assembly_switch.cpp"
 #else
 #error "Unsupported platform"
 #endif
