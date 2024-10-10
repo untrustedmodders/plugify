@@ -233,7 +233,7 @@ To navigate it with your favorite browser:
    your_favorite_browser docs/html/index.html
    ```
 
-The same version is also available [online](https://github.com/untrustedmodders/plugify)
+The same version is also available [online](https://untrustedmodders.github.io/plugify)
 for the latest release, that is the last stable tag.<br/>
 Moreover, there exists a [wiki](https://github.com/untrustedmodders/plugify/wiki) dedicated
 to the project where users can find all related documentation pages.
