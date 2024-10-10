@@ -50,6 +50,7 @@
 
 #include <nn/ro.h>
 #include <nn/fs.h>
+#include <nn/os.h>
 
 #else
 
