@@ -4,10 +4,12 @@
 #include <cmath>
 #include <cstring>
 
+#if !PLUGIFY_ARCH_ARM
 #if PLUGIFY_COMPILER_GCC && !PLUGIFY_COMPILER_CLANG && !defined(NDEBUG)
 #undef __OPTIMIZE__
 #endif // !defined(NDEBUG)
 #include <emmintrin.h>
+#endif // !PLUGIFY_USE_ARM
 
 using namespace plugify;
 namespace fs = std::filesystem;
@@ -69,6 +71,7 @@ MemAddr Assembly::FindPattern(MemAddr pattern, std::string_view mask, MemAddr st
 		pData = pStartAddress;
 	}
 
+#if !PLUGIFY_ARCH_ARM
 	std::array<int, 64> masks = {};// 64*16 = enough masks for 1024 bytes.
 	const uint8_t numMasks = static_cast<uint8_t>(std::ceil(static_cast<float>(maskLen) / 16.f));
 
@@ -101,7 +104,23 @@ MemAddr Assembly::FindPattern(MemAddr pattern, std::string_view mask, MemAddr st
 				return pData;
 		}
 	}
+#else
+	for (; pData != pEnd; ++pData) {
+		bool found = false;
 
+		for (size_t i = 0; i < maskLen; ++i) {
+			if (mask[i] == 'x' || pPattern[i] == *(pData + i)) {
+				found = true;
+			} else {
+				found = false;
+				break;
+			}
+		}
+
+		if (found)
+			return pData;
+	}
+#endif // !PLUGIFY_ARCH_ARM
 	return nullptr;
 }
 
