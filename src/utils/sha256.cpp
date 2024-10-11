@@ -9,7 +9,7 @@
 #if PLUGIFY_COMPILER_CLANG
 #include <cpuid.h>
 #include <immintrin.h>
-#endif  // PLUGIFY_COMPILER_CLANG
+#endif // PLUGIFY_COMPILER_CLANG
 
 #if PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_INTEL
 #include <immintrin.h>
@@ -65,135 +65,6 @@ namespace {
 	};
 
 	constexpr std::array<uint32_t, 8> H{0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
-
-	void transform_impl_base(Sha256& sha, std::span<const uint8_t, 64> in) {
-		std::array<uint32_t, 8> S;
-		std::array<uint32_t, 64> W;
-
-		memcpy(W.data(), in.data(), 64);
-
-		for (size_t i = 0; i < 16; ++i)
-			W[i] = be32toh(W[i]);
-
-		for (size_t i = 16; i < 64; ++i)
-			W[i] = r1(W[i - 2]) + W[i - 7] + r0(W[i - 15]) + W[i - 16];
-
-		memcpy(S.data(), sha._h.data(), 32);
-
-		for (size_t i = 0; i < 64; i++) {
-			uint32_t t1 = S[7] + s1(S[4]) + ch(S[4], S[5], S[6]) + K.dw[i] + W[i];
-			uint32_t t2 = s0(S[0]) + maj(S[0], S[1], S[2]);
-			S[7] = S[6];
-			S[6] = S[5];
-			S[5] = S[4];
-			S[4] = S[3] + t1;
-			S[3] = S[2];
-			S[2] = S[1];
-			S[1] = S[0];
-			S[0] = t1 + t2;
-		}
-
-		for (size_t i = 0; i < 8; ++i)
-			sha._h[i] += S[i];
-	}
-
-#if !PLUGIFY_ARCH_ARM
-	/**
-	 * Based on: https://github.com/stong/bruteforce/tree/master
-	 */
-	void transform_impl_sha(Sha256& sha, std::span<const uint8_t, 64> in) {
-		// Cyclic W array
-		// We keep the W array content cyclically in 4 variables
-		// Initially:
-		// cw0 = w3 : w2 : w1 : w0
-		// cw1 = w7 : w6 : w5 : w4
-		// cw2 = w11 : w10 : w9 : w8
-		// cw3 = w15 : w14 : w13 : w12
-		const __m128i byteswapindex = _mm_set_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3);
-		const __m128i* msgx = reinterpret_cast<const __m128i*>(in.data());
-		__m128i cw0 = _mm_shuffle_epi8(_mm_loadu_si128(msgx), byteswapindex);
-		__m128i cw1 = _mm_shuffle_epi8(_mm_loadu_si128(msgx + 1), byteswapindex);
-		__m128i cw2 = _mm_shuffle_epi8(_mm_loadu_si128(msgx + 2), byteswapindex);
-		__m128i cw3 = _mm_shuffle_epi8(_mm_loadu_si128(msgx + 3), byteswapindex);
-
-// Advance W array cycle
-// Inputs:
-//  CW0 = w[t-13] : w[t-14] : w[t-15] : w[t-16]
-//  CW1 = w[t-9] : w[t-10] : w[t-11] : w[t-12]
-//  CW2 = w[t-5] : w[t-6] : w[t-7] : w[t-8]
-//  CW3 = w[t-1] : w[t-2] : w[t-3] : w[t-4]
-// Outputs:
-//  CW1 = w[t-9] : w[t-10] : w[t-11] : w[t-12]
-//  CW2 = w[t-5] : w[t-6] : w[t-7] : w[t-8]
-//  CW3 = w[t-1] : w[t-2] : w[t-3] : w[t-4]
-//  CW0 = w[t+3] : w[t+2] : w[t+1] : w[t]
-#define CYCLE_W(CW0, CW1, CW2, CW3)                                                              \
-	CW0 = _mm_sha256msg1_epu32(CW0, CW1);                                                        \
-	CW0 = _mm_add_epi32(CW0, _mm_alignr_epi8(CW3, CW2, 4)); /* add w[t-4]:w[t-5]:w[t-6]:w[t-7]*/ \
-	CW0 = _mm_sha256msg2_epu32(CW0, CW3);
-
-		__m128i state1 = sha._h0145;// a:b:e:f
-		__m128i state2 = sha._h2367;// c:d:g:h
-		__m128i tmp;
-
-		/* w0 - w3 */
-#define SHA256_ROUNDS_4(cwN, n)                                                                            \
-	tmp = _mm_add_epi32(cwN, K.x[n]);					 /* w3+K3 : w2+K2 : w1+K1 : w0+K0 */               \
-	state2 = _mm_sha256rnds2_epu32(state2, state1, tmp); /* state2 = a':b':e':f' / state1 = c':d':g':h' */ \
-	tmp = _mm_unpackhi_epi64(tmp, tmp);					 /* - : - : w3+K3 : w2+K2 */                       \
-	state1 = _mm_sha256rnds2_epu32(state1, state2, tmp); /* state1 = a':b':e':f' / state2 = c':d':g':h' */
-
-		/* w0 - w3 */
-		SHA256_ROUNDS_4(cw0, 0);
-		/* w4 - w7 */
-		SHA256_ROUNDS_4(cw1, 1);
-		/* w8 - w11 */
-		SHA256_ROUNDS_4(cw2, 2);
-		/* w12 - w15 */
-		SHA256_ROUNDS_4(cw3, 3);
-		/* w16 - w19 */
-		CYCLE_W(cw0, cw1, cw2, cw3); /* cw0 = w19 : w18 : w17 : w16 */
-		SHA256_ROUNDS_4(cw0, 4);
-		/* w20 - w23 */
-		CYCLE_W(cw1, cw2, cw3, cw0); /* cw1 = w23 : w22 : w21 : w20 */
-		SHA256_ROUNDS_4(cw1, 5);
-		/* w24 - w27 */
-		CYCLE_W(cw2, cw3, cw0, cw1); /* cw2 = w27 : w26 : w25 : w24 */
-		SHA256_ROUNDS_4(cw2, 6);
-		/* w28 - w31 */
-		CYCLE_W(cw3, cw0, cw1, cw2); /* cw3 = w31 : w30 : w29 : w28 */
-		SHA256_ROUNDS_4(cw3, 7);
-		/* w32 - w35 */
-		CYCLE_W(cw0, cw1, cw2, cw3); /* cw0 = w35 : w34 : w33 : w32 */
-		SHA256_ROUNDS_4(cw0, 8);
-		/* w36 - w39 */
-		CYCLE_W(cw1, cw2, cw3, cw0); /* cw1 = w39 : w38 : w37 : w36 */
-		SHA256_ROUNDS_4(cw1, 9);
-		/* w40 - w43 */
-		CYCLE_W(cw2, cw3, cw0, cw1); /* cw2 = w43 : w42 : w41 : w40 */
-		SHA256_ROUNDS_4(cw2, 10);
-		/* w44 - w47 */
-		CYCLE_W(cw3, cw0, cw1, cw2); /* cw3 = w47 : w46 : w45 : w44 */
-		SHA256_ROUNDS_4(cw3, 11);
-		/* w48 - w51 */
-		CYCLE_W(cw0, cw1, cw2, cw3); /* cw0 = w51 : w50 : w49 : w48 */
-		SHA256_ROUNDS_4(cw0, 12);
-		/* w52 - w55 */
-		CYCLE_W(cw1, cw2, cw3, cw0); /* cw1 = w55 : w54 : w53 : w52 */
-		SHA256_ROUNDS_4(cw1, 13);
-		/* w56 - w59 */
-		CYCLE_W(cw2, cw3, cw0, cw1); /* cw2 = w59 : w58 : w57 : w56 */
-		SHA256_ROUNDS_4(cw2, 14);
-		/* w60 - w63 */
-		CYCLE_W(cw3, cw0, cw1, cw2); /* cw3 = w63 : w62 : w61 : w60 */
-		SHA256_ROUNDS_4(cw3, 15);
-
-		// Add to the intermediate hash
-		sha._h0145 = _mm_add_epi32(state1, sha._h0145);
-		sha._h2367 = _mm_add_epi32(state2, sha._h2367);
-	}
-#endif // !PLUGIFY_ARCH_ARM
-
 }// namespace
 
 #if !PLUGIFY_ARCH_ARM
@@ -240,10 +111,9 @@ static bool DetectSHA256Acceleration() {
 #endif
 }
 static bool has_sha256_acceleration = DetectSHA256Acceleration();
-static decltype(&transform_impl_base) transform_impl = has_sha256_acceleration ? transform_impl_sha : transform_impl_base;
-#define transform(i) transform_impl(*this, i);
+#define transform(i) has_sha256_acceleration ? transform_sha(i) : transform_base(i);
 #else
-#define transform(i) transform_impl_base(*this, i);
+#define transform(i) transform_base(i);
 #endif // !PLUGIFY_ARCH_ARM
 
 Sha256::Sha256() {
@@ -356,6 +226,134 @@ Digest Sha256::digest() {
 
 	return digest;
 }
+
+void Sha256::transform_base(std::span<const uint8_t, 64> in) {
+	std::array<uint32_t, 8> S;
+	std::array<uint32_t, 64> W;
+
+	memcpy(W.data(), in.data(), 64);
+
+	for (size_t i = 0; i < 16; ++i)
+		W[i] = be32toh(W[i]);
+
+	for (size_t i = 16; i < 64; ++i)
+		W[i] = r1(W[i - 2]) + W[i - 7] + r0(W[i - 15]) + W[i - 16];
+
+	memcpy(S.data(), _h.data(), 32);
+
+	for (size_t i = 0; i < 64; i++) {
+		uint32_t t1 = S[7] + s1(S[4]) + ch(S[4], S[5], S[6]) + K.dw[i] + W[i];
+		uint32_t t2 = s0(S[0]) + maj(S[0], S[1], S[2]);
+		S[7] = S[6];
+		S[6] = S[5];
+		S[5] = S[4];
+		S[4] = S[3] + t1;
+		S[3] = S[2];
+		S[2] = S[1];
+		S[1] = S[0];
+		S[0] = t1 + t2;
+	}
+
+	for (size_t i = 0; i < 8; ++i)
+		_h[i] += S[i];
+}
+
+#if !PLUGIFY_ARCH_ARM
+/**
+ * Based on: https://github.com/stong/bruteforce/tree/master
+ */
+void Sha256::transform_sha(std::span<const uint8_t, 64> in) {
+	// Cyclic W array
+	// We keep the W array content cyclically in 4 variables
+	// Initially:
+	// cw0 = w3 : w2 : w1 : w0
+	// cw1 = w7 : w6 : w5 : w4
+	// cw2 = w11 : w10 : w9 : w8
+	// cw3 = w15 : w14 : w13 : w12
+	const __m128i byteswapindex = _mm_set_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3);
+	const __m128i* msgx = reinterpret_cast<const __m128i*>(in.data());
+	__m128i cw0 = _mm_shuffle_epi8(_mm_loadu_si128(msgx), byteswapindex);
+	__m128i cw1 = _mm_shuffle_epi8(_mm_loadu_si128(msgx + 1), byteswapindex);
+	__m128i cw2 = _mm_shuffle_epi8(_mm_loadu_si128(msgx + 2), byteswapindex);
+	__m128i cw3 = _mm_shuffle_epi8(_mm_loadu_si128(msgx + 3), byteswapindex);
+
+// Advance W array cycle
+// Inputs:
+//  CW0 = w[t-13] : w[t-14] : w[t-15] : w[t-16]
+//  CW1 = w[t-9] : w[t-10] : w[t-11] : w[t-12]
+//  CW2 = w[t-5] : w[t-6] : w[t-7] : w[t-8]
+//  CW3 = w[t-1] : w[t-2] : w[t-3] : w[t-4]
+// Outputs:
+//  CW1 = w[t-9] : w[t-10] : w[t-11] : w[t-12]
+//  CW2 = w[t-5] : w[t-6] : w[t-7] : w[t-8]
+//  CW3 = w[t-1] : w[t-2] : w[t-3] : w[t-4]
+//  CW0 = w[t+3] : w[t+2] : w[t+1] : w[t]
+#define CYCLE_W(CW0, CW1, CW2, CW3)                                                              \
+	CW0 = _mm_sha256msg1_epu32(CW0, CW1);                                                        \
+	CW0 = _mm_add_epi32(CW0, _mm_alignr_epi8(CW3, CW2, 4)); /* add w[t-4]:w[t-5]:w[t-6]:w[t-7]*/ \
+	CW0 = _mm_sha256msg2_epu32(CW0, CW3);
+
+	__m128i state1 = _h0145;// a:b:e:f
+	__m128i state2 = _h2367;// c:d:g:h
+	__m128i tmp;
+
+	/* w0 - w3 */
+#define SHA256_ROUNDS_4(cwN, n)                                                                            \
+	tmp = _mm_add_epi32(cwN, K.x[n]);					 /* w3+K3 : w2+K2 : w1+K1 : w0+K0 */               \
+	state2 = _mm_sha256rnds2_epu32(state2, state1, tmp); /* state2 = a':b':e':f' / state1 = c':d':g':h' */ \
+	tmp = _mm_unpackhi_epi64(tmp, tmp);					 /* - : - : w3+K3 : w2+K2 */                       \
+	state1 = _mm_sha256rnds2_epu32(state1, state2, tmp); /* state1 = a':b':e':f' / state2 = c':d':g':h' */
+
+	/* w0 - w3 */
+	SHA256_ROUNDS_4(cw0, 0);
+	/* w4 - w7 */
+	SHA256_ROUNDS_4(cw1, 1);
+	/* w8 - w11 */
+	SHA256_ROUNDS_4(cw2, 2);
+	/* w12 - w15 */
+	SHA256_ROUNDS_4(cw3, 3);
+	/* w16 - w19 */
+	CYCLE_W(cw0, cw1, cw2, cw3); /* cw0 = w19 : w18 : w17 : w16 */
+	SHA256_ROUNDS_4(cw0, 4);
+	/* w20 - w23 */
+	CYCLE_W(cw1, cw2, cw3, cw0); /* cw1 = w23 : w22 : w21 : w20 */
+	SHA256_ROUNDS_4(cw1, 5);
+	/* w24 - w27 */
+	CYCLE_W(cw2, cw3, cw0, cw1); /* cw2 = w27 : w26 : w25 : w24 */
+	SHA256_ROUNDS_4(cw2, 6);
+	/* w28 - w31 */
+	CYCLE_W(cw3, cw0, cw1, cw2); /* cw3 = w31 : w30 : w29 : w28 */
+	SHA256_ROUNDS_4(cw3, 7);
+	/* w32 - w35 */
+	CYCLE_W(cw0, cw1, cw2, cw3); /* cw0 = w35 : w34 : w33 : w32 */
+	SHA256_ROUNDS_4(cw0, 8);
+	/* w36 - w39 */
+	CYCLE_W(cw1, cw2, cw3, cw0); /* cw1 = w39 : w38 : w37 : w36 */
+	SHA256_ROUNDS_4(cw1, 9);
+	/* w40 - w43 */
+	CYCLE_W(cw2, cw3, cw0, cw1); /* cw2 = w43 : w42 : w41 : w40 */
+	SHA256_ROUNDS_4(cw2, 10);
+	/* w44 - w47 */
+	CYCLE_W(cw3, cw0, cw1, cw2); /* cw3 = w47 : w46 : w45 : w44 */
+	SHA256_ROUNDS_4(cw3, 11);
+	/* w48 - w51 */
+	CYCLE_W(cw0, cw1, cw2, cw3); /* cw0 = w51 : w50 : w49 : w48 */
+	SHA256_ROUNDS_4(cw0, 12);
+	/* w52 - w55 */
+	CYCLE_W(cw1, cw2, cw3, cw0); /* cw1 = w55 : w54 : w53 : w52 */
+	SHA256_ROUNDS_4(cw1, 13);
+	/* w56 - w59 */
+	CYCLE_W(cw2, cw3, cw0, cw1); /* cw2 = w59 : w58 : w57 : w56 */
+	SHA256_ROUNDS_4(cw2, 14);
+	/* w60 - w63 */
+	CYCLE_W(cw3, cw0, cw1, cw2); /* cw3 = w63 : w62 : w61 : w60 */
+	SHA256_ROUNDS_4(cw3, 15);
+
+	// Add to the intermediate hash
+	_h0145 = _mm_add_epi32(state1, _h0145);
+	_h2367 = _mm_add_epi32(state2, _h2367);
+}
+#endif // !PLUGIFY_ARCH_ARM
 
 std::string Sha256::ToString(const Digest& digest) {
 	return std::format(

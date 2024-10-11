@@ -10,14 +10,14 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#endif  // PLUGIFY_COMPILER_GCC
+#endif // PLUGIFY_COMPILER_GCC
 
 #if PLUGIFY_COMPILER_CLANG
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wpedantic"
 #pragma clang diagnostic ignored "-Wignored-qualifiers"
 #pragma clang diagnostic ignored "-Wfloat-equal"
-#endif  // PLUGIFY_COMPILER_CLANG
+#endif // PLUGIFY_COMPILER_CLANG
 
 #if PLUGIFY_COMPILER_MSVC
 #pragma warning( push )
@@ -49,6 +49,12 @@ namespace plugify {
 
 		static std::string ToString(const Digest& digest);
 
+	private:
+		void transform_base(std::span<const uint8_t, 64> in);
+#if !PLUGIFY_ARCH_ARM
+		void transform_sha(std::span<const uint8_t, 64> in);
+#endif // !PLUGIFY_ARCH_ARM
+
 		// Intermediate hash
 		union {
 			std::array<uint32_t, 8> _h;
@@ -60,7 +66,6 @@ namespace plugify {
 #endif // !PLUGIFY_ARCH_ARM
 		};
 
-	private:
 		std::array<uint8_t, 64> _buf;
 		size_t _len;
 	};
@@ -69,11 +74,11 @@ namespace plugify {
 #if !PLUGIFY_ARCH_ARM
 #if PLUGIFY_COMPILER_CLANG
 #pragma clang diagnostic pop
-#endif  // PLUGIFY_COMPILER_CLANG
+#endif // PLUGIFY_COMPILER_CLANG
 
 #if PLUGIFY_COMPILER_GCC
 #pragma GCC diagnostic pop
-#endif  // PLUGIFY_COMPILER_GCC
+#endif // PLUGIFY_COMPILER_GCC
 
 #if PLUGIFY_COMPILER_MSVC
 #pragma warning( pop )
