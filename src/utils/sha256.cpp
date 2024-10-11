@@ -1,6 +1,7 @@
 #include "sha256.h"
 #include "binary_format.h"
 
+#if !PLUGIFY_ARCH_ARM
 #if PLUGIFY_COMPILER_MSVC
 #include <intrin.h>
 #endif // PLUGIFY_COMPILER_MSVC
@@ -13,48 +14,7 @@
 #if PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_INTEL
 #include <immintrin.h>
 #endif// PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_INTEL
-
-/*
- * Detect if the processor supports SHA-256 acceleration. We only check for
- * the three ISAs we need - SSSE3, SSE4.1 and SHA. We don't check for OS
- * support or XSAVE because that's been enabled since Windows 2000.
- */
-bool DetectSHA256Acceleration() {
-#if PLUGIFY_COMPILER_MSVC
-	int32_t regs0[4] = {0,0,0,0}, regs1[4] = {0,0,0,0}, regs7[4] = {0,0,0,0};
-	const uint32_t SSSE3_BIT = 1u <<  9; /* Function 1, Bit  9 of ECX */
-	const uint32_t SSE41_BIT = 1u << 19; /* Function 1, Bit 19 of ECX */
-	const uint32_t SHA_BIT   = 1u << 29; /* Function 7, Bit 29 of EBX */
-
-	__cpuid(regs0, 0);
-	const int32_t highest = regs0[0]; /*EAX*/
-
-	if (highest >= 0x01) {
-		__cpuidex(regs1, 1, 0);
-	}
-
-	if (highest >= 0x07) {
-		__cpuidex(regs7, 7, 0);
-	}
-
-	return (regs1[2] /*ECX*/ & SSSE3_BIT) && (regs1[2] /*ECX*/ & SSE41_BIT) && (regs7[1] /*EBX*/ & SHA_BIT);
-#elif PLUGIFY_COMPILER_CLANG
-	// FIXME: Use __builtin_cpu_supports("sha") when compilers support it
-	constexpr uint32_t cpuid_sha_ebx = (1 << 29);
-	uint32_t eax, ebx, ecx, edx;
-	__cpuid_count(7, 0, eax, ebx, ecx, edx);
-	const uint32_t cpu_supports_sha = (ebx & cpuid_sha_ebx);
-	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && cpu_supports_sha;
-#elif PLUGIFY_COMPILER_GCC
-	/* __builtin_cpu_supports available in GCC 4.8.1 and above */
-	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && __builtin_cpu_supports("sha");
-#elif PLUGIFY_COMPILER_INTEL
-	/* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_may_i_use_cpu_feature */
-	return _may_i_use_cpu_feature(_FEATURE_SSSE3|_FEATURE_SSE4_1|_FEATURE_SHA);
-#else
-	return false;
-#endif
-}
+#endif // !PLUGIFY_ARCH_ARM
 
 using namespace plugify;
 
@@ -135,6 +95,7 @@ namespace {
 			sha._h[i] += S[i];
 	}
 
+#if !PLUGIFY_ARCH_ARM
 	/**
 	 * Based on: https://github.com/stong/bruteforce/tree/master
 	 */
@@ -229,12 +190,59 @@ namespace {
 		sha._h0145 = _mm_add_epi32(state1, sha._h0145);
 		sha._h2367 = _mm_add_epi32(state2, sha._h2367);
 	}
+#endif // !PLUGIFY_ARCH_ARM
 
 }// namespace
 
+#if !PLUGIFY_ARCH_ARM
+/*
+ * Detect if the processor supports SHA-256 acceleration. We only check for
+ * the three ISAs we need - SSSE3, SSE4.1 and SHA. We don't check for OS
+ * support or XSAVE because that's been enabled since Windows 2000.
+ */
+static bool DetectSHA256Acceleration() {
+#if PLUGIFY_COMPILER_MSVC
+	int32_t regs0[4] = {0,0,0,0}, regs1[4] = {0,0,0,0}, regs7[4] = {0,0,0,0};
+	const uint32_t SSSE3_BIT = 1u <<  9; /* Function 1, Bit  9 of ECX */
+	const uint32_t SSE41_BIT = 1u << 19; /* Function 1, Bit 19 of ECX */
+	const uint32_t SHA_BIT   = 1u << 29; /* Function 7, Bit 29 of EBX */
+
+	__cpuid(regs0, 0);
+	const int32_t highest = regs0[0]; /*EAX*/
+
+	if (highest >= 0x01) {
+		__cpuidex(regs1, 1, 0);
+	}
+
+	if (highest >= 0x07) {
+		__cpuidex(regs7, 7, 0);
+	}
+
+	return (regs1[2] /*ECX*/ & SSSE3_BIT) && (regs1[2] /*ECX*/ & SSE41_BIT) && (regs7[1] /*EBX*/ & SHA_BIT);
+#elif PLUGIFY_COMPILER_CLANG
+	// FIXME: Use __builtin_cpu_supports("sha") when compilers support it
+	constexpr uint32_t cpuid_sha_ebx = (1 << 29);
+	uint32_t eax, ebx, ecx, edx;
+	__cpuid_count(7, 0, eax, ebx, ecx, edx);
+	const uint32_t cpu_supports_sha = (ebx & cpuid_sha_ebx);
+	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && cpu_supports_sha;
+#elif PLUGIFY_COMPILER_GCC
+	/* __builtin_cpu_supports available in GCC 4.8.1 and above */
+	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && __builtin_cpu_supports("sha");
+#elif PLUGIFY_COMPILER_INTEL
+	/* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_may_i_use_cpu_feature */
+	return _may_i_use_cpu_feature(_FEATURE_SSSE3|_FEATURE_SSE4_1|_FEATURE_SHA);
+#else
+	#warning "DetectSHA256Acceleration not implemented on this platform!"
+	return false;
+#endif
+}
 static bool has_sha256_acceleration = DetectSHA256Acceleration();
 static decltype(&transform_impl_base) transform_impl = has_sha256_acceleration ? transform_impl_sha : transform_impl_base;
 #define transform(i) transform_impl(*this, i);
+#else
+#define transform(i) transform_impl_base(*this, i);
+#endif // !PLUGIFY_ARCH_ARM
 
 Sha256::Sha256() {
 	clear();
@@ -243,10 +251,14 @@ Sha256::Sha256() {
 void Sha256::clear() {
 	_len = 0;
 
+#if !PLUGIFY_ARCH_ARM
 	if (has_sha256_acceleration) {
 		_h0145 = _mm_set_epi32(int(H[0]), int(H[1]), int(H[4]), int(H[5]));
 		_h2367 = _mm_set_epi32(int(H[2]), int(H[3]), int(H[6]), int(H[7]));
-	} else {
+	}
+	else
+#endif // !PLUGIFY_ARCH_ARM
+	{
 		_h = H;
 	}
 }
@@ -309,6 +321,7 @@ Digest Sha256::digest() {
 
 	Digest digest;
 
+#if !PLUGIFY_ARCH_ARM
 	// SHA uses big endian byte ordering
 	if (has_sha256_acceleration) {
 		// Get the resulting hash value.
@@ -328,7 +341,10 @@ Digest Sha256::digest() {
 		digest.h0123 = _mm_shuffle_epi8(digest.h0123, byteswapindex);
 		digest.h4567 = _mm_shuffle_epi8(digest.h4567, byteswapindex);
 #endif
-	} else {
+	}
+	else
+#endif // !PLUGIFY_ARCH_ARM
+	{
 		// Revert all bytes
 		for (auto& v : _h)
 			v = htobe32(v);
