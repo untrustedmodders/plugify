@@ -356,12 +356,18 @@ Digest Sha256::digest() {
 }
 
 std::string Sha256::ToString(const Digest& digest) {
-	std::stringstream s;
-	s << std::setfill('0') << std::hex;
-	
-	for(uint8_t i = 0 ; i < 32 ; i++) {
-		s << std::setw(2) << static_cast<uint32_t>(digest.h[i]);
-	}
-
-	return s.str();
+	return std::format(
+		"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"
+		"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"
+		"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"
+		"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+		digest.h[0], digest.h[1], digest.h[2], digest.h[3],
+		digest.h[4], digest.h[5], digest.h[6], digest.h[7],
+		digest.h[8], digest.h[9], digest.h[10], digest.h[11],
+		digest.h[12], digest.h[13], digest.h[14], digest.h[15],
+		digest.h[16], digest.h[17], digest.h[18], digest.h[19],
+		digest.h[20], digest.h[21], digest.h[22], digest.h[23],
+		digest.h[24], digest.h[25], digest.h[26], digest.h[27],
+		digest.h[28], digest.h[29], digest.h[30], digest.h[31]
+	);
 }
