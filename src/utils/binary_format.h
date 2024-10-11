@@ -11,6 +11,12 @@
 #define	bswap16(x)	__builtin_bswap16(x)
 #define	bswap32(x)	__builtin_bswap32(x)
 #define	bswap64(x)	__builtin_bswap64(x)
+#elif PLUGIFY_COMPILER_INTEL
+#define	bswap16(x)	((x >> 8) | (x << 8))
+#define	bswap32(x)	_bswap(x)
+#define	bswap64(x)	_bswap64(x)
+#else
+#error "Byteswap not supported on this platform!"
 #endif
 
 /*
