@@ -1,3 +1,4 @@
+#include <asmjit/a64.h>
 #include <plugify/jit/callback.h>
 #include <plugify/jit/helpers.h>
 
@@ -53,7 +54,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	code.init(rt->environment(), rt->cpuFeatures());
 
 	// initialize function
-	asmjit::x86::Compiler cc(&code);
+	asmjit::a64::Compiler cc(&code);
 	asmjit::FuncNode* func = cc.addFunc(sig);
 
 	/*StringLogger log;
@@ -66,17 +67,17 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	func->frame().resetPreservedFP();
 
 	// map argument slots to registers, following abi.
-	std::vector<asmjit::x86::Reg> argRegisters;
+	std::vector<asmjit::a64::Reg> argRegisters;
 	argRegisters.reserve(sig.argCount());
 
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); argIdx++) {
 		const auto& argType = sig.args()[argIdx];
 
-		asmjit::x86::Reg arg;
+		asmjit::a64::Reg arg;
 		if (asmjit::TypeUtils::isInt(argType)) {
 			arg = cc.newUIntPtr();
 		} else if (asmjit::TypeUtils::isFloat(argType)) {
-			arg = cc.newXmm();
+			arg = cc.newVec(argType);
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
@@ -90,11 +91,11 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 	// setup the stack structure to hold arguments for user callback
 	auto stackSize = static_cast<uint32_t>(sizeof(uintptr_t) * sig.argCount());
-	asmjit::x86::Mem argsStack = cc.newStack(stackSize, alignment);
-	asmjit::x86::Mem argsStackIdx(argsStack);
+	asmjit::a64::Mem argsStack = cc.newStack(stackSize, alignment);
+	asmjit::a64::Mem argsStackIdx(argsStack);
 
 	// assigns some register as index reg
-	asmjit::x86::Gp i = cc.newUIntPtr();
+	asmjit::a64::Gp i = cc.newUIntPtr();
 
 	// stackIdx <- stack[i].
 	argsStackIdx.setIndex(i);
@@ -111,16 +112,16 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 		// have to cast back to explicit register types to gen right mov type
 		if (asmjit::TypeUtils::isInt(argType)) {
-			cc.mov(argsStackIdx, argRegisters.at(argIdx).as<asmjit::x86::Gp>());
-		} else if(asmjit::TypeUtils::isFloat(argType)) {
-			cc.movq(argsStackIdx, argRegisters.at(argIdx).as<asmjit::x86::Xmm>());
+			cc.str(argRegisters.at(argIdx).as<asmjit::a64::Gp>(), argsStackIdx);
+		} else if (asmjit::TypeUtils::isFloat(argType)) {
+			cc.str(argRegisters.at(argIdx).as<asmjit::a64::Vec>(), argsStackIdx);
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
 		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, sizeof(uintptr_t));
+		cc.add(i, i, sizeof(uintptr_t));
 	}
 
 	union {
@@ -129,33 +130,29 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	} cast{ method };
 
 	// fill reg to pass method ptr to callback
-	asmjit::x86::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
+	asmjit::a64::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
 	cc.mov(methodPtrParam, cast.ptr);
 
 	// fill reg to pass data ptr to callback
-	asmjit::x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
+	asmjit::a64::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
 	cc.mov(dataPtrParam, data.CCast<uintptr_t>());
 
 	// get pointer to stack structure and pass it to the user callback
-	asmjit::x86::Gp argStruct = cc.newUIntPtr("argStruct");
+	asmjit::a64::Gp argStruct = cc.newUIntPtr("argStruct");
 	cc.lea(argStruct, argsStack);
 
 	// fill reg to pass struct arg count to callback
-	asmjit::x86::Gp argCountParam = cc.newUInt8("argCountParam");
+	asmjit::a64::Gp argCountParam = cc.newGp(asmjit::TypeId::kUInt8, "argCountParam");
 	cc.mov(argCountParam, static_cast<uint8_t>(sig.argCount()));
 
-#if PLUGIFY_PLATFORM_WINDOWS
-	auto retSize = static_cast<uint32_t>(sizeof(uintptr_t));
-#else
 	bool isPod = asmjit::TypeUtils::isVec128(sig.ret());
-	bool isIntPod = asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2);
-	bool isFloatPod = asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2);
+	//bool isIntPod = asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2);
+	//bool isFloatPod = asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2);
 	auto retSize = static_cast<uint32_t>(sizeof(uintptr_t) * (isPod ? 2 : 1));
-#endif
 
 	// create buffer for ret val
-	asmjit::x86::Mem retStack = cc.newStack(retSize, alignment);
-	asmjit::x86::Gp retStruct = cc.newUIntPtr("retStruct");
+	asmjit::a64::Mem retStack = cc.newStack(retSize, alignment);
+	asmjit::a64::Gp retStruct = cc.newUIntPtr("retStruct");
 	cc.lea(retStruct, retStack);
 
 	asmjit::InvokeNode* invokeNode;
@@ -176,48 +173,28 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
 		const auto& argType = sig.args()[argIdx];
 		if (asmjit::TypeUtils::isInt(argType)) {
-			cc.mov(argRegisters.at(argIdx).as<asmjit::x86::Gp>(), argsStackIdx);
+			cc.ldr(argRegisters.at(argIdx).as<asmjit::a64::Gp>(), argsStackIdx);
 		} else if (asmjit::TypeUtils::isFloat(argType)) {
-			cc.movq(argRegisters.at(argIdx).as<asmjit::x86::Xmm>(), argsStackIdx);
+			cc.ldr(argRegisters.at(argIdx).as<asmjit::a64::Vec>(), argsStackIdx);
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
 		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, sizeof(uintptr_t));
+		cc.add(i, i, sizeof(uintptr_t));
 	}
 
 	if (sig.hasRet()) {
-		asmjit::x86::Mem retStackIdx(retStack);
+		asmjit::a64::Mem retStackIdx(retStack);
 		retStackIdx.setSize(sizeof(uintptr_t));
 		if (asmjit::TypeUtils::isInt(sig.ret())) {
-			asmjit::x86::Gp tmp = cc.newUIntPtr();
-			cc.mov(tmp, retStackIdx);
+			asmjit::a64::Gp tmp = cc.newUIntPtr();
+			cc.ldr(tmp, retStackIdx);
 			cc.ret(tmp);
-		}
-#if !PLUGIFY_PLATFORM_WINDOWS
-		else if (isIntPod) {
-			asmjit::x86::Mem retStackIdxUpper(retStack);
-			retStackIdxUpper.addOffset(sizeof(uintptr_t));
-			retStackIdxUpper.setSize(sizeof(uintptr_t));
-
-			cc.mov(asmjit::x86::rax, retStackIdx);
-			cc.mov(asmjit::x86::rdx, retStackIdxUpper);
-			cc.ret();
-		} else if (isFloatPod) {
-			asmjit::x86::Mem retStackIdxUpper(retStack);
-			retStackIdxUpper.addOffset(sizeof(uintptr_t));
-			retStackIdxUpper.setSize(sizeof(uintptr_t));
-
-			cc.movq(asmjit::x86::xmm0, retStackIdx);
-			cc.movq(asmjit::x86::xmm1, retStackIdxUpper);
-			cc.ret();
-		}
-#endif
-		else {
-			asmjit::x86::Xmm tmp = cc.newXmm();
-			cc.movq(tmp, retStackIdx);
+		} else {
+			asmjit::a64::Vec tmp = cc.newVec(sig.ret());
+			cc.ldr(tmp, retStackIdx);
 			cc.ret(tmp);
 		}
 	}

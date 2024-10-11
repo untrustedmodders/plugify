@@ -1,0 +1,157 @@
+#include <asmjit/a64.h>
+#include <plugify/jit/call.h>
+#include <plugify/jit/helpers.h>
+
+using namespace plugify;
+
+JitCall::JitCall(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
+}
+
+JitCall::JitCall(JitCall&& other) noexcept : _rt{std::move(other._rt)}, _function{other._function}, _targetFunc{other._targetFunc} {
+	other._function = nullptr;
+	other._targetFunc = nullptr;
+}
+
+JitCall::~JitCall() {
+	if (_function) {
+		if (auto rt = _rt.lock()) {
+			rt->release(_function);
+		}
+	}
+}
+
+MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, WaitType waitType) {
+	if (_function)
+		return _function;
+
+	auto rt = _rt.lock();
+	if (!rt) {
+		_errorCode = "JitRuntime invalid";
+		return nullptr;
+	}
+
+	_targetFunc = target;
+
+	asmjit::CodeHolder code;
+	code.init(rt->environment(), rt->cpuFeatures());
+
+	// initialize function
+	asmjit::a64::Compiler cc(&code);
+	asmjit::FuncNode* func = cc.addFunc(asmjit::FuncSignature::build<void, Parameters*, Return*>());// Create the wrapper function around call we JIT
+
+	/*StringLogger log;
+	auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
+
+	log.addFlags(kFormatFlags);
+	code.setLogger(&log);*/
+
+	// too small to really need it
+	func->frame().resetPreservedFP();
+
+	asmjit::a64::Gp paramImm = cc.newUIntPtr();
+	func->setArg(0, paramImm);
+
+	asmjit::a64::Gp returnImm = cc.newUIntPtr();
+	func->setArg(1, returnImm);
+
+	// paramMem = ((char*)paramImm) + i (char* size walk, uintptr_t size r/w)
+	asmjit::a64::Gp i = cc.newUIntPtr();
+	asmjit::a64::Mem paramMem = ptr(paramImm, i);
+	paramMem.setSize(sizeof(uintptr_t));
+
+	// i = 0
+	cc.mov(i, 0);
+
+	std::vector<asmjit::a64::Reg> argRegisters;
+	argRegisters.reserve(sig.argCount());
+
+	// map argument slots to registers, following abi. (We can have multiple register per arg slot such as high and low 32bits of a 64bit slot)
+	for (uint32_t argIdx = 0; argIdx < sig.argCount(); argIdx++) {
+		const auto& argType = sig.args()[argIdx];
+
+		asmjit::a64::Reg arg;
+		if (asmjit::TypeUtils::isInt(argType)) {
+			arg = cc.newUIntPtr();
+			cc.ldr(arg.as<asmjit::a64::Gp>(), paramMem);
+		} else if (asmjit::TypeUtils::isFloat(argType)) {
+			arg = cc.newVec(argType);
+			cc.ldr(arg.as<asmjit::a64::Vec>(), paramMem);
+		} else {
+			// ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
+			_errorCode = "Parameters wider than 64bits not supported";
+			return nullptr;
+		}
+
+		argRegisters.push_back(std::move(arg));
+
+		// next structure slot (+= sizeof(uintptr_t))
+		cc.add(i, i, sizeof(uintptr_t));
+	}
+
+	// allows debuggers to trap
+	if (waitType == WaitType::Int3) {
+		cc.brk(0x1);
+	} else if (waitType == WaitType::Wait_Keypress) {
+		asmjit::InvokeNode* invokeNode;
+		cc.invoke(&invokeNode,
+				  (uint64_t) &getchar,
+				  asmjit::FuncSignature::build<int>()
+		);
+	}
+
+	// Gen the call
+	asmjit::InvokeNode* invokeNode;
+	cc.invoke(&invokeNode,
+		(uint64_t) target.GetPtr(),
+		sig
+	);
+
+	// Map call params to the args
+	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
+		invokeNode->setArg(argIdx, argRegisters.at(argIdx));
+	}
+
+	if (sig.hasRet()) {
+		if (asmjit::TypeUtils::isInt(sig.ret())) {
+			asmjit::a64::Gp tmp = cc.newUIntPtr();
+			invokeNode->setRet(0, tmp);
+			cc.str(tmp, ptr(returnImm));
+		} else {
+			asmjit::a64::Vec ret = cc.newVec(sig.ret());
+			invokeNode->setRet(0, ret);
+			cc.str(ret, ptr(returnImm));
+		}
+	}
+
+	//cc.ret();
+
+	// end of the function body
+	cc.endFunc();
+
+	// write to buffer
+	cc.finalize();
+
+	asmjit::Error err = rt->add(&_function, &code);
+	if (err) {
+		_function = nullptr;
+		_errorCode = asmjit::DebugUtils::errorAsString(err);
+		return nullptr;
+	}
+
+	//PL_LOG_VERBOSE("JIT Stub:\n{}", log.data());
+
+	return _function;
+}
+
+MemAddr JitCall::GetJitFunc(MethodRef method, MemAddr target, WaitType waitType, HiddenParam hidden) {
+	ValueType retType = method.GetReturnType().GetType();
+	bool isHiddenParam = hidden(retType);
+	asmjit::FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(isHiddenParam ? ValueType::Pointer : retType));
+	if (isHiddenParam) {
+		sig.addArg(JitUtils::GetValueTypeId(retType));
+	}
+	for (const auto& type : method.GetParamTypes()) {
+		sig.addArg(JitUtils::GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
+	}
+	return GetJitFunc(sig, target, waitType);
+}

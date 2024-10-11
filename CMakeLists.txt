@@ -114,6 +114,17 @@ else()
     message(WARNING "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
+# detect host architecture 
+if(NOT DEFINED PLUGIFY_USE_ARM)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
+        message("Detected 64-bit ARM host. Setting PLUGIFY_USE_ARM to true.")
+        set(PLUGIFY_USE_ARM TRUE)
+    else()
+        message("Detected non-ARM host. Setting PLUGIFY_USE_ARM to false.")
+        set(PLUGIFY_USE_ARM FALSE)
+    endif()
+endif()
+
 # ------------------------------------------------------------------------------
 # Compilation options
 option(PLUGIFY_BUILD_TESTS "Enable building tests." ON)
@@ -294,7 +305,7 @@ elseif(SWITCH)
     set(PLUGIFY_PLATFORM "switch")
 endif()
 
-set(PLUGIFY_ARCH_X86 $<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,64,32>)
+set(PLUGIFY_ARCH_BITS $<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,64,32>)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
@@ -310,7 +321,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_PLATFORM_ORBIS=$<BOOL:${ORBIS}>
         PLUGIFY_PLATFORM_PROSPERO=$<BOOL:${PROSPERO}>
         PLUGIFY_PLATFORM_SWITCH=$<BOOL:${SWITCH}>
-        PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
+        PLUGIFY_ARCH_BITS=${PLUGIFY_ARCH_BITS}
+        PLUGIFY_ARCH_ARM=$<BOOL:${PLUGIFY_USE_ARM}>
         PLUGIFY_IS_BIG_ENDIAN=$<STREQUAL:${CMAKE_CXX_BYTE_ORDER},BIG_ENDIAN>
         PLUGIFY_IS_DEBUG=$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>
 
@@ -345,10 +357,18 @@ endif()
 # ------------------------------------------------------------------------------
 # Tools
 if(PLUGIFY_BUILD_JIT)
-    add_library(${PROJECT_NAME}-jit OBJECT
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call.cpp"
+    if (PLUGIFY_USE_ARM)
+	    set(PLUGIFY_JIT_SOURCES 
+		    "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_arm.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_arm.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers.cpp")
+    else()
+	    set(PLUGIFY_JIT_SOURCES 
+		    "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_x86.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_x86.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers.cpp")
+    endif()	
+    add_library(${PROJECT_NAME}-jit OBJECT ${PLUGIFY_JIT_SOURCES})
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-jit ALIAS ${PROJECT_NAME}-jit)
     target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     if(PLUGIFY_USE_EXTERNAL_ASMJIT)
@@ -367,8 +387,13 @@ if(PLUGIFY_BUILD_JIT)
             PLUGIFY_PLATFORM_ORBIS=$<BOOL:${ORBIS}>
             PLUGIFY_PLATFORM_PROSPERO=$<BOOL:${PROSPERO}>
             PLUGIFY_PLATFORM_SWITCH=$<BOOL:${SWITCH}>
-            PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
-            PLUGIFY_SEPARATE_SOURCE_FILES=1)
+            PLUGIFY_ARCH_BITS=${PLUGIFY_ARCH_BITS}
+            PLUGIFY_SEPARATE_SOURCE_FILES=1
+
+            $<$<CXX_COMPILER_ID:MSVC>:PLUGIFY_COMPILER_MSVC=1>
+            $<$<CXX_COMPILER_ID:Clang>:PLUGIFY_COMPILER_CLANG=1>
+            $<$<CXX_COMPILER_ID:GNU>:PLUGIFY_COMPILER_GCC=1>
+            $<$<CXX_COMPILER_ID:Intel>:PLUGIFY_COMPILER_INTEL=1>)
     target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_BINARY_DIR}/exports)
     if(LINUX)
         target_compile_definitions(${PROJECT_NAME}-jit PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
@@ -390,8 +415,13 @@ if(PLUGIFY_BUILD_ASSEMBLY)
             PLUGIFY_PLATFORM_ORBIS=$<BOOL:${ORBIS}>
             PLUGIFY_PLATFORM_PROSPERO=$<BOOL:${PROSPERO}>
             PLUGIFY_PLATFORM_SWITCH=$<BOOL:${SWITCH}>
-            PLUGIFY_ARCH_X86=${PLUGIFY_ARCH_X86}
-            PLUGIFY_SEPARATE_SOURCE_FILES=1)
+            PLUGIFY_ARCH_BITS=${PLUGIFY_ARCH_BITS}
+            PLUGIFY_SEPARATE_SOURCE_FILES=1
+
+            $<$<CXX_COMPILER_ID:MSVC>:PLUGIFY_COMPILER_MSVC=1>
+            $<$<CXX_COMPILER_ID:Clang>:PLUGIFY_COMPILER_CLANG=1>
+            $<$<CXX_COMPILER_ID:GNU>:PLUGIFY_COMPILER_GCC=1>
+            $<$<CXX_COMPILER_ID:Intel>:PLUGIFY_COMPILER_INTEL=1>)
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_BINARY_DIR}/exports)
     if(LINUX)
         target_compile_definitions(${PROJECT_NAME}-assembly PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
