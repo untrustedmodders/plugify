@@ -1,27 +1,27 @@
 #pragma once
 
-#if defined(__GNUC__) && !defined(__clang__) && !defined(NDEBUG)
+#if PLUGIFY_COMPILER_GCC && !PLUGIFY_COMPILER_CLANG && !defined(NDEBUG)
 #undef __OPTIMIZE__
-#endif
+#endif // !defined(NDEBUG)
 #include <emmintrin.h>
 
-#if defined(__GNUC__)
+#if PLUGIFY_COMPILER_GCC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#endif  // defined(__GNUC__)
+#endif  // PLUGIFY_COMPILER_GCC
 
-#if defined(__clang__)
+#if PLUGIFY_COMPILER_CLANG
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wpedantic"
 #pragma clang diagnostic ignored "-Wignored-qualifiers"
 #pragma clang diagnostic ignored "-Wfloat-equal"
-#endif  // defined(__clang__)
+#endif  // PLUGIFY_COMPILER_CLANG
 
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 #pragma warning( push )
 #pragma warning( disable : 4201 )
-#endif // defined(_MSC_VER)
+#endif // PLUGIFY_COMPILER_MSVC
 
 namespace plugify {
 	union Digest {
@@ -60,14 +60,14 @@ namespace plugify {
 	};
 }
 
-#if defined(__clang__)
+#if PLUGIFY_COMPILER_CLANG
 #pragma clang diagnostic pop
-#endif  // defined(__clang__)
+#endif  // PLUGIFY_COMPILER_CLANG
 
-#if defined(__GNUC__)
+#if PLUGIFY_COMPILER_GCC
 #pragma GCC diagnostic pop
-#endif  // defined(__GNUC__)
+#endif  // PLUGIFY_COMPILER_GCC
 
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 #pragma warning( pop )
-#endif // defined(_MSC_VER)
+#endif // PLUGIFY_COMPILER_MSVC

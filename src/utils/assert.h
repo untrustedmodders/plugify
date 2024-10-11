@@ -1,11 +1,11 @@
 #pragma once
 
 #ifdef PLUGIFY_DEBUG
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 	#define PL_DEBUGBREAK() __debugbreak();
-#elif defined(__GNUC__) || PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
+#elif PLUGIFY_COMPILER_GCC || PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
 	#define PL_DEBUGBREAK() __builtin_trap();
-#elif defined(__clang__)
+#elif PLUGIFY_COMPILER_CLANG
 	#define PL_DEBUGBREAK() __builtin_debugtrap();
 #elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
 	#define PL_DEBUGBREAK() raise(SIGTRAP);

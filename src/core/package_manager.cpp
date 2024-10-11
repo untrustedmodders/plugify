@@ -137,11 +137,11 @@ void ValidateMethods(const std::string& name, std::vector<std::string>& errors, 
 		}
 
 		if (!method.callConv.empty()) {
-#if PLUGIFY_ARCH_X86 == 64 && PLUGIFY_PLATFORM_WINDOWS
+#if PLUGIFY_ARCH_BITS == 64 && PLUGIFY_PLATFORM_WINDOWS
 			if (method.callConv != "vectorcall")
-#elif PLUGIFY_ARCH_X86 == 32
+#elif PLUGIFY_ARCH_BITS == 32
 			if (method.callConv != "cdecl" && method.callConv != "stdcall" && method.callConv != "fastcall" && method.callConv != "thiscall" && method.callConv != "vectorcall")
-#endif // PLUGIFY_ARCH_X86
+#endif // PLUGIFY_ARCH_BITS
 			{
 				errors.emplace_back(std::format("Invalid calling convention: '{}' at: {}", method.callConv, method.name.empty() ? std::to_string(i) : method.name));
 			}

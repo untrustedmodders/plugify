@@ -1,18 +1,18 @@
 #include "sha256.h"
 #include "binary_format.h"
 
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 #include <intrin.h>
-#endif // defined(_MSC_VER)
+#endif // PLUGIFY_COMPILER_MSVC
 
-#if defined(__clang__)
+#if PLUGIFY_COMPILER_CLANG
 #include <cpuid.h>
 #include <immintrin.h>
-#endif  // defined(__clang__)
+#endif  // PLUGIFY_COMPILER_CLANG
 
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
+#if PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_INTEL
 #include <immintrin.h>
-#endif// defined(__GNUC__)
+#endif// PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_INTEL
 
 /*
  * Detect if the processor supports SHA-256 acceleration. We only check for
@@ -20,7 +20,7 @@
  * support or XSAVE because that's been enabled since Windows 2000.
  */
 bool DetectSHA256Acceleration() {
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 	int32_t regs0[4] = {0,0,0,0}, regs1[4] = {0,0,0,0}, regs7[4] = {0,0,0,0};
 	const uint32_t SSSE3_BIT = 1u <<  9; /* Function 1, Bit  9 of ECX */
 	const uint32_t SSE41_BIT = 1u << 19; /* Function 1, Bit 19 of ECX */
@@ -38,17 +38,17 @@ bool DetectSHA256Acceleration() {
 	}
 
 	return (regs1[2] /*ECX*/ & SSSE3_BIT) && (regs1[2] /*ECX*/ & SSE41_BIT) && (regs7[1] /*EBX*/ & SHA_BIT);
-#elif defined(__clang__)
+#elif PLUGIFY_COMPILER_CLANG
 	// FIXME: Use __builtin_cpu_supports("sha") when compilers support it
 	constexpr uint32_t cpuid_sha_ebx = (1 << 29);
 	uint32_t eax, ebx, ecx, edx;
 	__cpuid_count(7, 0, eax, ebx, ecx, edx);
 	const uint32_t cpu_supports_sha = (ebx & cpuid_sha_ebx);
 	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && cpu_supports_sha;
-#elif defined(__GNUC__)
+#elif PLUGIFY_COMPILER_GCC
 	/* __builtin_cpu_supports available in GCC 4.8.1 and above */
 	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && __builtin_cpu_supports("sha");
-#elif defined(__INTEL_COMPILER)
+#elif PLUGIFY_COMPILER_INTEL
 	/* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_may_i_use_cpu_feature */
 	return _may_i_use_cpu_feature(_FEATURE_SSSE3|_FEATURE_SSE4_1|_FEATURE_SHA);
 #else

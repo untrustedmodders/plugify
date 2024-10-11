@@ -6,11 +6,11 @@ namespace plugify {
 		String() = delete;
 
 		static inline int Strncasecmp(const char* s1, const char* s2, size_t n) {
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 			return _strnicmp(s1, s2, n);
 #else
 			return strncasecmp(s1, s2, n);
-#endif // defined(_MSC_VER)
+#endif // PLUGIFY_COMPILER_MSVC
 		}
 
 #if PLUGIFY_PLATFORM_WINDOWS

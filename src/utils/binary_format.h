@@ -3,11 +3,11 @@
 /*
  * General byte order swapping functions.
  */
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 #define	bswap16(x)	_byteswap_ushort(x)
 #define	bswap32(x)	_byteswap_ulong(x)
 #define	bswap64(x)	_byteswap_uint64(x)
-#elif defined(__GNUC__) || defined(__clang__)
+#elif PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_CLANG
 #define	bswap16(x)	__builtin_bswap16(x)
 #define	bswap32(x)	__builtin_bswap32(x)
 #define	bswap64(x)	__builtin_bswap64(x)

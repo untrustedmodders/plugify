@@ -4,7 +4,7 @@
 
 #include "os.h"
 	
-#if PLUGIFY_ARCH_X86 == 64
+#if PLUGIFY_ARCH_BITS == 64
 	typedef struct mach_header_64 MachHeader;
 	typedef struct segment_command_64 MachSegment;
 	typedef struct section_64 MachSection;

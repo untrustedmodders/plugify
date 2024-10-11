@@ -4,9 +4,9 @@
 #include <cmath>
 #include <cstring>
 
-#if defined(__GNUC__) && !defined(__clang__) && !defined(NDEBUG)
+#if PLUGIFY_COMPILER_GCC && !PLUGIFY_COMPILER_CLANG && !defined(NDEBUG)
 #undef __OPTIMIZE__
-#endif
+#endif // !defined(NDEBUG)
 #include <emmintrin.h>
 
 using namespace plugify;

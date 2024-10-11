@@ -128,7 +128,7 @@ namespace plugify::JitUtils {
 	}
 
 	asmjit::CallConvId GetCallConv([[maybe_unused]] std::string_view conv) noexcept {
-#if PLUGIFY_ARCH_X86 == 64
+#if PLUGIFY_ARCH_BITS == 64
 #if PLUGIFY_PLATFORM_WINDOWS
 		if (conv == "vectorcall") [[unlikely]] {
 			return asmjit::CallConvId::kVectorCall;
@@ -138,7 +138,7 @@ namespace plugify::JitUtils {
 #else
 		return asmjit::CallConvId::kX64SystemV;
 #endif // PLUGIFY_PLATFORM_WINDOWS
-#elif PLUGIFY_ARCH_X86 == 32
+#elif PLUGIFY_ARCH_BITS == 32
 		if (!conv.empty) {
 			if (conv == "cdecl") {
 				return asmjit::CallConvId::kCDecl;
@@ -153,7 +153,7 @@ namespace plugify::JitUtils {
 			}
 		}
 		return asmjit::CallConvId::kHost;
-#endif // PLUGIFY_ARCH_X86
+#endif // PLUGIFY_ARCH_BITS
 	}
 
 } // namespace plugify
