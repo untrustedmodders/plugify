@@ -53,10 +53,10 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	asmjit::x86::Gp returnImm = cc.newUIntPtr();
 	func->setArg(1, returnImm);
 
-	// paramMem = ((char*)paramImm) + i (char* size walk, uintptr_t size r/w)
+	// paramMem = ((char*)paramImm) + i (char* size walk, int64_t size r/w)
 	asmjit::x86::Gp i = cc.newUIntPtr();
 	asmjit::x86::Mem paramMem = ptr(paramImm, i);
-	paramMem.setSize(sizeof(uintptr_t));
+	paramMem.setSize(sizeof(int64_t));
 
 	// i = 0
 	cc.mov(i, 0);
@@ -83,8 +83,8 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 
 		argRegisters.push_back(std::move(arg));
 
-		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, sizeof(uintptr_t));
+		// next structure slot (+= sizeof(int64_t))
+		cc.add(i, sizeof(int64_t));
 	}
 
 	// allows debuggers to trap
@@ -123,7 +123,7 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 			invokeNode->setRet(0, tmp1);
 			invokeNode->setRet(1, tmp2);
 			cc.mov(ptr(returnImm), tmp1);
-			cc.mov(ptr(returnImm, sizeof(uintptr_t)), tmp2); // TODO: does it correct?
+			cc.mov(ptr(returnImm, sizeof(int64_t)), tmp2); // TODO: does it correct?
 
 		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2)) {
 			asmjit::x86::Xmm tmp1 = cc.newXmm();
@@ -131,7 +131,7 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 			invokeNode->setRet(0, tmp1);
 			invokeNode->setRet(1, tmp2);
 			cc.movq(ptr(returnImm), tmp1);
-			cc.movq(ptr(returnImm, sizeof(uintptr_t)), tmp2); // TODO: does it correct?
+			cc.movq(ptr(returnImm, sizeof(int64_t)), tmp2); // TODO: does it correct?
 		}
 #endif
 		else {

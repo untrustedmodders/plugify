@@ -41,7 +41,7 @@ namespace plugify{
 		 * @brief Structure to represent function parameters.
 		 */
 		struct Parameters {
-			typedef const uintptr_t* Data;
+			typedef const int64_t* Data;
 			
 			/**
 			 * @brief Constructor.
@@ -59,7 +59,7 @@ namespace plugify{
 			 */
 			template<typename T>
 			void AddArgument(T val) {
-				uintptr_t& arg = arguments.emplace_back(0);
+				int64_t& arg = arguments.emplace_back(0);
 				*(T*) &arg = val;
 			}
 
@@ -72,7 +72,7 @@ namespace plugify{
 			}
 			
 		private:
-			std::vector<uintptr_t> arguments; ///< Raw storage for function arguments.
+			std::vector<int64_t> arguments; ///< Raw storage for function arguments.
 		};
 		
 		struct Return {
@@ -106,7 +106,7 @@ namespace plugify{
 			}
 
 		private:
-			volatile uintptr_t ret[2]{}; ///< Raw storage for the return value.
+			volatile int64_t ret[2]{}; ///< Raw storage for the return value.
 		};
 		
 		enum class WaitType {

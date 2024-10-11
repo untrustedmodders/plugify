@@ -81,11 +81,11 @@ namespace plugify {
 			 * @return Pointer to the argument.
 			 */
 			[[nodiscard]] int8_t* GetArgumentPtr(uint8_t idx) const noexcept {
-				return ((int8_t*) &arguments) + sizeof(uintptr_t) * idx;
+				return ((int8_t*) &arguments) + sizeof(int64_t) * idx;
 			}
 
 		private:
-			volatile uintptr_t arguments; ///< Raw storage for function arguments.
+			volatile int64_t arguments; ///< Raw storage for function arguments.
 		};
 
 		/**
@@ -123,7 +123,7 @@ namespace plugify {
 			}
 
 		private:
-			volatile uintptr_t ret; ///< Raw storage for the return value.
+			volatile int64_t ret; ///< Raw storage for the return value.
 		};
 
 		using CallbackHandler = void(*)(MethodRef method, MemAddr data, const Parameters* params, uint8_t count, const Return* ret);

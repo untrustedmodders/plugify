@@ -75,7 +75,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 		asmjit::a64::Reg arg;
 		if (asmjit::TypeUtils::isInt(argType)) {
-			arg = cc.newUIntPtr();
+			arg = cc.newGpx();
 		} else if (asmjit::TypeUtils::isFloat(argType)) {
 			arg = cc.newVec(argType);
 		} else {
@@ -90,18 +90,18 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	const uint32_t alignment = 16;
 
 	// setup the stack structure to hold arguments for user callback
-	auto stackSize = static_cast<uint32_t>(sizeof(uintptr_t) * sig.argCount());
+	auto stackSize = static_cast<uint32_t>(sizeof(int64_t) * sig.argCount());
 	asmjit::a64::Mem argsStack = cc.newStack(stackSize, alignment);
 	asmjit::a64::Mem argsStackIdx(argsStack);
 
 	// assigns some register as index reg
-	asmjit::a64::Gp i = cc.newUIntPtr();
+	asmjit::a64::Gp i = cc.newGpx();
 
 	// stackIdx <- stack[i].
 	argsStackIdx.setIndex(i);
 
-	// r/w are sizeof(uintptr_t) width now
-	argsStackIdx.setSize(sizeof(uintptr_t));
+	// r/w are sizeof(int64_t) width now
+	argsStackIdx.setSize(sizeof(int64_t));
 
 	// set i = 0
 	cc.mov(i, 0);
@@ -120,25 +120,25 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 			return nullptr;
 		}
 
-		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, i, sizeof(uintptr_t));
+		// next structure slot (+= sizeof(int64_t))
+		cc.add(i, i, sizeof(int64_t));
 	}
 
 	union {
 		MethodRef method;
-		uintptr_t ptr;
+		int64_t ptr;
 	} cast{ method };
 
 	// fill reg to pass method ptr to callback
-	asmjit::a64::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
+	asmjit::a64::Gp methodPtrParam = cc.newGpx("methodPtrParam");
 	cc.mov(methodPtrParam, cast.ptr);
 
 	// fill reg to pass data ptr to callback
-	asmjit::a64::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
-	cc.mov(dataPtrParam, data.CCast<uintptr_t>());
+	asmjit::a64::Gp dataPtrParam = cc.newGpx("dataPtrParam");
+	cc.mov(dataPtrParam, data.CCast<int64_t>());
 
 	// get pointer to stack structure and pass it to the user callback
-	asmjit::a64::Gp argStruct = cc.newUIntPtr("argStruct");
+	asmjit::a64::Gp argStruct = cc.newGpx("argStruct");
 	cc.lea(argStruct, argsStack);
 
 	// fill reg to pass struct arg count to callback
@@ -148,11 +148,11 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	bool isPod = asmjit::TypeUtils::isVec128(sig.ret());
 	//bool isIntPod = asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2);
 	//bool isFloatPod = asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2);
-	auto retSize = static_cast<uint32_t>(sizeof(uintptr_t) * (isPod ? 2 : 1));
+	auto retSize = static_cast<uint32_t>(sizeof(int64_t) * (isPod ? 2 : 1));
 
 	// create buffer for ret val
 	asmjit::a64::Mem retStack = cc.newStack(retSize, alignment);
-	asmjit::a64::Gp retStruct = cc.newUIntPtr("retStruct");
+	asmjit::a64::Gp retStruct = cc.newGpx("retStruct");
 	cc.lea(retStruct, retStack);
 
 	asmjit::InvokeNode* invokeNode;
@@ -181,15 +181,15 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 			return nullptr;
 		}
 
-		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, i, sizeof(uintptr_t));
+		// next structure slot (+= sizeof(int64_t))
+		cc.add(i, i, sizeof(int64_t));
 	}
 
 	if (sig.hasRet()) {
 		asmjit::a64::Mem retStackIdx(retStack);
-		retStackIdx.setSize(sizeof(uintptr_t));
+		retStackIdx.setSize(sizeof(int64_t));
 		if (asmjit::TypeUtils::isInt(sig.ret())) {
-			asmjit::a64::Gp tmp = cc.newUIntPtr();
+			asmjit::a64::Gp tmp = cc.newGpx();
 			cc.ldr(tmp, retStackIdx);
 			cc.ret(tmp);
 		} else {

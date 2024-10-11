@@ -89,7 +89,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	const uint32_t alignment = 16;
 
 	// setup the stack structure to hold arguments for user callback
-	auto stackSize = static_cast<uint32_t>(sizeof(uintptr_t) * sig.argCount());
+	auto stackSize = static_cast<uint32_t>(sizeof(int64_t) * sig.argCount());
 	asmjit::x86::Mem argsStack = cc.newStack(stackSize, alignment);
 	asmjit::x86::Mem argsStackIdx(argsStack);
 
@@ -99,8 +99,8 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	// stackIdx <- stack[i].
 	argsStackIdx.setIndex(i);
 
-	// r/w are sizeof(uintptr_t) width now
-	argsStackIdx.setSize(sizeof(uintptr_t));
+	// r/w are sizeof(int64_t) width now
+	argsStackIdx.setSize(sizeof(int64_t));
 
 	// set i = 0
 	cc.mov(i, 0);
@@ -119,8 +119,8 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 			return nullptr;
 		}
 
-		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, sizeof(uintptr_t));
+		// next structure slot (+= sizeof(int64_t))
+		cc.add(i, sizeof(int64_t));
 	}
 
 	union {
@@ -134,7 +134,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 	// fill reg to pass data ptr to callback
 	asmjit::x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
-	cc.mov(dataPtrParam, data.CCast<uintptr_t>());
+	cc.mov(dataPtrParam, data.CCast<int64_t>());
 
 	// get pointer to stack structure and pass it to the user callback
 	asmjit::x86::Gp argStruct = cc.newUIntPtr("argStruct");
@@ -145,12 +145,12 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	cc.mov(argCountParam, static_cast<uint8_t>(sig.argCount()));
 
 #if PLUGIFY_PLATFORM_WINDOWS
-	auto retSize = static_cast<uint32_t>(sizeof(uintptr_t));
+	auto retSize = static_cast<uint32_t>(sizeof(int64_t));
 #else
 	bool isPod = asmjit::TypeUtils::isVec128(sig.ret());
 	bool isIntPod = asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2);
 	bool isFloatPod = asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2);
-	auto retSize = static_cast<uint32_t>(sizeof(uintptr_t) * (isPod ? 2 : 1));
+	auto retSize = static_cast<uint32_t>(sizeof(int64_t) * (isPod ? 2 : 1));
 #endif
 
 	// create buffer for ret val
@@ -184,13 +184,13 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 			return nullptr;
 		}
 
-		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, sizeof(uintptr_t));
+		// next structure slot (+= sizeof(int64_t))
+		cc.add(i, sizeof(int64_t));
 	}
 
 	if (sig.hasRet()) {
 		asmjit::x86::Mem retStackIdx(retStack);
-		retStackIdx.setSize(sizeof(uintptr_t));
+		retStackIdx.setSize(sizeof(int64_t));
 		if (asmjit::TypeUtils::isInt(sig.ret())) {
 			asmjit::x86::Gp tmp = cc.newUIntPtr();
 			cc.mov(tmp, retStackIdx);
@@ -199,16 +199,16 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 #if !PLUGIFY_PLATFORM_WINDOWS
 		else if (isIntPod) {
 			asmjit::x86::Mem retStackIdxUpper(retStack);
-			retStackIdxUpper.addOffset(sizeof(uintptr_t));
-			retStackIdxUpper.setSize(sizeof(uintptr_t));
+			retStackIdxUpper.addOffset(sizeof(int64_t));
+			retStackIdxUpper.setSize(sizeof(int64_t));
 
 			cc.mov(asmjit::x86::rax, retStackIdx);
 			cc.mov(asmjit::x86::rdx, retStackIdxUpper);
 			cc.ret();
 		} else if (isFloatPod) {
 			asmjit::x86::Mem retStackIdxUpper(retStack);
-			retStackIdxUpper.addOffset(sizeof(uintptr_t));
-			retStackIdxUpper.setSize(sizeof(uintptr_t));
+			retStackIdxUpper.addOffset(sizeof(int64_t));
+			retStackIdxUpper.setSize(sizeof(int64_t));
 
 			cc.movq(asmjit::x86::xmm0, retStackIdx);
 			cc.movq(asmjit::x86::xmm1, retStackIdxUpper);

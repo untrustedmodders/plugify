@@ -53,10 +53,10 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	asmjit::x86::Gp returnImm = cc.newUIntPtr();
 	func->setArg(1, returnImm);
 
-	// paramMem = ((char*)paramImm) + i (char* size walk, uintptr_t size r/w)
+	// paramMem = ((char*)paramImm) + i (char* size walk, int64_t size r/w)
 	asmjit::x86::Gp i = cc.newUIntPtr();
 	asmjit::x86::Mem paramMem = ptr(paramImm, i);
-	paramMem.setSize(sizeof(uintptr_t));
+	paramMem.setSize(sizeof(int64_t));
 
 	// i = 0
 	cc.mov(i, 0);
@@ -83,8 +83,8 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 
 		argRegisters.push_back(std::move(arg));
 
-		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, sizeof(uintptr_t));
+		// next structure slot (+= sizeof(int64_t))
+		cc.add(i, sizeof(int64_t));
 	}
 
 	// allows debuggers to trap
@@ -119,11 +119,11 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 #if !PLUGIFY_PLATFORM_WINDOWS
 		else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2)) {
 			cc.mov(ptr(returnImm), asmjit::x86::rax);
-			cc.mov(ptr(returnImm, sizeof(uintptr_t)), asmjit::x86::rdx);
+			cc.mov(ptr(returnImm, sizeof(int64_t)), asmjit::x86::rdx);
 
 		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2)) {
 			cc.movq(ptr(returnImm), asmjit::x86::xmm0);
-			cc.movq(ptr(returnImm, sizeof(uintptr_t)), asmjit::x86::xmm1);
+			cc.movq(ptr(returnImm, sizeof(int64_t)), asmjit::x86::xmm1);
 		}
 #endif
 		else {

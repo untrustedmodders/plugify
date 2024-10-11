@@ -48,16 +48,16 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	// too small to really need it
 	func->frame().resetPreservedFP();
 
-	asmjit::a64::Gp paramImm = cc.newUIntPtr();
+	asmjit::a64::Gp paramImm = cc.newGpx();
 	func->setArg(0, paramImm);
 
-	asmjit::a64::Gp returnImm = cc.newUIntPtr();
+	asmjit::a64::Gp returnImm = cc.newGpx();
 	func->setArg(1, returnImm);
 
-	// paramMem = ((char*)paramImm) + i (char* size walk, uintptr_t size r/w)
-	asmjit::a64::Gp i = cc.newUIntPtr();
+	// paramMem = ((char*)paramImm) + i (char* size walk, int64_t size r/w)
+	asmjit::a64::Gp i = cc.newGpx();
 	asmjit::a64::Mem paramMem = ptr(paramImm, i);
-	paramMem.setSize(sizeof(uintptr_t));
+	paramMem.setSize(sizeof(int64_t));
 
 	// i = 0
 	cc.mov(i, 0);
@@ -71,7 +71,7 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 
 		asmjit::a64::Reg arg;
 		if (asmjit::TypeUtils::isInt(argType)) {
-			arg = cc.newUIntPtr();
+			arg = cc.newGpx();
 			cc.ldr(arg.as<asmjit::a64::Gp>(), paramMem);
 		} else if (asmjit::TypeUtils::isFloat(argType)) {
 			arg = cc.newVec(argType);
@@ -84,8 +84,8 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 
 		argRegisters.push_back(std::move(arg));
 
-		// next structure slot (+= sizeof(uintptr_t))
-		cc.add(i, i, sizeof(uintptr_t));
+		// next structure slot (+= sizeof(int64_t))
+		cc.add(i, i, sizeof(int64_t));
 	}
 
 	// allows debuggers to trap
@@ -113,7 +113,7 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 
 	if (sig.hasRet()) {
 		if (asmjit::TypeUtils::isInt(sig.ret())) {
-			asmjit::a64::Gp tmp = cc.newUIntPtr();
+			asmjit::a64::Gp tmp = cc.newGpx();
 			invokeNode->setRet(0, tmp);
 			cc.str(tmp, ptr(returnImm));
 		} else {
