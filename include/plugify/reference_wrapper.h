@@ -45,4 +45,3 @@ namespace plugify {
 	 */
 	template<typename T> static constexpr bool is_ref_v = std::is_standard_layout_v<T> and sizeof(T) == sizeof(void*);
 }
-

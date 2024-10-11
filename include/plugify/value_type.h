@@ -84,8 +84,8 @@ namespace plugify {
 		_StructStart = Vector2,
 		_StructEnd = Matrix4x4,
 
-		// First struct which return as 1st parameter
-#if _WIN32
+		// First struct which return as hidden parameter
+#if _WIN32 && !_M_ARM64
 		_HiddenParamStart = Vector3,
 #else
 		_HiddenParamStart = Matrix4x4,
