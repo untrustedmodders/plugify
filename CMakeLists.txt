@@ -98,23 +98,7 @@ if(PLUGIFY_USE_CLANG_TIDY)
     endif()
 endif()
 
-# Define compiler-specific flags
-set(GCC_CLANG_FLAGS -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -msha)
-set(MSVC_FLAGS /arch:AVX /arch:AVX2) # /arch:SSE /arch:SSE2 only for x86
-set(INTEL_FLAGS -xSSE2 -xSSE3 -xSSSE3 -xSSE4.1 -xSSE4.2 -xSHA)
-
-# Determine the compiler and set the appropriate flags
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    set(PLUGIFY_SIMD_FLAGS ${GCC_CLANG_FLAGS})
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(PLUGIFY_SIMD_FLAGS ${MSVC_FLAGS})
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    set(PLUGIFY_SIMD_FLAGS ${INTEL_FLAGS})
-else()
-    message(WARNING "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
-endif()
-
-# detect host architecture 
+# detect host architecture
 if(NOT DEFINED PLUGIFY_USE_ARM)
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
         message("Detected 64-bit ARM host. Setting PLUGIFY_USE_ARM to true.")
@@ -122,6 +106,24 @@ if(NOT DEFINED PLUGIFY_USE_ARM)
     else()
         message("Detected non-ARM host. Setting PLUGIFY_USE_ARM to false.")
         set(PLUGIFY_USE_ARM FALSE)
+    endif()
+endif()
+
+if (NOT PLUGIFY_USE_ARM)
+    # Define compiler-specific flags
+    set(GCC_CLANG_FLAGS -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -msha)
+    set(MSVC_FLAGS /arch:AVX /arch:AVX2) # /arch:SSE /arch:SSE2 only for x86
+    set(INTEL_FLAGS -xSSE2 -xSSE3 -xSSSE3 -xSSE4.1 -xSSE4.2 -xSHA)
+
+    # Determine the compiler and set the appropriate flags
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        set(PLUGIFY_SIMD_FLAGS ${GCC_CLANG_FLAGS})
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        set(PLUGIFY_SIMD_FLAGS ${MSVC_FLAGS})
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+        set(PLUGIFY_SIMD_FLAGS ${INTEL_FLAGS})
+    else()
+        message(WARNING "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
     endif()
 endif()
 
