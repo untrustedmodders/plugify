@@ -246,5 +246,5 @@ MemAddr JitCallback::GetJitFunc(MethodRef method, CallbackHandler callback, MemA
 	for (const auto& type : method.GetParamTypes()) {
 		sig.addArg(JitUtils::GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
 	}
-	return GetJitFunc(sig, method, callback, data);
+	return GetJitFunc(sig, method, callback, data, retHidden);
 }
