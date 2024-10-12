@@ -41,7 +41,7 @@ namespace plugify{
 		 * @brief Structure to represent function parameters.
 		 */
 		struct Parameters {
-			typedef const int64_t* Data;
+			typedef const uint64_t* Data;
 			
 			/**
 			 * @brief Constructor.
@@ -59,7 +59,7 @@ namespace plugify{
 			 */
 			template<typename T>
 			void AddArgument(T val) {
-				int64_t& arg = arguments.emplace_back(0);
+				uint64_t& arg = arguments.emplace_back(0);
 				*(T*) &arg = val;
 			}
 
@@ -72,7 +72,7 @@ namespace plugify{
 			}
 			
 		private:
-			std::vector<int64_t> arguments; ///< Raw storage for function arguments.
+			std::vector<uint64_t> arguments; ///< Raw storage for function arguments.
 		};
 		
 		struct Return {
@@ -106,16 +106,16 @@ namespace plugify{
 			}
 
 		private:
-			volatile int64_t ret[2]{}; ///< Raw storage for the return value.
+			volatile uint64_t ret[2]{}; ///< Raw storage for the return value.
 		};
 		
 		enum class WaitType {
 			None,
-			Int3,
+			Breakpoint,
 			Wait_Keypress
 		};
 	
-		using CallingFunc = void(*)(const Parameters::Data params, const Return*); // Return can be null
+		using CallingFunc = void(*)(Parameters::Data params, const Return*); // Return can be null
 		using HiddenParam = bool(*)(ValueType);
 
 		/**
@@ -123,16 +123,17 @@ namespace plugify{
 		 * @param sig Function signature.
 		 * @param target Target function to call.
 		 * @param waitType Optionally insert a breakpoint before the call.
+		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, WaitType waitType = WaitType::None);
+		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, WaitType waitType, bool hidden);
 
 		/**
 		 * @brief Get a dynamically created function based on the method reference.
 		 * @param method Reference to the method.
 		 * @param target Target function to call.
 		 * @param waitType Optionally insert a breakpoint before the call.
-		 * @param hidden If true, return will be pass as first argument.
+		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
 		MemAddr GetJitFunc(MethodRef method, MemAddr target, WaitType waitType = WaitType::None, HiddenParam hidden = &ValueUtils::IsHiddenParam);

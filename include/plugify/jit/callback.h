@@ -81,11 +81,11 @@ namespace plugify {
 			 * @return Pointer to the argument.
 			 */
 			[[nodiscard]] int8_t* GetArgumentPtr(uint8_t idx) const noexcept {
-				return ((int8_t*) &arguments) + sizeof(int64_t) * idx;
+				return ((int8_t*) &arguments) + sizeof(uint64_t) * idx;
 			}
 
 		private:
-			volatile int64_t arguments; ///< Raw storage for function arguments.
+			volatile uint64_t arguments; ///< Raw storage for function arguments.
 		};
 
 		/**
@@ -123,7 +123,7 @@ namespace plugify {
 			}
 
 		private:
-			volatile int64_t ret; ///< Raw storage for the return value.
+			volatile uint64_t ret; ///< Raw storage for the return value.
 		};
 
 		using CallbackHandler = void(*)(MethodRef method, MemAddr data, const Parameters* params, uint8_t count, const Return* ret);
@@ -135,16 +135,17 @@ namespace plugify {
 		 * @param method Reference to the method.
 		 * @param callback Callback function.
 		 * @param data User data.
+		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, MethodRef method, CallbackHandler callback, MemAddr data = nullptr);
+		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, MethodRef method, CallbackHandler callback, MemAddr data, bool hidden);
 
 		/**
 		 * @brief Get a dynamically created function based on the method reference.
 		 * @param method Reference to the method.
 		 * @param callback Callback function.
 		 * @param data User data.
-		 * @param hidden If true, return will be pass as first argument.
+		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 *
 		 * @details Creates a new callback object, where method is a
@@ -152,7 +153,7 @@ namespace plugify {
 		 * callback handler (see below). The signature is needed in the generic
 		 * callback handler to correctly retrieve the arguments provided by the
 		 * caller of the callback. Note that the generic handler's function
-		 * type/declaration is always the same for any callback.  userdata is a
+		 * type/declaration is always the same for any callback. userdata is a
 		 * pointer to arbitrary user data to be available in the generic callback handler.
 		 */
 		MemAddr GetJitFunc(MethodRef method, CallbackHandler callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);

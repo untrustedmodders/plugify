@@ -20,7 +20,7 @@ JitCall::~JitCall() {
 	}
 }
 
-MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, WaitType waitType) {
+MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, WaitType waitType, bool hidden) {
 	if (_function)
 		return _function;
 
@@ -54,10 +54,10 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	asmjit::a64::Gp returnImm = cc.newGpx();
 	func->setArg(1, returnImm);
 
-	// paramMem = ((char*)paramImm) + i (char* size walk, int64_t size r/w)
+	// paramMem = ((char*)paramImm) + i (char* size walk, uint64_t size r/w)
 	asmjit::a64::Gp i = cc.newGpx();
 	asmjit::a64::Mem paramMem = ptr(paramImm, i);
-	paramMem.setSize(sizeof(int64_t));
+	paramMem.setSize(sizeof(uint64_t));
 
 	// i = 0
 	cc.mov(i, 0);
@@ -84,8 +84,8 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 
 		argRegisters.push_back(std::move(arg));
 
-		// next structure slot (+= sizeof(int64_t))
-		cc.add(i, i, sizeof(int64_t));
+		// next structure slot (+= sizeof(uint64_t))
+		cc.add(i, i, sizeof(uint64_t));
 	}
 
 	// allows debuggers to trap
@@ -102,9 +102,13 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	// Gen the call
 	asmjit::InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
-		(uint64_t) target.GetPtr(),
-		sig
+			(uint64_t) target.GetPtr(),
+			sig
 	);
+
+	if (hidden) {
+		cc.mov(asmjit::a64::x8, returnImm);
+	}
 
 	// Map call params to the args
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
@@ -116,6 +120,21 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 			asmjit::a64::Gp tmp = cc.newGpx();
 			invokeNode->setRet(0, tmp);
 			cc.str(tmp, ptr(returnImm));
+		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2)) {
+			cc.str(asmjit::a64::x0, ptr(returnImm));
+			cc.str(asmjit::a64::x1, ptr(returnImm, sizeof(uint64_t)));
+		} else if (sig.ret() == asmjit::TypeId::kFloat32x2) { // Vector2
+			cc.str(asmjit::a64::s0, ptr(returnImm));
+			cc.str(asmjit::a64::s1, ptr(returnImm, sizeof(float)));
+		} else if (sig.ret() == asmjit::TypeId::kFloat64x2) { // Vector3
+			cc.str(asmjit::a64::s0, ptr(returnImm));
+			cc.str(asmjit::a64::s1, ptr(returnImm, sizeof(float)));
+			cc.str(asmjit::a64::s2, ptr(returnImm, sizeof(float) * 2));
+		}  else if (sig.ret() == asmjit::TypeId::kFloat32x4) { // Vector4
+			cc.str(asmjit::a64::s0, ptr(returnImm));
+			cc.str(asmjit::a64::s1, ptr(returnImm, sizeof(float)));
+			cc.str(asmjit::a64::s2, ptr(returnImm, sizeof(float) * 2));
+			cc.str(asmjit::a64::s3, ptr(returnImm, sizeof(float) * 3));
 		} else {
 			asmjit::a64::Vec ret = cc.newVec(sig.ret());
 			invokeNode->setRet(0, ret);
@@ -145,13 +164,10 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 
 MemAddr JitCall::GetJitFunc(MethodRef method, MemAddr target, WaitType waitType, HiddenParam hidden) {
 	ValueType retType = method.GetReturnType().GetType();
-	bool isHiddenParam = hidden(retType);
-	asmjit::FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(isHiddenParam ? ValueType::Pointer : retType));
-	if (isHiddenParam) {
-		sig.addArg(JitUtils::GetValueTypeId(retType));
-	}
+	bool retHidden = hidden(retType);
+	asmjit::FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Void : retType));
 	for (const auto& type : method.GetParamTypes()) {
 		sig.addArg(JitUtils::GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
 	}
-	return GetJitFunc(sig, target, waitType);
+	return GetJitFunc(sig, target, waitType, retHidden);
 }
