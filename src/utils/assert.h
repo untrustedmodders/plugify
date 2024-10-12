@@ -7,7 +7,7 @@
 	#define PL_DEBUGBREAK() __builtin_trap();
 #elif PLUGIFY_COMPILER_CLANG
 	#define PL_DEBUGBREAK() __builtin_debugtrap();
-#elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE
+#elif PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE || PLUGIFY_PLATFORM_BSD
 	#define PL_DEBUGBREAK() raise(SIGTRAP);
 #else
 	#error "Asserts not supported on this platform!"
