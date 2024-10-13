@@ -113,7 +113,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		Terminate();
 		return false;
 	}
-#endif
+#endif // PLUGIFY_PLATFORM_WINDOWS
 
 	InitResult result = languageModulePtr->Initialize(std::move(provider), *this);
 	if (auto* data = std::get_if<ErrorData>(&result)) {

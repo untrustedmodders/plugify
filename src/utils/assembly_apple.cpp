@@ -20,7 +20,7 @@
 	const uint32_t MACH_LOADCMD_SEGMENT = LC_SEGMENT;
 	const cpu_type_t MACH_CPU_TYPE = CPU_TYPE_I386;
 	const cpu_subtype_t MACH_CPU_SUBTYPE = CPU_SUBTYPE_I386_ALL;
-#endif
+#endif // PLUGIFY_ARCH_BITS
 
 using namespace plugify;
 
@@ -31,7 +31,7 @@ Assembly::~Assembly() {
 		if (error) {
 			PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.c_str(), dlerror());
 		}
-#endif
+#endif // PLUGIFY_LOGGING
 		_handle = nullptr;
 	}
 }
@@ -132,7 +132,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 	if (!address) {
 		PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': {}", functionName, dlerror());
 	}
-#endif
+#endif // PLUGIFY_LOGGING
 	return address;
 }
 
@@ -151,7 +151,7 @@ namespace plugify {
 		if (flags & LoadFlag::Noload) unixFlags |= RTLD_NOLOAD;
 #ifdef RTLD_DEEPBIND
 		if (flags & LoadFlag::Deepbind) unixFlags |= RTLD_DEEPBIND;
-#endif
+#endif // RTLD_DEEPBIND
 		return unixFlags;
 	}
 
@@ -165,9 +165,9 @@ namespace plugify {
 		if (flags & RTLD_NOLOAD) loadFlags = loadFlags | LoadFlag::Noload;
 #ifdef RTLD_DEEPBIND
 		if (flags & RTLD_DEEPBIND) loadFlags = loadFlags | LoadFlag::Deepbind;
-#endif
+#endif // RTLD_DEEPBIND
 		return loadFlags;
 	}
 }
 
-#endif
+#endif // PLUGIFY_PLATFORM_APPLE

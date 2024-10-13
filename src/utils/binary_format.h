@@ -67,4 +67,4 @@
 #define	le16toh(x)	((x))
 #define	le32toh(x)	((x))
 #define	le64toh(x)	((x))
-#endif
+#endif // PLUGIFY_IS_BIG_ENDIAN

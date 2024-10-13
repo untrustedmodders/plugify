@@ -23,7 +23,7 @@ Assembly::~Assembly() {
 			default:
 				break;
 		}
-#endif
+#endif // PLUGIFY_LOGGING
 		_handle = nullptr;
 	}
 }
@@ -111,7 +111,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 		default:
 			break;
 	}
-#endif
+#endif // PLUGIFY_LOGGING
 	return address;
 }
 
@@ -133,4 +133,4 @@ namespace plugify {
 	}
 }
 
-#endif
+#endif // PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO

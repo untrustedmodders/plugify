@@ -1,4 +1,4 @@
-#if !PLUGIFY_PLATFORM_WINDOWS
+#if !PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_DOWNLOADER
 
 #include "http_downloader_curl.h"
 
@@ -172,4 +172,4 @@ void HTTPDownloaderCurl::CloseRequest(HTTPDownloader::Request* request) {
 	delete req;
 }
 
-#endif
+#endif // !PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_DOWNLOADER

@@ -10,7 +10,7 @@
 #else
 	const WORD PE_FILE_MACHINE = IMAGE_FILE_MACHINE_I386;
 	const WORD PE_NT_OPTIONAL_HDR_MAGIC = IMAGE_NT_OPTIONAL_HDR32_MAGIC;
-#endif
+#endif // PLUGIFY_ARCH_BITS
 
 using namespace plugify;
 
@@ -28,7 +28,7 @@ Assembly::~Assembly() {
 				LocalFree(messageBuffer);
 			}
 		}
-#endif
+#endif // PLUGIFY_LOGGING
 		_handle = nullptr;
 	}
 }
@@ -214,7 +214,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 			LocalFree(messageBuffer);
 		}
 	}
-#endif
+#endif // PLUGIFY_LOGGING
 	return pAddress;
 }
 
@@ -239,7 +239,7 @@ namespace plugify {
 		if (flags & LoadFlag::IgnoreAuthzLevel) winFlags |= LOAD_IGNORE_CODE_AUTHZ_LEVEL;
 #ifdef LOAD_LIBRARY_SAFE_CURRENT_DIRS
 		if (flags & LoadFlag::SafeCurrentDirs) winFlags |= LOAD_LIBRARY_SAFE_CURRENT_DIRS;
-#endif
+#endif // LOAD_LIBRARY_SAFE_CURRENT_DIRS
 		return winFlags;
 	}
 
@@ -259,9 +259,9 @@ namespace plugify {
 		if (flags & LOAD_IGNORE_CODE_AUTHZ_LEVEL) loadFlags = loadFlags | LoadFlag::IgnoreAuthzLevel;
 #ifdef LOAD_LIBRARY_SAFE_CURRENT_DIRS
 		if (flags & LOAD_LIBRARY_SAFE_CURRENT_DIRS) loadFlags = loadFlags | LoadFlag::SafeCurrentDirs;
-#endif
+#endif // LOAD_LIBRARY_SAFE_CURRENT_DIRS
 		return loadFlags;
 	}
 }
 
-#endif
+#endif // PLUGIFY_PLATFORM_WINDOWS

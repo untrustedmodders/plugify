@@ -16,7 +16,7 @@
 	#define PLUGIFY_ENABLE_ASSERTS
 #else
 	#define PL_DEBUGBREAK()
-#endif
+#endif // PLUGIFY_DEBUG
 
 #ifdef PLUGIFY_ENABLE_ASSERTS
 	#define PL_EXPAND_MACRO(x) x
@@ -34,4 +34,4 @@
 #else
 	#define PL_ASSERT(...)
 	#define PL_FATAL_ASSERT(...)
-#endif
+#endif // PLUGIFY_ENABLE_ASSERTS

@@ -1,4 +1,4 @@
-#if PLUGIFY_PLATFORM_WINDOWS
+#if PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_DOWNLOADER
 
 #include "http_downloader_winhttp.h"
 #include "strings.h"
@@ -264,4 +264,4 @@ void HTTPDownloaderWinHttp::CloseRequest(HTTPDownloader::Request* request) {
 	delete req;
 }
 
-#endif
+#endif // PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_DOWNLOADER

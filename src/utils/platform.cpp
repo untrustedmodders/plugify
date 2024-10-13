@@ -27,4 +27,4 @@ bool plugify::SetEnvVariable(const char* varName, const char* value) {
 bool plugify::UnsetEnvVariable(const char* varName) {
 	return unsetenv(varName) == 0;
 }
-#endif
+#endif // PLUGIFY_PLATFORM_WINDOWS

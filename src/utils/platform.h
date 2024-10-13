@@ -8,5 +8,5 @@ namespace plugify {
 	std::optional<std::string> GetEnvVariable(const char* varName);
 	bool SetEnvVariable(const char* varName, const char* value);
 	bool UnsetEnvVariable(const char* varName);
-#endif
+#endif // PLUGIFY_PLATFORM_WINDOWS
 }

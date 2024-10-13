@@ -123,7 +123,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 	if (ret.IsFailure()) {
 		PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': The symbol could not be found.", functionName);
 	}
-#endif
+#endif // PLUGIFY_LOGGING
 	return address;
 }
 
@@ -147,4 +147,4 @@ namespace plugify {
 	}
 }
 
-#endif
+#endif // PLUGIFY_PLATFORM_SWITCH

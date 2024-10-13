@@ -164,4 +164,4 @@ const std::string& Assembly::GetError() const noexcept {
 #else
 #error "Unsupported platform"
 #endif
-#endif
+#endif // PLUGIFY_SEPARATE_SOURCE_FILES

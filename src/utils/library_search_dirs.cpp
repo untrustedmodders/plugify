@@ -32,32 +32,18 @@ std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::
 	return std::unique_ptr<LibrarySearchDirs>(new LibrarySearchDirsWin(additionalSearchDirectories));
 }
 
-#elif PLUGIFY_PLATFORM_LINUX
+#else
 
-class LibrarySearchDirsLinux final : public LibrarySearchDirs {
+class LibrarySearchDirsDefault final : public LibrarySearchDirs {
 public:
 	// Cannot set LD_LIBRARY_PATH at runtime, so use rpath flag
-	explicit LibrarySearchDirsLinux(const std::vector<fs::path>& /*directories*/) {
+	explicit LibrarySearchDirsDefault(const std::vector<fs::path>& /*directories*/) {
 	}
-	~LibrarySearchDirsLinux() override = default;
+	~LibrarySearchDirsDefault() override = default;
 };
 
 std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::path>& additionalSearchDirectories) {
-	return std::unique_ptr<LibrarySearchDirs>(new LibrarySearchDirsLinux(additionalSearchDirectories));
+	return std::unique_ptr<LibrarySearchDirs>(new LibrarySearchDirsDefault(additionalSearchDirectories));
 }
 
-#elif PLUGIFY_PLATFORM_APPLE
-
-class LibrarySearchDirsApple final : public LibrarySearchDirs {
-public:
-	// Cannot set DYLD_LIBRARY_PATH at runtime, so use rpath flag
-	explicit LibrarySearchDirsApple(const std::vector<fs::path>& /*directories*/) {
-	}
-	~LibrarySearchDirsApple() override = default;
-};
-
-std::unique_ptr<LibrarySearchDirs> LibrarySearchDirs::Add(const std::vector<fs::path>& additionalSearchDirectories) {
-	return std::unique_ptr<LibrarySearchDirs>(new LibrarySearchDirsApple(additionalSearchDirectories));
-}
-
-#endif
+#endif // PLUGIFY_PLATFORM_WINDOWS

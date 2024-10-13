@@ -30,4 +30,4 @@ namespace plugify {
 #define PL_LOG_WARNING(...)
 #define PL_LOG_ERROR(...)
 #define PL_LOG_FATAL(...)
-#endif
+#endif // PLUGIFY_LOGGING

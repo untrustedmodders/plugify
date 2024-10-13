@@ -212,7 +212,7 @@ Digest Sha256::digest() {
 
 		digest.h0123 = _mm_shuffle_epi8(digest.h0123, byteswapindex);
 		digest.h4567 = _mm_shuffle_epi8(digest.h4567, byteswapindex);
-#endif
+#endif // PLUGIFY_IS_BIG_ENDIAN
 	}
 	else
 #endif // !PLUGIFY_ARCH_ARM
