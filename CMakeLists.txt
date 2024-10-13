@@ -109,7 +109,7 @@ if(NOT DEFINED PLUGIFY_USE_ARM)
     endif()
 endif()
 
-if (NOT PLUGIFY_USE_ARM)
+if(NOT PLUGIFY_USE_ARM)
     # Define compiler-specific flags
     set(GCC_CLANG_FLAGS -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -msha)
     set(MSVC_FLAGS /arch:AVX /arch:AVX2) # /arch:SSE /arch:SSE2 only for x86
@@ -144,6 +144,7 @@ option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library." OFF)
 option(PLUGIFY_USE_EXTERNAL_CURL "Use external curl library." ON)
 option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
 
+option(PLUGIFY_DOWNLOADER "Enable downloader for package manager." ON)
 option(PLUGIFY_LOGGING "Enable logging system." ON)
 option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
 
@@ -176,20 +177,22 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 
 # ------------------------------------------------------------------------------
-# Http
-if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
-else()
-    if(PLUGIFY_USE_EXTERNAL_CURL)
-        find_package(CURL REQUIRED)
-        target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
-        message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
-        message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
-        message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
+# Http/Curl
+if(PLUGIFY_DOWNLOADER)
+    if(WIN32)
+        target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
     else()
-        include(cmake/curl.git)
-        target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
-        target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
+        if(PLUGIFY_USE_EXTERNAL_CURL)
+            find_package(CURL REQUIRED)
+            target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
+            message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
+            message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
+            message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
+        else()
+            include(cmake/curl.git)
+            target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
+            target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
+        endif()
     endif()
 endif()
 
@@ -222,7 +225,7 @@ endif()
 
 # ------------------------------------------------------------------------------
 #
-target_link_libraries(${PROJECT_NAME} PRIVATE plugify-git)
+target_link_libraries(${PROJECT_NAME} PUBLIC plugify-git)
 
 include(GenerateExportHeader)
 generate_export_header(${PROJECT_NAME}
@@ -332,6 +335,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_IS_BIG_ENDIAN=$<STREQUAL:${CMAKE_CXX_BYTE_ORDER},BIG_ENDIAN>
         PLUGIFY_IS_DEBUG=$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>
 
+        PLUGIFY_DOWNLOADER=$<BOOL:${PLUGIFY_DOWNLOADER}>
         PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
         PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
         PLUGIFY_SEPARATE_SOURCE_FILES=0
@@ -369,7 +373,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Tools
 if(PLUGIFY_BUILD_JIT)
-    if (PLUGIFY_USE_ARM)
+    if(PLUGIFY_USE_ARM)
 	    set(PLUGIFY_JIT_SOURCES 
 		    "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_arm.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_arm.cpp"
