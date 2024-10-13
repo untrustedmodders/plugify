@@ -26,7 +26,7 @@ Assembly::~Assembly() {
 	}
 }
 
-bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool sections, bool extension) {
+bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections, bool extension) {
 	if (_handle)
 		return false;
 
@@ -57,13 +57,13 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool se
 	if (!dldata.addr)
 		return false;
 
-	if (!Init(dldata.modulePath, flags, sections))
+	if (!Init(dldata.modulePath, flags, additionalSearchDirectories, sections))
 		return false;
 
 	return true;
 }
 
-bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool sections) {
+bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) {
 	if (_handle)
 		return false;
 
@@ -74,13 +74,15 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool section
 	if (!dladdr(moduleMemory, &info) || !info.dli_fbase || !info.dli_fname)
 		return false;
 
-	if (!Init(info.dli_fname, flags, sections))
+	if (!Init(info.dli_fname, flags, additionalSearchDirectories, sections))
 		return false;
 
 	return true;
 }
 
-bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
+bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*additionalSearchDirectories*/, bool sections) {
+	// Cannot set LD_LIBRARY_PATH at runtime, so use rpath flag
+
 	void* handle = dlopen(modulePath.c_str(), TranslateLoading(flags));
 	if (!handle) {
 		_error = dlerror();

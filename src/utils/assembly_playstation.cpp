@@ -28,17 +28,17 @@ Assembly::~Assembly() {
 	}
 }
 
-bool Assembly::InitFromName(std::string_view /*moduleName*/, LoadFlag /*flags*/, bool /*sections*/, bool /*extension*/) {
+bool Assembly::InitFromName(std::string_view /*moduleName*/, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*sections*/, bool /*extension*/) {
 	// TODO: Implement
 	return false;
 }
 
-bool Assembly::InitFromMemory(MemAddr /*moduleMemory*/, LoadFlag /*flags*/, bool /*sections*/) {
+bool Assembly::InitFromMemory(MemAddr /*moduleMemory*/, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*sections*/) {
 	// TODO: Implement
 	return false;
 }
 
-bool Assembly::Init(fs::path modulePath, LoadFlag /*flags*/, bool /*sections*/) {
+bool Assembly::Init(fs::path modulePath, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*sections*/) {
 	SceKernelModule handle = sceKernelLoadStartModule(modulePath.c_str(), 0, nullptr, 0, nullptr, nullptr);
 	switch (handle) {
 		case SCE_KERNEL_ERROR_EINVAL:

@@ -14,16 +14,16 @@
 using namespace plugify;
 namespace fs = std::filesystem;
 
-Assembly::Assembly(std::string_view moduleName, LoadFlag flags, bool sections) : _handle{nullptr} {
-	InitFromName(moduleName, flags, sections);
+Assembly::Assembly(std::string_view moduleName, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) : _handle{nullptr} {
+	InitFromName(moduleName, flags, additionalSearchDirectories, sections);
 }
 
-Assembly::Assembly(const MemAddr moduleMemory, LoadFlag flags, bool sections) : _handle{nullptr} {
-	InitFromMemory(moduleMemory, flags, sections);
+Assembly::Assembly(const MemAddr moduleMemory, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) : _handle{nullptr} {
+	InitFromMemory(moduleMemory, flags, additionalSearchDirectories, sections);
 }
 
-Assembly::Assembly(const fs::path& modulePath, LoadFlag flags, bool sections) : _handle{nullptr} {
-	Init(modulePath, flags, sections);
+Assembly::Assembly(const fs::path& modulePath, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) : _handle{nullptr} {
+	Init(modulePath, flags, additionalSearchDirectories, sections);
 }
 
 std::pair<std::vector<uint8_t>, std::string> Assembly::PatternToMaskedBytes(std::string_view input) {

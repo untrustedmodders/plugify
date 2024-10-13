@@ -36,12 +36,12 @@ Assembly::~Assembly() {
 	}
 }
 
-bool Assembly::InitFromName(std::string_view /*moduleName*/, LoadFlag /*flags*/, bool /*extension*/, bool /*sections*/) {
+bool Assembly::InitFromName(std::string_view /*moduleName*/, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*extension*/, bool /*sections*/) {
 	// TODO: Implement
 	return false;
 }
 
-bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool sections) {
+bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) {
 	if (_handle)
 		return false;
 
@@ -52,13 +52,15 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool section
 	if (!dladdr(moduleMemory, &info) || !info.dli_fbase || !info.dli_fname)
 		return false;
 
-	if (!Init(info.dli_fname, flags, sections))
+	if (!Init(info.dli_fname, flags, additionalSearchDirectories, sections))
 		return false;
 
 	return true;
 }
 
-bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
+bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*additionalSearchDirectories*/, bool sections) {
+	// Cannot set LYLD_LIBRARY_PATH at runtime, so use rpath flag
+
 	void* handle = dlopen(modulePath.c_str(), TranslateLoading(flags));
 	if (!handle) {
 		_error = dlerror();

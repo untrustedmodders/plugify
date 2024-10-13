@@ -3,6 +3,7 @@
 #include <plugify/assembly.h>
 
 #include "os.h"
+#include "scope_guard.h"
 
 #if PLUGIFY_ARCH_BITS == 64
 	const WORD PE_FILE_MACHINE = IMAGE_FILE_MACHINE_AMD64;
@@ -52,7 +53,7 @@ static std::wstring GetModulePath(HMODULE hModule) {
 	return modulePath;
 }
 
-bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool sections, bool extension) {
+bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections, bool extension) {
 	if (_handle)
 		return false;
 
@@ -71,13 +72,13 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, bool se
 	if (modulePath.empty())
 		return false;
 
-	if (!Init(modulePath, flags, sections))
+	if (!Init(modulePath, flags, additionalSearchDirectories, sections))
 		return false;
 
 	return true;
 }
 
-bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool sections) {
+bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) {
 	if (_handle)
 		return false;
 
@@ -92,13 +93,27 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool section
 	if (modulePath.empty())
 		return false;
 
-	if (!Init(modulePath, flags, sections))
+	if (!Init(modulePath, flags, additionalSearchDirectories, sections))
 		return false;
 
 	return true;
 }
 
-bool Assembly::Init(fs::path modulePath, LoadFlag flags, bool sections) {
+bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) {
+	std::vector<DLL_DIRECTORY_COOKIE> dirCookies;
+	dirCookies.reserve(directories.size());
+	for (const auto& directory : additionalSearchDirectories) {
+		DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(directory.c_str());
+		if (cookie == nullptr)
+			continue;
+		dirCookies.push_back(cookie);
+	}
+
+	auto dirGuard = ScopeGuard([&dirCookies]() {
+		for (auto& cookie : dirCookies)
+			RemoveDllDirectory(cookie);
+	});
+
 	HMODULE hModule = LoadLibraryExW(modulePath.c_str(), nullptr, TranslateLoading(flags));
 	if (!hModule) {
 		DWORD errorCode = GetLastError();

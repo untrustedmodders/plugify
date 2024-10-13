@@ -57,50 +57,61 @@ namespace plugify {
 		// Delete copy constructor and copy assignment operator.
 		Assembly(const Assembly&) = delete;
 		Assembly& operator=(const Assembly&) = delete;
+		//Assembly& operator=(const Assembly&) && = delete;
 
 		// Delete move constructor and move assignment operator.
 		Assembly(Assembly&& rhs) noexcept = delete;
 		Assembly& operator=(Assembly&& rhs) noexcept = delete;
+		//Assembly& operator=(Assembly&&) && = delete;
+
+		using SearchDirs = std::vector<std::filesystem::path>;
 
 		/**
 		 * @brief Constructs an Assembly object with the specified module name, flags, and sections.
 		 * @param moduleName The name of the module.
 		 * @param flags Optional flags for module initialization.
+		 * @param additionalSearchDirectories Optional additional search directories.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(std::string_view moduleName, LoadFlag flags = LoadFlag::Default, bool sections = false);
+		explicit Assembly(std::string_view moduleName, LoadFlag flags = LoadFlag::Default, const SearchDirs& additionalSearchDirectories = {}, bool sections = false);
 
 		/**
 		 * @brief Constructs an Assembly object with a char pointer as module name.
 		 * @param moduleName The name of the module as a char pointer.
 		 * @param flags Optional flags for module initialization.
+		 * @param additionalSearchDirectories Optional additional search directories.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(const char* moduleName, LoadFlag flags = LoadFlag::Default, bool sections = false) : Assembly(std::string_view(moduleName), flags, sections) {}
+		explicit Assembly(const char* moduleName, LoadFlag flags = LoadFlag::Default, const SearchDirs& additionalSearchDirectories = {}, bool sections = false)
+			: Assembly(std::string_view(moduleName), flags, additionalSearchDirectories, sections) {}
 
 		/**
 		 * @brief Constructs an Assembly object with a string as module name.
 		 * @param moduleName The name of the module as a string.
 		 * @param flags Optional flags for module initialization.
+		 * @param additionalSearchDirectories Optional additional search directories.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(const std::string& moduleName, LoadFlag flags = LoadFlag::Default, bool sections = false) : Assembly(std::string_view(moduleName), flags, sections) {}
+		explicit Assembly(const std::string& moduleName, LoadFlag flags = LoadFlag::Default, const SearchDirs& additionalSearchDirectories = {}, bool sections = false)
+			: Assembly(std::string_view(moduleName), flags, additionalSearchDirectories, sections) {}
 
 		/**
 		 * @brief Constructs an Assembly object with a filesystem path as module path.
 		 * @param modulePath The filesystem path of the module.
 		 * @param flags Optional flags for module initialization.
+		 * @param additionalSearchDirectories Optional additional search directories.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(const std::filesystem::path& modulePath, LoadFlag flags = LoadFlag::Default, bool sections = false);
+		explicit Assembly(const std::filesystem::path& modulePath, LoadFlag flags = LoadFlag::Default, const SearchDirs& additionalSearchDirectories = {}, bool sections = false);
 
 		/**
 		 * @brief Constructs an Assembly object with a memory address.
 		 * @param moduleMemory The memory address of the module.
 		 * @param flags Optional flags for module initialization.
+		 * @param additionalSearchDirectories Optional additional search directories.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(MemAddr moduleMemory, LoadFlag flags = LoadFlag::Default, bool sections = false);
+		explicit Assembly(MemAddr moduleMemory, LoadFlag flags = LoadFlag::Default, const SearchDirs& additionalSearchDirectories = {}, bool sections = false);
 
 		/**
 		 * @brief Converts a string pattern with wildcards to an array of bytes and mask.
@@ -198,29 +209,32 @@ namespace plugify {
 		 * @brief Initializes module descriptors.
 		 * @param modulePath The path of the module.
 		 * @param flags Flags for module initialization.
+		 * @param additionalSearchDirectories Additional search directories.
 		 * @param sections Flag indicating if sections should be initialized.
 		 * @return True if initialization was successful, false otherwise.
 		 */
-		bool Init(std::filesystem::path modulePath, LoadFlag flags, bool sections);
+		bool Init(std::filesystem::path modulePath, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections);
 
 		/**
 		 * @brief Initializes the assembly from a module name.
 		 * @param moduleName The name of the module.
 		 * @param flags Flags for module initialization.
+		 * @param additionalSearchDirectories Additional search directories.
 		 * @param sections Flag indicating if sections should be initialized.
 		 * @param extension Indicates if an extension is used.
 		 * @return True if initialization was successful, false otherwise.
 		 */
-		bool InitFromName(std::string_view moduleName, LoadFlag flags, bool sections, bool extension = false);
+		bool InitFromName(std::string_view moduleName, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections, bool extension = false);
 
 		/**
 		 * @brief Initializes the assembly from memory.
 		 * @param moduleMemory The memory address of the module.
 		 * @param flags Flags for module initialization.
+		 * @param additionalSearchDirectories Additional search directories.
 		 * @param sections Flag indicating if sections should be initialized.
 		 * @return True if initialization was successful, false otherwise.
 		 */
-		bool InitFromMemory(MemAddr moduleMemory, LoadFlag flags, bool sections);
+		bool InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections);
 
 	private:
 		void* _handle;                //!< The handle to the module.
