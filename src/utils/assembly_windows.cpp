@@ -101,7 +101,7 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const Search
 
 bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) {
 	std::vector<DLL_DIRECTORY_COOKIE> dirCookies;
-	dirCookies.reserve(directories.size());
+	dirCookies.reserve(additionalSearchDirectories.size());
 	for (const auto& directory : additionalSearchDirectories) {
 		DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(directory.c_str());
 		if (cookie == nullptr)
