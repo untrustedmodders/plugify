@@ -1,6 +1,8 @@
 #include "strings.h"
 #include "os.h"
 
+#include <regex>
+
 using namespace plugify;
 
 #if PLUGIFY_PLATFORM_WINDOWS
@@ -41,4 +43,9 @@ bool String::ConvertWideToUtf8(std::string& dest, std::wstring_view str) {
 
 	return true;
 }
-#endif
+#endif // PLUGIFY_PLATFORM_WINDOWS
+
+bool String::IsValidURL(std::string_view url) {
+	static std::regex regex(R"(^((http[s]?|ftp):\/)?\/?([^:\/\s]+)((\/\w+)*\/)([\w\-\.]+[^#?\s]+)(.*)?(#[\w\-]+)?$)");
+	return !url.empty() && std::regex_match(url.begin(), url.end(), regex);
+}

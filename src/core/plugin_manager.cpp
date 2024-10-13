@@ -23,9 +23,13 @@ bool PluginManager::Initialize() {
 		return false;
 
 	auto debugStart = DateTime::Now();
+
 	DiscoverAllModulesAndPlugins();
 	LoadRequiredLanguageModules();
 	LoadAndStartAvailablePlugins();
+
+	_inited = true;
+
 	PL_LOG_DEBUG("PluginManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
 	return true;
 }
@@ -36,10 +40,12 @@ void PluginManager::Terminate() {
 
 	TerminateAllPlugins();
 	TerminateAllModules();
+
+	_inited = false;
 }
 
 bool PluginManager::IsInitialized() const {
-	return !_allPlugins.empty() || !_allModules.empty();
+	return _inited;
 }
 
 void PluginManager::DiscoverAllModulesAndPlugins() {

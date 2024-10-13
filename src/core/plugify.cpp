@@ -1,11 +1,12 @@
+#include "package_manager.h"
 #include "plugify_provider.h"
 #include "plugin_manager.h"
-#include "package_manager.h"
-#include <plugify/version.h>
 #include <plugify/plugify.h>
+#include <plugify/version.h>
 #include <utils/file_system.h>
 #include <utils/http_downloader.h>
 #include <utils/json.h>
+#include <utils/strings.h>
 
 namespace plugify {
 	class Plugify final : public IPlugify, public std::enable_shared_from_this<Plugify> {
@@ -16,7 +17,7 @@ namespace plugify {
 		};
 
 		bool Initialize(const fs::path& rootDir) override {
-			if (_inited)
+			if (IsInitialized())
 				return false;
 
 			_configPath = rootDir / "plugify.pconfig";
@@ -47,7 +48,7 @@ namespace plugify {
 		}
 
 		void Terminate() override {
-			if (!_inited)
+			if (!IsInitialized())
 				return;
 
 			if (_packageManager.use_count() != 1) {
@@ -78,12 +79,10 @@ namespace plugify {
 		}
 		
 		bool AddRepository(std::string_view repository) override {
-			std::string url(repository);
-
-			if (!HTTPDownloader::IsValidURL(url))
+			if (!String::IsValidURL(repository))
 				return false;
 			
-			auto [it, result] = _config.repositories.emplace(std::move(url));
+			auto [_, result] = _config.repositories.emplace(repository);
 			if (result) {
 				const auto config = glz::write_json(_config);
 				if (!config) {

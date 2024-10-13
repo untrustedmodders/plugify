@@ -50,5 +50,6 @@ namespace plugify {
 	private:
 		ModuleList _allModules;
 		PluginList _allPlugins;
+		bool _inited{ false };
 	};
 }

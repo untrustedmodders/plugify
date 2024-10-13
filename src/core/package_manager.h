@@ -7,7 +7,9 @@
 #include <utils/hash.h>
 
 namespace plugify {
+#if PLUGIFY_DOWNLOADER
 	class HTTPDownloader;
+#endif // PLUGIFY_DOWNLOADER
 	class PackageManager final : public IPackageManager, public PlugifyContext {
 	public:
 		explicit PackageManager(std::weak_ptr<IPlugify> plugify);
@@ -35,8 +37,8 @@ namespace plugify {
 
 		void SnapshotPackages(const fs::path& manifestFilePath, bool prettify) override;
 
-		bool HasMissedPackages() const override { return !_missedPackages.empty(); }
-		bool HasConflictedPackages() const override { return !_conflictedPackages.empty(); }
+		bool HasMissedPackages() const override;
+		bool HasConflictedPackages() const override;
 		void InstallMissedPackages() override;
 		void UninstallConflictedPackages() override;
 
@@ -52,7 +54,9 @@ namespace plugify {
 		}
 
 	private:
+		void LoadAllPackages();
 		void LoadLocalPackages();
+#if PLUGIFY_DOWNLOADER
 		void LoadRemotePackages();
 		void FindDependencies();
 
@@ -65,14 +69,18 @@ namespace plugify {
 		[[nodiscard]] bool DownloadPackage(const Package& package, const PackageVersion& version) const;
 		static std::string ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt);
 		static bool IsPackageLegit(std::string_view checksum, std::span<const uint8_t> packageData);
+#endif // PLUGIFY_DOWNLOADER
 
 		using Dependency = std::pair<const RemotePackage*, std::optional<int32_t>>;
 		
 	private:
+#if PLUGIFY_DOWNLOADER
 		std::unique_ptr<HTTPDownloader> _httpDownloader;
+#endif // PLUGIFY_DOWNLOADER
 		std::unordered_map<std::string, LocalPackage, string_hash, std::equal_to<>> _localPackages;
 		std::unordered_map<std::string, RemotePackage, string_hash, std::equal_to<>> _remotePackages;
 		std::unordered_map<std::string, Dependency> _missedPackages;
 		std::vector<const LocalPackage*> _conflictedPackages;
+		bool _inited{ false };
 	};
 }

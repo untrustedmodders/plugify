@@ -1,16 +1,16 @@
+#if PLUGIFY_DOWNLOADER
+
 #include "http_downloader.h"
 #include "strings.h"
 
 #include <thread>
-#include <regex>
 
 using namespace plugify;
 
 static constexpr float DEFAULT_TIMEOUT_IN_SECONDS = 30;
 static constexpr uint32_t DEFAULT_MAX_ACTIVE_REQUESTS = 4;
 
-HTTPDownloader::HTTPDownloader() : _timeout{DEFAULT_TIMEOUT_IN_SECONDS}, _maxActiveRequests{DEFAULT_MAX_ACTIVE_REQUESTS} {
-}
+HTTPDownloader::HTTPDownloader() : _timeout{DEFAULT_TIMEOUT_IN_SECONDS}, _maxActiveRequests{DEFAULT_MAX_ACTIVE_REQUESTS} {}
 
 HTTPDownloader::~HTTPDownloader() = default;
 
@@ -57,7 +57,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 
 	InternalPollRequests();
 
-	auto currentTime =  DateTime::Now();
+	auto currentTime = DateTime::Now();
 	uint32_t activeRequests = 0;
 	uint32_t unstartedRequests = 0;
 
@@ -76,7 +76,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 
 				req->state.store(Request::State::Cancelled);
 				_pendingRequests.erase(_pendingRequests.begin() + static_cast<ptrdiff_t>(index));
-				
+
 				// run callback with lock unheld
 				lock.unlock();
 				req->callback(HTTP_STATUS_TIMEOUT, {}, {});
@@ -88,7 +88,7 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 
 				req->state.store(Request::State::Cancelled);
 				_pendingRequests.erase(_pendingRequests.begin() + static_cast<ptrdiff_t>(index));
-				
+
 				// run callback with lock unheld
 				lock.unlock();
 				req->callback(HTTP_STATUS_CANCELLED, {}, {});
@@ -256,7 +256,4 @@ std::string_view HTTPDownloader::GetExtensionForContentType(std::string_view con
 	return {};
 }
 
-bool HTTPDownloader::IsValidURL(const std::string& url) {
-	static std::regex regex(R"(^((http[s]?|ftp):\/)?\/?([^:\/\s]+)((\/\w+)*\/)([\w\-\.]+[^#?\s]+)(.*)?(#[\w\-]+)?$)");
-	return !url.empty() && std::regex_match(url, regex);
-}
+#endif // PLUGIFY_DOWNLOADER

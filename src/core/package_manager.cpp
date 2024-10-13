@@ -3,12 +3,15 @@
 #include "module.h"
 #include "plugin.h"
 
+#include <miniz.h>
 #include <plugify/plugify.h>
 #include <utils/file_system.h>
-#include <utils/http_downloader.h>
 #include <utils/json.h>
+#include <utils/strings.h>
+#if PLUGIFY_DOWNLOADER
 #include <utils/sha256.h>
-#include <miniz.h>
+#include <utils/http_downloader.h>
+#endif // PLUGIFY_DOWNLOADER
 
 using namespace plugify;
 
@@ -30,10 +33,15 @@ bool PackageManager::Initialize() {
 		return false;
 
 	auto debugStart = DateTime::Now();
+
+#if PLUGIFY_DOWNLOADER
 	_httpDownloader = HTTPDownloader::Create();
-	LoadLocalPackages();
-	LoadRemotePackages();
-	FindDependencies();
+#endif // PLUGIFY_DOWNLOADER
+
+	LoadAllPackages();
+
+	_inited = true;
+
 	PL_LOG_DEBUG("PackageManager loaded in {}ms", (DateTime::Now() - debugStart).AsMilliseconds<float>());
 	return true;
 }
@@ -46,11 +54,33 @@ void PackageManager::Terminate() {
 	_remotePackages.clear();
 	_missedPackages.clear();
 	_conflictedPackages.clear();
+
+#if PLUGIFY_DOWNLOADER
 	_httpDownloader.reset();
+#endif // PLUGIFY_DOWNLOADER
+
+	_inited = false;
 }
 
 bool PackageManager::IsInitialized() const {
-	return _httpDownloader != nullptr;
+	return _inited;
+}
+
+bool PackageManager::Reload() {
+	if (!IsInitialized())
+		return false;
+
+	LoadAllPackages();
+
+	return true;
+}
+
+void PackageManager::LoadAllPackages() {
+	LoadLocalPackages();
+#if PLUGIFY_DOWNLOADER
+	LoadRemotePackages();
+	FindDependencies();
+#endif // PLUGIFY_DOWNLOADER
 }
 
 template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
@@ -142,7 +172,7 @@ void ValidateMethods(const std::string& name, std::vector<std::string>& errors, 
 
 #elif PLUGIFY_ARCH_BITS == 32
 			if (method.callConv != "soft" && method.callConv != "hard")
-#endif
+#endif // PLUGIFY_ARCH_BITS
 #else
 #if PLUGIFY_ARCH_BITS == 64 && PLUGIFY_PLATFORM_WINDOWS
 			if (method.callConv != "vectorcall")
@@ -288,6 +318,8 @@ void PackageManager::LoadLocalPackages()  {
 	}, 3);
 }
 
+#if PLUGIFY_DOWNLOADER
+
 void PackageManager::LoadRemotePackages() {
 	auto plugify = _plugify.lock();
 	PL_ASSERT(plugify);
@@ -302,7 +334,7 @@ void PackageManager::LoadRemotePackages() {
 	std::mutex mutex;
 
 	auto fetchManifest = [&](const std::string& url, const std::shared_ptr<Descriptor>& descriptor = nullptr) {
-		if (!HTTPDownloader::IsValidURL(url)) {
+		if (!String::IsValidURL(url)) {
 			PL_LOG_WARNING("Tried to fetch a package: '{}' that is not have valid url: \"{}\", aborting",
 						   descriptor ? descriptor->friendlyName : "<from config>", url.empty() ? "<empty>" : url);
 			return;
@@ -621,7 +653,7 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 }
 
 void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool reinstall) {
-	if (!HTTPDownloader::IsValidURL(manifestUrl)) {
+	if (!String::IsValidURL(manifestUrl)) {
 		PL_LOG_WARNING("Tried to install packages from manifest which is not have valid url: \"{}\", aborting", manifestUrl);
 		return;
 	}
@@ -863,38 +895,6 @@ bool PackageManager::UninstallPackage(const LocalPackage& package, bool remove) 
 	return false;
 }
 
-LocalPackageOpt PackageManager::FindLocalPackage(std::string_view packageName) const {
-	auto it = _localPackages.find(packageName);
-	if (it != _localPackages.end())
-		return std::get<LocalPackage>(*it);
-	return {};
-}
-
-RemotePackageOpt PackageManager::FindRemotePackage(std::string_view packageName) const {
-	auto it = _remotePackages.find(packageName);
-	if (it != _remotePackages.end())
-		return std::get<RemotePackage>(*it);
-	return {};
-}
-
-std::vector<LocalPackage> PackageManager::GetLocalPackages() const {
-	std::vector<LocalPackage> localPackages;
-	localPackages.reserve(_localPackages.size());
-	for (const auto& [_, package] : _localPackages)  {
-		localPackages.emplace_back(package);
-	}
-	return localPackages;
-}
-
-std::vector<RemotePackage> PackageManager::GetRemotePackages() const {
-	std::vector<RemotePackage> remotePackages;
-	remotePackages.reserve(remotePackages.size());
-	for (const auto& [_, package] : _remotePackages)  {
-		remotePackages.emplace_back(package);
-	}
-	return remotePackages;
-}
-
 void PackageManager::Request(const std::function<void()>& action, std::string_view function) {
 	auto debugStart = DateTime::Now();
 
@@ -902,26 +902,13 @@ void PackageManager::Request(const std::function<void()>& action, std::string_vi
 
 	_httpDownloader->WaitForAllRequests();
 
-	LoadLocalPackages();
-	LoadRemotePackages();
-	FindDependencies();
+	LoadAllPackages();
 
 	PL_LOG_DEBUG("{} processed in {}ms", function, (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
-bool PackageManager::Reload() {
-	if (!IsInitialized())
-		return false;
-	
-	LoadLocalPackages();
-	LoadRemotePackages();
-	FindDependencies();
-	
-	return true;
-}
-
 bool PackageManager::DownloadPackage(const Package& package, const PackageVersion& version) const {
-	if (!HTTPDownloader::IsValidURL(version.download)) {
+	if (!String::IsValidURL(version.download)) {
 		PL_LOG_WARNING("Tried to download a package: '{}' that is not have valid url: \"{}\", aborting", package.name, version.download.empty() ? "<empty>" : version.download);
 		return false;
 	}
@@ -1060,4 +1047,66 @@ bool PackageManager::IsPackageLegit(std::string_view checksum, std::span<const u
 	PL_LOG_VERBOSE("Computed checksum: {}", hash);
 
 	return checksum == hash;
+}
+
+#else
+
+void PackageManager::InstallPackage(std::string_view /*packageName*/, std::optional<int32_t> /*requiredVersion*/) {}
+void PackageManager::InstallPackages(std::span<const std::string> /*packageNames*/) {}
+void PackageManager::InstallAllPackages(const fs::path& /*manifestFilePath*/, bool /*reinstall*/) {}
+void PackageManager::InstallAllPackages(const std::string& /*manifestUrl*/, bool /*reinstall*/) {}
+
+void PackageManager::UpdatePackage(std::string_view /*packageName*/, std::optional<int32_t> /*requiredVersion*/) {}
+void PackageManager::UpdatePackages(std::span<const std::string> /*packageNames*/) {}
+void PackageManager::UpdateAllPackages() {}
+
+void PackageManager::UninstallPackage(std::string_view /*packageName*/) {}
+void PackageManager::UninstallPackages(std::span<const std::string> /*packageNames*/) {}
+void PackageManager::UninstallAllPackages() {}
+
+void PackageManager::SnapshotPackages(const fs::path& /*manifestFilePath*/, bool /*reinstall*/) {}
+
+void PackageManager::InstallMissedPackages() {}
+void PackageManager::UninstallConflictedPackages() {}
+
+#endif // PLUGIFY_DOWNLOADER
+
+bool PackageManager::HasMissedPackages() const {
+	return !_missedPackages.empty();
+}
+
+bool PackageManager::HasConflictedPackages() const {
+	return !_conflictedPackages.empty();
+}
+
+LocalPackageOpt PackageManager::FindLocalPackage(std::string_view packageName) const {
+	auto it = _localPackages.find(packageName);
+	if (it != _localPackages.end())
+		return std::get<LocalPackage>(*it);
+	return {};
+}
+
+RemotePackageOpt PackageManager::FindRemotePackage(std::string_view packageName) const {
+	auto it = _remotePackages.find(packageName);
+	if (it != _remotePackages.end())
+		return std::get<RemotePackage>(*it);
+	return {};
+}
+
+std::vector<LocalPackage> PackageManager::GetLocalPackages() const {
+	std::vector<LocalPackage> localPackages;
+	localPackages.reserve(_localPackages.size());
+	for (const auto& [_, package] : _localPackages)  {
+		localPackages.emplace_back(package);
+	}
+	return localPackages;
+}
+
+std::vector<RemotePackage> PackageManager::GetRemotePackages() const {
+	std::vector<RemotePackage> remotePackages;
+	remotePackages.reserve(remotePackages.size());
+	for (const auto& [_, package] : _remotePackages)  {
+		remotePackages.emplace_back(package);
+	}
+	return remotePackages;
 }
