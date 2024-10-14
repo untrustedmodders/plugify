@@ -89,7 +89,7 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	}
 
 	// allows debuggers to trap
-	if (waitType == WaitType::Int3) {
+	if (waitType == WaitType::Breakpoint) {
 		cc.brk(0x1);
 	} else if (waitType == WaitType::Wait_Keypress) {
 		asmjit::InvokeNode* invokeNode;
