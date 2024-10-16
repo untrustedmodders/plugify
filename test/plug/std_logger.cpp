@@ -32,7 +32,7 @@ namespace plug {
     }
 
     void StdLogger::SetSeverity(plugify::Severity severity) {
-		std::lock_guard<std::mutex> lock{_mutex};
+		std::lock_guard<std::mutex> lock(_mutex);
         _severity = severity;
     }
 }

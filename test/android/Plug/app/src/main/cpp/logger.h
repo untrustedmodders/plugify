@@ -1,13 +1,14 @@
 #pragma once
 
+#include <android/log.h>
 #include <plugify/log.h>
 #include <mutex>
 
 namespace plug {
-    class StdLogger final : public plugify::ILogger {
+    class AndroidLogger final : public plugify::ILogger {
     public:
-        StdLogger() = default;
-        ~StdLogger() override = default;
+        AndroidLogger() = default;
+        ~AndroidLogger() override = default;
 
         void Log(std::string_view message, plugify::Severity severity) override;
 
