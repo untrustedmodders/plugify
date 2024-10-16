@@ -1923,7 +1923,8 @@ namespace plg {
 				return ctx.begin();
 			}
 
-			auto format(const String& str, std::format_context& ctx) const {
+			template<class FormatContext>
+			auto format(const String& str, FormatContext& ctx) const {
 				return std::format_to(ctx.out(), format_string<Char>(), str.c_str());
 			}
 		};
