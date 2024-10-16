@@ -95,6 +95,7 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*add
 	if (!sections)
 		return true;
 
+#if !PLUGIFY_PLATFORM_ANDROID
 	link_map* lmap;
 	if (dlinfo(handle, RTLD_DI_LINKMAP, &lmap) != 0) {
 		_error = "Failed to retrieve dynamic linker information using dlinfo.";
@@ -153,6 +154,7 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*add
 	close(fd);
 
 	_executableCode = GetSectionByName(".text");
+#endif // !PLUGIFY_PLATFORM_ANDROID
 
 	return true;
 }

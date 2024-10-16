@@ -193,7 +193,7 @@ namespace plugify::JitUtils {
 #if PLUGIFY_ARCH_BITS == 64
 		return asmjit::CallConvId::kHost;
 #else
-		if (!conv.empty) {
+		if (!conv.empty()) {
 			if (conv == "soft") {
 				return asmjit::CallConvId::kSoftFloat;
 			} else if (conv == "hard") {
@@ -214,7 +214,7 @@ namespace plugify::JitUtils {
 		return asmjit::CallConvId::kX64SystemV;
 #endif // PLUGIFY_PLATFORM_WINDOWS
 #elif PLUGIFY_ARCH_BITS == 32
-		if (!conv.empty) {
+		if (!conv.empty()) {
 			if (conv == "cdecl") {
 				return asmjit::CallConvId::kCDecl;
 			} else if (conv == "stdcall") {

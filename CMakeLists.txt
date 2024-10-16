@@ -98,13 +98,27 @@ if(PLUGIFY_USE_CLANG_TIDY)
     endif()
 endif()
 
+message(VERBOSE "Processor: ${CMAKE_SYSTEM_PROCESSOR}")
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
+    set(PLUGIFY_X86_64 TRUE)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*|amd64.*|AMD64.*")
+    set(PLUGIFY_X86 TRUE)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)")
+    set(PLUGIFY_AARCH64 TRUE)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
+    set(PLUGIFY_ARM TRUE)
+else()
+    message(STATUS "Processor is not supported!")
+endif()
+
 # detect host architecture
 if(NOT DEFINED PLUGIFY_USE_ARM)
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
-        message("Detected 64-bit ARM host. Setting PLUGIFY_USE_ARM to true.")
+    if(PLUGIFY_AARCH64 OR PLUGIFY_ARM)
+        message(STATUS "Detected ARM host. Setting PLUGIFY_USE_ARM to true.")
         set(PLUGIFY_USE_ARM TRUE)
     else()
-        message("Detected non-ARM host. Setting PLUGIFY_USE_ARM to false.")
+        message(STATUS "Detected non-ARM host. Setting PLUGIFY_USE_ARM to false.")
         set(PLUGIFY_USE_ARM FALSE)
     endif()
 endif()
@@ -123,13 +137,13 @@ if(NOT PLUGIFY_USE_ARM)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         set(PLUGIFY_SIMD_FLAGS ${INTEL_FLAGS})
     else()
-        message(WARNING "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
+        message(STATUS "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
     endif()
 endif()
 
 # ------------------------------------------------------------------------------
 # Compilation options
-option(PLUGIFY_BUILD_TESTS "Enable building tests." OFF)
+option(PLUGIFY_BUILD_TESTS "Enable building tests." ON)
 option(PLUGIFY_BUILD_JIT "Build jit object library." OFF)
 option(PLUGIFY_BUILD_ASSEMBLY "Build assembly object library." OFF)
 option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
@@ -374,18 +388,18 @@ endif()
 # Tools
 if(PLUGIFY_BUILD_JIT)
     if(PLUGIFY_USE_ARM)
-	    set(PLUGIFY_JIT_SOURCES 
-		    "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_arm.cpp"
+        set(PLUGIFY_JIT_SOURCES 
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_arm.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_arm.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers.cpp"
         )
     else()
-	    set(PLUGIFY_JIT_SOURCES 
-		    "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_x86.cpp"
+        set(PLUGIFY_JIT_SOURCES 
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_x86.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_x86.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers.cpp"
         )
-    endif()	
+    endif()    
     add_library(${PROJECT_NAME}-jit OBJECT ${PLUGIFY_JIT_SOURCES})
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-jit ALIAS ${PROJECT_NAME}-jit)
     target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
