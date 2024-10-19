@@ -16,7 +16,7 @@ namespace plugify {
 	template<typename T>
 	class Ref {
 	public:
-		Ref() noexcept = default;
+		Ref() noexcept : _impl{nullptr} {}
 		Ref(T& impl) noexcept : _impl{std::addressof(impl)} {}
 
 		Ref(Ref const&) = default;
@@ -29,6 +29,8 @@ namespace plugify {
 		Ref& operator=(const Ref&) && = delete;
 		Ref& operator=(Ref&&) & = default;
 		Ref& operator=(Ref&&) && = delete;
+
+		explicit operator bool() const noexcept { return _impl != nullptr; }
 
 	protected:
 		T* _impl;
