@@ -98,6 +98,29 @@ namespace plugify {
 		 * @return An 8-bit unsigned integer representing the variable index.
 		 */
 		[[nodiscard]] uint8_t GetVarIndex() const noexcept;
+
+		/**
+		 * @brief Attempts to find a prototype method by its name in the current method's parameters or return type.
+		 *
+		 * This method searches through the parameter types (`paramTypes`) and return type (`retType`) of the current method
+		 * to find a method prototype with the given name. The search is recursive, meaning it will also look into
+		 * the prototypes of parameter and return types if they themselves have prototypes.
+		 *
+		 * @param name The name of the prototype method to search for.
+		 *
+		 * @return std::optional<MethodRef>
+		 * - A `std::optional<MethodRef>` containing the found prototype if a method with the specified name exists, or
+		 * - An empty `std::optional` if no matching prototype is found.
+		 *
+		 * Example usage:
+		 * @code
+		 * std::optional<MethodRef> prototype = methodRef.FindPrototype("targetMethodName");
+		 * if (prototype) {
+		 *     // Process the found prototype
+		 * }
+		 * @endcode
+		 */
+		[[nodiscard]] std::optional<MethodRef> FindPrototype(std::string_view name) const noexcept;
 	};
 	static_assert(is_ref_v<MethodRef>);
 } // namespace plugify

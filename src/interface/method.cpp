@@ -50,3 +50,11 @@ plugify::PropertyRef MethodRef::GetReturnType() const noexcept {
 uint8_t MethodRef::GetVarIndex() const noexcept {
 	return _impl->varIndex;
 }
+
+std::optional<MethodRef> MethodRef::FindPrototype(std::string_view name) const noexcept {
+	auto prototype = _impl->FindPrototype(name);
+	if (prototype) {
+		return *prototype;
+	}
+	return {};
+};
