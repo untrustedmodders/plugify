@@ -604,8 +604,8 @@ namespace plg {
 
 		template<std::input_iterator InputIterator>
 		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
-			auto len = std::distance(first, last);
-			_PLUGIFY_STRING_ASSERT((size_t) len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			auto len = static_cast<size_type>(std::distance(first, last));
+			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(first), len);
 		}
 
