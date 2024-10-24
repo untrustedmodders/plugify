@@ -1,16 +1,16 @@
 #pragma once
 
+#include <algorithm>
+#include <compare>
+#include <initializer_list>
 #include <iterator>
+#include <limits>
+#include <memory>
+#include <memory_resource> // for polymorphic_allocator
+#include <new>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <memory>
-#include <initializer_list>
-#include <algorithm>
-#include <numeric>
-#include <execution>
-#include <limits>
-#include <iostream>
-#include <ranges>
 
 #ifndef PLUGIFY_VECTOR_EXCEPTIONS
 #  if __cpp_exceptions
@@ -67,565 +67,1131 @@
 #else
 #define _PLUGIFY_VECTOR_NO_UNIQUE_ADDRESS [[no_unique_address]]
 #endif
+#pragma once
 
 namespace plg {
-	template<typename T, typename Allocator = std::allocator<T>>
-	class vector {
+	namespace {
+		template<typename Allocator, typename = void>
+		struct is_allocator : std::false_type {};
+
+		template<typename Allocator>
+		struct is_allocator<Allocator, std::void_t<typename Allocator::value_type, decltype(std::declval<Allocator&>().allocate(std::size_t{}))>> : std::true_type {};
+
+		template<typename Allocator>
+		constexpr inline bool is_allocator_v = is_allocator<Allocator>::value;
+
+		template<typename Iterator>
+		using iterator_value_t = typename std::iterator_traits<Iterator>::value_type;
+
+		// Contains algorithms useful for container classes.
+		//
+		// Synopsis:
+		//
+		// make_range( begin, end )
+		//   Returns a range that you can use with range for loop or other std::range
+		//   stuff
+		// zip_transform(dst, fst, fst_end, [snd, third, rest...], n-ary op)
+		//   Applies op on each element in the specified ranges, if snd, third, etc are
+		//   at least as long as fst..fst_end, inserting results into dst
+		// zip_foreach(fst, fst_end, [snd, third, rest...], n-ary op)
+		//   Applies op on each element in the specified ranges, if snd, third, etc are
+		//   at least as long as fst..fst_end
+		// uninitialized_copy(src, src_end, dst)
+		//   Like std::uninitialized_copy, but supports a custom allocator
+		// uninitialized_move(src, src_end, dst)
+		//   Like std::uninitialized_move, but supports a custom allocator
+		// uninitialized_move_if_noexcept(src, src_end, dst)
+		//   Like the above but with move_if_noexcept
+		//
+		// *_launder
+		//   Like the above, but where the pointers in src..src_end are laundered
+
+		template<std::input_or_output_iterator It, std::input_or_output_iterator It2>
+		[[nodiscard]] constexpr //
+				auto
+				make_range(It begin, It2 end) //
+				noexcept(std::is_nothrow_constructible_v<std::decay_t<It>, It&&> and
+						 std::is_nothrow_constructible_v<std::decay_t<It2>, It2&&>)
+		{
+			using InnerIt = std::decay_t<It>;
+			using InnerIt2 = std::decay_t<It2>;
+			struct Range
+			{
+				InnerIt m_begin;
+				InnerIt2 m_end;
+
+				[[nodiscard]] constexpr InnerIt begin() const noexcept { return m_begin; }
+				[[nodiscard]] constexpr InnerIt2 end() const noexcept { return m_end; }
+			};
+			return Range{ std::forward<It>(begin), std::forward<It2>(end) };
+		}
+
+		template<std::input_or_output_iterator OutputIt,
+				 std::input_iterator FstIt,
+				 typename Op,
+				 std::input_iterator... RestIt>
+		constexpr //
+				OutputIt
+				zip_transform(FstIt fst, FstIt fst_end, OutputIt dst, Op op, RestIt... rest)
+		{
+			for (; fst != fst_end; ++dst, ++fst, (++rest, ...)) {
+				*dst = op(*fst, *rest...);
+			}
+			return dst;
+		}
+
+		template<std::input_iterator FstIt, typename Op, std::input_iterator... RestIt>
+		constexpr //
+				void
+				zip_foreach(FstIt fst, FstIt fst_end, Op op, RestIt... rest)
+		{
+			for (; fst != fst_end; ++fst, (++rest, ...)) {
+				op(*fst, *rest...);
+			}
+		}
+
+		template<std::input_iterator InputIt,
+				 std::input_or_output_iterator OutputIt,
+				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr //
+				OutputIt
+				uninitialized_copy(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
+		{
+			for (; src != src_end; ++src, ++dst) {
+				std::allocator_traits<Allocator>::construct(alloc, dst, *src);
+			}
+			return dst;
+		}
+
+		template<std::input_iterator InputIt,
+				 std::input_or_output_iterator OutputIt,
+				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr //
+				OutputIt
+				uninitialized_move(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
+		{
+			for (; src != src_end; ++src, ++dst) {
+				std::allocator_traits<Allocator>::construct(alloc, dst, std::move(*src));
+			}
+			return dst;
+		}
+
+		template<std::input_iterator InputIt,
+				 std::input_or_output_iterator OutputIt,
+				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr //
+				OutputIt
+				uninitialized_move_if_noexcept(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
+		{
+			for (; src != src_end; ++src, ++dst) {
+				std::allocator_traits<Allocator>::construct(alloc, dst, std::move_if_noexcept(*src));
+			}
+			return dst;
+		}
+
+		template<std::input_iterator InputIt,
+				 std::input_or_output_iterator OutputIt,
+				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr //
+				OutputIt
+				uninitialized_copy_launder(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
+		{
+			for (; src != src_end; ++src, ++dst) {
+				std::allocator_traits<Allocator>::construct(alloc, dst, *std::launder(src));
+			}
+			return dst;
+		}
+
+		template<std::input_iterator InputIt,
+				 std::input_or_output_iterator OutputIt,
+				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr //
+				OutputIt
+				uninitialized_move_launder(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
+		{
+			for (; src != src_end; ++src, ++dst) {
+				std::allocator_traits<Allocator>::construct(alloc, dst, std::move(*std::launder(src)));
+			}
+			return dst;
+		}
+
+		template<std::input_iterator InputIt,
+				 std::input_or_output_iterator OutputIt,
+				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr //
+				OutputIt
+				uninitialized_move_if_noexcept_launder(InputIt src,
+													   InputIt src_end,
+													   OutputIt dst,
+													   Allocator alloc)
+		{
+			for (; src != src_end; ++src, ++dst) {
+				std::allocator_traits<Allocator>::construct(
+						alloc, dst, std::move_if_noexcept(*std::launder(src)));
+			}
+			return dst;
+		}
+
+		template<std::input_iterator InputIt,
+				 std::input_or_output_iterator OutputIt,
+				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr //
+				OutputIt
+				move_if_noexcept_launder_backward(InputIt src, InputIt src_end, OutputIt dst_end)
+		{
+			for (; src != src_end; --src_end, --dst_end) {
+				--src_end;
+				--dst_end;
+				*dst_end = std::move_if_noexcept(*std::launder(src_end));
+			}
+			return dst_end;
+		}
+
+		template<std::input_iterator InputIt,
+				 std::input_or_output_iterator OutputIt,
+				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr //
+				OutputIt
+				uninitialized_move_if_noexcept_launder_backward(InputIt src,
+																InputIt src_end,
+																OutputIt dst_end,
+																Allocator alloc)
+		{
+			for (; src != src_end; --src_end, --dst_end) {
+				--src_end;
+				--dst_end;
+				std::allocator_traits<Allocator>::construct(
+						alloc, dst_end, std::move_if_noexcept(*std::launder(src_end)));
+			}
+			return dst_end;
+		}
+
+	} // namespace
+
+	template<typename T, typename Allocator>
+	struct vector_base {
+		//////////////////
+		// Member types //
+		//////////////////
+
+	private:
 		// Purely to make notation easier
-		using alloc_traits = std::allocator_traits<Allocator>;
+		using allocator_traits = std::allocator_traits<Allocator>;
+
 	public:
 		using value_type = T;
 		using allocator_type = Allocator;
-		using size_type = typename alloc_traits::size_type;
-		using difference_type = typename alloc_traits::difference_type;
-		using reference = value_type&;
-		using const_reference = const value_type&;
-		using pointer = typename alloc_traits::pointer;
-		using const_pointer = typename alloc_traits::const_pointer;
-		using iterator = T*;
-		using const_iterator = const T*;
+		using size_type = typename allocator_traits::size_type;
+		using difference_type = typename allocator_traits::difference_type;
+		using reference = T&;
+		using const_reference = const T&;
+		using pointer = typename allocator_traits::pointer;
+		using const_pointer = typename allocator_traits::const_pointer;
+		using iterator = pointer;
+		using const_iterator = const_pointer;
 		using reverse_iterator = std::reverse_iterator<iterator>;
-		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+		using reverse_const_iterator = std::reverse_iterator<const_iterator>;
+		using comparison_type = std::conditional_t<std::three_way_comparable<T>,
+												   decltype(std::declval<T>() <=> std::declval<T>()),
+												   std::weak_ordering>;
+
+		/////////////////
+		// Data layout //
+		/////////////////
+	private:
+		pointer _begin;
+		pointer _end;
+		pointer _realend;
+		_PLUGIFY_VECTOR_NO_UNIQUE_ADDRESS
+		allocator_type _allocator;
 
 	public:
-		// constructors
-		constexpr vector() noexcept(std::is_nothrow_default_constructible<allocator_type>::value)
-			: _alloc(), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-		}
-		constexpr explicit vector(const Allocator& a) noexcept
-			: _alloc(a), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-		}
-		constexpr vector(size_type count, const T& value, const allocator_type& a = Allocator())
-			: _alloc(a), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-			_start = _alloc.allocate(count * sizeof(T));
-			_finish = _end_of_storage = _start + count;
-			std::uninitialized_fill_n(_start, count, value);
-		}
-		constexpr explicit vector(size_type count, const allocator_type& a = Allocator())
-			: _alloc(a), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-			_start = _alloc.allocate(count * sizeof(T));
-			_finish = _end_of_storage = _start + count;
-			std::uninitialized_fill_n(_start, count, T());
-		}
-		// In order to avoid ambiguity with overload 3, this overload participates in overload resolution only if InputIterator satisfies LegacyInputIterator.
-		// shall use SFINAE
-		template<typename InputIterator> requires(std::is_base_of_v<typename std::input_iterator_tag, typename std::iterator_traits<InputIterator>::iterator_category>)
-		constexpr vector(InputIterator first, InputIterator last, const allocator_type& a = Allocator())
-			: _alloc(a), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-			for (auto iter = first; iter != last; ++iter) {
-				push_back(*iter);
+		//////////////////
+		// Constructors //
+		//////////////////
+
+		constexpr       //
+				vector_base() //
+				noexcept(std::is_nothrow_default_constructible<allocator_type>::value) //
+			requires(is_allocator_v<Allocator>)
+			: _begin(nullptr),
+			  _end(nullptr),
+			  _realend(nullptr),
+			  _allocator()
+		{}
+
+		constexpr explicit                    //
+				vector_base(const allocator_type& alloc) //
+				noexcept  //
+			requires(is_allocator_v<Allocator>)
+			: _begin(nullptr),
+			  _end(nullptr),
+			  _realend(nullptr),
+			  _allocator(alloc)
+		{}
+
+		constexpr //
+				vector_base(size_type count, const T& value, const allocator_type& alloc = allocator_type()) //
+			requires(is_allocator_v<Allocator>)
+			: _allocator(alloc)
+		{
+			allocate(count, _allocator);
+			for (auto& elem : make_range(_begin, _realend)) {
+				allocator_traits::construct(_allocator, std::launder(&elem), value);
 			}
-		}
-		constexpr vector(const vector& other)
-			: _alloc(other._alloc), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-			if (other.size() > 0) {
-				_start = _alloc.allocate(other.size() * sizeof(T));
-				_finish = _end_of_storage = _start + other.size();
-				std::uninitialized_copy(other.begin(), other.end(), _start);
-			}
-		}
-		constexpr vector(const vector& other, const allocator_type& a)
-			: _alloc(a), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-			if (other.size() > 0) {
-				_start = _alloc.allocate(other.size() * sizeof(T));
-				_finish = _end_of_storage = _start + other.size();
-				std::uninitialized_copy(other.begin(), other.end(), _start);
-			}
-		}
-		constexpr vector(vector&& other) noexcept
-			: _alloc(std::move(other._alloc)), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-			_start = other._start;
-			_finish = other._finish;
-			_end_of_storage = other._end_of_storage;
-			other._start = other._finish = other._end_of_storage = nullptr;
-		}
-		constexpr vector(vector&& other, const allocator_type& a)
-			: _alloc(a), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-			if (_alloc == other._alloc) {
-				_start = other._start;
-				_finish = other._finish;
-				_end_of_storage = other._end_of_storage;
-				other._start = other._finish = other._end_of_storage = nullptr;
-			} else {
-				if (other.size() > 0) {
-					_start = _alloc.allocate(other.size() * sizeof(T));
-					std::uninitialized_move(other.begin(), other.end(), _start);
-				}
-			}
-		}
-		constexpr vector(std::initializer_list<T> il, const allocator_type& a = Allocator())
-			: _alloc(a), _start(nullptr), _finish(nullptr), _end_of_storage(nullptr) {
-			if (il.size() > 0) {
-				_start = _alloc.allocate(il.size() * sizeof(T));
-				_finish = _end_of_storage = _start + il.size();
-				std::uninitialized_copy(il.begin(), il.end(), _start);
-			}
-		}
-		// destructor
-		constexpr ~vector() {
-			clear();
-			free_all_spaces();
+			_end = _realend;
 		}
 
-		// operator =
-		constexpr vector& operator=(const vector& other) {
+		constexpr explicit //
+				vector_base(size_type count, const allocator_type& alloc = allocator_type()) //
+			requires(is_allocator_v<Allocator>)
+			: _allocator(alloc)
+		{
+			allocate(count, _allocator);
+			for (auto& elem : make_range(_begin, _realend)) {
+				allocator_traits::construct(_allocator, std::launder(&elem));
+			}
+			_end = _realend;
+		}
+
+		// Looser overload that allows any input iterator
+		template<std::input_iterator InputIt>
+		constexpr //
+				vector_base(InputIt first, InputIt last, const allocator_type& alloc = allocator_type()) //
+			requires(is_allocator_v<Allocator>)
+			: _begin(nullptr),
+			  _end(nullptr),
+			  _realend(nullptr),
+			  _allocator(alloc)
+		{
+			for (const auto& elem : make_range(first, last)) {
+				push_back(elem);
+			}
+		}
+
+		// Tighter overload to reserve up front
+		template<std::random_access_iterator RandomAccessIt>
+		constexpr //
+				vector_base(RandomAccessIt first, RandomAccessIt last, const allocator_type& alloc = allocator_type()) //
+			requires(is_allocator_v<Allocator>)
+			: _allocator(alloc)
+		{
+			if (last - first > 0) {
+				allocate(last - first, _allocator);
+				_end = uninitialized_copy(first, last, _begin, _allocator);
+			} else {
+				_begin = _end = _realend = nullptr;
+			}
+		}
+
+		/////////////////////////////////////////////////////////
+		// Special member functions (and similar constructors) //
+		/////////////////////////////////////////////////////////
+
+		constexpr //
+				vector_base(const vector_base& other)
+			: vector_base(other._begin,
+						  other._end,
+						  allocator_traits::select_on_container_copy_construction(other._allocator))
+		{}
+
+		constexpr //
+				vector_base(const vector_base& other, const allocator_type& alloc) //
+			requires(is_allocator_v<Allocator>)
+			: vector_base(other._begin, other._end, alloc)
+		{}
+
+		constexpr vector_base(std::initializer_list<T> il, const allocator_type& alloc = allocator_type()) //
+			requires(is_allocator_v<Allocator>)
+			: vector_base(il.begin(), il.end(), alloc)
+		{}
+
+		constexpr                          //
+				vector_base(vector_base&& other) //
+				noexcept
+			: _begin(other._begin),
+			  _end(other._end),
+			  _realend(other._realend),
+			  _allocator(std::move(other._allocator))
+		{
+			other._begin = other._end = other._realend = nullptr;
+		}
+
+		constexpr                                                  //
+				vector_base(vector_base&& other, const allocator_type& alloc) // //
+			requires(is_allocator_v<Allocator>)
+			: _allocator(alloc)
+		{
+			if (_allocator != other._allocator) {
+				allocate(other.size());
+				uninitialized_move(other._begin, other._end, _begin, _allocator);
+				_end = _realend;
+			} else {
+				_begin = other._begin;
+				_end = other._end;
+				_realend = other._realend;
+				other._begin = other._end = other._realend = nullptr;
+			}
+		}
+
+		constexpr //
+				vector_base&
+				operator=(const vector_base& other)
+		{
 			if (this == &other)
 				return *this;
-			clear();
-			if (other.size() <= capacity()) {
-				std::uninitialized_copy(other.begin(), other.end(), _start);
-				_finish = _start + other.size();
-			} else {
-				free_all_spaces();
-				_start = _alloc.allocate(other.size() * sizeof(T));
-				std::uninitialized_copy(other.begin(), other.end(), _start);
-				_finish = _end_of_storage = _start + other.size();
+
+			if constexpr (allocator_traits::propagate_on_container_copy_assignment::value) {
+				if (not allocator_traits::is_always_equal::value and _allocator != other._allocator) {
+					deallocate();
+				}
+				allocate_empty(other.size());
+				_allocator = other._allocator;
+			}
+
+			// we require realloc, so we construct into fresh array directly
+			if (other.size() > capacity()) {
+				auto tmp = allocate_tmp(other.size(), _allocator);
+				try {
+					uninitialized_copy(other._begin, other._end, tmp, _allocator);
+				} catch (...) {
+					allocator_traits::deallocate(_allocator, tmp, other.size());
+					throw;
+				}
+				allocator_traits::deallocate(_allocator, _begin, capacity());
+				_begin = tmp;
+				_end = _realend = tmp + other.size();
+				return *this;
+			}
+
+			// destroy excess
+			while (other.size() < size()) {
+				pop_back();
+			}
+
+			// copy-assign onto existing elements
+			auto tmp = other._begin;
+			for (auto& elem : *this) {
+				elem = *std::launder(tmp);
+				++tmp;
+			}
+
+			// copy-construct new elements
+			while (tmp != other._end) {
+				push_back(*std::launder(tmp));
+				++tmp;
 			}
 			return *this;
 		}
-		constexpr vector& operator=(vector&& other) noexcept(
-				alloc_traits::propagate_on_container_move_assignment::value ||
-				alloc_traits::is_always_equal::value) {
+
+		constexpr //
+				vector_base&
+				operator=(vector_base&& other) //
+				noexcept(allocator_traits::propagate_on_container_move_assignment::value ||
+						 allocator_traits::is_always_equal::value)
+		{
 			if (this == &other)
 				return *this;
-			clear();
-			free_all_spaces();
-			if (_alloc == other._alloc) {
-				_start = other._start;
-				_finish = other._finish;
-				_end_of_storage = other._end_of_storage;
-				other._start = other._finish = other._end_of_storage = nullptr;
+
+			if constexpr (allocator_traits::propagate_on_container_move_assignment::value) {
+				if (not allocator_traits::is_always_equal::value and _allocator != other._allocator) {
+					_allocator = other._allocator;
+				}
+				deallocate();
+				_begin = other._begin;
+				_end = other._end;
+				_realend = other._realend;
+				other._begin = other._end = other._realend = nullptr;
 			} else {
-				_alloc = other._alloc;
-				if (other.size() > 0) {
-					_start = _alloc.allocate(other.size() * sizeof(T));
-					std::uninitialized_move(other.begin(), other.end(), _start);
+				if (not allocator_traits::is_always_equal::value and _allocator != other._allocator) {
+					// We must move-assign elements :(
+					if (other.size() > capacity()) {
+						// We must realloc, so directly move into new buffer
+						auto tmp = allocate_tmp(other.size(), _allocator);
+						try {
+							uninitialized_move(other._begin, other._end, tmp, _allocator);
+							deallocate();
+							_begin = tmp;
+							_realend = _end = tmp + other.size();
+						} catch (...) {
+							allocator_traits::deallocate(_allocator, tmp, other.size());
+							throw;
+						}
+					} else {
+						// destroy excess
+						while (other.size() < size()) {
+							pop_back();
+						}
+
+						// move-assign onto existing elements
+						auto tmp = other._begin;
+						for (auto& elem : *this) {
+							elem = std::move(*std::launder(tmp));
+							++tmp;
+						}
+
+						// move-construct new elements
+						while (tmp != other._end) {
+							push_back(std::move(*std::launder(tmp)));
+							++tmp;
+						}
+					}
+				} else {
+					deallocate();
+					_begin = other._begin;
+					_end = other._end;
+					_realend = other._realend;
+					other._begin = other._end = other._realend = nullptr;
 				}
 			}
 			return *this;
 		}
-		constexpr vector& operator=(std::initializer_list<T> il) {
-			assign(il);
+
+		constexpr //
+				vector_base&
+				operator=(std::initializer_list<T> ilist)
+		{
+			assign(ilist.begin(), ilist.end());
 			return *this;
 		}
-		// assign
-		constexpr void assign(size_type count, const T& value) {
-			clear();
-			if (count <= capacity()) {
-				std::uninitialized_fill_n(_start, count, value);
-				_finish = _start + count;
-			} else {
-				free_all_spaces();
-				_start = _alloc.allocate(count * sizeof(T));
-				std::uninitialized_fill_n(_start, count, value);
-				_finish = _end_of_storage = _start + count;
+
+		constexpr //
+				void
+				swap(vector_base& other) //
+				noexcept(allocator_traits::propagate_on_container_swap::value ||
+						 allocator_traits::is_always_equal::value)
+		{
+			if constexpr (allocator_traits::propagate_on_container_swap::value) {
+				using std::swap;
+				swap(_allocator, other._allocator);
 			}
-		}
-		template<typename InputIterator> requires(std::is_base_of_v<typename std::input_iterator_tag, typename std::iterator_traits<InputIterator>::iterator_category>)
-		constexpr void assign(InputIterator first, InputIterator last) {
-			clear();
-			free_all_spaces();
-			for (; first != last; ++first) {
-				push_back(*first);
-			}
-		}
-		constexpr void assign(std::initializer_list<T> il) {
-			clear();
-			if (il.size() <= capacity()) {
-				std::uninitialized_copy(il.begin(), il.end(), _start);
-				_finish = _start + il.size();
-			} else {
-				free_all_spaces();
-				_start = _alloc.allocate(il.size() * sizeof(T));
-				std::uninitialized_copy(il.begin(), il.end(), _start);
-				_finish = _end_of_storage = _start + il.size();
-			}
-		}
-		// allocator
-		[[nodiscard]] constexpr allocator_type get_allocator() const noexcept {
-			return _alloc;
+			// We're allowed to UB if m_alloc != other.m_alloc and propagate is false
+			// This is cause swap must be constant time, if propagate is false and allocs are not equal
+			// we would be forced to copy / move (and thus not be constant time anymore)
+			std::swap(_begin, other._begin);
+			std::swap(_end, other._end);
+			std::swap(_realend, other._realend);
 		}
 
-		// element access
-		[[nodiscard]] constexpr reference at(size_type pos) {
-			_PLUGIFY_VECTOR_ASSERT(pos < size(), "plg::vector::at(): input index is out of bounds", std::out_of_range);
-			return *(begin() + pos);
-		}
-		[[nodiscard]] constexpr const_reference at(size_type pos) const {
-			_PLUGIFY_VECTOR_ASSERT(pos < size(), "plg::vector::at(): input index is out of bounds", std::out_of_range);
-			return *(begin() + pos);
-		}
-		[[nodiscard]] constexpr reference operator[](size_type pos) {
-			_PLUGIFY_VECTOR_ASSERT(pos < size(), "plg::vector::operator[]: input index is out of bounds", std::out_of_range);
-			return *(begin() + pos);
-		}
-		[[nodiscard]] constexpr const_reference operator[](size_type pos) const {
-			_PLUGIFY_VECTOR_ASSERT(pos < size(), "plg::vector::operator[]: input index is out of bounds", std::out_of_range);
-			return *(begin() + pos);
-		}
-		[[nodiscard]] constexpr reference front() {
-			_PLUGIFY_VECTOR_ASSERT(!empty(), "plg::vector::front(): array is empty", std::length_error);
-			return *begin();
-		}
-		[[nodiscard]] constexpr const_reference front() const {
-			_PLUGIFY_VECTOR_ASSERT(!empty(), "plg::vector::front(): array is empty", std::length_error);
-			return *begin();
-		}
-		[[nodiscard]] constexpr reference back() {
-			_PLUGIFY_VECTOR_ASSERT(!empty(), "plg::vector::back(): array is empty", std::length_error);
-			return *(end() - 1);
-		}
-		[[nodiscard]] constexpr const_reference back() const {
-			_PLUGIFY_VECTOR_ASSERT(!empty(), "plg::vector::back(): array is empty", std::length_error);
-			return *(end() - 1);
-		}
-		[[nodiscard]] constexpr pointer data() noexcept {
-			return _start;
-		}
-		[[nodiscard]] constexpr const_pointer data() const noexcept {
-			return _start;
+		friend //
+				void
+				swap(vector_base& a, vector_base& b) //
+				noexcept(allocator_traits::propagate_on_container_swap::value ||
+						 allocator_traits::is_always_equal::value)
+		{
+			a.swap(b);
 		}
 
-		// iterators
-		[[nodiscard]] constexpr iterator begin() noexcept {
-			return _start;
-		}
-		[[nodiscard]] constexpr const_iterator begin() const noexcept {
-			return _start;
-		}
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept {
-			return _start;
-		}
-		[[nodiscard]] constexpr iterator end() noexcept {
-			return _finish;
-		}
-		[[nodiscard]] constexpr const_iterator end() const noexcept {
-			return _finish;
-		}
-		[[nodiscard]] constexpr const_iterator cend() const noexcept {
-			return _finish;
-		}
-		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept {
-			return reverse_iterator(end());
-		}
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept {
-			return const_reverse_iterator(end());
-		}
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept {
-			return const_reverse_iterator(end());
-		}
-		[[nodiscard]] constexpr reverse_iterator rend() noexcept {
-			return reverse_iterator(begin());
-		}
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept {
-			return const_reverse_iterator(begin());
-		}
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept {
-			return const_reverse_iterator(begin());
+		constexpr ~vector_base() { deallocate(); }
+
+	private:
+		constexpr //
+				void
+				check_range(size_type n) //
+				const
+		{
+			if (n >= size()) {
+				// TODO: do fancier formatting when I implement constexpr string (?)
+				throw std::out_of_range("Bounds check failed.");
+			}
 		}
 
-		// size and capacity
-		[[nodiscard]] constexpr bool empty() const noexcept {
-			return begin() == end();
+	public:
+		[[nodiscard]] constexpr //
+				reference
+				at(size_type pos)
+		{
+			check_range(pos);
+			return *this[pos];
 		}
-		[[nodiscard]] constexpr size_type size() const noexcept {
-			return size_type(end() - begin());
+		[[nodiscard]] constexpr //
+				const_reference
+				at(size_type pos) //
+				const
+		{
+			check_range(pos);
+			return *this[pos];
 		}
-		[[nodiscard]] constexpr size_type max_size() const noexcept {
-			return std::numeric_limits<difference_type>::max();
+
+		[[nodiscard]] constexpr //
+				reference
+				operator[](size_type pos) //
+				noexcept
+		{
+			return *std::launder(_begin + pos);
 		}
-		constexpr void reserve(size_type new_cap) {
+		[[nodiscard]] constexpr //
+				const_reference
+				operator[](size_type pos) //
+				const noexcept
+		{
+			return *std::launder(_begin + pos);
+		}
+
+		/////////////
+		// Getters //
+		/////////////
+
+		[[nodiscard]] constexpr /********/ pointer data() /************/ noexcept { return _begin; }
+		[[nodiscard]] constexpr /**/ const_pointer data() /******/ const noexcept { return _begin; }
+		[[nodiscard]] constexpr /******/ allocator_type get_allocator() const noexcept { return _allocator; }
+
+		[[nodiscard]] constexpr /***/ reference front() /********/ noexcept { return *_begin; }
+		[[nodiscard]] constexpr const_reference front() /**/ const noexcept { return *_begin; }
+		[[nodiscard]] constexpr /***/ reference back() /*********/ noexcept { return *(_end - 1); }
+		[[nodiscard]] constexpr const_reference back() /***/ const noexcept { return *(_end - 1); }
+
+		[[nodiscard]] constexpr /***/ iterator begin() /*********/ noexcept { return _begin; }
+		[[nodiscard]] constexpr const_iterator begin() /***/ const noexcept { return _begin; }
+		[[nodiscard]] constexpr /***/ iterator end() /***********/ noexcept { return _end; }
+		[[nodiscard]] constexpr const_iterator end() /*****/ const noexcept { return _end; }
+		[[nodiscard]] constexpr const_iterator cbegin() /**/ const noexcept { return _begin; }
+		[[nodiscard]] constexpr const_iterator cend() /****/ const noexcept { return _end; }
+
+		[[nodiscard]] constexpr /***/ reverse_iterator rbegin() /*********/ noexcept { return _end; }
+		[[nodiscard]] constexpr reverse_const_iterator rbegin() /***/ const noexcept { return _end; }
+		[[nodiscard]] constexpr /***/ reverse_iterator rend() /***********/ noexcept { return _begin; }
+		[[nodiscard]] constexpr reverse_const_iterator rend() /*****/ const noexcept { return _begin; }
+		[[nodiscard]] constexpr reverse_const_iterator crbegin() /**/ const noexcept { return _end; }
+		[[nodiscard]] constexpr reverse_const_iterator crend() /****/ const noexcept { return _begin; }
+
+		[[nodiscard]] constexpr size_type size() /******/ const noexcept { return _end - _begin; }
+		[[nodiscard]] constexpr size_type capacity() /**/ const noexcept { return _realend - _begin; }
+		[[nodiscard]] constexpr bool empty() /**********/ const noexcept { return size() == 0; }
+		[[nodiscard]] constexpr //
+				size_type
+				max_size() //
+				const
+		{
+			const size_type diffmax = std::numeric_limits<difference_type>::max() / sizeof(T);
+			const size_type allocmax = allocator_traits::max_size(_allocator);
+			return std::min(diffmax, allocmax);
+		}
+
+		////////////////////
+		// Size modifiers //
+		////////////////////
+
+		constexpr //
+				void
+				reserve(size_type new_cap)
+		{
 			if (new_cap > capacity()) {
-				if (new_cap < 2 * capacity()) {
-					new_cap = 2 * capacity();
+				auto tmp = allocate_tmp(new_cap, _allocator);
+				try {
+					auto end = uninitialized_move_if_noexcept_launder(_begin, _end, tmp, _allocator);
+					deallocate();
+					_begin = tmp;
+					_end = end;
+					_realend = tmp + new_cap;
+				} catch (...) {
+					allocator_traits::deallocate(tmp);
+					throw;
 				}
-				adjust_capacity(new_cap);
-			}
-		}
-		[[nodiscard]] constexpr size_type capacity() const noexcept {
-			return static_cast<size_type>(_end_of_storage - _start);
-		}
-		constexpr void shrink_to_fit() {
-			// do shrink only when capacity > 2*size(), just a choice of implementation, no sepcial meaning
-			if (capacity() > 2 * size()) {
-				adjust_capacity(size());
 			}
 		}
 
-		// modifiers
-		constexpr void clear() noexcept {
-			erase_range(_start, _finish);
-			_finish = _start;
-		}
-		constexpr iterator insert(const_iterator pos, const T& value) {
-			size_type idx = (size_type) (pos - _start);
-			move_backward(idx, 1);
-			*(_start + idx) = value;
-			return _start + idx;
-		}
-		constexpr iterator insert(const_iterator pos, T&& value) {
-			size_type idx = (size_type) (pos - _start);
-			move_backward(idx, 1);
-			*(_start + idx) = std::move(value);
-			return _start + idx;
-		}
-		constexpr iterator insert(const_iterator pos, size_type count, const T& value) {
-			size_type idx = (size_type) (pos - _start);
-			move_backward(idx, count);
-			fill_range(_start + idx, _start + idx + count, value);
-			return _start + idx;
-		}
-		template<typename InputIterator> requires(std::is_base_of_v<typename std::input_iterator_tag, typename std::iterator_traits<InputIterator>::iterator_category>)
-		constexpr iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
-			size_type idx = (size_type) (pos - _start);
-			move_backward(idx, last - first);
-			copy_range(first, last, _start + idx);
-			return _start + idx;
-		}
-		constexpr iterator insert(const_iterator pos, std::initializer_list<T> il) {
-			size_type idx = (size_type) (pos - _start);
-			if (il.size() > 0) {
-				move_backward(idx, il.size());
-				copy_range(il.begin(), il.end(), _start + idx);
+		constexpr //
+				void
+				shrink_to_fit()
+		{
+			auto oldsize = size();
+			if (oldsize < capacity()) {
+				auto tmp = allocate_tmp(oldsize, _allocator);
+				try {
+					auto end = uninitialized_move_launder(_begin, _end, tmp, _allocator);
+					deallocate();
+					_begin = tmp;
+					_end = end;
+					_realend = tmp + oldsize;
+				} catch (...) {
+					allocator_traits::deallocate(tmp);
+					throw;
+				}
 			}
-			return _start + idx;
 		}
-		template<typename... Args>
-		constexpr iterator emplace(const_iterator pos, Args&&... args) {
-			size_type idx = (size_type) (pos - _start);
-			move_backward(idx, 1);
-			alloc_traits::construct(_alloc, _start + idx, std::forward<Args>(args)...);
-			return _start + idx;
-		}
-		constexpr iterator erase(const_iterator pos) {
-			move_forward(pos + 1, 1);
-			return (iterator) pos;
-		}
-		constexpr iterator erase(const_iterator first, const_iterator last) {
-			move_forward(last, last - first);
-			return (iterator) first;
-		}
-		constexpr void push_back(const T& value) {
-			if (size() == capacity()) {
-				adjust_capacity();// default ajust to double of size()
-			}
-			alloc_traits::construct(_alloc, _finish, value);
-			++_finish;
-		}
-		constexpr void push_back(T&& value) {
-			if (size() == capacity()) {
-				adjust_capacity();
-			}
-			alloc_traits::construct(_alloc, _finish, std::forward<T>(value));
-			++_finish;
-		}
-		template<typename... Args>
-		constexpr reference emplace_back(Args&&... args) {
-			if (size() == capacity()) {
-				adjust_capacity();
-			}
-			alloc_traits::construct(_alloc, _finish, std::forward<Args>(args)...);
-			++_finish;
-			return *_finish;
-		}
-		constexpr void pop_back() {
-			assert(!empty());
-			_alloc.destroy(_finish - 1);
-			--_finish;
-		}
-		constexpr void resize(size_type count) {
-			if (count == size()) {
-				return;
-			} else if (count < size()) {
-				erase_range(_start + count, _finish);
-				_finish = _start + count;
-			} else if (count <= capacity()) {
-				std::uninitialized_fill(_finish, _start + count, T());
-				_finish = _start + count;
+
+		constexpr //
+				void
+				resize(size_type count)
+		{
+			if (count > capacity()) {
+				auto tmp = allocate_tmp(count, _allocator);
+				try {
+					auto end = uninitialized_move_if_noexcept_launder(_begin, _end, tmp, _allocator);
+					for (; end < tmp + count; ++end) {
+						allocator_traits::construct(_allocator, end);
+					}
+					deallocate();
+					_begin = tmp;
+					_end = end;
+					_realend = tmp + count;
+				} catch (...) {
+					allocator_traits::deallocate(tmp);
+					throw;
+				}
+			} else if (count > size()) {
+				while (size() > count) {
+					emplace_back();
+				}
 			} else {
-				adjust_capacity(count);
-				std::uninitialized_fill(_finish, _start + count, T());
-				_finish = _start + count;
+				while (size() > count) {
+					pop_back();
+				}
 			}
 		}
-		constexpr void resize(size_type count, const value_type& value) {
-			if (count == size()) {
-				return;
-			} else if (count < size()) {
-				erase_range(_start + count, _finish);
-				_finish = _start + count;
-			} else if (count <= capacity()) {
-				std::uninitialized_fill(_finish, _start + count, value);
-				_finish = _start + count;
+
+		constexpr //
+				void
+				resize(size_type count, const value_type& value)
+		{
+			if (count > capacity()) {
+				auto tmp = allocate_tmp(count, _allocator);
+				try {
+					// We construct new elements first in case value is part of vector_base
+					auto end = tmp + size();
+					for (; end < tmp + count; ++end) {
+						allocator_traits::construct(_allocator, end, value);
+					}
+					end = uninitialized_move_if_noexcept_launder(_begin, _end, tmp, _allocator);
+					deallocate();
+					_begin = tmp;
+					_end = end;
+					_realend = tmp + count;
+				} catch (...) {
+					allocator_traits::deallocate(tmp);
+					throw;
+				}
+			} else if (count > size()) {
+				while (size() > count) {
+					emplace_back(value);
+				}
 			} else {
-				adjust_capacity(count);
-				std::uninitialized_fill(_finish, _start + count, value);
-				_finish = _start + count;
+				while (size() > count) {
+					pop_back();
+				}
 			}
 		}
-		constexpr void swap(vector& other) noexcept(std::allocator_traits<Allocator>::propagate_on_container_swap::value || std::allocator_traits<Allocator>::is_always_equal::value) {
-			if (this == &other)
-				return;
-			using std::swap;
-			swap(_alloc, other._alloc);
-			swap(_start, other._start);
-			swap(_finish, other._finish);
-			swap(_end_of_storage, other._end_of_storage);
+
+		constexpr //
+				void
+				clear() //
+				noexcept
+		{
+			while (not empty()) {
+				pop_back();
+			}
 		}
+
+		/////////////////////////
+		// Assigning modifiers //
+		/////////////////////////
+
+		/*constexpr void assign(size_type count, const T& value)
+		{
+			// TODO: Finish
+		}*/
+
+		template< class InputIt >
+		constexpr void assign(InputIt first, InputIt last)
+		{
+			assign(std::initializer_list<T>(first, last));
+		}
+
+		constexpr void assign(std::initializer_list<T> ilist)
+		{
+			if (ilist.size() > capacity()) {
+				// We must realloc, so directly move into new buffer
+				auto tmp = allocate_tmp(ilist.size(), _allocator);
+				try {
+					uninitialized_move(ilist.begin(), ilist.end(), tmp, _allocator);
+					deallocate();
+					_begin = tmp;
+					_realend = _end = tmp + ilist.size();
+				} catch (...) {
+					allocator_traits::deallocate(_allocator, tmp, ilist.size());
+					throw;
+				}
+			} else {
+				// destroy excess
+				while (ilist.size() < size()) {
+					pop_back();
+				}
+
+				// copy-assign onto existing elements
+				auto tmp = ilist.begin();
+				for (auto& elem : *this) {
+					elem = *tmp;
+					++tmp;
+				}
+
+				// copy-construct new elements
+				while (tmp != ilist.end()) {
+					push_back(*tmp);
+					++tmp;
+				}
+			}
+		}
+
+		/////////////////////////
+		// Insertion modifiers //
+		/////////////////////////
+
+		// Strong exception guarantee
+		template<typename... Args>
+		constexpr //
+				void
+				emplace_back(Args&&... args)
+		{
+			if (_end < _realend) {
+				allocator_traits::construct(_allocator, std::launder(_end), std::forward<Args>(args)...);
+				++_end;
+			}
+
+			// Ensure we've fully prepared a tmp buffer before deallocating m_begin
+			auto oldsize = size();
+			auto newcap = size() * 2 + 1;
+			auto tmp = allocate_tmp(newcap, _allocator);
+			try {
+				// construct new value into tmp, we should do this first in case input is part of the
+				// vector_base
+				allocator_traits::construct(_allocator, tmp + oldsize, std::forward<Args>(args)...);
+				// move existing values if noexcept, else copy
+				uninitialized_move_if_noexcept_launder(_begin, _end, tmp, _allocator);
+			} catch (...) {
+				allocator_traits::deallocate(_allocator, tmp, newcap);
+				throw;
+			}
+			// buffer is ready, do the swap
+			allocator_traits::deallocate(_allocator, _begin, capacity());
+			_begin = tmp;
+			_end = tmp + oldsize + 1;
+			_realend = tmp + newcap;
+		}
+
+		// Strong exception guarantee
+		constexpr void push_back(const T& v) { emplace_back(v); }
+		// Strong exception guarantee
+		constexpr void push_back(T&& v) { emplace_back(std::move(v)); }
+
+		// Conditionally strong exception guarantee
+		// as long as value_type is nothrow assignable and constructible either by move or copy.
+		template<typename... Args>
+		constexpr //
+				pointer
+				emplace(const_pointer pos, Args&&... args)
+		{
+			if (pos == _end) {
+				emplace_back(args...);
+				return _end - 1;
+			}
+
+			if (_end == _realend) {
+				// We need to realloc
+				auto index = pos - _begin;
+				auto oldsize = size();
+				auto newcap = size() * 2 + 1;
+				auto tmp = allocate_tmp(newcap, _allocator);
+				try {
+					// construct new value into tmp, we should do this first in case input is part of the
+					// vector_base
+					allocator_traits::construct(_allocator, tmp + index, std::forward<T>(args)...);
+					// move existing values if noexcept, else copy
+					uninitialized_move_if_noexcept_launder(_begin, pos, tmp, _allocator);
+					uninitialized_move_if_noexcept_launder(pos, _end, tmp + index + 1, _allocator);
+				} catch (...) {
+					allocator_traits::deallocate(_allocator, tmp, newcap);
+					throw;
+				}
+				// buffer is ready, do the swap
+				allocator_traits::deallocate(_allocator, _begin, capacity());
+				_begin = tmp;
+				_end = tmp + oldsize + 1;
+				_realend = tmp + newcap;
+				return _begin + index;
+			}
+
+			// No realloc needed
+			// We're allowed to UB if the move / copy constructor / assignment throws
+			// ... unfortunately we can't shift the elements first, THEN construct
+			// because if the constructor throws we aren't supposed to UB
+			// So we start by constructing the element into a temporary that we move into place later.
+			auto tmp = T(std::forward<T>(args)...);
+			// After this point, everything is either allowed to UB or is noexcept :)
+
+			// Shift elements back
+			uninitialized_move_if_noexcept_launder_backward(_end - 1, _end, _end + 1, _allocator);
+			move_if_noexcept_launder_backward(pos, _end - 1, _end);
+			// Now move the tmp var into place
+			*pos = std::move_if_noexcept(tmp);
+			return pos;
+		}
+
+		constexpr //
+				iterator
+				insert(const_iterator pos, const T& value)
+		{
+			insert(pos, 1, value);
+		}
+
+		constexpr //
+				iterator
+				insert(const_iterator pos, T&& value)
+		{
+			if (pos == _end) {
+				emplace_back(value);
+				return _end - 1;
+			}
+
+			if (_end + 1 < _realend) {
+				// We need to realloc
+				auto index = pos - _begin;
+				auto oldsize = size();
+				auto newcap = size() * 2 + 1;
+				auto tmp = allocate_tmp(newcap, _allocator);
+				try {
+					// construct new values into tmp, we should do this first in case input is part of the
+					// vector_base
+					allocator_traits::construct(_allocator, tmp + index, std::move(value));
+					// move existing values if noexcept, else copy
+					uninitialized_move_if_noexcept_launder(_begin, pos, tmp, _allocator);
+					uninitialized_move_if_noexcept_launder(pos, _end, tmp + index + 1, _allocator);
+				} catch (...) {
+					allocator_traits::deallocate(_allocator, tmp, newcap);
+					throw;
+				}
+				// buffer is ready, do the swap
+				allocator_traits::deallocate(_allocator, _begin, capacity());
+				_begin = tmp;
+				_end = tmp + oldsize + 1;
+				_realend = tmp + newcap;
+				return _begin + index;
+			}
+
+			// No realloc needed
+			// Shift elements back
+			uninitialized_move_if_noexcept_launder_backward(_end - 1, _end, _end + 1, _allocator);
+			move_if_noexcept_launder_backward(pos, _end - 1, _end);
+			// Now move value into place
+			pos = std::move(value);
+			return pos;
+		}
+
+		constexpr //
+				iterator
+				insert(const_iterator pos, size_type count, const T& value)
+		{
+			if (count != 0) {
+				if (pos == _end) {
+					emplace_back(value);
+					return _end - 1;
+				}
+
+				if (_end + count < _realend) {
+					// We need to realloc
+					auto index = pos - _begin;
+					auto oldsize = size();
+					auto newcap = size() * 2 + count;
+					auto tmp = allocate_tmp(newcap, _allocator);
+					try {
+						// construct new values into tmp, we should do this first in case input is part of the
+						// vector_base
+						for (auto it = tmp + index; it < tmp + index + count; ++it) {
+							allocator_traits::construct(_allocator, it, value);
+						}
+						// move existing values if noexcept, else copy
+						uninitialized_move_if_noexcept_launder(_begin, pos, tmp, _allocator);
+						uninitialized_move_if_noexcept_launder(pos, _end, tmp + index + count, _allocator);
+					} catch (...) {
+						allocator_traits::deallocate(_allocator, tmp, newcap);
+						throw;
+					}
+					// buffer is ready, do the swap
+					allocator_traits::deallocate(_allocator, _begin, capacity());
+					_begin = tmp;
+					_end = tmp + oldsize + count;
+					_realend = tmp + newcap;
+					return _begin + index;
+				}
+
+				// No realloc needed
+				// Shift elements back
+				uninitialized_move_if_noexcept_launder_backward(_end - count, _end, _end + count, _allocator);
+				move_if_noexcept_launder_backward(pos, _end - count, _end);
+				// Now copy the value into place repeatedly
+				std::fill(pos, pos + count, value);
+				return pos;
+			}
+		}
+
+		// Not quite the same as LegacyInputIterator,
+		// but this way is easier and shouldn't break any existing code anyway.
+		template<std::input_iterator InputIt>
+		constexpr //
+				iterator
+				insert(const_iterator pos, InputIt first, InputIt last)
+		{
+			// Since input iterator is single pass, we will just insert one at a time the dumb way.
+			// TODO: copy first to a vector then call the random_access_iterator overload.
+
+			// Convert iterator to an index first to handle reallocation case
+			auto index = std::distance(_begin, pos);
+			while (first != last) {
+				insert(_begin + index, *first);
+				++index;
+				++first;
+			}
+			return _begin + index;
+		}
+
+		constexpr //
+				iterator
+				insert(const_iterator pos, std::initializer_list<T> ilist)
+		{
+			return insert(pos, ilist.begin(), ilist.end());
+		}
+
+		///////////////////////
+		// Removal modifiers //
+		///////////////////////
+
+		constexpr //
+				void
+				pop_back() //
+		{
+			allocator_traits::destroy(_allocator, std::launder(_end - 1));
+			--_end;
+		}
+
+		constexpr //
+				iterator
+				erase(const_iterator pos)
+		{
+			return erase(pos, pos + 1);
+		}
+
+		constexpr //
+				iterator
+				erase(const_iterator first, const_iterator last)
+		{
+			move_if_noexcept_launder(last, _end, first, _allocator);
+			for (size_t i = 0; i < last - first; ++i) {
+				pop_back();
+			}
+			return first;
+		}
+
+		//////////////////////////
+		// Comparison operators //
+		//////////////////////////
+
+		[[nodiscard]] constexpr //
+				bool
+				operator==(const vector_base& other)                 //
+				const noexcept(noexcept(*begin() == *other.begin())) //
+			requires std::equality_comparable<T>
+		{
+			return std::equal(begin(), end(), other.begin(), other.end());
+		}
+
+		[[nodiscard]] constexpr //
+				comparison_type
+				operator<=>(const vector_base& other)                //
+				const noexcept(noexcept(*begin() == *other.begin())) //
+			requires std::three_way_comparable<T> ||             //
+					 requires(const T& elem)
+		{
+			elem < elem;
+		} //
+		{
+			if constexpr (std::three_way_comparable<T>) {
+				return std::lexicographical_compare_three_way(_begin, _end, other._begin, other._end);
+			} else {
+				return std::lexicographical_compare_three_way(
+						_begin, _end, other._begin, other._end, [](const auto& a, const auto& b) {
+							return a < b ? std::weak_ordering::less :
+								   b < a ? std::weak_ordering::greater :
+										 std::weak_ordering::equivalent;
+						});
+			}
+		}
+
+		/////////////////////////////////////////
+		// Allocation / deallocation utilities //
+		/////////////////////////////////////////
 
 	private:
-		// auxiliary functions
-		template<typename InputIterator>
-		void copy_range(InputIterator first, InputIterator last, iterator dest) {
-			for (; first != last; ++first, ++dest) {
-				*dest = *first;
+		constexpr //
+				void
+				allocate(size_type capacity, Allocator& alloc)
+		{
+			try {
+				_begin = allocator_traits::allocate(alloc, capacity);
+				_realend = _begin + capacity;
+			} catch (...) {
+				if (capacity > max_size()) {
+					throw std::length_error("Tried to allocate too many elements.");
+				} else {
+					throw;
+				}
 			}
 		}
-		// move from front to back
-		void move_range(const_iterator first, const_iterator last, iterator dest) {
-			for (; first != last; ++first, ++dest) {
-				*dest = std::move(*first);
+
+		constexpr //
+				pointer
+				allocate_tmp(size_type capacity, Allocator& alloc)
+		{
+			try {
+				return allocator_traits::allocate(alloc, capacity, _begin);
+			} catch (...) {
+				if (capacity > max_size()) {
+					throw std::length_error("Tried to allocate too many elements.");
+				} else {
+					throw;
+				}
 			}
 		}
-		// move from back to front
-		void move_range_from_back_to_front(const_iterator first, const_iterator last, iterator dest) {
-			auto count = last - first;
-			auto rfirst = std::make_reverse_iterator(first);
-			auto iter = std::make_reverse_iterator(last);
-			for (auto rdest = std::make_reverse_iterator(dest + count); iter != rfirst; ++iter, ++rdest) {
-				*rdest = std::move(*iter);
-			}
-		}
-		void fill_range(iterator first, iterator last, const T& value) {
-			for (auto dest = first; dest != last; ++dest) {
-				*dest = value;
-			}
-		}
-		// destroy a range of elements in reverse order.
-		void erase_range(iterator first, iterator last) {
-			for (auto iter = last; iter != first;) {
-				alloc_traits::destroy(_alloc, &*(--iter));
-			}
-		}
-		// free all spaces for another allocation
-		void free_all_spaces() {
-			if (_start) {
-				_alloc.deallocate(_start, capacity());
-			}
-			_start = _finish = _end_of_storage = nullptr;
-		}
-		// adjust capacity: less or more, reserve, shrink_to_fit, etc
-		// new_cap must greater than or equal to size(), default adjust to double of current size()
-		void adjust_capacity(size_type new_cap = 0) {
-			if (new_cap <= size()) {
-				new_cap = 2 * size();
-				new_cap = new_cap > 0 ? new_cap : 1;// make sure at least for 1 elements
-			}
-			pointer new_start = _alloc.allocate(new_cap * sizeof(T));
-			pointer new_finish = new_start + size();
-			pointer new_end_of_storage = new_start + new_cap;
-			std::uninitialized_move(_start, _finish, new_start);
+
+		constexpr //
+				void
+				deallocate() //
+				noexcept
+		{
 			clear();
-			free_all_spaces();
-			_start = new_start;
-			_finish = new_finish;
-			_end_of_storage = new_end_of_storage;
+			if (_begin)
+				allocator_traits::deallocate(_allocator, _begin, capacity());
 		}
-		// move elements after(include) idx backward specific location.
-		// do the copy(move if possible), and ajust capacity if necessary
-		// for insert
-		void move_backward(size_type idx, size_type count) {
-			while (size() + count > capacity()) {
-				adjust_capacity(max(2 * size(), size() + count));
-			}
-			if (idx + count >= size()) {
-				std::uninitialized_copy(_start + idx, _finish, _start + idx + count);
-			} else {
-				std::uninitialized_copy(_finish - count, _finish, _finish);
-				// move elements from back to front
-				move_range_from_back_to_front(_start + idx, _finish - count, _start + idx + count);
-			}
-			_finish += count;
-		}
-		// move elements forward
-		// called after erasing
-		void move_forward(const_iterator first, size_type count) {
-			move_range(first, _finish, (iterator) (first - count));
-			erase_range(_finish - count, _finish);
-			_finish -= count;
-		}
-
-	private:
-		pointer _start;
-		pointer _finish; // off the end
-		pointer _end_of_storage; // off the capacity
-		_PLUGIFY_VECTOR_NO_UNIQUE_ADDRESS
-		allocator_type _alloc;
 	};
 
-	namespace details {
-		// non-member operations
-		// a non-standard compare function for vector
-		// equal 0 less -1 greater 1
-		template<typename T, typename Allocator>
-		constexpr int cmp_vector(const vector<T, Allocator>& lhs, const vector<T, Allocator>& rhs) {
-			auto iter1 = lhs.begin();
-			auto iter2 = rhs.begin();
-			for (; iter1 != lhs.end() && iter2 != rhs.end(); ++iter1, ++iter2)
-			{
-				if (*iter1 == *iter2)
-				{
-					continue;
-				}
-				return *iter1 > *iter2 ? 1 : -1;
-			}
-			if (iter1 != lhs.end())
-			{
-				return 1;
-			}
-			if (iter2 != rhs.end())
-			{
-				return -1;
-			}
-			return 0;
-		}
-	} // namespace details
-
-	// comparisons
-	template<typename T, typename Allocator>
-	constexpr bool operator==(const vector<T, Allocator>& lhs, const vector<T, Allocator>& rhs) {
-		return details::cmp_vector(lhs, rhs) == 0;
-	}
-	template<typename T, typename Allocator>
-	constexpr bool operator!=(const vector<T, Allocator>& lhs, const vector<T, Allocator>& rhs) {
-		return details::cmp_vector(lhs, rhs) != 0;
-	}
-	template<typename T, typename Allocator>
-	constexpr bool operator<(const vector<T, Allocator>& lhs, const vector<T, Allocator>& rhs) {
-		return details::cmp_vector(lhs, rhs) < 0;
-	}
-	template<typename T, typename Allocator>
-	constexpr bool operator<=(const vector<T, Allocator>& lhs, const vector<T, Allocator>& rhs) {
-		return details::cmp_vector(lhs, rhs) <= 0;
-	}
-	template<typename T, typename Allocator>
-	constexpr bool operator>(const vector<T, Allocator>& lhs, const vector<T, Allocator>& rhs) {
-		return details::cmp_vector(lhs, rhs) > 0;
-	}
-	template<typename T, typename Allocator>
-	constexpr bool operator>=(const vector<T, Allocator>& lhs, const vector<T, Allocator>& rhs) {
-		return details::cmp_vector(lhs, rhs) >= 0;
+	template<typename T, typename Alloc, typename U>
+	constexpr //
+			typename vector_base<T, Alloc>::size_type
+			erase(vector_base<T, Alloc>& c, const U& value)
+	{
+		auto it = std::remove(c.begin(), c.end(), value);
+		auto r = std::distance(it, c.end());
+		c.erase(it, c.end());
+		return r;
 	}
 
-	// global swap for vector
-	template<typename T, typename Allocator>
-	constexpr void swap(vector<T, Allocator>& lhs, vector<T, Allocator>& rhs) noexcept(noexcept(lhs.swap(rhs))) {
-		lhs.swap(rhs);
+	template<typename T, typename Alloc, typename Pred>
+	constexpr //
+			typename vector_base<T, Alloc>::size_type
+			erase_if(vector_base<T, Alloc>& c, Pred pred)
+	{
+		auto it = std::remove_if(c.begin(), c.end(), pred);
+		auto r = std::distance(it, c.end());
+		c.erase(it, c.end());
+		return r;
 	}
+
+	template<typename T, typename Allocator = std::allocator<T>>
+	using vector = vector_base<T, Allocator>;
 
 	namespace pmr {
 		template<typename T>
-		using vector = ::plg::vector<T, std::pmr::polymorphic_allocator<T>>;
+		using vector = ::plg::vector_base<T, std::pmr::polymorphic_allocator<T>>;
+
 	} // namespace pmr
 
 } // namespace plg

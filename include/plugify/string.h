@@ -284,7 +284,7 @@ namespace plg {
 		} storage;
 
 		_PLUGIFY_STRING_NO_UNIQUE_ADDRESS
-		allocator_type _alloc;
+		allocator_type _allocator;
 
 		constexpr static bool fits_in_sso(size_type size) {
 			return size < min_cap;
@@ -299,7 +299,7 @@ namespace plg {
 
 		constexpr void short_init() {
 			if (auto& buffer = this->get_long_data(); this->is_long() && buffer != nullptr) {
-				this->_alloc.deallocate(buffer, this->get_long_cap() + 1);
+				this->_allocator.deallocate(buffer, this->get_long_cap() + 1);
 				buffer = nullptr;
 			}
 
@@ -405,12 +405,12 @@ namespace plg {
 			auto& old_buffer = this->get_long_data();
 
 			auto new_len = std::min(new_cap, old_len);
-			auto new_buffer = this->_alloc.allocate(new_cap + 1);
+			auto new_buffer = this->_allocator.allocate(new_cap + 1);
 
 			if (old_buffer != nullptr) {
 				if (old_len != 0 && copy_old)
 					Traits::copy(new_buffer, old_buffer, new_len);
-				this->_alloc.deallocate(old_buffer, old_cap + 1);
+				this->_allocator.deallocate(old_buffer, old_cap + 1);
 			}
 
 			this->set_long_data(new_buffer);
@@ -424,7 +424,7 @@ namespace plg {
 				return;
 			}
 
-			auto buffer = this->_alloc.allocate(new_cap + 1);
+			auto buffer = this->_allocator.allocate(new_cap + 1);
 			auto len = this->get_short_size();
 
 			Traits::copy(buffer, this->get_short_data(), len);
@@ -568,7 +568,7 @@ namespace plg {
 		}
 
 	public:
-		explicit constexpr basic_string(detail::uninitialized_size_tag, size_type size, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		explicit constexpr basic_string(detail::uninitialized_size_tag, size_type size, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			if (fits_in_sso(size))
 				this->short_init();
 			else {
@@ -579,23 +579,23 @@ namespace plg {
 		}
 
 		constexpr basic_string() noexcept(std::is_nothrow_default_constructible<allocator_type>::value) requires(detail::is_allocator_v<Allocator>) : basic_string(allocator_type()) {}
-		explicit constexpr basic_string(const allocator_type& a) noexcept requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		explicit constexpr basic_string(const allocator_type& a) noexcept requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			this->short_init();
 		}
 
-		constexpr basic_string(size_type count, value_type ch, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		constexpr basic_string(size_type count, value_type ch, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			_PLUGIFY_STRING_ASSERT(count <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(ch, count);
 		}
 
-		constexpr basic_string(const basic_string& str, size_type pos, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		constexpr basic_string(const basic_string& str, size_type pos, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			_PLUGIFY_STRING_ASSERT(pos <= str.get_size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
 			auto len = std::min(count, str.get_size() - pos);
 			this->internal_assign(str.data(), len);
 		}
 		constexpr basic_string(const basic_string& str, size_type pos, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : basic_string(str, pos, npos, a) {}
 
-		constexpr basic_string(const value_type* str, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		constexpr basic_string(const value_type* str, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			_PLUGIFY_STRING_ASSERT(count <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(str, count);
 		}
@@ -603,20 +603,20 @@ namespace plg {
 			: basic_string(str, Traits::length(str), a) {}
 
 		template<std::input_iterator InputIterator>
-		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			auto len = static_cast<size_type>(std::distance(first, last));
 			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(first), len);
 		}
 
-		constexpr basic_string(const basic_string& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		constexpr basic_string(const basic_string& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			auto len = str.length();
 			this->internal_assign(str.data(), len);
 		}
 		constexpr basic_string(const basic_string& str) : basic_string(str, allocator_type()) {}
 
-		constexpr basic_string(basic_string&& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _alloc(a), storage(std::move(str.storage)) {
-			if (str.is_long() && a != str._alloc) {
+		constexpr basic_string(basic_string&& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _allocator(a), storage(std::move(str.storage)) {
+			if (str.is_long() && a != str._allocator) {
 				auto len = str.get_long_size();
 				this->internal_assign(str.get_long_data(), len);
 			} else {
@@ -624,9 +624,9 @@ namespace plg {
 				str.short_init();
 			}
 		}
-		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value) : basic_string(str, std::move(str._alloc)) {}
+		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value) : basic_string(str, std::move(str._allocator)) {}
 
-		constexpr basic_string(std::initializer_list<value_type> ilist, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		constexpr basic_string(std::initializer_list<value_type> ilist, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			auto len = ilist.size();
 			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(ilist.begin()), len);
@@ -634,7 +634,7 @@ namespace plg {
 
 		template<typename Type>
 			requires(std::is_convertible_v<const Type&, sview_type>)
-		constexpr basic_string(const Type& t, size_type pos, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		constexpr basic_string(const Type& t, size_type pos, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			auto sv = sview_type(t);
 			_PLUGIFY_STRING_ASSERT(pos <= sv.length(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
 
@@ -648,7 +648,7 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string(const Type& t, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
+		constexpr basic_string(const Type& t, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			sview_type sv(t);
 			auto len = sv.length();
 			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
@@ -674,7 +674,7 @@ namespace plg {
 		constexpr ~basic_string() {
 			if (this->is_long())
 				if (auto& buffer = this->get_long_data(); buffer != nullptr)
-					this->_alloc.deallocate(buffer, this->get_long_cap() + 1);
+					this->_allocator.deallocate(buffer, this->get_long_cap() + 1);
 		}
 
 		constexpr basic_string& operator=(const basic_string& str) {
@@ -736,7 +736,7 @@ namespace plg {
 				alloc_traits::is_always_equal::value) {
 			if (this == &str)
 				return *this;
-			if (this->_alloc == str._alloc)
+			if (this->_allocator == str._allocator)
 				this->swap(str);
 			else
 				this->internal_assign(str.data(), str.size());
@@ -797,7 +797,7 @@ namespace plg {
 		}
 #endif
 		[[nodiscard]] constexpr allocator_type get_allocator() const noexcept {
-			return this->_alloc;
+			return this->_allocator;
 		}
 
 		[[nodiscard]] constexpr reference operator[](size_type pos) {
@@ -1417,11 +1417,9 @@ namespace plg {
 		}
 
 		constexpr void swap(basic_string& str) noexcept(alloc_traits::propagate_on_container_swap::value || alloc_traits::is_always_equal::value) {
-			if (this == &str)
-				return;
 			using std::swap;
 			swap(this->storage, str.storage);
-			swap(this->_alloc, str._alloc);
+			swap(this->_allocator, str._allocator);
 		}
 
 		[[nodiscard]] constexpr size_type find(const basic_string& str, size_type pos = 0) const noexcept {
