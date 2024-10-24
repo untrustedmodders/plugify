@@ -1418,7 +1418,7 @@ namespace plg {
 
 		constexpr void swap(basic_string& str) noexcept(alloc_traits::propagate_on_container_swap::value || alloc_traits::is_always_equal::value) {
 			if (this == &str)
-				return *this;
+				return;
 			using std::swap;
 			swap(this->storage, str.storage);
 			swap(this->_alloc, str._alloc);

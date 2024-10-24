@@ -343,7 +343,7 @@ namespace plg {
 			}
 		}
 		[[nodiscard]] constexpr size_type capacity() const noexcept {
-			return _end_of_storage - _start;
+			return static_cast<size_type>(_end_of_storage - _start);
 		}
 		constexpr void shrink_to_fit() {
 			// do shrink only when capacity > 2*size(), just a choice of implementation, no sepcial meaning
