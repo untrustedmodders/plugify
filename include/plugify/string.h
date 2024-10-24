@@ -154,14 +154,20 @@
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define _PLUGIFY_ALWAYS_INLINE __attribute__((always_inline)) inline
-#define _PLUGIFY_ALWAYS_RESTRICT __restrict__
+#define _PLUGIFY_STRING_ALWAYS_INLINE __attribute__((always_inline)) inline
+#define _PLUGIFY_STRING_ALWAYS_RESTRICT __restrict__
 #elif defined(_MSC_VER)
-#define _PLUGIFY_ALWAYS_INLINE __forceinline
-#define _PLUGIFY_ALWAYS_RESTRICT __restrict
+#define _PLUGIFY_STRING_ALWAYS_INLINE __forceinline
+#define _PLUGIFY_STRING_ALWAYS_RESTRICT __restrict
 #else
-#define _PLUGIFY_ALWAYS_INLINE inline
-#define _PLUGIFY_ALWAYS_RESTRICT
+#define _PLUGIFY_STRING_ALWAYS_INLINE inline
+#define _PLUGIFY_STRING_ALWAYS_RESTRICT
+#endif
+
+#if defined(_MSC_VER)
+#define _PLUGIFY_STRING_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#else
+#define _PLUGIFY_STRING_NO_UNIQUE_ADDRESS [[no_unique_address]]
 #endif
 
 namespace plg {
@@ -190,7 +196,10 @@ namespace plg {
 	// based on implementations from libc++, libstdc++ and Microsoft STL
 	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
 	class basic_string {
+	private:
+		// Purely to make notation easier
 		using alloc_traits = std::allocator_traits<Allocator>;
+
 	public:
 		using traits_type = Traits;
 		using value_type = typename traits_type::char_type;
@@ -211,11 +220,6 @@ namespace plg {
 
 	private:
 		constexpr static auto _terminator = value_type();
-
-#if _MSC_VER
-#define no_unique_address msvc::no_unique_address
-#endif
-		[[no_unique_address]] Allocator _allocator;
 
 		_PLUGIFY_STRING_DIAG_PUSH()
 
@@ -279,6 +283,9 @@ namespace plg {
 			short_data _short{};
 		} storage;
 
+		_PLUGIFY_STRING_NO_UNIQUE_ADDRESS
+		allocator_type _alloc;
+
 		constexpr static bool fits_in_sso(size_type size) {
 			return size < min_cap;
 		}
@@ -292,7 +299,7 @@ namespace plg {
 
 		constexpr void short_init() {
 			if (auto& buffer = this->get_long_data(); this->is_long() && buffer != nullptr) {
-				this->_allocator.deallocate(buffer, this->get_long_cap() + 1);
+				this->_alloc.deallocate(buffer, this->get_long_cap() + 1);
 				buffer = nullptr;
 			}
 
@@ -398,12 +405,12 @@ namespace plg {
 			auto& old_buffer = this->get_long_data();
 
 			auto new_len = std::min(new_cap, old_len);
-			auto new_buffer = this->_allocator.allocate(new_cap + 1);
+			auto new_buffer = this->_alloc.allocate(new_cap + 1);
 
 			if (old_buffer != nullptr) {
 				if (old_len != 0 && copy_old)
 					Traits::copy(new_buffer, old_buffer, new_len);
-				this->_allocator.deallocate(old_buffer, old_cap + 1);
+				this->_alloc.deallocate(old_buffer, old_cap + 1);
 			}
 
 			this->set_long_data(new_buffer);
@@ -417,7 +424,7 @@ namespace plg {
 				return;
 			}
 
-			auto buffer = this->_allocator.allocate(new_cap + 1);
+			auto buffer = this->_alloc.allocate(new_cap + 1);
 			auto len = this->get_short_size();
 
 			Traits::copy(buffer, this->get_short_data(), len);
@@ -561,7 +568,7 @@ namespace plg {
 		}
 
 	public:
-		explicit constexpr basic_string(detail::uninitialized_size_tag, size_type size, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		explicit constexpr basic_string(detail::uninitialized_size_tag, size_type size, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			if (fits_in_sso(size))
 				this->short_init();
 			else {
@@ -572,23 +579,23 @@ namespace plg {
 		}
 
 		constexpr basic_string() noexcept(std::is_nothrow_default_constructible<allocator_type>::value) requires(detail::is_allocator_v<Allocator>) : basic_string(allocator_type()) {}
-		explicit constexpr basic_string(const allocator_type& a) noexcept requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		explicit constexpr basic_string(const allocator_type& a) noexcept requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			this->short_init();
 		}
 
-		constexpr basic_string(size_type count, value_type ch, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		constexpr basic_string(size_type count, value_type ch, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			_PLUGIFY_STRING_ASSERT(count <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(ch, count);
 		}
 
-		constexpr basic_string(const basic_string& str, size_type pos, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		constexpr basic_string(const basic_string& str, size_type pos, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			_PLUGIFY_STRING_ASSERT(pos <= str.get_size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
 			auto len = std::min(count, str.get_size() - pos);
 			this->internal_assign(str.data(), len);
 		}
 		constexpr basic_string(const basic_string& str, size_type pos, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : basic_string(str, pos, npos, a) {}
 
-		constexpr basic_string(const value_type* str, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		constexpr basic_string(const value_type* str, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			_PLUGIFY_STRING_ASSERT(count <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(str, count);
 		}
@@ -596,20 +603,20 @@ namespace plg {
 			: basic_string(str, Traits::length(str), a) {}
 
 		template<std::input_iterator InputIterator>
-		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			auto len = std::distance(first, last);
 			_PLUGIFY_STRING_ASSERT((size_t) len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(first), len);
 		}
 
-		constexpr basic_string(const basic_string& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		constexpr basic_string(const basic_string& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			auto len = str.length();
 			this->internal_assign(str.data(), len);
 		}
 		constexpr basic_string(const basic_string& str) : basic_string(str, allocator_type()) {}
 
-		constexpr basic_string(basic_string&& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _allocator(a), storage(std::move(str.storage)) {
-			if (str.is_long() && a != str._allocator) {
+		constexpr basic_string(basic_string&& str, const allocator_type& a) requires(detail::is_allocator_v<Allocator>) : _alloc(a), storage(std::move(str.storage)) {
+			if (str.is_long() && a != str._alloc) {
 				auto len = str.get_long_size();
 				this->internal_assign(str.get_long_data(), len);
 			} else {
@@ -617,9 +624,9 @@ namespace plg {
 				str.short_init();
 			}
 		}
-		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value) : basic_string(str, std::move(str._allocator)) {}
+		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value) : basic_string(str, std::move(str._alloc)) {}
 
-		constexpr basic_string(std::initializer_list<value_type> ilist, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		constexpr basic_string(std::initializer_list<value_type> ilist, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			auto len = ilist.size();
 			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(ilist.begin()), len);
@@ -627,7 +634,7 @@ namespace plg {
 
 		template<typename Type>
 			requires(std::is_convertible_v<const Type&, sview_type>)
-		constexpr basic_string(const Type& t, size_type pos, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		constexpr basic_string(const Type& t, size_type pos, size_type count, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			auto sv = sview_type(t);
 			_PLUGIFY_STRING_ASSERT(pos <= sv.length(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
 
@@ -641,7 +648,7 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string(const Type& t, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		constexpr basic_string(const Type& t, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _alloc(a) {
 			sview_type sv(t);
 			auto len = sv.length();
 			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
@@ -667,7 +674,7 @@ namespace plg {
 		constexpr ~basic_string() {
 			if (this->is_long())
 				if (auto& buffer = this->get_long_data(); buffer != nullptr)
-					this->_allocator.deallocate(buffer, this->get_long_cap() + 1);
+					this->_alloc.deallocate(buffer, this->get_long_cap() + 1);
 		}
 
 		constexpr basic_string& operator=(const basic_string& str) {
@@ -677,7 +684,7 @@ namespace plg {
 		constexpr basic_string& operator=(basic_string&& str) noexcept(
 				alloc_traits::propagate_on_container_move_assignment::value ||
 				alloc_traits::is_always_equal::value) {
-			return this->assign(str);
+			return this->assign(std::move(str));
 		}
 
 		constexpr basic_string& operator=(const value_type* str) {
@@ -712,6 +719,8 @@ namespace plg {
 		}
 
 		constexpr basic_string& assign(const basic_string& str) {
+			if (this == &str)
+				return *this;
 			this->internal_assign(str.data(), str.size());
 			return *this;
 		}
@@ -725,11 +734,12 @@ namespace plg {
 		constexpr basic_string& assign(basic_string&& str) noexcept(
 				alloc_traits::propagate_on_container_move_assignment::value ||
 				alloc_traits::is_always_equal::value) {
-			if (this->_allocator == str._allocator)
+			if (this == &str)
+				return *this;
+			if (this->_alloc == str._alloc)
 				this->swap(str);
 			else
 				this->internal_assign(str.data(), str.size());
-
 			return *this;
 		}
 
@@ -786,129 +796,132 @@ namespace plg {
 			return this->assign();
 		}
 #endif
-
-		constexpr allocator_type get_allocator() const noexcept {
-			return this->_allocator;
+		[[nodiscard]] constexpr allocator_type get_allocator() const noexcept {
+			return this->_alloc;
 		}
 
-		constexpr reference operator[](size_type pos) {
+		[[nodiscard]] constexpr reference operator[](size_type pos) {
 			return this->get_data()[pos];
 		}
 
-		constexpr const_reference operator[](size_type pos) const {
+		[[nodiscard]] constexpr const_reference operator[](size_type pos) const {
 			return this->get_data()[pos];
 		}
 
-		constexpr reference at(size_type pos) {
+		[[nodiscard]] constexpr reference at(size_type pos) {
 			_PLUGIFY_STRING_ASSERT(pos < this->get_size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
 			return this->get_data()[pos];
 		}
 
-		constexpr const_reference at(size_type pos) const {
+		[[nodiscard]] constexpr const_reference at(size_type pos) const {
 			_PLUGIFY_STRING_ASSERT(pos < this->get_size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
 			return this->get_data()[pos];
 		}
 
-		constexpr reference front() {
+		[[nodiscard]] constexpr reference front() {
 			return this->get_data()[0];
 		}
 
-		constexpr const_reference front() const {
+		[[nodiscard]] constexpr const_reference front() const {
 			return this->get_data()[0];
 		}
 
-		constexpr reference back() {
+		[[nodiscard]] constexpr reference back() {
 			return this->get_data()[this->get_size() - 1];
 		}
 
-		constexpr const_reference back() const {
+		[[nodiscard]] constexpr const_reference back() const {
 			return this->get_data()[this->get_size() - 1];
 		}
 
-		constexpr const value_type* data() const noexcept {
+		[[nodiscard]] constexpr const value_type* data() const noexcept {
 			return this->get_data();
 		}
 
-		constexpr value_type* data() noexcept {
+		[[nodiscard]] constexpr value_type* data() noexcept {
 			return this->get_data();
 		}
 
-		constexpr const value_type* c_str() const noexcept {
+		[[nodiscard]] constexpr const value_type* c_str() const noexcept {
 			return this->get_data();
 		}
 
-		constexpr operator sview_type() const noexcept {
+		[[nodiscard]] constexpr operator sview_type() const noexcept {
 			return this->get_view();
 		}
 
-		constexpr iterator begin() noexcept {
+		[[nodiscard]] constexpr iterator begin() noexcept {
 			return this->get_data();
 		}
 
-		constexpr const_iterator begin() const noexcept {
+		[[nodiscard]] constexpr const_iterator begin() const noexcept {
 			return this->get_data();
 		}
 
-		constexpr const_iterator cbegin() const noexcept {
+		[[nodiscard]] constexpr const_iterator cbegin() const noexcept {
 			return this->get_data();
 		}
 
-		constexpr iterator end() noexcept {
+		[[nodiscard]] constexpr iterator end() noexcept {
 			return this->get_data() + this->get_size();
 		}
 
-		constexpr const_iterator end() const noexcept {
+		[[nodiscard]] constexpr const_iterator end() const noexcept {
 			return this->get_data() + this->get_size();
 		}
 
-		constexpr const_iterator cend() const noexcept {
+		[[nodiscard]] constexpr const_iterator cend() const noexcept {
 			return this->get_data() + this->get_size();
 		}
 
-		constexpr reverse_iterator rbegin() noexcept {
+		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept {
 			return reverse_iterator(this->end());
 		}
 
-		constexpr const_reverse_iterator rbegin() const noexcept {
+		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept {
 			return const_reverse_iterator(this->end());
 		}
 
-		constexpr const_reverse_iterator crbegin() const noexcept {
+		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept {
 			return const_reverse_iterator(this->cend());
 		}
 
-		constexpr reverse_iterator rend() noexcept {
+		[[nodiscard]] constexpr reverse_iterator rend() noexcept {
 			return reverse_iterator(this->begin());
 		}
 
-		constexpr const_reverse_iterator rend() const noexcept {
+		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept {
 			return const_reverse_iterator(this->begin());
 		}
 
-		constexpr const_reverse_iterator crend() const noexcept {
+		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept {
 			return const_reverse_iterator(this->cbegin());
 		}
 
-		constexpr bool empty() const noexcept {
+		[[nodiscard]] constexpr bool empty() const noexcept {
 			return this->get_size() == 0;
 		}
 
-		constexpr size_type size() const noexcept {
+		[[nodiscard]] constexpr size_type size() const noexcept {
 			return this->get_size();
 		}
 
-		constexpr size_type length() const noexcept {
+		[[nodiscard]] constexpr size_type length() const noexcept {
 			return this->get_size();
 		}
 
-		constexpr size_type max_size() const noexcept {
-			// size_type m = alloc_traits::max_size(this->_allocator);
+		[[nodiscard]] constexpr size_type max_size() const noexcept {
+			// size_type m = allocator_traits::max_size(this->_allocator);
 
 			// if (m <= numeric_limits<size_type>::max() / 2)
 			//     return m - alignment;
 			// else
 			//     return (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) ? m - alignment : (m / 2) - alignment;
 			return (alloc_traits::max_size(allocator_type()) - 1) / 2;
+		}
+
+		[[nodiscard]] constexpr size_type capacity() const noexcept {
+			return this->get_cap();
 		}
 
 		constexpr void reserve(size_type cap) {
@@ -923,12 +936,8 @@ namespace plg {
 			this->grow_to(new_cap);
 		}
 
-		[[deprecated]] void reserve() {
+		void reserve() {
 			this->shrink_to_fit();
-		}
-
-		constexpr size_type capacity() const noexcept {
-			return this->get_cap();
 		}
 
 		constexpr void shrink_to_fit() {
@@ -1184,27 +1193,27 @@ namespace plg {
 			return this->append(sview_type(t));
 		}
 
-		constexpr int compare(const basic_string& str) const noexcept {
+		[[nodiscard]] constexpr int compare(const basic_string& str) const noexcept {
 			return this->get_view().compare(str.get_view());
 		}
 
-		constexpr int compare(size_type pos1, size_type count1, const basic_string& str) const {
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const basic_string& str) const {
 			return this->get_view().compare(pos1, count1, str.get_view());
 		}
 
-		constexpr int compare(size_type pos1, size_type count1, const basic_string& str, size_type pos2, size_type count2 = npos) const {
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const basic_string& str, size_type pos2, size_type count2 = npos) const {
 			return this->get_view().compare(pos1, count1, str.get_view(), pos2, count2);
 		}
 
-		constexpr int compare(const value_type* str) const {
+		[[nodiscard]] constexpr int compare(const value_type* str) const {
 			return this->get_view().compare(str);
 		}
 
-		constexpr int compare(size_type pos1, size_type count1, const value_type* str) const {
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const value_type* str) const {
 			return this->get_view().compare(pos1, count1, str);
 		}
 
-		constexpr int compare(size_type pos1, size_type count1, const value_type* str, size_type count2) const {
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const value_type* str, size_type count2) const {
 			return this->get_view().compare(pos1, count1, str, count2);
 		}
 
@@ -1212,7 +1221,7 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr int compare(const Type& t) const noexcept(noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>)) {
+		[[nodiscard]] constexpr int compare(const Type& t) const noexcept(noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>)) {
 			return this->get_view().compare(sview_type(t));
 		}
 
@@ -1220,7 +1229,7 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr int compare(size_type pos1, size_type count1, const Type& t) const {
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const Type& t) const {
 			return this->get_view().compare(pos1, count1, sview_type(t));
 		}
 
@@ -1228,43 +1237,43 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr int compare(size_type pos1, size_type count1, const Type& t, size_type pos2, size_type count2 = npos) const {
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const Type& t, size_type pos2, size_type count2 = npos) const {
 			return this->get_view().compare(pos1, count1, sview_type(t), pos2, count2);
 		}
 
-		constexpr bool starts_with(sview_type sv) const noexcept {
+		[[nodiscard]] constexpr bool starts_with(sview_type sv) const noexcept {
 			return this->get_view().starts_with(sv);
 		}
 
-		constexpr bool starts_with(Char ch) const noexcept {
+		[[nodiscard]] constexpr bool starts_with(Char ch) const noexcept {
 			return this->get_view().starts_with(ch);
 		}
 
-		constexpr bool starts_with(const Char* str) const {
+		[[nodiscard]] constexpr bool starts_with(const Char* str) const {
 			return this->get_view().starts_with(str);
 		}
 
-		constexpr bool ends_with(sview_type sv) const noexcept {
+		[[nodiscard]] constexpr bool ends_with(sview_type sv) const noexcept {
 			return this->get_view().ends_with(sv);
 		}
 
-		constexpr bool ends_with(Char ch) const noexcept {
+		[[nodiscard]] constexpr bool ends_with(Char ch) const noexcept {
 			return this->get_view().ends_with(ch);
 		}
 
-		constexpr bool ends_with(const Char* str) const {
+		[[nodiscard]] constexpr bool ends_with(const Char* str) const {
 			return this->get_view().ends_with(str);
 		}
 
-		constexpr bool contains(sview_type sv) const noexcept {
+		[[nodiscard]] constexpr bool contains(sview_type sv) const noexcept {
 			return this->get_view().contains(sv);
 		}
 
-		constexpr bool contains(Char ch) const noexcept {
+		[[nodiscard]] constexpr bool contains(Char ch) const noexcept {
 			return this->get_view().contains(ch);
 		}
 
-		constexpr bool contains(const Char* str) const {
+		[[nodiscard]] constexpr bool contains(const Char* str) const {
 			return this->get_view().contains(str);
 		}
 
@@ -1373,7 +1382,7 @@ namespace plg {
 		}
 #endif
 
-		constexpr basic_string substr(size_type pos = 0, size_type count = npos) const {
+		[[nodiscard]] constexpr basic_string substr(size_type pos = 0, size_type count = npos) const {
 			_PLUGIFY_STRING_ASSERT(pos <= this->get_size(), "plg::basic_string::substr(): pos out of range", std::out_of_range);
 			return basic_string(*this, pos, count);
 		}
@@ -1408,24 +1417,26 @@ namespace plg {
 		}
 
 		constexpr void swap(basic_string& str) noexcept(alloc_traits::propagate_on_container_swap::value || alloc_traits::is_always_equal::value) {
+			if (this == &str)
+				return *this;
 			using std::swap;
 			swap(this->storage, str.storage);
-			swap(this->_allocator, str._allocator);
+			swap(this->_alloc, str._alloc);
 		}
 
-		constexpr size_type find(const basic_string& str, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find(const basic_string& str, size_type pos = 0) const noexcept {
 			return this->get_view().find(sview_type(str), pos);
 		}
 
-		constexpr size_type find(const value_type* str, size_type pos, size_type count) const noexcept {
+		[[nodiscard]] constexpr size_type find(const value_type* str, size_type pos, size_type count) const noexcept {
 			return this->get_view().find(str, pos, count);
 		}
 
-		constexpr size_type find(const value_type* str, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find(const value_type* str, size_type pos = 0) const noexcept {
 			return this->get_view().find(str, pos);
 		}
 
-		constexpr size_type find(value_type ch, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find(value_type ch, size_type pos = 0) const noexcept {
 			return this->get_view().find(ch, pos);
 		}
 
@@ -1433,23 +1444,23 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr size_type find(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+		[[nodiscard]] constexpr size_type find(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find(sview_type(t), pos);
 		}
 
-		constexpr size_type rfind(const basic_string& str, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type rfind(const basic_string& str, size_type pos = npos) const noexcept {
 			return this->get_view().rfind(sview_type(str), pos);
 		}
 
-		constexpr size_type rfind(const value_type* str, size_type pos, size_type count) const noexcept {
+		[[nodiscard]] constexpr size_type rfind(const value_type* str, size_type pos, size_type count) const noexcept {
 			return this->get_view().rfind(str, pos, count);
 		}
 
-		constexpr size_type rfind(const value_type* str, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type rfind(const value_type* str, size_type pos = npos) const noexcept {
 			return this->get_view().rfind(str, pos);
 		}
 
-		constexpr size_type rfind(value_type ch, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type rfind(value_type ch, size_type pos = npos) const noexcept {
 			return this->get_view().rfind(ch, pos);
 		}
 
@@ -1457,23 +1468,23 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr size_type rfind(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+		[[nodiscard]] constexpr size_type rfind(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().rfind(sview_type(t), pos);
 		}
 
-		constexpr size_type find_first_of(const basic_string& str, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find_first_of(const basic_string& str, size_type pos = 0) const noexcept {
 			return this->get_view().find_first_of(sview_type(str), pos);
 		}
 
-		constexpr size_type find_first_of(const value_type* str, size_type pos, size_type count) const noexcept {
+		[[nodiscard]] constexpr size_type find_first_of(const value_type* str, size_type pos, size_type count) const noexcept {
 			return this->get_view().find_first_of(str, pos, count);
 		}
 
-		constexpr size_type find_first_of(const value_type* str, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find_first_of(const value_type* str, size_type pos = 0) const noexcept {
 			return this->get_view().find_first_of(str, pos);
 		}
 
-		constexpr size_type find_first_of(value_type ch, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find_first_of(value_type ch, size_type pos = 0) const noexcept {
 			return this->get_view().find_first_of(ch, pos);
 		}
 
@@ -1481,23 +1492,23 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr size_type find_first_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+		[[nodiscard]] constexpr size_type find_first_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find_first_of(sview_type(t), pos);
 		}
 
-		constexpr size_type find_first_not_of(const basic_string& str, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find_first_not_of(const basic_string& str, size_type pos = 0) const noexcept {
 			return this->get_view().find_last_not_of(sview_type(str), pos);
 		}
 
-		constexpr size_type find_first_not_of(const value_type* str, size_type pos, size_type count) const noexcept {
+		[[nodiscard]] constexpr size_type find_first_not_of(const value_type* str, size_type pos, size_type count) const noexcept {
 			return this->get_view().find_last_not_of(str, pos, count);
 		}
 
-		constexpr size_type find_first_not_of(const value_type* str, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find_first_not_of(const value_type* str, size_type pos = 0) const noexcept {
 			return this->get_view().find_last_not_of(str, pos);
 		}
 
-		constexpr size_type find_first_not_of(value_type ch, size_type pos = 0) const noexcept {
+		[[nodiscard]] constexpr size_type find_first_not_of(value_type ch, size_type pos = 0) const noexcept {
 			return this->get_view().find_first_not_of(ch, pos);
 		}
 
@@ -1505,23 +1516,23 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr size_type find_first_not_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+		[[nodiscard]] constexpr size_type find_first_not_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find_first_not_of(sview_type(t), pos);
 		}
 
-		constexpr size_type find_last_of(const basic_string& str, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type find_last_of(const basic_string& str, size_type pos = npos) const noexcept {
 			return this->get_view().find_last_of(sview_type(str), pos);
 		}
 
-		constexpr size_type find_last_of(const value_type* str, size_type pos, size_type count) const noexcept {
+		[[nodiscard]] constexpr size_type find_last_of(const value_type* str, size_type pos, size_type count) const noexcept {
 			return this->get_view().find_last_of(str, pos, count);
 		}
 
-		constexpr size_type find_last_of(const value_type* str, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type find_last_of(const value_type* str, size_type pos = npos) const noexcept {
 			return this->get_view().find_last_of(str, pos);
 		}
 
-		constexpr size_type find_last_of(value_type ch, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type find_last_of(value_type ch, size_type pos = npos) const noexcept {
 			return this->get_view().find_last_of(ch, pos);
 		}
 
@@ -1529,23 +1540,23 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr size_type find_last_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+		[[nodiscard]] constexpr size_type find_last_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find_last_of(sview_type(t), pos);
 		}
 
-		constexpr size_type find_last_not_of(const basic_string& str, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type find_last_not_of(const basic_string& str, size_type pos = npos) const noexcept {
 			return this->get_view().find_last_not_of(sview_type(str), pos);
 		}
 
-		constexpr size_type find_last_not_of(const value_type* str, size_type pos, size_type count) const noexcept {
+		[[nodiscard]] constexpr size_type find_last_not_of(const value_type* str, size_type pos, size_type count) const noexcept {
 			return this->get_view().find_last_not_of(str, pos, count);
 		}
 
-		constexpr size_type find_last_not_of(const value_type* str, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type find_last_not_of(const value_type* str, size_type pos = npos) const noexcept {
 			return this->get_view().find_last_not_of(str, pos);
 		}
 
-		constexpr size_type find_last_not_of(value_type ch, size_type pos = npos) const noexcept {
+		[[nodiscard]] constexpr size_type find_last_not_of(value_type ch, size_type pos = npos) const noexcept {
 			return this->get_view().find_last_not_of(ch, pos);
 		}
 
@@ -1553,11 +1564,11 @@ namespace plg {
 			requires(
 					std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr size_type find_last_not_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+		[[nodiscard]] constexpr size_type find_last_not_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find_last_not_of(sview_type(t), pos);
 		}
 
-		friend constexpr basic_string operator+(const basic_string& lhs, const basic_string& rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, const basic_string& rhs) {
 			auto lhs_sz = lhs.size();
 			auto rhs_sz = rhs.size();
 			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::alloc_traits::select_on_container_copy_construction(lhs.get_allocator()));
@@ -1568,19 +1579,19 @@ namespace plg {
 			return ret;
 		}
 
-		friend constexpr basic_string operator+(basic_string&& lhs, const basic_string& rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, const basic_string& rhs) {
 			return std::move(lhs.append(rhs));
 		}
 
-		friend constexpr basic_string operator+(const basic_string& lhs, basic_string&& rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, basic_string&& rhs) {
 			return std::move(rhs.insert(0, lhs));
 		}
 
-		friend constexpr basic_string operator+(basic_string&& lhs, basic_string&& rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, basic_string&& rhs) {
 			return std::move(lhs.append(rhs));
 		}
 
-		friend constexpr basic_string operator+(const Char* lhs, const basic_string& rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(const Char* lhs, const basic_string& rhs) {
 			auto lhs_sz = Traits::length(lhs);
 			auto rhs_sz = rhs.size();
 			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::alloc_traits::select_on_container_copy_construction(rhs.get_allocator()));
@@ -1591,11 +1602,11 @@ namespace plg {
 			return ret;
 		}
 
-		friend constexpr basic_string operator+(const Char* lhs, basic_string&& rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(const Char* lhs, basic_string&& rhs) {
 			return std::move(rhs.insert(0, lhs));
 		}
 
-		friend constexpr basic_string operator+(Char lhs, const basic_string& rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(Char lhs, const basic_string& rhs) {
 			auto rhs_sz = rhs.size();
 			basic_string ret(detail::uninitialized_size_tag(), rhs_sz + 1, basic_string::alloc_traits::select_on_container_copy_construction(rhs.get_allocator()));
 			auto buffer = ret.get_data();
@@ -1605,12 +1616,12 @@ namespace plg {
 			return ret;
 		}
 
-		friend constexpr basic_string operator+(Char lhs, basic_string&& rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(Char lhs, basic_string&& rhs) {
 			rhs.insert(rhs.begin(), lhs);
 			return std::move(rhs);
 		}
 
-		friend constexpr basic_string operator+(const basic_string& lhs, const Char* rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, const Char* rhs) {
 			auto lhs_sz = lhs.size();
 			auto rhs_sz = Traits::length(rhs);
 			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::alloc_traits::select_on_container_copy_construction(lhs.get_allocator()));
@@ -1621,11 +1632,11 @@ namespace plg {
 			return ret;
 		}
 
-		friend constexpr basic_string operator+(basic_string&& lhs, const Char* rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, const Char* rhs) {
 			return std::move(lhs.append(rhs));
 		}
 
-		friend constexpr basic_string operator+(const basic_string& lhs, Char rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, Char rhs) {
 			auto lhs_sz = lhs.size();
 			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + 1, basic_string::alloc_traits::select_on_container_copy_construction(lhs.get_allocator()));
 			auto buffer = ret.get_data();
@@ -1635,29 +1646,29 @@ namespace plg {
 			return ret;
 		}
 
-		friend constexpr basic_string operator+(basic_string&& lhs, Char rhs) {
+		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, Char rhs) {
 			lhs.push_back(rhs);
 			return std::move(lhs);
 		}
 	};
 
 	template<typename Char, typename Traits, typename Allocator>
-	constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept {
+	[[nodiscard]] constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept {
 		return lhs.compare(rhs) == 0;
 	}
 
 	template<typename Char, typename Traits, typename Allocator>
-	constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const Char* rhs) {
+	[[nodiscard]] constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const Char* rhs) {
 		return lhs.compare(rhs) == 0;
 	}
 
 	template<typename Char, typename Traits, typename Allocator>
-	constexpr std::strong_ordering operator<=>(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept {
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept {
 		return lhs.compare(rhs) <=> 0;
 	}
 
 	template<typename Char, typename Traits, typename Allocator>
-	constexpr std::strong_ordering operator<=>(const basic_string<Char, Traits, Allocator>& lhs, const Char* rhs) {
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const basic_string<Char, Traits, Allocator>& lhs, const Char* rhs) {
 		return lhs.compare(rhs) <=> 0;
 	}
 
@@ -1685,8 +1696,8 @@ namespace plg {
 	}
 
 	// deduction guides
-	template<typename InputIt, typename Allocator = std::allocator<typename std::iterator_traits<InputIt>::value_type>>
-	basic_string(InputIt, InputIt, Allocator = Allocator()) -> basic_string<typename std::iterator_traits<InputIt>::value_type, std::char_traits<typename std::iterator_traits<InputIt>::value_type>, Allocator>;
+	template<typename InputIterator, typename Allocator = std::allocator<typename std::iterator_traits<InputIterator>::value_type>>
+	basic_string(InputIterator, InputIterator, Allocator = Allocator()) -> basic_string<typename std::iterator_traits<InputIterator>::value_type, std::char_traits<typename std::iterator_traits<InputIterator>::value_type>, Allocator>;
 
 	template<typename Char, typename Traits, typename Allocator = std::allocator<Char>>
 	explicit basic_string(std::basic_string_view<Char, Traits>, const Allocator& = Allocator()) -> basic_string<Char, Traits, Allocator>;
@@ -1708,7 +1719,7 @@ namespace plg {
 
 #if PLUGIFY_STRING_NUMERIC_CONVERSIONS
 	// numeric conversions
-	inline int stoi(const string& str, std::size_t* pos = nullptr, int base = 10) {
+	[[nodiscard]] inline int stoi(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1719,7 +1730,7 @@ namespace plg {
 		return static_cast<int>(ret);
 	}
 
-	inline long stol(const string& str, std::size_t* pos = nullptr, int base = 10) {
+	[[nodiscard]] inline long stol(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1730,7 +1741,7 @@ namespace plg {
 		return ret;
 	}
 
-	inline long long stoll(const string& str, std::size_t* pos = nullptr, int base = 10) {
+	[[nodiscard]] inline long long stoll(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1741,7 +1752,7 @@ namespace plg {
 		return ret;
 	}
 
-	inline unsigned long stoul(const string& str, std::size_t* pos = nullptr, int base = 10) {
+	[[nodiscard]] inline unsigned long stoul(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1752,7 +1763,7 @@ namespace plg {
 		return ret;
 	}
 
-	inline unsigned long long stoull(const string& str, std::size_t* pos = nullptr, int base = 10) {
+	[[nodiscard]] inline unsigned long long stoull(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1764,7 +1775,7 @@ namespace plg {
 	}
 
 #if PLUGIFY_STRING_FLOAT
-	inline float stof(const string& str, std::size_t* pos = nullptr) {
+	[[nodiscard]] inline float stof(const string& str, std::size_t* pos = nullptr) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1775,7 +1786,7 @@ namespace plg {
 		return ret;
 	}
 
-	inline double stod(const string& str, std::size_t* pos = nullptr) {
+	[[nodiscard]] inline double stod(const string& str, std::size_t* pos = nullptr) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1787,7 +1798,7 @@ namespace plg {
 	}
 
 #if PLUGIFY_STRING_LONG_DOUBLE
-	inline long double stold(const string& str, std::size_t* pos = nullptr) {
+	[[nodiscard]] inline long double stold(const string& str, std::size_t* pos = nullptr) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1802,7 +1813,7 @@ namespace plg {
 
 	namespace detail {
 		template<typename S, typename V>
-		_PLUGIFY_ALWAYS_INLINE S to_string(V v) {
+		_PLUGIFY_STRING_ALWAYS_INLINE S to_string(V v) {
 			//  numeric_limits::digits10 returns value less on 1 than desired for unsigned numbers.
 			//  For example, for 1-byte unsigned value digits10 is 2 (999 can not be represented),
 			//  so we need +1 here.
@@ -1834,7 +1845,7 @@ namespace plg {
 		}
 
 		template<typename S, typename P, typename V>
-		_PLUGIFY_ALWAYS_INLINE S as_string(P sprintf_like, const typename S::value_type* fmt, V v) {
+		_PLUGIFY_STRING_ALWAYS_INLINE S as_string(P sprintf_like, const typename S::value_type* fmt, V v) {
 			typedef typename S::size_type size_type;
 			S s;
 			s.resize(s.capacity());
@@ -1857,35 +1868,35 @@ namespace plg {
 		}
 	}// namespace detail
 
-	inline string to_string(int val) { return detail::to_string<string>(val); }
-	inline string to_string(unsigned val) { return detail::to_string<string>(val); }
-	inline string to_string(long val) { return detail::to_string<string>(val); }
-	inline string to_string(unsigned long val) { return detail::to_string<string>(val); }
-	inline string to_string(long long val) { return detail::to_string<string>(val); }
-	inline string to_string(unsigned long long val) { return detail::to_string<string>(val); }
+	[[nodiscard]] inline string to_string(int val) { return detail::to_string<string>(val); }
+	[[nodiscard]] inline string to_string(unsigned val) { return detail::to_string<string>(val); }
+	[[nodiscard]] inline string to_string(long val) { return detail::to_string<string>(val); }
+	[[nodiscard]] inline string to_string(unsigned long val) { return detail::to_string<string>(val); }
+	[[nodiscard]] inline string to_string(long long val) { return detail::to_string<string>(val); }
+	[[nodiscard]] inline string to_string(unsigned long long val) { return detail::to_string<string>(val); }
 
 #if PLUGIFY_STRING_FLOAT
-	inline string to_string(float val) { return detail::as_string<string>(snprintf, "%f", val); }
-	inline string to_string(double val) { return detail::as_string<string>(snprintf, "%f", val); }
+	[[nodiscard]] inline string to_string(float val) { return detail::as_string<string>(snprintf, "%f", val); }
+	[[nodiscard]] inline string to_string(double val) { return detail::as_string<string>(snprintf, "%f", val); }
 
 #if PLUGIFY_STRING_LONG_DOUBLE
-	inline string to_string(long double val) { return detail::as_string<string>(snprintf, "%Lf", val); }
+	[[nodiscard]] inline string to_string(long double val) { return detail::as_string<string>(snprintf, "%Lf", val); }
 #endif
 #endif
 
-	inline wstring to_wstring(int val) { return detail::to_string<wstring>(val); }
-	inline wstring to_wstring(unsigned val) { return detail::to_string<wstring>(val); }
-	inline wstring to_wstring(long val) { return detail::to_string<wstring>(val); }
-	inline wstring to_wstring(unsigned long val) { return detail::to_string<wstring>(val); }
-	inline wstring to_wstring(long long val) { return detail::to_string<wstring>(val); }
-	inline wstring to_wstring(unsigned long long val) { return detail::to_string<wstring>(val); }
+	[[nodiscard]] inline wstring to_wstring(int val) { return detail::to_string<wstring>(val); }
+	[[nodiscard]] inline wstring to_wstring(unsigned val) { return detail::to_string<wstring>(val); }
+	[[nodiscard]] inline wstring to_wstring(long val) { return detail::to_string<wstring>(val); }
+	[[nodiscard]] inline wstring to_wstring(unsigned long val) { return detail::to_string<wstring>(val); }
+	[[nodiscard]] inline wstring to_wstring(long long val) { return detail::to_string<wstring>(val); }
+	[[nodiscard]] inline wstring to_wstring(unsigned long long val) { return detail::to_string<wstring>(val); }
 
 #if PLUGIFY_STRING_FLOAT
-	inline wstring to_wstring(float val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%f", val); }
-	inline wstring to_wstring(double val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%f", val); }
+	[[nodiscard]] inline wstring to_wstring(float val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%f", val); }
+	[[nodiscard]] inline wstring to_wstring(double val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%f", val); }
 
 #if PLUGIFY_STRING_LONG_DOUBLE
-	inline wstring to_wstring(long double val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%Lf", val); }
+	[[nodiscard]] inline wstring to_wstring(long double val) { return detail::as_string<wstring>(detail::get_swprintf(), L"%Lf", val); }
 #endif
 #endif
 #endif
@@ -1943,11 +1954,11 @@ namespace plg {
 			_PLUGIFY_STRING_DIAG_IGN(4455)
 #endif
 			// suffix for basic_string literals
-			constexpr string operator""s(const char* str, std::size_t len) { return string{str, len}; }
-			constexpr u8string operator""s(const char8_t* str, std::size_t len) { return u8string{str, len}; }
-			constexpr u16string operator""s(const char16_t* str, std::size_t len) { return u16string{str, len}; }
-			constexpr u32string operator""s(const char32_t* str, std::size_t len) { return u32string{str, len}; }
-			constexpr wstring operator""s(const wchar_t* str, std::size_t len) { return wstring{str, len}; }
+			[[nodiscard]] constexpr string operator""s(const char* str, std::size_t len) { return string{str, len}; }
+			[[nodiscard]] constexpr u8string operator""s(const char8_t* str, std::size_t len) { return u8string{str, len}; }
+			[[nodiscard]] constexpr u16string operator""s(const char16_t* str, std::size_t len) { return u16string{str, len}; }
+			[[nodiscard]] constexpr u32string operator""s(const char32_t* str, std::size_t len) { return u32string{str, len}; }
+			[[nodiscard]] constexpr wstring operator""s(const wchar_t* str, std::size_t len) { return wstring{str, len}; }
 
 			_PLUGIFY_STRING_DIAG_POP()
 		}// namespace string_literals
