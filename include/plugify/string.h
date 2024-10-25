@@ -602,8 +602,8 @@ namespace plg {
 		constexpr basic_string(const value_type* str, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>)
 			: basic_string(str, Traits::length(str), a) {}
 
-		template<std::input_iterator InputIterator>
-		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
+		template<std::input_iterator InputIt>
+		constexpr basic_string(InputIt first, InputIt last, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			auto len = static_cast<size_type>(std::distance(first, last));
 			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(first), len);
@@ -645,8 +645,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string(const Type& t, const allocator_type& a = allocator_type()) requires(detail::is_allocator_v<Allocator>) : _allocator(a) {
 			sview_type sv(t);
@@ -700,8 +699,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& operator=(const Type& t) {
 			sview_type sv(t);
@@ -753,10 +751,10 @@ namespace plg {
 			return this->assign(str, Traits::length(str));
 		}
 
-		template<typename InputIterator>
-		constexpr basic_string& assign(InputIterator first, InputIterator last) {
-			auto len = std::distance(first, last);
-			_PLUGIFY_STRING_ASSERT((size_t) len <= this->max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+		template<std::input_iterator InputIt>
+		constexpr basic_string& assign(InputIt first, InputIt last) {
+			auto len = static_cast<size_type>(std::distance(first, last));
+			_PLUGIFY_STRING_ASSERT(len <= this->max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
 			this->internal_assign(const_pointer(first), len);
 			return *this;
 		}
@@ -769,8 +767,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& assign(const Type& t) {
 			sview_type sv(t);
@@ -778,8 +775,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& assign(const Type& t, size_type pos, size_type count = npos) {
 			auto sv = sview_type(t).substr(pos, count);
@@ -998,10 +994,10 @@ namespace plg {
 			return std::next(this->begin(), spos);
 		}
 
-		template<typename InputIterator>
-		constexpr iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
+		template<std::input_iterator InputIt>
+		constexpr iterator insert(const_iterator pos, InputIt first, InputIt last) {
 			auto spos = std::distance(this->cbegin(), pos);
-			auto len = std::distance(first, last);
+			auto len = static_cast<size_type>(std::distance(first, last));
 			_PLUGIFY_STRING_ASSERT(this->get_size() + len <= this->max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			this->internal_insert(spos, const_pointer(first), len);
 			return std::next(this->begin(), spos);
@@ -1015,8 +1011,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& insert(size_type pos, const Type& t) {
 			_PLUGIFY_STRING_ASSERT(pos <= this->get_size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
@@ -1027,8 +1022,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& insert(size_type pos, const Type& t, size_type pos_str, size_type count = npos) {
 			auto sv = sview_type(t);
@@ -1121,9 +1115,9 @@ namespace plg {
 			return this->append(str, len);
 		}
 
-		template<typename InputIterator>
-		constexpr basic_string& append(InputIterator first, InputIterator last) {
-			auto len = std::distance(first, last);
+		template<std::input_iterator InputIt>
+		constexpr basic_string& append(InputIt first, InputIt last) {
+			auto len = static_cast<size_type>(std::distance(first, last));
 			_PLUGIFY_STRING_ASSERT(this->get_size() + len <= this->max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			this->internal_append(const_pointer(first), len);
 			return *this;
@@ -1136,8 +1130,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& append(const Type& t) {
 			sview_type sv(t);
@@ -1147,8 +1140,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& append(const Type& t, size_type pos, size_type count = npos) {
 			sview_type sv(t);
@@ -1186,8 +1178,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& operator+=(const Type& t) {
 			return this->append(sview_type(t));
@@ -1218,24 +1209,21 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr int compare(const Type& t) const noexcept(noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>)) {
 			return this->get_view().compare(sview_type(t));
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const Type& t) const {
 			return this->get_view().compare(pos1, count1, sview_type(t));
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const Type& t, size_type pos2, size_type count2 = npos) const {
 			return this->get_view().compare(pos1, count1, sview_type(t), pos2, count2);
@@ -1295,8 +1283,8 @@ namespace plg {
 			return this->replace(pos, count, ssv.data(), ssv.length());
 		}
 
-		template<typename InputIterator>
-		constexpr basic_string& replace(const_iterator first, const_iterator last, InputIterator first2, InputIterator last2) {
+		template<std::input_iterator InputIt>
+		constexpr basic_string& replace(const_iterator first, const_iterator last, InputIt first2, InputIt last2) {
 			return this->replace(first, last, const_pointer(first2), std::distance(first2, last2));
 		}
 
@@ -1346,8 +1334,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& replace(size_type pos, size_type count, const Type& t) {
 			_PLUGIFY_STRING_ASSERT(pos <= this->get_size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
@@ -1356,8 +1343,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& replace(const_iterator first, const_iterator last, const Type& t) {
 			sview_type sv(t);
@@ -1365,8 +1351,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& replace(size_type pos, size_type count, const Type& t, size_type pos2, size_type count2 = npos) {
 			_PLUGIFY_STRING_ASSERT(pos <= this->get_size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
@@ -1439,8 +1424,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr size_type find(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find(sview_type(t), pos);
@@ -1463,8 +1447,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr size_type rfind(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().rfind(sview_type(t), pos);
@@ -1487,8 +1470,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr size_type find_first_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find_first_of(sview_type(t), pos);
@@ -1511,8 +1493,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr size_type find_first_not_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find_first_not_of(sview_type(t), pos);
@@ -1535,8 +1516,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr size_type find_last_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find_last_of(sview_type(t), pos);
@@ -1559,8 +1539,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(
-					std::is_convertible_v<const Type&, sview_type> &&
+			requires(std::is_convertible_v<const Type&, sview_type> &&
 					!std::is_convertible_v<const Type&, const Char*>)
 		[[nodiscard]] constexpr size_type find_last_not_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return this->get_view().find_last_not_of(sview_type(t), pos);
@@ -1694,8 +1673,8 @@ namespace plg {
 	}
 
 	// deduction guides
-	template<typename InputIterator, typename Allocator = std::allocator<typename std::iterator_traits<InputIterator>::value_type>>
-	basic_string(InputIterator, InputIterator, Allocator = Allocator()) -> basic_string<typename std::iterator_traits<InputIterator>::value_type, std::char_traits<typename std::iterator_traits<InputIterator>::value_type>, Allocator>;
+	template<typename InputIt, typename Allocator = std::allocator<typename std::iterator_traits<InputIt>::value_type>>
+	basic_string(InputIt, InputIt, Allocator = Allocator()) -> basic_string<typename std::iterator_traits<InputIt>::value_type, std::char_traits<typename std::iterator_traits<InputIt>::value_type>, Allocator>;
 
 	template<typename Char, typename Traits, typename Allocator = std::allocator<Char>>
 	explicit basic_string(std::basic_string_view<Char, Traits>, const Allocator& = Allocator()) -> basic_string<Char, Traits, Allocator>;
