@@ -1,16 +1,15 @@
 #pragma once
 
-#include <algorithm>
-#include <compare>
-#include <initializer_list>
-#include <iterator>
-#include <limits>
-#include <memory>
-#include <memory_resource> // for polymorphic_allocator
-#include <new>
-#include <stdexcept>
-#include <type_traits>
-#include <utility>
+#include <algorithm>        // for std::min, std::max
+#include <compare>          // for std::weak_ordering
+#include <initializer_list> // for std::initializer_list
+#include <iterator>         // for std::distance, std::next, std::iterator_traits, std::input_iterator
+#include <limits>           // for std::numeric_limits
+#include <memory>           // for std::uninitialized_copy, std::uninitialized_fill
+#include <memory_resource>  // for std::polymorphic_allocator
+#include <new>              // for some memory utilities
+#include <type_traits>      // for std::is_constant_evaluated, std::declval, std::false_type
+#include <utility>          // for std::move, std::launder
 
 #ifndef PLUGIFY_VECTOR_EXCEPTIONS
 #  if __cpp_exceptions
@@ -107,33 +106,23 @@ namespace plg {
 		//   Like the above, but where the pointers in src..src_end are laundered
 
 		template<std::input_or_output_iterator It, std::input_or_output_iterator It2>
-		[[nodiscard]] constexpr //
-				auto
-				make_range(It begin, It2 end) //
+		[[nodiscard]] constexpr auto make_range(It begin, It2 end)
 				noexcept(std::is_nothrow_constructible_v<std::decay_t<It>, It&&> and
-						 std::is_nothrow_constructible_v<std::decay_t<It2>, It2&&>)
-		{
+						 std::is_nothrow_constructible_v<std::decay_t<It2>, It2&&>) {
 			using InnerIt = std::decay_t<It>;
 			using InnerIt2 = std::decay_t<It2>;
-			struct Range
-			{
-				InnerIt m_begin;
-				InnerIt2 m_end;
+			struct Range {
+				InnerIt _begin;
+				InnerIt2 _end;
 
-				[[nodiscard]] constexpr InnerIt begin() const noexcept { return m_begin; }
-				[[nodiscard]] constexpr InnerIt2 end() const noexcept { return m_end; }
+				[[nodiscard]] constexpr InnerIt begin() const noexcept { return _begin; }
+				[[nodiscard]] constexpr InnerIt2 end() const noexcept { return _end; }
 			};
 			return Range{ std::forward<It>(begin), std::forward<It2>(end) };
 		}
 
-		template<std::input_or_output_iterator OutputIt,
-				 std::input_iterator FstIt,
-				 typename Op,
-				 std::input_iterator... RestIt>
-		constexpr //
-				OutputIt
-				zip_transform(FstIt fst, FstIt fst_end, OutputIt dst, Op op, RestIt... rest)
-		{
+		template<std::input_or_output_iterator OutputIt, std::input_iterator FstIt, typename Op, std::input_iterator... RestIt>
+		constexpr OutputIt zip_transform(FstIt fst, FstIt fst_end, OutputIt dst, Op op, RestIt... rest) {
 			for (; fst != fst_end; ++dst, ++fst, (++rest, ...)) {
 				*dst = op(*fst, *rest...);
 			}
@@ -141,104 +130,62 @@ namespace plg {
 		}
 
 		template<std::input_iterator FstIt, typename Op, std::input_iterator... RestIt>
-		constexpr //
-				void
-				zip_foreach(FstIt fst, FstIt fst_end, Op op, RestIt... rest)
-		{
+		constexpr void zip_foreach(FstIt fst, FstIt fst_end, Op op, RestIt... rest) {
 			for (; fst != fst_end; ++fst, (++rest, ...)) {
 				op(*fst, *rest...);
 			}
 		}
 
-		template<std::input_iterator InputIt,
-				 std::input_or_output_iterator OutputIt,
-				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
-		constexpr //
-				OutputIt
-				uninitialized_copy(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
-		{
+		template<std::input_iterator InputIt, std::input_or_output_iterator OutputIt, typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr OutputIt uninitialized_copy(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc) {
 			for (; src != src_end; ++src, ++dst) {
 				std::allocator_traits<Allocator>::construct(alloc, dst, *src);
 			}
 			return dst;
 		}
 
-		template<std::input_iterator InputIt,
-				 std::input_or_output_iterator OutputIt,
-				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
-		constexpr //
-				OutputIt
-				uninitialized_move(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
-		{
+		template<std::input_iterator InputIt, std::input_or_output_iterator OutputIt, typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr OutputIt uninitialized_move(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc) {
 			for (; src != src_end; ++src, ++dst) {
 				std::allocator_traits<Allocator>::construct(alloc, dst, std::move(*src));
 			}
 			return dst;
 		}
 
-		template<std::input_iterator InputIt,
-				 std::input_or_output_iterator OutputIt,
-				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
-		constexpr //
-				OutputIt
-				uninitialized_move_if_noexcept(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
-		{
+		template<std::input_iterator InputIt, std::input_or_output_iterator OutputIt, typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr OutputIt uninitialized_move_if_noexcept(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc) {
 			for (; src != src_end; ++src, ++dst) {
 				std::allocator_traits<Allocator>::construct(alloc, dst, std::move_if_noexcept(*src));
 			}
 			return dst;
 		}
 
-		template<std::input_iterator InputIt,
-				 std::input_or_output_iterator OutputIt,
-				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
-		constexpr //
-				OutputIt
-				uninitialized_copy_launder(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
-		{
+		template<std::input_iterator InputIt, std::input_or_output_iterator OutputIt, typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr OutputIt uninitialized_copy_launder(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc) {
 			for (; src != src_end; ++src, ++dst) {
 				std::allocator_traits<Allocator>::construct(alloc, dst, *std::launder(src));
 			}
 			return dst;
 		}
 
-		template<std::input_iterator InputIt,
-				 std::input_or_output_iterator OutputIt,
-				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
-		constexpr //
-				OutputIt
-				uninitialized_move_launder(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc)
-		{
+		template<std::input_iterator InputIt, std::input_or_output_iterator OutputIt, typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr OutputIt uninitialized_move_launder(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc) {
 			for (; src != src_end; ++src, ++dst) {
 				std::allocator_traits<Allocator>::construct(alloc, dst, std::move(*std::launder(src)));
 			}
 			return dst;
 		}
 
-		template<std::input_iterator InputIt,
-				 std::input_or_output_iterator OutputIt,
-				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
-		constexpr //
-				OutputIt
-				uninitialized_move_if_noexcept_launder(InputIt src,
-													   InputIt src_end,
-													   OutputIt dst,
-													   Allocator alloc)
-		{
+		template<std::input_iterator InputIt, std::input_or_output_iterator OutputIt, typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr OutputIt uninitialized_move_if_noexcept_launder(InputIt src, InputIt src_end, OutputIt dst, Allocator alloc) {
 			for (; src != src_end; ++src, ++dst) {
-				std::allocator_traits<Allocator>::construct(
-						alloc, dst, std::move_if_noexcept(*std::launder(src)));
+				std::allocator_traits<Allocator>::construct(alloc, dst, std::move_if_noexcept(*std::launder(src)));
 			}
 			return dst;
 		}
 
-		template<std::input_iterator InputIt,
-				 std::input_or_output_iterator OutputIt,
-				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
-		constexpr //
-				OutputIt
-				move_if_noexcept_launder_backward(InputIt src, InputIt src_end, OutputIt dst_end)
-		{
+		template<std::input_iterator InputIt, std::input_or_output_iterator OutputIt, typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr OutputIt move_if_noexcept_launder_backward(InputIt src, InputIt src_end, OutputIt dst_end) {
 			for (; src != src_end; --src_end, --dst_end) {
 				--src_end;
 				--dst_end;
@@ -247,16 +194,8 @@ namespace plg {
 			return dst_end;
 		}
 
-		template<std::input_iterator InputIt,
-				 std::input_or_output_iterator OutputIt,
-				 typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
-		constexpr //
-				OutputIt
-				uninitialized_move_if_noexcept_launder_backward(InputIt src,
-																InputIt src_end,
-																OutputIt dst_end,
-																Allocator alloc)
-		{
+		template<std::input_iterator InputIt, td::input_or_output_iterator OutputIt, typename Allocator = std::allocator<iterator_value_t<OutputIt>>>
+		constexpr OutputIt uninitialized_move_if_noexcept_launder_backward(InputIt src, InputIt src_end, OutputIt dst_end, Allocator alloc) {
 			for (; src != src_end; --src_end, --dst_end) {
 				--src_end;
 				--dst_end;
@@ -310,9 +249,7 @@ namespace plg {
 		// Constructors //
 		//////////////////
 
-		constexpr //
-				vector_base() //
-				noexcept(std::is_nothrow_default_constructible<allocator_type>::value) //
+		constexpr vector_base() noexcept(std::is_nothrow_default_constructible<allocator_type>::value)
 			requires(is_allocator_v<Allocator>)
 			: _begin(nullptr),
 			  _end(nullptr),
@@ -320,9 +257,7 @@ namespace plg {
 			  _allocator()
 		{}
 
-		constexpr explicit //
-				vector_base(const allocator_type& alloc) //
-				noexcept  //
+		constexpr explicit vector_base(const allocator_type& alloc) noexcept
 			requires(is_allocator_v<Allocator>)
 			: _begin(nullptr),
 			  _end(nullptr),
@@ -330,8 +265,7 @@ namespace plg {
 			  _allocator(alloc)
 		{}
 
-		 constexpr //
-				vector_base(size_type count, const T& value, const allocator_type& alloc = allocator_type()) //
+		 constexpr vector_base(size_type count, const T& value, const allocator_type& alloc = allocator_type())
 			requires(is_allocator_v<Allocator>)
 			: _allocator(alloc)
 		{
@@ -342,8 +276,7 @@ namespace plg {
 			_end = _realend;
 		}
 
-		constexpr explicit //
-				vector_base(size_type count, const allocator_type& alloc = allocator_type()) //
+		constexpr explicit vector_base(size_type count, const allocator_type& alloc = allocator_type())
 			requires(is_allocator_v<Allocator>)
 			: _allocator(alloc)
 		{
@@ -356,8 +289,7 @@ namespace plg {
 
 		// Looser overload that allows any input iterator
 		template<std::input_iterator InputIt>
-		constexpr //
-				vector_base(InputIt first, InputIt last, const allocator_type& alloc = allocator_type()) //
+		constexpr vector_base(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
 			requires(is_allocator_v<Allocator>)
 			: _begin(nullptr),
 			  _end(nullptr),
@@ -371,8 +303,7 @@ namespace plg {
 
 		// Tighter overload to reserve up front
 		/*template<std::random_access_iterator RandomAccessIt>
-		constexpr //
-				vector_base(RandomAccessIt first, RandomAccessIt last, const allocator_type& alloc = allocator_type()) //
+		constexpr vector_base(RandomAccessIt first, RandomAccessIt last, const allocator_type& alloc = allocator_type())
 			requires(is_allocator_v<Allocator>)
 			: _allocator(alloc)
 		{
@@ -389,28 +320,23 @@ namespace plg {
 		// Special member functions (and similar constructors) //
 		/////////////////////////////////////////////////////////
 
-		constexpr //
-				vector_base(const vector_base& other)
+		constexpr vector_base(const vector_base& other)
 			: vector_base(other._begin,
 						  other._end,
 						  allocator_traits::select_on_container_copy_construction(other._allocator))
 		{}
 
-		constexpr //
-				vector_base(const vector_base& other, const allocator_type& alloc) //
+		constexpr vector_base(const vector_base& other, const allocator_type& alloc)
 			requires(is_allocator_v<Allocator>)
 			: vector_base(other._begin, other._end, alloc)
 		{}
 
-		constexpr //
-				vector_base(std::initializer_list<T> il, const allocator_type& alloc = allocator_type()) //
+		constexpr vector_base(std::initializer_list<T> il, const allocator_type& alloc = allocator_type())
 			requires(is_allocator_v<Allocator>)
 			: vector_base(il.begin(), il.end(), alloc)
 		{}
 
-		constexpr //
-				vector_base(vector_base&& other) //
-				noexcept
+		constexpr vector_base(vector_base&& other) noexcept
 			: _begin(other._begin),
 			  _end(other._end),
 			  _realend(other._realend),
@@ -419,8 +345,7 @@ namespace plg {
 			other._begin = other._end = other._realend = nullptr;
 		}
 
-		constexpr //
-				vector_base(vector_base&& other, const allocator_type& alloc) //
+		constexpr vector_base(vector_base&& other, const allocator_type& alloc)
 			requires(is_allocator_v<Allocator>)
 			: _allocator(alloc)
 		{
@@ -436,10 +361,7 @@ namespace plg {
 			}
 		}
 
-		constexpr //
-				vector_base&
-				operator=(const vector_base& other)
-		{
+		constexpr vector_base& operator=(const vector_base& other) {
 			if (this == &other)
 				return *this;
 
@@ -486,9 +408,7 @@ namespace plg {
 			return *this;
 		}
 
-		constexpr //
-				vector_base&
-				operator=(vector_base&& other) //
+		constexpr vector_base& operator=(vector_base&& other)
 				noexcept(allocator_traits::propagate_on_container_move_assignment::value ||
 						 allocator_traits::is_always_equal::value)
 		{
@@ -549,20 +469,14 @@ namespace plg {
 			return *this;
 		}
 
-		constexpr //
-				vector_base&
-				operator=(std::initializer_list<T> ilist)
-		{
+		constexpr vector_base& operator=(std::initializer_list<T> ilist) {
 			assign(ilist.begin(), ilist.end());
 			return *this;
 		}
 
-		constexpr //
-				void
-				swap(vector_base& other) //
+		constexpr void swap(vector_base& other)
 				noexcept(allocator_traits::propagate_on_container_swap::value ||
-						 allocator_traits::is_always_equal::value)
-		{
+						 allocator_traits::is_always_equal::value) {
 			using std::swap;
 			if constexpr (allocator_traits::propagate_on_container_swap::value) {
 				swap(_allocator, other._allocator);
@@ -575,58 +489,28 @@ namespace plg {
 			swap(_realend, other._realend);
 		}
 
-		friend //
-				void
-				swap(vector_base& a, vector_base& b) //
+		friend void swap(vector_base& a, vector_base& b) 
 				noexcept(allocator_traits::propagate_on_container_swap::value ||
-						 allocator_traits::is_always_equal::value)
-		{
+						 allocator_traits::is_always_equal::value) {
 			a.swap(b);
 		}
 
 		constexpr ~vector_base() { deallocate(); }
 
-	private:
-		constexpr //
-				void
-				check_range(size_type n) //
-				const
-		{
-			if (n >= size()) {
-				// TODO: do fancier formatting when I implement constexpr string (?)
-				throw std::out_of_range("Bounds check failed.");
-			}
-		}
-
 	public:
-		[[nodiscard]] constexpr //
-				reference
-				at(size_type pos)
-		{
-			check_range(pos);
+		[[nodiscard]] constexpr reference at(size_type pos) {
+			_PLUGIFY_VECTOR_ASSERT(pos < this->get_size(), "plg::vector_base::at(): pos out of range", std::out_of_range);
 			return *this[pos];
 		}
-		[[nodiscard]] constexpr //
-				const_reference
-				at(size_type pos) //
-				const
-		{
-			check_range(pos);
+		[[nodiscard]] constexpr const_reference at(size_type pos) const {
+			_PLUGIFY_VECTOR_ASSERT(pos < this->get_size(), "plg::vector_base::at(): pos out of range", std::out_of_range);
 			return *this[pos];
 		}
 
-		[[nodiscard]] constexpr //
-				reference
-				operator[](size_type pos) //
-				noexcept
-		{
+		[[nodiscard]] constexpr reference operator[](size_type pos) noexcept {
 			return *std::launder(_begin + pos);
 		}
-		[[nodiscard]] constexpr //
-				const_reference
-				operator[](size_type pos) //
-				const noexcept
-		{
+		[[nodiscard]] constexpr const_reference operator[](size_type pos) const noexcept {
 			return *std::launder(_begin + pos);
 		}
 
@@ -660,11 +544,8 @@ namespace plg {
 		[[nodiscard]] constexpr size_type size() /******/ const noexcept { return _end - _begin; }
 		[[nodiscard]] constexpr size_type capacity() /**/ const noexcept { return _realend - _begin; }
 		[[nodiscard]] constexpr bool empty() /**********/ const noexcept { return size() == 0; }
-		[[nodiscard]] constexpr //
-				size_type
-				max_size() //
-				const
-		{
+		
+		[[nodiscard]] constexpr size_type max_size() const {
 			const size_type diffmax = std::numeric_limits<difference_type>::max() / sizeof(T);
 			const size_type allocmax = allocator_traits::max_size(_allocator);
 			return std::min(diffmax, allocmax);
@@ -674,10 +555,7 @@ namespace plg {
 		// Size modifiers //
 		////////////////////
 
-		constexpr //
-				void
-				reserve(size_type new_cap)
-		{
+		constexpr void reserve(size_type new_cap) {
 			if (new_cap > capacity()) {
 				auto tmp = allocate_tmp(new_cap, _allocator);
 				try {
@@ -693,10 +571,7 @@ namespace plg {
 			}
 		}
 
-		constexpr //
-				void
-				shrink_to_fit()
-		{
+		constexpr void shrink_to_fit() {
 			auto oldsize = size();
 			if (oldsize < capacity()) {
 				auto tmp = allocate_tmp(oldsize, _allocator);
@@ -713,10 +588,7 @@ namespace plg {
 			}
 		}
 
-		constexpr //
-				void
-				resize(size_type count)
-		{
+		constexpr void resize(size_type count) {
 			if (count > capacity()) {
 				auto tmp = allocate_tmp(count, _allocator);
 				try {
@@ -743,10 +615,7 @@ namespace plg {
 			}
 		}
 
-		constexpr //
-				void
-				resize(size_type count, const value_type& value)
-		{
+		constexpr void resize(size_type count, const value_type& value) {
 			if (count > capacity()) {
 				auto tmp = allocate_tmp(count, _allocator);
 				try {
@@ -775,11 +644,7 @@ namespace plg {
 			}
 		}
 
-		constexpr //
-				void
-				clear() //
-				noexcept
-		{
+		constexpr void clear() noexcept {
 			while (not empty()) {
 				pop_back();
 			}
@@ -795,8 +660,7 @@ namespace plg {
 		}*/
 
 		template<std::input_iterator InputIt>
-		constexpr void assign(InputIt first, InputIt last)
-		{
+		constexpr void assign(InputIt first, InputIt last) {
 			size_type sz = static_cast<size_type>(last - first);
 			if (sz > capacity()) {
 				// We must realloc, so directly move into new buffer
@@ -831,8 +695,7 @@ namespace plg {
 			}
 		}
 
-		constexpr void assign(std::initializer_list<T> ilist)
-		{
+		constexpr void assign(std::initializer_list<T> ilist) {
 			if (ilist.size() > capacity()) {
 				// We must realloc, so directly move into new buffer
 				auto tmp = allocate_tmp(ilist.size(), _allocator);
@@ -872,10 +735,7 @@ namespace plg {
 
 		// Strong exception guarantee
 		template<typename... Args>
-		constexpr //
-				void
-				emplace_back(Args&&... args)
-		{
+		constexpr void emplace_back(Args&&... args) {
 			if (_end < _realend) {
 				allocator_traits::construct(_allocator, std::launder(_end), std::forward<Args>(args)...);
 				++_end;
@@ -910,10 +770,7 @@ namespace plg {
 		// Conditionally strong exception guarantee
 		// as long as value_type is nothrow assignable and constructible either by move or copy.
 		template<typename... Args>
-		constexpr //
-				pointer
-				emplace(const_pointer pos, Args&&... args)
-		{
+		constexpr pointer emplace(const_pointer pos, Args&&... args) {
 			if (pos == _end) {
 				emplace_back(args...);
 				return _end - 1;
@@ -960,17 +817,11 @@ namespace plg {
 			return pos;
 		}
 
-		constexpr //
-				iterator
-				insert(const_iterator pos, const T& value)
-		{
+		constexpr iterator insert(const_iterator pos, const T& value) {
 			insert(pos, 1, value);
 		}
 
-		constexpr //
-				iterator
-				insert(const_iterator pos, T&& value)
-		{
+		constexpr iterator insert(const_iterator pos, T&& value) {
 			if (pos == _end) {
 				emplace_back(value);
 				return _end - 1;
@@ -1010,10 +861,7 @@ namespace plg {
 			return pos;
 		}
 
-		constexpr //
-				iterator
-				insert(const_iterator pos, size_type count, const T& value)
-		{
+		constexpr iterator insert(const_iterator pos, size_type count, const T& value) {
 			if (count != 0) {
 				if (pos == _end) {
 					emplace_back(value);
@@ -1060,10 +908,7 @@ namespace plg {
 		// Not quite the same as LegacyInputIterator,
 		// but this way is easier and shouldn't break any existing code anyway.
 		template<std::input_iterator InputIt>
-		constexpr //
-				iterator
-				insert(const_iterator pos, InputIt first, InputIt last)
-		{
+		constexpr iterator insert(const_iterator pos, InputIt first, InputIt last) {
 			// Since input iterator is single pass, we will just insert one at a time the dumb way.
 			// TODO: copy first to a vector then call the random_access_iterator overload.
 
@@ -1077,10 +922,7 @@ namespace plg {
 			return _begin + index;
 		}
 
-		constexpr //
-				iterator
-				insert(const_iterator pos, std::initializer_list<T> ilist)
-		{
+		constexpr iterator insert(const_iterator pos, std::initializer_list<T> ilist) {
 			return insert(pos, ilist.begin(), ilist.end());
 		}
 
@@ -1088,25 +930,16 @@ namespace plg {
 		// Removal modifiers //
 		///////////////////////
 
-		constexpr //
-				void
-				pop_back() //
-		{
+		constexpr void pop_back() {
 			allocator_traits::destroy(_allocator, std::launder(_end - 1));
 			--_end;
 		}
 
-		constexpr //
-				iterator
-				erase(const_iterator pos)
-		{
+		constexpr iterator erase(const_iterator pos) {
 			return erase(pos, pos + 1);
 		}
 
-		constexpr //
-				iterator
-				erase(const_iterator first, const_iterator last)
-		{
+		constexpr iterator erase(const_iterator first, const_iterator last) {
 			move_if_noexcept_launder(last, _end, first, _allocator);
 			for (size_t i = 0; i < last - first; ++i) {
 				pop_back();
@@ -1118,25 +951,16 @@ namespace plg {
 		// Comparison operators //
 		//////////////////////////
 
-		[[nodiscard]] constexpr //
-				bool
-				operator==(const vector_base& other)                 //
-				const noexcept(noexcept(*begin() == *other.begin())) //
+		[[nodiscard]] constexpr bool operator==(const vector_base& other)
+			const noexcept(noexcept(*begin() == *other.begin()))
 			requires std::equality_comparable<T>
 		{
 			return std::equal(begin(), end(), other.begin(), other.end());
 		}
 
-		[[nodiscard]] constexpr //
-				comparison_type
-				operator<=>(const vector_base& other)                //
-				const noexcept(noexcept(*begin() == *other.begin())) //
-			requires std::three_way_comparable<T> ||             //
-					 requires(const T& elem)
-		{
-			elem < elem;
-		} //
-		{
+		[[nodiscard]] constexpr comparison_type operator<=>(const vector_base& other) const 
+			noexcept(noexcept(*begin() == *other.begin()))
+			requires std::three_way_comparable<T> || requires(const T& elem) { elem < elem; } {
 			if constexpr (std::three_way_comparable<T>) {
 				return std::lexicographical_compare_three_way(_begin, _end, other._begin, other._end);
 			} else {
@@ -1144,7 +968,7 @@ namespace plg {
 						_begin, _end, other._begin, other._end, [](const auto& a, const auto& b) {
 							return a < b ? std::weak_ordering::less :
 								   b < a ? std::weak_ordering::greater :
-										 std::weak_ordering::equivalent;
+										   std::weak_ordering::equivalent;
 						});
 			}
 		}
@@ -1154,10 +978,7 @@ namespace plg {
 		/////////////////////////////////////////
 
 	private:
-		constexpr //
-				void
-				allocate(size_type capacity, Allocator& alloc)
-		{
+		constexpr void allocate(size_type capacity, Allocator& alloc) {
 			try {
 				_begin = allocator_traits::allocate(alloc, capacity);
 				_realend = _begin + capacity;
@@ -1170,10 +991,7 @@ namespace plg {
 			}
 		}
 
-		constexpr //
-				pointer
-				allocate_tmp(size_type capacity, Allocator& alloc)
-		{
+		constexpr pointer allocate_tmp(size_type capacity, Allocator& alloc) {
 			try {
 				return allocator_traits::allocate(alloc, capacity, _begin);
 			} catch (...) {
@@ -1185,11 +1003,7 @@ namespace plg {
 			}
 		}
 
-		constexpr //
-				void
-				deallocate() //
-				noexcept
-		{
+		constexpr void deallocate() noexcept {
 			clear();
 			if (_begin)
 				allocator_traits::deallocate(_allocator, _begin, capacity());
@@ -1197,10 +1011,7 @@ namespace plg {
 	};
 
 	template<typename T, typename Alloc, typename U>
-	constexpr //
-			typename vector_base<T, Alloc>::size_type
-			erase(vector_base<T, Alloc>& c, const U& value)
-	{
+	constexpr typename vector_base<T, Alloc>::size_type erase(vector_base<T, Alloc>& c, const U& value) {
 		auto it = std::remove(c.begin(), c.end(), value);
 		auto r = std::distance(it, c.end());
 		c.erase(it, c.end());
@@ -1208,10 +1019,7 @@ namespace plg {
 	}
 
 	template<typename T, typename Alloc, typename Pred>
-	constexpr //
-			typename vector_base<T, Alloc>::size_type
-			erase_if(vector_base<T, Alloc>& c, Pred pred)
-	{
+	constexpr typename vector_base<T, Alloc>::size_type erase_if(vector_base<T, Alloc>& c, Pred pred) {
 		auto it = std::remove_if(c.begin(), c.end(), pred);
 		auto r = std::distance(it, c.end());
 		c.erase(it, c.end());
