@@ -330,7 +330,7 @@ namespace plg {
 			  _allocator(alloc)
 		{}
 
-		constexpr //
+		 constexpr //
 				vector_base(size_type count, const T& value, const allocator_type& alloc = allocator_type()) //
 			requires(is_allocator_v<Allocator>)
 			: _allocator(alloc)
@@ -370,19 +370,20 @@ namespace plg {
 		}
 
 		// Tighter overload to reserve up front
-		template<std::random_access_iterator RandomAccessIt>
-		constexpr //
+		/*template<std::random_access_iterator RandomAccessIt>
+		constexpr explicit //
 				vector_base(RandomAccessIt first, RandomAccessIt last, const allocator_type& alloc = allocator_type()) //
 			requires(is_allocator_v<Allocator>)
 			: _allocator(alloc)
 		{
-			if (last - first > 0) {
-				allocate(last - first, _allocator);
+            size_type length = static_cast<size_type>(last - first);
+			if (length > 0) {
+				allocate(length, _allocator);
 				_end = uninitialized_copy(first, last, _begin, _allocator);
 			} else {
 				_begin = _end = _realend = nullptr;
 			}
-		}
+		}*/
 
 		/////////////////////////////////////////////////////////
 		// Special member functions (and similar constructors) //
@@ -685,7 +686,7 @@ namespace plg {
 					_end = end;
 					_realend = tmp + new_cap;
 				} catch (...) {
-					allocator_traits::deallocate(tmp);
+					allocator_traits::deallocate(_allocator, tmp, new_cap);
 					throw;
 				}
 			}
@@ -705,7 +706,7 @@ namespace plg {
 					_end = end;
 					_realend = tmp + oldsize;
 				} catch (...) {
-					allocator_traits::deallocate(tmp);
+					allocator_traits::deallocate(_allocator, tmp, oldsize);
 					throw;
 				}
 			}
@@ -727,7 +728,7 @@ namespace plg {
 					_end = end;
 					_realend = tmp + count;
 				} catch (...) {
-					allocator_traits::deallocate(tmp);
+					allocator_traits::deallocate(_allocator, tmp, count);
 					throw;
 				}
 			} else if (count > size()) {
@@ -759,7 +760,7 @@ namespace plg {
 					_end = end;
 					_realend = tmp + count;
 				} catch (...) {
-					allocator_traits::deallocate(tmp);
+					allocator_traits::deallocate(_allocator, tmp, count);
 					throw;
 				}
 			} else if (count > size()) {
@@ -792,10 +793,41 @@ namespace plg {
 			// TODO: Finish
 		}*/
 
-		template< class InputIt >
+		template<std::input_iterator InputIt>
 		constexpr void assign(InputIt first, InputIt last)
 		{
-			assign(std::initializer_list<T>(first, last));
+			size_type length = static_cast<size_type>(last - first);
+			if (length > capacity()) {
+				// We must realloc, so directly move into new buffer
+				auto tmp = allocate_tmp(length, _allocator);
+				try {
+					uninitialized_move(first, last, tmp, _allocator);
+					deallocate();
+					_begin = tmp;
+					_realend = _end = tmp + length;
+				} catch (...) {
+					allocator_traits::deallocate(_allocator, tmp, length);
+					throw;
+				}
+			} else {
+				// destroy excess
+				while (length < size()) {
+					pop_back();
+				}
+
+				// copy-assign onto existing elements
+				auto tmp = first;
+				for (auto& elem : *this) {
+					elem = *tmp;
+					++tmp;
+				}
+
+				// copy-construct new elements
+				while (tmp != last) {
+					push_back(*tmp);
+					++tmp;
+				}
+			}
 		}
 
 		constexpr void assign(std::initializer_list<T> ilist)
@@ -1190,7 +1222,7 @@ namespace plg {
 
 	namespace pmr {
 		template<typename T>
-		using vector = ::plg::vector_base<T, std::pmr::polymorphic_allocator<T>>;
+		using vector = ::plg::vector<T, std::pmr::polymorphic_allocator<T>>;
 
 	} // namespace pmr
 
