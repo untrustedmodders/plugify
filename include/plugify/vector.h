@@ -310,7 +310,7 @@ namespace plg {
 		// Constructors //
 		//////////////////
 
-		constexpr       //
+		constexpr //
 				vector_base() //
 				noexcept(std::is_nothrow_default_constructible<allocator_type>::value) //
 			requires(is_allocator_v<Allocator>)
@@ -320,7 +320,7 @@ namespace plg {
 			  _allocator()
 		{}
 
-		constexpr explicit                    //
+		constexpr explicit //
 				vector_base(const allocator_type& alloc) //
 				noexcept  //
 			requires(is_allocator_v<Allocator>)
@@ -371,14 +371,14 @@ namespace plg {
 
 		// Tighter overload to reserve up front
 		/*template<std::random_access_iterator RandomAccessIt>
-		constexpr explicit //
+		constexpr //
 				vector_base(RandomAccessIt first, RandomAccessIt last, const allocator_type& alloc = allocator_type()) //
 			requires(is_allocator_v<Allocator>)
 			: _allocator(alloc)
 		{
-            size_type length = static_cast<size_type>(last - first);
-			if (length > 0) {
-				allocate(length, _allocator);
+            size_type sz = static_cast<size_type>(last - first);
+			if (sz > 0) {
+				allocate(sz, _allocator);
 				_end = uninitialized_copy(first, last, _begin, _allocator);
 			} else {
 				_begin = _end = _realend = nullptr;
@@ -402,12 +402,13 @@ namespace plg {
 			: vector_base(other._begin, other._end, alloc)
 		{}
 
-		constexpr vector_base(std::initializer_list<T> il, const allocator_type& alloc = allocator_type()) //
+		constexpr //
+				vector_base(std::initializer_list<T> il, const allocator_type& alloc = allocator_type()) //
 			requires(is_allocator_v<Allocator>)
 			: vector_base(il.begin(), il.end(), alloc)
 		{}
 
-		constexpr                          //
+		constexpr //
 				vector_base(vector_base&& other) //
 				noexcept
 			: _begin(other._begin),
@@ -418,8 +419,8 @@ namespace plg {
 			other._begin = other._end = other._realend = nullptr;
 		}
 
-		constexpr                                                  //
-				vector_base(vector_base&& other, const allocator_type& alloc) // //
+		constexpr //
+				vector_base(vector_base&& other, const allocator_type& alloc) //
 			requires(is_allocator_v<Allocator>)
 			: _allocator(alloc)
 		{
@@ -562,16 +563,16 @@ namespace plg {
 				noexcept(allocator_traits::propagate_on_container_swap::value ||
 						 allocator_traits::is_always_equal::value)
 		{
+			using std::swap;
 			if constexpr (allocator_traits::propagate_on_container_swap::value) {
-				using std::swap;
 				swap(_allocator, other._allocator);
 			}
 			// We're allowed to UB if m_alloc != other.m_alloc and propagate is false
 			// This is cause swap must be constant time, if propagate is false and allocs are not equal
 			// we would be forced to copy / move (and thus not be constant time anymore)
-			std::swap(_begin, other._begin);
-			std::swap(_end, other._end);
-			std::swap(_realend, other._realend);
+			swap(_begin, other._begin);
+			swap(_end, other._end);
+			swap(_realend, other._realend);
 		}
 
 		friend //
@@ -796,22 +797,22 @@ namespace plg {
 		template<std::input_iterator InputIt>
 		constexpr void assign(InputIt first, InputIt last)
 		{
-			size_type length = static_cast<size_type>(last - first);
-			if (length > capacity()) {
+			size_type sz = static_cast<size_type>(last - first);
+			if (sz > capacity()) {
 				// We must realloc, so directly move into new buffer
-				auto tmp = allocate_tmp(length, _allocator);
+				auto tmp = allocate_tmp(sz, _allocator);
 				try {
 					uninitialized_move(first, last, tmp, _allocator);
 					deallocate();
 					_begin = tmp;
-					_realend = _end = tmp + length;
+					_realend = _end = tmp + sz;
 				} catch (...) {
-					allocator_traits::deallocate(_allocator, tmp, length);
+					allocator_traits::deallocate(_allocator, tmp, sz);
 					throw;
 				}
 			} else {
 				// destroy excess
-				while (length < size()) {
+				while (sz < size()) {
 					pop_back();
 				}
 
@@ -1222,7 +1223,7 @@ namespace plg {
 
 	namespace pmr {
 		template<typename T>
-		using vector = ::plg::vector<T, std::pmr::polymorphic_allocator<T>>;
+		using vector = ::plg::vector_base<T, std::pmr::polymorphic_allocator<T>>;
 
 	} // namespace pmr
 
