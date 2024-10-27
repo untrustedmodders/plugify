@@ -410,6 +410,13 @@ if(PLUGIFY_BUILD_JIT)
         target_include_directories(${PROJECT_NAME}-jit PRIVATE ${ASMJIT_SRC})
     endif()
     target_link_libraries(${PROJECT_NAME}-jit PRIVATE asmjit::asmjit)
+    if(MSVC)
+        target_compile_options(asmjit PUBLIC /wd5054)
+    elseif(MINGW)
+        target_compile_options(asmjit PUBLIC -Wno-deprecated-enum-enum-conversion)
+    else()
+        target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion)
+    endif()
     target_compile_definitions(${PROJECT_NAME}-jit PRIVATE
             PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
             PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
