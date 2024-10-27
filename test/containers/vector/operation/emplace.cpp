@@ -1,4 +1,4 @@
-#include <catch2/catch_all.hpp>
+#include <catch_amalgamated.hpp>
 
 #include <app/counter.hpp>
 #include <app/vec_tester.hpp>

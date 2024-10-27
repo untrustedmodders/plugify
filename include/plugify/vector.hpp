@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cstring>
 
 #define _PLUGIFY_VECTOR_HAS_EXCEPTIONS (__cpp_exceptions || __EXCEPTIONS || _HAS_EXCEPTIONS)
 
@@ -425,7 +426,7 @@ namespace plg {
 		{
 			_PLUGIFY_VECTOR_ASSERT(size <= max_size(), "plg::vector_base::reserve(): allocated memory size would exceed max_size()", std::length_error);
 			if (size > capacity()) {
-				change_capacity(static_cast<size_type>(std::ranges::max(size, static_cast<size_t>(capacity() * growth_factor))));
+				change_capacity(static_cast<size_type>(std::ranges::max(size, static_cast<size_t>(static_cast<float>(capacity()) * growth_factor))));
 			}
 		}
 
@@ -975,16 +976,16 @@ namespace plg {
 		constexpr void set_size(size_type sz)
 		{
 			if (sbo_active()) {
-				_size.small.size = static_cast<uint8_t>(sz);
+				_size.small.size = (sz & 0x7F);
 			} else {
-				_size.big.size = sz;
+				_size.big.size = (sz & 0x7FFFFFFFFFFFFFFF);
 			}
 		}
 
 		constexpr void ensure_capacity(size_type min_capacity)
 		{
 			if (capacity() < min_capacity) {
-				change_capacity(std::ranges::max(min_capacity, static_cast<size_type>(capacity() * growth_factor)));
+				change_capacity(std::ranges::max(min_capacity, static_cast<size_type>(static_cast<float>(capacity()) * growth_factor)));
 			}
 		}
 
@@ -993,7 +994,7 @@ namespace plg {
 			if (capacity() >= min_capacity) {
 				construct(data());
 			} else {
-				change_capacity(std::ranges::max(min_capacity, static_cast<size_type>(capacity() * growth_factor)), construct);
+				change_capacity(std::ranges::max(min_capacity, static_cast<size_type>(static_cast<float>(capacity()) * growth_factor)), construct);
 			}
 		}
 

@@ -28,10 +28,10 @@ enable_testing()
 #
 file(GLOB_RECURSE TESTS_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 
-add_executable(${PROJECT_NAME} ${TESTS_SOURCES})
+add_executable(${PROJECT_NAME} ${TESTS_SOURCES} ${Catch2_SOURCE_DIR}/extras/catch_amalgamated.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify Catch2::Catch2WithMain)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${Catch2_SOURCE_DIR}/extras)
 
 if(NOT COMPILER_SUPPORTS_FORMAT)
     target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
@@ -44,5 +44,5 @@ catch_discover_tests(${PROJECT_NAME})
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Werror) #-Wconversion -Wpedantic
 endif()

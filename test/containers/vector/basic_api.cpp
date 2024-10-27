@@ -1,4 +1,4 @@
-#include <catch2/catch_all.hpp>
+#include <catch_amalgamated.hpp>
 
 #include <plugify/string.hpp>
 #include <plugify/vector.hpp>
@@ -21,8 +21,8 @@ namespace {
 			a.push_back(i + 100);
 		}
 
-		for (int i = 0; i < 100; ++i) {
-			REQUIRE(i + 100 == a[i]);
+		for (size_t i = 0; i < 100; ++i) {
+			REQUIRE(static_cast<int>(i + 100) == a[i]);
 		}
 
 		const auto b = T(5, 10);
@@ -109,7 +109,7 @@ namespace {
 
 		REQUIRE(b.empty());
 
-		for (int i = 0; i < 10; ++i) {
+		for (size_t i = 0; i < 10; ++i) {
 			REQUIRE(a[i] == c[i]);
 		}
 
@@ -161,11 +161,11 @@ TEST_CASE("vector", "[vector]") {
 	}
 
 	SECTION("Constructor, CountAndValue") {
-		int count = 100;
+		size_t count = 100;
 		int value = 5;
 		vint vec(count, value); // { 5, 5 }
 
-		for (int i = 0; i < count; i++) {
+		for (size_t i = 0; i < count; i++) {
 			REQUIRE(value == vec.at(i));
 			REQUIRE(value == vec.at(i));
 		}
@@ -177,7 +177,7 @@ TEST_CASE("vector", "[vector]") {
 
 		REQUIRE(4 == copy.size());
 
-		for (int i = 0; i < 4; i++) {
+		for (size_t i = 0; i < 4; i++) {
 			REQUIRE(original.at(i) == copy.at(i));
 		}
 	}
@@ -188,7 +188,7 @@ TEST_CASE("vector", "[vector]") {
 
 		REQUIRE(4 == copy.size());
 
-		for (int i = 0; i < 4; i++) {
+		for (size_t i = 0; i < 4; i++) {
 			REQUIRE(original.at(i) == copy.at(i));
 		}
 	}
@@ -212,7 +212,7 @@ TEST_CASE("vector", "[vector]") {
 
 		REQUIRE(list.size() == vec.size());
 
-		for (int i = 0; i < list.size(); i++) {
+		for (size_t i = 0; i < list.size(); i++) {
 			REQUIRE(*(list.begin() + i) == vec.at(i));
 		}
 	}
@@ -236,19 +236,19 @@ TEST_CASE("vector", "[vector]") {
 		copy = original;
 		REQUIRE(4 == copy.size());
 
-		for (int i = 0; i < 4; i++) {
+		for (size_t i = 0; i < 4; i++) {
 			REQUIRE(original.at(i) == copy.at(i));
 		}
 	}
 
 	SECTION("Function, Assign") {
-		int count = 3;
+		size_t count = 3;
 		int value = 5;
 		vint vec({ 1, 2, 3, 4 });
 		vec.assign(count, value);
 
 		REQUIRE(count == vec.size());
-		for (int i = 0; i < vec.size(); i++) {
+		for (size_t i = 0; i < vec.size(); i++) {
 			REQUIRE(value == vec.at(i));
 		}
 	}
@@ -450,7 +450,7 @@ TEST_CASE("vector", "[vector]") {
 			double b;
 			plg::string c;
         
-			T(int a, double b, std::string &&c) : a(a) , b(b), c(std::move(c)) {}
+			T(int _a, double _b, std::string &&_c) : a(_a) , b(_b), c(std::move(_c)) {}
 		};
     
 		plg::vector<T> objects;
@@ -509,8 +509,8 @@ TEST_CASE("vector", "[vector]") {
 		REQUIRE(5 == vec.size());
 		REQUIRE(5 == *it);
 		REQUIRE(5 == vec.at(0));
-		for (int i = 1; i < 5; i++) {
-			REQUIRE(i == vec.at(i));
+		for (size_t i = 1; i < 5; i++) {
+			REQUIRE(static_cast<int>(i) == vec.at(i));
 		}
 
 		it = vec.insert(vec.end(), value);
@@ -527,8 +527,8 @@ TEST_CASE("vector", "[vector]") {
 		REQUIRE(5 == vec.size());
 		REQUIRE(5 == *it);
 		REQUIRE(5 == vec.at(0));
-		for (int i = 1; i < 5; i++) {
-			REQUIRE(i == vec.at(i));
+		for (size_t i = 1; i < 5; i++) {
+			REQUIRE(static_cast<int>(i) == vec.at(i));
 		}
 	}
 
@@ -561,7 +561,7 @@ TEST_CASE("vector", "[vector]") {
 		REQUIRE(6 == vec.size());
 		REQUIRE(20 == *it);
     
-		for (int i = 0; i < 6; i++) {
+		for (size_t i = 0; i < 6; i++) {
 			REQUIRE(vec.at(i) == results[i]);
 		}
 	}
@@ -576,7 +576,7 @@ TEST_CASE("vector", "[vector]") {
 		REQUIRE(6 == vec.size());
 		REQUIRE(20 == *it);
     
-		for (int i = 0; i < 6; i++) {
+		for (size_t i = 0; i < 6; i++) {
 			REQUIRE(vec.at(i) == results[i]);
 		}
 	}
@@ -587,7 +587,7 @@ TEST_CASE("vector", "[vector]") {
 			double b;
 			plg::string c;
         
-			T(int a, double b, std::string &&c) : a(a) , b(b), c(std::move(c)) {}
+			T(int _a, double _b, std::string &&_c) : a(_a) , b(_b), c(std::move(_c)) {}
 		};
     
 		plg::vector<T> objects;
@@ -606,7 +606,7 @@ TEST_CASE("vector", "[vector]") {
 
 		REQUIRE(3 == vec.size());
 
-		for (int i = 0; i < 3; i++) {
+		for (size_t i = 0; i < 3; i++) {
 			REQUIRE(result[i] == vec.at(i));
 		}
 	}
@@ -620,7 +620,7 @@ TEST_CASE("vector", "[vector]") {
 		REQUIRE(2 == vec.at(1));
 		REQUIRE(3 == vec.at(2));
 		REQUIRE(4 == vec.at(3));
-		for (int i = 5; i < 10; i++) {
+		for (size_t i = 5; i < 10; i++) {
 			REQUIRE(0 == vec.at(i));
 		}
 
@@ -639,7 +639,7 @@ TEST_CASE("vector", "[vector]") {
 		REQUIRE(2 == vec.at(1));
 		REQUIRE(3 == vec.at(2));
 		REQUIRE(4 == vec.at(3));
-		for (int i = 5; i < 10; i++) {
+		for (size_t i = 5; i < 10; i++) {
 			REQUIRE(999 == vec.at(i));
 		}
 
@@ -657,12 +657,12 @@ TEST_CASE("vector", "[vector]") {
 		REQUIRE(5 == vec.size());
 		REQUIRE(4 == other.size());
 
-		for (int i = 0; i < 5; i++) {
-			REQUIRE((i + 1) * 10 == vec.at(i));
+		for (size_t i = 0; i < 5; i++) {
+			REQUIRE((i + 1) * 10 == static_cast<size_t>(vec.at(i)));
 		}
 
-		for (int i = 0; i < 4; i++) {
-			REQUIRE(i + 1 == other.at(i));
+		for (size_t i = 0; i < 4; i++) {
+			REQUIRE(i + 1 == static_cast<size_t>(other.at(i)));
 		}
 	}
 
