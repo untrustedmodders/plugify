@@ -1,8 +1,8 @@
-#include <plugify/method.h>
-#include <plugify/plugin_descriptor.h>
-#include <plugify/plugin_reference_descriptor.h>
-#include <core/plugin_descriptor.h>
-#include <utils/pointer.h>
+#include <core/plugin_descriptor.hpp>
+#include <plugify/method.hpp>
+#include <plugify/plugin_descriptor.hpp>
+#include <plugify/plugin_reference_descriptor.hpp>
+#include <utils/pointer.hpp>
 
 using namespace plugify;
 

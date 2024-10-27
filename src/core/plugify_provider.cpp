@@ -1,10 +1,10 @@
-#include "plugify_provider.h"
-#include "plugin_descriptor.h"
-#include <plugify/plugin_manager.h>
-#include <plugify/plugin.h>
-#include <plugify/plugin_descriptor.h>
-#include <plugify/language_module_descriptor.h>
-#include <plugify/module.h>
+#include "plugify_provider.hpp"
+#include "plugin_descriptor.hpp"
+#include <plugify/language_module_descriptor.hpp>
+#include <plugify/module.hpp>
+#include <plugify/plugin.hpp>
+#include <plugify/plugin_descriptor.hpp>
+#include <plugify/plugin_manager.hpp>
 
 using namespace plugify;
 

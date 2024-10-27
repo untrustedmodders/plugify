@@ -33,6 +33,10 @@ add_executable(${PROJECT_NAME} ${TESTS_SOURCES})
 target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify Catch2::Catch2WithMain)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(NOT COMPILER_SUPPORTS_FORMAT)
+    target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
+endif()
+
 include(CTest)
 include(Catch)
 catch_discover_tests(${PROJECT_NAME})

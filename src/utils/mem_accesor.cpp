@@ -1,6 +1,6 @@
-#include <plugify/mem_accessor.h>
-#include <plugify/mem_protector.h>
 #include "os.h"
+#include <plugify/mem_accessor.hpp>
+#include <plugify/mem_protector.hpp>
 
 #include <cstring>
 

@@ -1,9 +1,9 @@
 #if PLUGIFY_PLATFORM_WINDOWS
 
-#include <plugify/assembly.h>
+#include <plugify/assembly.hpp>
 
 #include "os.h"
-#include "scope_guard.h"
+#include "scope_guard.hpp"
 
 #if PLUGIFY_ARCH_BITS == 64
 	const WORD PE_FILE_MACHINE = IMAGE_FILE_MACHINE_AMD64;

@@ -1,6 +1,6 @@
-#include <plugify/module.h>
-#include <plugify/language_module_descriptor.h>
-#include <core/module.h>
+#include <core/module.hpp>
+#include <plugify/language_module_descriptor.hpp>
+#include <plugify/module.hpp>
 
 using namespace plugify;
 

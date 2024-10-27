@@ -1,4 +1,4 @@
-#include "strings.h"
+#include "strings.hpp"
 #include "os.h"
 
 #include <regex>

@@ -1,6 +1,6 @@
-#include <core/language_module_descriptor.h>
-#include <plugify/language_module_descriptor.h>
-#include <utils/pointer.h>
+#include <core/language_module_descriptor.hpp>
+#include <plugify/language_module_descriptor.hpp>
+#include <utils/pointer.hpp>
 
 using namespace plugify;
 

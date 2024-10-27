@@ -1,13 +1,13 @@
-#include "plugin_manager.h"
-#include "package_manager.h"
-#include "plugin.h"
-#include "module.h"
+#include "plugin_manager.hpp"
+#include "module.hpp"
+#include "package_manager.hpp"
+#include "plugin.hpp"
 
-#include <plugify/plugify.h>
-#include <plugify/plugin_manager.h>
-#include <plugify/plugin_descriptor.h>
-#include <plugify/plugin_reference_descriptor.h>
-#include <utils/json.h>
+#include <plugify/plugify.hpp>
+#include <plugify/plugin_descriptor.hpp>
+#include <plugify/plugin_manager.hpp>
+#include <plugify/plugin_reference_descriptor.hpp>
+#include <utils/json.hpp>
 
 using namespace plugify;
 

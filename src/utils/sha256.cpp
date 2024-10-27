@@ -1,4 +1,4 @@
-#include "sha256.h"
+#include "sha256.hpp"
 #include "binary_format.h"
 
 #if !PLUGIFY_ARCH_ARM

@@ -1,8 +1,8 @@
 #include <catch2/catch_all.hpp>
 
-#include <plugify/vector.h>
+#include <plugify/vector.hpp>
 
-#include <app/counter.h>
+#include <app/counter.hpp>
 
 #include <numeric>
 #include <ostream>

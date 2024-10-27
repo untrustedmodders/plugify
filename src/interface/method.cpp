@@ -1,6 +1,6 @@
-#include <plugify/method.h>
-#include <core/method.h>
-#include <utils/pointer.h>
+#include <core/method.hpp>
+#include <plugify/method.hpp>
+#include <utils/pointer.hpp>
 
 using namespace plugify;
 

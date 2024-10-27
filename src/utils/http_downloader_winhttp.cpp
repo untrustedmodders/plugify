@@ -1,7 +1,7 @@
 #if PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_DOWNLOADER
 
-#include "http_downloader_winhttp.h"
-#include "strings.h"
+#include "http_downloader_winhttp.hpp"
+#include "strings.hpp"
 
 using namespace plugify;
 

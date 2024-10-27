@@ -1,6 +1,6 @@
 #include <catch2/catch_all.hpp>
 
-#include <plugify/string.h>
+#include <plugify/string.hpp>
 
 TEST_CASE("string access > c_str", "[string]") {
 

@@ -1,4 +1,4 @@
-#include "counter.h"
+#include "counter.hpp"
 
 #include <cstdlib>// for abort
 #include <iostream>

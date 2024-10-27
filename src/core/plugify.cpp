@@ -1,12 +1,12 @@
-#include "package_manager.h"
-#include "plugify_provider.h"
-#include "plugin_manager.h"
-#include <plugify/plugify.h>
-#include <plugify/version.h>
-#include <utils/file_system.h>
-#include <utils/http_downloader.h>
-#include <utils/json.h>
-#include <utils/strings.h>
+#include "package_manager.hpp"
+#include "plugify_provider.hpp"
+#include "plugin_manager.hpp"
+#include <plugify/plugify.hpp>
+#include <plugify/version.hpp>
+#include <utils/file_system.hpp>
+#include <utils/http_downloader.hpp>
+#include <utils/json.hpp>
+#include <utils/strings.hpp>
 
 namespace plugify {
 	class Plugify final : public IPlugify, public std::enable_shared_from_this<Plugify> {

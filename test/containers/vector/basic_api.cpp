@@ -1,10 +1,10 @@
 #include <catch2/catch_all.hpp>
 
-#include <plugify/vector.h>
-#include <plugify/string.h>
+#include <plugify/string.hpp>
+#include <plugify/vector.hpp>
 
 #include <chrono>
-#include <plugify/compat_format.h>
+#include <plugify/compat_format.hpp>
 
 using namespace std::literals;
 

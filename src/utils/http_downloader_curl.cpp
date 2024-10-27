@@ -1,6 +1,6 @@
 #if !PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_DOWNLOADER
 
-#include "http_downloader_curl.h"
+#include "http_downloader_curl.hpp"
 
 #include <curl/curl.h>
 #include <csignal>

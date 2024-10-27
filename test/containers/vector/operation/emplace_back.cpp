@@ -1,9 +1,9 @@
 #include <catch2/catch_all.hpp>
 
-#include <plugify/vector.h>
-#include <app/counter.h>
+#include <app/counter.hpp>
+#include <plugify/vector.hpp>
 
-#include <plugify/compat_format.h>
+#include <plugify/compat_format.hpp>
 
 #include <string>
 

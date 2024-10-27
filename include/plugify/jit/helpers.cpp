@@ -1,4 +1,4 @@
-#include "helpers.h"
+#include "helpers.hpp"
 
 namespace plugify::JitUtils {
 	asmjit::TypeId GetValueTypeId(ValueType valueType) noexcept {

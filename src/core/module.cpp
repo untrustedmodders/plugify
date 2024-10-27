@@ -1,9 +1,9 @@
-#include "module.h"
-#include "plugin.h"
-#include <plugify/module.h>
-#include <plugify/package.h>
-#include <plugify/plugify_provider.h>
-#include <plugify/mem_protector.h>
+#include "module.hpp"
+#include "plugin.hpp"
+#include <plugify/mem_protector.hpp>
+#include <plugify/module.hpp>
+#include <plugify/package.hpp>
+#include <plugify/plugify_provider.hpp>
 
 #undef FindResource
 

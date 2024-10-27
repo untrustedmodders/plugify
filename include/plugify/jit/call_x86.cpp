@@ -1,5 +1,5 @@
-#include <plugify/jit/call.h>
-#include <plugify/jit/helpers.h>
+#include <plugify/jit/call.hpp>
+#include <plugify/jit/helpers.hpp>
 
 using namespace plugify;
 

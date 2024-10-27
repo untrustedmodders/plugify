@@ -1,6 +1,6 @@
-#include <plugify/plugin.h>
-#include <plugify/plugin_descriptor.h>
-#include <core/plugin.h>
+#include <core/plugin.hpp>
+#include <plugify/plugin.hpp>
+#include <plugify/plugin_descriptor.hpp>
 
 using namespace plugify;
 

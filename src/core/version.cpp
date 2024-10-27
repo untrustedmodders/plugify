@@ -1,4 +1,4 @@
-#include <plugify/version.h>
+#include <plugify/version.hpp>
 
 using namespace plugify;
 

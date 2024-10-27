@@ -1,6 +1,6 @@
 #include <asmjit/a64.h>
-#include <plugify/jit/callback.h>
-#include <plugify/jit/helpers.h>
+#include <plugify/jit/callback.hpp>
+#include <plugify/jit/helpers.hpp>
 
 using namespace plugify;
 

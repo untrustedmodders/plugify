@@ -1,7 +1,7 @@
 #if PLUGIFY_DOWNLOADER
 
-#include "http_downloader.h"
-#include "strings.h"
+#include "http_downloader.hpp"
+#include "strings.hpp"
 
 #include <thread>
 

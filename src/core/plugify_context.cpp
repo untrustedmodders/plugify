@@ -1,5 +1,5 @@
-#include "plugify_context.h"
-#include <plugify/plugify.h>
+#include "plugify_context.hpp"
+#include <plugify/plugify.hpp>
 
 using namespace plugify;
 

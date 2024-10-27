@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include <plugify/string.h>
+#include <plugify/string.hpp>
 
 TEST_CASE("string constructor", "[string]") {
     SECTION("string() noexcept") {

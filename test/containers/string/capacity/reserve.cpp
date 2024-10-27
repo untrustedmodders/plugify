@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include <plugify/string.h>
+#include <plugify/string.hpp>
 
 TEST_CASE("string capacity > reserve", "[string]") {
 

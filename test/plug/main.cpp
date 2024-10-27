@@ -1,14 +1,14 @@
-#include "std_logger.h"
-#include <plugify/compat_format.h>
-#include <plugify/plugify.h>
-#include <plugify/module.h>
-#include <plugify/package.h>
-#include <plugify/package_manager.h>
-#include <plugify/plugin_manager.h>
-#include <plugify/plugin.h>
-#include <plugify/plugin_descriptor.h>
-#include <plugify/plugin_reference_descriptor.h>
-#include <plugify/language_module_descriptor.h>
+#include "plugify/plugify.hpp"
+#include "std_logger.hpp"
+#include <plugify/compat_format.hpp>
+#include <plugify/language_module_descriptor.hpp>
+#include <plugify/module.hpp>
+#include <plugify/package.hpp>
+#include <plugify/package_manager.hpp>
+#include <plugify/plugin.hpp>
+#include <plugify/plugin_descriptor.hpp>
+#include <plugify/plugin_manager.hpp>
+#include <plugify/plugin_reference_descriptor.hpp>
 
 #include <chrono>
 #include <iostream>

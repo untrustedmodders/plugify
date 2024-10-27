@@ -1,7 +1,7 @@
 #include <catch2/catch_all.hpp>
 
-#include <plugify/vector.h>
-#include <app/counter.h>
+#include <app/counter.hpp>
+#include <plugify/vector.hpp>
 
 TEST_CASE("vector capacity > shrink_to_fit", "[vector]") {
 

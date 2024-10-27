@@ -1,16 +1,16 @@
-#include "package_manager.h"
-#include "package_manifest.h"
-#include "module.h"
-#include "plugin.h"
+#include "package_manager.hpp"
+#include "module.hpp"
+#include "package_manifest.hpp"
+#include "plugin.hpp"
 
 #include <miniz.h>
-#include <plugify/plugify.h>
-#include <utils/file_system.h>
-#include <utils/json.h>
-#include <utils/strings.h>
+#include <plugify/plugify.hpp>
+#include <utils/file_system.hpp>
+#include <utils/json.hpp>
+#include <utils/strings.hpp>
 #if PLUGIFY_DOWNLOADER
-#include <utils/sha256.h>
-#include <utils/http_downloader.h>
+#include <utils/http_downloader.hpp>
+#include <utils/sha256.hpp>
 #endif // PLUGIFY_DOWNLOADER
 
 using namespace plugify;

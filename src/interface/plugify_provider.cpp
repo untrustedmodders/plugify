@@ -1,5 +1,5 @@
-#include <plugify/plugify_provider.h>
-#include <core/plugify_provider.h>
+#include <core/plugify_provider.hpp>
+#include <plugify/plugify_provider.hpp>
 
 using namespace plugify;
 

@@ -1,8 +1,8 @@
 #include <catch2/catch_all.hpp>
 
-#include <plugify/vector.h>
-#include <app/counter.h>
-#include <app/vec_tester.h>
+#include <app/counter.hpp>
+#include <app/vec_tester.hpp>
+#include <plugify/vector.hpp>
 
 #include <vector>
 

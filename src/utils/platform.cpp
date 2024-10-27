@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "platform.hpp"
 #include "os.h"
 
 #if PLUGIFY_PLATFORM_WINDOWS

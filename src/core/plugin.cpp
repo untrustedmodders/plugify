@@ -1,8 +1,8 @@
-#include "plugin.h"
-#include "module.h"
-#include <plugify/plugin.h>
-#include <plugify/package.h>
-#include <plugify/plugify_provider.h>
+#include "plugin.hpp"
+#include "module.hpp"
+#include <plugify/package.hpp>
+#include <plugify/plugify_provider.hpp>
+#include <plugify/plugin.hpp>
 
 using namespace plugify;
 

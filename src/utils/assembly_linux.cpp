@@ -1,6 +1,6 @@
 #if PLUGIFY_PLATFORM_LINUX
 
-#include <plugify/assembly.h>
+#include <plugify/assembly.hpp>
 
 #include "os.h"
 

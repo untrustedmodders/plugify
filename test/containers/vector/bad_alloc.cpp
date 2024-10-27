@@ -1,6 +1,6 @@
 #include <catch2/catch_all.hpp>
 
-#include <plugify/vector.h>
+#include <plugify/vector.hpp>
 
 // make sure all this works even when valgrind is not installed
 #if __has_include(<valgrind/valgrind.h>)
