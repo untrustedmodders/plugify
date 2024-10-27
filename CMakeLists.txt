@@ -471,6 +471,7 @@ endif()
 # Test
 if(PLUGIFY_BUILD_TESTS)
     add_subdirectory(test/plug)
+    add_subdirectory(test/containers)
 endif()
 
 # ------------------------------------------------------------------------------
