@@ -156,8 +156,6 @@ TEST_CASE("vector operation > insert", "[vector]") {
 		auto it_begin = FooInputIterator<Counter::Obj>(data.data());
 		auto it_end = FooInputIterator<Counter::Obj>(data.data() + data.size());
 
-		auto s = it_begin - it_end;
-
 		counts("before insert");
 		assert_eq(va, vb);
 		va.insert(va.begin() + 1, it_begin, it_end);

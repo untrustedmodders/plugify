@@ -44,5 +44,5 @@ catch_discover_tests(${PROJECT_NAME})
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Werror) #-Wconversion -Wpedantic
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wshadow -Werror) #-Wconversion -Wpedantic
 endif()

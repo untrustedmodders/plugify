@@ -28,7 +28,7 @@ if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
     target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
 add_custom_command(TARGET plug POST_BUILD
