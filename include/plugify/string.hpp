@@ -138,38 +138,38 @@
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define _PLUGIFY_STRING_DIAG_PUSH() _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic push)
-#define _PLUGIFY_STRING_DIAG_IGN(wrn) _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic ignored wrn)
-#define _PLUGIFY_STRING_DIAG_POP() _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic pop)
+#  define _PLUGIFY_STRING_DIAG_PUSH() _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic push)
+#  define _PLUGIFY_STRING_DIAG_IGN(wrn) _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic ignored wrn)
+#  define _PLUGIFY_STRING_DIAG_POP() _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic pop)
 #elif defined(_MSC_VER)
-#define _PLUGIFY_STRING_DIAG_PUSH()	__pragma(warning(push))
-#define _PLUGIFY_STRING_DIAG_IGN(wrn) __pragma(warning(disable: wrn))
-#define _PLUGIFY_STRING_DIAG_POP() __pragma(warning(pop))
+#  define _PLUGIFY_STRING_DIAG_PUSH()	__pragma(warning(push))
+#  define _PLUGIFY_STRING_DIAG_IGN(wrn) __pragma(warning(disable: wrn))
+#  define _PLUGIFY_STRING_DIAG_POP() __pragma(warning(pop))
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define _PLUGIFY_STRING_PACK(decl) decl __attribute__((__packed__))
+#  define _PLUGIFY_STRING_PACK(decl) decl __attribute__((__packed__))
 #elif defined(_MSC_VER)
-#define _PLUGIFY_STRING_PACK(decl) __pragma(pack(push, 1)) decl __pragma(pack(pop))
+#  define _PLUGIFY_STRING_PACK(decl) __pragma(pack(push, 1)) decl __pragma(pack(pop))
 #else
-#define _PLUGIFY_STRING_PACK(decl) decl
+#  define _PLUGIFY_STRING_PACK(decl) decl
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define _PLUGIFY_STRING_ALWAYS_INLINE __attribute__((always_inline)) inline
-#define _PLUGIFY_STRING_ALWAYS_RESTRICT __restrict__
+#  define _PLUGIFY_STRING_ALWAYS_INLINE __attribute__((always_inline)) inline
+#  define _PLUGIFY_STRING_ALWAYS_RESTRICT __restrict__
 #elif defined(_MSC_VER)
-#define _PLUGIFY_STRING_ALWAYS_INLINE __forceinline
-#define _PLUGIFY_STRING_ALWAYS_RESTRICT __restrict
+#  define _PLUGIFY_STRING_ALWAYS_INLINE __forceinline
+#  define _PLUGIFY_STRING_ALWAYS_RESTRICT __restrict
 #else
-#define _PLUGIFY_STRING_ALWAYS_INLINE inline
-#define _PLUGIFY_STRING_ALWAYS_RESTRICT
+#  define _PLUGIFY_STRING_ALWAYS_INLINE inline
+#  define _PLUGIFY_STRING_ALWAYS_RESTRICT
 #endif
 
 #if defined(_MSC_VER)
-#define _PLUGIFY_STRING_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#  define _PLUGIFY_STRING_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #else
-#define _PLUGIFY_STRING_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#  define _PLUGIFY_STRING_NO_UNIQUE_ADDRESS [[no_unique_address]]
 #endif
 
 namespace plg {
@@ -199,7 +199,6 @@ namespace plg {
 	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>> requires(detail::is_allocator_v<Allocator>)
 	class basic_string {
 	private:
-		// Purely to make notation easier
 		using allocator_traits = std::allocator_traits<Allocator>;
 
 	public:
@@ -240,7 +239,7 @@ namespace plg {
 
 		template<typename CharT, size_t = sizeof(CharT)>
 		struct padding {
-			[[maybe_unused]] uint8_t padding[sizeof(CharT) - sizeof(uint8_t)];
+			[[maybe_unused]] uint8_t padding[sizeof(CharT) - 1];
 		};
 
 		template<typename CharT>
@@ -368,7 +367,7 @@ namespace plg {
 			_storage._long.data = data;
 		}
 
-		constexpr void is_long(bool l)  noexcept
+		constexpr void is_long(bool l) noexcept
 		{
 			_storage._long.is_long = l;
 		}
@@ -481,7 +480,7 @@ namespace plg {
 			return get_data() <= ptr && ptr <= get_data() + get_size();
 		}
 
-		constexpr _PLUGIFY_STRING_ALWAYS_INLINE void internal_replace_impl(auto func, size_type pos, size_type oldcount, size_type count)
+		constexpr void internal_replace_impl(auto func, size_type pos, size_type oldcount, size_type count)
 		{
 			auto cap = get_cap();
 			auto sz = get_size();
@@ -514,7 +513,7 @@ namespace plg {
 			internal_replace_impl([&]() { Traits::assign(get_data() + pos, count, ch); }, pos, oldcount, count);
 		}
 
-		constexpr _PLUGIFY_STRING_ALWAYS_INLINE void internal_insert_impl(auto func, size_type pos, size_type size)
+		constexpr void internal_insert_impl(auto func, size_type pos, size_type size)
 		{
 			if (size == 0) [[unlikely]]
 				return;
@@ -547,7 +546,7 @@ namespace plg {
 			internal_insert_impl([&]() { Traits::assign(get_data() + pos, count, ch); }, pos, count);
 		}
 
-		constexpr _PLUGIFY_STRING_ALWAYS_INLINE void internal_append_impl(auto func, size_type size)
+		constexpr void internal_append_impl(auto func, size_type size)
 		{
 			if (size == 0) [[unlikely]]
 				return;
@@ -578,7 +577,7 @@ namespace plg {
 			internal_append_impl([&](size_type pos) { Traits::assign(get_data() + pos, count, ch); }, count);
 		}
 
-		constexpr _PLUGIFY_STRING_ALWAYS_INLINE void internal_assign_impl(auto func, size_type size, bool copy_old)
+		constexpr void internal_assign_impl(auto func, size_type size, bool copy_old)
 		{
 			if (fits_in_sso(size)) {
 				if (is_long() == true) {
@@ -800,7 +799,7 @@ namespace plg {
 
 		constexpr basic_string& assign(size_type count, value_type ch) 
 		{
-			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): resulted string size would exceed max_size()", std::length_error);
+			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
 			internal_assign(ch, count);
 			return *this;
 		}
@@ -830,7 +829,8 @@ namespace plg {
 				auto len = str.get_long_size();
 				internal_assign(str.get_long_data(), len);
 			} else {
-				_storage = std::move(str._storage);
+				std::ranges::swap(_storage , str._storage);
+				str.deallocate();
 				str.short_init();
 			}
 			return *this;
@@ -2082,7 +2082,7 @@ namespace plg {
 		}
 #endif
 
-		constexpr wide_printf get_swprintf() noexcept
+		constexpr _PLUGIFY_STRING_ALWAYS_INLINE wide_printf get_swprintf() noexcept
 		{
 #if defined(_MSC_VER)
 			return static_cast<int(__cdecl*)(wchar_t* __restrict, size_t, const wchar_t* __restrict, ...)>(truncate_snwprintf);
