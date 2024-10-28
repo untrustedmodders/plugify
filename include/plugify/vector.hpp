@@ -167,6 +167,12 @@ namespace plg {
 			assign(std::move(first), std::move(last));
 		}
 
+		_PLUGIFY_VECTOR_DIAG_PUSH()
+
+#if defined(__clang__) || defined(__GNUC__)
+		_PLUGIFY_VECTOR_DIAG_IGN("-Wclass-memaccess")
+#endif
+
 		constexpr vector_base(const vector_base& other)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>) {
@@ -186,6 +192,8 @@ namespace plg {
 				set_size(other.st_size());
 			}
 		}
+
+		_PLUGIFY_VECTOR_DIAG_POP()
 
 		constexpr vector_base(const vector_base& other, const allocator_type& alloc)
 			: _allocator(alloc)
@@ -225,6 +233,12 @@ namespace plg {
 			destroy();
 		}
 
+		_PLUGIFY_VECTOR_DIAG_PUSH()
+
+#if defined(__clang__) || defined(__GNUC__)
+		_PLUGIFY_VECTOR_DIAG_IGN("-Wclass-memaccess")
+#endif
+
 		constexpr vector_base& operator=(const vector_base& other)
 		{
 			if (this == &other) [[unlikely]] {
@@ -244,6 +258,8 @@ namespace plg {
 
 			return *this;
 		}
+
+		_PLUGIFY_VECTOR_DIAG_POP()
 
 		template<typename A, bool SBO, size_t SBOP>
 		constexpr vector_base& operator=(const vector_base<T, SBO, SBOP, A>& other)
@@ -885,7 +901,7 @@ namespace plg {
 		static_assert(sizeof(sbo_size) == sizeof(size_type));
 		static_assert(alignof(sbo_size) == alignof(size_type));
 
-		constexpr void change_capacity(size_type newCapacity)
+		constexpr _PLUGIFY_VECTOR_ALWAYS_INLINE void change_capacity(size_type newCapacity)
 		{
 			change_capacity(newCapacity, [](pointer) {});
 		}
