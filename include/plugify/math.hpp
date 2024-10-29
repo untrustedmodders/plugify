@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <plugify/vector.hpp>
+#include <plugify/string.hpp>
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -81,6 +83,22 @@ namespace plugify {
 				};
 				std::array<float, 16> data{}; ///< Array representation of the matrix.
 			};
+		};
+
+		/**
+		 * @struct Vector
+		 * @brief Represents a plg::vector using C-compatible struct.
+		 */
+		struct Vector {
+			[[maybe_unused]] uint8_t padding[sizeof(plg::vector<int>)]{};
+		};
+
+		/**
+		 * @struct String
+		 * @brief Represents a plg::string using C-compatible struct.
+		 */
+		struct String {
+			[[maybe_unused]] uint8_t padding[sizeof(plg::string)]{};
 		};
 	}
 }
