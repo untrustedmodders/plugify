@@ -138,13 +138,13 @@
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#  define _PLUGIFY_STRING_DIAG_PUSH() _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic push)
-#  define _PLUGIFY_STRING_DIAG_IGN(wrn) _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic ignored wrn)
-#  define _PLUGIFY_STRING_DIAG_POP() _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic pop)
+#  define _PLUGIFY_STRING_WARN_PUSH() _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic push)
+#  define _PLUGIFY_STRING_WARN_IGNORE(wrn) _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic ignored wrn)
+#  define _PLUGIFY_STRING_WARN_POP() _PLUGIFY_STRING_PRAGMA(_PLUGIFY_STRING_PRAGMA_DIAG_PREFIX diagnostic pop)
 #elif defined(_MSC_VER)
-#  define _PLUGIFY_STRING_DIAG_PUSH()	__pragma(warning(push))
-#  define _PLUGIFY_STRING_DIAG_IGN(wrn) __pragma(warning(disable: wrn))
-#  define _PLUGIFY_STRING_DIAG_POP() __pragma(warning(pop))
+#  define _PLUGIFY_STRING_WARN_PUSH()	__pragma(warning(push))
+#  define _PLUGIFY_STRING_WARN_IGNORE(wrn) __pragma(warning(disable: wrn))
+#  define _PLUGIFY_STRING_WARN_POP() __pragma(warning(pop))
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -225,16 +225,16 @@ namespace plg {
 		_PLUGIFY_STRING_NO_UNIQUE_ADDRESS
 		allocator_type _allocator;
 
-		_PLUGIFY_STRING_DIAG_PUSH()
+		_PLUGIFY_STRING_WARN_PUSH()
 
 #if defined(__clang__)
-		_PLUGIFY_STRING_DIAG_IGN("-Wgnu-anonymous-struct")
-		_PLUGIFY_STRING_DIAG_IGN("-Wzero-length-array")
+		_PLUGIFY_STRING_WARN_IGNORE("-Wgnu-anonymous-struct")
+		_PLUGIFY_STRING_WARN_IGNORE("-Wzero-length-array")
 #elif defined(__GNUC__)
-		_PLUGIFY_STRING_DIAG_IGN("-Wpedantic")// this doesn't work
+		_PLUGIFY_STRING_WARN_IGNORE("-Wpedantic")// this doesn't work
 #elif defined(_MSC_VER)
-		_PLUGIFY_STRING_DIAG_IGN(4201)
-		_PLUGIFY_STRING_DIAG_IGN(4200)
+		_PLUGIFY_STRING_WARN_IGNORE(4201)
+		_PLUGIFY_STRING_WARN_IGNORE(4200)
 #endif
 
 		template<typename CharT, size_t = sizeof(CharT)>
@@ -277,7 +277,7 @@ namespace plg {
 			sso_size size;
 		};
 
-		_PLUGIFY_STRING_DIAG_POP()
+		_PLUGIFY_STRING_WARN_POP()
 
 		static_assert(sizeof(short_data) == (sizeof(value_type) * (min_cap + sizeof(uint8_t))), "short has an unexpected size.");
 		static_assert(sizeof(short_data) == sizeof(long_data), "short and long layout structures must be the same size");
@@ -694,7 +694,7 @@ namespace plg {
 			assign(std::move(str));
 		}
 		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value)
-			: _storage(std::move(str._storage)), _allocator(std::move(str._allocator))
+			: _allocator(std::move(str._allocator)), _storage(std::move(str._storage))
 		{
 			str.short_init();
 		}
@@ -2195,14 +2195,14 @@ namespace plg {
 
 	inline namespace literals {
 		inline namespace string_literals {
-			_PLUGIFY_STRING_DIAG_PUSH()
+			_PLUGIFY_STRING_WARN_PUSH()
 
 #if defined(__clang__)
-			_PLUGIFY_STRING_DIAG_IGN("-Wuser-defined-literals")
+			_PLUGIFY_STRING_WARN_IGNORE("-Wuser-defined-literals")
 #elif defined(__GNUC__)
-			_PLUGIFY_STRING_DIAG_IGN("-Wliteral-suffix")
+			_PLUGIFY_STRING_WARN_IGNORE("-Wliteral-suffix")
 #elif defined(_MSC_VER)
-			_PLUGIFY_STRING_DIAG_IGN(4455)
+			_PLUGIFY_STRING_WARN_IGNORE(4455)
 #endif
 			// suffix for basic_string literals
 			[[nodiscard]] constexpr string operator""s(const char* str, std::size_t len) { return string{str, len}; }
@@ -2211,7 +2211,7 @@ namespace plg {
 			[[nodiscard]] constexpr u32string operator""s(const char32_t* str, std::size_t len) { return u32string{str, len}; }
 			[[nodiscard]] constexpr wstring operator""s(const wchar_t* str, std::size_t len) { return wstring{str, len}; }
 
-			_PLUGIFY_STRING_DIAG_POP()
+			_PLUGIFY_STRING_WARN_POP()
 		}// namespace string_literals
 	}// namespace literals
 }// namespace plg

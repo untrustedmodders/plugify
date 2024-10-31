@@ -80,13 +80,13 @@
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#  define _PLUGIFY_VECTOR_DIAG_PUSH() _PLUGIFY_VECTOR_PRAGMA(_PLUGIFY_VECTOR_PRAGMA_DIAG_PREFIX diagnostic push)
-#  define _PLUGIFY_VECTOR_DIAG_IGN(wrn) _PLUGIFY_VECTOR_PRAGMA(_PLUGIFY_VECTOR_PRAGMA_DIAG_PREFIX diagnostic ignored wrn)
-#  define _PLUGIFY_VECTOR_DIAG_POP() _PLUGIFY_VECTOR_PRAGMA(_PLUGIFY_VECTOR_PRAGMA_DIAG_PREFIX diagnostic pop)
+#  define _PLUGIFY_VECTOR_WARN_PUSH() _PLUGIFY_VECTOR_PRAGMA(_PLUGIFY_VECTOR_PRAGMA_DIAG_PREFIX diagnostic push)
+#  define _PLUGIFY_VECTOR_WARN_IGNORE(wrn) _PLUGIFY_VECTOR_PRAGMA(_PLUGIFY_VECTOR_PRAGMA_DIAG_PREFIX diagnostic ignored wrn)
+#  define _PLUGIFY_VECTOR_WARN_POP() _PLUGIFY_VECTOR_PRAGMA(_PLUGIFY_VECTOR_PRAGMA_DIAG_PREFIX diagnostic pop)
 #elif defined(_MSC_VER)
-#  define _PLUGIFY_VECTOR_DIAG_PUSH()	__pragma(warning(push))
-#  define _PLUGIFY_VECTOR_DIAG_IGN(wrn) __pragma(warning(disable: wrn))
-#  define _PLUGIFY_VECTOR_DIAG_POP() __pragma(warning(pop))
+#  define _PLUGIFY_VECTOR_WARN_PUSH()	__pragma(warning(push))
+#  define _PLUGIFY_VECTOR_WARN_IGNORE(wrn) __pragma(warning(disable: wrn))
+#  define _PLUGIFY_VECTOR_WARN_POP() __pragma(warning(pop))
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -167,10 +167,10 @@ namespace plg {
 			assign(std::move(first), std::move(last));
 		}
 
-		_PLUGIFY_VECTOR_DIAG_PUSH()
+		_PLUGIFY_VECTOR_WARN_PUSH()
 
 #if defined(__clang__) || defined(__GNUC__)
-		_PLUGIFY_VECTOR_DIAG_IGN("-Wclass-memaccess")
+		_PLUGIFY_VECTOR_WARN_IGNORE("-Wclass-memaccess")
 #endif
 
 		constexpr vector_base(const vector_base& other)
@@ -195,7 +195,7 @@ namespace plg {
 			}
 		}
 
-		_PLUGIFY_VECTOR_DIAG_POP()
+		_PLUGIFY_VECTOR_WARN_POP()
 
 		constexpr vector_base(const vector_base& other, const allocator_type& alloc)
 			: _allocator(alloc)
@@ -239,10 +239,10 @@ namespace plg {
 			destroy();
 		}
 
-		_PLUGIFY_VECTOR_DIAG_PUSH()
+		_PLUGIFY_VECTOR_WARN_PUSH()
 
 #if defined(__clang__) || defined(__GNUC__)
-		_PLUGIFY_VECTOR_DIAG_IGN("-Wclass-memaccess")
+		_PLUGIFY_VECTOR_WARN_IGNORE("-Wclass-memaccess")
 #endif
 
 		constexpr vector_base& operator=(const vector_base& other)
@@ -265,7 +265,7 @@ namespace plg {
 			return *this;
 		}
 
-		_PLUGIFY_VECTOR_DIAG_POP()
+		_PLUGIFY_VECTOR_WARN_POP()
 
 		template<typename A, bool SBO, size_t SBOP>
 		constexpr vector_base& operator=(const vector_base<T, SBO, SBOP, A>& other)
@@ -308,6 +308,7 @@ namespace plg {
 
 		constexpr void assign(size_t count, const T& value)
 		{
+			//TODO:
 			//_PLUGIFY_VECTOR_ASSERT(count <= max_size(), "plg::vector_base::assign(): resulted vector size would exceed max_size()", std::length_error);
 			clear();
 			resize(count, value);
@@ -316,6 +317,7 @@ namespace plg {
 		template<class InputIt> requires (detail::is_iterator_v<InputIt>)
 		constexpr void assign(InputIt begin, InputIt end)
 		{
+			//TODO:
 			//_PLUGIFY_VECTOR_ASSERT(count <= max_size(), "plg::vector_base::assign(): resulted vector size would exceed max_size()", std::length_error);
 			clear();
 
@@ -866,16 +868,16 @@ namespace plg {
 
 	private:
 
-		_PLUGIFY_VECTOR_DIAG_PUSH()
+		_PLUGIFY_VECTOR_WARN_PUSH()
 
 #if defined(__clang__)
-		_PLUGIFY_VECTOR_DIAG_IGN("-Wgnu-anonymous-struct")
-		_PLUGIFY_VECTOR_DIAG_IGN("-Wzero-length-array")
+		_PLUGIFY_VECTOR_WARN_IGNORE("-Wgnu-anonymous-struct")
+		_PLUGIFY_VECTOR_WARN_IGNORE("-Wzero-length-array")
 #elif defined(__GNUC__)
-		_PLUGIFY_VECTOR_DIAG_IGN("-Wpedantic")// this doesn't work
+		_PLUGIFY_VECTOR_WARN_IGNORE("-Wpedantic")// this doesn't work
 #elif defined(_MSC_VER)
-		_PLUGIFY_VECTOR_DIAG_IGN(4201)
-		_PLUGIFY_VECTOR_DIAG_IGN(4200)
+		_PLUGIFY_VECTOR_WARN_IGNORE(4201)
+		_PLUGIFY_VECTOR_WARN_IGNORE(4200)
 #endif
 
 		static constexpr int char_bit = std::numeric_limits<int8_t>::digits + std::numeric_limits<int8_t>::is_signed;
@@ -906,7 +908,7 @@ namespace plg {
 			[[maybe_unused]] uint8_t _padding[SBOPadding + sizeof(pointer)];
 		};
 
-		_PLUGIFY_VECTOR_DIAG_POP()
+		_PLUGIFY_VECTOR_WARN_POP()
 
 		static_assert(sizeof(sbo_size) == sizeof(size_type));
 		static_assert(alignof(sbo_size) == alignof(size_type));
@@ -922,8 +924,12 @@ namespace plg {
 			const auto capacity = st_capacity();
 			_PLUGIFY_VECTOR_ASSERT(newCapacity >= size, "plg::vector_base::change_capacity(): resulted vector size would exceed size()", std::length_error);
 			if (newCapacity != capacity) {
-				// Allocate new memory
 				const bool canUseSBO = sbo_max_objects() >= newCapacity;
+				if (sbo_active() && canUseSBO) {
+					return;
+				}
+
+				// Allocate new memory
 				pointer newData = canUseSBO ? sbo_data() : (newCapacity > 0 ? allocator_traits::allocate(_allocator, newCapacity) : nullptr);
 				construct(newData);
 
