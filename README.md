@@ -235,7 +235,7 @@ To navigate it with your favorite browser:
 
 The same version is also available [online](https://untrustedmodders.github.io/plugify)
 for the latest release, that is the last stable tag.<br/>
-Moreover, there exists a [wiki](https://github.com/untrustedmodders/plugify/wiki) dedicated
+Moreover, there exists a [wiki](https://untrustedmodders.github.io/) dedicated
 to the project where users can find all related documentation pages.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -284,7 +284,7 @@ Here is a list of all already implemented language modules:
 
 While Plugify is a relatively new project, it is making waves in the realm of server-side modding, 
 particularly in the Counter-Strike 2 community. As of now, Plugify is primarily utilized in the 
-ance of a new project known as [CS2-Plugify](https://github.com/mms2-plugify/), which is also being developed by our team.
+ance of a new project known as [MM2-Plugify](https://github.com/mms2-plugify/), which is also being developed by our team.
 
 If you know of other resources out there that are about `Plugify`, feel free to open an issue or a PR and we will be glad to add them here.
 

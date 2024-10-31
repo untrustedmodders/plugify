@@ -2,45 +2,46 @@
 
 The following lists how the types are exposed to the C++ API.
 
-| Type                   | Alias    | Ref ? |
-|------------------------|----------|-------|
-| void                   | void     | false |
-| bool                   | bool     | true  |
-| char                   | char8    | true  |
-| char16_t               | char16   | true  |
-| int8_t                 | int8     | true  |
-| int16_t                | int16    | true  |
-| int32_t                | int32    | true  |
-| int64_t                | int64    | true  |
-| uint8_t                | uint8    | true  |
-| uint16_t               | uint16   | true  |
-| uint32_t               | uint32   | true  |
-| uint64_t               | uint64   | true  |
-| uintptr_t              | ptr64    | true  |
-| uintptr_t              | ptr32    | true  |
-| float                  | float    | true  |
-| double                 | double   | true  |
-| void*                  | function | false |
-| std::string            | string   | true  |
-| std::vector<bool>      | bool*    | true  |
-| std::vector<char>      | char8*   | true  |
-| std::vector<char16_t>  | char16*  | true  |
-| std::vector<int8_t>    | int8*    | true  |
-| std::vector<int16_t>   | int16*   | true  |
-| std::vector<int32_t>   | int32*   | true  |
-| std::vector<int64_t>   | int64*   | true  |
-| std::vector<uint8_t>   | uint8*   | true  |
-| std::vector<uint16_t>  | uint16*  | true  |
-| std::vector<uint32_t>  | uint32*  | true  |
-| std::vector<uint64_t>  | uint64*  | true  |
-| std::vector<uintptr_t> | ptr64*   | true  |
-| std::vector<uintptr_t> | ptr32*   | true  |
-| std::vector<float>     | float*   | true  |
-| std::vector<double>    | double*  | true  |
-| vector2                | vec2     | true  |
-| vector3                | vec3     | true  |
-| vector4                | vec4     | true  |
-| matrix4x4              | mat4x4   | true  |
+| Type                       | Alias    | Ref ? |
+|----------------------------|----------|-------|
+| void                       | void     | false |
+| bool                       | bool     | true  |
+| char                       | char8    | true  |
+| char16_t                   | char16   | true  |
+| int8_t                     | int8     | true  |
+| int16_t                    | int16    | true  |
+| int32_t                    | int32    | true  |
+| int64_t                    | int64    | true  |
+| uint8_t                    | uint8    | true  |
+| uint16_t                   | uint16   | true  |
+| uint32_t                   | uint32   | true  |
+| uint64_t                   | uint64   | true  |
+| uintptr_t                  | ptr64    | true  |
+| uintptr_t                  | ptr32    | true  |
+| float                      | float    | true  |
+| double                     | double   | true  |
+| void*                      | function | false |
+| plg::string                | string   | true  |
+| plg::vector\<bool\>        | bool*    | true  |
+| plg::vector\<char\>        | char8*   | true  |
+| plg::vector\<char16_t\>    | char16*  | true  |
+| plg::vector\<int8_t\>      | int8*    | true  |
+| plg::vector\<int16_t\>     | int16*   | true  |
+| plg::vector\<int32_t\>     | int32*   | true  |
+| plg::vector\<int64_t\>     | int64*   | true  |
+| plg::vector\<uint8_t\>     | uint8*   | true  |
+| plg::vector\<uint16_t\>    | uint16*  | true  |
+| plg::vector\<uint32_t\>    | uint32*  | true  |
+| plg::vector\<uint64_t\>    | uint64*  | true  |
+| plg::vector\<uintptr_t\>   | ptr64*   | true  |
+| plg::vector\<uintptr_t\>   | ptr32*   | true  |
+| plg::vector\<float\>       | float*   | true  |
+| plg::vector\<double\>      | double*  | true  |
+| plg::vector\<plg::string\> | string*  | true  |
+| plg::vec2                  | vec2     | true  |
+| plg::vec3                  | vec3     | true  |
+| plg::vec4                  | vec4     | true  |
+| plg::mat4x4                | mat4x4   | true  |
 
 ## Exported Functions
 
@@ -98,7 +99,7 @@ Here's an example template that combines these elements:
 How it will look like on C++ side:
 
 ```c++
-extern "C" void Example_Function(std::string& ret, void* p1, const std::string& p2, int32_t p3, std::vector<uint8_t>& p4)
+extern "C" plg::string Example_Function(void* p1, const plg::string& p2, int32_t p3, plg::vector<uint8_t>& p4)
 ```
 
 ### Example 2
@@ -166,28 +167,3 @@ Here's an example template that combines these elements:
   }
 }
 ```
-
-How it will look like on C++ side:
-
-```c++
-using Example_Callback_Function = std::string(*)(void*, const std::string&, int32_t);
-extern "C" void Example_Function(float p1, double& p2, Example_Callback_Function p4)
-```
-
----
-
-### Pointers
-	For ref and out paramaters you'll use the corresponding
-	reference type. With setting "ref" parameter to true.
-	So if you have a type listed as "int32", you should use
-	"int32_t&" in your implementation. 
-
-### Arrays and Strings
-	Arrays of any type must be described with a std::vector<>& and the
-	strings should be pass by std::string&. 
-
-### Return
-	In x86-x64 calling conventions, which determine how function arguments are passed. 
-	For pod structures or objects returned by value, the caller must allocate memory 
-	for the return value and pass a pointer to it as the first argument.
-	
