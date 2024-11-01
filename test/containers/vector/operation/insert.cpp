@@ -12,6 +12,10 @@
 #include <string>
 #include <vector>
 
+#include <iostream>
+#include <ranges>
+#include <iterator>
+
 template <class T>
 class FooInputIterator {
 	T* _ptr{};
@@ -25,6 +29,16 @@ public:
 
 	explicit FooInputIterator(T* ptr)
 		: _ptr(ptr) {}
+
+	FooInputIterator(const FooInputIterator& other)
+		: _ptr(other._ptr) {}
+
+	FooInputIterator(FooInputIterator&& other) noexcept
+		: _ptr(other._ptr) {}
+
+	operator const T*() const noexcept {
+		return _ptr;
+	}
 
 	auto operator*() const -> T& {
 		return *_ptr;

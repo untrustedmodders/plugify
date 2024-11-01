@@ -207,7 +207,7 @@ TEST_CASE("vector", "[vector]") {
 	}
 
 	SECTION("Constructor, WithInitList") {
-		std::initializer_list<int> list({ 1, 2, 3, 4 });
+		std::initializer_list<int> list{ 1, 2, 3, 4 };
 		vint vec(list);
 
 		REQUIRE(list.size() == vec.size());
@@ -534,9 +534,7 @@ TEST_CASE("vector", "[vector]") {
 
 	SECTION("Modifier, InsertWithCount") {
 		vint vec({ 1, 2, 3, 4, 5, 6 });
-		vint cpy(vec.begin() + 3, vec.begin() + 5);
-
-		auto it = vec.insert(vec.begin(), cpy.begin(), cpy.end());
+		auto it = vec.insert(vec.begin(), vec.begin() + 3, vec.begin() + 5);
 
 		REQUIRE(8 == vec.size());
 		REQUIRE(4 == *it);
@@ -568,7 +566,7 @@ TEST_CASE("vector", "[vector]") {
 
 	SECTION("Modifier, InsertWithInitList") {
 		vint vec({ 1, 2, 3, 4 });
-		std::initializer_list<int> list({ 20, 30 });
+		std::initializer_list<int> list{ 20, 30 };
     
 		int results[6] = { 1, 2, 20, 30, 3, 4 };
     

@@ -24,5 +24,13 @@ TEST_CASE("vector access > at", "[vector]") {
 		REQUIRE(svConst.at(99) == "");
 		REQUIRE_THROWS_AS(sv.at(100), std::out_of_range);	  // NOLINT(llvm-else-after-return,readability-else-after-return)
 		REQUIRE_THROWS_AS(svConst.at(100), std::out_of_range);// NOLINT(llvm-else-after-return,readability-else-after-return)
+
+		plg::vector<int> v { 1, 2, 3 };
+		REQUIRE(v.at (0) == v[0]);
+		REQUIRE(v.at (0) == v.front());
+		REQUIRE(v.at (1) == v[1]);
+		REQUIRE(v.at (v.size () - 1) == v[v.size () - 1]);
+		REQUIRE(v.at (v.size () - 1) == v.back());
+
 	}
 }
