@@ -6,7 +6,7 @@
 
 TEST_CASE("vector operator > access > operator[]", "[vector]") {
 	SECTION("idx]") {
-		plg::vector<int> v { 1, 2, 3 };
+		plg::vector<int> v{ 1, 2, 3 };
 		
 		REQUIRE(v[0] == v.at(0));
 		REQUIRE(v[0] == *v.begin());

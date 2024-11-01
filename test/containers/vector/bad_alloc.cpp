@@ -4,11 +4,11 @@
 
 // make sure all this works even when valgrind is not installed
 #if __has_include(<valgrind/valgrind.h>)
-#    include <valgrind/valgrind.h>
+#	include <valgrind/valgrind.h>
 #else
-#    ifndef RUNNING_ON_VALGRIND
-#        define RUNNING_ON_VALGRIND 0
-#    endif
+#	ifndef RUNNING_ON_VALGRIND
+#		define RUNNING_ON_VALGRIND 0
+#	endif
 #endif
 
 #include <limits>
@@ -18,10 +18,10 @@
 #define SANITIZER_ACTIVE 0
 
 #if defined(__has_feature)
-#    if __has_feature(address_sanitizer) || __has_feature(thread_sanitizer)
-#        undef SANITIZER_ACTIVE
-#        define SANITIZER_ACTIVE 1
-#    endif
+#	if __has_feature(address_sanitizer) || __has_feature(thread_sanitizer)
+#		undef SANITIZER_ACTIVE
+#		define SANITIZER_ACTIVE 1
+#	endif
 #endif
 
 TEST_CASE("allocator", "[vector]") {
@@ -30,8 +30,7 @@ TEST_CASE("allocator", "[vector]") {
 			// this test doesn't work with valgrind or some sanitizers.
 		} else {
 			auto sv = plg::vector<std::string>();
-			auto m = sv.max_size();
-			REQUIRE(m == 0x7fffffffffffffff);
+			REQUIRE(sv.max_size() == 0x7fffffffffffffff);
 			REQUIRE_THROWS_AS(sv.reserve(sv.max_size()), std::bad_alloc);
 		}
 	}

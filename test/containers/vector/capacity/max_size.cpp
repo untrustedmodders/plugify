@@ -7,10 +7,12 @@
 
 TEST_CASE("vector capacity > max_size", "[vector]") {
 	SECTION("max_size") {
-		plg::vector<int> v;
-		REQUIRE(0x7fffffffffffffff == v.max_size());
+		const size_t max_size = 0x7fffffffffffffff;
 
-		plg::vector<double> w;
-		REQUIRE(0x7fffffffffffffff == w.max_size());
+		plg::vector<int> a;
+		REQUIRE(max_size == a.max_size());
+
+		plg::vector<double> b(100, 20.0);
+		REQUIRE(max_size == b.max_size());
 	}
 }

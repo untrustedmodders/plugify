@@ -4,25 +4,28 @@
 
 TEST_CASE("vector access > back", "[vector]") {
 
-    SECTION("back") {
-        plg::vector<char> a{'s', 'm', 'a', 'l', 'l'};
-        REQUIRE(a.back() == 'l');
-        a.back() = 't';
-        REQUIRE(a.back() == 't');
+	SECTION("back") {
+		{
+			plg::vector<char> a{'s', 'm', 'a', 'l', 'l'};
+			REQUIRE(a.back() == 'l');
+			a.back() = 't';
+			REQUIRE(a.back() == 't');
+		}
+		{
+			plg::vector<int> b{ 2 };
 
-		plg::vector<int> v{ 2 };
+			REQUIRE(b.back() == 2);
+			REQUIRE(b.back() == b[b.size() - 1]);
 
-		REQUIRE(v.back () == 2);
-		REQUIRE(v.back () == v[v.size () - 1]);
+			b.push_back(3);
 
-		v.push_back(3);
+			REQUIRE(b.back() == 3);
+			REQUIRE(b.back() == b[b.size() - 1]);
 
-		REQUIRE(v.back () == 3);
-		REQUIRE(v.back () == v[v.size () - 1]);
+			b.insert(b.begin(), 1);
 
-		v.insert(v.begin (), 1);
-
-		REQUIRE(v.back () == 3);
-		REQUIRE(v.back () == v[v.size () - 1]);
-    }
+			REQUIRE(b.back() == 3);
+			REQUIRE(b.back() == b[b.size() - 1]);
+		}
+	}
 }

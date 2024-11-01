@@ -924,21 +924,25 @@ namespace plg {
 
 		[[nodiscard]] constexpr reference front() 
 		{
+			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
 			return get_data()[0];
 		}
 
 		[[nodiscard]] constexpr const_reference front() const 
 		{
+			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
 			return get_data()[0];
 		}
 
 		[[nodiscard]] constexpr reference back() 
 		{
+			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
 			return get_data()[get_size() - 1];
 		}
 
 		[[nodiscard]] constexpr const_reference back() const 
 		{
+			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
 			return get_data()[get_size() - 1];
 		}
 
@@ -1039,12 +1043,6 @@ namespace plg {
 
 		[[nodiscard]] constexpr size_type max_size() const noexcept 
 		{
-			// size_type m = allocator_traits::max_size(_allocator);
-
-			// if (m <= numeric_limits<size_type>::max() / 2)
-			//     return m - alignment;
-			// else
-			//     return (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) ? m - alignment : (m / 2) - alignment;
 			return (allocator_traits::max_size(allocator_type()) - 1) / 2;
 		}
 

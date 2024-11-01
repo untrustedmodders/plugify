@@ -19,7 +19,5 @@ TEST_CASE("vector access > get_allocator", "[vector]") {
 
 		REQUIRE(w.empty());
 		REQUIRE(alloc == w.get_allocator());
-		//REQUIRE(alloc_type2 { } != w.get_allocator());
-		//REQUIRE(v.get_allocator() != w.get_allocator());
 	}
 }

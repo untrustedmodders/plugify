@@ -4,22 +4,28 @@
 
 TEST_CASE("vector access > data", "[vector]") {
 
-    SECTION("data") {
-        plg::vector<char> const a{'s', 'm', 'a', 'l', 'l'};
-        REQUIRE(a.data()[0] == 's');
-        REQUIRE(a.data()[4] == 'l');
-		
-		plg::vector<int> v;
-		
-		CHECK(v.empty());
-		CHECK(v.data() == v.begin());
+	SECTION("data") {
+		{
+			plg::vector<char> const a{'s', 'm', 'a', 'l', 'l'};
+			REQUIRE(a.data()[0] == 's');
+			REQUIRE(a.data()[4] == 'l');
+		}
+		{
+			plg::vector<int> b;
 
-		v.push_back(1);
-		CHECK(v.data() == v.begin());
-		CHECK(1 == *v.data());
+			CHECK(b.empty());
+			CHECK(b.data() == b.begin());
 
-		v.push_back(2);
-		CHECK(v.data() == v.begin());
-		CHECK(1 == *v.data());
-    }
+			b.push_back(1);
+			CHECK(b.data() == b.begin());
+			CHECK(1 == *b.data());
+
+			b.push_back(2);
+			b.push_back(3);
+			b.push_back(4);
+			b.push_back(5);
+			CHECK(b.data() == b.begin());
+			CHECK(1 == *b.data());
+		}
+	}
 }

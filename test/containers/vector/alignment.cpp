@@ -6,7 +6,7 @@ namespace {
 
 template <size_t Alignment, size_t Size>
 struct A {
-    alignas(Alignment) std::array<std::byte, Size> m_data{};
+	alignas(Alignment) std::array<std::byte, Size> m_data{};
 };
 
 } // namespace

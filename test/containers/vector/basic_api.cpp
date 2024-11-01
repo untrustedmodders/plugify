@@ -268,12 +268,12 @@ TEST_CASE("vector", "[vector]") {
 
 	SECTION("Access, At") {
 		vint vec({ 1, 2, 3, 4 });
-    
+
 		REQUIRE(vec.at(0) == 1);
 		REQUIRE(vec.at(1) == 2);
 		REQUIRE(vec.at(2) == 3);
 		REQUIRE(vec.at(3) == 4);
-    
+
 		REQUIRE_THROWS_AS(vec.at(10), std::out_of_range);
 	}
 
@@ -384,7 +384,7 @@ TEST_CASE("vector", "[vector]") {
 	SECTION("Modifier, Erase") {
 		vint vec({ 1, 2, 3, 4 });
 		vec.erase(vec.begin() + 1);
-    
+
 		REQUIRE(vec.size() == 3);
 		REQUIRE(vec.at(0) == 1);
 		REQUIRE(vec.at(1) == 3);
@@ -394,7 +394,7 @@ TEST_CASE("vector", "[vector]") {
 	SECTION("Modifier, EraseWithRange") {
 		vint vec({ 1, 2, 3, 4 });
 		vec.erase(vec.begin() + 1, vec.begin() + 3);
-    
+
 		REQUIRE(vec.size() == 2);
 		REQUIRE(vec.at(0) == 1);
 		REQUIRE(vec.at(1) == 4);
@@ -449,13 +449,13 @@ TEST_CASE("vector", "[vector]") {
 			int a;
 			double b;
 			plg::string c;
-        
+
 			T(int _a, double _b, std::string &&_c) : a(_a) , b(_b), c(std::move(_c)) {}
 		};
-    
+
 		plg::vector<T> objects;
 		objects.emplace_back(42, 3.14, "foo");
-    
+
 		REQUIRE(1 == objects.size());
 		REQUIRE(42 == objects.at(0).a);
 		REQUIRE(3.14 == objects.at(0).b);
@@ -505,7 +505,7 @@ TEST_CASE("vector", "[vector]") {
 		int value = 5;
 		vint vec({ 1, 2, 3, 4 });
 		auto it = vec.insert(vec.begin(), value);
-    
+
 		REQUIRE(5 == vec.size());
 		REQUIRE(5 == *it);
 		REQUIRE(5 == vec.at(0));
@@ -538,11 +538,11 @@ TEST_CASE("vector", "[vector]") {
 
 		REQUIRE(8 == vec.size());
 		REQUIRE(4 == *it);
-    
+
 		REQUIRE(4 == vec.at(0));
 		REQUIRE(5 == vec.at(1));
 		REQUIRE(1 == vec.at(2));
-   
+
 		REQUIRE(2 == vec.at(3));
 		REQUIRE(3 == vec.at(4));
 		REQUIRE(4 == vec.at(5));
@@ -552,13 +552,13 @@ TEST_CASE("vector", "[vector]") {
 	SECTION("Modifier, InsertWithIterators") {
 		vint vec({ 1, 2, 3, 4 });
 		vint other({ 10, 20, 30, 40 });
-    
+
 		int results[6] = { 1, 2, 20, 30, 3, 4 };
-    
+
 		auto it = vec.insert(vec.begin() + 2, other.begin() + 1, other.begin() + 3);
 		REQUIRE(6 == vec.size());
 		REQUIRE(20 == *it);
-    
+
 		for (size_t i = 0; i < 6; i++) {
 			REQUIRE(vec.at(i) == results[i]);
 		}
@@ -567,13 +567,13 @@ TEST_CASE("vector", "[vector]") {
 	SECTION("Modifier, InsertWithInitList") {
 		vint vec({ 1, 2, 3, 4 });
 		std::initializer_list<int> list{ 20, 30 };
-    
+
 		int results[6] = { 1, 2, 20, 30, 3, 4 };
-    
+
 		auto it = vec.insert(vec.begin() + 2, list);
 		REQUIRE(6 == vec.size());
 		REQUIRE(20 == *it);
-    
+
 		for (size_t i = 0; i < 6; i++) {
 			REQUIRE(vec.at(i) == results[i]);
 		}
@@ -584,13 +584,13 @@ TEST_CASE("vector", "[vector]") {
 			int a;
 			double b;
 			plg::string c;
-        
+
 			T(int _a, double _b, std::string &&_c) : a(_a) , b(_b), c(std::move(_c)) {}
 		};
-    
+
 		plg::vector<T> objects;
 		objects.emplace(objects.begin(), 42, 3.14, "foo");
-    
+
 		REQUIRE(1 == objects.size());
 		REQUIRE(42 == objects.at(0).a);
 		REQUIRE(3.14 == objects.at(0).b);
@@ -678,7 +678,7 @@ TEST_CASE("vector", "[vector]") {
 		vint vec({ 1, 2, 3, 4 });
 		vint other({ 1, 2, 3, 4 });
 		vint different({ 1, 2, 3, 5 });
-    
+
 		REQUIRE(vec == other);
 		REQUIRE_FALSE(vec == different);
 	}
@@ -687,7 +687,7 @@ TEST_CASE("vector", "[vector]") {
 		vint vec({ 1, 2, 3, 4 });
 		vint other({ 1, 2, 3, 4 });
 		vint different({ 1, 2, 3, 5 });
-    
+
 		REQUIRE_FALSE(vec != other);
 		REQUIRE(vec != different);
 	}
@@ -696,7 +696,7 @@ TEST_CASE("vector", "[vector]") {
 		vint vec({ 1, 2, 3, 4 });
 		vint other({ 1, 2, 3, 4 });
 		vint different({ 1, 3, 3, 4 });
-    
+
 		REQUIRE_FALSE(vec < other);
 		REQUIRE(vec < different);
 	}
@@ -705,7 +705,7 @@ TEST_CASE("vector", "[vector]") {
 		vint vec({ 1, 2, 3, 4 });
 		vint other({ 1, 2, 3, 4 });
 		vint different({ 1, 3, 3, 4 });
-    
+
 		REQUIRE_FALSE(vec > other);
 		REQUIRE_FALSE(vec > different);
 	}
@@ -714,7 +714,7 @@ TEST_CASE("vector", "[vector]") {
 		vint vec({ 1, 2, 3, 4 });
 		vint other({ 1, 2, 3, 4 });
 		vint different({ 1, 3, 3, 4 });
-    
+
 		REQUIRE(vec <= other);
 		REQUIRE(vec <= different);
 	}
@@ -723,7 +723,7 @@ TEST_CASE("vector", "[vector]") {
 		vint vec({ 1, 2, 3, 4 });
 		vint other({ 1, 2, 3, 4 });
 		vint different({ 1, 3, 3, 4 });
-    
+
 		REQUIRE(vec >= other);
 		REQUIRE_FALSE(vec >= different);
 	}

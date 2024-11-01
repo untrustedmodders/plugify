@@ -44,32 +44,32 @@ TEST_CASE("vector iterator > rbegin_rend", "[vector]") {
 
 		REQUIRE(v.rbegin() == v.rbegin());
 		REQUIRE(v.rbegin() == v.crbegin());
-		REQUIRE(!(v.rbegin()  ==  v.rend()));
-		REQUIRE(!(v.rbegin()  ==  v.crend()));
+		REQUIRE(!(v.rbegin() == v.rend()));
+		REQUIRE(!(v.rbegin() == v.crend()));
 
 		REQUIRE(std::next(v.rbegin()) == v.rend());
 		REQUIRE(std::next(v.rbegin()) == v.crend());
 
 		REQUIRE(v.rbegin() == c.rbegin());
 		REQUIRE(v.rbegin() == c.crbegin());
-		REQUIRE(!(v.rbegin()  ==  c.rend()));
-		REQUIRE(!(v.rbegin()  ==  c.crend()));
+		REQUIRE(!(v.rbegin() == c.rend()));
+		REQUIRE(!(v.rbegin() == c.crend()));
 
 		REQUIRE(std::next(v.rbegin()) == c.rend());
 		REQUIRE(std::next(v.rbegin()) == c.crend());
 
 		REQUIRE(c.rbegin() == v.rbegin());
 		REQUIRE(c.rbegin() == v.crbegin());
-		REQUIRE(!(c.rbegin()  ==  v.rend()));
-		REQUIRE(!(c.rbegin()  ==  v.crend()));
+		REQUIRE(!(c.rbegin() == v.rend()));
+		REQUIRE(!(c.rbegin() == v.crend()));
 
 		REQUIRE(std::next(c.rbegin()) == v.rend());
 		REQUIRE(std::next(c.rbegin()) == v.crend());
 
 		REQUIRE(c.rbegin() == c.rbegin());
 		REQUIRE(c.rbegin() == c.crbegin());
-		REQUIRE(!(c.rbegin()  ==  c.rend()));
-		REQUIRE(!(c.rbegin()  ==  c.crend()));
+		REQUIRE(!(c.rbegin() == c.rend()));
+		REQUIRE(!(c.rbegin() == c.crend()));
 
 		REQUIRE(std::next(c.rbegin()) == c.rend());
 		REQUIRE(std::next(c.rbegin()) == c.crend());
@@ -83,32 +83,32 @@ TEST_CASE("vector iterator > rbegin_rend", "[vector]") {
 
 		REQUIRE(v.rbegin() == v.rbegin());
 		REQUIRE(v.rbegin() == v.crbegin());
-		REQUIRE(!(v.rbegin()  ==  v.rend()));
-		REQUIRE(!(v.rbegin()  ==  v.crend()));
+		REQUIRE(!(v.rbegin() == v.rend()));
+		REQUIRE(!(v.rbegin() == v.crend()));
 
 		REQUIRE(std::next(v.rbegin(), 2) == v.rend());
 		REQUIRE(std::next(v.rbegin(), 2) == v.crend());
 
 		REQUIRE(v.rbegin() == c.rbegin());
 		REQUIRE(v.rbegin() == c.crbegin());
-		REQUIRE(!(v.rbegin()  ==  c.rend()));
-		REQUIRE(!(v.rbegin()  ==  c.crend()));
+		REQUIRE(!(v.rbegin() == c.rend()));
+		REQUIRE(!(v.rbegin() == c.crend()));
 
 		REQUIRE(std::next(v.rbegin(), 2) == c.rend());
 		REQUIRE(std::next(v.rbegin(), 2) == c.crend());
 
 		REQUIRE(c.rbegin() == v.rbegin());
 		REQUIRE(c.rbegin() == v.crbegin());
-		REQUIRE(!(c.rbegin()  ==  v.rend()));
-		REQUIRE(!(c.rbegin()  ==  v.crend()));
+		REQUIRE(!(c.rbegin() == v.rend()));
+		REQUIRE(!(c.rbegin() == v.crend()));
 
 		REQUIRE(std::next(c.rbegin(), 2) == v.rend());
 		REQUIRE(std::next(c.rbegin(), 2) == v.crend());
 
 		REQUIRE(c.rbegin() == c.rbegin());
 		REQUIRE(c.rbegin() == c.crbegin());
-		REQUIRE(!(c.rbegin()  ==  c.rend()));
-		REQUIRE(!(c.rbegin()  ==  c.crend()));
+		REQUIRE(!(c.rbegin() == c.rend()));
+		REQUIRE(!(c.rbegin() == c.crend()));
 
 		REQUIRE(std::next(c.rbegin(), 2) == c.rend());
 		REQUIRE(std::next(c.rbegin(), 2) == c.crend());
@@ -122,23 +122,23 @@ TEST_CASE("vector iterator > rbegin_rend", "[vector]") {
 
 		REQUIRE(v.rbegin() == v.rbegin());
 		REQUIRE(v.rbegin() == v.crbegin());
-		REQUIRE(!(v.rbegin()  ==  v.rend()));
-		REQUIRE(!(v.rbegin()  ==  v.crend()));
+		REQUIRE(!(v.rbegin() == v.rend()));
+		REQUIRE(!(v.rbegin() == v.crend()));
 
 		REQUIRE(v.rbegin() == c.rbegin());
 		REQUIRE(v.rbegin() == c.crbegin());
-		REQUIRE(!(v.rbegin()  ==  c.rend()));
-		REQUIRE(!(v.rbegin()  ==  c.crend()));
+		REQUIRE(!(v.rbegin() == c.rend()));
+		REQUIRE(!(v.rbegin() == c.crend()));
 
 		REQUIRE(c.rbegin() == v.rbegin());
 		REQUIRE(c.rbegin() == v.crbegin());
-		REQUIRE(!(c.rbegin()  ==  v.rend()));
-		REQUIRE(!(c.rbegin()  ==  v.crend()));
+		REQUIRE(!(c.rbegin() == v.rend()));
+		REQUIRE(!(c.rbegin() == v.crend()));
 
 		REQUIRE(c.rbegin() == c.rbegin());
 		REQUIRE(c.rbegin() == c.crbegin());
-		REQUIRE(!(c.rbegin()  ==  c.rend()));
-		REQUIRE(!(c.rbegin()  ==  c.crend()));
+		REQUIRE(!(c.rbegin() == c.rend()));
+		REQUIRE(!(c.rbegin() == c.crend()));
 
 		v.clear();
 
@@ -221,32 +221,32 @@ TEST_CASE("vector iterator > rbegin_rend", "[vector]") {
 
 		REQUIRE(v.rend() == v.rend());
 		REQUIRE(v.rend() == v.crend());
-		REQUIRE(!(v.rend()  ==  v.rbegin()));
-		REQUIRE(!(v.rend()  ==  v.crbegin()));
+		REQUIRE(!(v.rend() == v.rbegin()));
+		REQUIRE(!(v.rend() == v.crbegin()));
 
 		REQUIRE(std::prev(v.rend()) == v.rbegin());
 		REQUIRE(std::prev(v.rend()) == v.crbegin());
 
 		REQUIRE(v.rend() == c.rend());
 		REQUIRE(v.rend() == c.crend());
-		REQUIRE(!(v.rend()  ==  c.rbegin()));
-		REQUIRE(!(v.rend()  ==  c.crbegin()));
+		REQUIRE(!(v.rend() == c.rbegin()));
+		REQUIRE(!(v.rend() == c.crbegin()));
 
 		REQUIRE(std::prev(v.rend()) == c.rbegin());
 		REQUIRE(std::prev(v.rend()) == c.crbegin());
 
 		REQUIRE(c.rend() == v.rend());
 		REQUIRE(c.rend() == v.crend());
-		REQUIRE(!(c.rend()  ==  v.rbegin()));
-		REQUIRE(!(c.rend()  ==  v.crbegin()));
+		REQUIRE(!(c.rend() == v.rbegin()));
+		REQUIRE(!(c.rend() == v.crbegin()));
 
 		REQUIRE(std::prev(c.rend()) == v.rbegin());
 		REQUIRE(std::prev(c.rend()) == v.crbegin());
 
 		REQUIRE(c.rend() == c.rend());
 		REQUIRE(c.rend() == c.crend());
-		REQUIRE(!(c.rend()  ==  c.rbegin()));
-		REQUIRE(!(c.rend()  ==  c.crbegin()));
+		REQUIRE(!(c.rend() == c.rbegin()));
+		REQUIRE(!(c.rend() == c.crbegin()));
 
 		REQUIRE(std::prev(c.rend()) == c.rbegin());
 		REQUIRE(std::prev(c.rend()) == c.crbegin());
@@ -260,32 +260,32 @@ TEST_CASE("vector iterator > rbegin_rend", "[vector]") {
 
 		REQUIRE(v.rend() == v.rend());
 		REQUIRE(v.rend() == v.crend());
-		REQUIRE(!(v.rend()  ==  v.rbegin()));
-		REQUIRE(!(v.rend()  ==  v.crbegin()));
+		REQUIRE(!(v.rend() == v.rbegin()));
+		REQUIRE(!(v.rend() == v.crbegin()));
 
 		REQUIRE(std::prev(v.rend(), 2) == v.rbegin());
 		REQUIRE(std::prev(v.rend(), 2) == v.crbegin());
 
 		REQUIRE(v.rend() == c.rend());
 		REQUIRE(v.rend() == c.crend());
-		REQUIRE(!(v.rend()  ==  c.rbegin()));
-		REQUIRE(!(v.rend()  ==  c.crbegin()));
+		REQUIRE(!(v.rend() == c.rbegin()));
+		REQUIRE(!(v.rend() == c.crbegin()));
 
 		REQUIRE(std::prev(v.rend(), 2) == c.rbegin());
 		REQUIRE(std::prev(v.rend(), 2) == c.crbegin());
 
 		REQUIRE(c.rend() == v.rend());
 		REQUIRE(c.rend() == v.crend());
-		REQUIRE(!(c.rend()  ==  v.rbegin()));
-		REQUIRE(!(c.rend()  ==  v.crbegin()));
+		REQUIRE(!(c.rend() == v.rbegin()));
+		REQUIRE(!(c.rend() == v.crbegin()));
 
 		REQUIRE(std::prev(c.rend(), 2) == v.rbegin());
 		REQUIRE(std::prev(c.rend(), 2) == v.crbegin());
 
 		REQUIRE(c.rend() == c.rend());
 		REQUIRE(c.rend() == c.crend());
-		REQUIRE(!(c.rend()  ==  c.rbegin()));
-		REQUIRE(!(c.rend()  ==  c.crbegin()));
+		REQUIRE(!(c.rend() == c.rbegin()));
+		REQUIRE(!(c.rend() == c.crbegin()));
 
 		REQUIRE(std::prev(c.rend(), 2) == c.rbegin());
 		REQUIRE(std::prev(c.rend(), 2) == c.crbegin());
@@ -299,23 +299,23 @@ TEST_CASE("vector iterator > rbegin_rend", "[vector]") {
 
 		REQUIRE(v.rend() == v.rend());
 		REQUIRE(v.rend() == v.crend());
-		REQUIRE(!(v.rend()  ==  v.rbegin()));
-		REQUIRE(!(v.rend()  ==  v.crbegin()));
+		REQUIRE(!(v.rend() == v.rbegin()));
+		REQUIRE(!(v.rend() == v.crbegin()));
 
 		REQUIRE(v.rend() == c.rend());
 		REQUIRE(v.rend() == c.crend());
-		REQUIRE(!(v.rend()  ==  c.rbegin()));
-		REQUIRE(!(v.rend()  ==  c.crbegin()));
+		REQUIRE(!(v.rend() == c.rbegin()));
+		REQUIRE(!(v.rend() == c.crbegin()));
 
 		REQUIRE(c.rend() == v.rend());
 		REQUIRE(c.rend() == v.crend());
-		REQUIRE(!(c.rend()  ==  v.rbegin()));
-		REQUIRE(!(c.rend()  ==  v.crbegin()));
+		REQUIRE(!(c.rend() == v.rbegin()));
+		REQUIRE(!(c.rend() == v.crbegin()));
 
 		REQUIRE(c.rend() == c.rend());
 		REQUIRE(c.rend() == c.crend());
-		REQUIRE(!(c.rend()  ==  c.rbegin()));
-		REQUIRE(!(c.rend()  ==  c.crbegin()));
+		REQUIRE(!(c.rend() == c.rbegin()));
+		REQUIRE(!(c.rend() == c.crbegin()));
 
 		v.clear();
 

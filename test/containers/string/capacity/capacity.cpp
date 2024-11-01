@@ -4,12 +4,12 @@
 
 TEST_CASE("string capacity > capacity", "[string]") {
 
-    SECTION("size_type capacity() const noexcept") {
-        plg::string a;
-        REQUIRE(a.size() == 0);
+	 SECTION("size_type capacity() const noexcept") {
+		  plg::string a;
+		  REQUIRE(a.size() == 0);
 
-        plg::string b{"toto", 4};
-        REQUIRE(b.size() == 4);
-    }
+		  plg::string b{"toto", 4};
+		  REQUIRE(b.size() == 4);
+	 }
 
 }
