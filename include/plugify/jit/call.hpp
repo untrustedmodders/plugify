@@ -1,10 +1,10 @@
 #pragma once
 
 #include <asmjit/asmjit.h>
-#include <memory>
 #include <plugify/mem_addr.hpp>
 #include <plugify/method.hpp>
 #include <string_view>
+#include <memory>
 #include <vector>
 
 namespace plugify{
@@ -76,6 +76,15 @@ namespace plugify{
 		};
 		
 		struct Return {
+			/**
+			 * @brief Constructs an object of type `T` at the memory location.
+			 * @param args The arguments to be forwarded to the constructor.
+			 */
+			template<typename T, typename...Args>
+			void ConstructAt(Args&&... args) const noexcept {
+				std::construct_at((T*) GetReturnPtr(), std::forward<Args>(args)...);
+			}
+
 			/**
 			 * @brief Set the return value.
 			 * @tparam T Type of the return value.
