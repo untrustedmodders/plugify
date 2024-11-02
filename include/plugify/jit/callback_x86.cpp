@@ -195,17 +195,17 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 		}
 #if !PLUGIFY_PLATFORM_WINDOWS
 		else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2)) {
-			asmjit::x86::Mem retStackIdxUpper(retStack);
-			retStackIdxUpper.addOffset(sizeof(uint64_t));
+			asmjit::x86::Mem retStackIdxUpper(*retStack);
 			retStackIdxUpper.setSize(sizeof(uint64_t));
+			retStackIdxUpper.setOffset(sizeof(uint64_t));
 
 			cc.mov(asmjit::x86::rax, retStackIdx);
 			cc.mov(asmjit::x86::rdx, retStackIdxUpper);
 			cc.ret();
 		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2)) {
-			asmjit::x86::Mem retStackIdxUpper(retStack);
-			retStackIdxUpper.addOffset(sizeof(uint64_t));
+			asmjit::x86::Mem retStackIdxUpper(*retStack);
 			retStackIdxUpper.setSize(sizeof(uint64_t));
+			retStackIdxUpper.setOffset(sizeof(uint64_t));
 
 			cc.movq(asmjit::x86::xmm0, retStackIdx);
 			cc.movq(asmjit::x86::xmm1, retStackIdxUpper);
