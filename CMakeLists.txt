@@ -49,7 +49,7 @@ option(PLUGIFY_USE_SANITIZER "Enable sanitizers by adding -fsanitize=address -fn
 option(PLUGIFY_USE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PLUGIFY_USE_ABI0 "Enable use of the older C++ ABI, which was the default in GCC versions before GCC 5" ON)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
     if(PLUGIFY_USE_LIBCPP)
         check_cxx_compiler_flag(-stdlib=libc++ PLUGIFY_HAS_LIBCPP)
         if(NOT PLUGIFY_HAS_LIBCPP)
@@ -80,7 +80,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 if(PLUGIFY_USE_SANITIZER)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
         set(PLUGIFY_HAS_SANITIZER TRUE CACHE BOOL "" FORCE)
         mark_as_advanced(PLUGIFY_HAS_SANITIZER)
     endif()
@@ -130,7 +130,7 @@ if(NOT PLUGIFY_USE_ARM)
     set(INTEL_FLAGS -xSSE2 -xSSE3 -xSSSE3 -xSSE4.1 -xSSE4.2 -xSHA)
 
     # Determine the compiler and set the appropriate flags
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
         set(PLUGIFY_SIMD_FLAGS ${GCC_CLANG_FLAGS})
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         set(PLUGIFY_SIMD_FLAGS ${MSVC_FLAGS})
@@ -260,7 +260,7 @@ if(MSVC)
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(${PROJECT_NAME} PRIVATE /MP)
     endif()
-else()
+else(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
     target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
@@ -391,13 +391,13 @@ if(PLUGIFY_BUILD_JIT)
         set(PLUGIFY_JIT_SOURCES 
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_arm.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_arm.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_x86.cpp"
         )
     else()
         set(PLUGIFY_JIT_SOURCES 
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_x86.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_x86.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_x86.cpp"
         )
     endif()    
     add_library(${PROJECT_NAME}-jit OBJECT ${PLUGIFY_JIT_SOURCES})
