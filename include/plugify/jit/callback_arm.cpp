@@ -90,7 +90,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	const uint32_t alignment = 16;
 
 	// setup the stack structure to hold arguments for user callback
-	auto stackSize = static_cast<uint32_t>(sizeof(uint64_t) * sig.argCount());
+	const auto stackSize = static_cast<uint32_t>(sizeof(uint64_t) * sig.argCount());
 	asmjit::a64::Mem argsStack = cc.newStack(stackSize, alignment);
 	asmjit::a64::Mem argsStackIdx(argsStack);
 
@@ -145,14 +145,14 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	asmjit::a64::Gp argCountParam = cc.newGp(asmjit::TypeId::kUInt8, "argCountParam");
 	cc.mov(argCountParam, static_cast<uint8_t>(sig.argCount()));
 
-	auto retSize = static_cast<uint32_t>(sizeof(uint64_t) * (asmjit::TypeUtils::isVec128(sig.ret()) ? 2 : 1));
-
 	// create buffer for ret val
 	std::optional<asmjit::a64::Mem> retStack;
 	asmjit::a64::Gp retStruct = cc.newGpx("retStruct");
+	// if hidden param, then we don't need to allocate ret struct
 	if (hidden) {
 		cc.mov(retStruct, asmjit::a64::x8);
 	} else {
+		const auto retSize = static_cast<uint32_t>(sizeof(uint64_t) * (asmjit::TypeUtils::isVec128(sig.ret()) ? 2 : 1));
 		retStack = cc.newStack(retSize, alignment);
 		cc.add(retStruct, asmjit::a64::sp, retStack->offset());
 	}
@@ -187,7 +187,10 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 		cc.add(i, i, sizeof(uint64_t));
 	}
 
-	if (sig.hasRet()) {
+	if (hidden) {
+		cc.mov(asmjit::a64::x8, retStruct);
+		cc.ret();
+	} else if (sig.hasRet()) {
 		asmjit::a64::Mem retStackIdx(*retStack);
 		retStackIdx.setSize(sizeof(uint64_t));
 		if (asmjit::TypeUtils::isInt(sig.ret())) {

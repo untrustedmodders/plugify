@@ -62,6 +62,16 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	// i = 0
 	cc.mov(i, 0);
 
+	if (hidden) {
+		// load first arg and store its address to ret struct
+		asmjit::a64::Gp tmp = cc.newGpx();
+		cc.ldr(tmp, paramMem);
+		cc.str(tmp, ptr(returnImm));
+
+		// next structure slot (+= sizeof(uint64_t))
+		cc.add(i, i, sizeof(uint64_t));
+	}
+
 	std::vector<asmjit::a64::Reg> argRegisters;
 	argRegisters.reserve(sig.argCount());
 
