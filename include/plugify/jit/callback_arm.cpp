@@ -196,27 +196,27 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 			cc.ret(tmp);
 		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2)) {
 			asmjit::a64::Mem retStackIdxUpper(*retStack);
-			retStackIdxUpper.addOffset(sizeof(uint64_t));
 			retStackIdxUpper.setSize(sizeof(uint64_t));
+			retStackIdxUpper.setOffset(sizeof(uint64_t));
 			cc.ldr(asmjit::a64::x0, retStackIdx);
 			cc.ldr(asmjit::a64::x1, retStackIdxUpper);
 			cc.ret();
 		} else if (sig.ret() == asmjit::TypeId::kFloat32x2) { // Vector2
 			retStackIdx.setSize(sizeof(float));
 			asmjit::a64::Mem retStackIdxUpper(*retStack);
-			retStackIdxUpper.addOffset(sizeof(float));
 			retStackIdxUpper.setSize(sizeof(float));
+			retStackIdxUpper.setOffset(sizeof(float));
 			cc.ldr(asmjit::a64::s0, retStackIdx);
 			cc.ldr(asmjit::a64::s1, retStackIdxUpper);
 			cc.ret();
 		} else if (sig.ret() == asmjit::TypeId::kFloat64x2) { // Vector3
 			retStackIdx.setSize(sizeof(float));
 			asmjit::a64::Mem retStackIdx1(*retStack);
-			retStackIdx1.addOffset(sizeof(float));
 			retStackIdx1.setSize(sizeof(float));
+			retStackIdx1.setOffset(sizeof(float));
 			asmjit::a64::Mem retStackIdx2(*retStack);
-			retStackIdx2.addOffset(sizeof(float) * 2);
 			retStackIdx2.setSize(sizeof(float));
+			retStackIdx2.setOffset(sizeof(float) * 2);
 			cc.ldr(asmjit::a64::s0, retStackIdx);
 			cc.ldr(asmjit::a64::s1, retStackIdx1);
 			cc.ldr(asmjit::a64::s2, retStackIdx2);
@@ -224,14 +224,14 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 		} else if (sig.ret() == asmjit::TypeId::kFloat32x4) { // Vector4
 			retStackIdx.setSize(sizeof(float));
 			asmjit::a64::Mem retStackIdx1(*retStack);
-			retStackIdx1.addOffset(sizeof(float));
 			retStackIdx1.setSize(sizeof(float));
+			retStackIdx1.setOffset(sizeof(float));
 			asmjit::a64::Mem retStackIdx2(*retStack);
-			retStackIdx2.addOffset(sizeof(float) * 2);
 			retStackIdx2.setSize(sizeof(float));
+			retStackIdx2.setOffset(sizeof(float) * 2);
 			asmjit::a64::Mem retStackIdx3(*retStack);
-			retStackIdx3.addOffset(sizeof(float) * 3);
 			retStackIdx3.setSize(sizeof(float));
+			retStackIdx3.setOffset(sizeof(float) * 3);
 			cc.ldr(asmjit::a64::s0, retStackIdx);
 			cc.ldr(asmjit::a64::s1, retStackIdx1);
 			cc.ldr(asmjit::a64::s2, retStackIdx2);
