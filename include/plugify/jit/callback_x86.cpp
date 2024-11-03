@@ -142,10 +142,10 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	if (hidden) {
 		// if hidden param, then we need to offset it
 		if (--argCount != 0) {
-			asmjit::x86::Mem argsStackIdxUpper(argsStack);
-			argsStackIdxUpper.setSize(sizeof(uint64_t));
-			argsStackIdxUpper.setOffset(sizeof(uint64_t));
-			cc.lea(argStruct, argsStackIdxUpper);
+			asmjit::x86::Mem argsStackIdxNoRet(argsStack);
+			argsStackIdxNoRet.setSize(sizeof(uint64_t));
+			argsStackIdxNoRet.addOffset(sizeof(uint64_t));
+			cc.lea(argStruct, argsStackIdxNoRet);
 		}
 	} else {
 		cc.lea(argStruct, argsStack);
@@ -158,7 +158,6 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	// create buffer for ret val
 	std::optional<asmjit::x86::Mem> retStack;
 	asmjit::x86::Gp retStruct = cc.newUIntPtr("retStruct");
-	// if hidden param, then we don't need to allocate ret struct
 	if (hidden) {
 		cc.mov(retStruct, argsStack);
 	} else {
@@ -200,35 +199,35 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	if (hidden) {
 		cc.ret(retStruct);
 	} else if (sig.hasRet()) {
-		asmjit::x86::Mem retStackIdx(*retStack);
-		retStackIdx.setSize(sizeof(uint64_t));
+		asmjit::x86::Mem retStackIdx0(*retStack);
+		retStackIdx0.setSize(sizeof(uint64_t));
 		if (asmjit::TypeUtils::isInt(sig.ret())) {
 			asmjit::x86::Gp tmp = cc.newUIntPtr();
-			cc.mov(tmp, retStackIdx);
+			cc.mov(tmp, retStackIdx0);
 			cc.ret(tmp);
 		}
 #if !PLUGIFY_PLATFORM_WINDOWS
 		else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2)) {
-			asmjit::x86::Mem retStackIdxUpper(*retStack);
-			retStackIdxUpper.setSize(sizeof(uint64_t));
-			retStackIdxUpper.setOffset(sizeof(uint64_t));
+			asmjit::x86::Mem retStackIdx1(*retStack);
+			retStackIdx1.setSize(sizeof(uint64_t));
+			retStackIdx1.addOffset(sizeof(uint64_t));
 
-			cc.mov(asmjit::x86::rax, retStackIdx);
-			cc.mov(asmjit::x86::rdx, retStackIdxUpper);
+			cc.mov(asmjit::x86::rax, retStackIdx0);
+			cc.mov(asmjit::x86::rdx, retStackIdx1);
 			cc.ret();
 		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kFloat32x4, asmjit::TypeId::kFloat64x2)) {
-			asmjit::x86::Mem retStackIdxUpper(*retStack);
-			retStackIdxUpper.setSize(sizeof(uint64_t));
-			retStackIdxUpper.setOffset(sizeof(uint64_t));
+			asmjit::x86::Mem retStackIdx1(*retStack);
+			retStackIdx1.setSize(sizeof(uint64_t));
+			retStackIdx1.addOffset(sizeof(uint64_t));
 
-			cc.movq(asmjit::x86::xmm0, retStackIdx);
-			cc.movq(asmjit::x86::xmm1, retStackIdxUpper);
+			cc.movq(asmjit::x86::xmm0, retStackIdx0);
+			cc.movq(asmjit::x86::xmm1, retStackIdx1);
 			cc.ret();
 		}
 #endif
 		else {
 			asmjit::x86::Xmm tmp = cc.newXmm();
-			cc.movq(tmp, retStackIdx);
+			cc.movq(tmp, retStackIdx0);
 			cc.ret(tmp);
 		}
 	}

@@ -148,7 +148,6 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	// create buffer for ret val
 	std::optional<asmjit::a64::Mem> retStack;
 	asmjit::a64::Gp retStruct = cc.newGpx("retStruct");
-	// if hidden param, then we don't need to allocate ret struct
 	if (hidden) {
 		cc.mov(retStruct, asmjit::a64::x8);
 	} else {
@@ -191,58 +190,58 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 		cc.mov(asmjit::a64::x8, retStruct);
 		cc.ret();
 	} else if (sig.hasRet()) {
-		asmjit::a64::Mem retStackIdx(*retStack);
-		retStackIdx.setSize(sizeof(uint64_t));
+		asmjit::a64::Mem retStackIdx0(*retStack);
+		retStackIdx0.setSize(sizeof(uint64_t));
 		if (asmjit::TypeUtils::isInt(sig.ret())) {
 			asmjit::a64::Gp tmp = cc.newGpx();
-			cc.ldr(tmp, retStackIdx);
+			cc.ldr(tmp, retStackIdx0);
 			cc.ret(tmp);
 		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2)) {
-			asmjit::a64::Mem retStackIdxUpper(*retStack);
-			retStackIdxUpper.setSize(sizeof(uint64_t));
-			retStackIdxUpper.setOffset(sizeof(uint64_t));
-			cc.ldr(asmjit::a64::x0, retStackIdx);
-			cc.ldr(asmjit::a64::x1, retStackIdxUpper);
+			asmjit::a64::Mem retStackIdx1(*retStack);
+			retStackIdx1.setSize(sizeof(uint64_t));
+			retStackIdx1.addOffset(sizeof(uint64_t));
+			cc.ldr(asmjit::a64::x0, retStackIdx0);
+			cc.ldr(asmjit::a64::x1, retStackIdx1);
 			cc.ret();
 		} else if (sig.ret() == asmjit::TypeId::kFloat32x2) { // Vector2
-			retStackIdx.setSize(sizeof(float));
-			asmjit::a64::Mem retStackIdxUpper(*retStack);
-			retStackIdxUpper.setSize(sizeof(float));
-			retStackIdxUpper.setOffset(sizeof(float));
-			cc.ldr(asmjit::a64::s0, retStackIdx);
-			cc.ldr(asmjit::a64::s1, retStackIdxUpper);
-			cc.ret();
-		} else if (sig.ret() == asmjit::TypeId::kFloat64x2) { // Vector3
-			retStackIdx.setSize(sizeof(float));
+			retStackIdx0.setSize(sizeof(float));
 			asmjit::a64::Mem retStackIdx1(*retStack);
 			retStackIdx1.setSize(sizeof(float));
-			retStackIdx1.setOffset(sizeof(float));
+			retStackIdx1.addOffset(sizeof(float));
+			cc.ldr(asmjit::a64::s0, retStackIdx0);
+			cc.ldr(asmjit::a64::s1, retStackIdx1);
+			cc.ret();
+		} else if (sig.ret() == asmjit::TypeId::kFloat64x2) { // Vector3
+			retStackIdx0.setSize(sizeof(float));
+			asmjit::a64::Mem retStackIdx1(*retStack);
+			retStackIdx1.setSize(sizeof(float));
+			retStackIdx1.addOffset(sizeof(float));
 			asmjit::a64::Mem retStackIdx2(*retStack);
 			retStackIdx2.setSize(sizeof(float));
-			retStackIdx2.setOffset(sizeof(float) * 2);
-			cc.ldr(asmjit::a64::s0, retStackIdx);
+			retStackIdx2.addOffset(sizeof(float) * 2);
+			cc.ldr(asmjit::a64::s0, retStackIdx0);
 			cc.ldr(asmjit::a64::s1, retStackIdx1);
 			cc.ldr(asmjit::a64::s2, retStackIdx2);
 			cc.ret();
 		} else if (sig.ret() == asmjit::TypeId::kFloat32x4) { // Vector4
-			retStackIdx.setSize(sizeof(float));
+			retStackIdx0.setSize(sizeof(float));
 			asmjit::a64::Mem retStackIdx1(*retStack);
 			retStackIdx1.setSize(sizeof(float));
-			retStackIdx1.setOffset(sizeof(float));
+			retStackIdx1.addOffset(sizeof(float));
 			asmjit::a64::Mem retStackIdx2(*retStack);
 			retStackIdx2.setSize(sizeof(float));
-			retStackIdx2.setOffset(sizeof(float) * 2);
+			retStackIdx2.addOffset(sizeof(float) * 2);
 			asmjit::a64::Mem retStackIdx3(*retStack);
 			retStackIdx3.setSize(sizeof(float));
-			retStackIdx3.setOffset(sizeof(float) * 3);
-			cc.ldr(asmjit::a64::s0, retStackIdx);
+			retStackIdx3.addOffset(sizeof(float) * 3);
+			cc.ldr(asmjit::a64::s0, retStackIdx0);
 			cc.ldr(asmjit::a64::s1, retStackIdx1);
 			cc.ldr(asmjit::a64::s2, retStackIdx2);
 			cc.ldr(asmjit::a64::s3, retStackIdx3);
 			cc.ret();
 		} else {
 			asmjit::a64::Vec tmp = cc.newVec(sig.ret());
-			cc.ldr(tmp, retStackIdx);
+			cc.ldr(tmp, retStackIdx0);
 			cc.ret(tmp);
 		}
 	}
