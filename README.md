@@ -83,9 +83,27 @@ The plan was to build a new plugin system for CS in C#, but some of the decision
 - CMake version 3.14 or later.
 - Doxygen version 1.8 or later.
 - Requires C++20 or later.
-- Only designed and tested for 64bit little-endian systems.
+- Designed for x86 and Arm.
+- Tested on 64bit little-endian systems.
 
-[Actions](https://github.com/untrustedmodders/plugify/actions) build and test with [Clang](https://clang.llvm.org) (15+), [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/) (2022), and [GCC](https://gcc.gnu.org) (11+) on apple, windows, and linux.
+#### Supported platforms:
+- Windows (7+)
+- Linux
+- macOS (13.0+)
+- PlayStation 4/5
+- Nintendo Switch
+- Android (14+)
+- iOS/iPadOS/tvOS (16.0+)
+- UWP (Universal Windows, Xbox One)
+
+#### Supported compilers:
+
+- [Clang](https://clang.llvm.org) 15 and above
+- [GCC](https://gcc.gnu.org) 11 and above
+- [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/) 2022 and above
+- [Apple Clang](https://opensource.apple.com/projects/llvm-clang/) 15 and above
+
+[Actions](https://github.com/untrustedmodders/plugify/actions) build created for windows, linux and apple.
 
 ![clang build](https://github.com/untrustedmodders/plugify/actions/workflows/clang.yml/badge.svg) ![gcc build](https://github.com/untrustedmodders/plugify/actions/workflows/gcc.yml/badge.svg) ![msvc build](https://github.com/untrustedmodders/plugify/actions/workflows/msvc.yml/badge.svg) ![msys build](https://github.com/untrustedmodders/plugify/actions/workflows/msys2.yml/badge.svg)
 
@@ -275,7 +293,9 @@ To build the basic testing app:
 
 Here is a list of all already implemented language modules:
 - [C++ Language Module](https://github.com/untrustedmodders/plugify-module-cpp)
-- [C# Language Module](https://github.com/untrustedmodders/csharp-lang-module)
+- [C# (.NET) Language Module](https://github.com/untrustedmodders/plugify-module-dotnet)
+- [C# (Mono) Language Module](https://github.com/untrustedmodders/plugify-module-mono)
+- [Go Language Module](https://github.com/untrustedmodders/plugify-module-golang)
 - [Python Language Module](https://github.com/untrustedmodders/plugify-module-python3.12)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
