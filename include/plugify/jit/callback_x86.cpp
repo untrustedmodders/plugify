@@ -6,9 +6,10 @@ using namespace plugify;
 JitCallback::JitCallback(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
-JitCallback::JitCallback(JitCallback&& other) noexcept : _rt{std::move(other._rt)}, _function{other._function}, _userData{other._userData} {
-	other._function = nullptr;
-	other._userData = nullptr;
+JitCallback::JitCallback(JitCallback&& other) noexcept
+	: _rt{std::move(other._rt)},
+	  _function{std::exchange(other._function, nullptr)},
+	  _userData{std::exchange(other._userData, nullptr)} {
 }
 
 JitCallback::~JitCallback() {

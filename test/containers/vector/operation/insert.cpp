@@ -34,7 +34,7 @@ public:
 		: _ptr(other._ptr) {}
 
 	FooInputIterator(FooInputIterator&& other) noexcept
-		: _ptr(other._ptr) {}
+		: _ptr(std::exchange(other._ptr, nullptr)) {}
 
 	operator const T*() const noexcept {
 		return _ptr;
@@ -68,6 +68,9 @@ public:
 	operator difference_type() const noexcept {
 		return reinterpret_cast<difference_type>(_ptr);
 	}
+
+	auto operator=(const FooInputIterator&) -> FooInputIterator& = default;
+	auto operator=(FooInputIterator&&) noexcept -> FooInputIterator& = default;
 
 	friend auto operator!=(FooInputIterator const& a, FooInputIterator const& b) {
 		return a._ptr != b._ptr;

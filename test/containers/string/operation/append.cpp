@@ -31,7 +31,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(24, 'a');
 				REQUIRE(a == "aaaaaaaaaaaaaaaaaaaaaaaa");
 				REQUIRE(a.size() == 24);
-			a.reserve(46);
+				a.reserve(46);
 				REQUIRE(a.capacity() == 46);
 		  }
 	 }
@@ -51,7 +51,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b);
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-			a.reserve(46);
+				a.reserve(46);
 				REQUIRE(a.capacity() == 46);
 		  }
 		  {

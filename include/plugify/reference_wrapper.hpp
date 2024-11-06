@@ -45,5 +45,5 @@ namespace plugify {
 	 *
 	 * @tparam T The type to check.
 	 */
-	template<typename T> static constexpr bool is_ref_v = std::is_standard_layout_v<T> and sizeof(T) == sizeof(void*);
+	template<typename T> static constexpr bool is_ref_v = std::is_standard_layout_v<T> && sizeof(T) == sizeof(void*);
 }
