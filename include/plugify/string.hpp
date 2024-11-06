@@ -183,6 +183,12 @@ namespace plg {
 		template<typename Allocator>
 		constexpr inline bool is_allocator_v = is_allocator<Allocator>::value;
 
+		template<typename Traits>
+		using is_traits = std::conjunction<std::is_integral<typename Traits::char_type>, std::is_integral<typename Traits::char_traits::char_type>>;
+
+		template<typename Traits>
+		constexpr bool is_traits_v = is_traits<Traits>::value;
+
 		struct uninitialized_size_tag {};
 
 		template<typename>
@@ -190,13 +196,13 @@ namespace plg {
 
 #if PLUGIFY_STRING_CONTAINERS_RANGES
 		template<typename Range, typename Type>
-		concept container_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
+		concept string_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
 #endif
 	}// namespace detail
 
 	// basic_string
 	// based on implementations from libc++, libstdc++ and Microsoft STL
-	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>> requires(detail::is_allocator_v<Allocator>)
+	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>> requires(detail::is_traits_v<Traits> && detail::is_allocator_v<Allocator>)
 	class basic_string {
 	private:
 		using allocator_traits = std::allocator_traits<Allocator>;
@@ -211,410 +217,14 @@ namespace plg {
 		using const_reference = const value_type&;
 		using pointer = typename allocator_traits::pointer;
 		using const_pointer = typename allocator_traits::const_pointer;
-		using iterator = value_type*;
-		using const_iterator = const value_type*;
+		using iterator = pointer;
+		using const_iterator = const_pointer;
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 		using sview_type = std::basic_string_view<Char, Traits>;
 
 		constexpr static size_type npos = static_cast<size_t>(-1);
 
-	private:
-		constexpr static auto _terminator = value_type();
-
-		_PLUGIFY_STRING_NO_UNIQUE_ADDRESS
-		allocator_type _allocator;
-
-		_PLUGIFY_STRING_WARN_PUSH()
-
-#if defined(__clang__)
-		_PLUGIFY_STRING_WARN_IGNORE("-Wgnu-anonymous-struct")
-		_PLUGIFY_STRING_WARN_IGNORE("-Wzero-length-array")
-#elif defined(__GNUC__)
-		_PLUGIFY_STRING_WARN_IGNORE("-Wpedantic")// this doesn't work
-#elif defined(_MSC_VER)
-		_PLUGIFY_STRING_WARN_IGNORE(4201)
-		_PLUGIFY_STRING_WARN_IGNORE(4200)
-#endif
-
-		template<typename CharT, size_t = sizeof(CharT)>
-		struct padding {
-			[[maybe_unused]] uint8_t padding[sizeof(CharT) - 1];
-		};
-
-		template<typename CharT>
-		struct padding<CharT, 1> {
-			// template specialization to remove the padding structure to avoid warnings on zero length arrays
-			// also, this allows us to take advantage of the empty-base-class optimization.
-		};
-
-		// size must correspond to the last byte of long_data.cap, so we don't want the compiler to insert
-		// padding after size if sizeof(value_type) != 1; Also ensures both layouts are the same size.
-		struct sso_size : padding<value_type> {
-			_PLUGIFY_STRING_PACK(struct {
-				uint8_t spare_size : 7;
-				uint8_t is_long : 1;
-			});
-		};
-
-		static constexpr int char_bit = std::numeric_limits<uint8_t>::digits + std::numeric_limits<uint8_t>::is_signed;
-
-		static_assert(char_bit == 8, "assumes an 8 bit byte.");
-
-		struct long_data {
-			pointer data;
-			size_type size;
-			_PLUGIFY_STRING_PACK(struct {
-				 size_type cap : sizeof(size_type) * char_bit - 1;
-				 size_type is_long : 1;
-			});
-		};
-
-		static constexpr size_type min_cap = (sizeof(long_data) - sizeof(uint8_t)) / sizeof(value_type) > 2 ? (sizeof(long_data) - sizeof(uint8_t)) / sizeof(value_type) : 2;
-
-		struct short_data {
-			value_type data[min_cap];
-			sso_size size;
-		};
-
-		_PLUGIFY_STRING_WARN_POP()
-
-		static_assert(sizeof(short_data) == (sizeof(value_type) * (min_cap + sizeof(uint8_t))), "short has an unexpected size.");
-		static_assert(sizeof(short_data) == sizeof(long_data), "short and long layout structures must be the same size");
-
-		union {
-			long_data _long;
-			short_data _short{};
-		} _storage;
-
-		[[nodiscard]] constexpr static bool fits_in_sso(size_type size)
-		{
-			return size < min_cap;
-		}
-
-		constexpr void long_init() {
-			is_long(true);
-			set_long_data(nullptr);
-			set_long_size(0);
-			set_long_cap(0);
-		}
-
-		constexpr void short_init() {
-			is_long(false);
-			set_short_size(0);
-		}
-
-		constexpr void default_init(size_type size)
-		{
-			if (fits_in_sso(size))
-				short_init();
-			else
-				long_init();
-		}
-
-		[[nodiscard]] constexpr auto& get_long_data() noexcept
-		{
-			return _storage._long.data;
-		}
-
-		[[nodiscard]] constexpr const auto& get_long_data() const noexcept
-		{
-			return _storage._long.data;
-		}
-
-		[[nodiscard]] constexpr auto& get_short_data() noexcept
-		{
-			return _storage._short.data;
-		}
-
-		[[nodiscard]] constexpr const auto& get_short_data() const noexcept
-		{
-			return _storage._short.data;
-		}
-
-		constexpr void set_short_size(size_type size) noexcept
-		{
-			_storage._short.size.spare_size = min_cap - (size & 0x7F);
-		}
-
-		[[nodiscard]] constexpr size_type get_short_size() const noexcept
-		{
-			return min_cap - _storage._short.size.spare_size;
-		}
-
-		constexpr void set_long_size(size_type size) noexcept
-		{
-			_storage._long.size = size;
-		}
-
-		[[nodiscard]] constexpr size_type get_long_size() const noexcept
-		{
-			return _storage._long.size;
-		}
-
-		constexpr void set_long_cap(size_type cap) noexcept
-		{
-			_storage._long.cap = (cap & 0x7FFFFFFFFFFFFFFF);
-		}
-
-		[[nodiscard]] constexpr size_type get_long_cap() const noexcept
-		{
-			return _storage._long.cap;
-		}
-
-		constexpr void set_long_data(value_type* data)
-		{
-			_storage._long.data = data;
-		}
-
-		constexpr void is_long(bool l) noexcept
-		{
-			_storage._long.is_long = l;
-		}
-
-		[[nodiscard]] constexpr bool is_long() const noexcept
-		{
-			return _storage._long.is_long == true;
-		}
-
-		[[nodiscard]] constexpr pointer get_data() noexcept
-		{
-			return is_long() ? get_long_data() : get_short_data();
-		}
-
-		[[nodiscard]] constexpr const_pointer get_data() const noexcept
-		{
-			return is_long() ? get_long_data() : get_short_data();
-		}
-
-		[[nodiscard]] constexpr size_type get_size() const noexcept
-		{
-			return is_long() ? get_long_size() : get_short_size();
-		}
-
-		constexpr void set_size(size_type size) noexcept
-		{
-			if (is_long())
-				set_long_size(size);
-			else
-				set_short_size(size);
-		}
-
-		[[nodiscard]] constexpr size_type get_cap() const noexcept
-		{
-			if (is_long())
-				return get_long_cap();
-			else
-				return min_cap;
-		}
-
-		[[nodiscard]] constexpr sview_type get_view() const noexcept
-		{
-			return sview_type(get_data(), get_size());
-		}
-
-		constexpr void reallocate(std::size_t new_cap, bool copy_old) {
-			
-			if (new_cap == get_long_cap())
-				return;
-
-			auto old_len = get_long_size();
-			auto old_cap = get_long_cap();
-			auto& old_buffer = get_long_data();
-
-			auto new_len = std::min(new_cap, old_len);
-			auto new_data = _allocator.allocate(new_cap + 1);
-
-			if (old_buffer != nullptr) {
-				if (old_len != 0 && copy_old)
-					Traits::copy(new_data, old_buffer, new_len);
-				_allocator.deallocate(old_buffer, old_cap + 1);
-			}
-
-			set_long_data(new_data);
-			set_long_size(new_len);
-			set_long_cap(new_cap);
-		}
-
-		constexpr void deallocate() 
-		{
-			if (is_long()) {
-				if (auto& buffer = get_long_data(); buffer != nullptr) {
-					_allocator.deallocate(buffer, get_long_cap() + 1);
-					buffer = nullptr;
-				}
-			}
-		}
-
-		constexpr void grow_to(size_type new_cap) 
-		{
-			if (is_long() == true) {
-				reallocate(new_cap, true);
-				return;
-			}
-
-			auto buffer = _allocator.allocate(new_cap + 1);
-			auto len = get_short_size();
-
-			Traits::copy(buffer, get_short_data(), len);
-			Traits::assign(buffer[len], _terminator);
-
-			long_init();
-			set_long_data(buffer);
-			set_long_size(len);
-			set_long_cap(new_cap);
-		}
-
-		constexpr void null_terminate() noexcept
-		{
-			auto buffer = get_data();
-			if (buffer == nullptr) [[unlikely]]
-				return;
-			Traits::assign(buffer[get_size()], _terminator);
-		}
-
-		constexpr bool addr_in_range(const_pointer ptr) const
-		{
-			if (std::is_constant_evaluated())
-				return false;
-			return get_data() <= ptr && ptr <= get_data() + get_size();
-		}
-
-		constexpr void internal_replace_impl(auto func, size_type pos, size_type oldcount, size_type count)
-		{
-			auto cap = get_cap();
-			auto sz = get_size();
-
-			auto rsz = sz - oldcount + count;
-
-			if (cap < rsz)
-				grow_to(rsz);
-
-			if (oldcount != count)
-				Traits::move(get_data() + pos + count, get_data() + pos + oldcount, sz - pos - oldcount);
-
-			func();
-
-			set_size(rsz);
-			null_terminate();
-		}
-
-		constexpr void internal_replace(size_type pos, const_pointer str, size_type oldcount, size_type count) 
-		{
-			if (addr_in_range(str)) {
-				basic_string rstr(str, count);
-				internal_replace_impl([&]() { Traits::copy(get_data() + pos, rstr.data(), count); }, pos, oldcount, count);
-			} else
-				internal_replace_impl([&]() { Traits::copy(get_data() + pos, str, count); }, pos, oldcount, count);
-		}
-
-		constexpr void internal_replace(size_type pos, value_type ch, size_type oldcount, size_type count) 
-		{
-			internal_replace_impl([&]() { Traits::assign(get_data() + pos, count, ch); }, pos, oldcount, count);
-		}
-
-		constexpr void internal_insert_impl(auto func, size_type pos, size_type size)
-		{
-			if (size == 0) [[unlikely]]
-				return;
-
-			auto cap = get_cap();
-			auto sz = get_size();
-			auto rsz = sz + size;
-
-			if (cap < rsz)
-				grow_to(rsz);
-
-			Traits::move(get_data() + pos + size, get_data() + pos, sz - pos);
-			func();
-
-			set_size(rsz);
-			null_terminate();
-		}
-
-		constexpr void internal_insert(size_type pos, const_pointer str, size_type count) 
-		{
-			if (addr_in_range(str)) {
-				basic_string rstr(str, count);
-				internal_insert_impl([&]() { Traits::copy(get_data() + pos, rstr.data(), count); }, pos, count);
-			} else
-				internal_insert_impl([&]() { Traits::copy(get_data() + pos, str, count); }, pos, count);
-		}
-
-		constexpr void internal_insert(size_type pos, value_type ch, size_type count) 
-		{
-			internal_insert_impl([&]() { Traits::assign(get_data() + pos, count, ch); }, pos, count);
-		}
-
-		constexpr void internal_append_impl(auto func, size_type size)
-		{
-			if (size == 0) [[unlikely]]
-				return;
-
-			auto cap = get_cap();
-			auto sz = get_size();
-			auto rsz = sz + size;
-
-			if (cap < rsz)
-				grow_to(rsz);
-
-			func(sz);
-			set_size(rsz);
-			null_terminate();
-		}
-
-		constexpr void internal_append(const_pointer str, size_type count) 
-		{
-			if (addr_in_range(str)) {
-				basic_string rstr(str, count);
-				internal_append_impl([&](size_type pos) { Traits::copy(get_data() + pos, rstr.data(), count); }, count);
-			} else
-				internal_append_impl([&](size_type pos) { Traits::copy(get_data() + pos, str, count); }, count);
-		}
-
-		constexpr void internal_append(value_type ch, size_type count) 
-		{
-			internal_append_impl([&](size_type pos) { Traits::assign(get_data() + pos, count, ch); }, count);
-		}
-
-		constexpr void internal_assign_impl(auto func, size_type size, bool copy_old)
-		{
-			if (fits_in_sso(size)) {
-				if (is_long() == true) {
-					deallocate();
-					short_init();
-				}
-
-				set_short_size(size);
-				func(get_short_data());
-				null_terminate();
-			} else {
-				if (is_long() == false)
-					long_init();
-				if (get_long_cap() < size)
-					reallocate(size, copy_old);
-
-				func(get_long_data());
-				set_long_size(size);
-				null_terminate();
-			}
-		}
-
-		constexpr void internal_assign(const_pointer str, size_type size, bool copy_old = false) 
-		{
-			if (addr_in_range(str)) {
-				basic_string rstr(str, size);
-				internal_assign_impl([&](auto data) { Traits::copy(data, rstr.data(), size); }, size, copy_old);
-			} else
-				internal_assign_impl([&](auto data) { Traits::copy(data, str, size); }, size, copy_old);
-		}
-
-		constexpr void internal_assign(value_type ch, size_type count, bool copy_old = false) 
-		{
-			internal_assign_impl([&](auto data) { Traits::assign(data, count, ch); }, count, copy_old);
-		}
-
-	public:
 		explicit constexpr basic_string(detail::uninitialized_size_tag, size_type size, const allocator_type& alloc)
 			: _allocator(alloc)
 		{
@@ -688,14 +298,21 @@ namespace plg {
 			: basic_string(str, allocator_type())
 		{}
 
-		constexpr basic_string(basic_string&& str, const allocator_type& alloc)
-			: _allocator(alloc)
-		{
-			assign(std::move(str));
-		}
 		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value)
 			: _allocator(std::move(str._allocator)), _storage(std::move(str._storage))
 		{
+			str.short_init();
+		}
+
+		constexpr basic_string(basic_string&& str, const allocator_type& alloc)
+			: _allocator(alloc)
+		{
+			if (str.is_long() && alloc != str._allocator) {
+				internal_assign(str.data(), str.size());
+				str.deallocate();
+			} else {
+				swap(str);
+			}
 			str.short_init();
 		}
 
@@ -747,7 +364,7 @@ namespace plg {
 #endif
 
 #if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::container_compatible_range<Char> Range>
+		template<detail::string_compatible_range<Char> Range>
 		constexpr basic_string(std::from_range_t, Range&& range, const allocator_type& alloc = allocator_type())
 			: basic_string(std::ranges::begin(range), std::ranges::end(range), alloc)
 		{}
@@ -826,14 +443,9 @@ namespace plg {
 		{
 			if (this == &str) [[unlikely]]
 				return *this;
-			if (str.is_long() && _allocator != str._allocator) {
-				auto len = str.get_long_size();
-				internal_assign(str.get_long_data(), len);
-			} else {
-				std::swap(_storage , str._storage);
-				str.deallocate();
-				str.short_init();
-			}
+			deallocate();
+			short_init();
+			swap(str);
 			return *this;
 		}
 
@@ -887,7 +499,7 @@ namespace plg {
 		}
 
 #if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::container_compatible_range<Char> Range>
+		template<detail::string_compatible_range<Char> Range>
 		constexpr basic_string& assign_range(Range&& range) 
 		{
 			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
@@ -1180,7 +792,7 @@ namespace plg {
 		}
 
 #if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::container_compatible_range<Char> Range>
+		template<detail::string_compatible_range<Char> Range>
 		constexpr iterator insert_range(const_iterator pos, Range&& range) 
 		{
 			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
@@ -1313,7 +925,7 @@ namespace plg {
 		}
 
 #if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::container_compatible_range<Char> Range>
+		template<detail::string_compatible_range<Char> Range>
 		constexpr basic_string& append_range(Range&& range)
 		{
 			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
@@ -1559,7 +1171,7 @@ namespace plg {
 		}
 
 #if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::container_compatible_range<Char> Range>
+		template<detail::string_compatible_range<Char> Range>
 		constexpr iterator replace_with_range(const_iterator first, const_iterator last, Range&& range) 
 		{
 			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
@@ -1606,7 +1218,7 @@ namespace plg {
 			static_assert(detail::dependent_false<Char>, "plg::basic_string::resize_and_overwrite(count, op) not implemented!");
 		}
 
-		constexpr void swap(basic_string& other) noexcept(allocator_traits::propagate_on_container_swap::value || allocator_traits::is_always_equal::value) 
+		constexpr void swap(basic_string& other) noexcept(allocator_traits::propagate_on_container_swap::value || allocator_traits::is_always_equal::value)
 		{
 			using std::swap;
 			if constexpr (allocator_traits::propagate_on_container_swap::value) {
@@ -1878,10 +1490,405 @@ namespace plg {
 			lhs.push_back(rhs);
 			return std::move(lhs);
 		}
+
+	private:
+		constexpr static auto _terminator = value_type();
+
+		_PLUGIFY_STRING_NO_UNIQUE_ADDRESS
+		allocator_type _allocator;
+
+		_PLUGIFY_STRING_WARN_PUSH()
+
+#if defined(__clang__)
+		_PLUGIFY_STRING_WARN_IGNORE("-Wgnu-anonymous-struct")
+		_PLUGIFY_STRING_WARN_IGNORE("-Wzero-length-array")
+#elif defined(__GNUC__)
+		_PLUGIFY_STRING_WARN_IGNORE("-Wpedantic")// this doesn't work
+#elif defined(_MSC_VER)
+		_PLUGIFY_STRING_WARN_IGNORE(4201)
+		_PLUGIFY_STRING_WARN_IGNORE(4200)
+#endif
+
+		template<typename CharT, std::size_t = sizeof(CharT)>
+		struct padding {
+			[[maybe_unused]] uint8_t padding[sizeof(CharT) - 1];
+		};
+
+		template<typename CharT>
+		struct padding<CharT, 1> {
+			// template specialization to remove the padding structure to avoid warnings on zero length arrays
+			// also, this allows us to take advantage of the empty-base-class optimization.
+		};
+
+		// size must correspond to the last byte of long_data.cap, so we don't want the compiler to insert
+		// padding after size if sizeof(value_type) != 1; Also ensures both layouts are the same size.
+		struct sso_size : padding<value_type> {
+			_PLUGIFY_STRING_PACK(struct {
+				uint8_t spare_size : 7;
+				uint8_t is_long : 1;
+			});
+		};
+
+		static constexpr int char_bit = std::numeric_limits<uint8_t>::digits + std::numeric_limits<uint8_t>::is_signed;
+
+		static_assert(char_bit == 8, "assumes an 8 bit byte.");
+
+		struct long_data {
+			pointer data;
+			size_type size;
+			_PLUGIFY_STRING_PACK(struct {
+				size_type cap : sizeof(size_type) * char_bit - 1;
+				size_type is_long : 1;
+			});
+		};
+
+		static constexpr size_type min_cap = (sizeof(long_data) - sizeof(uint8_t)) / sizeof(value_type) > 2 ? (sizeof(long_data) - sizeof(uint8_t)) / sizeof(value_type) : 2;
+
+		struct short_data {
+			value_type data[min_cap];
+			sso_size size;
+		};
+
+		_PLUGIFY_STRING_WARN_POP()
+
+		static_assert(sizeof(short_data) == (sizeof(value_type) * (min_cap + sizeof(uint8_t))), "short has an unexpected size.");
+		static_assert(sizeof(short_data) == sizeof(long_data), "short and long layout structures must be the same size");
+
+		union {
+			long_data _long;
+			short_data _short{};
+		} _storage;
+
+		[[nodiscard]] constexpr static bool fits_in_sso(size_type size)
+		{
+			return size < min_cap;
+		}
+
+		constexpr void long_init() {
+			is_long(true);
+			set_long_data(nullptr);
+			set_long_size(0);
+			set_long_cap(0);
+		}
+
+		constexpr void short_init() {
+			is_long(false);
+			set_short_size(0);
+		}
+
+		constexpr void default_init(size_type size)
+		{
+			if (fits_in_sso(size))
+				short_init();
+			else
+				long_init();
+		}
+
+		[[nodiscard]] constexpr auto& get_long_data() noexcept
+		{
+			return _storage._long.data;
+		}
+
+		[[nodiscard]] constexpr const auto& get_long_data() const noexcept
+		{
+			return _storage._long.data;
+		}
+
+		[[nodiscard]] constexpr auto& get_short_data() noexcept
+		{
+			return _storage._short.data;
+		}
+
+		[[nodiscard]] constexpr const auto& get_short_data() const noexcept
+		{
+			return _storage._short.data;
+		}
+
+		constexpr void set_short_size(size_type size) noexcept
+		{
+			_storage._short.size.spare_size = min_cap - (size & 0x7F);
+		}
+
+		[[nodiscard]] constexpr size_type get_short_size() const noexcept
+		{
+			return min_cap - _storage._short.size.spare_size;
+		}
+
+		constexpr void set_long_size(size_type size) noexcept
+		{
+			_storage._long.size = size;
+		}
+
+		[[nodiscard]] constexpr size_type get_long_size() const noexcept
+		{
+			return _storage._long.size;
+		}
+
+		constexpr void set_long_cap(size_type cap) noexcept
+		{
+			_storage._long.cap = (cap & 0x7FFFFFFFFFFFFFFF);
+		}
+
+		[[nodiscard]] constexpr size_type get_long_cap() const noexcept
+		{
+			return _storage._long.cap;
+		}
+
+		constexpr void set_long_data(value_type* data)
+		{
+			_storage._long.data = data;
+		}
+
+		constexpr void is_long(bool l) noexcept
+		{
+			_storage._long.is_long = l;
+		}
+
+		[[nodiscard]] constexpr bool is_long() const noexcept
+		{
+			return _storage._long.is_long == true;
+		}
+
+		[[nodiscard]] constexpr pointer get_data() noexcept
+		{
+			return is_long() ? get_long_data() : get_short_data();
+		}
+
+		[[nodiscard]] constexpr const_pointer get_data() const noexcept
+		{
+			return is_long() ? get_long_data() : get_short_data();
+		}
+
+		[[nodiscard]] constexpr size_type get_size() const noexcept
+		{
+			return is_long() ? get_long_size() : get_short_size();
+		}
+
+		constexpr void set_size(size_type size) noexcept
+		{
+			if (is_long())
+				set_long_size(size);
+			else
+				set_short_size(size);
+		}
+
+		[[nodiscard]] constexpr size_type get_cap() const noexcept
+		{
+			if (is_long())
+				return get_long_cap();
+			else
+				return min_cap;
+		}
+
+		[[nodiscard]] constexpr sview_type get_view() const noexcept
+		{
+			return sview_type(get_data(), get_size());
+		}
+
+		constexpr void reallocate(size_type new_cap, bool copy_old) {
+
+			if (new_cap == get_long_cap())
+				return;
+
+			auto old_len = get_long_size();
+			auto old_cap = get_long_cap();
+			auto& old_buffer = get_long_data();
+
+			auto new_len = std::min(new_cap, old_len);
+			auto new_data = _allocator.allocate(new_cap + 1);
+
+			if (old_buffer != nullptr) {
+				if (old_len != 0 && copy_old)
+					Traits::copy(new_data, old_buffer, new_len);
+				_allocator.deallocate(old_buffer, old_cap + 1);
+			}
+
+			set_long_data(new_data);
+			set_long_size(new_len);
+			set_long_cap(new_cap);
+		}
+
+		constexpr void deallocate()
+		{
+			if (is_long()) {
+				if (auto& buffer = get_long_data(); buffer != nullptr) {
+					_allocator.deallocate(buffer, get_long_cap() + 1);
+					buffer = nullptr;
+				}
+			}
+		}
+
+		constexpr void grow_to(size_type new_cap)
+		{
+			if (is_long() == true) {
+				reallocate(new_cap, true);
+				return;
+			}
+
+			auto buffer = _allocator.allocate(new_cap + 1);
+			auto len = get_short_size();
+
+			Traits::copy(buffer, get_short_data(), len);
+			Traits::assign(buffer[len], _terminator);
+
+			long_init();
+			set_long_data(buffer);
+			set_long_size(len);
+			set_long_cap(new_cap);
+		}
+
+		constexpr void null_terminate() noexcept
+		{
+			auto buffer = get_data();
+			if (buffer == nullptr) [[unlikely]]
+				return;
+			Traits::assign(buffer[get_size()], _terminator);
+		}
+
+		[[nodiscard]] constexpr bool addr_in_range(const_pointer ptr) const
+		{
+			if (std::is_constant_evaluated())
+				return false;
+			return get_data() <= ptr && ptr <= get_data() + get_size();
+		}
+
+		constexpr void internal_replace_impl(auto func, size_type pos, size_type oldcount, size_type count)
+		{
+			auto cap = get_cap();
+			auto sz = get_size();
+
+			auto rsz = sz - oldcount + count;
+
+			if (cap < rsz)
+				grow_to(rsz);
+
+			if (oldcount != count)
+				Traits::move(get_data() + pos + count, get_data() + pos + oldcount, sz - pos - oldcount);
+
+			func();
+
+			set_size(rsz);
+			null_terminate();
+		}
+
+		constexpr void internal_replace(size_type pos, const_pointer str, size_type oldcount, size_type count)
+		{
+			if (addr_in_range(str)) {
+				basic_string rstr(str, count);
+				internal_replace_impl([&]() { Traits::copy(get_data() + pos, rstr.data(), count); }, pos, oldcount, count);
+			} else
+				internal_replace_impl([&]() { Traits::copy(get_data() + pos, str, count); }, pos, oldcount, count);
+		}
+
+		constexpr void internal_replace(size_type pos, value_type ch, size_type oldcount, size_type count)
+		{
+			internal_replace_impl([&]() { Traits::assign(get_data() + pos, count, ch); }, pos, oldcount, count);
+		}
+
+		constexpr void internal_insert_impl(auto func, size_type pos, size_type size)
+		{
+			if (size == 0) [[unlikely]]
+				return;
+
+			auto cap = get_cap();
+			auto sz = get_size();
+			auto rsz = sz + size;
+
+			if (cap < rsz)
+				grow_to(rsz);
+
+			Traits::move(get_data() + pos + size, get_data() + pos, sz - pos);
+			func();
+
+			set_size(rsz);
+			null_terminate();
+		}
+
+		constexpr void internal_insert(size_type pos, const_pointer str, size_type count)
+		{
+			if (addr_in_range(str)) {
+				basic_string rstr(str, count);
+				internal_insert_impl([&]() { Traits::copy(get_data() + pos, rstr.data(), count); }, pos, count);
+			} else
+				internal_insert_impl([&]() { Traits::copy(get_data() + pos, str, count); }, pos, count);
+		}
+
+		constexpr void internal_insert(size_type pos, value_type ch, size_type count)
+		{
+			internal_insert_impl([&]() { Traits::assign(get_data() + pos, count, ch); }, pos, count);
+		}
+
+		constexpr void internal_append_impl(auto func, size_type size)
+		{
+			if (size == 0) [[unlikely]]
+				return;
+
+			auto cap = get_cap();
+			auto sz = get_size();
+			auto rsz = sz + size;
+
+			if (cap < rsz)
+				grow_to(rsz);
+
+			func(sz);
+			set_size(rsz);
+			null_terminate();
+		}
+
+		constexpr void internal_append(const_pointer str, size_type count)
+		{
+			if (addr_in_range(str)) {
+				basic_string rstr(str, count);
+				internal_append_impl([&](size_type pos) { Traits::copy(get_data() + pos, rstr.data(), count); }, count);
+			} else
+				internal_append_impl([&](size_type pos) { Traits::copy(get_data() + pos, str, count); }, count);
+		}
+
+		constexpr void internal_append(value_type ch, size_type count)
+		{
+			internal_append_impl([&](size_type pos) { Traits::assign(get_data() + pos, count, ch); }, count);
+		}
+
+		constexpr void internal_assign_impl(auto func, size_type size, bool copy_old)
+		{
+			if (fits_in_sso(size)) {
+				if (is_long() == true) {
+					deallocate();
+					short_init();
+				}
+
+				set_short_size(size);
+				func(get_short_data());
+				null_terminate();
+			} else {
+				if (is_long() == false)
+					long_init();
+				if (get_long_cap() < size)
+					reallocate(size, copy_old);
+
+				func(get_long_data());
+				set_long_size(size);
+				null_terminate();
+			}
+		}
+
+		constexpr void internal_assign(const_pointer str, size_type size, bool copy_old = false)
+		{
+			if (addr_in_range(str)) {
+				basic_string rstr(str, size);
+				internal_assign_impl([&](auto data) { Traits::copy(data, rstr.data(), size); }, size, copy_old);
+			} else
+				internal_assign_impl([&](auto data) { Traits::copy(data, str, size); }, size, copy_old);
+		}
+
+		constexpr void internal_assign(value_type ch, size_type count, bool copy_old = false)
+		{
+			internal_assign_impl([&](auto data) { Traits::assign(data, count, ch); }, count, copy_old);
+		}
 	};
 
 	template<typename Char, typename Traits, typename Allocator>
-	[[nodiscard]] constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept 
+	[[nodiscard]] constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept
 	{
 		return lhs.compare(rhs) == 0;
 	}
@@ -2061,16 +2068,16 @@ namespace plg {
 			//  numeric_limits::digits10 returns value less on 1 than desired for unsigned numbers.
 			//  For example, for 1-byte unsigned value digits10 is 2 (999 can not be represented),
 			//  so we need +1 here.
-			constexpr size_t bufSize = std::numeric_limits<V>::digits10 + 2; // +1 for minus, +1 for digits10
+			constexpr std::size_t bufSize = std::numeric_limits<V>::digits10 + 2; // +1 for minus, +1 for digits10
 			char buf[bufSize];
 			const auto res = std::to_chars(buf, buf + bufSize, v);
 			return S(buf, res.ptr);
 		}
 
-		typedef int (*wide_printf)(wchar_t* __restrict, size_t, const wchar_t* __restrict, ...);
+		typedef int (*wide_printf)(wchar_t* __restrict, std::size_t, const wchar_t* __restrict, ...);
 
 #if defined(_MSC_VER)
-		inline int truncate_snwprintf(wchar_t* __restrict buffer, size_t count, const wchar_t* __restrict format, ...) 
+		inline int truncate_snwprintf(wchar_t* __restrict buffer, std::size_t count, const wchar_t* __restrict format, ...)
 		{
 			int r;
 			va_list args;
@@ -2084,7 +2091,7 @@ namespace plg {
 		constexpr _PLUGIFY_STRING_ALWAYS_INLINE wide_printf get_swprintf() noexcept
 		{
 #if defined(_MSC_VER)
-			return static_cast<int(__cdecl*)(wchar_t* __restrict, size_t, const wchar_t* __restrict, ...)>(truncate_snwprintf);
+			return static_cast<int(__cdecl*)(wchar_t* __restrict, std::size_t, const wchar_t* __restrict, ...)>(truncate_snwprintf);
 #else
 			return swprintf;
 #endif
