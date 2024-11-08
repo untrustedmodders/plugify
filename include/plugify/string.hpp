@@ -197,7 +197,7 @@ namespace plg {
 #if PLUGIFY_STRING_CONTAINERS_RANGES
 		template<typename Range, typename Type>
 		concept string_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
-#endif
+#endif // PLUGIFY_STRING_CONTAINERS_RANGES
 	}// namespace detail
 
 	// basic_string
@@ -206,7 +206,7 @@ namespace plg {
 	class basic_string {
 	private:
 		using allocator_traits = std::allocator_traits<Allocator>;
-
+		using sview_type = std::basic_string_view<Char, Traits>;
 	public:
 		using traits_type = Traits;
 		using value_type = typename traits_type::char_type;
@@ -221,1275 +221,8 @@ namespace plg {
 		using const_iterator = const_pointer;
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-		using sview_type = std::basic_string_view<Char, Traits>;
 
 		constexpr static size_type npos = static_cast<size_t>(-1);
-
-		explicit constexpr basic_string(detail::uninitialized_size_tag, size_type size, const allocator_type& alloc)
-			: _allocator(alloc)
-		{
-			_PLUGIFY_STRING_ASSERT(size <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			if (fits_in_sso(size))
-				short_init();
-			else {
-				long_init();
-				reallocate(size, false);
-			}
-			set_size(size);
-		}
-
-		constexpr basic_string() noexcept(std::is_nothrow_default_constructible<allocator_type>::value)
-			: basic_string(allocator_type())
-		{}
-
-		explicit constexpr basic_string(const allocator_type& alloc) noexcept
-			: _allocator(alloc)
-		{
-			short_init();
-		}
-
-		constexpr basic_string(size_type count, value_type ch, const allocator_type& alloc = allocator_type())
-			: _allocator(alloc)
-		{
-			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(ch, count);
-		}
-
-		constexpr basic_string(const basic_string& str, size_type pos, size_type count, const allocator_type& alloc = allocator_type())
-			: _allocator(alloc)
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= str.get_size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
-			auto len = std::min(count, str.get_size() - pos);
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(str.data() + pos, len);
-		}
-		constexpr basic_string(const basic_string& str, size_type pos, const allocator_type& alloc = allocator_type())
-			: basic_string(str, pos, npos, alloc)
-		{}
-
-		constexpr basic_string(const value_type* str, size_type count, const allocator_type& alloc = allocator_type())
-			: _allocator(alloc)
-		{
-			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(str, count);
-		}
-
-		constexpr basic_string(const value_type* str, const allocator_type& alloc = allocator_type())
-			: basic_string(str, Traits::length(str), alloc)
-		{}
-
-		template<std::input_iterator InputIterator>
-		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& alloc = allocator_type())
-			: _allocator(alloc)
-		{
-			auto len = static_cast<size_type>(std::distance(first, last));
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(const_pointer(first), len);
-		}
-
-		constexpr basic_string(const basic_string& str, const allocator_type& alloc)
-			: _allocator(alloc)
-		{
-			auto len = str.length();
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(str.data(), len);
-		}
-		constexpr basic_string(const basic_string& str)
-			: basic_string(str, allocator_type())
-		{}
-
-		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<allocator_type>::value)
-			: _allocator(std::move(str._allocator)), _storage(std::move(str._storage))
-		{
-			str.short_init();
-		}
-
-		constexpr basic_string(basic_string&& str, const allocator_type& alloc)
-			: _allocator(alloc)
-		{
-			if (str.is_long() && alloc != str._allocator) {
-				internal_assign(str.data(), str.size());
-				str.deallocate();
-			} else {
-				swap(str);
-			}
-			str.short_init();
-		}
-
-		constexpr basic_string(std::initializer_list<value_type> list, const allocator_type& alloc = allocator_type())
-			: _allocator(alloc)
-		{
-			auto len = list.size();
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(const_pointer(list.begin()), len);
-		}
-
-		template<typename Type> requires(std::is_convertible_v<const Type&, sview_type>)
-		constexpr basic_string(const Type& t, size_type pos, size_type count, const allocator_type& alloc = allocator_type())
-			: _allocator(alloc)
-		{
-			auto sv = sview_type(t);
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= sv.length(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
-			auto ssv = sv.substr(pos, count);
-			auto len = ssv.length();
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(ssv.data(), len);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string(const Type& t, const allocator_type& alloc = allocator_type())
-			: _allocator(alloc)
-		{
-			sview_type sv(t);
-			auto len = sv.length();
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(sv.data(), len);
-		}
-
-		constexpr basic_string(basic_string&& str, size_type pos, size_type count, const allocator_type& alloc = allocator_type())
-			: basic_string(std::move(str), alloc)
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= str.get_size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
-			erase(pos, count);
-        }
-
-		constexpr basic_string(basic_string&& str, size_type pos, const allocator_type& alloc = allocator_type())
-			: basic_string(std::move(str), pos, npos, alloc)
-		{}
-
-#if __cplusplus > 202002L
-		basic_string(std::nullptr_t) = delete;
-#endif
-
-#if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::string_compatible_range<Char> Range>
-		constexpr basic_string(std::from_range_t, Range&& range, const allocator_type& alloc = allocator_type())
-			: basic_string(std::ranges::begin(range), std::ranges::end(range), alloc)
-		{}
-#endif
-
-		constexpr ~basic_string()
-		{
-			deallocate();
-		}
-
-		constexpr basic_string& operator=(const basic_string& str)
-		{
-			return assign(str);
-		}
-
-		constexpr basic_string& operator=(basic_string&& str) noexcept(
-				allocator_traits::propagate_on_container_move_assignment::value ||
-				allocator_traits::is_always_equal::value) 
-		{
-			return assign(std::move(str));
-		}
-
-		constexpr basic_string& operator=(const value_type* str) 
-		{
-			return assign(str, Traits::length(str));
-		}
-
-		constexpr basic_string& operator=(value_type ch) 
-		{
-			return assign(std::addressof(ch), 1);
-		}
-
-		constexpr basic_string& operator=(std::initializer_list<value_type> list)
-		{
-			return assign(list.begin(), list.size());
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& operator=(const Type& t) 
-		{
-			sview_type sv(t);
-			return assign(sv);
-		}
-
-#if __cplusplus > 202002L
-		constexpr basic_string& operator=(std::nullptr_t) = delete;
-#endif
-
-		constexpr basic_string& assign(size_type count, value_type ch) 
-		{
-			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
-			internal_assign(ch, count);
-			return *this;
-		}
-
-		constexpr basic_string& assign(const basic_string& str) 
-		{
-			if (this == &str) [[unlikely]]
-				return *this;
-			internal_assign(str.data(), str.size());
-			return *this;
-		}
-
-		constexpr basic_string& assign(const basic_string& str, size_type pos, size_type count = npos) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= str.get_size(), "plg::basic_string::assign(): pos out of range", std::out_of_range);
-			internal_assign(str.data(), std::min(count, str.size() - pos));
-			return *this;
-		}
-
-		constexpr basic_string& assign(basic_string&& str) noexcept(
-				allocator_traits::propagate_on_container_move_assignment::value ||
-				allocator_traits::is_always_equal::value) 
-		{
-			if (this == &str) [[unlikely]]
-				return *this;
-			deallocate();
-			short_init();
-			swap(str);
-			return *this;
-		}
-
-		constexpr basic_string& assign(const value_type* str, size_type count) 
-		{
-			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
-			internal_assign(str, count);
-			return *this;
-		}
-
-		constexpr basic_string& assign(const value_type* str)
-		{
-			return assign(str, Traits::length(str));
-		}
-
-		template<std::input_iterator InputIterator>
-		constexpr basic_string& assign(InputIterator first, InputIterator last)
-		{
-			auto len = static_cast<size_type>(std::distance(first, last));
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
-			internal_assign(const_pointer(first), len);
-			return *this;
-		}
-
-		constexpr basic_string& assign(std::initializer_list<value_type> list)
-		{
-			auto len = list.size();
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
-			internal_assign(const_pointer(list.begin()), len);
-			return *this;
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& assign(const Type& t) 
-		{
-			sview_type sv(t);
-			return assign(sv.data(), sv.length());
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& assign(const Type& t, size_type pos, size_type count = npos) 
-		{
-			auto sv = sview_type(t).substr(pos, count);
-			auto len = sv.length();
-			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
-			return assign(sv.data(), len);
-		}
-
-#if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::string_compatible_range<Char> Range>
-		constexpr basic_string& assign_range(Range&& range) 
-		{
-			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
-			_PLUGIFY_STRING_ASSERT(str.get_size() <= max_size(), "plg::basic_string::assign_range(): resulted string size would exceed max_size()", std::length_error);
-			return assign(std::move(str));
-		}
-#endif
-		[[nodiscard]] constexpr allocator_type get_allocator() const noexcept 
-		{
-			return _allocator;
-		}
-
-		[[nodiscard]] constexpr reference operator[](size_type pos) 
-		{
-			return get_data()[pos];
-		}
-
-		[[nodiscard]] constexpr const_reference operator[](size_type pos) const 
-		{
-			return get_data()[pos];
-		}
-
-		[[nodiscard]] constexpr reference at(size_type pos) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
-			return get_data()[pos];
-		}
-
-		[[nodiscard]] constexpr const_reference at(size_type pos) const 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
-			return get_data()[pos];
-		}
-
-		[[nodiscard]] constexpr reference front() 
-		{
-			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
-			return get_data()[0];
-		}
-
-		[[nodiscard]] constexpr const_reference front() const 
-		{
-			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
-			return get_data()[0];
-		}
-
-		[[nodiscard]] constexpr reference back() 
-		{
-			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
-			return get_data()[get_size() - 1];
-		}
-
-		[[nodiscard]] constexpr const_reference back() const 
-		{
-			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
-			return get_data()[get_size() - 1];
-		}
-
-		[[nodiscard]] constexpr const value_type* data() const noexcept 
-		{
-			return get_data();
-		}
-
-		[[nodiscard]] constexpr value_type* data() noexcept 
-		{
-			return get_data();
-		}
-
-		[[nodiscard]] constexpr const value_type* c_str() const noexcept 
-		{
-			return get_data();
-		}
-
-		[[nodiscard]] constexpr operator sview_type() const noexcept 
-		{
-			return get_view();
-		}
-
-		[[nodiscard]] constexpr iterator begin() noexcept 
-		{
-			return get_data();
-		}
-
-		[[nodiscard]] constexpr const_iterator begin() const noexcept 
-		{
-			return get_data();
-		}
-
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept 
-		{
-			return get_data();
-		}
-
-		[[nodiscard]] constexpr iterator end() noexcept
-		{
-			return get_data() + get_size();
-		}
-
-		[[nodiscard]] constexpr const_iterator end() const noexcept 
-		{
-			return get_data() + get_size();
-		}
-
-		[[nodiscard]] constexpr const_iterator cend() const noexcept 
-		{
-			return get_data() + get_size();
-		}
-
-		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept 
-		{
-			return reverse_iterator(end());
-		}
-
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept 
-		{
-			return const_reverse_iterator(end());
-		}
-
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept
-		{
-			return const_reverse_iterator(cend());
-		}
-
-		[[nodiscard]] constexpr reverse_iterator rend() noexcept 
-		{
-			return reverse_iterator(begin());
-		}
-
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept 
-		{
-			return const_reverse_iterator(begin());
-		}
-
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept 
-		{
-			return const_reverse_iterator(cbegin());
-		}
-
-		[[nodiscard]] constexpr bool empty() const noexcept 
-		{
-			return get_size() == 0;
-		}
-
-		[[nodiscard]] constexpr size_type size() const noexcept 
-		{
-			return get_size();
-		}
-
-		[[nodiscard]] constexpr size_type length() const noexcept 
-		{
-			return get_size();
-		}
-
-		[[nodiscard]] constexpr size_type max_size() const noexcept 
-		{
-			return (allocator_traits::max_size(allocator_type()) - 1) / 2;
-		}
-
-		[[nodiscard]] constexpr size_type capacity() const noexcept
-		{
-			return get_cap();
-		}
-
-		constexpr void reserve(size_type cap) 
-		{
-			_PLUGIFY_STRING_ASSERT(cap <= max_size(), "plg::basic_string::reserve(): allocated memory size would exceed max_size()", std::length_error);
-			if (cap <= get_cap()) [[unlikely]]
-				return;
-
-			auto new_cap = std::max(cap, get_size());
-			if (new_cap == get_cap()) [[unlikely]]
-				return;
-
-			grow_to(new_cap);
-		}
-
-		void reserve() 
-		{
-			shrink_to_fit();
-		}
-
-		constexpr void shrink_to_fit()
-		{
-			if (is_long() == false)
-				return;
-
-			reallocate(get_size(), true);
-		}
-
-		constexpr void clear() noexcept
-		{
-			set_size(0);
-		}
-
-		constexpr basic_string& insert(size_type pos, size_type count, value_type ch) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
-			insert(std::next(cbegin(), pos), count, ch);
-			return *this;
-		}
-
-		constexpr basic_string& insert(size_type pos, const value_type* str) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
-			auto len = Traits::length(str);
-			_PLUGIFY_STRING_ASSERT(get_size() + len <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			internal_insert(pos, str, len);
-			return *this;
-		}
-
-		constexpr basic_string& insert(size_type pos, const value_type* str, size_type count) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
-			internal_insert(pos, str, count);
-			return *this;
-		}
-
-		constexpr basic_string& insert(size_type pos, const basic_string& str) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + str.get_size() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
-			internal_insert(pos, const_pointer(str.get_data()), str.get_size());
-			return *this;
-		}
-
-		constexpr basic_string& insert(size_type pos, const basic_string& str, size_type pos_str, size_type count = npos) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos <= get_size() && pos_str <= str.get_size(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
-			count = std::min(count, str.length() - pos_str);
-			_PLUGIFY_STRING_ASSERT(get_size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			return insert(pos, str.data() + pos_str, count);
-		}
-
-		constexpr iterator insert(const_iterator pos, value_type ch) 
-		{
-			return insert(pos, 1, ch);
-		}
-
-		constexpr iterator insert(const_iterator pos, size_type count, value_type ch) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			auto spos = std::distance(cbegin(), pos);
-			internal_insert(spos, ch, count);
-			return std::next(begin(), spos);
-		}
-
-		template<std::input_iterator InputIterator>
-		constexpr iterator insert(const_iterator pos, InputIterator first, InputIterator last) 
-		{
-			auto spos = std::distance(cbegin(), pos);
-			auto len = static_cast<size_type>(std::distance(first, last));
-			_PLUGIFY_STRING_ASSERT(get_size() + len <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			internal_insert(spos, const_pointer(first), len);
-			return std::next(begin(), spos);
-		}
-
-		constexpr iterator insert(const_iterator pos, std::initializer_list<value_type> list)
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + list.size() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			auto spos = std::distance(cbegin(), pos);
-			internal_insert(spos, const_pointer(list.begin()), list.size());
-			return std::next(begin(), spos);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& insert(size_type pos, const Type& t) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
-			sview_type sv(t);
-			_PLUGIFY_STRING_ASSERT(get_size() + sv.length() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			internal_insert(pos, const_pointer(sv.data()), sv.length());
-			return *this;
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& insert(size_type pos, const Type& t, size_type pos_str, size_type count = npos) 
-		{
-			auto sv = sview_type(t);
-			_PLUGIFY_STRING_ASSERT(pos <= get_size() && pos_str <= sv.length(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
-			auto ssv = sv.substr(pos_str, count);
-			_PLUGIFY_STRING_ASSERT(get_size() + ssv.length() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			internal_insert(pos, const_pointer(ssv.data()), ssv.length());
-			return *this;
-		}
-
-#if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::string_compatible_range<Char> Range>
-		constexpr iterator insert_range(const_iterator pos, Range&& range) 
-		{
-			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
-			_PLUGIFY_STRING_ASSERT(get_size() + str.get_size() <= max_size(), "plg::basic_string::insert_range(): resulted string size would exceed max_size()", std::length_error);
-			return insert(pos - begin(), str);
-		}
-#endif
-
-		constexpr basic_string& erase(size_type pos = 0, size_type count = npos) 
-		{
-			auto sz = get_size();
-			auto buffer = get_data();
-
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= sz, "plg::basic_string::erase(): pos out of range", std::out_of_range);
-
-			count = std::min(count, sz - pos);
-
-			auto left = sz - (pos + count);
-			if (left != 0)
-				Traits::move(buffer + pos, buffer + pos + count, left);
-
-			auto new_size = pos + left;
-			set_size(new_size);
-			null_terminate();
-
-			return *this;
-		}
-
-		constexpr iterator erase(const_iterator position) 
-		{
-			auto pos = std::distance(cbegin(), position);
-			erase(pos, 1);
-			return begin() + pos;
-		}
-
-		constexpr iterator erase(const_iterator first, const_iterator last) 
-		{
-			auto pos = std::distance(cbegin(), first);
-			auto len = std::distance(first, last);
-			erase(pos, len);
-			return begin() + pos;
-		}
-
-		constexpr void push_back(value_type ch) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + 1 <= max_size(), "plg::basic_string::push_back(): resulted string size would exceed max_size()", std::length_error);
-			append(1, ch);
-		}
-
-		constexpr void pop_back() 
-		{
-			erase(end() - 1);
-		}
-
-		constexpr basic_string& append(size_type count, value_type ch) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + count <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			internal_append(ch, count);
-			return *this;
-		}
-
-		constexpr basic_string& append(const basic_string& str) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + str.get_size() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			internal_append(str.get_data(), str.get_size());
-			return *this;
-		}
-
-		constexpr basic_string& append(const basic_string& str, size_type pos, size_type count = npos) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= str.get_size(), "plg::basic_string::append(): pos out of range", std::out_of_range);
-			auto ssv = sview_type(str).substr(pos, count);
-			_PLUGIFY_STRING_ASSERT(get_size() + ssv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			internal_append(ssv.data(), ssv.length());
-			return *this;
-		}
-
-		constexpr basic_string& append(const value_type* str, size_type count) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + count <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			internal_append(str, count);
-			return *this;
-		}
-
-		constexpr basic_string& append(const value_type* str) 
-		{
-			auto len = Traits::length(str);
-			_PLUGIFY_STRING_ASSERT(get_size() + len <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			return append(str, len);
-		}
-
-		template<std::input_iterator InputIterator>
-		constexpr basic_string& append(InputIterator first, InputIterator last) 
-		{
-			auto len = static_cast<size_type>(std::distance(first, last));
-			_PLUGIFY_STRING_ASSERT(get_size() + len <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			internal_append(const_pointer(first), len);
-			return *this;
-		}
-
-		constexpr basic_string& append(std::initializer_list<value_type> list)
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + list.size() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			internal_append(const_pointer(list.begin()), list.size());
-			return *this;
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& append(const Type& t) 
-		{
-			sview_type sv(t);
-			_PLUGIFY_STRING_ASSERT(get_size() + sv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			internal_append(sv.data(), sv.size());
-			return *this;
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& append(const Type& t, size_type pos, size_type count = npos) 
-		{
-			sview_type sv(t);
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= sv.length(), "plg::basic_string::append(): pos out of range", std::out_of_range);
-			auto ssv = sv.substr(pos, count);
-			_PLUGIFY_STRING_ASSERT(get_size() + ssv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
-			internal_append(ssv.data(), ssv.length());
-			return *this;
-		}
-
-#if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::string_compatible_range<Char> Range>
-		constexpr basic_string& append_range(Range&& range)
-		{
-			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
-			_PLUGIFY_STRING_ASSERT(get_size() + str.get_size() <= max_size(), "plg::basic_string::insert_range(): resulted string size would exceed max_size()", std::length_error);
-			return append(str);
-		}
-#endif
-
-		constexpr basic_string& operator+=(const basic_string& str) 
-		{
-			return append(str);
-		}
-
-		constexpr basic_string& operator+=(value_type ch) 
-		{
-			push_back(ch);
-			return *this;
-		}
-
-		constexpr basic_string& operator+=(const value_type* str) 
-		{
-			return append(str);
-		}
-
-		constexpr basic_string& operator+=(std::initializer_list<value_type> list)
-		{
-			return append(list);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& operator+=(const Type& t) 
-		{
-			return append(sview_type(t));
-		}
-
-		[[nodiscard]] constexpr int compare(const basic_string& str) const noexcept 
-		{
-			return get_view().compare(str.get_view());
-		}
-
-		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const basic_string& str) const
-		{
-			return get_view().compare(pos1, count1, str.get_view());
-		}
-
-		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const basic_string& str, size_type pos2, size_type count2 = npos) const 
-		{
-			return get_view().compare(pos1, count1, str.get_view(), pos2, count2);
-		}
-
-		[[nodiscard]] constexpr int compare(const value_type* str) const 
-		{
-			return get_view().compare(str);
-		}
-
-		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const value_type* str) const 
-		{
-			return get_view().compare(pos1, count1, str);
-		}
-
-		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const value_type* str, size_type count2) const
-		{
-			return get_view().compare(pos1, count1, str, count2);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr int compare(const Type& t) const noexcept(noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>)) 
-		{
-			return get_view().compare(sview_type(t));
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const Type& t) const 
-		{
-			return get_view().compare(pos1, count1, sview_type(t));
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const Type& t, size_type pos2, size_type count2 = npos) const 
-		{
-			return get_view().compare(pos1, count1, sview_type(t), pos2, count2);
-		}
-
-		[[nodiscard]] constexpr bool starts_with(sview_type sv) const noexcept 
-		{
-			return get_view().starts_with(sv);
-		}
-
-		[[nodiscard]] constexpr bool starts_with(Char ch) const noexcept 
-		{
-			return get_view().starts_with(ch);
-		}
-
-		[[nodiscard]] constexpr bool starts_with(const Char* str) const 
-		{
-			return get_view().starts_with(str);
-		}
-
-		[[nodiscard]] constexpr bool ends_with(sview_type sv) const noexcept 
-		{
-			return get_view().ends_with(sv);
-		}
-
-		[[nodiscard]] constexpr bool ends_with(Char ch) const noexcept 
-		{
-			return get_view().ends_with(ch);
-		}
-
-		[[nodiscard]] constexpr bool ends_with(const Char* str) const 
-		{
-			return get_view().ends_with(str);
-		}
-
-		[[nodiscard]] constexpr bool contains(sview_type sv) const noexcept 
-		{
-			return get_view().contains(sv);
-		}
-
-		[[nodiscard]] constexpr bool contains(Char ch) const noexcept 
-		{
-			return get_view().contains(ch);
-		}
-
-		[[nodiscard]] constexpr bool contains(const Char* str) const 
-		{
-			return get_view().contains(str);
-		}
-
-		constexpr basic_string& replace(size_type pos, size_type count, const basic_string& str) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
-			return replace(pos, count, str, 0, str.length());
-		}
-
-		constexpr basic_string& replace(const_iterator first, const_iterator last, const basic_string& str)
-		{
-			auto pos = std::distance(cbegin(), first);
-			auto count = std::distance(first, last);
-			return replace(pos, count, str, 0, str.length());
-		}
-
-		constexpr basic_string& replace(size_type pos, size_type count, const basic_string& str, size_type pos2, size_type count2 = npos) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos <= get_size() && pos2 <= str.get_size(), "plg::basic_string::replace(): pos or pos_str out of range", std::out_of_range);
-			count2 = std::min(count2, str.length() - pos2);
-			auto ssv = sview_type(str).substr(pos2, count2);
-			return replace(pos, count, ssv.data(), ssv.length());
-		}
-
-		template<std::input_iterator InputIterator>
-		constexpr basic_string& replace(const_iterator first, const_iterator last, InputIterator first2, InputIterator last2) 
-		{
-			return replace(first, last, const_pointer(first2), std::distance(first2, last2));
-		}
-
-		constexpr basic_string& replace(size_type pos, size_type count, const value_type* str, size_type count2) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
-			count = std::min(count, length() - pos);
-			_PLUGIFY_STRING_ASSERT(get_size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
-			internal_replace(pos, const_pointer(str), count, count2);
-			return *this;
-		}
-
-		constexpr basic_string& replace(const_iterator first, const_iterator last, const value_type* str, size_type count2) 
-		{
-			size_type pos = std::distance(cbegin(), first);
-			size_type count = std::distance(first, last);
-
-			return replace(pos, count, str, count2);
-		}
-
-		constexpr basic_string& replace(size_type pos, size_type count, const value_type* str) 
-		{
-			return replace(pos, count, str, Traits::length(str));
-		}
-
-		constexpr basic_string& replace(const_iterator first, const_iterator last, const value_type* str)
-		{
-			return replace(first, last, str, Traits::length(str));
-		}
-
-		constexpr basic_string& replace(size_type pos, size_type count, size_type count2, value_type ch) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
-			count = std::min(count, length() - pos);
-			_PLUGIFY_STRING_ASSERT(get_size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
-			internal_replace(pos, ch, count, count2);
-			return *this;
-		}
-
-		constexpr basic_string& replace(const_iterator first, const_iterator last, size_type count2, value_type ch) 
-		{
-			auto pos = std::distance(cbegin(), first);
-			auto count = std::distance(first, last);
-
-			_PLUGIFY_STRING_ASSERT(get_size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
-			internal_replace(pos, ch, count, count2);
-			return *this;
-		}
-
-		constexpr basic_string& replace(const_iterator first, const_iterator last, std::initializer_list<value_type> list)
-		{
-			return replace(first, last, const_pointer(list.begin()), list.size());
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& replace(size_type pos, size_type count, const Type& t) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
-			sview_type sv(t);
-			return replace(pos, count, sv.data(), sv.length());
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& replace(const_iterator first, const_iterator last, const Type& t) 
-		{
-			sview_type sv(t);
-			return replace(first, last, sv.data(), sv.length());
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		constexpr basic_string& replace(size_type pos, size_type count, const Type& t, size_type pos2, size_type count2 = npos) 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
-			auto sv = sview_type(t).substr(pos2, count2);
-			return replace(pos, count, sv.data(), sv.length());
-		}
-
-#if PLUGIFY_STRING_CONTAINERS_RANGES
-		template<detail::string_compatible_range<Char> Range>
-		constexpr iterator replace_with_range(const_iterator first, const_iterator last, Range&& range) 
-		{
-			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
-			return replace(first, last, str); // replace checks for max_size()
-		}
-#endif
-
-		[[nodiscard]] constexpr basic_string substr(size_type pos = 0, size_type count = npos) const 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::substr(): pos out of range", std::out_of_range);
-			return basic_string(*this, pos, count);
-		}
-
-		constexpr size_type copy(value_type* str, size_type count, size_type pos = 0) const 
-		{
-			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= get_size(), "plg::basic_string::copy(): pos out of range", std::out_of_range);
-			return get_view().copy(str, count, pos);
-		}
-
-		constexpr void resize(size_type count, value_type ch) 
-		{
-			_PLUGIFY_STRING_ASSERT(get_size() + count <= max_size(), "plg::basic_string::resize(): resulted string size would exceed max_size()", std::length_error);
-			auto cap = get_cap();
-			auto sz = get_size();
-			auto rsz = count + sz;
-
-			if (sz < rsz) {
-				if (cap < rsz)
-					grow_to(rsz);
-				Traits::assign(get_data() + sz, count, ch);
-			}
-			set_size(rsz);
-			null_terminate();
-		}
-
-		constexpr void resize(size_type count) 
-		{
-			resize(count, _terminator);
-		}
-
-		template<typename Operation>
-		constexpr void resize_and_overwrite(size_type, Operation) 
-		{
-			static_assert(detail::dependent_false<Char>, "plg::basic_string::resize_and_overwrite(count, op) not implemented!");
-		}
-
-		constexpr void swap(basic_string& other) noexcept(allocator_traits::propagate_on_container_swap::value || allocator_traits::is_always_equal::value)
-		{
-			using std::swap;
-			if constexpr (allocator_traits::propagate_on_container_swap::value) {
-				swap(_allocator, other._allocator);
-			}
-			swap(_storage, other._storage);
-		}
-
-		[[nodiscard]] constexpr size_type find(const basic_string& str, size_type pos = 0) const noexcept 
-		{
-			return get_view().find(sview_type(str), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find(const value_type* str, size_type pos, size_type count) const noexcept 
-		{
-			return get_view().find(str, pos, count);
-		}
-
-		[[nodiscard]] constexpr size_type find(const value_type* str, size_type pos = 0) const noexcept 
-		{
-			return get_view().find(str, pos);
-		}
-
-		[[nodiscard]] constexpr size_type find(value_type ch, size_type pos = 0) const noexcept 
-		{
-			return get_view().find(ch, pos);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr size_type find(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) 
-		{
-			return get_view().find(sview_type(t), pos);
-		}
-
-		[[nodiscard]] constexpr size_type rfind(const basic_string& str, size_type pos = npos) const noexcept 
-		{
-			return get_view().rfind(sview_type(str), pos);
-		}
-
-		[[nodiscard]] constexpr size_type rfind(const value_type* str, size_type pos, size_type count) const noexcept 
-		{
-			return get_view().rfind(str, pos, count);
-		}
-
-		[[nodiscard]] constexpr size_type rfind(const value_type* str, size_type pos = npos) const noexcept 
-		{
-			return get_view().rfind(str, pos);
-		}
-
-		[[nodiscard]] constexpr size_type rfind(value_type ch, size_type pos = npos) const noexcept
-		{
-			return get_view().rfind(ch, pos);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr size_type rfind(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>)
-		{
-			return get_view().rfind(sview_type(t), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_first_of(const basic_string& str, size_type pos = 0) const noexcept 
-		{
-			return get_view().find_first_of(sview_type(str), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_first_of(const value_type* str, size_type pos, size_type count) const noexcept 
-		{
-			return get_view().find_first_of(str, pos, count);
-		}
-
-		[[nodiscard]] constexpr size_type find_first_of(const value_type* str, size_type pos = 0) const noexcept 
-		{
-			return get_view().find_first_of(str, pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_first_of(value_type ch, size_type pos = 0) const noexcept 
-		{
-			return get_view().find_first_of(ch, pos);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr size_type find_first_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) 
-		{
-			return get_view().find_first_of(sview_type(t), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_first_not_of(const basic_string& str, size_type pos = 0) const noexcept 
-		{
-			return get_view().find_last_not_of(sview_type(str), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_first_not_of(const value_type* str, size_type pos, size_type count) const noexcept 
-		{
-			return get_view().find_last_not_of(str, pos, count);
-		}
-
-		[[nodiscard]] constexpr size_type find_first_not_of(const value_type* str, size_type pos = 0) const noexcept 
-		{
-			return get_view().find_last_not_of(str, pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_first_not_of(value_type ch, size_type pos = 0) const noexcept 
-		{
-			return get_view().find_first_not_of(ch, pos);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr size_type find_first_not_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) 
-		{
-			return get_view().find_first_not_of(sview_type(t), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_last_of(const basic_string& str, size_type pos = npos) const noexcept 
-		{
-			return get_view().find_last_of(sview_type(str), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_last_of(const value_type* str, size_type pos, size_type count) const noexcept 
-		{
-			return get_view().find_last_of(str, pos, count);
-		}
-
-		[[nodiscard]] constexpr size_type find_last_of(const value_type* str, size_type pos = npos) const noexcept
-		{
-			return get_view().find_last_of(str, pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_last_of(value_type ch, size_type pos = npos) const noexcept 
-		{
-			return get_view().find_last_of(ch, pos);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr size_type find_last_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) 
-		{
-			return get_view().find_last_of(sview_type(t), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_last_not_of(const basic_string& str, size_type pos = npos) const noexcept 
-		{
-			return get_view().find_last_not_of(sview_type(str), pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_last_not_of(const value_type* str, size_type pos, size_type count) const noexcept 
-		{
-			return get_view().find_last_not_of(str, pos, count);
-		}
-
-		[[nodiscard]] constexpr size_type find_last_not_of(const value_type* str, size_type pos = npos) const noexcept 
-		{
-			return get_view().find_last_not_of(str, pos);
-		}
-
-		[[nodiscard]] constexpr size_type find_last_not_of(value_type ch, size_type pos = npos) const noexcept 
-		{
-			return get_view().find_last_not_of(ch, pos);
-		}
-
-		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
-					!std::is_convertible_v<const Type&, const Char*>)
-		[[nodiscard]] constexpr size_type find_last_not_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>)
-		{
-			return get_view().find_last_not_of(sview_type(t), pos);
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, const basic_string& rhs) 
-		{
-			auto lhs_sz = lhs.size();
-			auto rhs_sz = rhs.size();
-			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::allocator_traits::select_on_container_copy_construction(lhs._allocator));
-			auto buffer = ret.get_data();
-			Traits::copy(buffer, lhs.data(), lhs_sz);
-			Traits::copy(buffer + lhs_sz, rhs.data(), rhs_sz);
-			ret.null_terminate();
-			return ret;
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, const basic_string& rhs)
-		{
-			return std::move(lhs.append(rhs));
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, basic_string&& rhs)
-		{
-			return std::move(rhs.insert(0, lhs));
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, basic_string&& rhs) 
-		{
-			return std::move(lhs.append(rhs));
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(const Char* lhs, const basic_string& rhs) 
-		{
-			auto lhs_sz = Traits::length(lhs);
-			auto rhs_sz = rhs.size();
-			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::allocator_traits::select_on_container_copy_construction(rhs._allocator));
-			auto buffer = ret.get_data();
-			Traits::copy(buffer, lhs, lhs_sz);
-			Traits::copy(buffer + lhs_sz, rhs.data(), rhs_sz);
-			ret.null_terminate();
-			return ret;
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(const Char* lhs, basic_string&& rhs)
-		{
-			return std::move(rhs.insert(0, lhs));
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(Char lhs, const basic_string& rhs)
-		{
-			auto rhs_sz = rhs.size();
-			basic_string ret(detail::uninitialized_size_tag(), rhs_sz + 1, basic_string::allocator_traits::select_on_container_copy_construction(rhs._allocator));
-			auto buffer = ret.get_data();
-			Traits::assign(buffer, 1, lhs);
-			Traits::copy(buffer + 1, rhs.data(), rhs_sz);
-			ret.null_terminate();
-			return ret;
-		}
-
-		
-		[[nodiscard]] friend constexpr basic_string operator+(Char lhs, basic_string&& rhs) 
-		{
-			rhs.insert(rhs.begin(), lhs);
-			return std::move(rhs);
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, const Char* rhs)
-		{
-			auto lhs_sz = lhs.size();
-			auto rhs_sz = Traits::length(rhs);
-			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::allocator_traits::select_on_container_copy_construction(lhs._allocator));
-			auto buffer = ret.get_data();
-			Traits::copy(buffer, lhs.data(), lhs_sz);
-			Traits::copy(buffer + lhs_sz, rhs, rhs_sz);
-			ret.null_terminate();
-			return ret;
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, const Char* rhs) 
-		{
-			return std::move(lhs.append(rhs));
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, Char rhs) 
-		{
-			auto lhs_sz = lhs.size();
-			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + 1, basic_string::allocator_traits::select_on_container_copy_construction(lhs._allocator));
-			auto buffer = ret.get_data();
-			Traits::copy(buffer, lhs.data(), lhs_sz);
-			Traits::assign(buffer + lhs_sz, 1, rhs);
-			ret.null_terminate();
-			return ret;
-		}
-
-		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, Char rhs)
-		{
-			lhs.push_back(rhs);
-			return std::move(lhs);
-		}
 
 	private:
 		constexpr static auto _terminator = value_type();
@@ -1530,7 +263,6 @@ namespace plg {
 		};
 
 		static constexpr int char_bit = std::numeric_limits<uint8_t>::digits + std::numeric_limits<uint8_t>::is_signed;
-
 		static_assert(char_bit == 8, "assumes an 8 bit byte.");
 
 		struct long_data {
@@ -1559,134 +291,93 @@ namespace plg {
 			short_data _short{};
 		} _storage;
 
-		[[nodiscard]] constexpr static bool fits_in_sso(size_type size)
-		{
+		[[nodiscard]] constexpr static bool fits_in_sso(size_type size) noexcept {
 			return size < min_cap;
 		}
 
-		constexpr void long_init() {
-			is_long(true);
+		constexpr void long_init() noexcept {
+			set_long(true);
 			set_long_data(nullptr);
 			set_long_size(0);
 			set_long_cap(0);
 		}
 
-		constexpr void short_init() {
-			is_long(false);
+		constexpr void short_init() noexcept {
+			set_long(false);
 			set_short_size(0);
 		}
 
-		constexpr void default_init(size_type size)
-		{
+		constexpr void default_init(size_type size) noexcept {
 			if (fits_in_sso(size))
 				short_init();
 			else
 				long_init();
 		}
 
-		[[nodiscard]] constexpr auto& get_long_data() noexcept
-		{
+		[[nodiscard]] constexpr auto& get_long_data() noexcept {
 			return _storage._long.data;
 		}
 
-		[[nodiscard]] constexpr const auto& get_long_data() const noexcept
-		{
+		[[nodiscard]] constexpr const auto& get_long_data() const noexcept {
 			return _storage._long.data;
 		}
 
-		[[nodiscard]] constexpr auto& get_short_data() noexcept
-		{
+		[[nodiscard]] constexpr auto& get_short_data() noexcept {
 			return _storage._short.data;
 		}
 
-		[[nodiscard]] constexpr const auto& get_short_data() const noexcept
-		{
+		[[nodiscard]] constexpr const auto& get_short_data() const noexcept {
 			return _storage._short.data;
 		}
 
-		constexpr void set_short_size(size_type size) noexcept
-		{
+		constexpr void set_short_size(size_type size) noexcept {
 			_storage._short.size.spare_size = min_cap - (size & 0x7F);
 		}
 
-		[[nodiscard]] constexpr size_type get_short_size() const noexcept
-		{
+		[[nodiscard]] constexpr size_type get_short_size() const noexcept {
 			return min_cap - _storage._short.size.spare_size;
 		}
 
-		constexpr void set_long_size(size_type size) noexcept
-		{
+		constexpr void set_long_size(size_type size) noexcept {
 			_storage._long.size = size;
 		}
 
-		[[nodiscard]] constexpr size_type get_long_size() const noexcept
-		{
+		[[nodiscard]] constexpr size_type get_long_size() const noexcept {
 			return _storage._long.size;
 		}
 
-		constexpr void set_long_cap(size_type cap) noexcept
-		{
+		constexpr void set_long_cap(size_type cap) noexcept {
 			_storage._long.cap = (cap & 0x7FFFFFFFFFFFFFFF);
 		}
 
-		[[nodiscard]] constexpr size_type get_long_cap() const noexcept
-		{
+		[[nodiscard]] constexpr size_type get_long_cap() const noexcept {
 			return _storage._long.cap;
 		}
 
-		constexpr void set_long_data(value_type* data)
-		{
+		constexpr void set_long_data(value_type* data) noexcept {
 			_storage._long.data = data;
 		}
 
-		constexpr void is_long(bool l) noexcept
-		{
-			_storage._long.is_long = l;
-		}
-
-		[[nodiscard]] constexpr bool is_long() const noexcept
-		{
+		[[nodiscard]] constexpr bool is_long() const noexcept {
 			return _storage._long.is_long == true;
 		}
 
-		[[nodiscard]] constexpr pointer get_data() noexcept
-		{
-			return is_long() ? get_long_data() : get_short_data();
+		constexpr void set_long(bool is_long) noexcept {
+			_storage._long.is_long = is_long;
 		}
 
-		[[nodiscard]] constexpr const_pointer get_data() const noexcept
-		{
-			return is_long() ? get_long_data() : get_short_data();
-		}
-
-		[[nodiscard]] constexpr size_type get_size() const noexcept
-		{
-			return is_long() ? get_long_size() : get_short_size();
-		}
-
-		constexpr void set_size(size_type size) noexcept
-		{
+		constexpr void set_size(size_type size) noexcept {
 			if (is_long())
 				set_long_size(size);
 			else
 				set_short_size(size);
 		}
 
-		[[nodiscard]] constexpr size_type get_cap() const noexcept
-		{
-			if (is_long())
-				return get_long_cap();
-			else
-				return min_cap;
-		}
-
-		[[nodiscard]] constexpr sview_type get_view() const noexcept
-		{
-			return sview_type(get_data(), get_size());
+		[[nodiscard]] constexpr sview_type view() const noexcept {
+			return sview_type(data(), size());
 		}
 
 		constexpr void reallocate(size_type new_cap, bool copy_old) {
-
 			if (new_cap == get_long_cap())
 				return;
 
@@ -1695,12 +386,12 @@ namespace plg {
 			auto& old_buffer = get_long_data();
 
 			auto new_len = std::min(new_cap, old_len);
-			auto new_data = _allocator.allocate(new_cap + 1);
+			auto new_data = allocator_traits::allocate(_allocator, new_cap + 1);
 
 			if (old_buffer != nullptr) {
 				if (old_len != 0 && copy_old)
 					Traits::copy(new_data, old_buffer, new_len);
-				_allocator.deallocate(old_buffer, old_cap + 1);
+				allocator_traits::deallocate(_allocator, old_buffer, old_cap + 1);
 			}
 
 			set_long_data(new_data);
@@ -1708,24 +399,22 @@ namespace plg {
 			set_long_cap(new_cap);
 		}
 
-		constexpr void deallocate()
-		{
+		constexpr void deallocate() {
 			if (is_long()) {
 				if (auto& buffer = get_long_data(); buffer != nullptr) {
-					_allocator.deallocate(buffer, get_long_cap() + 1);
+					allocator_traits::deallocate(_allocator, buffer, get_long_cap() + 1);
 					buffer = nullptr;
 				}
 			}
 		}
 
-		constexpr void grow_to(size_type new_cap)
-		{
+		constexpr void grow_to(size_type new_cap) {
 			if (is_long() == true) {
 				reallocate(new_cap, true);
 				return;
 			}
 
-			auto buffer = _allocator.allocate(new_cap + 1);
+			auto buffer = allocator_traits::allocate(_allocator, new_cap + 1);
 			auto len = get_short_size();
 
 			Traits::copy(buffer, get_short_data(), len);
@@ -1737,25 +426,23 @@ namespace plg {
 			set_long_cap(new_cap);
 		}
 
-		constexpr void null_terminate() noexcept
-		{
-			auto buffer = get_data();
+		constexpr void null_terminate() {
+			auto buffer = data();
 			if (buffer == nullptr) [[unlikely]]
 				return;
-			Traits::assign(buffer[get_size()], _terminator);
+			Traits::assign(buffer[size()], _terminator);
 		}
 
-		[[nodiscard]] constexpr bool addr_in_range(const_pointer ptr) const
-		{
+		[[nodiscard]] constexpr bool addr_in_range(const_pointer ptr) const noexcept {
 			if (std::is_constant_evaluated())
 				return false;
-			return get_data() <= ptr && ptr <= get_data() + get_size();
+			else
+				return data() <= ptr && ptr <= data() + size();
 		}
 
-		constexpr void internal_replace_impl(auto func, size_type pos, size_type oldcount, size_type count)
-		{
-			auto cap = get_cap();
-			auto sz = get_size();
+		constexpr void internal_replace_impl(auto func, size_type pos, size_type oldcount, size_type count) {
+			auto cap = capacity();
+			auto sz = size();
 
 			auto rsz = sz - oldcount + count;
 
@@ -1763,7 +450,7 @@ namespace plg {
 				grow_to(rsz);
 
 			if (oldcount != count)
-				Traits::move(get_data() + pos + count, get_data() + pos + oldcount, sz - pos - oldcount);
+				Traits::move(data() + pos + count, data() + pos + oldcount, sz - pos - oldcount);
 
 			func();
 
@@ -1771,61 +458,55 @@ namespace plg {
 			null_terminate();
 		}
 
-		constexpr void internal_replace(size_type pos, const_pointer str, size_type oldcount, size_type count)
-		{
+		constexpr void internal_replace(size_type pos, const_pointer str, size_type oldcount, size_type count) {
 			if (addr_in_range(str)) {
 				basic_string rstr(str, count);
-				internal_replace_impl([&]() { Traits::copy(get_data() + pos, rstr.data(), count); }, pos, oldcount, count);
+				internal_replace_impl([&]() { Traits::copy(data() + pos, rstr.data(), count); }, pos, oldcount, count);
 			} else
-				internal_replace_impl([&]() { Traits::copy(get_data() + pos, str, count); }, pos, oldcount, count);
+				internal_replace_impl([&]() { Traits::copy(data() + pos, str, count); }, pos, oldcount, count);
 		}
 
-		constexpr void internal_replace(size_type pos, value_type ch, size_type oldcount, size_type count)
-		{
-			internal_replace_impl([&]() { Traits::assign(get_data() + pos, count, ch); }, pos, oldcount, count);
+		constexpr void internal_replace(size_type pos, value_type ch, size_type oldcount, size_type count) {
+			internal_replace_impl([&]() { Traits::assign(data() + pos, count, ch); }, pos, oldcount, count);
 		}
 
-		constexpr void internal_insert_impl(auto func, size_type pos, size_type size)
-		{
-			if (size == 0) [[unlikely]]
+		constexpr void internal_insert_impl(auto func, size_type pos, size_type count) {
+			if (count == 0) [[unlikely]]
 				return;
 
-			auto cap = get_cap();
-			auto sz = get_size();
-			auto rsz = sz + size;
+			auto cap = capacity();
+			auto sz = size();
+			auto rsz = sz + count;
 
 			if (cap < rsz)
 				grow_to(rsz);
 
-			Traits::move(get_data() + pos + size, get_data() + pos, sz - pos);
+			Traits::move(data() + pos + count, data() + pos, sz - pos);
 			func();
 
 			set_size(rsz);
 			null_terminate();
 		}
 
-		constexpr void internal_insert(size_type pos, const_pointer str, size_type count)
-		{
+		constexpr void internal_insert(size_type pos, const_pointer str, size_type count) {
 			if (addr_in_range(str)) {
 				basic_string rstr(str, count);
-				internal_insert_impl([&]() { Traits::copy(get_data() + pos, rstr.data(), count); }, pos, count);
+				internal_insert_impl([&]() { Traits::copy(data() + pos, rstr.data(), count); }, pos, count);
 			} else
-				internal_insert_impl([&]() { Traits::copy(get_data() + pos, str, count); }, pos, count);
+				internal_insert_impl([&]() { Traits::copy(data() + pos, str, count); }, pos, count);
 		}
 
-		constexpr void internal_insert(size_type pos, value_type ch, size_type count)
-		{
-			internal_insert_impl([&]() { Traits::assign(get_data() + pos, count, ch); }, pos, count);
+		constexpr void internal_insert(size_type pos, value_type ch, size_type count) {
+			internal_insert_impl([&]() { Traits::assign(data() + pos, count, ch); }, pos, count);
 		}
 
-		constexpr void internal_append_impl(auto func, size_type size)
-		{
-			if (size == 0) [[unlikely]]
+		constexpr void internal_append_impl(auto func, size_type count) {
+			if (count == 0) [[unlikely]]
 				return;
 
-			auto cap = get_cap();
-			auto sz = get_size();
-			auto rsz = sz + size;
+			auto cap = capacity();
+			auto sz = size();
+			auto rsz = sz + count;
 
 			if (cap < rsz)
 				grow_to(rsz);
@@ -1835,22 +516,19 @@ namespace plg {
 			null_terminate();
 		}
 
-		constexpr void internal_append(const_pointer str, size_type count)
-		{
+		constexpr void internal_append(const_pointer str, size_type count) {
 			if (addr_in_range(str)) {
 				basic_string rstr(str, count);
-				internal_append_impl([&](size_type pos) { Traits::copy(get_data() + pos, rstr.data(), count); }, count);
+				internal_append_impl([&](size_type pos) { Traits::copy(data() + pos, rstr.data(), count); }, count);
 			} else
-				internal_append_impl([&](size_type pos) { Traits::copy(get_data() + pos, str, count); }, count);
+				internal_append_impl([&](size_type pos) { Traits::copy(data() + pos, str, count); }, count);
 		}
 
-		constexpr void internal_append(value_type ch, size_type count)
-		{
-			internal_append_impl([&](size_type pos) { Traits::assign(get_data() + pos, count, ch); }, count);
+		constexpr void internal_append(value_type ch, size_type count) {
+			internal_append_impl([&](size_type pos) { Traits::assign(data() + pos, count, ch); }, count);
 		}
 
-		constexpr void internal_assign_impl(auto func, size_type size, bool copy_old)
-		{
+		constexpr void internal_assign_impl(auto func, size_type size, bool copy_old) {
 			if (fits_in_sso(size)) {
 				if (is_long() == true) {
 					deallocate();
@@ -1872,8 +550,7 @@ namespace plg {
 			}
 		}
 
-		constexpr void internal_assign(const_pointer str, size_type size, bool copy_old = false)
-		{
+		constexpr void internal_assign(const_pointer str, size_type size, bool copy_old = false) {
 			if (addr_in_range(str)) {
 				basic_string rstr(str, size);
 				internal_assign_impl([&](auto data) { Traits::copy(data, rstr.data(), size); }, size, copy_old);
@@ -1881,47 +558,1162 @@ namespace plg {
 				internal_assign_impl([&](auto data) { Traits::copy(data, str, size); }, size, copy_old);
 		}
 
-		constexpr void internal_assign(value_type ch, size_type count, bool copy_old = false)
-		{
+		constexpr void internal_assign(value_type ch, size_type count, bool copy_old = false) {
 			internal_assign_impl([&](auto data) { Traits::assign(data, count, ch); }, count, copy_old);
+		}
+
+	public:
+		explicit constexpr basic_string(detail::uninitialized_size_tag, size_type size, const Allocator& alloc)
+			: _allocator(alloc) {
+			_PLUGIFY_STRING_ASSERT(size <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			if (fits_in_sso(size))
+				short_init();
+			else {
+				long_init();
+				reallocate(size, false);
+			}
+			set_size(size);
+		}
+
+		constexpr basic_string() noexcept(std::is_nothrow_default_constructible<Allocator>::value)
+			: basic_string(Allocator()) {}
+
+		explicit constexpr basic_string(const Allocator& alloc) noexcept
+			: _allocator(alloc) {
+			short_init();
+		}
+
+		constexpr basic_string(size_type count, value_type ch, const Allocator& alloc = Allocator())
+			: _allocator(alloc) {
+			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			internal_assign(ch, count);
+		}
+
+		constexpr basic_string(const basic_string& str, size_type pos, size_type count, const Allocator& alloc = Allocator())
+			: _allocator(alloc) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= str.size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
+			auto len = std::min(count, str.size() - pos);
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			internal_assign(str.data() + pos, len);
+		}
+		constexpr basic_string(const basic_string& str, size_type pos, const Allocator& alloc = Allocator())
+			: basic_string(str, pos, npos, alloc) {}
+
+		constexpr basic_string(const value_type* str, size_type count, const Allocator& alloc = Allocator())
+			: _allocator(alloc) {
+			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			internal_assign(str, count);
+		}
+
+		constexpr basic_string(const value_type* str, const Allocator& alloc = Allocator())
+			: basic_string(str, Traits::length(str), alloc) {}
+
+		template<std::input_iterator InputIterator>
+		constexpr basic_string(InputIterator first, InputIterator last, const Allocator& alloc = Allocator())
+			: _allocator(alloc) {
+			auto len = size_type(std::distance(first, last));
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			internal_assign(const_pointer(first), len);
+		}
+
+		constexpr basic_string(const basic_string& str, const Allocator& alloc)
+			: _allocator(alloc) {
+			auto len = str.length();
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			internal_assign(str.data(), len);
+		}
+		constexpr basic_string(const basic_string& str)
+			: basic_string(str, Allocator()) {}
+
+		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<Allocator>::value)
+			: _allocator(std::move(str._allocator)), _storage(std::move(str._storage)) {
+			str.short_init();
+		}
+
+		constexpr basic_string(basic_string&& str, const Allocator& alloc)
+			: _allocator(alloc) {
+			if constexpr (allocator_traits::is_always_equal::value) {
+				std::swap(_storage, str._storage);
+			} else {
+				if (!str.is_long() || get_allocator() == str.get_allocator()) {
+					std::swap(_storage, str._storage);
+				} else {
+					internal_assign(str.data(), str.size());
+					str.deallocate();
+				}
+			}
+			str.short_init();
+		}
+
+		constexpr basic_string(std::initializer_list<value_type> list, const Allocator& alloc = Allocator())
+			: _allocator(alloc) {
+			auto len = list.size();
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			internal_assign(const_pointer(list.begin()), len);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type>)
+		constexpr basic_string(const Type& t, size_type pos, size_type count, const Allocator& alloc = Allocator())
+			: _allocator(alloc) {
+			auto sv = sview_type(t);
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= sv.length(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
+			auto ssv = sv.substr(pos, count);
+			auto len = ssv.length();
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			internal_assign(ssv.data(), len);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string(const Type& t, const Allocator& alloc = Allocator())
+			: _allocator(alloc) {
+			sview_type sv(t);
+			auto len = sv.length();
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			internal_assign(sv.data(), len);
+		}
+
+		constexpr basic_string(basic_string&& str, size_type pos, size_type count, const Allocator& alloc = Allocator())
+			: basic_string(std::move(str), alloc) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= str.size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
+			erase(pos, count);
+		}
+
+		constexpr basic_string(basic_string&& str, size_type pos, const Allocator& alloc = Allocator())
+			: basic_string(std::move(str), pos, npos, alloc) {}
+
+#if __cplusplus > 202002L
+		basic_string(std::nullptr_t) = delete;
+#endif
+
+#if PLUGIFY_STRING_CONTAINERS_RANGES
+		template<detail::string_compatible_range<Char> Range>
+		constexpr basic_string(std::from_range_t, Range&& range, const Allocator& alloc = Allocator())
+			: basic_string(std::ranges::begin(range), std::ranges::end(range), alloc) {}
+#endif // PLUGIFY_STRING_CONTAINERS_RANGES
+
+		constexpr ~basic_string() {
+			deallocate();
+		}
+
+		constexpr basic_string& operator=(const basic_string& str) {
+			return assign(str);
+		}
+
+		constexpr basic_string& operator=(basic_string&& str) noexcept(
+				allocator_traits::propagate_on_container_move_assignment::value ||
+				allocator_traits::is_always_equal::value) {
+			return assign(std::move(str));
+		}
+
+		constexpr basic_string& operator=(const value_type* str) {
+			return assign(str, Traits::length(str));
+		}
+
+		constexpr basic_string& operator=(value_type ch) {
+			return assign(std::addressof(ch), 1);
+		}
+
+		constexpr basic_string& operator=(std::initializer_list<value_type> list) {
+			return assign(list.begin(), list.size());
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& operator=(const Type& t) {
+			sview_type sv(t);
+			return assign(sv);
+		}
+
+#if __cplusplus > 202002L
+		constexpr basic_string& operator=(std::nullptr_t) = delete;
+#endif
+
+		constexpr basic_string& assign(size_type count, value_type ch) {
+			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			internal_assign(ch, count);
+			return *this;
+		}
+
+		constexpr basic_string& assign(const basic_string& str) {
+			if (this == &str) [[unlikely]]
+				return *this;
+
+			if constexpr (allocator_traits::propagate_on_container_copy_assignment::value) {
+				if constexpr (!allocator_traits::is_always_equal::value) {
+					if (get_allocator() != str.get_allocator()) {
+						deallocate();
+						short_init();
+					}
+				}
+				_allocator = str._allocator;
+			}
+
+			internal_assign(str.data(), str.size());
+			return *this;
+		}
+
+		constexpr basic_string& assign(const basic_string& str, size_type pos, size_type count = npos) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= str.size(), "plg::basic_string::assign(): pos out of range", std::out_of_range);
+			internal_assign(str.data(), std::min(count, str.size() - pos));
+			return *this;
+		}
+
+		constexpr basic_string& assign(basic_string&& str) noexcept(
+				allocator_traits::propagate_on_container_move_assignment::value ||
+				allocator_traits::is_always_equal::value) {
+			if (this == &str) [[unlikely]]
+				return *this;
+
+			if constexpr (allocator_traits::propagate_on_container_move_assignment::value) {
+				if constexpr (!allocator_traits::is_always_equal::value) {
+					if (get_allocator() != str.get_allocator()) {
+						deallocate();
+						short_init();
+					}
+				}
+				_allocator = std::move(str._allocator);
+			}
+
+			if constexpr (allocator_traits::propagate_on_container_move_assignment::value || allocator_traits::is_always_equal::value) {
+				deallocate();
+				short_init();
+				std::swap(_storage, str._storage);
+			} else {
+				if (get_allocator() == str.get_allocator()) {
+					deallocate();
+					short_init();
+					std::swap(_storage, str._storage);
+				} else {
+					internal_assign(str.data(), str.size());
+				}
+			}
+
+			return *this;
+		}
+
+		constexpr basic_string& assign(const value_type* str, size_type count) {
+			_PLUGIFY_STRING_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			internal_assign(str, count);
+			return *this;
+		}
+
+		constexpr basic_string& assign(const value_type* str) {
+			return assign(str, Traits::length(str));
+		}
+
+		template<std::input_iterator InputIterator>
+		constexpr basic_string& assign(InputIterator first, InputIterator last) {
+			auto len = static_cast<size_type>(std::distance(first, last));
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			internal_assign(const_pointer(first), len);
+			return *this;
+		}
+
+		constexpr basic_string& assign(std::initializer_list<value_type> list) {
+			auto len = list.size();
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			internal_assign(const_pointer(list.begin()), len);
+			return *this;
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& assign(const Type& t) {
+			sview_type sv(t);
+			return assign(sv.data(), sv.length());
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& assign(const Type& t, size_type pos, size_type count = npos) {
+			auto sv = sview_type(t).substr(pos, count);
+			auto len = sv.length();
+			_PLUGIFY_STRING_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			return assign(sv.data(), len);
+		}
+
+#if PLUGIFY_STRING_CONTAINERS_RANGES
+		template<detail::string_compatible_range<Char> Range>
+		constexpr basic_string& assign_range(Range&& range) {
+			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
+			_PLUGIFY_STRING_ASSERT(str.size() <= max_size(), "plg::basic_string::assign_range(): resulted string size would exceed max_size()", std::length_error);
+			return assign(std::move(str));
+		}
+#endif // PLUGIFY_STRING_CONTAINERS_RANGES
+
+		[[nodiscard]] constexpr allocator_type get_allocator() const noexcept {
+			return _allocator;
+		}
+
+		[[nodiscard]] constexpr reference operator[](size_type pos) {
+			return data()[pos];
+		}
+
+		[[nodiscard]] constexpr const_reference operator[](size_type pos) const {
+			return data()[pos];
+		}
+
+		[[nodiscard]] constexpr reference at(size_type pos) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
+			return data()[pos];
+		}
+
+		[[nodiscard]] constexpr const_reference at(size_type pos) const {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
+			return data()[pos];
+		}
+
+		[[nodiscard]] constexpr reference front() {
+			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
+			return data()[0];
+		}
+
+		[[nodiscard]] constexpr const_reference front() const {
+			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
+			return data()[0];
+		}
+
+		[[nodiscard]] constexpr reference back() {
+			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
+			return data()[size() - 1];
+		}
+
+		[[nodiscard]] constexpr const_reference back() const {
+			_PLUGIFY_STRING_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
+			return data()[size() - 1];
+		}
+
+		[[nodiscard]] constexpr const value_type* data() const noexcept {
+			return is_long() ? get_long_data() : get_short_data();
+		}
+
+		[[nodiscard]] constexpr value_type* data() noexcept {
+			return is_long() ? get_long_data() : get_short_data();
+		}
+
+		[[nodiscard]] constexpr const value_type* c_str() const noexcept {
+			return data();
+		}
+
+		[[nodiscard]] constexpr operator sview_type() const noexcept {
+			return view();
+		}
+
+		[[nodiscard]] constexpr iterator begin() noexcept {
+			return data();
+		}
+
+		[[nodiscard]] constexpr const_iterator begin() const noexcept {
+			return data();
+		}
+
+		[[nodiscard]] constexpr const_iterator cbegin() const noexcept {
+			return data();
+		}
+
+		[[nodiscard]] constexpr iterator end() noexcept {
+			return data() + size();
+		}
+
+		[[nodiscard]] constexpr const_iterator end() const noexcept {
+			return data() + size();
+		}
+
+		[[nodiscard]] constexpr const_iterator cend() const noexcept {
+			return data() + size();
+		}
+
+		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept {
+			return reverse_iterator(end());
+		}
+
+		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept {
+			return const_reverse_iterator(end());
+		}
+
+		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept {
+			return const_reverse_iterator(cend());
+		}
+
+		[[nodiscard]] constexpr reverse_iterator rend() noexcept {
+			return reverse_iterator(begin());
+		}
+
+		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept {
+			return const_reverse_iterator(begin());
+		}
+
+		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept {
+			return const_reverse_iterator(cbegin());
+		}
+
+		[[nodiscard]] constexpr bool empty() const noexcept {
+			return size() == 0;
+		}
+
+		[[nodiscard]] constexpr size_type size() const noexcept {
+			return is_long() ? get_long_size() : get_short_size();
+		}
+
+		[[nodiscard]] constexpr size_type length() const noexcept {
+			return size();
+		}
+
+		[[nodiscard]] constexpr size_type max_size() const noexcept {
+			return (allocator_traits::max_size(_allocator) - 1) / 2;
+		}
+
+		[[nodiscard]] constexpr size_type capacity() const noexcept {
+			return is_long() ? get_long_cap() : min_cap;
+		}
+
+		constexpr void reserve(size_type cap) {
+			_PLUGIFY_STRING_ASSERT(cap <= max_size(), "plg::basic_string::reserve(): allocated memory size would exceed max_size()", std::length_error);
+			if (cap <= capacity()) [[unlikely]]
+				return;
+
+			auto new_cap = std::max(cap, size());
+			if (new_cap == capacity()) [[unlikely]]
+				return;
+
+			grow_to(new_cap);
+		}
+
+		void reserve() {
+			shrink_to_fit();
+		}
+
+		constexpr void shrink_to_fit() {
+			if (is_long() == false)
+				return;
+
+			reallocate(size(), true);
+		}
+
+		constexpr void clear() noexcept {
+			set_size(0);
+		}
+
+		constexpr basic_string& insert(size_type pos, size_type count, value_type ch) {
+			_PLUGIFY_STRING_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			insert(std::next(cbegin(), pos), count, ch);
+			return *this;
+		}
+
+		constexpr basic_string& insert(size_type pos, const value_type* str) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			auto len = Traits::length(str);
+			_PLUGIFY_STRING_ASSERT(size() + len <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			internal_insert(pos, str, len);
+			return *this;
+		}
+
+		constexpr basic_string& insert(size_type pos, const value_type* str, size_type count) {
+			_PLUGIFY_STRING_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			internal_insert(pos, str, count);
+			return *this;
+		}
+
+		constexpr basic_string& insert(size_type pos, const basic_string& str) {
+			_PLUGIFY_STRING_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			internal_insert(pos, const_pointer(str.data()), str.size());
+			return *this;
+		}
+
+		constexpr basic_string& insert(size_type pos, const basic_string& str, size_type pos_str, size_type count = npos) {
+			_PLUGIFY_STRING_ASSERT(pos <= size() && pos_str <= str.size(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
+			count = std::min(count, str.length() - pos_str);
+			_PLUGIFY_STRING_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			return insert(pos, str.data() + pos_str, count);
+		}
+
+		constexpr iterator insert(const_iterator pos, value_type ch) {
+			return insert(pos, 1, ch);
+		}
+
+		constexpr iterator insert(const_iterator pos, size_type count, value_type ch) {
+			_PLUGIFY_STRING_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			auto spos = std::distance(cbegin(), pos);
+			internal_insert(spos, ch, count);
+			return std::next(begin(), spos);
+		}
+
+		template<std::input_iterator InputIterator>
+		constexpr iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
+			auto spos = std::distance(cbegin(), pos);
+			auto len = static_cast<size_type>(std::distance(first, last));
+			_PLUGIFY_STRING_ASSERT(size() + len <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			internal_insert(spos, const_pointer(first), len);
+			return std::next(begin(), spos);
+		}
+
+		constexpr iterator insert(const_iterator pos, std::initializer_list<value_type> list) {
+			_PLUGIFY_STRING_ASSERT(size() + list.size() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			auto spos = std::distance(cbegin(), pos);
+			internal_insert(spos, const_pointer(list.begin()), list.size());
+			return std::next(begin(), spos);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& insert(size_type pos, const Type& t) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			sview_type sv(t);
+			_PLUGIFY_STRING_ASSERT(size() + sv.length() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			internal_insert(pos, const_pointer(sv.data()), sv.length());
+			return *this;
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& insert(size_type pos, const Type& t, size_type pos_str, size_type count = npos) {
+			auto sv = sview_type(t);
+			_PLUGIFY_STRING_ASSERT(pos <= size() && pos_str <= sv.length(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
+			auto ssv = sv.substr(pos_str, count);
+			_PLUGIFY_STRING_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			internal_insert(pos, const_pointer(ssv.data()), ssv.length());
+			return *this;
+		}
+
+#if PLUGIFY_STRING_CONTAINERS_RANGES
+		template<detail::string_compatible_range<Char> Range>
+		constexpr iterator insert_range(const_iterator pos, Range&& range) {
+			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
+			_PLUGIFY_STRING_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert_range(): resulted string size would exceed max_size()", std::length_error);
+			return insert(pos - begin(), str);
+		}
+#endif // PLUGIFY_STRING_CONTAINERS_RANGES
+
+		constexpr basic_string& erase(size_type pos = 0, size_type count = npos) {
+			auto sz = size();
+			auto buffer = data();
+
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= sz, "plg::basic_string::erase(): pos out of range", std::out_of_range);
+
+			count = std::min(count, sz - pos);
+
+			auto left = sz - (pos + count);
+			if (left != 0)
+				Traits::move(buffer + pos, buffer + pos + count, left);
+
+			auto new_size = pos + left;
+			set_size(new_size);
+			null_terminate();
+
+			return *this;
+		}
+
+		constexpr iterator erase(const_iterator position) {
+			auto pos = std::distance(cbegin(), position);
+			erase(pos, 1);
+			return begin() + pos;
+		}
+
+		constexpr iterator erase(const_iterator first, const_iterator last) {
+			auto pos = std::distance(cbegin(), first);
+			auto len = std::distance(first, last);
+			erase(pos, len);
+			return begin() + pos;
+		}
+
+		constexpr void push_back(value_type ch) {
+			_PLUGIFY_STRING_ASSERT(size() + 1 <= max_size(), "plg::basic_string::push_back(): resulted string size would exceed max_size()", std::length_error);
+			append(1, ch);
+		}
+
+		constexpr void pop_back() {
+			erase(end() - 1);
+		}
+
+		constexpr basic_string& append(size_type count, value_type ch) {
+			_PLUGIFY_STRING_ASSERT(size() + count <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			internal_append(ch, count);
+			return *this;
+		}
+
+		constexpr basic_string& append(const basic_string& str) {
+			_PLUGIFY_STRING_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			internal_append(str.data(), str.size());
+			return *this;
+		}
+
+		constexpr basic_string& append(const basic_string& str, size_type pos, size_type count = npos) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= str.size(), "plg::basic_string::append(): pos out of range", std::out_of_range);
+			auto ssv = sview_type(str).substr(pos, count);
+			_PLUGIFY_STRING_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			internal_append(ssv.data(), ssv.length());
+			return *this;
+		}
+
+		constexpr basic_string& append(const value_type* str, size_type count) {
+			_PLUGIFY_STRING_ASSERT(size() + count <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			internal_append(str, count);
+			return *this;
+		}
+
+		constexpr basic_string& append(const value_type* str) {
+			auto len = Traits::length(str);
+			_PLUGIFY_STRING_ASSERT(size() + len <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			return append(str, len);
+		}
+
+		template<std::input_iterator InputIterator>
+		constexpr basic_string& append(InputIterator first, InputIterator last) {
+			auto len = static_cast<size_type>(std::distance(first, last));
+			_PLUGIFY_STRING_ASSERT(size() + len <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			internal_append(const_pointer(first), len);
+			return *this;
+		}
+
+		constexpr basic_string& append(std::initializer_list<value_type> list) {
+			_PLUGIFY_STRING_ASSERT(size() + list.size() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			internal_append(const_pointer(list.begin()), list.size());
+			return *this;
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& append(const Type& t) {
+			sview_type sv(t);
+			_PLUGIFY_STRING_ASSERT(size() + sv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			internal_append(sv.data(), sv.size());
+			return *this;
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& append(const Type& t, size_type pos, size_type count = npos) {
+			sview_type sv(t);
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= sv.length(), "plg::basic_string::append(): pos out of range", std::out_of_range);
+			auto ssv = sv.substr(pos, count);
+			_PLUGIFY_STRING_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			internal_append(ssv.data(), ssv.length());
+			return *this;
+		}
+
+#if PLUGIFY_STRING_CONTAINERS_RANGES
+		template<detail::string_compatible_range<Char> Range>
+		constexpr basic_string& append_range(Range&& range) {
+			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
+			_PLUGIFY_STRING_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert_range(): resulted string size would exceed max_size()", std::length_error);
+			return append(str);
+		}
+#endif // PLUGIFY_STRING_CONTAINERS_RANGES
+
+		constexpr basic_string& operator+=(const basic_string& str) {
+			return append(str);
+		}
+
+		constexpr basic_string& operator+=(value_type ch) {
+			push_back(ch);
+			return *this;
+		}
+
+		constexpr basic_string& operator+=(const value_type* str) {
+			return append(str);
+		}
+
+		constexpr basic_string& operator+=(std::initializer_list<value_type> list) {
+			return append(list);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& operator+=(const Type& t) {
+			return append(sview_type(t));
+		}
+
+		[[nodiscard]] constexpr int compare(const basic_string& str) const noexcept {
+			return view().compare(str.view());
+		}
+
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const basic_string& str) const {
+			return view().compare(pos1, count1, str.view());
+		}
+
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const basic_string& str, size_type pos2, size_type count2 = npos) const {
+			return view().compare(pos1, count1, str.view(), pos2, count2);
+		}
+
+		[[nodiscard]] constexpr int compare(const value_type* str) const {
+			return view().compare(str);
+		}
+
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const value_type* str) const {
+			return view().compare(pos1, count1, str);
+		}
+
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const value_type* str, size_type count2) const {
+			return view().compare(pos1, count1, str, count2);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr int compare(const Type& t) const noexcept(noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>)) {
+			return view().compare(sview_type(t));
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const Type& t) const {
+			return view().compare(pos1, count1, sview_type(t));
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const Type& t, size_type pos2, size_type count2 = npos) const {
+			return view().compare(pos1, count1, sview_type(t), pos2, count2);
+		}
+
+		[[nodiscard]] constexpr bool starts_with(sview_type sv) const noexcept {
+			return view().starts_with(sv);
+		}
+
+		[[nodiscard]] constexpr bool starts_with(Char ch) const noexcept {
+			return view().starts_with(ch);
+		}
+
+		[[nodiscard]] constexpr bool starts_with(const Char* str) const {
+			return view().starts_with(str);
+		}
+
+		[[nodiscard]] constexpr bool ends_with(sview_type sv) const noexcept {
+			return view().ends_with(sv);
+		}
+
+		[[nodiscard]] constexpr bool ends_with(Char ch) const noexcept {
+			return view().ends_with(ch);
+		}
+
+		[[nodiscard]] constexpr bool ends_with(const Char* str) const {
+			return view().ends_with(str);
+		}
+
+		[[nodiscard]] constexpr bool contains(sview_type sv) const noexcept {
+			return view().contains(sv);
+		}
+
+		[[nodiscard]] constexpr bool contains(Char ch) const noexcept {
+			return view().contains(ch);
+		}
+
+		[[nodiscard]] constexpr bool contains(const Char* str) const {
+			return view().contains(str);
+		}
+
+		constexpr basic_string& replace(size_type pos, size_type count, const basic_string& str) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			return replace(pos, count, str, 0, str.length());
+		}
+
+		constexpr basic_string& replace(const_iterator first, const_iterator last, const basic_string& str) {
+			auto pos = std::distance(cbegin(), first);
+			auto count = std::distance(first, last);
+			return replace(pos, count, str, 0, str.length());
+		}
+
+		constexpr basic_string& replace(size_type pos, size_type count, const basic_string& str, size_type pos2, size_type count2 = npos) {
+			_PLUGIFY_STRING_ASSERT(pos <= size() && pos2 <= str.size(), "plg::basic_string::replace(): pos or pos_str out of range", std::out_of_range);
+			count2 = std::min(count2, str.length() - pos2);
+			auto ssv = sview_type(str).substr(pos2, count2);
+			return replace(pos, count, ssv.data(), ssv.length());
+		}
+
+		template<std::input_iterator InputIterator>
+		constexpr basic_string& replace(const_iterator first, const_iterator last, InputIterator first2, InputIterator last2) {
+			return replace(first, last, const_pointer(first2), std::distance(first2, last2));
+		}
+
+		constexpr basic_string& replace(size_type pos, size_type count, const value_type* str, size_type count2) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			count = std::min(count, length() - pos);
+			_PLUGIFY_STRING_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
+			internal_replace(pos, const_pointer(str), count, count2);
+			return *this;
+		}
+
+		constexpr basic_string& replace(const_iterator first, const_iterator last, const value_type* str, size_type count2) {
+			size_type pos = std::distance(cbegin(), first);
+			size_type count = std::distance(first, last);
+
+			return replace(pos, count, str, count2);
+		}
+
+		constexpr basic_string& replace(size_type pos, size_type count, const value_type* str) {
+			return replace(pos, count, str, Traits::length(str));
+		}
+
+		constexpr basic_string& replace(const_iterator first, const_iterator last, const value_type* str) {
+			return replace(first, last, str, Traits::length(str));
+		}
+
+		constexpr basic_string& replace(size_type pos, size_type count, size_type count2, value_type ch) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			count = std::min(count, length() - pos);
+			_PLUGIFY_STRING_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
+			internal_replace(pos, ch, count, count2);
+			return *this;
+		}
+
+		constexpr basic_string& replace(const_iterator first, const_iterator last, size_type count2, value_type ch) {
+			auto pos = std::distance(cbegin(), first);
+			auto count = std::distance(first, last);
+
+			_PLUGIFY_STRING_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			internal_replace(pos, ch, count, count2);
+			return *this;
+		}
+
+		constexpr basic_string& replace(const_iterator first, const_iterator last, std::initializer_list<value_type> list) {
+			return replace(first, last, const_pointer(list.begin()), list.size());
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& replace(size_type pos, size_type count, const Type& t) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			sview_type sv(t);
+			return replace(pos, count, sv.data(), sv.length());
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& replace(const_iterator first, const_iterator last, const Type& t) {
+			sview_type sv(t);
+			return replace(first, last, sv.data(), sv.length());
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		constexpr basic_string& replace(size_type pos, size_type count, const Type& t, size_type pos2, size_type count2 = npos) {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			auto sv = sview_type(t).substr(pos2, count2);
+			return replace(pos, count, sv.data(), sv.length());
+		}
+
+#if PLUGIFY_STRING_CONTAINERS_RANGES
+		template<detail::string_compatible_range<Char> Range>
+		constexpr iterator replace_with_range(const_iterator first, const_iterator last, Range&& range) {
+			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
+			return replace(first, last, str);// replace checks for max_size()
+		}
+#endif // PLUGIFY_STRING_CONTAINERS_RANGES
+
+		[[nodiscard]] constexpr basic_string substr(size_type pos = 0, size_type count = npos) const {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::substr(): pos out of range", std::out_of_range);
+			return basic_string(*this, pos, count);
+		}
+
+		constexpr size_type copy(value_type* str, size_type count, size_type pos = 0) const {
+			_PLUGIFY_STRING_ASSERT(pos >= 0 && pos <= size(), "plg::basic_string::copy(): pos out of range", std::out_of_range);
+			return view().copy(str, count, pos);
+		}
+
+		constexpr void resize(size_type count, value_type ch) {
+			_PLUGIFY_STRING_ASSERT(size() + count <= max_size(), "plg::basic_string::resize(): resulted string size would exceed max_size()", std::length_error);
+			auto cap = capacity();
+			auto sz = size();
+			auto rsz = count + sz;
+
+			if (sz < rsz) {
+				if (cap < rsz)
+					grow_to(rsz);
+				Traits::assign(data() + sz, count, ch);
+			}
+			set_size(rsz);
+			null_terminate();
+		}
+
+		constexpr void resize(size_type count) {
+			resize(count, _terminator);
+		}
+
+		template<typename Operation>
+		constexpr void resize_and_overwrite(size_type, Operation) {
+			static_assert(detail::dependent_false<Char>, "plg::basic_string::resize_and_overwrite(count, op) not implemented!");
+		}
+
+		constexpr void swap(basic_string& other) noexcept(allocator_traits::propagate_on_container_swap::value || allocator_traits::is_always_equal::value) {
+			using std::swap;
+			if constexpr (allocator_traits::propagate_on_container_swap::value) {
+				swap(_allocator, other._allocator);
+			}
+			swap(_storage, other._storage);
+		}
+
+		[[nodiscard]] constexpr size_type find(const basic_string& str, size_type pos = 0) const noexcept {
+			return view().find(sview_type(str), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find(const value_type* str, size_type pos, size_type count) const noexcept {
+			return view().find(str, pos, count);
+		}
+
+		[[nodiscard]] constexpr size_type find(const value_type* str, size_type pos = 0) const noexcept {
+			return view().find(str, pos);
+		}
+
+		[[nodiscard]] constexpr size_type find(value_type ch, size_type pos = 0) const noexcept {
+			return view().find(ch, pos);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr size_type find(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+			return view().find(sview_type(t), pos);
+		}
+
+		[[nodiscard]] constexpr size_type rfind(const basic_string& str, size_type pos = npos) const noexcept {
+			return view().rfind(sview_type(str), pos);
+		}
+
+		[[nodiscard]] constexpr size_type rfind(const value_type* str, size_type pos, size_type count) const noexcept {
+			return view().rfind(str, pos, count);
+		}
+
+		[[nodiscard]] constexpr size_type rfind(const value_type* str, size_type pos = npos) const noexcept {
+			return view().rfind(str, pos);
+		}
+
+		[[nodiscard]] constexpr size_type rfind(value_type ch, size_type pos = npos) const noexcept {
+			return view().rfind(ch, pos);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr size_type rfind(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+			return view().rfind(sview_type(t), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_first_of(const basic_string& str, size_type pos = 0) const noexcept {
+			return view().find_first_of(sview_type(str), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_first_of(const value_type* str, size_type pos, size_type count) const noexcept {
+			return view().find_first_of(str, pos, count);
+		}
+
+		[[nodiscard]] constexpr size_type find_first_of(const value_type* str, size_type pos = 0) const noexcept {
+			return view().find_first_of(str, pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_first_of(value_type ch, size_type pos = 0) const noexcept {
+			return view().find_first_of(ch, pos);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr size_type find_first_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+			return view().find_first_of(sview_type(t), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_first_not_of(const basic_string& str, size_type pos = 0) const noexcept {
+			return view().find_last_not_of(sview_type(str), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_first_not_of(const value_type* str, size_type pos, size_type count) const noexcept {
+			return view().find_last_not_of(str, pos, count);
+		}
+
+		[[nodiscard]] constexpr size_type find_first_not_of(const value_type* str, size_type pos = 0) const noexcept {
+			return view().find_last_not_of(str, pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_first_not_of(value_type ch, size_type pos = 0) const noexcept {
+			return view().find_first_not_of(ch, pos);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr size_type find_first_not_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+			return view().find_first_not_of(sview_type(t), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_last_of(const basic_string& str, size_type pos = npos) const noexcept {
+			return view().find_last_of(sview_type(str), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_last_of(const value_type* str, size_type pos, size_type count) const noexcept {
+			return view().find_last_of(str, pos, count);
+		}
+
+		[[nodiscard]] constexpr size_type find_last_of(const value_type* str, size_type pos = npos) const noexcept {
+			return view().find_last_of(str, pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_last_of(value_type ch, size_type pos = npos) const noexcept {
+			return view().find_last_of(ch, pos);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr size_type find_last_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+			return view().find_last_of(sview_type(t), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_last_not_of(const basic_string& str, size_type pos = npos) const noexcept {
+			return view().find_last_not_of(sview_type(str), pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_last_not_of(const value_type* str, size_type pos, size_type count) const noexcept {
+			return view().find_last_not_of(str, pos, count);
+		}
+
+		[[nodiscard]] constexpr size_type find_last_not_of(const value_type* str, size_type pos = npos) const noexcept {
+			return view().find_last_not_of(str, pos);
+		}
+
+		[[nodiscard]] constexpr size_type find_last_not_of(value_type ch, size_type pos = npos) const noexcept {
+			return view().find_last_not_of(ch, pos);
+		}
+
+		template<typename Type>
+			requires(std::is_convertible_v<const Type&, sview_type> &&
+					 !std::is_convertible_v<const Type&, const Char*>)
+		[[nodiscard]] constexpr size_type find_last_not_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
+			return view().find_last_not_of(sview_type(t), pos);
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, const basic_string& rhs) {
+			auto lhs_sz = lhs.size();
+			auto rhs_sz = rhs.size();
+			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::allocator_traits::select_on_container_copy_construction(lhs._allocator));
+			auto buffer = ret.data();
+			Traits::copy(buffer, lhs.data(), lhs_sz);
+			Traits::copy(buffer + lhs_sz, rhs.data(), rhs_sz);
+			ret.null_terminate();
+			return ret;
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, const basic_string& rhs) {
+			return std::move(lhs.append(rhs));
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, basic_string&& rhs) {
+			return std::move(rhs.insert(0, lhs));
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, basic_string&& rhs) {
+			return std::move(lhs.append(rhs));
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(const Char* lhs, const basic_string& rhs) {
+			auto lhs_sz = Traits::length(lhs);
+			auto rhs_sz = rhs.size();
+			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::allocator_traits::select_on_container_copy_construction(rhs._allocator));
+			auto buffer = ret.data();
+			Traits::copy(buffer, lhs, lhs_sz);
+			Traits::copy(buffer + lhs_sz, rhs.data(), rhs_sz);
+			ret.null_terminate();
+			return ret;
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(const Char* lhs, basic_string&& rhs) {
+			return std::move(rhs.insert(0, lhs));
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(Char lhs, const basic_string& rhs) {
+			auto rhs_sz = rhs.size();
+			basic_string ret(detail::uninitialized_size_tag(), rhs_sz + 1, basic_string::allocator_traits::select_on_container_copy_construction(rhs._allocator));
+			auto buffer = ret.data();
+			Traits::assign(buffer, 1, lhs);
+			Traits::copy(buffer + 1, rhs.data(), rhs_sz);
+			ret.null_terminate();
+			return ret;
+		}
+
+
+		[[nodiscard]] friend constexpr basic_string operator+(Char lhs, basic_string&& rhs) {
+			rhs.insert(rhs.begin(), lhs);
+			return std::move(rhs);
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, const Char* rhs) {
+			auto lhs_sz = lhs.size();
+			auto rhs_sz = Traits::length(rhs);
+			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + rhs_sz, basic_string::allocator_traits::select_on_container_copy_construction(lhs._allocator));
+			auto buffer = ret.data();
+			Traits::copy(buffer, lhs.data(), lhs_sz);
+			Traits::copy(buffer + lhs_sz, rhs, rhs_sz);
+			ret.null_terminate();
+			return ret;
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, const Char* rhs) {
+			return std::move(lhs.append(rhs));
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(const basic_string& lhs, Char rhs) {
+			auto lhs_sz = lhs.size();
+			basic_string ret(detail::uninitialized_size_tag(), lhs_sz + 1, basic_string::allocator_traits::select_on_container_copy_construction(lhs._allocator));
+			auto buffer = ret.data();
+			Traits::copy(buffer, lhs.data(), lhs_sz);
+			Traits::assign(buffer + lhs_sz, 1, rhs);
+			ret.null_terminate();
+			return ret;
+		}
+
+		[[nodiscard]] friend constexpr basic_string operator+(basic_string&& lhs, Char rhs) {
+			lhs.push_back(rhs);
+			return std::move(lhs);
 		}
 	};
 
 	template<typename Char, typename Traits, typename Allocator>
-	[[nodiscard]] constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept
-	{
+	[[nodiscard]] constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept {
 		return lhs.compare(rhs) == 0;
 	}
 
 	template<typename Char, typename Traits, typename Allocator>
-	[[nodiscard]] constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const Char* rhs)
-	{
+	[[nodiscard]] constexpr bool operator==(const basic_string<Char, Traits, Allocator>& lhs, const Char* rhs) {
 		return lhs.compare(rhs) == 0;
 	}
 
 	template<typename Char, typename Traits, typename Allocator>
-	[[nodiscard]] constexpr std::strong_ordering operator<=>(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept 
-	{
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const basic_string<Char, Traits, Allocator>& lhs, const basic_string<Char, Traits, Allocator>& rhs) noexcept {
 		return lhs.compare(rhs) <=> 0;
 	}
 
 	template<typename Char, typename Traits, typename Allocator>
-	[[nodiscard]] constexpr std::strong_ordering operator<=>(const basic_string<Char, Traits, Allocator>& lhs, const Char* rhs) 
-	{
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const basic_string<Char, Traits, Allocator>& lhs, const Char* rhs) {
 		return lhs.compare(rhs) <=> 0;
 	}
 
 	// swap
 	template<typename Char, typename Traits, typename Allocator>
-	constexpr void swap(basic_string<Char, Traits, Allocator>& lhs, basic_string<Char, Traits, Allocator>& rhs) noexcept(noexcept(lhs.swap(rhs)))
-	{
+	constexpr void swap(basic_string<Char, Traits, Allocator>& lhs, basic_string<Char, Traits, Allocator>& rhs) noexcept(noexcept(lhs.swap(rhs))) {
 		lhs.swap(rhs);
 	}
 
 	// erasure
 	template<typename Char, typename Traits, typename Allocator, typename U>
-	constexpr typename basic_string<Char, Traits, Allocator>::size_type erase(basic_string<Char, Traits, Allocator>& c, const U& value) 
-	{
+	constexpr typename basic_string<Char, Traits, Allocator>::size_type erase(basic_string<Char, Traits, Allocator>& c, const U& value) {
 		auto it = std::remove(c.begin(), c.end(), value);
 		auto r = std::distance(it, c.end());
 		c.erase(it, c.end());
@@ -1929,8 +1721,7 @@ namespace plg {
 	}
 
 	template<typename Char, typename Traits, typename Allocator, typename Pred>
-	constexpr typename basic_string<Char, Traits, Allocator>::size_type erase_if(basic_string<Char, Traits, Allocator>& c, Pred pred) 
-	{
+	constexpr typename basic_string<Char, Traits, Allocator>::size_type erase_if(basic_string<Char, Traits, Allocator>& c, Pred pred) {
 		auto it = std::remove_if(c.begin(), c.end(), pred);
 		auto r = std::distance(it, c.end());
 		c.erase(it, c.end());
@@ -1950,7 +1741,7 @@ namespace plg {
 #if PLUGIFY_STRING_CONTAINERS_RANGES
 	template<std::ranges::input_range Range, typename Allocator = std::allocator<std::ranges::range_value_t<Range>>>
 	basic_string(std::from_range_t, Range&&, Allocator = Allocator()) -> basic_string<std::ranges::range_value_t<Range>, std::char_traits<std::ranges::range_value_t<Range>>, Allocator>;
-#endif
+#endif // PLUGIFY_STRING_CONTAINERS_RANGES
 
 	// basic_string typedef-names
 	using string = basic_string<char>;
@@ -1961,8 +1752,7 @@ namespace plg {
 
 #if PLUGIFY_STRING_NUMERIC_CONVERSIONS
 	// numeric conversions
-	[[nodiscard]] inline int stoi(const string& str, std::size_t* pos = nullptr, int base = 10) 
-	{
+	[[nodiscard]] inline int stoi(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1973,8 +1763,7 @@ namespace plg {
 		return static_cast<int>(ret);
 	}
 
-	[[nodiscard]] inline long stol(const string& str, std::size_t* pos = nullptr, int base = 10) 
-	{
+	[[nodiscard]] inline long stol(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1985,8 +1774,7 @@ namespace plg {
 		return ret;
 	}
 
-	[[nodiscard]] inline long long stoll(const string& str, std::size_t* pos = nullptr, int base = 10)
-	{
+	[[nodiscard]] inline long long stoll(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -1997,8 +1785,7 @@ namespace plg {
 		return ret;
 	}
 
-	[[nodiscard]] inline unsigned long stoul(const string& str, std::size_t* pos = nullptr, int base = 10)
-	{
+	[[nodiscard]] inline unsigned long stoul(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -2009,8 +1796,7 @@ namespace plg {
 		return ret;
 	}
 
-	[[nodiscard]] inline unsigned long long stoull(const string& str, std::size_t* pos = nullptr, int base = 10) 
-	{
+	[[nodiscard]] inline unsigned long long stoull(const string& str, std::size_t* pos = nullptr, int base = 10) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -2022,8 +1808,7 @@ namespace plg {
 	}
 
 #if PLUGIFY_STRING_FLOAT
-	[[nodiscard]] inline float stof(const string& str, std::size_t* pos = nullptr)
-	{
+	[[nodiscard]] inline float stof(const string& str, std::size_t* pos = nullptr) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -2034,8 +1819,7 @@ namespace plg {
 		return ret;
 	}
 
-	[[nodiscard]] inline double stod(const string& str, std::size_t* pos = nullptr)
-	{
+	[[nodiscard]] inline double stod(const string& str, std::size_t* pos = nullptr) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -2047,8 +1831,7 @@ namespace plg {
 	}
 
 #if PLUGIFY_STRING_LONG_DOUBLE
-	[[nodiscard]] inline long double stold(const string& str, std::size_t* pos = nullptr) 
-	{
+	[[nodiscard]] inline long double stold(const string& str, std::size_t* pos = nullptr) {
 		auto cstr = str.c_str();
 		char* ptr = const_cast<char*>(cstr);
 
@@ -2063,8 +1846,7 @@ namespace plg {
 
 	namespace detail {
 		template<typename S, typename V>
-		constexpr _PLUGIFY_STRING_ALWAYS_INLINE S to_string(V v)
-		{
+		constexpr _PLUGIFY_STRING_ALWAYS_INLINE S to_string(V v) {
 			//  numeric_limits::digits10 returns value less on 1 than desired for unsigned numbers.
 			//  For example, for 1-byte unsigned value digits10 is 2 (999 can not be represented),
 			//  so we need +1 here.
@@ -2077,8 +1859,7 @@ namespace plg {
 		typedef int (*wide_printf)(wchar_t* __restrict, std::size_t, const wchar_t* __restrict, ...);
 
 #if defined(_MSC_VER)
-		inline int truncate_snwprintf(wchar_t* __restrict buffer, std::size_t count, const wchar_t* __restrict format, ...)
-		{
+		inline int truncate_snwprintf(wchar_t* __restrict buffer, std::size_t count, const wchar_t* __restrict format, ...) {
 			int r;
 			va_list args;
 			va_start(args, format);
@@ -2088,8 +1869,7 @@ namespace plg {
 		}
 #endif
 
-		constexpr _PLUGIFY_STRING_ALWAYS_INLINE wide_printf get_swprintf() noexcept
-		{
+		constexpr _PLUGIFY_STRING_ALWAYS_INLINE wide_printf get_swprintf() noexcept {
 #if defined(_MSC_VER)
 			return static_cast<int(__cdecl*)(wchar_t* __restrict, std::size_t, const wchar_t* __restrict, ...)>(truncate_snwprintf);
 #else
@@ -2098,8 +1878,7 @@ namespace plg {
 		}
 
 		template<typename S, typename P, typename V>
-		constexpr _PLUGIFY_STRING_ALWAYS_INLINE S as_string(P sprintf_like, const typename S::value_type* fmt, V v)
-		{
+		constexpr _PLUGIFY_STRING_ALWAYS_INLINE S as_string(P sprintf_like, const typename S::value_type* fmt, V v) {
 			typedef typename S::size_type size_type;
 			S s;
 			s.resize(s.capacity());
@@ -2160,8 +1939,7 @@ namespace plg {
 	namespace detail {
 		template<typename Char, typename Allocator, typename String = basic_string<Char, std::char_traits<Char>, Allocator>>
 		struct string_hash_base {
-			[[nodiscard]] constexpr std::size_t operator()(const String& str) const noexcept
-			{
+			[[nodiscard]] constexpr std::size_t operator()(const String& str) const noexcept {
 				return std::hash<typename String::sview_type>{}(typename String::sview_type(str));
 			}
 		};
@@ -2185,14 +1963,12 @@ namespace plg {
 
 		template<typename Char, typename Allocator, typename String = basic_string<Char, std::char_traits<Char>, Allocator>>
 		struct string_formatter_base {
-			constexpr auto parse(std::format_parse_context& ctx)
-			{
+			constexpr auto parse(std::format_parse_context& ctx) {
 				return ctx.begin();
 			}
 
 			template<class FormatContext>
-			auto format(const String& str, FormatContext& ctx) const
-			{
+			auto format(const String& str, FormatContext& ctx) const {
 				return std::format_to(ctx.out(), format_string<Char>(), str.c_str());
 			}
 		};
