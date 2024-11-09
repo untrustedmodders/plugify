@@ -14,7 +14,7 @@ TEST_CASE("vector capacity > shrink_to_fit", "[vector]") {
 		a.reserve(1000);
 		REQUIRE(a.capacity() == 1000);
 		a.shrink_to_fit();
-		REQUIRE(a.capacity() == 23);
+		REQUIRE(a.capacity() == 0);
 
 		for (size_t i = 0; i < 1000; ++i) {
 			a.push_back(static_cast<char>(i));
@@ -62,8 +62,8 @@ TEST_CASE("vector capacity > shrink_to_fit", "[vector]") {
 			}
 			REQUIRE(a.size() == 1000 - i - 1);
 		}
-		REQUIRE(a.capacity() == 1);
-		REQUIRE(num_shrinks == 999);
+		REQUIRE(a.capacity() == 0);
+		REQUIRE(num_shrinks == 1000);
 	}
 
 	SECTION("shrink_2") {
@@ -118,6 +118,6 @@ TEST_CASE("vector capacity > shrink_to_fit", "[vector]") {
 		REQUIRE(counts.dtor == 100 + 97 + 3 + 3 + 2);
 		a.shrink_to_fit();
 		REQUIRE(counts.dtor == 100 + 97 + 3 + 3 + 2);
-		REQUIRE(a.capacity() == 1);
+		REQUIRE(a.capacity() == 0);
 	}
 }

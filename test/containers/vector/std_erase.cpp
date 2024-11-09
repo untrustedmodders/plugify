@@ -34,5 +34,8 @@ TEST_CASE("algorithm", "[vector]") {
 		});
 		REQUIRE(num_erased == 5);
 		REQUIRE("1579" == std::string_view(sv.data(), sv.size()));
+
+		sv.erase(sv.begin() + 1, sv.end() - 1);
+		REQUIRE("19" == std::string_view(sv.data(), sv.size()));
 	}
 }

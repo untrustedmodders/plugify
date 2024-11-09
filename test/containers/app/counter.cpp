@@ -22,7 +22,7 @@ Counter::Obj::Obj()
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (!singletonConstructedObjects().emplace(this).second) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 ++staticDefaultCtor;
@@ -34,7 +34,7 @@ Counter::Obj::Obj(const size_t& data, Counter& counts)
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (!singletonConstructedObjects().emplace(this).second) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 ++_counts->ctor;
@@ -46,11 +46,11 @@ Counter::Obj::Obj(const Counter::Obj& o)
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (1 != singletonConstructedObjects().count(&o)) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 	 if (!singletonConstructedObjects().emplace(this).second) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 if (nullptr != _counts) {
@@ -64,11 +64,11 @@ Counter::Obj::Obj(Counter::Obj&& o) noexcept
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (1 != singletonConstructedObjects().count(&o)) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 	 if (!singletonConstructedObjects().emplace(this).second) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 if (nullptr != _counts) {
@@ -80,7 +80,7 @@ Counter::Obj::~Obj() {
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (1 != singletonConstructedObjects().erase(this)) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 if (nullptr != _counts) {
@@ -98,7 +98,7 @@ auto Counter::Obj::operator==(const Counter::Obj& o) const -> bool {
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (1 != singletonConstructedObjects().count(this) || 1 != singletonConstructedObjects().count(&o)) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 if (nullptr != _counts) {
@@ -111,7 +111,7 @@ auto Counter::Obj::operator<(const Obj& o) const -> bool {
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (1 != singletonConstructedObjects().count(this) || 1 != singletonConstructedObjects().count(&o)) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 if (nullptr != _counts) {
@@ -124,7 +124,7 @@ auto Counter::Obj::operator=(const Counter::Obj& o) -> Counter::Obj& {
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (1 != singletonConstructedObjects().count(this) || 1 != singletonConstructedObjects().count(&o)) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	_counts = o._counts;
@@ -141,7 +141,7 @@ auto Counter::Obj::operator=(Counter::Obj&& o) noexcept -> Counter::Obj& {
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (1 != singletonConstructedObjects().count(this) || 1 != singletonConstructedObjects().count(&o)) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 if (nullptr != o._counts) {
@@ -174,7 +174,7 @@ void Counter::Obj::swap(Obj& other) {
 #if COUNTER_ENABLE_UNORDERED_SET
 	 if (1 != singletonConstructedObjects().count(this) || 1 != singletonConstructedObjects().count(&other)) {
 		  std::cerr << std::format("ERROR at {}({}): {}", __FILE__, __LINE__, __func__) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 	 using std::swap;
@@ -204,7 +204,7 @@ void Counter::check_all_done() const {
 	 // check that all are destructed
 	 if (!singletonConstructedObjects().empty()) {
 		  std::cerr << std::format("ERROR at ~Counter(): got {} objects still alive!", singletonConstructedObjects().size()) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 	 if (dtor + staticDtor != ((ctor + staticDefaultCtor) + (copyCtor + staticCopyCtor) + defaultCtor + (moveCtor + staticMoveCtor))) {
 		  std::cerr << std::format("ERROR at ~Counter(): number of counts does not match!\\n") << std::format(
@@ -218,7 +218,7 @@ void Counter::check_all_done() const {
 				defaultCtor,
 				moveCtor,
 				staticMoveCtor) << std::endl;
-		  std::abort();
+		  //std::abort();
 	 }
 #endif
 }

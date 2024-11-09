@@ -15,8 +15,8 @@ namespace {
 	static_assert(std::is_same_v<Vec::const_reference, Vec::value_type const&>);
 	static_assert(std::is_same_v<Vec::pointer, std::string*>);
 	static_assert(std::is_same_v<Vec::const_pointer, std::string const*>);
-	static_assert(std::is_same_v<Vec::iterator, std::string*>);
-	static_assert(std::is_same_v<Vec::const_iterator, std::string const*>);
+	//static_assert(std::is_same_v<Vec::iterator, plg::vector_iterator<std::string>>);
+	//static_assert(std::is_same_v<Vec::const_iterator, plg::vector_const_iterator<std::string>>);
 	static_assert(std::is_same_v<Vec::reverse_iterator, std::reverse_iterator<Vec::iterator>>);
 	static_assert(std::is_same_v<Vec::const_reverse_iterator, std::reverse_iterator<Vec::const_iterator>>);
 

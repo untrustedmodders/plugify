@@ -11,6 +11,9 @@ using namespace std::literals;
 static_assert(sizeof(plg::vector<uint32_t>) == 24);
 
 using vint = plg::vector<int>;
+using sint = plg::vector<std::string>;
+
+#define LONGSTR "_________________________________________________"
 
 namespace {
 	template <typename T>
@@ -122,8 +125,9 @@ namespace {
 	}
 
 	template <typename T>
-	void testSBO(size_t expectedSBOSize)
+	void testSBO([[maybe_unused]] size_t expectedSBOSize)
 	{
+#if PLUGIFY_VECTOR_SBO
 		if (!T::sbo_enabled()) {
 			return;
 		}
@@ -150,6 +154,7 @@ namespace {
 		b.pop_back();
 		b.shrink_to_fit();
 		REQUIRE(b.sbo_active());
+#endif
 	}
 }
 
@@ -219,7 +224,7 @@ TEST_CASE("vector", "[vector]") {
 
 	SECTION("Destructor, FreeStack") {
 		vint vec;
-		vec.~vector_base();
+		vec.~vector();
 
 		REQUIRE(nullptr == vec.data());
 	}
@@ -392,12 +397,26 @@ TEST_CASE("vector", "[vector]") {
 	}
 
 	SECTION("Modifier, EraseWithRange") {
-		vint vec({ 1, 2, 3, 4 });
-		vec.erase(vec.begin() + 1, vec.begin() + 3);
+		{
 
-		REQUIRE(vec.size() == 2);
-		REQUIRE(vec.at(0) == 1);
-		REQUIRE(vec.at(1) == 4);
+			vint vec({ 1, 2, 3, 4 });
+			vec.erase(vec.begin() + 1, vec.begin() + 3);
+
+			REQUIRE(vec.size() == 2);
+			REQUIRE(vec.at(0) == 1);
+			REQUIRE(vec.at(1) == 4);
+		}
+		{
+			sint vec({ "1" LONGSTR, "2" LONGSTR, "3" LONGSTR, "4" LONGSTR });
+			vec.erase(vec.begin() + 1, vec.begin() + 3);
+
+			REQUIRE(vec.size() == 2);
+			REQUIRE(vec.at(0) == "1" LONGSTR);
+			REQUIRE(vec.at(1) == "4" LONGSTR);
+			vec.erase(vec.begin());
+			REQUIRE(vec.at(0) == "4" LONGSTR);
+			REQUIRE(vec.size() == 1);
+		}
 	}
 
 	SECTION("Modifier, EraseIf") {
@@ -477,7 +496,7 @@ TEST_CASE("vector", "[vector]") {
 
 	SECTION("Capacity, MaxSize") {
 		vint vec;
-		REQUIRE(vec.max_size() == 0x7fffffffffffffff);
+		REQUIRE(vec.max_size() == 0x3fffffffffffffff);
 	}
 
 	SECTION("Capacity, Reserve") {
@@ -491,7 +510,7 @@ TEST_CASE("vector", "[vector]") {
 		vint vec({ 1, 2, 3, 4 });
 		vec.reserve(100); // TODO change to resize
 		vec.shrink_to_fit();
-		REQUIRE(5 == vec.capacity());
+		REQUIRE(4 == vec.capacity());
 	}
 
 	SECTION("Modifier, Clear") {
@@ -533,20 +552,65 @@ TEST_CASE("vector", "[vector]") {
 	}
 
 	SECTION("Modifier, InsertWithCount") {
-		vint vec({ 1, 2, 3, 4, 5, 6 });
-		auto it = vec.insert(vec.begin(), vec.begin() + 3, vec.begin() + 5);
+		{
+			vint vec({ 1, 2, 3, 4, 5, 6 });
+			auto it = vec.insert(vec.begin(), vec.begin() + 3, vec.begin() + 5);
 
-		REQUIRE(8 == vec.size());
-		REQUIRE(4 == *it);
+			REQUIRE(8 == vec.size());
+			REQUIRE(4 == *it);
 
-		REQUIRE(4 == vec.at(0));
-		REQUIRE(5 == vec.at(1));
-		REQUIRE(1 == vec.at(2));
+			REQUIRE(4 == vec.at(0));
+			REQUIRE(5 == vec.at(1));
+			REQUIRE(1 == vec.at(2));
 
-		REQUIRE(2 == vec.at(3));
-		REQUIRE(3 == vec.at(4));
-		REQUIRE(4 == vec.at(5));
-		REQUIRE(5 == vec.at(6));
+			REQUIRE(2 == vec.at(3));
+			REQUIRE(3 == vec.at(4));
+			REQUIRE(4 == vec.at(5));
+			REQUIRE(5 == vec.at(6));
+		}
+		{
+			vint vec({ 1, 2, 3, 4, 5, 6 });
+			auto it = vec.insert(vec.begin(), vec.begin(), vec.end());
+
+			REQUIRE(12 == vec.size());
+			REQUIRE(1 == *it);
+
+			REQUIRE(1 == vec.at(0));
+			REQUIRE(2 == vec.at(1));
+			REQUIRE(3 == vec.at(2));
+			REQUIRE(4 == vec.at(3));
+			REQUIRE(5 == vec.at(4));
+			REQUIRE(6 == vec.at(5));
+
+			REQUIRE(1 == vec.at(6));
+			REQUIRE(2 == vec.at(7));
+			REQUIRE(3 == vec.at(8));
+			REQUIRE(4 == vec.at(9));
+			REQUIRE(5 == vec.at(10));
+			REQUIRE(6 == vec.at(11));
+		}
+		{
+			sint vec({ "1" LONGSTR, "2" LONGSTR, "3" LONGSTR, "4" LONGSTR, "5" LONGSTR, "6" LONGSTR });
+			vec.shrink_to_fit();
+			auto it = vec.insert(vec.begin(), vec.begin(), vec.end());
+
+			REQUIRE(12 == vec.size());
+			REQUIRE("1" LONGSTR == *it);
+
+			REQUIRE("1" LONGSTR == vec.at(0));
+			REQUIRE("2" LONGSTR == vec.at(1));
+			REQUIRE("3" LONGSTR == vec.at(2));
+			REQUIRE("4" LONGSTR == vec.at(3));
+			REQUIRE("5" LONGSTR == vec.at(4));
+			REQUIRE("6" LONGSTR == vec.at(5));
+
+			REQUIRE("1" LONGSTR == vec.at(6));
+			REQUIRE("2" LONGSTR == vec.at(7));
+			REQUIRE("3" LONGSTR == vec.at(8));
+			REQUIRE("4" LONGSTR == vec.at(9));
+			REQUIRE("5" LONGSTR == vec.at(10));
+			REQUIRE("6" LONGSTR == vec.at(11));
+		}
 	}
 
 	SECTION("Modifier, InsertWithIterators") {
@@ -740,7 +804,7 @@ TEST_CASE("vector", "[vector]") {
 
 	SECTION("Test, SelfMove")
 	{
-		testSelfMove<plg::vector<plg::string>>("hello");
+		testSelfMove<plg::vector<plg::string>>("hellohellohellohellohellohellohellohellohellohellohellohellohello");
 		testMoveOnly<plg::vector<std::unique_ptr<int>>>(std::make_unique<int>(42));
 	}
 

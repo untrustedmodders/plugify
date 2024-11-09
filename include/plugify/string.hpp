@@ -440,7 +440,8 @@ namespace plg {
 				return data() <= ptr && ptr <= data() + size();
 		}
 
-		constexpr void internal_replace_impl(auto func, size_type pos, size_type oldcount, size_type count) {
+		template<typename F>
+		constexpr void internal_replace_impl(const F& func, size_type pos, size_type oldcount, size_type count) {
 			auto cap = capacity();
 			auto sz = size();
 
@@ -470,7 +471,8 @@ namespace plg {
 			internal_replace_impl([&]() { Traits::assign(data() + pos, count, ch); }, pos, oldcount, count);
 		}
 
-		constexpr void internal_insert_impl(auto func, size_type pos, size_type count) {
+		template<typename F>
+		constexpr void internal_insert_impl(const F& func, size_type pos, size_type count) {
 			if (count == 0) [[unlikely]]
 				return;
 
@@ -500,7 +502,8 @@ namespace plg {
 			internal_insert_impl([&]() { Traits::assign(data() + pos, count, ch); }, pos, count);
 		}
 
-		constexpr void internal_append_impl(auto func, size_type count) {
+		template<typename F>
+		constexpr void internal_append_impl(const F& func, size_type count) {
 			if (count == 0) [[unlikely]]
 				return;
 
@@ -528,7 +531,8 @@ namespace plg {
 			internal_append_impl([&](size_type pos) { Traits::assign(data() + pos, count, ch); }, count);
 		}
 
-		constexpr void internal_assign_impl(auto func, size_type size, bool copy_old) {
+		template<typename F>
+		constexpr void internal_assign_impl(const F& func, size_type size, bool copy_old) {
 			if (fits_in_sso(size)) {
 				if (is_long() == true) {
 					deallocate();
@@ -738,6 +742,12 @@ namespace plg {
 			return *this;
 		}
 
+		constexpr basic_string& assign(const basic_string& str, size_type pos, size_type count = npos) {
+			_PLUGIFY_STRING_ASSERT(pos <= str.size(), "plg::basic_string::assign(): pos out of range", std::out_of_range);
+			internal_assign(str.data(), std::min(count, str.size() - pos));
+			return *this;
+		}
+
 		constexpr basic_string& assign(const basic_string& str) {
 			if (this == &str) [[unlikely]]
 				return *this;
@@ -753,12 +763,6 @@ namespace plg {
 			}
 
 			internal_assign(str.data(), str.size());
-			return *this;
-		}
-
-		constexpr basic_string& assign(const basic_string& str, size_type pos, size_type count = npos) {
-			_PLUGIFY_STRING_ASSERT(pos <= str.size(), "plg::basic_string::assign(): pos out of range", std::out_of_range);
-			internal_assign(str.data(), std::min(count, str.size() - pos));
 			return *this;
 		}
 
@@ -981,11 +985,11 @@ namespace plg {
 
 		constexpr void reserve(size_type cap) {
 			_PLUGIFY_STRING_ASSERT(cap <= max_size(), "plg::basic_string::reserve(): allocated memory size would exceed max_size()", std::length_error);
-			if (cap <= capacity()) [[unlikely]]
+			if (cap <= capacity())
 				return;
 
 			auto new_cap = std::max(cap, size());
-			if (new_cap == capacity()) [[unlikely]]
+			if (new_cap == capacity())
 				return;
 
 			grow_to(new_cap);

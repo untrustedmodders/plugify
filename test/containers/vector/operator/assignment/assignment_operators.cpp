@@ -71,7 +71,7 @@ TEST_CASE("vector operator > assignment > copy/move", "[vector]") {
 		REQUIRE(counts.dtor == 2 + 3 + 1);
 
 		// additionally set moved-from to be clear
-		REQUIRE(b.empty());// NOLINT(hicpp-invalid-access-moved)
+		REQUIRE(b.empty());
 		REQUIRE(a.size() == 3);
 		REQUIRE(a[0].get() == 3);
 		REQUIRE(a[1].get() == 4);
@@ -114,7 +114,7 @@ TEST_CASE("vector operator > assignment > copy/move", "[vector]") {
 
 			c = std::move(a);
 			counts("after c = std::move(a)");
-			REQUIRE(a.empty());// NOLINT(hicpp-invalid-access-moved)
+			REQUIRE(a.empty());
 			REQUIRE(c.size() == 100);
 			for (size_t i = 0; i < 100; ++i) {
 				REQUIRE(c[i].get() == 1000 + i);

@@ -26,6 +26,6 @@ TEST_CASE("vector operator != comparison > n_equal", "[vector]") {
 		REQUIRE(sv.capacity() == 4);
 
 		sv.shrink_to_fit();
-		REQUIRE(sv.capacity() == 1);
+		REQUIRE(sv.capacity() == 0);
 	}
 }

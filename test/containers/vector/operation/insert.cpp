@@ -16,73 +16,6 @@
 #include <ranges>
 #include <iterator>
 
-template <class T>
-class FooInputIterator {
-	T* _ptr{};
-	
-public:
-	using iterator_category = std::input_iterator_tag;
-	using value_type = T;
-	using difference_type = std::ptrdiff_t;
-	using pointer = T*;
-	using reference = T&;
-
-	explicit FooInputIterator(T* ptr)
-		: _ptr(ptr) {}
-
-	FooInputIterator(const FooInputIterator& other)
-		: _ptr(other._ptr) {}
-
-	FooInputIterator(FooInputIterator&& other) noexcept
-		: _ptr(std::exchange(other._ptr, nullptr)) {}
-
-	operator const T*() const noexcept {
-		return _ptr;
-	}
-
-	auto operator*() const -> T& {
-		return *_ptr;
-	}
-	auto operator->() const -> T* {
-		return _ptr;
-	}
-	auto operator++() -> FooInputIterator& {
-		++_ptr;
-		return *this;
-	}
-	auto operator++(int) -> FooInputIterator {
-		auto tmp = *this;
-		++*this;
-		return tmp;
-	}
-	auto operator--() -> FooInputIterator& {
-		--_ptr;
-		return *this;
-	}
-	auto operator--(int) -> FooInputIterator {
-		auto tmp = *this;
-		--*this;
-		return tmp;
-	}
-
-	operator difference_type() const noexcept {
-		return reinterpret_cast<difference_type>(_ptr);
-	}
-
-	auto operator=(const FooInputIterator&) -> FooInputIterator& = default;
-	auto operator=(FooInputIterator&&) noexcept -> FooInputIterator& = default;
-
-	friend auto operator!=(FooInputIterator const& a, FooInputIterator const& b) {
-		return a._ptr != b._ptr;
-	}
-	friend auto operator==(FooInputIterator const& a, FooInputIterator const& b) {
-		return a._ptr == b._ptr;
-	}
-	friend auto operator-(FooInputIterator const& a, FooInputIterator const& b) {
-		return FooInputIterator{reinterpret_cast<T*>(a._ptr - b._ptr)};
-	}
-};
-
 TEST_CASE("vector operation > insert", "[vector]") {
 	
 	SECTION("insert_single") {
@@ -109,7 +42,7 @@ TEST_CASE("vector operation > insert", "[vector]") {
 
 				// constexpr => copied
 				std::string x = "asdf";
-				ita = va.insert(va.cbegin() + i, x);
+				ita = va.insert(va.cbegin() + std::ptrdiff_t(i), x);
 				itb = vb.insert(vb.cbegin() + std::ptrdiff_t(i), x);
 				REQUIRE(*ita == x);
 				*ita += 'g';
@@ -170,8 +103,8 @@ TEST_CASE("vector operation > insert", "[vector]") {
 				Counter::Obj(14, counts),
 		}};
 
-		auto it_begin = FooInputIterator<Counter::Obj>(data.data());
-		auto it_end = FooInputIterator<Counter::Obj>(data.data() + data.size());
+		auto it_begin = data.begin();
+		auto it_end = data.end();
 
 		counts("before insert");
 		assert_eq(va, vb);

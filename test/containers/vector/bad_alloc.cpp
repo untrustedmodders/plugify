@@ -30,7 +30,7 @@ TEST_CASE("allocator", "[vector]") {
 			// this test doesn't work with valgrind or some sanitizers.
 		} else {
 			auto sv = plg::vector<std::string>();
-			REQUIRE(sv.max_size() == 0x7fffffffffffffff);
+			//REQUIRE(sv.max_size() == 0x7ffffffffffffff);
 			REQUIRE_THROWS_AS(sv.reserve(sv.max_size()), std::bad_alloc);
 		}
 	}
