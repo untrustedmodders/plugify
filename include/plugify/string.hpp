@@ -206,7 +206,6 @@ namespace plg {
 	class basic_string {
 	private:
 		using allocator_traits = std::allocator_traits<Allocator>;
-		using sview_type = std::basic_string_view<Char, Traits>;
 	public:
 		using traits_type = Traits;
 		using value_type = typename traits_type::char_type;
@@ -221,6 +220,7 @@ namespace plg {
 		using const_iterator = const_pointer;
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+		using sview_type = std::basic_string_view<Char, Traits>;
 
 		constexpr static size_type npos = static_cast<size_t>(-1);
 
