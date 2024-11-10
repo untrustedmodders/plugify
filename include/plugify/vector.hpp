@@ -322,16 +322,7 @@ namespace plg {
 	}
 
 	namespace detail {
-		//template<typename T>
-		//[[nodiscard]] constexpr T align_up(T val, T align) { return val + (align - (val % align)) % align; }
-
-		template<std::forward_iterator InputIterator, typename... Args>
-		constexpr void construct(InputIterator first, InputIterator last, Args&&... args) {
-			while (first != last) {
-				std::construct_at(first, std::forward<Args>(args)...);
-				++first;
-			}
-		}
+		struct initialized_value_tag {};
 
 #if PLUGIFY_VECTOR_CONTAINERS_RANGES
 		template<typename Range, typename Type>
@@ -421,25 +412,33 @@ namespace plg {
 		}
 
 		template<typename F>
-		constexpr void construct_at(const F& construct) {
+		constexpr void emplace_at_end(const F& construct) {
 			if (is_full()) {
 				reallocate(calculate_new_capacity(), construct);
 			} else {
-				construct(data());
+				construct(_begin);
 			}
 		}
 
-		template<typename... Args>
-		constexpr void resize_to(size_type count, Args&&... args) {
+		template<typename V>
+		constexpr void resize_to(size_type count, const V& value) {
 			if (count < size()) {
 				std::destroy(_begin + count, _end);
 				_end = _begin + count;
 			} else if (count > size()) {
 				const size_type old_size = size();
+				auto construct = [&](pointer const data) {
+					if constexpr (std::is_same_v<V, T>) {
+						std::uninitialized_fill(data + old_size, data + count, value);
+					} else {
+						std::uninitialized_value_construct(data + old_size, data + count);
+					}
+				};
 				if (count > capacity()) {
-					reallocate(count);
+					reallocate(count, construct);
+				} else {
+					construct(_begin);
 				}
-				detail::construct(_begin + old_size, _begin + count, std::forward<Args>(args)...);
 				_end = _begin + count;
 			}
 		}
@@ -570,7 +569,7 @@ namespace plg {
 						allocator_traits::deallocate(_allocator, _begin, capacity());
 					}
 				}
-				_allocator = std::move(other._allocator);
+				_allocator = other.get_allocator();
 			}
 
 			if constexpr (allocator_traits::propagate_on_container_move_assignment::value || allocator_traits::is_always_equal::value) {
@@ -798,7 +797,7 @@ namespace plg {
 					pointer const old_position = _begin + position_distance;
 					std::uninitialized_move(_begin, old_position, new_begin);
 					pointer const new_position = new_begin + position_distance;
-					detail::construct(new_position, new_position + count, value);
+					std::uninitialized_fill_n(new_position, count, value);
 					std::uninitialized_move(old_position, _end, new_position + count);
 					std::destroy(_begin, _end);
 					allocator_traits::deallocate(_allocator, _begin, capacity());
@@ -807,8 +806,7 @@ namespace plg {
 					_capacity = _end;
 				} else {
 					pointer const pointer_position = _begin + position_distance;
-					//std::move_backward(pointer_position, _end, _end + count);
-					std::fill_n(pointer_position, count, value);
+					std::uninitialized_fill_n(_end, count, value);
 					_end += count;
 					std::rotate(pointer_position, _end - count, _end);
 				}
@@ -839,8 +837,7 @@ namespace plg {
 					_capacity = _end;
 				} else {
 					pointer const pointer_position = _begin + position_distance;
-					//std::move_backward(pointer_position, _end, _end + count);
-					std::copy(first, last, pointer_position);
+					std::uninitialized_copy(first, last, _end);
 					_end += count;
 					std::rotate(pointer_position, _end - count, _end);
 				}
@@ -884,7 +881,6 @@ namespace plg {
 					_capacity = _begin + new_capacity;
 				} else {
 					pointer const pointer_position = _begin + position_distance;
-					//std::move_backward(pointer_position, _end, _end + 1);
 					std::construct_at(_end, std::forward<Args>(args)...);
 					++_end;
 					std::rotate(pointer_position, _end - 1, _end);
@@ -896,7 +892,6 @@ namespace plg {
 		constexpr iterator erase(const_iterator position) {
 			iterator nonconst_position = const_iterator_cast(position);
 			if (nonconst_position + 1 != end()) {
-				//std::move(nonconst_position + 1, end(), nonconst_position);
 				std::rotate(nonconst_position, nonconst_position + 1, end());
 			}
 			--_end;
@@ -910,7 +905,6 @@ namespace plg {
 			iterator nonconst_last = const_iterator_cast(last);
 			if (nonconst_first != nonconst_last) {
 				if (nonconst_last != end()) {
-					//std::move(nonconst_last, end(), nonconst_first);
 					std::rotate(nonconst_first, nonconst_last, end());
 				}
 				_end = nonconst_first.base() + static_cast<size_type>(end() - nonconst_last);
@@ -922,7 +916,7 @@ namespace plg {
 		constexpr void push_back(const T& value) {
 			const size_type sz = size();
 			_PLUGIFY_VECTOR_ASSERT(sz + 1 <= max_size(), "plg::vector::push_back(): resulted vector size would exceed max_size()", std::length_error);
-			construct_at([&](pointer const data) {
+			emplace_at_end([&](pointer const data) {
 				std::construct_at(data + sz, value);
 			});
 			++_end;
@@ -931,7 +925,7 @@ namespace plg {
 		constexpr void push_back(T&& value) {
 			const size_type sz = size();
 			_PLUGIFY_VECTOR_ASSERT(sz + 1 <= max_size(), "plg::vector::push_back(): resulted vector size would exceed max_size()", std::length_error);
-			construct_at([&](pointer const data) {
+			emplace_at_end([&](pointer const data) {
 				std::construct_at(data + sz, std::move(value));
 			});
 			++_end;
@@ -941,7 +935,7 @@ namespace plg {
 		constexpr reference emplace_back(Args&&... args) {
 			const size_type sz = size();
 			_PLUGIFY_VECTOR_ASSERT(sz + 1 <= max_size(), "plg::vector::emplace_back(): resulted vector size would exceed max_size()", std::length_error);
-			construct_at([&](pointer const data) {
+			emplace_at_end([&](pointer const data) {
 				std::construct_at(data + sz, std::forward<Args>(args)...);
 			});
 			++_end;
@@ -956,7 +950,7 @@ namespace plg {
 
 		constexpr void resize(size_type count) {
 			_PLUGIFY_VECTOR_ASSERT(count <= max_size(), "plg::vector::resize(): allocated memory size would exceed max_size()", std::length_error);
-			resize_to(count);
+			resize_to(count, detail::initialized_value_tag{});
 		}
 
 		constexpr void resize(size_type count, const T& value) {

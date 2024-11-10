@@ -627,7 +627,7 @@ namespace plg {
 			internal_assign(str.data(), len);
 		}
 		constexpr basic_string(const basic_string& str)
-			: basic_string(str, Allocator()) {}
+			: basic_string(str, str.get_allocator()) {}
 
 		constexpr basic_string(basic_string&& str) noexcept(std::is_nothrow_move_constructible<Allocator>::value)
 			: _allocator(std::move(str._allocator)), _storage(std::move(str._storage)) {
