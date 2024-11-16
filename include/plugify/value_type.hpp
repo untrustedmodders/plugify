@@ -113,20 +113,20 @@ namespace plugify {
 		static constexpr std::string_view Double = "double";
 		static constexpr std::string_view Function = "function";
 		static constexpr std::string_view String = "string";
-		static constexpr std::string_view ArrayBool = "bool*";
-		static constexpr std::string_view ArrayChar8 = "char8*";
-		static constexpr std::string_view ArrayChar16 = "char16*";
-		static constexpr std::string_view ArrayInt8 = "int8*";
-		static constexpr std::string_view ArrayInt16 = "int16*";
-		static constexpr std::string_view ArrayInt32 = "int32*";
-		static constexpr std::string_view ArrayInt64 = "int64*";
-		static constexpr std::string_view ArrayUInt8 = "uint8*";
-		static constexpr std::string_view ArrayUInt16 = "uint16*";
-		static constexpr std::string_view ArrayUInt32 = "uint32*";
-		static constexpr std::string_view ArrayUInt64 = "uint64*";
-		static constexpr std::string_view ArrayFloat = "float*";
-		static constexpr std::string_view ArrayDouble = "double*";
-		static constexpr std::string_view ArrayString = "string*";
+		static constexpr std::string_view ArrayBool = "bool[]";
+		static constexpr std::string_view ArrayChar8 = "char8[]";
+		static constexpr std::string_view ArrayChar16 = "char16[]";
+		static constexpr std::string_view ArrayInt8 = "int8[]";
+		static constexpr std::string_view ArrayInt16 = "int16[]";
+		static constexpr std::string_view ArrayInt32 = "int32[]";
+		static constexpr std::string_view ArrayInt64 = "int64[]";
+		static constexpr std::string_view ArrayUInt8 = "uint8[]";
+		static constexpr std::string_view ArrayUInt16 = "uint16[]";
+		static constexpr std::string_view ArrayUInt32 = "uint32[]";
+		static constexpr std::string_view ArrayUInt64 = "uint64[]";
+		static constexpr std::string_view ArrayFloat = "float[]";
+		static constexpr std::string_view ArrayDouble = "double[]";
+		static constexpr std::string_view ArrayString = "string[]";
 		static constexpr std::string_view Vector2 = "vec2";
 		static constexpr std::string_view Vector3 = "vec3";
 		static constexpr std::string_view Vector4 = "vec4";
@@ -134,10 +134,10 @@ namespace plugify {
 		static constexpr std::string_view Invalid = "invalid";
 #if INTPTR_MAX == INT32_MAX
 		static constexpr std::string_view Pointer = "ptr32";
-		static constexpr std::string_view ArrayPointer = "ptr32*";
+		static constexpr std::string_view ArrayPointer = "ptr32[]";
 #elif INTPTR_MAX == INT64_MAX
 		static constexpr std::string_view Pointer = "ptr64";
-		static constexpr std::string_view ArrayPointer = "ptr64*";
+		static constexpr std::string_view ArrayPointer = "ptr64[]";
 #else
 		#error "Environment not 32 or 64-bit."
 #endif
