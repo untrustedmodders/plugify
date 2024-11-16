@@ -570,6 +570,23 @@ TEST_CASE("vector", "[vector]") {
 		}
 		{
 			vint vec({ 1, 2, 3, 4, 5, 6 });
+			vec.reserve(12);
+			auto it = vec.insert(vec.begin(), vec.begin() + 3, vec.begin() + 5);
+
+			REQUIRE(8 == vec.size());
+			REQUIRE(4 == *it);
+
+			REQUIRE(4 == vec.at(0));
+			REQUIRE(5 == vec.at(1));
+			REQUIRE(1 == vec.at(2));
+
+			REQUIRE(2 == vec.at(3));
+			REQUIRE(3 == vec.at(4));
+			REQUIRE(4 == vec.at(5));
+			REQUIRE(5 == vec.at(6));
+		}
+		{
+			vint vec({ 1, 2, 3, 4, 5, 6 });
 			auto it = vec.insert(vec.begin(), vec.begin(), vec.end());
 
 			REQUIRE(12 == vec.size());
