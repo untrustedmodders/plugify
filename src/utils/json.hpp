@@ -172,6 +172,7 @@ struct glz::meta<plugify::Property> {
 	static constexpr auto value = object(
 			"type", &T::type,
 			"name", skip{},
+			"description", skip{},
 			"ref", &T::ref,
 			"prototype", &T::prototype
 	);
@@ -182,6 +183,7 @@ struct glz::meta<plugify::Method> {
 	using T = plugify::Method;
 	static constexpr auto value = object(
 			"name", &T::name,
+			"group", skip{},
 			"description", skip{},
 			"funcName", &T::funcName,
 			"callConv", &T::callConv,
