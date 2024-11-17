@@ -253,8 +253,9 @@ To navigate it with your favorite browser:
 
 The same version is also available [online](https://untrustedmodders.github.io/plugify)
 for the latest release, that is the last stable tag.<br/>
-Moreover, there exists a [wiki](https://untrustedmodders.github.io/) dedicated
+There is also a [wiki](https://untrustedmodders.github.io/) page dedicated
 to the project where users can find all related documentation pages.
+Additionally, we offer an online documentation [generator](https://untrustedmodders.github.io/plugify-generator/) that allows you to easily create documentation for your plugin's manifest file.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
