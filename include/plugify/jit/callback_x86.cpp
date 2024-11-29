@@ -63,8 +63,10 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	log.addFlags(kFormatFlags);
 	code.setLogger(&log);*/
 
+#if PLUGIFY_IS_RELEASE
 	// too small to really need it
 	func->frame().resetPreservedFP();
+#endif
 
 	// map argument slots to registers, following abi.
 	std::vector<asmjit::x86::Reg> argRegisters;

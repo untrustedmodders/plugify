@@ -324,17 +324,7 @@ elseif(SWITCH)
     set(PLUGIFY_PLATFORM "switch")
 endif()
 
-set(PLUGIFY_ARCH_BITS $<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,64,32>)
-set(PLUGIFY_COMPILER_MSVC $<CXX_COMPILER_ID:MSVC>)
-set(PLUGIFY_COMPILER_CLANG $<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>)
-set(PLUGIFY_COMPILER_GCC $<CXX_COMPILER_ID:GNU>)
-set(PLUGIFY_COMPILER_INTEL $<CXX_COMPILER_ID:Intel>)
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-        PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
-)
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE
+set(PLUGIFY_COMPILE_DEFINITIONS
         PLUGIFY_PLATFORM="${PLUGIFY_PLATFORM}"
         PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
         PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
@@ -344,15 +334,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_PLATFORM_ORBIS=$<BOOL:${ORBIS}>
         PLUGIFY_PLATFORM_PROSPERO=$<BOOL:${PROSPERO}>
         PLUGIFY_PLATFORM_SWITCH=$<BOOL:${SWITCH}>
-        PLUGIFY_ARCH_BITS=${PLUGIFY_ARCH_BITS}
+        PLUGIFY_ARCH_BITS=$<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,64,32>
         PLUGIFY_ARCH_ARM=$<BOOL:${PLUGIFY_USE_ARM}>
         PLUGIFY_IS_BIG_ENDIAN=$<STREQUAL:${CMAKE_CXX_BYTE_ORDER},BIG_ENDIAN>
         PLUGIFY_IS_DEBUG=$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>
-
-        PLUGIFY_DOWNLOADER=$<BOOL:${PLUGIFY_DOWNLOADER}>
-        PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
-        PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
-        PLUGIFY_SEPARATE_SOURCE_FILES=0
+        PLUGIFY_IS_RELEASE=$<STREQUAL:${CMAKE_BUILD_TYPE},Release>
 
         PLUGIFY_COMPILED_COMPILER="${CMAKE_CXX_COMPILER_ID}"
         PLUGIFY_COMPILED_SYSTEM="${CMAKE_SYSTEM}"
@@ -365,10 +351,22 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PLUGIFY_VERSION_PATCH=${PROJECT_VERSION_PATCH}
         PLUGIFY_VERSION_TWEAK=${PROJECT_VERSION_TWEAK}
 
-        PLUGIFY_COMPILER_MSVC=${PLUGIFY_COMPILER_MSVC}
-        PLUGIFY_COMPILER_CLANG=${PLUGIFY_COMPILER_CLANG}
-        PLUGIFY_COMPILER_GCC=${PLUGIFY_COMPILER_GCC}
-        PLUGIFY_COMPILER_INTEL=${PLUGIFY_COMPILER_INTEL}
+        PLUGIFY_COMPILER_MSVC=$<CXX_COMPILER_ID:MSVC>
+        PLUGIFY_COMPILER_CLANG=$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>
+        PLUGIFY_COMPILER_GCC=$<CXX_COMPILER_ID:GNU>
+        PLUGIFY_COMPILER_INTEL=$<CXX_COMPILER_ID:Intel>
+)
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC
+        PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
+)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+        ${PLUGIFY_COMPILE_DEFINITIONS}
+        PLUGIFY_DOWNLOADER=$<BOOL:${PLUGIFY_DOWNLOADER}>
+        PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
+        PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
+        PLUGIFY_SEPARATE_SOURCE_FILES=0
 )
 
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
@@ -388,18 +386,18 @@ endif()
 # Tools
 if(PLUGIFY_BUILD_JIT)
     if(PLUGIFY_USE_ARM)
-        set(PLUGIFY_JIT_SOURCES 
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_arm.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_arm.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_x86.cpp"
+        set(PLUGIFY_JIT_SOURCES
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_arm.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_arm.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_arm.cpp"
         )
     else()
-        set(PLUGIFY_JIT_SOURCES 
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_x86.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_x86.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_x86.cpp"
+        set(PLUGIFY_JIT_SOURCES
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_x86.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_x86.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_x86.cpp"
         )
-    endif()    
+    endif()
     add_library(${PROJECT_NAME}-jit OBJECT ${PLUGIFY_JIT_SOURCES})
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-jit ALIAS ${PROJECT_NAME}-jit)
     target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -418,22 +416,8 @@ if(PLUGIFY_BUILD_JIT)
         target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion -Wno-deprecated-enum-enum-conversion)
     endif()
     target_compile_definitions(${PROJECT_NAME}-jit PRIVATE
-            PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
-            PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
-            PLUGIFY_PLATFORM_LINUX=$<BOOL:${LINUX}>
-            PLUGIFY_PLATFORM_ANDROID=$<BOOL:${ANDROID}>
-            PLUGIFY_PLATFORM_BSD=$<BOOL:${BSD}>
-            PLUGIFY_PLATFORM_ORBIS=$<BOOL:${ORBIS}>
-            PLUGIFY_PLATFORM_PROSPERO=$<BOOL:${PROSPERO}>
-            PLUGIFY_PLATFORM_SWITCH=$<BOOL:${SWITCH}>
-            PLUGIFY_ARCH_BITS=${PLUGIFY_ARCH_BITS}
-            PLUGIFY_ARCH_ARM=$<BOOL:${PLUGIFY_USE_ARM}>
+            ${PLUGIFY_COMPILE_DEFINITIONS}
             PLUGIFY_SEPARATE_SOURCE_FILES=1
-
-            PLUGIFY_COMPILER_MSVC=${PLUGIFY_COMPILER_MSVC}
-            PLUGIFY_COMPILER_CLANG=${PLUGIFY_COMPILER_CLANG}
-            PLUGIFY_COMPILER_GCC=${PLUGIFY_COMPILER_GCC}
-            PLUGIFY_COMPILER_INTEL=${PLUGIFY_COMPILER_INTEL}
     )
     target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_BINARY_DIR}/exports)
     if(LINUX)
@@ -448,22 +432,8 @@ if(PLUGIFY_BUILD_ASSEMBLY)
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-assembly ALIAS ${PROJECT_NAME}-assembly)
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_compile_definitions(${PROJECT_NAME}-assembly PRIVATE
-            PLUGIFY_PLATFORM_WINDOWS=$<BOOL:${WIN32}>
-            PLUGIFY_PLATFORM_APPLE=$<BOOL:${APPLE}>
-            PLUGIFY_PLATFORM_LINUX=$<BOOL:${LINUX}>
-            PLUGIFY_PLATFORM_ANDROID=$<BOOL:${ANDROID}>
-            PLUGIFY_PLATFORM_BSD=$<BOOL:${BSD}>
-            PLUGIFY_PLATFORM_ORBIS=$<BOOL:${ORBIS}>
-            PLUGIFY_PLATFORM_PROSPERO=$<BOOL:${PROSPERO}>
-            PLUGIFY_PLATFORM_SWITCH=$<BOOL:${SWITCH}>
-            PLUGIFY_ARCH_BITS=${PLUGIFY_ARCH_BITS}
-            PLUGIFY_ARCH_ARM=$<BOOL:${PLUGIFY_USE_ARM}>
+            ${PLUGIFY_COMPILE_DEFINITIONS}
             PLUGIFY_SEPARATE_SOURCE_FILES=1
-
-            PLUGIFY_COMPILER_MSVC=${PLUGIFY_COMPILER_MSVC}
-            PLUGIFY_COMPILER_CLANG=${PLUGIFY_COMPILER_CLANG}
-            PLUGIFY_COMPILER_GCC=${PLUGIFY_COMPILER_GCC}
-            PLUGIFY_COMPILER_INTEL=${PLUGIFY_COMPILER_INTEL}
     )
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_BINARY_DIR}/exports)
     if(LINUX)

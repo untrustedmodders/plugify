@@ -46,8 +46,10 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	log.addFlags(kFormatFlags);
 	code.setLogger(&log);*/
 
+#if PLUGIFY_IS_RELEASE
 	// too small to really need it
 	func->frame().resetPreservedFP();
+#endif
 
 	asmjit::a64::Gp paramImm = cc.newGpx();
 	func->setArg(0, paramImm);
