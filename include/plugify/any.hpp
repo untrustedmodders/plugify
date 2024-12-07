@@ -1,6 +1,6 @@
 #pragma once
 
-#include <plugifynumerics.hpp>
+#include <plugify/numerics.hpp>
 #include <plugify/string.hpp>
 #include <plugify/variant.hpp>
 #include <plugify/vector.hpp>
