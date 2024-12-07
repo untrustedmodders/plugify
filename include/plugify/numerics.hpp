@@ -8,6 +8,7 @@ namespace plg {
 
 #if defined(__clang__)
 	PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
+	PLUGIFY_WARN_IGNORE("-Wnested-anon-types")
 #elif defined(__GNUC__)
 	PLUGIFY_WARN_IGNORE("-Wpedantic")
 #elif defined(_MSC_VER)
@@ -59,18 +60,6 @@ namespace plg {
 				float data[4][4];
 			};
 		};
-
-		/*struct vec {
-			[[maybe_unused]] uint8_t padding[sizeof(vector<int>)]{};
-		};
-
-		struct str {
-			[[maybe_unused]] uint8_t padding[sizeof(string)]{};
-		};
-
-		struct var {
-			[[maybe_unused]] uint8_t padding[sizeof(any)]{};
-		};*/
 	}
 
 	PLUGIFY_WARN_POP()
@@ -96,17 +85,4 @@ namespace plg {
 		}
 		return true;
 	}
-
-	/*[[nodiscard]] inline plg::str ReturnStr(plg::string str) {
-		plg::str ret{};
-		std::construct_at(reinterpret_cast<plg::string*>(&ret), std::move(str));
-		return ret;
-	}
-
-	template<typename T>
-	[[nodiscard]] inline plg::vec ReturnVec(plg::vector<T> vec) {
-		plg::vec ret{};
-		std::construct_at(reinterpret_cast<plg::vector<T>*>(&ret), std::move(vec));
-		return ret;
-	}*/
 } // namespace plg

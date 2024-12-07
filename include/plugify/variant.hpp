@@ -909,6 +909,8 @@ namespace plg {
 	
 		template<unsigned Idx, class... Args>
 		constexpr void do_emplace_no_dtor(Args&&... args) {
+			_current = static_cast<index_type>(Idx);
+
 			auto* ptr = detail::addressof(unsafe_get<Idx>());
 
 #ifdef PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE
@@ -917,8 +919,6 @@ namespace plg {
 #else
 			std::construct_at(ptr, PLG_FWD(args)...);
 #endif // PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE
-
-			_current = static_cast<index_type>(Idx);
 		}
 	
 		// destroy the current elem IFF not valueless

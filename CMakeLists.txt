@@ -417,6 +417,7 @@ if(PLUGIFY_BUILD_JIT)
     endif()
     target_compile_definitions(${PROJECT_NAME}-jit PRIVATE
             ${PLUGIFY_COMPILE_DEFINITIONS}
+            PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
             PLUGIFY_SEPARATE_SOURCE_FILES=1
     )
     target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_BINARY_DIR}/exports)
@@ -433,6 +434,7 @@ if(PLUGIFY_BUILD_ASSEMBLY)
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_compile_definitions(${PROJECT_NAME}-assembly PRIVATE
             ${PLUGIFY_COMPILE_DEFINITIONS}
+            PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
             PLUGIFY_SEPARATE_SOURCE_FILES=1
     )
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_BINARY_DIR}/exports)
