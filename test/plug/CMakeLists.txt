@@ -5,7 +5,7 @@ if(POLICY CMP0092)
 endif()
 
 
-project(plug)
+project(plug VERSION 1.0.0.0  DESCRIPTION "Plugify Sample App" HOMEPAGE_URL "https://github.com/untrustedmodders/plugify" LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -26,7 +26,7 @@ endif()
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS TEST_HAS_NO_EXCEPTIONS=1)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()

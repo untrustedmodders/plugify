@@ -1,4 +1,4 @@
-#include <plugify/vector.hpp>
+#include <plugifyvector.hpp>
 
 #include <string>
 

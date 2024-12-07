@@ -1,8 +1,8 @@
 #include <catch_amalgamated.hpp>
 
 #include <app/counter.hpp>
-#include <app/vec_tester.hpp>
-#include <plugify/vector.hpp>
+#include <app/vector_tester.hpp>
+#include <plugifyvector.hpp>
 
 #include <plugify/compat_format.hpp>
 

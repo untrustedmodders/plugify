@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-namespace plugify{
+namespace plugify {
 	/**
 	 * @class JitCall
 	 * @brief Class encapsulates architecture-, OS- and compiler-specific

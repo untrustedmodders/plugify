@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/string.hpp>
+#include <plugifystring.hpp>
 
 TEST_CASE("string operator > arithmetic > addition", "[string]") {
 

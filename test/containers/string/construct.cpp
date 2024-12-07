@@ -1,8 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <utility>
-
-#include <plugify/string.hpp>
+#include <plugifystring.hpp>
 
 TEST_CASE("string constructor", "[string]") {
 	 SECTION("string() noexcept") {

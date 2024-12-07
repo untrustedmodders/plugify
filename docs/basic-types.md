@@ -22,6 +22,7 @@ The following lists how the types are exposed to the C++ API.
 | double                     | double   | true  |
 | void*                      | function | false |
 | plg::string                | string   | true  |
+| plg::any                   | any      | true  |
 | plg::vector\<bool\>        | bool[]   | true  |
 | plg::vector\<char\>        | char8[]  | true  |
 | plg::vector\<char16_t\>    | char16[] | true  |
@@ -38,6 +39,7 @@ The following lists how the types are exposed to the C++ API.
 | plg::vector\<float\>       | float[]  | true  |
 | plg::vector\<double\>      | double[] | true  |
 | plg::vector\<plg::string\> | string[] | true  |
+| plg::vector\<plg::any\>    | any[]    | true  |
 | plg::vec2                  | vec2     | true  |
 | plg::vec3                  | vec3     | true  |
 | plg::vec4                  | vec4     | true  |

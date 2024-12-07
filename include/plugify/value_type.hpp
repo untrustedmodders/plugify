@@ -6,6 +6,8 @@
 #include <optional>
 #include <string_view>
 
+#include <plugifyany.hpp>
+
 namespace plugify {
 	/**
 	 * @enum ValueType
@@ -35,6 +37,7 @@ namespace plugify {
 
 		// Objects
 		String,
+		Any,
 
 		ArrayBool,
 		ArrayChar8,
@@ -51,6 +54,7 @@ namespace plugify {
 		ArrayFloat,
 		ArrayDouble,
 		ArrayString,
+		ArrayAny,
 
 		// Structs
 		Vector2,
@@ -76,10 +80,10 @@ namespace plugify {
 		_FloatEnd = Double,
 
 		_ObjectStart = String,
-		_ObjectEnd = ArrayString,
+		_ObjectEnd = ArrayAny,
 
 		_ArrayStart = ArrayBool,
-		_ArrayEnd = ArrayString,
+		_ArrayEnd = ArrayAny,
 
 		_StructStart = Vector2,
 		_StructEnd = Matrix4x4,
@@ -113,6 +117,7 @@ namespace plugify {
 		static constexpr std::string_view Double = "double";
 		static constexpr std::string_view Function = "function";
 		static constexpr std::string_view String = "string";
+		static constexpr std::string_view Any = "any";
 		static constexpr std::string_view ArrayBool = "bool[]";
 		static constexpr std::string_view ArrayChar8 = "char8[]";
 		static constexpr std::string_view ArrayChar16 = "char16[]";
@@ -127,6 +132,7 @@ namespace plugify {
 		static constexpr std::string_view ArrayFloat = "float[]";
 		static constexpr std::string_view ArrayDouble = "double[]";
 		static constexpr std::string_view ArrayString = "string[]";
+		static constexpr std::string_view ArrayAny = "any[]";
 		static constexpr std::string_view Vector2 = "vec2";
 		static constexpr std::string_view Vector3 = "vec3";
 		static constexpr std::string_view Vector4 = "vec4";
@@ -322,6 +328,14 @@ namespace plugify {
 		[[maybe_unused]] constexpr bool IsString(ValueType type) noexcept { return type == ValueType::String; }
 
 		/**
+		 * @brief Tests whether a given type is an any.
+		 *
+		 * @param type The type to test.
+		 * @return True if type is an any. False otherwise.
+		 */
+		[[maybe_unused]] constexpr bool IsAny(ValueType type) noexcept { return type == ValueType::Any; }
+
+		/**
 		 * @brief Tests whether a given type is an object of any size.
 		 *
 		 * @param type The type to test.
@@ -384,6 +398,7 @@ namespace plugify {
 				case ValueType::Double:        return ValueName::Double;
 				case ValueType::Function:      return ValueName::Function;
 				case ValueType::String:        return ValueName::String;
+				case ValueType::Any:           return ValueName::Any;
 				case ValueType::ArrayBool:     return ValueName::ArrayBool;
 				case ValueType::ArrayChar8:    return ValueName::ArrayChar8;
 				case ValueType::ArrayChar16:   return ValueName::ArrayChar16;
@@ -399,6 +414,7 @@ namespace plugify {
 				case ValueType::ArrayFloat:    return ValueName::ArrayFloat;
 				case ValueType::ArrayDouble:   return ValueName::ArrayDouble;
 				case ValueType::ArrayString:   return ValueName::ArrayString;
+				case ValueType::ArrayAny:      return ValueName::ArrayAny;
 				case ValueType::Vector2:       return ValueName::Vector2;
 				case ValueType::Vector3:       return ValueName::Vector2;
 				case ValueType::Vector4:       return ValueName::Vector3;
@@ -447,6 +463,8 @@ namespace plugify {
 				return ValueType::Function;
 			} else if (value == ValueName::String) {
 				return ValueType::String;
+			}  else if (value == ValueName::Any) {
+				return ValueType::Any;
 			} else if (value == ValueName::ArrayBool) {
 				return ValueType::ArrayBool;
 			} else if (value == ValueName::ArrayChar8) {
@@ -477,6 +495,8 @@ namespace plugify {
 				return ValueType::ArrayDouble;
 			} else if (value == ValueName::ArrayString) {
 				return ValueType::ArrayString;
+			}  else if (value == ValueName::ArrayAny) {
+				return ValueType::ArrayAny;
 			} else if (value == ValueName::Vector2) {
 				return ValueType::Vector2;
 			} else if (value == ValueName::Vector3) {
@@ -490,4 +510,43 @@ namespace plugify {
 		}
 	} // namespace ValueUtils
 
+	using plugify::ValueType;
+	static_assert(ValueType::Void == static_cast<ValueType>(plg::any::index_of<plg::none>));
+	static_assert(ValueType::Bool == static_cast<ValueType>(plg::any::index_of<bool>));
+	static_assert(ValueType::Char8 == static_cast<ValueType>(plg::any::index_of<char>));
+	static_assert(ValueType::Char16 == static_cast<ValueType>(plg::any::index_of<char16_t>));
+	static_assert(ValueType::Int8 == static_cast<ValueType>(plg::any::index_of<int8_t>));
+	static_assert(ValueType::Int16 == static_cast<ValueType>(plg::any::index_of<int16_t>));
+	static_assert(ValueType::Int32 == static_cast<ValueType>(plg::any::index_of<int32_t>));
+	static_assert(ValueType::Int64 == static_cast<ValueType>(plg::any::index_of<int64_t>));
+	static_assert(ValueType::UInt8 == static_cast<ValueType>(plg::any::index_of<uint8_t>));
+	static_assert(ValueType::UInt16 == static_cast<ValueType>(plg::any::index_of<uint16_t>));
+	static_assert(ValueType::UInt32 == static_cast<ValueType>(plg::any::index_of<uint32_t>));
+	static_assert(ValueType::UInt64 == static_cast<ValueType>(plg::any::index_of<uint64_t>));
+	static_assert(ValueType::Pointer == static_cast<ValueType>(plg::any::index_of<void*>));
+	static_assert(ValueType::Float == static_cast<ValueType>(plg::any::index_of<float>));
+	static_assert(ValueType::Double == static_cast<ValueType>(plg::any::index_of<double>));
+	static_assert(ValueType::Function == static_cast<ValueType>(plg::any::index_of<plg::function>));
+	static_assert(ValueType::String == static_cast<ValueType>(plg::any::index_of<plg::string>));
+	static_assert(ValueType::Any == static_cast<ValueType>(plg::any::index_of<plg::variant<plg::none>>));
+	static_assert(ValueType::ArrayBool == static_cast<ValueType>(plg::any::index_of<plg::vector<bool>>));
+	static_assert(ValueType::ArrayChar8 == static_cast<ValueType>(plg::any::index_of<plg::vector<char>>));
+	static_assert(ValueType::ArrayChar16 == static_cast<ValueType>(plg::any::index_of<plg::vector<char16_t>>));
+	static_assert(ValueType::ArrayInt8 == static_cast<ValueType>(plg::any::index_of<plg::vector<int8_t>>));
+	static_assert(ValueType::ArrayInt16 == static_cast<ValueType>(plg::any::index_of<plg::vector<int16_t>>));
+	static_assert(ValueType::ArrayInt32 == static_cast<ValueType>(plg::any::index_of<plg::vector<int32_t>>));
+	static_assert(ValueType::ArrayInt64 == static_cast<ValueType>(plg::any::index_of<plg::vector<int64_t>>));
+	static_assert(ValueType::ArrayUInt8 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint8_t>>));
+	static_assert(ValueType::ArrayUInt16 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint16_t>>));
+	static_assert(ValueType::ArrayUInt32 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint32_t>>));
+	static_assert(ValueType::ArrayUInt64 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint64_t>>));
+	static_assert(ValueType::ArrayPointer == static_cast<ValueType>(plg::any::index_of<plg::vector<void*>>));
+	static_assert(ValueType::ArrayFloat == static_cast<ValueType>(plg::any::index_of<plg::vector<float>>));
+	static_assert(ValueType::ArrayDouble == static_cast<ValueType>(plg::any::index_of<plg::vector<double>>));
+	static_assert(ValueType::ArrayString == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::string>>));
+	static_assert(ValueType::ArrayAny == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::variant<plg::none>>>));
+	static_assert(ValueType::Vector2 == static_cast<ValueType>(plg::any::index_of<plg::vec2>));
+	static_assert(ValueType::Vector3 == static_cast<ValueType>(plg::any::index_of<plg::vec3>));
+	static_assert(ValueType::Vector4 == static_cast<ValueType>(plg::any::index_of<plg::vec4>));
+	
 } // namespace plugify

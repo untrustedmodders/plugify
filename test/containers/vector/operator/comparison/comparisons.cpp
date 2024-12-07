@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/vector.hpp>
+#include <plugifyvector.hpp>
 
 #include <vector>
 
@@ -53,7 +53,7 @@ void test_equals(A& a, B& b) {
 	cmp(a, b, true, false);
 }
 
-TEST_CASE("vector operator == comparison > equal", "[vector]") {
+TEST_CASE("vector operator > comparison > equal", "[vector]") {
 	SECTION("equals_vec") {
 		auto a = plg::vector<uint64_t>();
 		auto b = plg::vector<uint64_t>();

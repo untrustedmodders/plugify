@@ -1,11 +1,11 @@
 #include "counter.hpp"
 
-#include <cstdlib>// for abort
+#include <cstdlib>      // for abort
 #include <iostream>
 #include <ostream>		// for ostream
 #include <stdexcept>	// for runtime_error
 #include <unordered_set>// for unordered_set
-#include <utility>		// for swap, pair
+#include <utility>	    // for swap, pair
 
 #define COUNTER_ENABLE_UNORDERED_SET 1
 

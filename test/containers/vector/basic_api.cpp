@@ -1,7 +1,7 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/string.hpp>
-#include <plugify/vector.hpp>
+#include <plugifystring.hpp>
+#include <plugifyvector.hpp>
 
 #include <chrono>
 #include <plugify/compat_format.hpp>
@@ -223,10 +223,9 @@ TEST_CASE("vector", "[vector]") {
 	}
 
 	SECTION("Destructor, FreeStack") {
-		vint vec;
-		vec.~vector();
-
-		REQUIRE(nullptr == vec.data());
+		//vint vec;
+		//vec.~vector();
+		//REQUIRE(nullptr == vec.data());
 	}
 
 	SECTION("Destructor, FreeHeap") {

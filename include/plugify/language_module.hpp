@@ -32,7 +32,7 @@ namespace plugify {
 	struct ErrorData {
 		//string error; ///< Description of the error.
 
-		std::array<char, 256> error{}; ///< Description of the error.
+		std::array<char, 255> error{}; ///< Description of the error.
 
 		ErrorData(std::string_view str) {
 			std::memcpy(error.data(), str.data(), std::min(str.length(), error.size() - 1));
