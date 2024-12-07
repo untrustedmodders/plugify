@@ -97,19 +97,19 @@ namespace plg {
 	private:
 		constexpr static auto _terminator = value_type();
 
-		_PLUGIFY_NO_UNIQUE_ADDRESS
+		PLUGIFY_NO_UNIQUE_ADDRESS
 		allocator_type _allocator;
 
-		_PLUGIFY_WARN_PUSH()
+		PLUGIFY_WARN_PUSH()
 
 #if defined(__clang__)
-		_PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
-		_PLUGIFY_WARN_IGNORE("-Wzero-length-array")
+		PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
+		PLUGIFY_WARN_IGNORE("-Wzero-length-array")
 #elif defined(__GNUC__)
-		_PLUGIFY_WARN_IGNORE("-Wpedantic")
+		PLUGIFY_WARN_IGNORE("-Wpedantic")
 #elif defined(_MSC_VER)
-		_PLUGIFY_WARN_IGNORE(4201)
-		_PLUGIFY_WARN_IGNORE(4200)
+		PLUGIFY_WARN_IGNORE(4201)
+		PLUGIFY_WARN_IGNORE(4200)
 #endif
 
 		template<typename CharT, std::size_t = sizeof(CharT)>
@@ -126,7 +126,7 @@ namespace plg {
 		// size must correspond to the last byte of long_data.cap, so we don't want the compiler to insert
 		// padding after size if sizeof(value_type) != 1; Also ensures both layouts are the same size.
 		struct sso_size : padding<value_type> {
-			_PLUGIFY_PACK(struct {
+			PLUGIFY_PACK(struct {
 				uint8_t spare_size : 7;
 				uint8_t is_long : 1;
 			});
@@ -138,7 +138,7 @@ namespace plg {
 		struct long_data {
 			pointer data;
 			size_type size;
-			_PLUGIFY_PACK(struct {
+			PLUGIFY_PACK(struct {
 				size_type cap : sizeof(size_type) * char_bit - 1;
 				size_type is_long : 1;
 			});
@@ -151,7 +151,7 @@ namespace plg {
 			sso_size size;
 		};
 
-		_PLUGIFY_WARN_POP()
+		PLUGIFY_WARN_POP()
 
 		static_assert(sizeof(short_data) == (sizeof(value_type) * (min_cap + 1)), "short has an unexpected size.");
 		static_assert(sizeof(short_data) == sizeof(long_data), "short and long layout structures must be the same size");
@@ -439,7 +439,7 @@ namespace plg {
 	public:
 		explicit constexpr basic_string(detail::uninitialized_size_tag, size_type size, const Allocator& allocator)
 			: _allocator(allocator) {
-			_PLUGIFY_ASSERT(size <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			if (fits_in_sso(size))
 				short_init();
 			else {
@@ -459,15 +459,15 @@ namespace plg {
 
 		constexpr basic_string(size_type count, value_type ch, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
-			_PLUGIFY_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(ch, count);
 		}
 
 		constexpr basic_string(const basic_string& str, size_type pos, size_type count, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
-			_PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
 			auto len = std::min(count, str.size() - pos);
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(str.data() + pos, len);
 		}
 		constexpr basic_string(const basic_string& str, size_type pos, const Allocator& allocator = Allocator())
@@ -475,7 +475,7 @@ namespace plg {
 
 		constexpr basic_string(const value_type* str, size_type count, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
-			_PLUGIFY_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(str, count);
 		}
 
@@ -486,14 +486,14 @@ namespace plg {
 		constexpr basic_string(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
 			auto len = size_type(std::distance(first, last));
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(const_pointer(first), len);
 		}
 
 		constexpr basic_string(const basic_string& str, const Allocator& allocator)
 			: _allocator(allocator) {
 			auto len = str.length();
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(str.data(), len);
 		}
 		constexpr basic_string(const basic_string& str)
@@ -522,7 +522,7 @@ namespace plg {
 		constexpr basic_string(std::initializer_list<value_type> list, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
 			auto len = list.size();
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(const_pointer(list.begin()), len);
 		}
 
@@ -531,10 +531,10 @@ namespace plg {
 		constexpr basic_string(const Type& t, size_type pos, size_type count, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
 			auto sv = sview_type(t);
-			_PLUGIFY_ASSERT(pos <= sv.length(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= sv.length(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
 			auto ssv = sv.substr(pos, count);
 			auto len = ssv.length();
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(ssv.data(), len);
 		}
 
@@ -545,13 +545,13 @@ namespace plg {
 			: _allocator(allocator) {
 			sview_type sv(t);
 			auto len = sv.length();
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(sv.data(), len);
 		}
 
 		constexpr basic_string(basic_string&& str, size_type pos, size_type count, const Allocator& allocator = Allocator())
 			: basic_string(std::move(str), allocator) {
-			_PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
 			erase(pos, count);
 		}
 
@@ -607,13 +607,13 @@ namespace plg {
 #endif
 
 		constexpr basic_string& assign(size_type count, value_type ch) {
-			_PLUGIFY_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
 			internal_assign(ch, count);
 			return *this;
 		}
 
 		constexpr basic_string& assign(const basic_string& str, size_type pos, size_type count = npos) {
-			_PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::assign(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::assign(): pos out of range", std::out_of_range);
 			internal_assign(str.data(), std::min(count, str.size() - pos));
 			return *this;
 		}
@@ -670,7 +670,7 @@ namespace plg {
 		}
 
 		constexpr basic_string& assign(const value_type* str, size_type count) {
-			_PLUGIFY_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
 			internal_assign(str, count);
 			return *this;
 		}
@@ -682,14 +682,14 @@ namespace plg {
 		template<std::input_iterator InputIterator>
 		constexpr basic_string& assign(InputIterator first, InputIterator last) {
 			auto len = static_cast<size_type>(std::distance(first, last));
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
 			internal_assign(const_pointer(first), len);
 			return *this;
 		}
 
 		constexpr basic_string& assign(std::initializer_list<value_type> list) {
 			auto len = list.size();
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
 			internal_assign(const_pointer(list.begin()), len);
 			return *this;
 		}
@@ -708,7 +708,7 @@ namespace plg {
 		constexpr basic_string& assign(const Type& t, size_type pos, size_type count = npos) {
 			auto sv = sview_type(t).substr(pos, count);
 			auto len = sv.length();
-			_PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
 			return assign(sv.data(), len);
 		}
 
@@ -716,7 +716,7 @@ namespace plg {
 		template<detail::string_compatible_range<Char> Range>
 		constexpr basic_string& assign_range(Range&& range) {
 			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
-			_PLUGIFY_ASSERT(str.size() <= max_size(), "plg::basic_string::assign_range(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(str.size() <= max_size(), "plg::basic_string::assign_range(): resulted string size would exceed max_size()", std::length_error);
 			return assign(std::move(str));
 		}
 #endif // PLUGIFY_STRING_CONTAINERS_RANGES
@@ -734,32 +734,32 @@ namespace plg {
 		}
 
 		[[nodiscard]] constexpr reference at(size_type pos) {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
 			return data()[pos];
 		}
 
 		[[nodiscard]] constexpr const_reference at(size_type pos) const {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::at(): pos out of range", std::out_of_range);
 			return data()[pos];
 		}
 
 		[[nodiscard]] constexpr reference front() {
-			_PLUGIFY_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
 			return data()[0];
 		}
 
 		[[nodiscard]] constexpr const_reference front() const {
-			_PLUGIFY_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "plg::basic_string::front(): vector is empty", std::length_error);
 			return data()[0];
 		}
 
 		[[nodiscard]] constexpr reference back() {
-			_PLUGIFY_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
 			return data()[size() - 1];
 		}
 
 		[[nodiscard]] constexpr const_reference back() const {
-			_PLUGIFY_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "plg::basic_string::back(): vector is empty", std::length_error);
 			return data()[size() - 1];
 		}
 
@@ -854,7 +854,7 @@ namespace plg {
 		}
 
 		constexpr void reserve(size_type cap) {
-			_PLUGIFY_ASSERT(cap <= max_size(), "plg::basic_string::reserve(): allocated memory size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(cap <= max_size(), "plg::basic_string::reserve(): allocated memory size would exceed max_size()", std::length_error);
 			if (cap <= capacity())
 				return;
 
@@ -881,38 +881,38 @@ namespace plg {
 		}
 
 		constexpr basic_string& insert(size_type pos, size_type count, value_type ch) {
-			_PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
 			insert(std::next(cbegin(), pos), count, ch);
 			return *this;
 		}
 
 		constexpr basic_string& insert(size_type pos, const value_type* str) {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
 			auto len = Traits::length(str);
-			_PLUGIFY_ASSERT(size() + len <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + len <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			internal_insert(pos, str, len);
 			return *this;
 		}
 
 		constexpr basic_string& insert(size_type pos, const value_type* str, size_type count) {
-			_PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
 			internal_insert(pos, str, count);
 			return *this;
 		}
 
 		constexpr basic_string& insert(size_type pos, const basic_string& str) {
-			_PLUGIFY_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
 			internal_insert(pos, const_pointer(str.data()), str.size());
 			return *this;
 		}
 
 		constexpr basic_string& insert(size_type pos, const basic_string& str, size_type pos_str, size_type count = npos) {
-			_PLUGIFY_ASSERT(pos <= size() && pos_str <= str.size(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size() && pos_str <= str.size(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
 			count = std::min(count, str.length() - pos_str);
-			_PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			return insert(pos, str.data() + pos_str, count);
 		}
 
@@ -921,7 +921,7 @@ namespace plg {
 		}
 
 		constexpr iterator insert(const_iterator pos, size_type count, value_type ch) {
-			_PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			auto spos = std::distance(cbegin(), pos);
 			internal_insert(spos, ch, count);
 			return std::next(begin(), spos);
@@ -931,13 +931,13 @@ namespace plg {
 		constexpr iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
 			auto spos = std::distance(cbegin(), pos);
 			auto len = static_cast<size_type>(std::distance(first, last));
-			_PLUGIFY_ASSERT(size() + len <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + len <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			internal_insert(spos, const_pointer(first), len);
 			return std::next(begin(), spos);
 		}
 
 		constexpr iterator insert(const_iterator pos, std::initializer_list<value_type> list) {
-			_PLUGIFY_ASSERT(size() + list.size() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + list.size() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			auto spos = std::distance(cbegin(), pos);
 			internal_insert(spos, const_pointer(list.begin()), list.size());
 			return std::next(begin(), spos);
@@ -947,9 +947,9 @@ namespace plg {
 			requires(std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& insert(size_type pos, const Type& t) {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
 			sview_type sv(t);
-			_PLUGIFY_ASSERT(size() + sv.length() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + sv.length() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			internal_insert(pos, const_pointer(sv.data()), sv.length());
 			return *this;
 		}
@@ -959,9 +959,9 @@ namespace plg {
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& insert(size_type pos, const Type& t, size_type pos_str, size_type count = npos) {
 			auto sv = sview_type(t);
-			_PLUGIFY_ASSERT(pos <= size() && pos_str <= sv.length(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size() && pos_str <= sv.length(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
 			auto ssv = sv.substr(pos_str, count);
-			_PLUGIFY_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			internal_insert(pos, const_pointer(ssv.data()), ssv.length());
 			return *this;
 		}
@@ -970,7 +970,7 @@ namespace plg {
 		template<detail::string_compatible_range<Char> Range>
 		constexpr iterator insert_range(const_iterator pos, Range&& range) {
 			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
-			_PLUGIFY_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert_range(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert_range(): resulted string size would exceed max_size()", std::length_error);
 			return insert(pos - begin(), str);
 		}
 #endif // PLUGIFY_STRING_CONTAINERS_RANGES
@@ -979,7 +979,7 @@ namespace plg {
 			auto sz = size();
 			auto buffer = data();
 
-			_PLUGIFY_ASSERT(pos <= sz, "plg::basic_string::erase(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= sz, "plg::basic_string::erase(): pos out of range", std::out_of_range);
 
 			count = std::min(count, sz - pos);
 
@@ -1008,7 +1008,7 @@ namespace plg {
 		}
 
 		constexpr void push_back(value_type ch) {
-			_PLUGIFY_ASSERT(size() + 1 <= max_size(), "plg::basic_string::push_back(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + 1 <= max_size(), "plg::basic_string::push_back(): resulted string size would exceed max_size()", std::length_error);
 			append(1, ch);
 		}
 
@@ -1017,47 +1017,47 @@ namespace plg {
 		}
 
 		constexpr basic_string& append(size_type count, value_type ch) {
-			_PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			internal_append(ch, count);
 			return *this;
 		}
 
 		constexpr basic_string& append(const basic_string& str) {
-			_PLUGIFY_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			internal_append(str.data(), str.size());
 			return *this;
 		}
 
 		constexpr basic_string& append(const basic_string& str, size_type pos, size_type count = npos) {
-			_PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::append(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::append(): pos out of range", std::out_of_range);
 			auto ssv = sview_type(str).substr(pos, count);
-			_PLUGIFY_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			internal_append(ssv.data(), ssv.length());
 			return *this;
 		}
 
 		constexpr basic_string& append(const value_type* str, size_type count) {
-			_PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			internal_append(str, count);
 			return *this;
 		}
 
 		constexpr basic_string& append(const value_type* str) {
 			auto len = Traits::length(str);
-			_PLUGIFY_ASSERT(size() + len <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + len <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			return append(str, len);
 		}
 
 		template<std::input_iterator InputIterator>
 		constexpr basic_string& append(InputIterator first, InputIterator last) {
 			auto len = static_cast<size_type>(std::distance(first, last));
-			_PLUGIFY_ASSERT(size() + len <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + len <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			internal_append(const_pointer(first), len);
 			return *this;
 		}
 
 		constexpr basic_string& append(std::initializer_list<value_type> list) {
-			_PLUGIFY_ASSERT(size() + list.size() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + list.size() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			internal_append(const_pointer(list.begin()), list.size());
 			return *this;
 		}
@@ -1067,7 +1067,7 @@ namespace plg {
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& append(const Type& t) {
 			sview_type sv(t);
-			_PLUGIFY_ASSERT(size() + sv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + sv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			internal_append(sv.data(), sv.size());
 			return *this;
 		}
@@ -1077,9 +1077,9 @@ namespace plg {
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& append(const Type& t, size_type pos, size_type count = npos) {
 			sview_type sv(t);
-			_PLUGIFY_ASSERT(pos <= sv.length(), "plg::basic_string::append(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= sv.length(), "plg::basic_string::append(): pos out of range", std::out_of_range);
 			auto ssv = sv.substr(pos, count);
-			_PLUGIFY_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + ssv.length() <= max_size(), "plg::basic_string::append(): resulted string size would exceed max_size()", std::length_error);
 			internal_append(ssv.data(), ssv.length());
 			return *this;
 		}
@@ -1088,7 +1088,7 @@ namespace plg {
 		template<detail::string_compatible_range<Char> Range>
 		constexpr basic_string& append_range(Range&& range) {
 			auto str = basic_string(std::from_range, std::forward<Range>(range), _allocator);
-			_PLUGIFY_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert_range(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + str.size() <= max_size(), "plg::basic_string::insert_range(): resulted string size would exceed max_size()", std::length_error);
 			return append(str);
 		}
 #endif // PLUGIFY_STRING_CONTAINERS_RANGES
@@ -1199,7 +1199,7 @@ namespace plg {
 		}
 
 		constexpr basic_string& replace(size_type pos, size_type count, const basic_string& str) {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
 			return replace(pos, count, str, 0, str.length());
 		}
 
@@ -1210,7 +1210,7 @@ namespace plg {
 		}
 
 		constexpr basic_string& replace(size_type pos, size_type count, const basic_string& str, size_type pos2, size_type count2 = npos) {
-			_PLUGIFY_ASSERT(pos <= size() && pos2 <= str.size(), "plg::basic_string::replace(): pos or pos_str out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size() && pos2 <= str.size(), "plg::basic_string::replace(): pos or pos_str out of range", std::out_of_range);
 			count2 = std::min(count2, str.length() - pos2);
 			auto ssv = sview_type(str).substr(pos2, count2);
 			return replace(pos, count, ssv.data(), ssv.length());
@@ -1222,9 +1222,9 @@ namespace plg {
 		}
 
 		constexpr basic_string& replace(size_type pos, size_type count, const value_type* str, size_type count2) {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
 			count = std::min(count, length() - pos);
-			_PLUGIFY_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
 			internal_replace(pos, const_pointer(str), count, count2);
 			return *this;
 		}
@@ -1244,9 +1244,9 @@ namespace plg {
 		}
 
 		constexpr basic_string& replace(size_type pos, size_type count, size_type count2, value_type ch) {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
 			count = std::min(count, length() - pos);
-			_PLUGIFY_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
 			internal_replace(pos, ch, count, count2);
 			return *this;
 		}
@@ -1255,8 +1255,8 @@ namespace plg {
 			auto pos = std::distance(cbegin(), first);
 			auto count = std::distance(first, last);
 
-			_PLUGIFY_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
 			internal_replace(pos, ch, count, count2);
 			return *this;
 		}
@@ -1269,7 +1269,7 @@ namespace plg {
 			requires(std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& replace(size_type pos, size_type count, const Type& t) {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
 			sview_type sv(t);
 			return replace(pos, count, sv.data(), sv.length());
 		}
@@ -1286,7 +1286,7 @@ namespace plg {
 			requires(std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& replace(size_type pos, size_type count, const Type& t, size_type pos2, size_type count2 = npos) {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
 			auto sv = sview_type(t).substr(pos2, count2);
 			return replace(pos, count, sv.data(), sv.length());
 		}
@@ -1300,17 +1300,17 @@ namespace plg {
 #endif // PLUGIFY_STRING_CONTAINERS_RANGES
 
 		[[nodiscard]] constexpr basic_string substr(size_type pos = 0, size_type count = npos) const {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::substr(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::substr(): pos out of range", std::out_of_range);
 			return basic_string(*this, pos, count);
 		}
 
 		constexpr size_type copy(value_type* str, size_type count, size_type pos = 0) const {
-			_PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::copy(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::copy(): pos out of range", std::out_of_range);
 			return view().copy(str, count, pos);
 		}
 
 		constexpr void resize(size_type count, value_type ch) {
-			_PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::resize(): resulted string size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::resize(): resulted string size would exceed max_size()", std::length_error);
 			auto cap = capacity();
 			auto sz = size();
 			auto rsz = count + sz;
@@ -1721,7 +1721,7 @@ namespace plg {
 
 	namespace detail {
 		template<typename S, typename V>
-		_PLUGIFY_FORCE_INLINE constexpr S to_string(V v) {
+		PLUGIFY_FORCE_INLINE constexpr S to_string(V v) {
 			//  numeric_limits::digits10 returns value less on 1 than desired for unsigned numbers.
 			//  For example, for 1-byte unsigned value digits10 is 2 (999 can not be represented),
 			//  so we need +1 here.
@@ -1744,7 +1744,7 @@ namespace plg {
 		}
 #endif
 
-		_PLUGIFY_FORCE_INLINE constexpr wide_printf get_swprintf() noexcept {
+		PLUGIFY_FORCE_INLINE constexpr wide_printf get_swprintf() noexcept {
 #if defined(_MSC_VER)
 			return static_cast<int(__cdecl*)(wchar_t* __restrict, std::size_t, const wchar_t* __restrict, ...)>(truncate_snwprintf);
 #else
@@ -1753,7 +1753,7 @@ namespace plg {
 		}
 
 		template<typename S, typename P, typename V>
-		_PLUGIFY_FORCE_INLINE constexpr S as_string(P sprintf_like, const typename S::value_type* fmt, V v) {
+		PLUGIFY_FORCE_INLINE constexpr S as_string(P sprintf_like, const typename S::value_type* fmt, V v) {
 			typedef typename S::size_type size_type;
 			S s;
 			s.resize(s.capacity());
@@ -1840,14 +1840,14 @@ namespace plg {
 
 	inline namespace literals {
 		inline namespace string_literals {
-			_PLUGIFY_WARN_PUSH()
+			PLUGIFY_WARN_PUSH()
 
 #if defined(__clang__)
-			_PLUGIFY_WARN_IGNORE("-Wuser-defined-literals")
+			PLUGIFY_WARN_IGNORE("-Wuser-defined-literals")
 #elif defined(__GNUC__)
-			_PLUGIFY_WARN_IGNORE("-Wliteral-suffix")
+			PLUGIFY_WARN_IGNORE("-Wliteral-suffix")
 #elif defined(_MSC_VER)
-			_PLUGIFY_WARN_IGNORE(4455)
+			PLUGIFY_WARN_IGNORE(4455)
 #endif
 			// suffix for basic_string literals
 			[[nodiscard]] constexpr string operator""s(const char* str, std::size_t len) { return string{str, len}; }
@@ -1856,7 +1856,7 @@ namespace plg {
 			[[nodiscard]] constexpr u32string operator""s(const char32_t* str, std::size_t len) { return u32string{str, len}; }
 			[[nodiscard]] constexpr wstring operator""s(const wchar_t* str, std::size_t len) { return wstring{str, len}; }
 
-			_PLUGIFY_WARN_POP()
+			PLUGIFY_WARN_POP()
 		}// namespace string_literals
 	}// namespace literals
 }// namespace plg

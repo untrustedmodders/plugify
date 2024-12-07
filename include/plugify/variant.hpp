@@ -413,7 +413,7 @@ namespace plg {
 		if constexpr (N < RemainingIndex) { \
 			return static_cast<Fn&&>(fn)(static_cast<V&&>(v).template unsafe_get<N+Offset>()); \
 			break; \
-		} else _PLUGIFY_UNREACHABLE();
+		} else PLUGIFY_UNREACHABLE();
 
 #define SEQSIZE 100
 
@@ -425,7 +425,7 @@ namespace plg {
 						if constexpr (SEQSIZE < RemainingIndex)
 							return detail::single_visit_tail<Offset + SEQSIZE, Rtype>(static_cast<Fn&&>(fn), static_cast<V&&>(v));
 						else
-							_PLUGIFY_UNREACHABLE();
+							PLUGIFY_UNREACHABLE();
 				}
 
 #undef X
@@ -441,7 +441,7 @@ namespace plg {
 		if constexpr (N < RemainingIndex) { \
 			return static_cast<Fn&&>(fn)(static_cast<V&&>(v).template unsafe_get<N+Offset>(), std::integral_constant<unsigned, N+Offset>{}); \
 			break; \
-		} else _PLUGIFY_UNREACHABLE();
+		} else PLUGIFY_UNREACHABLE();
 
 #define SEQSIZE 100
 
@@ -453,7 +453,7 @@ namespace plg {
 						if constexpr (SEQSIZE < RemainingIndex)
 							return detail::single_visit_w_index_tail<Offset + SEQSIZE, Rtype>(static_cast<Fn&&>(fn), static_cast<V&&>(v));
 						else
-							_PLUGIFY_UNREACHABLE();
+							PLUGIFY_UNREACHABLE();
 				}
 
 #undef X
@@ -971,7 +971,7 @@ namespace plg {
 	template<std::size_t Idx, class... Ts>
 	[[nodiscard]] constexpr auto& get(variant<Ts...>& v) {
 		static_assert(Idx < sizeof...(Ts), "Index exceeds the variant size. ");
-		_PLUGIFY_ASSERT(v.index() == Idx, "plg::variant:get(): Bad variant access in get.", bad_variant_access);
+		PLUGIFY_ASSERT(v.index() == Idx, "plg::variant:get(): Bad variant access in get.", bad_variant_access);
 		return (v.template unsafe_get<Idx>());
 	}
 	
@@ -1050,7 +1050,7 @@ namespace plg {
 	template<class Fn, class... Vs>
 	constexpr decltype(auto) visit(Fn&& fn, Vs&&... vs) {
 		if constexpr ((std::decay_t<Vs>::can_be_valueless || ...))
-			_PLUGIFY_ASSERT(!(vs.valueless_by_exception() || ...), "plg::variant:visit(): Bad variant access in visit.", bad_variant_access);
+			PLUGIFY_ASSERT(!(vs.valueless_by_exception() || ...), "plg::variant:visit(): Bad variant access in visit.", bad_variant_access);
 	
 		if constexpr (sizeof...(Vs) == 1)
 			return detail::visit(PLG_FWD(fn), PLG_FWD(vs)...);

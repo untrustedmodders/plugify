@@ -4,14 +4,14 @@
 #include <plugify/string.hpp>
 
 namespace plg {
-	_PLUGIFY_WARN_PUSH()
+	PLUGIFY_WARN_PUSH()
 
 #if defined(__clang__)
-	_PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
+	PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
 #elif defined(__GNUC__)
-	_PLUGIFY_WARN_IGNORE("-Wpedantic")
+	PLUGIFY_WARN_IGNORE("-Wpedantic")
 #elif defined(_MSC_VER)
-	_PLUGIFY_WARN_IGNORE(4201)
+	PLUGIFY_WARN_IGNORE(4201)
 #endif
 
 	extern "C" {
@@ -60,16 +60,20 @@ namespace plg {
 			};
 		};
 
-		struct vec {
+		/*struct vec {
 			[[maybe_unused]] uint8_t padding[sizeof(vector<int>)]{};
 		};
 
 		struct str {
 			[[maybe_unused]] uint8_t padding[sizeof(string)]{};
 		};
+
+		struct var {
+			[[maybe_unused]] uint8_t padding[sizeof(any)]{};
+		};*/
 	}
 
-	_PLUGIFY_WARN_POP()
+	PLUGIFY_WARN_POP()
 
 	[[nodiscard]] constexpr bool operator==(const vec2& lhs, const vec2& rhs) {
 		return lhs.x == rhs.x && lhs.y == rhs.y;
@@ -93,7 +97,7 @@ namespace plg {
 		return true;
 	}
 
-	[[nodiscard]] inline plg::str ReturnStr(plg::string str) {
+	/*[[nodiscard]] inline plg::str ReturnStr(plg::string str) {
 		plg::str ret{};
 		std::construct_at(reinterpret_cast<plg::string*>(&ret), std::move(str));
 		return ret;
@@ -104,5 +108,5 @@ namespace plg {
 		plg::vec ret{};
 		std::construct_at(reinterpret_cast<plg::vector<T>*>(&ret), std::move(vec));
 		return ret;
-	}
+	}*/
 } // namespace plg
