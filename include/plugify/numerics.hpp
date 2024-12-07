@@ -1,7 +1,7 @@
 #pragma once
 
-#include <plugifyvector.hpp>
-#include <plugifystring.hpp>
+#include <plugify/vector.hpp>
+#include <plugify/string.hpp>
 
 namespace plg {
 	_PLUGIFY_WARN_PUSH()

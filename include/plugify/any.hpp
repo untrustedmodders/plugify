@@ -1,9 +1,9 @@
 #pragma once
 
 #include <plugifynumerics.hpp>
-#include <plugifystring.hpp>
-#include <plugifyvariant.hpp>
-#include <plugifyvector.hpp>
+#include <plugify/string.hpp>
+#include <plugify/variant.hpp>
+#include <plugify/vector.hpp>
 
 namespace plg {
 	struct invalid {};

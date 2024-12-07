@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifyvector.hpp>
+#include <plugify/vector.hpp>
 
 // make sure all this works even when valgrind is not installed
 #if __has_include(<valgrind/valgrind.h>)

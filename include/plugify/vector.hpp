@@ -23,7 +23,7 @@
 #  include <ranges>
 #endif
 
-#include <plugifymacro.hpp>
+#include <plugify/macro.hpp>
 
 namespace plg {
 	template<typename Allocator>

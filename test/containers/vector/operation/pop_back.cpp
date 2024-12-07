@@ -2,7 +2,7 @@
 
 #include <app/counter.hpp>
 #include <app/vector_tester.hpp>
-#include <plugifyvector.hpp>
+#include <plugify/vector.hpp>
 
 TEST_CASE("vector operation > pop_back", "[vector]") {
 	SECTION("pop_back") {

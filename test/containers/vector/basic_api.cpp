@@ -1,7 +1,7 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifystring.hpp>
-#include <plugifyvector.hpp>
+#include <plugify/string.hpp>
+#include <plugify/vector.hpp>
 
 #include <chrono>
 #include <plugify/compat_format.hpp>

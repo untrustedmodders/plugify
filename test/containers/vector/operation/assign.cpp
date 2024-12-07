@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifyvector.hpp>
+#include <plugify/vector.hpp>
 
 #include <ostream>
 #include <string>

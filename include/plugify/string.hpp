@@ -40,7 +40,7 @@
 #  include <plugify/compat_format.hpp>
 #endif
 
-#include <plugifymacro.hpp>
+#include <plugify/macro.hpp>
 
 namespace plg {
 	namespace detail {

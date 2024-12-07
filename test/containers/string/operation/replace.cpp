@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifystring.hpp>
+#include <plugify/string.hpp>
 
 TEST_CASE("string operation > replace", "[string]") {
 

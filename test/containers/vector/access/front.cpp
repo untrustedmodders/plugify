@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifyvector.hpp>
+#include <plugify/vector.hpp>
 
 TEST_CASE("vector access > front", "[vector]") {
 

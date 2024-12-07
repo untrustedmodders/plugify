@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifyvariant.hpp>
+#include <plugify/variant.hpp>
 
 TEST_CASE("variant monostate operator > operators", "[variant]") {
 	SECTION("bool operator<=>(monostate, monostate) noexcept") {

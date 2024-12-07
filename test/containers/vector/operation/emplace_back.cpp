@@ -1,7 +1,7 @@
 #include <catch_amalgamated.hpp>
 
 #include <app/counter.hpp>
-#include <plugifyvector.hpp>
+#include <plugify/vector.hpp>
 
 #include <plugify/compat_format.hpp>
 

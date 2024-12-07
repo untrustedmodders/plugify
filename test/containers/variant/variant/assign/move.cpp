@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifyvariant.hpp>
+#include <plugify/variant.hpp>
 
 namespace {
 	struct NoCopy {

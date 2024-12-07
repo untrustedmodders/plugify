@@ -9,7 +9,7 @@
 #pragma once
 
 #include <plugify/compat_format.hpp>
-#include <plugifyvector.hpp>
+#include <plugify/vector.hpp>
 
 #include <cstddef>
 #include <stdexcept>

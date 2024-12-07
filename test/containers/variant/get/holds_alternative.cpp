@@ -2,7 +2,7 @@
 
 #include "app/variant_tester.hpp"
 
-#include <plugifyvariant.hpp>
+#include <plugify/variant.hpp>
 
 TEST_CASE("variant > holds_alternative", "[variant]") {
 	SECTION("bool holds_alternative(const variant<Types...>& v) noexcept") {

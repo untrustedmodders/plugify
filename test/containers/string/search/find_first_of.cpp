@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifystring.hpp>
+#include <plugify/string.hpp>
 
 TEST_CASE("string search > find_first_of", "[string]") {
 

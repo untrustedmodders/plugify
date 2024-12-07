@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugifyvariant.hpp>
+#include <plugify/variant.hpp>
 
 TEST_CASE("variant > bad_variant_access", "[variant]") {
 	SECTION("class bad_variant_access : public exception") {
