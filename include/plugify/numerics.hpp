@@ -57,7 +57,8 @@ namespace plg {
 					float m20, m21, m22, m23;
 					float m30, m31, m32, m33;
 				};
-				float data[4][4];
+				float m[4][4];
+				float data[16];
 			};
 		};
 	}
@@ -77,11 +78,9 @@ namespace plg {
 	}
 
 	[[nodiscard]] constexpr bool operator==(const mat4x4& lhs, const mat4x4& rhs) {
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				if (lhs.data[i][j] != rhs.data[i][j])
-					return false;
-			}
+		for (int i = 0; i < 16; ++i) {
+			if (lhs.data[i] != rhs.data[i])
+				return false;
 		}
 		return true;
 	}
