@@ -34,6 +34,7 @@ namespace plugify::JitUtils {
 				return GetTypeIdx<double>();
 			case ValueType::Pointer:
 			case ValueType::String:
+			case ValueType::Any:
 			case ValueType::Function:
 			case ValueType::ArrayBool:
 			case ValueType::ArrayChar8:
@@ -50,6 +51,7 @@ namespace plugify::JitUtils {
 			case ValueType::ArrayFloat:
 			case ValueType::ArrayDouble:
 			case ValueType::ArrayString:
+			case ValueType::ArrayAny:
 			case ValueType::Vector2:
 			case ValueType::Vector3:
 			case ValueType::Vector4:
@@ -94,6 +96,7 @@ namespace plugify::JitUtils {
 			case ValueType::Function:
 				return asmjit::TypeId::kUIntPtr;
 			case ValueType::String:
+			case ValueType::Any:
 			case ValueType::ArrayBool:
 			case ValueType::ArrayChar8:
 			case ValueType::ArrayChar16:
@@ -109,6 +112,7 @@ namespace plugify::JitUtils {
 			case ValueType::ArrayFloat:
 			case ValueType::ArrayDouble:
 			case ValueType::ArrayString:
+			case ValueType::ArrayAny:
 			case ValueType::Matrix4x4:
 				return asmjit::TypeId::kVoid;
 			case ValueType::Vector2:
