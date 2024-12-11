@@ -72,7 +72,7 @@ namespace plugify {
 			 * @return Value of the argument.
 			 */
 			template<typename T>
-			[[nodiscard]] T GetArgument(uint8_t idx) const noexcept {
+			T GetArgument(uint8_t idx) const noexcept {
 				return *(T*) GetArgumentPtr(idx);
 			}
 
@@ -81,7 +81,7 @@ namespace plugify {
 			 * @param idx Index of the argument.
 			 * @return Pointer to the argument.
 			 */
-			[[nodiscard]] int8_t* GetArgumentPtr(uint8_t idx) const noexcept {
+			int8_t* GetArgumentPtr(uint8_t idx) const noexcept {
 				return ((int8_t*) &arguments) + sizeof(uint64_t) * idx;
 			}
 
@@ -120,7 +120,7 @@ namespace plugify {
 			 * @return Value of the return.
 			 */
 			template<typename T>
-			[[nodiscard]] T GetReturn() const noexcept {
+			T GetReturn() const noexcept {
 				return *(T*) GetReturnPtr();
 			}
 
@@ -128,7 +128,7 @@ namespace plugify {
 			 * @brief Get a pointer to the return value.
 			 * @return Pointer to the return value.
 			 */
-			[[nodiscard]] int8_t* GetReturnPtr() const noexcept {
+			int8_t* GetReturnPtr() const noexcept {
 				return (int8_t*) &ret;
 			}
 
@@ -173,7 +173,7 @@ namespace plugify {
 		 * @return Pointer to the already generated function.
 		 * @note The returned pointer can be nullptr if function is not generate.
 		 */
-		[[nodiscard]] MemAddr GetFunction() const noexcept { return _function; }
+		MemAddr GetFunction() const noexcept { return _function; }
 
 		/**
 		 * @brief Get the user data associated with the object.
@@ -181,13 +181,13 @@ namespace plugify {
 		 * @return A void pointer to the user data.
 		 * @note The returned pointer can be nullptr if no user data is set.
 		 */
-		[[nodiscard]] MemAddr GetUserData() const noexcept { return _userData; }
+		MemAddr GetUserData() const noexcept { return _userData; }
 
 		/**
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */
-		[[nodiscard]] std::string_view GetError() noexcept { return !_function && _errorCode ? _errorCode : ""; }
+		std::string_view GetError() noexcept { return !_function && _errorCode ? _errorCode : ""; }
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;

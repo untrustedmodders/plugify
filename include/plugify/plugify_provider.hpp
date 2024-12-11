@@ -31,7 +31,7 @@ namespace plugify {
 		 * @brief Get the base directory of the Plugify system.
 		 * @return Reference to the base directory path.
 		 */
-		[[nodiscard]] std::filesystem::path_view GetBaseDir() const noexcept;
+		std::filesystem::path_view GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Checks if the preference for using own symbols is enabled.
@@ -45,7 +45,7 @@ namespace plugify {
 		 * 
 		 * @return True if the preference for using own symbols is enabled, false otherwise.
 		 */
-		[[nodiscard]] bool IsPreferOwnSymbols() const noexcept;
+		bool IsPreferOwnSymbols() const noexcept;
 		
 		/**
 		 * @brief Checks if a plugin with the specified name is loaded.
@@ -59,7 +59,7 @@ namespace plugify {
 		 * @param minimum If true, checks if the loaded version meets or exceeds the required version.
 		 * @return True if the plugin is loaded and meets the version requirements, false otherwise.
 		 */
-		[[nodiscard]] bool IsPluginLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
+		bool IsPluginLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
 		
 		/**
 		 * @brief Checks if a language module with the specified name is loaded.
@@ -73,7 +73,7 @@ namespace plugify {
 		 * @param minimum If true, checks if the loaded version meets or exceeds the required version.
 		 * @return True if the language module is loaded and meets the version requirements, false otherwise.
 		 */
-		[[nodiscard]] bool IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
+		bool IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
 	};
 	static_assert(is_ref_v<IPlugifyProvider>);
 } // namespace plugify

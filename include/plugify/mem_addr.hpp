@@ -84,7 +84,7 @@ namespace plugify {
 		 * @brief Returns the uintptr_t representation of the pointer.
 		 * @return The uintptr_t value of the pointer.
 		 */
-		[[nodiscard]] uintptr_t GetPtr() const noexcept {
+		uintptr_t GetPtr() const noexcept {
 			return _ptr;
 		}
 
@@ -94,7 +94,7 @@ namespace plugify {
 		 * @return The value at the memory address.
 		 */
 		template<class T>
-		[[nodiscard]] T GetValue() const noexcept {
+		T GetValue() const noexcept {
 			return *reinterpret_cast<T*>(_ptr);
 		}
 
@@ -104,7 +104,7 @@ namespace plugify {
 		 * @return The casted pointer.
 		 */
 		template<typename T>
-		[[nodiscard]] T CCast() const noexcept {
+		T CCast() const noexcept {
 			return (T) _ptr;
 		}
 
@@ -114,7 +114,7 @@ namespace plugify {
 		 * @return The casted pointer.
 		 */
 		template<typename T>
-		[[nodiscard]] T RCast() const noexcept {
+		T RCast() const noexcept {
 			return reinterpret_cast<T>(_ptr);
 		}
 
@@ -124,7 +124,7 @@ namespace plugify {
 		 * @return The casted pointer.
 		 */
 		template<typename T>
-		[[nodiscard]] T UCast() const noexcept {
+		T UCast() const noexcept {
 			union {
 				uintptr_t m_ptr;
 				T cptr;
@@ -137,7 +137,7 @@ namespace plugify {
 		 * @param offset The offset value.
 		 * @return A new MemAddr object with the offset applied.
 		 */
-		[[nodiscard]] MemAddr Offset(ptrdiff_t offset) const noexcept {
+		MemAddr Offset(ptrdiff_t offset) const noexcept {
 			return _ptr + static_cast<uintptr_t>(offset);
 		}
 
@@ -156,7 +156,7 @@ namespace plugify {
 		 * @param deref The number of times to dereference.
 		 * @return A new MemAddr object after dereferencing.
 		 */
-		[[nodiscard]] MemAddr Deref(ptrdiff_t deref = 1) const {
+		MemAddr Deref(ptrdiff_t deref = 1) const {
 			uintptr_t reference = _ptr;
 
 			while (deref--) {
@@ -187,7 +187,7 @@ namespace plugify {
 		 * @param nextInstructionOffset The offset to the next instruction.
 		 * @return A new MemAddr object with the resolved address.
 		 */
-		[[nodiscard]] MemAddr FollowNearCall(ptrdiff_t opcodeOffset = 0x1, ptrdiff_t nextInstructionOffset = 0x5) const {
+		MemAddr FollowNearCall(ptrdiff_t opcodeOffset = 0x1, ptrdiff_t nextInstructionOffset = 0x5) const {
 			return ResolveRelativeAddress(opcodeOffset, nextInstructionOffset);
 		}
 
@@ -207,7 +207,7 @@ namespace plugify {
 		 * @param nextInstructionOffset The offset to the next instruction.
 		 * @return A new MemAddr object with the resolved address.
 		 */
-		[[nodiscard]] MemAddr ResolveRelativeAddress(ptrdiff_t registerOffset = 0x0, ptrdiff_t nextInstructionOffset = 0x4) const {
+		MemAddr ResolveRelativeAddress(ptrdiff_t registerOffset = 0x0, ptrdiff_t nextInstructionOffset = 0x4) const {
 			const uintptr_t skipRegister = _ptr + static_cast<uintptr_t>(registerOffset);
 			const int32_t relativeAddress = *reinterpret_cast<int32_t*>(skipRegister);
 			const uintptr_t nextInstruction = _ptr + static_cast<uintptr_t>(nextInstructionOffset);

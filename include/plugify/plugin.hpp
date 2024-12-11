@@ -56,49 +56,49 @@ namespace plugify {
 		 * @brief Get the unique identifier of the plugin.
 		 * @return The unique identifier.
 		 */
-		[[nodiscard]] UniqueId GetId() const noexcept;
+		UniqueId GetId() const noexcept;
 
 		/**
 		 * @brief Get the name of the plugin.
 		 * @return The name of the plugin.
 		 */
-		[[nodiscard]] std::string_view GetName() const noexcept;
+		std::string_view GetName() const noexcept;
 
 		/**
 		 * @brief Get the friendly name of the plugin.
 		 * @return The friendly name of the plugin.
 		 */
-		[[nodiscard]] std::string_view GetFriendlyName() const noexcept;
+		std::string_view GetFriendlyName() const noexcept;
 
 		/**
 		 * @brief Get the base directory of the plugin.
 		 * @return The base directory as a filesystem path.
 		 */
-		[[nodiscard]] std::filesystem::path_view GetBaseDir() const noexcept;
+		std::filesystem::path_view GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Get the descriptor of the plugin.
 		 * @return The descriptor of the plugin.
 		 */
-		[[nodiscard]] PluginDescriptorRef GetDescriptor() const noexcept;
+		PluginDescriptorRef GetDescriptor() const noexcept;
 
 		/**
 		 * @brief Get the state of the plugin.
 		 * @return The state of the plugin.
 		 */
-		[[nodiscard]] PluginState GetState() const noexcept;
+		PluginState GetState() const noexcept;
 
 		/**
 		 * @brief Get the error message associated with the plugin.
 		 * @return The error message.
 		 */
-		[[nodiscard]] std::string_view GetError() const noexcept;
+		std::string_view GetError() const noexcept;
 
 		/**
 		 * @brief Get the list of methods supported by the plugin.
 		 * @return The list of method data.
 		 */
-		[[nodiscard]] std::span<const MethodData> GetMethods() const noexcept;
+		std::span<const MethodData> GetMethods() const noexcept;
 
 		/**
 		 * @brief Find a resource file associated with the plugin.
@@ -121,7 +121,7 @@ namespace plugify {
 		 * auto resourcePath = plugin.FindResource("configs/core.cfg");
 		 * @endcode
 		 */
-		[[nodiscard]] std::optional<std::filesystem::path_view> FindResource(std::filesystem::path_view path) const;
+		std::optional<std::filesystem::path_view> FindResource(std::filesystem::path_view path) const;
 	};
 	static_assert(is_ref_v<PluginRef>);
 

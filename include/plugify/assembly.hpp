@@ -37,7 +37,7 @@ namespace plugify {
 			 * @brief Checks if the section is valid.
 			 * @return True if the section is valid, false otherwise.
 			 */
-			[[nodiscard]] bool IsValid() const noexcept { return base; }
+			bool IsValid() const noexcept { return base; }
 
 			std::string name{}; //!< The name of the section.
 			MemAddr base;       //!< The base address of the section.
@@ -118,7 +118,7 @@ namespace plugify {
 		 * @param input The input pattern string.
 		 * @return A pair containing the byte array and the mask string.
 		 */
-		[[nodiscard]] static std::pair<std::vector<uint8_t>, std::string> PatternToMaskedBytes(std::string_view input);
+		static std::pair<std::vector<uint8_t>, std::string> PatternToMaskedBytes(std::string_view input);
 
 		/**
 		 * @brief Finds an array of bytes in process memory using SIMD instructions.
@@ -128,7 +128,7 @@ namespace plugify {
 		 * @param moduleSection The module section to search within.
 		 * @return The memory address where the pattern is found, or nullptr if not found.
 		 */
-		[[nodiscard]] MemAddr FindPattern(MemAddr pattern, std::string_view mask, MemAddr startAddress = nullptr, Section* moduleSection = nullptr) const;
+		MemAddr FindPattern(MemAddr pattern, std::string_view mask, MemAddr startAddress = nullptr, Section* moduleSection = nullptr) const;
 
 		/**
 		 * @brief Finds a string pattern in process memory using SIMD instructions.
@@ -137,7 +137,7 @@ namespace plugify {
 		 * @param moduleSection The module section to search within.
 		 * @return The memory address where the pattern is found, or nullptr if not found.
 		 */
-		[[nodiscard]] MemAddr FindPattern(std::string_view pattern, MemAddr startAddress = nullptr, Section* moduleSection = nullptr) const;
+		MemAddr FindPattern(std::string_view pattern, MemAddr startAddress = nullptr, Section* moduleSection = nullptr) const;
 
 		/**
 		 * @brief Gets an address of a virtual method table by RTTI type descriptor name.
@@ -145,51 +145,51 @@ namespace plugify {
 		 * @param decorated Indicates whether the name is decorated.
 		 * @return The memory address of the virtual table, or nullptr if not found.
 		 */
-		[[nodiscard]] MemAddr GetVirtualTableByName(std::string_view tableName, bool decorated = false) const;
+		MemAddr GetVirtualTableByName(std::string_view tableName, bool decorated = false) const;
 
 		/**
 		 * @brief Gets an address of a function by its name.
 		 * @param functionName The name of the function.
 		 * @return The memory address of the function, or nullptr if not found.
 		 */
-		[[nodiscard]] MemAddr GetFunctionByName(std::string_view functionName) const noexcept;
+		MemAddr GetFunctionByName(std::string_view functionName) const noexcept;
 
 		/**
 		 * @brief Gets a module section by name.
 		 * @param sectionName The name of the section (e.g., ".rdata", ".text").
 		 * @return The Section object representing the module section.
 		 */
-		[[nodiscard]] Section GetSectionByName(std::string_view sectionName) const noexcept;
+		Section GetSectionByName(std::string_view sectionName) const noexcept;
 
 		/**
 		 * @brief Returns the module handle.
 		 * @return The module handle.
 		 */
-		[[nodiscard]] void* GetHandle() const noexcept;
+		void* GetHandle() const noexcept;
 
 		/**
 		 * @brief Returns the module base address.
 		 * @return The base address of the module.
 		 */
-		[[nodiscard]] MemAddr GetBase() const noexcept;
+		MemAddr GetBase() const noexcept;
 
 		/**
 		 * @brief Returns the module path.
 		 * @return The path of the module.
 		 */
-		[[nodiscard]] const std::filesystem::path& GetPath() const noexcept;
+		const std::filesystem::path& GetPath() const noexcept;
 
 		/**
 		 * @brief Returns the module error.
 		 * @return The error string of the module.
 		 */
-		[[nodiscard]] const std::string& GetError() const noexcept;
+		const std::string& GetError() const noexcept;
 
 		/**
 		 * @brief Checks if the assembly is valid.
 		 * @return True if the assembly is valid, false otherwise.
 		 */
-		[[nodiscard]] bool IsValid() const noexcept { return _handle != nullptr; }
+		bool IsValid() const noexcept { return _handle != nullptr; }
 
 		/**
 		 * @brief Conversion operator to check if the assembly is valid.

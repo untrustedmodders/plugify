@@ -41,55 +41,55 @@ namespace plugify {
 		 * @brief Get the unique identifier of the language module.
 		 * @return The unique identifier.
 		 */
-		[[nodiscard]] UniqueId GetId() const noexcept;
+		UniqueId GetId() const noexcept;
 
 		/**
 		 * @brief Get the name of the language module.
 		 * @return The name of the language module.
 		 */
-		[[nodiscard]] std::string_view GetName() const noexcept;
+		std::string_view GetName() const noexcept;
 
 		/**
 		 * @brief Get the language of the language module.
 		 * @return The language of the language module.
 		 */
-		[[nodiscard]] std::string_view GetLanguage() const noexcept;
+		std::string_view GetLanguage() const noexcept;
 
 		/**
 		 * @brief Get the friendly name of the language module.
 		 * @return The friendly name of the language module.
 		 */
-		[[nodiscard]] std::string_view GetFriendlyName() const noexcept;
+		std::string_view GetFriendlyName() const noexcept;
 
 		/**
 		 * @brief Get the file path of the language module.
 		 * @return The file path as a filesystem path.
 		 */
-		[[nodiscard]] std::filesystem::path_view GetFilePath() const noexcept;
+		std::filesystem::path_view GetFilePath() const noexcept;
 
 		/**
 		 * @brief Get the base directory of the language module.
 		 * @return The base directory as a filesystem path.
 		 */
-		[[nodiscard]] std::filesystem::path_view GetBaseDir() const noexcept;
+		std::filesystem::path_view GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Get the descriptor of the language module.
 		 * @return The descriptor of the language module.
 		 */
-		[[nodiscard]] LanguageModuleDescriptorRef GetDescriptor() const noexcept;
+		LanguageModuleDescriptorRef GetDescriptor() const noexcept;
 
 		/**
 		 * @brief Get the state of the language module.
 		 * @return The state of the language module.
 		 */
-		[[nodiscard]] ModuleState GetState() const noexcept;
+		ModuleState GetState() const noexcept;
 
 		/**
 		 * @brief Get the error message associated with the language module.
 		 * @return The error message.
 		 */
-		[[nodiscard]] std::string_view GetError() const noexcept;
+		std::string_view GetError() const noexcept;
 
 		/**
 		 * @brief Find a resource file associated with the module.
@@ -112,7 +112,7 @@ namespace plugify {
 		 * auto resourcePath = module.FindResource("configs/core.cfg");
 		 * @endcode
 		 */
-		[[nodiscard]] std::optional<std::filesystem::path_view> FindResource(std::filesystem::path_view path) const;
+		std::optional<std::filesystem::path_view> FindResource(std::filesystem::path_view path) const;
 	};
 	static_assert(is_ref_v<ModuleRef>);
 

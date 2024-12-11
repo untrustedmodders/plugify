@@ -42,7 +42,7 @@ namespace plugify {
 		 * @brief Check if the Plugify system is initialized.
 		 * @return True if initialized, false otherwise.
 		 */
-		[[nodiscard]] virtual bool IsInitialized() const = 0;
+		virtual bool IsInitialized() const = 0;
 
 		/**
 		 * @brief Set the logger for the Plugify system.
@@ -73,31 +73,31 @@ namespace plugify {
 		 * @brief Get a weak pointer to the Plugify provider.
 		 * @return Weak pointer to the Plugify provider.
 		 */
-		[[nodiscard]] virtual std::weak_ptr<IPlugifyProvider> GetProvider() const = 0;
+		virtual std::weak_ptr<IPlugifyProvider> GetProvider() const = 0;
 
 		/**
 		 * @brief Get a weak pointer to the Plugin Manager.
 		 * @return Weak pointer to the Plugin Manager.
 		 */
-		[[nodiscard]] virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
+		virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
 
 		/**
 		 * @brief Get a weak pointer to the Package Manager.
 		 * @return Weak pointer to the Package Manager.
 		 */
-		[[nodiscard]] virtual std::weak_ptr<IPackageManager> GetPackageManager() const = 0;
+		virtual std::weak_ptr<IPackageManager> GetPackageManager() const = 0;
 
 		/**
 		 * @brief Get the configuration of the Plugify system.
 		 * @return Reference to the configuration.
 		 */
-		[[nodiscard]] virtual const Config& GetConfig() const = 0;
+		virtual const Config& GetConfig() const = 0;
 
 		/**
 		 * @brief Get the version information of the Plugify system.
 		 * @return Version information.
 		 */
-		[[nodiscard]] virtual Version GetVersion() const = 0;
+		virtual Version GetVersion() const = 0;
 	};
 
 	/**

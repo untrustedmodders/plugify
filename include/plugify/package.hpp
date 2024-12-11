@@ -28,7 +28,7 @@ namespace plugify {
 		 * @param rhs The right-hand side PackageVersion for comparison.
 		 * @return True if the version of this instance is less than the version of rhs.
 		 */
-		[[nodiscard]] bool operator <(const PackageVersion& rhs) const noexcept { return version > rhs.version || (version == rhs.version && std::tie(checksum, download, platforms) < std::tie(rhs.checksum, rhs.download, rhs.platforms)); }
+		bool operator <(const PackageVersion& rhs) const noexcept { return version > rhs.version || (version == rhs.version && std::tie(checksum, download, platforms) < std::tie(rhs.checksum, rhs.download, rhs.platforms)); }
 	};
 
 	/**
@@ -53,7 +53,7 @@ namespace plugify {
 		 * @param rhs The right-hand side Package for comparison.
 		 * @return True if the name and type of this instance are equal to those of rhs.
 		 */
-		[[nodiscard]] bool operator==(const Package& rhs) const noexcept { return name == rhs.name && type == rhs.type; }
+		bool operator==(const Package& rhs) const noexcept { return name == rhs.name && type == rhs.type; }
 	};
 
 	/**
@@ -73,7 +73,7 @@ namespace plugify {
 		 * @brief Get the latest available version of the package.
 		 * @return A pointer to the latest PackageVersion.
 		 */
-		[[nodiscard]] PackageOpt LatestVersion() const noexcept {
+		PackageOpt LatestVersion() const noexcept {
 			if (!versions.empty())
 				return &(*versions.begin());
 			return {};
@@ -84,7 +84,7 @@ namespace plugify {
 		 * @param version The version number to retrieve.
 		 * @return A pointer to the specified PackageVersion.
 		 */
-		[[nodiscard]] PackageOpt Version(int32_t version) const {
+		PackageOpt Version(int32_t version) const {
 			auto it = versions.find(PackageVersion{ version, {}, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
 				return &(*it);

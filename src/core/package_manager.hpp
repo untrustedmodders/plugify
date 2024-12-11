@@ -66,7 +66,7 @@ namespace plugify {
 		bool InstallPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion = {});
 		bool UninstallPackage(const LocalPackage& package, bool remove = true);
 
-		[[nodiscard]] bool DownloadPackage(const Package& package, const PackageVersion& version) const;
+		bool DownloadPackage(const Package& package, const PackageVersion& version) const;
 		static std::string ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt);
 		static bool IsPackageLegit(std::string_view checksum, std::span<const uint8_t> packageData);
 #endif // PLUGIFY_DOWNLOADER

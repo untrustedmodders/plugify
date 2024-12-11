@@ -10,6 +10,7 @@ namespace plg {
 	struct none {};
 	union function { void* ptr; };
 
+	// TODO: Add comments explaing tags
 	using any = variant<
 			invalid,
 

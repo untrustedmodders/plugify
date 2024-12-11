@@ -55,6 +55,6 @@ namespace plugify {
 	public:
 		static inline const uint8_t kNoVarArgs = 0xFFU;
 
-		[[nodiscard]] bool operator==(const Method& rhs) const noexcept { return name == rhs.name; }
+		bool operator==(const Method& rhs) const noexcept { return name == rhs.name; }
 	};
 }

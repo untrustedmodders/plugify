@@ -44,7 +44,7 @@ namespace plugify {
 		 * @brief Check if the package manager is initialized.
 		 * @return True if the package manager is initialized, false otherwise.
 		 */
-		[[nodiscard]] virtual bool IsInitialized() const = 0;
+		virtual bool IsInitialized() const = 0;
 		
 		/**
 		 * @brief Reload the package manager.
@@ -125,13 +125,13 @@ namespace plugify {
 		 * @brief Check if there are missed packages (not installed but required by other packages).
 		 * @return True if there are missed packages, false otherwise.
 		 */
-		[[nodiscard]] virtual bool HasMissedPackages() const = 0;
+		virtual bool HasMissedPackages() const = 0;
 
 		/**
 		 * @brief Check if there are conflicted packages (installed with conflicting versions).
 		 * @return True if there are conflicted packages, false otherwise.
 		 */
-		[[nodiscard]] virtual bool HasConflictedPackages() const = 0;
+		virtual bool HasConflictedPackages() const = 0;
 
 		/**
 		 * @brief Install missed packages.
@@ -148,26 +148,26 @@ namespace plugify {
 		 * @param packageName Name of the package to find.
 		 * @return Optional reference to the found local package.
 		 */
-		[[nodiscard]] virtual LocalPackageOpt FindLocalPackage(std::string_view packageName) const = 0;
+		virtual LocalPackageOpt FindLocalPackage(std::string_view packageName) const = 0;
 
 		/**
 		 * @brief Find a remote package by name.
 		 * @param packageName Name of the package to find.
 		 * @return Optional reference to the found remote package.
 		 */
-		[[nodiscard]] virtual RemotePackageOpt FindRemotePackage(std::string_view packageName) const = 0;
+		virtual RemotePackageOpt FindRemotePackage(std::string_view packageName) const = 0;
 
 		/**
 		 * @brief Get a vector of all local packages.
 		 * @return Vector of local packages.
 		 */
-		[[nodiscard]] virtual std::vector<LocalPackage> GetLocalPackages() const = 0;
+		virtual std::vector<LocalPackage> GetLocalPackages() const = 0;
 
 		/**
 		 * @brief Get a vector of all remote packages.
 		 * @return Vector of remote packages.
 		 */
-		[[nodiscard]] virtual std::vector<RemotePackage> GetRemotePackages() const = 0;
+		virtual std::vector<RemotePackage> GetRemotePackages() const = 0;
 	};
 
 } // namespace plugify

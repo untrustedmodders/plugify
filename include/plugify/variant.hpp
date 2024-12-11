@@ -756,18 +756,18 @@ namespace plg {
 	
 		// ==================================== value status (20.7.3.6)
 	
-		[[nodiscard]] constexpr bool valueless_by_exception() const noexcept {
+		constexpr bool valueless_by_exception() const noexcept {
 			if constexpr (can_be_valueless)
 				return _current == npos;
 			else return false;
 		}
-	
-		[[nodiscard]] constexpr index_type index() const noexcept {
+
+		constexpr index_type index() const noexcept {
 			return _current;
 		}
-	
+
 		// =================================== swap (20.7.3.7)
-	
+
 		constexpr void swap(variant& o)
 			noexcept((std::is_nothrow_move_constructible_v<Ts> && ...)
 					   && (detail::swap_trait::template nothrow<Ts> && ...))
@@ -780,7 +780,7 @@ namespace plg {
 					full.reset_no_check();
 					full._current = npos;
 				};
-	
+
 				switch(static_cast<int>(index() == npos) + static_cast<int>(o.index() == npos) * 2) {
 					case 0 :
 						break;
@@ -797,64 +797,64 @@ namespace plg {
 						return;
 				}
 			}
-	
+
 			assert(not(valueless_by_exception() && o.valueless_by_exception()));
-	
+
 			detail::visit_with_index(o, [&o, this](auto&& elem, auto index_cst) {
 				if (index() == index_cst) {
 					using std::swap;
 					swap(unsafe_get<index_cst>(), elem);
 					return;
 				}
-	
+
 				using idx_t = decltype(index_cst);
 				detail::visit_with_index(*this, [this, &o, &elem](auto&& this_elem, auto this_index) {
 					auto tmp { PLG_MOV(this_elem) };
-	
+
 					// destruct the element
 					detail::destruct<alternative<this_index>>(this_elem);
-	
+
 					// ok, we just destroyed the element in this, don't call the dtor again
 					emplace_no_dtor<idx_t::value>(PLG_MOV(elem));
-	
+
 					// we could refactor this
 					detail::destruct<alternative<idx_t::value>>(elem);
 					o.template emplace_no_dtor<(unsigned)(this_index) >(PLG_MOV(tmp));
 				});
 			});
 		}
-	
+
 		// +================================== methods for internal use
 		// these methods performs no errors checking at all
-	
+
 		template<detail::union_index_t Idx>
-		[[nodiscard]] constexpr auto& unsafe_get() & noexcept {
+		constexpr auto& unsafe_get() & noexcept {
 			static_assert(Idx < size);
 			assert(_current == Idx);
 			return _storage.template get<Idx>();
 		}
-	
+
 		template<detail::union_index_t Idx>
-		[[nodiscard]] constexpr auto&& unsafe_get() && noexcept {
+		constexpr auto&& unsafe_get() && noexcept {
 			static_assert(Idx < size);
 			assert(_current == Idx);
 			return PLG_MOV(_storage.template get<Idx>());
 		}
-	
+
 		template<detail::union_index_t Idx>
-		[[nodiscard]] constexpr const auto& unsafe_get() const & noexcept {
+		constexpr const auto& unsafe_get() const & noexcept {
 			static_assert(Idx < size);
 			assert(_current == Idx);
 			return _storage.template get<Idx>();
 		}
-	
+
 		template<detail::union_index_t Idx>
-		[[nodiscard]] constexpr const auto&& unsafe_get() const && noexcept {
+		constexpr const auto&& unsafe_get() const && noexcept {
 			static_assert(Idx < size);
 			assert(_current == Idx);
 			return PLG_MOV(_storage.template get<Idx>());
 		}
-	
+
 	private:
 		// assign from another variant
 		template<class Other, class Fn>
@@ -871,19 +871,19 @@ namespace plg {
 			assert(not o.valueless_by_exception());
 			detail::visit_with_index(PLG_FWD(o), PLG_FWD(fn));
 		}
-	
+
 		template<unsigned Idx, class... Args>
 		constexpr auto& emplace_impl(Args&&... args) {
 			reset();
 			emplace_no_dtor<Idx>(PLG_FWD(args)...);
 			return unsafe_get<Idx>();
 		}
-	
+
 		// can be used directly only when the variant is in a known empty state
 		template<unsigned Idx, class... Args>
 		constexpr void emplace_no_dtor(Args&&... args) {
 			using T = alternative<Idx>;
-	
+
 			if constexpr (not std::is_nothrow_constructible_v<T, Args&&...>)
 			{
 				if constexpr (std::is_nothrow_move_constructible_v<T>)
@@ -906,7 +906,7 @@ namespace plg {
 			else
 				do_emplace_no_dtor<Idx>(PLG_FWD(args)...);
 		}
-	
+
 		template<unsigned Idx, class... Args>
 		constexpr void do_emplace_no_dtor(Args&&... args) {
 			_current = static_cast<index_type>(Idx);
@@ -920,14 +920,14 @@ namespace plg {
 			std::construct_at(ptr, PLG_FWD(args)...);
 #endif // PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE
 		}
-	
+
 		// destroy the current elem IFF not valueless
 		constexpr void reset() {
 			if constexpr (can_be_valueless)
 				if (valueless_by_exception()) return;
 			reset_no_check();
 		}
-	
+
 		// destroy the current element without checking for valueless
 		constexpr void reset_no_check() {
 			assert(index() < size);
@@ -937,7 +937,7 @@ namespace plg {
 				});
 			}
 		}
-	
+
 		// construct this from another variant, for constructors only
 		template<class Other>
 		constexpr void construct_from(Other&& o) {
@@ -946,134 +946,134 @@ namespace plg {
 					_current = npos;
 					return;
 				}
-	
+
 			detail::visit_with_index(PLG_FWD(o), detail::emplace_no_dtor_from_elem<variant&>{*this});
 		}
-	
+
 		template<class T>
 		friend struct detail::emplace_no_dtor_from_elem;
 
 		storage _storage;
 		index_type _current;
 	};
-	
+
 	// ================================= value access (20.7.5)
-	
+
 	template<class T, class... Ts>
 	constexpr bool holds_alternative(const variant<Ts...>& v) noexcept {
 		static_assert((std::is_same_v<T, Ts> || ...), "Requested type is not contained in the variant");
 		constexpr auto Index = variant<Ts...>::template index_of<T>;
 		return v.index() == Index;
 	}
-	
+
 	// ========= get by index
-	
+
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr auto& get(variant<Ts...>& v) {
+	constexpr auto& get(variant<Ts...>& v) {
 		static_assert(Idx < sizeof...(Ts), "Index exceeds the variant size. ");
 		PLUGIFY_ASSERT(v.index() == Idx, "plg::variant:get(): Bad variant access in get.", bad_variant_access);
 		return (v.template unsafe_get<Idx>());
 	}
-	
+
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr const auto& get(const variant<Ts...>& v) {
+	constexpr const auto& get(const variant<Ts...>& v) {
 		return plg::get<Idx>(const_cast<variant<Ts...>&>(v));
 	}
-	
+
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr auto&& get(variant<Ts...>&& v) {
+	constexpr auto&& get(variant<Ts...>&& v) {
 		return PLG_MOV(plg::get<Idx>(v));
 	}
-	
+
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr const auto&& get(const variant<Ts...>&& v) {
+	constexpr const auto&& get(const variant<Ts...>&& v) {
 		return PLG_MOV(plg::get<Idx>(v));
 	}
-	
+
 	// ========= get by type
-	
+
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr T& get(variant<Ts...>& v) {
+	constexpr T& get(variant<Ts...>& v) {
 		return plg::get<variant<Ts...>::template index_of<T> >(v);
 	}
-	
+
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr const T& get(const variant<Ts...>& v) {
+	constexpr const T& get(const variant<Ts...>& v) {
 		return plg::get<variant<Ts...>::template index_of<T> >(v);
 	}
-	
+
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr T&& get(variant<Ts...>&& v) {
+	constexpr T&& get(variant<Ts...>&& v) {
 		return plg::get<variant<Ts...>::template index_of<T> >(PLG_FWD(v));
 	}
-	
+
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr const T&& get(const variant<Ts...>&& v) {
+	constexpr const T&& get(const variant<Ts...>&& v) {
 		return plg::get<variant<Ts...>::template index_of<T> >(PLG_FWD(v));
 	}
-	
+
 	// ===== get_if by index
-	
+
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr const auto* get_if(const variant<Ts...>* v) noexcept {
+	constexpr const auto* get_if(const variant<Ts...>* v) noexcept {
 		using rtype = typename variant<Ts...>::template alternative<Idx>*;
 		if (v == nullptr || v->index() != Idx)
 			return rtype{nullptr};
 		else
 			return detail::addressof(v->template unsafe_get<Idx>());
 	}
-	
+
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr auto* get_if(variant<Ts...>* v) noexcept {
+	constexpr auto* get_if(variant<Ts...>* v) noexcept {
 		using rtype = typename variant<Ts...>::template alternative<Idx>;
 		return const_cast<rtype*>(
 			plg::get_if<Idx>(static_cast<const variant<Ts...>*>(v))
 		);
 	}
-	
+
 	// ====== get_if by type
-	
+
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr T* get_if(variant<Ts...>* v) noexcept {
+	constexpr T* get_if(variant<Ts...>* v) noexcept {
 		static_assert((std::is_same_v<T, Ts> || ...), "Requested type is not contained in the variant");
 		return plg::get_if<variant<Ts...>::template index_of<T> >(v);
 	}
-	
+
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr const T* get_if(const variant<Ts...>* v) noexcept {
+	constexpr const T* get_if(const variant<Ts...>* v) noexcept {
 		static_assert((std::is_same_v<T, Ts> || ...), "Requested type is not contained in the variant");
 		return plg::get_if<variant<Ts...>::template index_of<T> >(v);
 	}
-	
+
 	// =============================== visitation (20.7.7)
-	
+
 	template<class Fn, class... Vs>
 	constexpr decltype(auto) visit(Fn&& fn, Vs&&... vs) {
 		if constexpr ((std::decay_t<Vs>::can_be_valueless || ...))
 			PLUGIFY_ASSERT(!(vs.valueless_by_exception() || ...), "plg::variant:visit(): Bad variant access in visit.", bad_variant_access);
-	
+
 		if constexpr (sizeof...(Vs) == 1)
 			return detail::visit(PLG_FWD(fn), PLG_FWD(vs)...);
 		else
 			return detail::multi_visit(PLG_FWD(fn), PLG_FWD(vs)...);
 	}
-	
+
 	template<class Fn>
 	constexpr decltype(auto) visit(Fn&& fn) {
 		return PLG_FWD(fn)();
 	}
-	
+
 	template<class R, class Fn, class... Vs>
 		requires (is_variant<Vs> && ...)
 	constexpr R visit(Fn&& fn, Vs&&... vars) {
 		return static_cast<R>(plg::visit(PLG_FWD(fn), PLG_FWD(vars)...));
 	}
-	
+
 	// ============================== relational operators (20.7.6)
-	
+
 	template<class... Ts>
 		requires (detail::has_eq_comp<Ts> && ...)
-	[[nodiscard]] constexpr bool operator==(const variant<Ts...>& v1, const variant<Ts...>& v2) {
+	constexpr bool operator==(const variant<Ts...>& v1, const variant<Ts...>& v2) {
 		if (v1.index() != v2.index())
 			return false;
 		if constexpr (variant<Ts...>::can_be_valueless)
@@ -1082,17 +1082,17 @@ namespace plg {
 			return (v1.template unsafe_get<index>() == elem);
 		});
 	}
-	
+
 	template<class... Ts>
-	[[nodiscard]] constexpr bool operator!=(const variant<Ts...>& v1, const variant<Ts...>& v2)
+	constexpr bool operator!=(const variant<Ts...>& v1, const variant<Ts...>& v2)
 		requires requires { v1 == v2; }
 	{
 		return not(v1 == v2);
 	}
-	
+
 	template<class... Ts>
 		requires (detail::has_lesser_comp<const Ts&> && ...)
-	[[nodiscard]] constexpr bool operator<(const variant<Ts...>& v1, const variant<Ts...>& v2) {
+	constexpr bool operator<(const variant<Ts...>& v1, const variant<Ts...>& v2) {
 		if constexpr (variant<Ts...>::can_be_valueless) {
 			if (v2.valueless_by_exception()) return false;
 			if (v1.valueless_by_exception()) return true;
@@ -1105,17 +1105,17 @@ namespace plg {
 		else
 			return (v1.index() < v2.index());
 	}
-	
+
 	template<class... Ts>
-	[[nodiscard]] constexpr bool operator>(const variant<Ts...>& v1, const variant<Ts...>& v2)
+	constexpr bool operator>(const variant<Ts...>& v1, const variant<Ts...>& v2)
 		requires requires { v2 < v1; }
 	{
 		return v2 < v1;
 	}
-	
+
 	template<class... Ts>
 		requires (detail::has_less_or_eq_comp<const Ts&> && ...)
-	[[nodiscard]] constexpr bool operator<=(const variant<Ts...>& v1, const variant<Ts...>& v2) {
+	constexpr bool operator<=(const variant<Ts...>& v1, const variant<Ts...>& v2) {
 		if constexpr (variant<Ts...>::can_be_valueless) {
 			if (v1.valueless_by_exception()) return true;
 			if (v2.valueless_by_exception()) return false;
@@ -1128,25 +1128,25 @@ namespace plg {
 		else
 			return (v1.index() < v2.index());
 	}
-	
+
 	template<class... Ts>
-	[[nodiscard]] constexpr bool operator>=(const variant<Ts...>& v1, const variant<Ts...>& v2)
+	constexpr bool operator>=(const variant<Ts...>& v1, const variant<Ts...>& v2)
 		requires requires { v2 <= v1; }
 	{
 		return v2 <= v1;
 	}
-	
+
 	// ===================================== monostate (20.7.8, 20.7.9)
-	
+
 	struct monostate{};
-	[[nodiscard]] constexpr bool operator==(monostate, monostate) noexcept { return true; }
-	[[nodiscard]] constexpr bool operator> (monostate, monostate) noexcept { return false; }
-	[[nodiscard]] constexpr bool operator< (monostate, monostate) noexcept { return false; }
-	[[nodiscard]] constexpr bool operator<=(monostate, monostate) noexcept { return true; }
-	[[nodiscard]] constexpr bool operator>=(monostate, monostate) noexcept { return true; }
-	
+	constexpr bool operator==(monostate, monostate) noexcept { return true; }
+	constexpr bool operator> (monostate, monostate) noexcept { return false; }
+	constexpr bool operator< (monostate, monostate) noexcept { return false; }
+	constexpr bool operator<=(monostate, monostate) noexcept { return true; }
+	constexpr bool operator>=(monostate, monostate) noexcept { return true; }
+
 	// ===================================== specialized algorithms (20.7.10)
-	
+
 	template<class... Ts>
 	constexpr void swap(variant<Ts...>& a, variant<Ts...>& b)
 		noexcept(noexcept(a.swap(b)))
@@ -1154,18 +1154,18 @@ namespace plg {
 	{
 		a.swap(b);
 	}
-	
+
 	// ===================================== helper classes (20.7.4)
-	
+
 	template<class T>
 		requires is_variant<T>
 	inline constexpr std::size_t variant_size_v = std::decay_t<T>::size;
-	
+
 	// not sure why anyone would need this, i'm adding it anyway
 	template<class T>
 		requires is_variant<T>
 	struct variant_size : std::integral_constant<std::size_t, variant_size_v<T>> {};
-	
+
 	namespace detail {
 		// ugh, we have to take care of volatile here
 		template<bool IsVolatile>
@@ -1173,36 +1173,36 @@ namespace plg {
 			template<std::size_t Idx, class T>
 			using type = std::remove_reference_t<decltype(std::declval<T>().template unsafe_get<Idx>())>;
 		};
-	
+
 		template<>
 		struct var_alt_impl<true> {
 			template<std::size_t Idx, class T>
 			using type = volatile typename var_alt_impl<false>::template type<Idx, std::remove_volatile_t<T>>;
 		};
 	}
-	
+
 	template<std::size_t Idx, class T>
 		requires (Idx < variant_size_v<T>)
 	using variant_alternative_t = typename detail::var_alt_impl<std::is_volatile_v<T>>::template type<Idx, T>;
-	
+
 	template<std::size_t Idx, class T>
 		requires is_variant<T>
 	struct variant_alternative {
 		using type = variant_alternative_t<Idx, T>;
 	};
-	
+
 	// ===================================== extensions (unsafe_get)
-	
+
 	template<std::size_t Idx, class Var>
 		requires is_variant<Var>
-	[[nodiscard]] constexpr auto&& unsafe_get(Var&& var) noexcept {
+	constexpr auto&& unsafe_get(Var&& var) noexcept {
 		static_assert(Idx < std::decay_t<Var>::size, "Index exceeds the variant size.");
 		return PLG_FWD(var).template unsafe_get<Idx>();
 	}
-	
+
 	template<class T, class Var>
 		requires is_variant<Var>
-	[[nodiscard]] constexpr auto&& unsafe_get(Var&& var) noexcept {
+	constexpr auto&& unsafe_get(Var&& var) noexcept {
 		return plg::unsafe_get<std::decay_t<Var>::template index_of<T>>(PLG_FWD(var));
 	}
 

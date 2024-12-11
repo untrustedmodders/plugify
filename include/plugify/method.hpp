@@ -27,14 +27,14 @@ namespace plugify {
 		 *
 		 * @return The value type of the property.
 		 */
-		[[nodiscard]] ValueType GetType() const noexcept;
+		ValueType GetType() const noexcept;
 
 		/**
 		 * @brief Checks if the property is a reference.
 		 *
 		 * @return `true` if the property is a reference, otherwise `false`.
 		 */
-		[[nodiscard]] bool IsReference() const noexcept;
+		bool IsReference() const noexcept;
 
 		/**
 		 * @brief Retrieves the prototype method for the property.
@@ -42,7 +42,7 @@ namespace plugify {
 		 * @return An optional `MethodRef` representing the prototype method.
 		 *         Returns an empty optional if no prototype exists.
 		 */
-		[[nodiscard]] std::optional<MethodRef> GetPrototype() const noexcept;
+		std::optional<MethodRef> GetPrototype() const noexcept;
 	};
 	static_assert(is_ref_v<PropertyRef>);
 
@@ -62,42 +62,42 @@ namespace plugify {
 		 *
 		 * @return A string view representing the name of the method.
 		 */
-		[[nodiscard]] std::string_view GetName() const noexcept;
+		std::string_view GetName() const noexcept;
 
 		/**
 		 * @brief Retrieves the function name of the method.
 		 *
 		 * @return A string view representing the function name of the method.
 		 */
-		[[nodiscard]] std::string_view GetFunctionName() const noexcept;
+		std::string_view GetFunctionName() const noexcept;
 
 		/**
 		 * @brief Retrieves the calling convention of the method.
 		 *
 		 * @return A string view representing the calling convention.
 		 */
-		[[nodiscard]] std::string_view GetCallingConvention() const noexcept;
+		std::string_view GetCallingConvention() const noexcept;
 
 		/**
 		 * @brief Retrieves the parameter types for the method.
 		 *
 		 * @return A span of `PropertyRef` objects representing the parameter types.
 		 */
-		[[nodiscard]] std::span<const PropertyRef> GetParamTypes() const noexcept;
+		std::span<const PropertyRef> GetParamTypes() const noexcept;
 
 		/**
 		 * @brief Retrieves the return type of the method.
 		 *
 		 * @return A `PropertyRef` representing the return type of the method.
 		 */
-		[[nodiscard]] PropertyRef GetReturnType() const noexcept;
+		PropertyRef GetReturnType() const noexcept;
 
 		/**
 		 * @brief Retrieves the variable index for the method.
 		 *
 		 * @return An 8-bit unsigned integer representing the variable index.
 		 */
-		[[nodiscard]] uint8_t GetVarIndex() const noexcept;
+		uint8_t GetVarIndex() const noexcept;
 
 		/**
 		 * @brief Attempts to find a prototype method by its name in the current method's parameters or return type.
@@ -120,7 +120,7 @@ namespace plugify {
 		 * }
 		 * @endcode
 		 */
-		[[nodiscard]] std::optional<MethodRef> FindPrototype(std::string_view name) const noexcept;
+		std::optional<MethodRef> FindPrototype(std::string_view name) const noexcept;
 	};
 	static_assert(is_ref_v<MethodRef>);
 } // namespace plugify
