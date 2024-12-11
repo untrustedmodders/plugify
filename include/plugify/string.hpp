@@ -72,7 +72,7 @@ namespace plg {
 
 	// basic_string
 	// based on implementations from libc++, libstdc++ and Microsoft STL
-	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>> requires(detail::is_traits_v<Traits> && detail::is_allocator_v<Allocator>)
+	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>> requires (detail::is_traits_v<Traits> && detail::is_allocator_v<Allocator>)
 	class basic_string {
 	private:
 		using allocator_traits = std::allocator_traits<Allocator>;
@@ -527,7 +527,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type>)
+			requires (std::is_convertible_v<const Type&, sview_type>)
 		constexpr basic_string(const Type& t, size_type pos, size_type count, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
 			auto sv = sview_type(t);
@@ -539,7 +539,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string(const Type& t, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
@@ -595,7 +595,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& operator=(const Type& t) {
 			sview_type sv(t);
@@ -695,7 +695,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& assign(const Type& t) {
 			sview_type sv(t);
@@ -703,7 +703,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& assign(const Type& t, size_type pos, size_type count = npos) {
 			auto sv = sview_type(t).substr(pos, count);
@@ -944,7 +944,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& insert(size_type pos, const Type& t) {
 			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::insert(): pos out of range", std::out_of_range);
@@ -955,7 +955,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& insert(size_type pos, const Type& t, size_type pos_str, size_type count = npos) {
 			auto sv = sview_type(t);
@@ -1063,7 +1063,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& append(const Type& t) {
 			sview_type sv(t);
@@ -1073,7 +1073,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& append(const Type& t, size_type pos, size_type count = npos) {
 			sview_type sv(t);
@@ -1111,7 +1111,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& operator+=(const Type& t) {
 			return append(sview_type(t));
@@ -1142,21 +1142,21 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr int compare(const Type& t) const noexcept(noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>)) {
 			return view().compare(sview_type(t));
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr int compare(size_type pos1, size_type count1, const Type& t) const {
 			return view().compare(pos1, count1, sview_type(t));
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr int compare(size_type pos1, size_type count1, const Type& t, size_type pos2, size_type count2 = npos) const {
 			return view().compare(pos1, count1, sview_type(t), pos2, count2);
@@ -1266,7 +1266,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& replace(size_type pos, size_type count, const Type& t) {
 			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
@@ -1275,7 +1275,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& replace(const_iterator first, const_iterator last, const Type& t) {
 			sview_type sv(t);
@@ -1283,7 +1283,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr basic_string& replace(size_type pos, size_type count, const Type& t, size_type pos2, size_type count2 = npos) {
 			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
@@ -1358,7 +1358,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr size_type find(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return view().find(sview_type(t), pos);
@@ -1381,7 +1381,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr size_type rfind(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return view().rfind(sview_type(t), pos);
@@ -1404,7 +1404,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr size_type find_first_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return view().find_first_of(sview_type(t), pos);
@@ -1427,7 +1427,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr size_type find_first_not_of(const Type& t, size_type pos = 0) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return view().find_first_not_of(sview_type(t), pos);
@@ -1450,7 +1450,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr size_type find_last_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return view().find_last_of(sview_type(t), pos);
@@ -1473,7 +1473,7 @@ namespace plg {
 		}
 
 		template<typename Type>
-			requires(std::is_convertible_v<const Type&, sview_type> &&
+			requires (std::is_convertible_v<const Type&, sview_type> &&
 					 !std::is_convertible_v<const Type&, const Char*>)
 		constexpr size_type find_last_not_of(const Type& t, size_type pos = npos) const noexcept(std::is_nothrow_convertible_v<const Type&, sview_type>) {
 			return view().find_last_not_of(sview_type(t), pos);
