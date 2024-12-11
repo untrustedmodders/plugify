@@ -5,6 +5,7 @@
 #include <utility>
 #include <memory>
 #include <initializer_list>
+#include <memory_resource>
 #include <algorithm>
 #include <span>
 #include <limits>

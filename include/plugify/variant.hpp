@@ -915,7 +915,7 @@ namespace plg {
 
 #ifdef PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE
 			using T = alternative<Idx>;
-			new ((void*)(ptr)) t(PLG_FWD(args)...);
+			new (const_cast<void*>(ptr)) t(PLG_FWD(args)...);
 #else
 			std::construct_at(ptr, PLG_FWD(args)...);
 #endif // PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE
