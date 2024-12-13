@@ -9,6 +9,7 @@
 #include <span>
 #include <limits>
 #include <optional>
+#include <algorithm>
 
 #include <cstdint>
 #include <cstddef>
