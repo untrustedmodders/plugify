@@ -6,10 +6,21 @@
 namespace plugify {
 	struct Method;
 
+	struct EnumValue final {
+		std::string name;
+		int64_t value;
+	};
+
+	struct Enum final {
+		std::string name;
+		std::vector<EnumValue> values;
+	};
+
 	struct Property final {
 		ValueType type{};
 		bool ref{ false };
 		std::shared_ptr<Method> prototype;
+		std::shared_ptr<Enum> enumerate;
 	};
 
 	struct Method final {

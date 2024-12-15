@@ -169,6 +169,27 @@ struct glz::meta<plugify::LocalPackage> {
 };
 
 template <>
+struct glz::meta<plugify::EnumValue> {
+	using T = plugify::EnumValue;
+	static constexpr auto value = object(
+			"name", &T::name,
+			"description", skip{},
+			"value", &T::value
+	);
+};
+
+
+template <>
+struct glz::meta<plugify::Enum> {
+	using T = plugify::Enum;
+	static constexpr auto value = object(
+			"name", &T::name,
+			"description", skip{},
+			"values", &T::values
+	);
+};
+
+template <>
 struct glz::meta<plugify::Property> {
 	using T = plugify::Property;
 	static constexpr auto value = object(
@@ -177,7 +198,7 @@ struct glz::meta<plugify::Property> {
 			"description", skip{},
 			"ref", &T::ref,
 			"prototype", &T::prototype,
-			"enum", skip{}
+			"enum", &T::enumerate
 	);
 };
 
