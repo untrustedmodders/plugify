@@ -43,6 +43,14 @@ std::optional<MethodRef> PropertyRef::GetPrototype() const noexcept {
 	}
 }
 
+std::optional<EnumRef> PropertyRef::GetEnum() const noexcept {
+	if (_impl->enumerate) {
+		return { *(_impl->enumerate) };
+	} else {
+		return {};
+	}
+}
+
 std::string_view MethodRef::GetName() const noexcept {
 	return _impl->name;
 }
