@@ -132,6 +132,20 @@ void ValidateDependencies(const std::string& name, std::vector<std::string>& err
 	}
 }
 
+void ValidateEnum(std::vector<std::string>& errors, const Enum& enumerate, size_t i) {
+	if (enumerate.name.empty()) {
+		errors.emplace_back(std::format("Missing enum name at: {}", i));
+	}
+
+	if (!enumerate.values.empty()) {
+		for (const auto& value : enumerate.values) {
+			if (value.name.empty()) {
+				errors.emplace_back(std::format("Missing enum value name for: {}", enumerate.name));
+			}
+		}
+	}
+}
+
 void ValidateParameters(std::vector<std::string>& errors, const Method& method, size_t i) {
 	for (const auto& property : method.paramTypes) {
 		if (property.type == ValueType::Void) {
@@ -142,6 +156,10 @@ void ValidateParameters(std::vector<std::string>& errors, const Method& method, 
 
 		if (property.prototype) {
 			ValidateParameters(errors, *property.prototype, i);
+		}
+
+		if (property.enumerate) {
+			ValidateEnum(errors, *property.enumerate, i);
 		}
 	}
 
