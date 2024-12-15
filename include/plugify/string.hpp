@@ -255,7 +255,7 @@ namespace plg {
 			auto old_cap = get_long_cap();
 			auto& old_buffer = get_long_data();
 
-			auto new_len = std::min<size_type>(new_cap, old_len);
+			auto new_len = std::min(new_cap, old_len);
 			auto new_data = allocator_traits::allocate(_allocator, new_cap + 1);
 
 			if (old_buffer != nullptr) {
@@ -466,7 +466,7 @@ namespace plg {
 		constexpr basic_string(const basic_string& str, size_type pos, size_type count, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
 			PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::basic_string(): pos out of range", std::out_of_range);
-			auto len = std::min<size_type>(count, str.size() - pos);
+			auto len = std::min(count, str.size() - pos);
 			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
 			internal_assign(str.data() + pos, len);
 		}
@@ -614,7 +614,7 @@ namespace plg {
 
 		constexpr basic_string& assign(const basic_string& str, size_type pos, size_type count = npos) {
 			PLUGIFY_ASSERT(pos <= str.size(), "plg::basic_string::assign(): pos out of range", std::out_of_range);
-			internal_assign(str.data(), std::min<size_type>(count, str.size() - pos));
+			internal_assign(str.data(), std::min(count, str.size() - pos));
 			return *this;
 		}
 
@@ -858,7 +858,7 @@ namespace plg {
 			if (cap <= capacity())
 				return;
 
-			auto new_cap = std::max<size_type>(cap, size());
+			auto new_cap = std::max(cap, size());
 			if (new_cap == capacity())
 				return;
 
@@ -911,7 +911,7 @@ namespace plg {
 
 		constexpr basic_string& insert(size_type pos, const basic_string& str, size_type pos_str, size_type count = npos) {
 			PLUGIFY_ASSERT(pos <= size() && pos_str <= str.size(), "plg::basic_string::insert(): pos or pos_str out of range", std::out_of_range);
-			count = std::min<size_type>(count, str.length() - pos_str);
+			count = std::min(count, str.length() - pos_str);
 			PLUGIFY_ASSERT(size() + count <= max_size(), "plg::basic_string::insert(): resulted string size would exceed max_size()", std::length_error);
 			return insert(pos, str.data() + pos_str, count);
 		}
@@ -981,7 +981,7 @@ namespace plg {
 
 			PLUGIFY_ASSERT(pos <= sz, "plg::basic_string::erase(): pos out of range", std::out_of_range);
 
-			count = std::min<size_type>(count, sz - pos);
+			count = std::min(count, sz - pos);
 
 			auto left = sz - (pos + count);
 			if (left != 0)
@@ -1211,7 +1211,7 @@ namespace plg {
 
 		constexpr basic_string& replace(size_type pos, size_type count, const basic_string& str, size_type pos2, size_type count2 = npos) {
 			PLUGIFY_ASSERT(pos <= size() && pos2 <= str.size(), "plg::basic_string::replace(): pos or pos_str out of range", std::out_of_range);
-			count2 = std::min<size_type>(count2, str.length() - pos2);
+			count2 = std::min(count2, str.length() - pos2);
 			auto ssv = sview_type(str).substr(pos2, count2);
 			return replace(pos, count, ssv.data(), ssv.length());
 		}
@@ -1223,7 +1223,7 @@ namespace plg {
 
 		constexpr basic_string& replace(size_type pos, size_type count, const value_type* str, size_type count2) {
 			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
-			count = std::min<size_type>(count, length() - pos);
+			count = std::min(count, length() - pos);
 			PLUGIFY_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
 			internal_replace(pos, const_pointer(str), count, count2);
 			return *this;
@@ -1245,7 +1245,7 @@ namespace plg {
 
 		constexpr basic_string& replace(size_type pos, size_type count, size_type count2, value_type ch) {
 			PLUGIFY_ASSERT(pos <= size(), "plg::basic_string::replace(): pos out of range", std::out_of_range);
-			count = std::min<size_type>(count, length() - pos);
+			count = std::min(count, length() - pos);
 			PLUGIFY_ASSERT(size() - count + count2 <= max_size(), "plg::basic_string::replace(): resulted string size would exceed max_size()", std::length_error);
 			internal_replace(pos, ch, count, count2);
 			return *this;
