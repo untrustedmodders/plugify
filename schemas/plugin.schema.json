@@ -153,7 +153,8 @@
           "name": {
             "type": "string",
             "title": "Function name to export to the other plugins.",
-            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "minLength": 1
           },
           "group": {
             "type": "string",
@@ -166,7 +167,8 @@
           "funcName": {
             "type": "string",
             "title": "Internal function name in plugin's assembly.",
-            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "minLength": 1
           },
           "paramTypes": {
             "type": "array",
@@ -175,6 +177,7 @@
               "type": "object",
               "title": "Parameter's information.",
               "required": [
+                "name",
                 "type"
               ],
               "properties": {
@@ -186,7 +189,8 @@
                 "name": {
                   "type": "string",
                   "title": "Parameter's name for generator.",
-                  "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                  "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                  "minLength": 1
                 },
                 "description": {
                   "type": "string",
@@ -203,8 +207,13 @@
                   "properties": {
                     "name": {
                       "type": "string",
-                      "title": "Function name.",
-                      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                      "title": "Function's name.",
+                      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string",
+                      "title": "Function's description for documentation."
                     },
                     "paramTypes": {
                       "type": "array",
@@ -213,6 +222,7 @@
                         "type": "object",
                         "title": "Parameter's information.",
                         "required": [
+                          "name",
                           "type"
                         ],
                         "properties": {
@@ -224,7 +234,12 @@
                           "name": {
                             "type": "string",
                             "title": "Parameter's name.",
-                            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                            "minLength": 1
+                          },
+                          "description": {
+                            "type": "string",
+                            "title": "Parameter's description for documentation."
                           }
                         }
                       }
@@ -244,7 +259,56 @@
                         "name": {
                           "type": "string",
                           "title": "Return's name.",
-                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                },
+                "enum": {
+                  "type": "object",
+                  "title": "An object describing enum structure.",
+                  "required": [
+                    "name",
+                    "values"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "title": "Enum name.",
+                      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string",
+                      "title": "Enum's description for documentation."
+                    },
+                    "values": {
+                      "type": "array",
+                      "title": "Enum entries.",
+                      "items": {
+                        "type": "object",
+                        "title": "Value's information.",
+                        "required": [
+                          "name",
+                          "value"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "title": "Enum's value name.",
+                            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                            "minLength": 1
+                          },
+                          "description": {
+                            "type": "string",
+                            "title": "Enum's value description for documentation."
+                          },
+                          "value": {
+                            "type": "integer",
+                            "title": "An integer representing the value of the enum element."
+                          }
                         }
                       }
                     }
@@ -257,6 +321,7 @@
             "type": "object",
             "title": "Return's information.",
             "required": [
+              "name",
               "type"
             ],
             "properties": {
@@ -268,7 +333,8 @@
               "name": {
                 "type": "string",
                 "title": "Return's name for generator.",
-                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                "minLength": 1
               },
               "description": {
                 "type": "string",
@@ -285,8 +351,13 @@
                 "properties": {
                   "name": {
                     "type": "string",
-                    "title": "Function name.",
-                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                    "title": "Function's name.",
+                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "title": "Function's description for documentation."
                   },
                   "paramTypes": {
                     "type": "array",
@@ -295,6 +366,7 @@
                       "type": "object",
                       "title": "Parameter's information.",
                       "required": [
+                        "name",
                         "type"
                       ],
                       "properties": {
@@ -306,7 +378,12 @@
                         "name": {
                           "type": "string",
                           "title": "Parameter's name.",
-                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                          "minLength": 1
+                        },
+                        "description": {
+                          "type": "string",
+                          "title": "Parameter's description for documentation."
                         }
                       }
                     }
@@ -326,7 +403,56 @@
                       "name": {
                         "type": "string",
                         "title": "Return's name.",
-                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              },
+              "enum": {
+                "type": "object",
+                "title": "An object describing enum structure.",
+                "required": [
+                  "name",
+                  "values"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "title": "Enum name.",
+                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "title": "Enum's description for documentation."
+                  },
+                  "values": {
+                    "type": "array",
+                    "title": "Enum entries.",
+                    "items": {
+                      "type": "object",
+                      "title": "Value's information.",
+                      "required": [
+                        "name",
+                        "value"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "title": "Enum's value name.",
+                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                          "minLength": 1
+                        },
+                        "description": {
+                          "type": "string",
+                          "title": "Enum's value description for documentation."
+                        },
+                        "value": {
+                          "type": "integer",
+                          "title": "An integer representing the value of the enum element."
+                        }
                       }
                     }
                   }
