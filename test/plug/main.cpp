@@ -144,7 +144,7 @@ int main() {
 
             if (args[0] == "-e" || args[0] == "exit" || args[0] == "-q" || args[0] == "quit") {
                 running = false;
-            } else if (args[0] == "plugify" && args.size() > 1) {
+            } else if ((args[0] == "plg" || args[0] == "plugify") && args.size() > 1) {
                 if (args[1] == "init") {
 					if (!plug->Initialize()) {
 						CONPRINTE("No feet, no sweets!");
@@ -519,13 +519,13 @@ int main() {
 
 					else {
 						CONPRINTF("unknown option: {}", args[1]);
-						CONPRINT("usage: plugify <command> [options] [arguments]");
-						CONPRINT("Try plugify help or -h for more information.");
+						CONPRINT("usage: plg <command> [options] [arguments]");
+						CONPRINT("Try plg help or -h for more information.");
 					}
 				}
 			} else {
-				CONPRINT("usage: plugify <command> [options] [arguments]");
-				CONPRINT("Try plugify help or -h for more information.");
+				CONPRINT("usage: plg <command> [options] [arguments]");
+				CONPRINT("Try plg help or -h for more information.");
 			}
         }
     }
