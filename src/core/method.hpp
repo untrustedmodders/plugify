@@ -14,6 +14,10 @@ namespace plugify {
 	struct Enum final {
 		std::string name;
 		std::vector<EnumValue> values;
+
+	private:
+		mutable std::shared_ptr<std::vector<EnumValueRef>> _values;
+		friend class EnumRef;
 	};
 
 	struct Property final {

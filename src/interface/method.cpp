@@ -4,6 +4,29 @@
 
 using namespace plugify;
 
+std::string_view EnumValueRef::GetName() const noexcept {
+	return _impl->name;
+}
+
+int64_t EnumValueRef::GetValue() const noexcept {
+	return _impl->value;
+}
+
+std::string_view EnumRef::GetName() const noexcept {
+	return _impl->name;
+}
+
+std::span<const EnumValueRef> EnumRef::GetValues() const noexcept {
+	if (!_impl->_values) {
+		_impl->_values = make_shared_nothrow<std::vector<EnumValueRef>>(_impl->values.begin(), _impl->values.end());
+	}
+	if (_impl->_values) {
+		return *_impl->_values;
+	} else {
+		return {};
+	}
+}
+
 ValueType PropertyRef::GetType() const noexcept {
 	return _impl->type;
 }

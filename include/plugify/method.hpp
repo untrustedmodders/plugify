@@ -8,9 +8,62 @@
 #include <string>
 
 namespace plugify {
+	struct EnumValue;
+	struct Enum;
 	struct Method;
 	struct Property;
 	class MethodRef;
+
+	/**
+	 * @class EnumValueRef
+	 * @brief A reference class for an `EnumValue` structure.
+	 *
+	 * This class holds a reference to a specific value within an `Enum` object, allowing users
+	 * to retrieve information such as the name and value of the enum element.
+	 */
+	class PLUGIFY_API EnumValueRef : public Ref<const EnumValue> {
+		using Ref::Ref; ///< Inherit constructors from Ref<const EnumValue>.
+	public:
+		/**
+		 * @brief Retrieves the enum value name.
+		 *
+		 * @return A string view representing the name of the enum value.
+		 */
+		std::string_view GetName() const noexcept;
+
+		/**
+		 * @brief Retrieves the enum value.
+		 *
+		 * @return An integer representing the value of the enum element.
+		 */
+		int64_t GetValue() const noexcept;
+	};
+	static_assert(is_ref_v<EnumValueRef>);
+
+	/**
+	 * @class EnumRef
+	 * @brief A reference class for the `Enum` structure.
+	 *
+	 * This class holds a reference to an `Enum` object, providing access to its name and values.
+	 */
+	class PLUGIFY_API EnumRef : public Ref<const Enum> {
+		using Ref::Ref; ///< Inherit constructors from Ref<const Enum>.
+	public:
+		/**
+		 * @brief Retrieves the enum name.
+		 *
+		 * @return A string view representing the name of the enum.
+		 */
+		std::string_view GetName() const noexcept;
+
+		/**
+		 * @brief Retrieves the values contained within the enum.
+		 *
+		 * @return A span of `EnumValueRef` objects representing the values in the enum.
+		 */
+		std::span<const EnumValueRef> GetValues() const noexcept;
+	};
+	static_assert(is_ref_v<EnumRef>);
 
 	/**
 	 * @class PropertyRef
@@ -43,6 +96,14 @@ namespace plugify {
 		 *         Returns an empty optional if no prototype exists.
 		 */
 		std::optional<MethodRef> GetPrototype() const noexcept;
+
+		/**
+		 * @brief Retrieves the enum information for the property.
+		 *
+		 * @return An optional `EnumRef` representing the enum information.
+		 *         Returns an empty optional if no enum exists.
+		 */
+		std::optional<EnumRef> GetEnum() const noexcept;
 	};
 	static_assert(is_ref_v<PropertyRef>);
 
@@ -123,4 +184,6 @@ namespace plugify {
 		std::optional<MethodRef> FindPrototype(std::string_view name) const noexcept;
 	};
 	static_assert(is_ref_v<MethodRef>);
+
+
 } // namespace plugify
