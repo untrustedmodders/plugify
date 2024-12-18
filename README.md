@@ -1,5 +1,8 @@
 <a name="readme-top"></a>
 
+[![Documentation](https://img.shields.io/badge/docs-doxygen-blue)](https://untrustedmodders.github.io/plugify/)
+[![Discord channel](https://img.shields.io/discord/1215604597972795403?logo=discord)](https://discord.com/invite/rX9TMmpang)
+
 <h1 align="center">
   <a href="https://github.com/untrustedmodders/plugify">
     <!-- Please provide path to your logo here -->
@@ -17,7 +20,6 @@
   <a href="https://github.com/untrustedmodders/plugify/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask a Question</a>
 </div>
 
-<div align="center">
 <br />
 
 </div>
@@ -263,26 +265,49 @@ Additionally, we offer an online documentation [generator](https://untrustedmodd
 
 To build the basic testing app:
 
-1. Clone the repo
+1. Install dependencies:
+   
+   a. Windows
+   > Setting up [CMake tools with Visual Studio Installer](https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio#installation)
+
+   b. Linux:
+   ```sh
+   sudo apt-get install -y build-essential cmake ninja-build
+   ```
+   
+   c. Mac:
+   ```sh
+   brew install cmake ninja
+   ```
+   
+3. Clone the repo:
+   
    ```sh
    git clone https://github.com/untrustedmodders/plugify.git
    ```
-2. Install CURL, otherwise build it in embedding mode with cmake options  
+   
+5. Install CURL, otherwise build it in embedding mode with cmake options:
+    
    a. Linux:
    ```sh
    sudo apt-get install -y libcurl4-openssl-dev
    ```
+   
    b. Mac:
    ```sh
    brew install curl
    ```
+   
    > The dependencies can be used as external `(find_package)` and embedding `(add_subdirectory)`, you can use plugify options to choose what you suits your need.
-3. Create build folder
+7. Create build folder:
+   
    ```sh
    mkdir build
    cd build
    ```
-4. Build the project
+   
+9. Build the project:
+    
    ```sh
    cmake .. 
    cmake --build . --target plug
