@@ -128,7 +128,7 @@ namespace plugify {
 		 * This method is called once per game frame and allows the language module
 		 * to perform periodic updates or processing required during the game loop.
 		 */
-		virtual void OnGameFrame() = 0;
+		//virtual void OnGameFrame() = 0;
 
 		/**
 		* @brief Determine if language module is build with debugging mode.
