@@ -123,6 +123,14 @@ namespace plugify {
 		virtual void OnMethodExport(PluginRef plugin) = 0;
 
 		/**
+		 * @brief Handle actions to be performed on each game frame.
+		 *
+		 * This method is called once per game frame and allows the language module
+		 * to perform periodic updates or processing required during the game loop.
+		 */
+		virtual void OnGameFrame() = 0;
+
+		/**
 		* @brief Determine if language module is build with debugging mode.
 		* @return True if the assembly is build with debugging, false otherwise.
 		*/
