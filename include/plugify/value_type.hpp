@@ -82,7 +82,7 @@ namespace plugify {
 		_FloatEnd = Double,
 
 		_ObjectStart = String,
-		_ObjectEnd = ArrayAny,
+		_ObjectEnd = ArrayMatrix4x4,
 
 		_ArrayStart = ArrayBool,
 		_ArrayEnd = ArrayMatrix4x4,
