@@ -52,6 +52,10 @@ namespace plugify::JitUtils {
 			case ValueType::ArrayDouble:
 			case ValueType::ArrayString:
 			case ValueType::ArrayAny:
+			case ValueType::ArrayVector2:
+			case ValueType::ArrayVector3:
+			case ValueType::ArrayVector4:
+			case ValueType::ArrayMatrix4x4:
 			case ValueType::Vector2:
 			case ValueType::Vector3:
 			case ValueType::Vector4:
@@ -112,6 +116,10 @@ namespace plugify::JitUtils {
 			case ValueType::ArrayDouble:
 			case ValueType::ArrayString:
 			case ValueType::ArrayAny:
+			case ValueType::ArrayVector2:
+			case ValueType::ArrayVector3:
+			case ValueType::ArrayVector4:
+			case ValueType::ArrayMatrix4x4:
 			case ValueType::Matrix4x4:
 				return asmjit::TypeId::kUIntPtr;
 			case ValueType::Vector2:
