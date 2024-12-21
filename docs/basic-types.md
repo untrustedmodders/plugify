@@ -2,48 +2,52 @@
 
 The following lists how the types are exposed to the C++ API.
 
-| Type                       | Alias    | Ref ? |
-|----------------------------|----------|-------|
-| void                       | void     | false |
-| bool                       | bool     | true  |
-| char                       | char8    | true  |
-| char16_t                   | char16   | true  |
-| int8_t                     | int8     | true  |
-| int16_t                    | int16    | true  |
-| int32_t                    | int32    | true  |
-| int64_t                    | int64    | true  |
-| uint8_t                    | uint8    | true  |
-| uint16_t                   | uint16   | true  |
-| uint32_t                   | uint32   | true  |
-| uint64_t                   | uint64   | true  |
-| uintptr_t                  | ptr64    | true  |
-| uintptr_t                  | ptr32    | true  |
-| float                      | float    | true  |
-| double                     | double   | true  |
-| void*                      | function | false |
-| plg::string                | string   | true  |
-| plg::any                   | any      | true  |
-| plg::vector\<bool\>        | bool[]   | true  |
-| plg::vector\<char\>        | char8[]  | true  |
-| plg::vector\<char16_t\>    | char16[] | true  |
-| plg::vector\<int8_t\>      | int8[]   | true  |
-| plg::vector\<int16_t\>     | int16[]  | true  |
-| plg::vector\<int32_t\>     | int32[]  | true  |
-| plg::vector\<int64_t\>     | int64[]  | true  |
-| plg::vector\<uint8_t\>     | uint8[]  | true  |
-| plg::vector\<uint16_t\>    | uint16[] | true  |
-| plg::vector\<uint32_t\>    | uint32[] | true  |
-| plg::vector\<uint64_t\>    | uint64[] | true  |
-| plg::vector\<uintptr_t\>   | ptr64[]  | true  |
-| plg::vector\<uintptr_t\>   | ptr32[]  | true  |
-| plg::vector\<float\>       | float[]  | true  |
-| plg::vector\<double\>      | double[] | true  |
-| plg::vector\<plg::string\> | string[] | true  |
-| plg::vector\<plg::any\>    | any[]    | true  |
-| plg::vec2                  | vec2     | true  |
-| plg::vec3                  | vec3     | true  |
-| plg::vec4                  | vec4     | true  |
-| plg::mat4x4                | mat4x4   | true  |
+| Type                         | Alias    | Ref ? |
+|------------------------------|----------|-------|
+| void                         | void     | false |
+| bool                         | bool     | true  |
+| char                         | char8    | true  |
+| char16_t                     | char16   | true  |
+| int8_t                       | int8     | true  |
+| int16_t                      | int16    | true  |
+| int32_t                      | int32    | true  |
+| int64_t                      | int64    | true  |
+| uint8_t                      | uint8    | true  |
+| uint16_t                     | uint16   | true  |
+| uint32_t                     | uint32   | true  |
+| uint64_t                     | uint64   | true  |
+| uintptr_t                    | ptr64    | true  |
+| uintptr_t                    | ptr32    | true  |
+| float                        | float    | true  |
+| double                       | double   | true  |
+| void*                        | function | false |
+| plg::string                  | string   | true  |
+| plg::any                     | any      | true  |
+| plg::vector\<bool\>          | bool[]   | true  |
+| plg::vector\<char\>          | char8[]  | true  |
+| plg::vector\<char16_t\>      | char16[] | true  |
+| plg::vector\<int8_t\>        | int8[]   | true  |
+| plg::vector\<int16_t\>       | int16[]  | true  |
+| plg::vector\<int32_t\>       | int32[]  | true  |
+| plg::vector\<int64_t\>       | int64[]  | true  |
+| plg::vector\<uint8_t\>       | uint8[]  | true  |
+| plg::vector\<uint16_t\>      | uint16[] | true  |
+| plg::vector\<uint32_t\>      | uint32[] | true  |
+| plg::vector\<uint64_t\>      | uint64[] | true  |
+| plg::vector\<uintptr_t\>     | ptr64[]  | true  |
+| plg::vector\<uintptr_t\>     | ptr32[]  | true  |
+| plg::vector\<float\>         | float[]  | true  |
+| plg::vector\<double\>        | double[] | true  |
+| plg::vector\<plg::string\>   | string[] | true  |
+| plg::vector\<plg::any\>      | any[]    | true  |
+| plg::vector\<plg::vec2\>     | vec2[]    | true  |
+| plg::vector\<plg::vec3\>     | vec3[]    | true  |
+| plg::vector\<plg::vec4\>     | vec4[]    | true  |
+| plg::vector\<plg::mat4x4\>   | mat4x4[]    | true  |
+| plg::vec2                    | vec2     | true  |
+| plg::vec3                    | vec3     | true  |
+| plg::vec4                    | vec4     | true  |
+| plg::mat4x4                  | mat4x4   | true  |
 
 ## Exported Functions
 

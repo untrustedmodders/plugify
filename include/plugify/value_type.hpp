@@ -53,6 +53,10 @@ namespace plugify {
 		ArrayDouble,
 		ArrayString,
 		ArrayAny,
+		ArrayVector2,
+		ArrayVector3,
+		ArrayVector4,
+		ArrayMatrix4x4,
 
 		// Structs
 		Vector2,
@@ -81,7 +85,7 @@ namespace plugify {
 		_ObjectEnd = ArrayAny,
 
 		_ArrayStart = ArrayBool,
-		_ArrayEnd = ArrayAny,
+		_ArrayEnd = ArrayMatrix4x4,
 
 		_StructStart = Vector2,
 		_StructEnd = Matrix4x4,
@@ -131,6 +135,10 @@ namespace plugify {
 		static constexpr std::string_view ArrayDouble = "double[]";
 		static constexpr std::string_view ArrayString = "string[]";
 		static constexpr std::string_view ArrayAny = "any[]";
+		static constexpr std::string_view ArrayVector2 = "vec2[]";
+		static constexpr std::string_view ArrayVector3 = "vec3[]";
+		static constexpr std::string_view ArrayVector4 = "vec4[]";
+		static constexpr std::string_view ArrayMatrix4x4 = "mat4x4[]";
 		static constexpr std::string_view Vector2 = "vec2";
 		static constexpr std::string_view Vector3 = "vec3";
 		static constexpr std::string_view Vector4 = "vec4";
@@ -379,45 +387,49 @@ namespace plugify {
 		 */
 		[[maybe_unused]] constexpr std::string_view ToString(ValueType value) noexcept {
 			switch (value) {
-				case ValueType::Void:          return ValueName::Void;
-				case ValueType::Bool:          return ValueName::Bool;
-				case ValueType::Char8:         return ValueName::Char8;
-				case ValueType::Char16:        return ValueName::Char16;
-				case ValueType::Int8:          return ValueName::Int8;
-				case ValueType::Int16:         return ValueName::Int16;
-				case ValueType::Int32:         return ValueName::Int32;
-				case ValueType::Int64:         return ValueName::Int64;
-				case ValueType::UInt8:         return ValueName::UInt8;
-				case ValueType::UInt16:        return ValueName::UInt16;
-				case ValueType::UInt32:        return ValueName::UInt32;
-				case ValueType::UInt64:        return ValueName::UInt64;
-				case ValueType::Pointer:       return ValueName::Pointer;
-				case ValueType::Float:         return ValueName::Float;
-				case ValueType::Double:        return ValueName::Double;
-				case ValueType::Function:      return ValueName::Function;
-				case ValueType::String:        return ValueName::String;
-				case ValueType::Any:           return ValueName::Any;
-				case ValueType::ArrayBool:     return ValueName::ArrayBool;
-				case ValueType::ArrayChar8:    return ValueName::ArrayChar8;
-				case ValueType::ArrayChar16:   return ValueName::ArrayChar16;
-				case ValueType::ArrayInt8:     return ValueName::ArrayInt8;
-				case ValueType::ArrayInt16:    return ValueName::ArrayInt16;
-				case ValueType::ArrayInt32:    return ValueName::ArrayInt32;
-				case ValueType::ArrayInt64:    return ValueName::ArrayInt64;
-				case ValueType::ArrayUInt8:    return ValueName::ArrayUInt8;
-				case ValueType::ArrayUInt16:   return ValueName::ArrayUInt16;
-				case ValueType::ArrayUInt32:   return ValueName::ArrayUInt32;
-				case ValueType::ArrayUInt64:   return ValueName::ArrayUInt64;
-				case ValueType::ArrayPointer:  return ValueName::ArrayPointer;
-				case ValueType::ArrayFloat:    return ValueName::ArrayFloat;
-				case ValueType::ArrayDouble:   return ValueName::ArrayDouble;
-				case ValueType::ArrayString:   return ValueName::ArrayString;
-				case ValueType::ArrayAny:      return ValueName::ArrayAny;
-				case ValueType::Vector2:       return ValueName::Vector2;
-				case ValueType::Vector3:       return ValueName::Vector2;
-				case ValueType::Vector4:       return ValueName::Vector3;
-				case ValueType::Matrix4x4:     return ValueName::Vector4;
-				default:                       return ValueName::Invalid;
+				case ValueType::Void:           return ValueName::Void;
+				case ValueType::Bool:           return ValueName::Bool;
+				case ValueType::Char8:          return ValueName::Char8;
+				case ValueType::Char16:         return ValueName::Char16;
+				case ValueType::Int8:           return ValueName::Int8;
+				case ValueType::Int16:          return ValueName::Int16;
+				case ValueType::Int32:          return ValueName::Int32;
+				case ValueType::Int64:          return ValueName::Int64;
+				case ValueType::UInt8:          return ValueName::UInt8;
+				case ValueType::UInt16:         return ValueName::UInt16;
+				case ValueType::UInt32:         return ValueName::UInt32;
+				case ValueType::UInt64:         return ValueName::UInt64;
+				case ValueType::Pointer:        return ValueName::Pointer;
+				case ValueType::Float:          return ValueName::Float;
+				case ValueType::Double:         return ValueName::Double;
+				case ValueType::Function:       return ValueName::Function;
+				case ValueType::String:         return ValueName::String;
+				case ValueType::Any:            return ValueName::Any;
+				case ValueType::ArrayBool:      return ValueName::ArrayBool;
+				case ValueType::ArrayChar8:     return ValueName::ArrayChar8;
+				case ValueType::ArrayChar16:    return ValueName::ArrayChar16;
+				case ValueType::ArrayInt8:      return ValueName::ArrayInt8;
+				case ValueType::ArrayInt16:     return ValueName::ArrayInt16;
+				case ValueType::ArrayInt32:     return ValueName::ArrayInt32;
+				case ValueType::ArrayInt64:     return ValueName::ArrayInt64;
+				case ValueType::ArrayUInt8:     return ValueName::ArrayUInt8;
+				case ValueType::ArrayUInt16:    return ValueName::ArrayUInt16;
+				case ValueType::ArrayUInt32:    return ValueName::ArrayUInt32;
+				case ValueType::ArrayUInt64:    return ValueName::ArrayUInt64;
+				case ValueType::ArrayPointer:   return ValueName::ArrayPointer;
+				case ValueType::ArrayFloat:     return ValueName::ArrayFloat;
+				case ValueType::ArrayDouble:    return ValueName::ArrayDouble;
+				case ValueType::ArrayString:    return ValueName::ArrayString;
+				case ValueType::ArrayAny:       return ValueName::ArrayAny;
+				case ValueType::ArrayVector2:   return ValueName::ArrayVector2;
+				case ValueType::ArrayVector3:   return ValueName::ArrayVector3;
+				case ValueType::ArrayVector4:   return ValueName::ArrayVector4;
+				case ValueType::ArrayMatrix4x4: return ValueName::ArrayMatrix4x4;
+				case ValueType::Vector2:        return ValueName::Vector2;
+				case ValueType::Vector3:        return ValueName::Vector3;
+				case ValueType::Vector4:        return ValueName::Vector4;
+				case ValueType::Matrix4x4:      return ValueName::Matrix4x4;
+				default:                        return ValueName::Invalid;
 			}
 		}
 
@@ -493,8 +505,16 @@ namespace plugify {
 				return ValueType::ArrayDouble;
 			} else if (value == ValueName::ArrayString) {
 				return ValueType::ArrayString;
-			}  else if (value == ValueName::ArrayAny) {
+			} else if (value == ValueName::ArrayAny) {
 				return ValueType::ArrayAny;
+			} else if (value == ValueName::ArrayVector2) {
+				return ValueType::ArrayVector2;
+			} else if (value == ValueName::ArrayVector3) {
+				return ValueType::ArrayVector3;
+			} else if (value == ValueName::ArrayVector4) {
+				return ValueType::ArrayVector4;
+			} else if (value == ValueName::ArrayMatrix4x4) {
+				return ValueType::ArrayMatrix4x4;
 			} else if (value == ValueName::Vector2) {
 				return ValueType::Vector2;
 			} else if (value == ValueName::Vector3) {

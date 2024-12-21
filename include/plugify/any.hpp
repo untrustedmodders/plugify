@@ -48,6 +48,10 @@ namespace plg {
 			vector<double>,
 			vector<string>,
 			vector<variant<none>>,
+			vector<vec2>,
+			vector<vec3>,
+			vector<vec4>,
+			vector<mat4x4>,
 			vec2,
 			vec3,
 			vec4

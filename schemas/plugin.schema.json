@@ -184,7 +184,7 @@
                 "type": {
                   "type": "string",
                   "title": "Parameter's type.",
-                  "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2", "vec3", "vec4", "mat4x4"]
+                  "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
                 },
                 "name": {
                   "type": "string",
@@ -229,7 +229,7 @@
                           "type": {
                             "type": "string",
                             "title": "Parameter's type.",
-                            "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2", "vec3", "vec4", "mat4x4"]
+                            "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
                           },
                           "name": {
                             "type": "string",
@@ -254,7 +254,7 @@
                         "type": {
                           "type": "string",
                           "title": "Return's type.",
-                          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2", "vec3", "vec4", "mat4x4"]
+                          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
                         },
                         "name": {
                           "type": "string",
@@ -327,7 +327,7 @@
               "type": {
                 "type": "string",
                 "title": "Return's type.",
-                "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2", "vec3", "vec4", "mat4x4"]
+                "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
               },
               "name": {
                 "type": "string",
@@ -372,7 +372,7 @@
                         "type": {
                           "type": "string",
                           "title": "Parameter's type.",
-                          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2", "vec3", "vec4", "mat4x4"]
+                          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
                         },
                         "name": {
                           "type": "string",
@@ -397,7 +397,7 @@
                       "type": {
                         "type": "string",
                         "title": "Return's type.",
-                        "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2", "vec3", "vec4", "mat4x4"]
+                        "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
                       },
                       "name": {
                         "type": "string",

@@ -36,6 +36,10 @@ static_assert(ValueType::ArrayFloat == static_cast<ValueType>(plg::any::index_of
 static_assert(ValueType::ArrayDouble == static_cast<ValueType>(plg::any::index_of<plg::vector<double>>));
 static_assert(ValueType::ArrayString == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::string>>));
 static_assert(ValueType::ArrayAny == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::variant<plg::none>>>));
+static_assert(ValueType::ArrayVector2 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec2>>));
+static_assert(ValueType::ArrayVector3 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec3>>));
+static_assert(ValueType::ArrayVector4 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec4>>));
+static_assert(ValueType::ArrayMatrix4x4 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::mat4x4>>));
 static_assert(ValueType::Vector2 == static_cast<ValueType>(plg::any::index_of<plg::vec2>));
 static_assert(ValueType::Vector3 == static_cast<ValueType>(plg::any::index_of<plg::vec3>));
 static_assert(ValueType::Vector4 == static_cast<ValueType>(plg::any::index_of<plg::vec4>));
