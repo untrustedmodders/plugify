@@ -190,16 +190,18 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sr
 
 # ------------------------------------------------------------------------------
 # Glaze
-if(PLUGIFY_USE_EXTERNAL_GLAZE)
-    find_package(glaze REQUIRED)
-else()
-    include(cmake/glaze.cmake)
+if(NOT PLUGIFY_INTERFACE)
+    if(PLUGIFY_USE_EXTERNAL_GLAZE)
+        find_package(glaze REQUIRED)
+    else()
+        include(cmake/glaze.cmake)
+    endif()
+    target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 endif()
-target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 
 # ------------------------------------------------------------------------------
 # Http/Curl
-if(PLUGIFY_DOWNLOADER)
+if(NOT PLUGIFY_INTERFACE AND PLUGIFY_DOWNLOADER)
     if(WIN32)
         target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
     else()
@@ -219,9 +221,11 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Miniz
-include(cmake/miniz.cmake)
-target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
-set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
+if(NOT PLUGIFY_INTERFACE)
+    include(cmake/miniz.cmake)
+    target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
+    set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # ------------------------------------------------------------------------------
 # Format
