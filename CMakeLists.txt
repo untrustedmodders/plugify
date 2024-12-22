@@ -188,40 +188,38 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/in
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.hpp)
 
-# ------------------------------------------------------------------------------
-# Glaze
 if(NOT PLUGIFY_INTERFACE)
+    # ------------------------------------------------------------------------------
+    # Glaze
     if(PLUGIFY_USE_EXTERNAL_GLAZE)
         find_package(glaze REQUIRED)
     else()
         include(cmake/glaze.cmake)
     endif()
     target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
-endif()
 
-# ------------------------------------------------------------------------------
-# Http/Curl
-if(NOT PLUGIFY_INTERFACE AND PLUGIFY_DOWNLOADER)
-    if(WIN32)
-        target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
-    else()
-        if(PLUGIFY_USE_EXTERNAL_CURL)
-            find_package(CURL REQUIRED)
-            target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
-            message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
-            message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
-            message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
+    # ------------------------------------------------------------------------------
+    # Http/Curl
+    if(PLUGIFY_DOWNLOADER)
+        if(WIN32)
+            target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
         else()
-            include(cmake/curl.git)
-            target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
-            target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
+            if(PLUGIFY_USE_EXTERNAL_CURL)
+                find_package(CURL REQUIRED)
+                target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
+                message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
+                message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
+                message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
+            else()
+                include(cmake/curl.git)
+                target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
+                target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
+            endif()
         endif()
     endif()
-endif()
 
-# ------------------------------------------------------------------------------
-# Miniz
-if(NOT PLUGIFY_INTERFACE)
+    # ------------------------------------------------------------------------------
+    # Miniz
     include(cmake/miniz.cmake)
     target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
     set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
