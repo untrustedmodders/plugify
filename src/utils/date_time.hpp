@@ -40,8 +40,14 @@ namespace plugify {
 		static std::string Get(std::string_view format = "%Y-%m-%d %H:%M:%S") {
 			auto now = std::chrono::system_clock::now();
 			auto timeT = std::chrono::system_clock::to_time_t(now);
+			std::tm localTime;
+#ifdef _WIN32
+			localtime_s(&localTime, &timeT); // Windows-specific
+#else
+			localtime_r(&timeT, &localTime); // POSIX-compliant
+#endif
 			std::stringstream ss;
-			ss << std::put_time(std::localtime(&timeT), format.data());
+			ss << std::put_time(&localTime, format.data());
 			return ss.str();
 		}
 

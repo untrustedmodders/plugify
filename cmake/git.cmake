@@ -59,6 +59,11 @@ else()
     set(GIT_TAG "UNKNOWN")
 endif()
 
+string(REPLACE "\"" "\\\"" GIT_COMMIT_SUBJECT ${GIT_COMMIT_SUBJECT})
+string(REPLACE "#" "" GIT_COMMIT_SUBJECT "${GIT_COMMIT_SUBJECT}")
+string(REPLACE ":" "" GIT_COMMIT_SUBJECT "${GIT_COMMIT_SUBJECT}")
+string(REPLACE ";" "" GIT_COMMIT_SUBJECT "${GIT_COMMIT_SUBJECT}")
+
 add_library(plugify-git INTERFACE)
 target_compile_definitions(plugify-git INTERFACE
         PLUGIFY_GIT_COMMIT_HASH="${GIT_SHA1}"
