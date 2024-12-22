@@ -506,14 +506,23 @@ namespace plg {
 			constexpr bool operator==(T idx) const noexcept { return idx == std::numeric_limits<T>::max(); }
 		};
 	}
-	
-	template<class T>
-	inline constexpr bool is_variant = std::is_base_of_v<detail::variant_tag, std::decay_t<T>>;
-	
+
 	inline static constexpr detail::variant_npos_t variant_npos;
 	
 	template<class... Ts>
 	class variant;
+
+	template<typename T>
+	struct is_variant_impl : std::false_type {};
+
+	template<typename... Ts>
+	struct is_variant_impl<variant<Ts...>> : std::true_type {};
+
+	template<typename T>
+	struct is_variant : is_variant_impl<std::decay_t<T>> {};
+
+	template<typename T>
+	inline constexpr bool is_variant_v = is_variant<T>::value;
 	
 	// ill-formed variant, an empty specialization prevents some really bad errors messages on gcc
 	template<class... Ts>
@@ -531,7 +540,7 @@ namespace plg {
 	};
 	
 	template<class... Ts>
-	class variant : private detail::variant_tag {
+	class variant {
 	
 		using storage = detail::union_node<false, detail::make_tree_union<Ts...>, detail::dummy_type>;
 	
@@ -1064,7 +1073,7 @@ namespace plg {
 	}
 
 	template<class R, class Fn, class... Vs>
-		requires (is_variant<Vs> && ...)
+		requires (is_variant_v<Vs> && ...)
 	constexpr R visit(Fn&& fn, Vs&&... vars) {
 		return static_cast<R>(plg::visit(PLG_FWD(fn), PLG_FWD(vars)...));
 	}
@@ -1158,12 +1167,12 @@ namespace plg {
 	// ===================================== helper classes (20.7.4)
 
 	template<class T>
-		requires is_variant<T>
+		requires is_variant_v<T>
 	inline constexpr std::size_t variant_size_v = std::decay_t<T>::size;
 
 	// not sure why anyone would need this, i'm adding it anyway
 	template<class T>
-		requires is_variant<T>
+		requires is_variant_v<T>
 	struct variant_size : std::integral_constant<std::size_t, variant_size_v<T>> {};
 
 	namespace detail {
@@ -1186,7 +1195,7 @@ namespace plg {
 	using variant_alternative_t = typename detail::var_alt_impl<std::is_volatile_v<T>>::template type<Idx, T>;
 
 	template<std::size_t Idx, class T>
-		requires is_variant<T>
+		requires is_variant_v<T>
 	struct variant_alternative {
 		using type = variant_alternative_t<Idx, T>;
 	};
@@ -1194,14 +1203,14 @@ namespace plg {
 	// ===================================== extensions (unsafe_get)
 
 	template<std::size_t Idx, class Var>
-		requires is_variant<Var>
+		requires is_variant_v<Var>
 	constexpr auto&& unsafe_get(Var&& var) noexcept {
 		static_assert(Idx < std::decay_t<Var>::size, "Index exceeds the variant size.");
 		return PLG_FWD(var).template unsafe_get<Idx>();
 	}
 
 	template<class T, class Var>
-		requires is_variant<Var>
+		requires is_variant_v<Var>
 	constexpr auto&& unsafe_get(Var&& var) noexcept {
 		return plg::unsafe_get<std::decay_t<Var>::template index_of<T>>(PLG_FWD(var));
 	}
