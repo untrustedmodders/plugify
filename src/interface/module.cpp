@@ -43,3 +43,9 @@ std::string_view ModuleRef::GetError() const noexcept {
 std::optional<fs::path_view> ModuleRef::FindResource(fs::path_view path) const {
 	return _impl->FindResource(path);
 }
+
+#if PLUGIFY_INTERFACE
+std::optional<fs::path_view> Module::FindResource(const fs::path&) const {
+	return {};
+}
+#endif // PLUGIFY_INTERFACE

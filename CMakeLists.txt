@@ -166,7 +166,9 @@ option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
 # ------------------------------------------------------------------------------
 # Plugify
 if(PLUGIFY_INTERFACE)
-    set(PLUGIFY_CORE_SOURCES "src/utils/log.cpp")
+    file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/interface/*.cpp")
+    #file(GLOB_RECURSE PLUGIFY_UTIL_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/utils/*.cpp")
+    set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} "src/core/plugify_provider.cpp" "src/core/plugify_context.cpp")
 else()
     file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
 endif()

@@ -39,3 +39,9 @@ std::span<const MethodData> PluginRef::GetMethods() const noexcept {
 std::optional<fs::path_view> PluginRef::FindResource(fs::path_view path) const {
 	return _impl->FindResource(path);
 }
+
+#if PLUGIFY_INTERFACE
+std::optional<fs::path_view> Plugin::FindResource(const fs::path&) const {
+	return {};
+}
+#endif // PLUGIFY_INTERFACE
