@@ -158,13 +158,18 @@ option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library." OFF)
 option(PLUGIFY_USE_EXTERNAL_CURL "Use external curl library." ON)
 option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
 
+option(PLUGIFY_INTERFACE "Build as lightweight interface for language modules." OFF)
 option(PLUGIFY_DOWNLOADER "Enable downloader for package manager." ON)
 option(PLUGIFY_LOGGING "Enable logging system." ON)
 option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
 
 # ------------------------------------------------------------------------------
 # Plugify
-file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
+if(PLUGIFY_INTERFACE)
+    set(PLUGIFY_CORE_SOURCES "src/utils/log.cpp")
+else()
+    file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
+endif()
 
 if(NOT PLUGIFY_BUILD_OBJECT_LIB)
     if(PLUGIFY_BUILD_SHARED_LIB)
@@ -363,6 +368,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         ${PLUGIFY_COMPILE_DEFINITIONS}
+        PLUGIFY_INTERFACE=$<BOOL:${PLUGIFY_INTERFACE}>
         PLUGIFY_DOWNLOADER=$<BOOL:${PLUGIFY_DOWNLOADER}>
         PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
         PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
