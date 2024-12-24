@@ -41,7 +41,7 @@ namespace plugify {
 			auto now = std::chrono::system_clock::now();
 			auto timeT = std::chrono::system_clock::to_time_t(now);
 			std::tm localTime;
-#ifdef _WIN32
+#if PLUGIFY_PLATFORM_WINDOWS
 			localtime_s(&localTime, &timeT); // Windows-specific
 #else
 			localtime_r(&timeT, &localTime); // POSIX-compliant
