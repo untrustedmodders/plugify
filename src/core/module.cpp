@@ -14,7 +14,7 @@ Module::Module(UniqueId id, const LocalPackage& package) : _id{id}, _name{packag
 	PL_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
 	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
 	_baseDir = package.path.parent_path();
-	_filePath = _baseDir / "bin" / std::format(PLUGIFY_MODULE_PREFIX "{}" PLUGIFY_MODULE_SUFFIX, package.name);
+	_filePath = _baseDir / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, package.name);
 }
 
 Module::~Module() {
