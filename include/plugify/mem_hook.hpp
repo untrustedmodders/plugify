@@ -36,7 +36,7 @@ namespace plugify {
 	 * @return int The index of the virtual function in the virtual table, or -1 if the index could not be determined.
 	 */
 	template<typename F>
-	int GetVTableIndex(F func, ProtFlag flag = ProtFlag::RWX) {
+	int GetVirtualTableIndex(F func, ProtFlag flag = ProtFlag::RWX) {
 		void* ptr = (void*&)func;
 
 		constexpr size_t size = 12;
