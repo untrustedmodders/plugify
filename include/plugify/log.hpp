@@ -46,7 +46,7 @@ namespace plugify {
 		 * @param severity The Severity value to convert.
 		 * @return The string representation of the Severity.
 		 */
-		[[maybe_unused]] constexpr std::string_view ToString(Severity severity) noexcept {
+		constexpr std::string_view ToString(Severity severity) noexcept {
 			switch (severity) {
 				case Severity::Fatal:   return "Fatal";
 				case Severity::Error:   return "Error";
@@ -63,7 +63,7 @@ namespace plugify {
 		 * @param severity The string representation of Severity.
 		 * @return The corresponding Severity enum value.
 		 */
-		[[maybe_unused]] constexpr Severity FromString(std::string_view severity) noexcept {
+		constexpr Severity FromString(std::string_view severity) noexcept {
 			if (severity == "Fatal") {
 				return Severity::Fatal;
 			} else if (severity == "Error") {

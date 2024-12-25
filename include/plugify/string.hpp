@@ -51,7 +51,7 @@ namespace plg {
 		struct is_allocator<Allocator, std::void_t<typename Allocator::value_type, decltype(std::declval<Allocator&>().allocate(std::size_t{}))>> : std::true_type {};
 
 		template<typename Allocator>
-		constexpr inline bool is_allocator_v = is_allocator<Allocator>::value;
+		constexpr bool is_allocator_v = is_allocator<Allocator>::value;
 
 		template<typename Traits>
 		using is_traits = std::conjunction<std::is_integral<typename Traits::char_type>, std::is_integral<typename Traits::char_traits::char_type>>;

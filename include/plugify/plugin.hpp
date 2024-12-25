@@ -134,7 +134,7 @@ namespace plugify {
 		 * @param state The PluginState value to convert.
 		 * @return The string representation of the PluginState.
 		 */
-		[[maybe_unused]] constexpr std::string_view ToString(PluginState state) {
+		constexpr std::string_view ToString(PluginState state) {
 			switch (state) {
 				case PluginState::NotLoaded:   return "NotLoaded";
 				case PluginState::Error:       return "Error";
@@ -150,7 +150,7 @@ namespace plugify {
 		 * @param state The string representation of PluginState.
 		 * @return The corresponding PluginState enum value.
 		 */
-		[[maybe_unused]] constexpr PluginState FromString(std::string_view state) {
+		constexpr PluginState FromString(std::string_view state) {
 			if (state == "NotLoaded") {
 				return PluginState::NotLoaded;
 			} else if (state == "Error") {

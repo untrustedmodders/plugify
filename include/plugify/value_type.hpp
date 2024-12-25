@@ -169,7 +169,7 @@ namespace plugify {
 		 * @return True if x is between a and b, inclusive. False otherwise.
 		 */
 		template<typename T>
-		[[maybe_unused]] constexpr bool IsBetween(T x, T a, T b) noexcept {
+		constexpr bool IsBetween(T x, T a, T b) noexcept {
 			return x >= a && x <= b;
 		}
 
@@ -179,7 +179,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is ValueType::Void. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsVoid(ValueType type) noexcept { return type == ValueType::Void; }
+		constexpr bool IsVoid(ValueType type) noexcept { return type == ValueType::Void; }
 
 		/**
 		 * @brief Tests whether a given type is a valid non-void type.
@@ -187,7 +187,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a valid non-void type. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsValid(ValueType type) noexcept { return IsBetween(type, ValueType::Void, ValueType::_LastAssigned); }
+		constexpr bool IsValid(ValueType type) noexcept { return IsBetween(type, ValueType::Void, ValueType::_LastAssigned); }
 
 		/**
 		 * @brief Tests whether a given type is scalar (has no vector part).
@@ -195,7 +195,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is scalar. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsScalar(ValueType type) noexcept { return IsBetween(type, ValueType::_BaseStart, ValueType::_BaseEnd); }
+		constexpr bool IsScalar(ValueType type) noexcept { return IsBetween(type, ValueType::_BaseStart, ValueType::_BaseEnd); }
 
 		/**
 		 * @brief Tests whether a given type is a scalar floating point of any size.
@@ -203,7 +203,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a scalar floating point. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsFloating(ValueType type) noexcept { return IsBetween(type, ValueType::_FloatStart, ValueType::_FloatEnd); }
+		constexpr bool IsFloating(ValueType type) noexcept { return IsBetween(type, ValueType::_FloatStart, ValueType::_FloatEnd); }
 
 		/**
 		 * @brief Tests whether a given type is a 1-bit boolean.
@@ -211,7 +211,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 1-bit boolean. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsBool(ValueType type) noexcept { return type == ValueType::Bool; }
+		constexpr bool IsBool(ValueType type) noexcept { return type == ValueType::Bool; }
 
 		/**
 		 * @brief Tests whether a given type is an 8-bit character.
@@ -219,7 +219,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an 8-bit character. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsChar8(ValueType type) noexcept { return type == ValueType::Char8; }
+		constexpr bool IsChar8(ValueType type) noexcept { return type == ValueType::Char8; }
 
 		/**
 		 * @brief Tests whether a given type is a 16-bit character.
@@ -227,7 +227,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 16-bit character. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsChar16(ValueType type) noexcept { return type == ValueType::Char16; }
+		constexpr bool IsChar16(ValueType type) noexcept { return type == ValueType::Char16; }
 
 		/**
 		 * @brief Tests whether a given type is an 8-bit integer.
@@ -235,7 +235,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an 8-bit integer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsInt8(ValueType type) noexcept { return type == ValueType::Int8; }
+		constexpr bool IsInt8(ValueType type) noexcept { return type == ValueType::Int8; }
 
 		/**
 		 * @brief Tests whether a given type is an 8-bit unsigned integer.
@@ -243,7 +243,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an 8-bit unsigned integer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsUInt8(ValueType type) noexcept { return type == ValueType::UInt8; }
+		constexpr bool IsUInt8(ValueType type) noexcept { return type == ValueType::UInt8; }
 
 		/**
 		 * @brief Tests whether a given type is a 16-bit integer.
@@ -251,7 +251,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 16-bit integer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsInt16(ValueType type) noexcept { return type == ValueType::Int16; }
+		constexpr bool IsInt16(ValueType type) noexcept { return type == ValueType::Int16; }
 
 		/**
 		 * @brief Tests whether a given type is a 16-bit unsigned integer.
@@ -259,7 +259,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 16-bit unsigned integer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsUInt16(ValueType type) noexcept { return type == ValueType::UInt16; }
+		constexpr bool IsUInt16(ValueType type) noexcept { return type == ValueType::UInt16; }
 
 		/**
 		 * @brief Tests whether a given type is a 32-bit integer.
@@ -267,7 +267,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 32-bit integer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsInt32(ValueType type) noexcept { return type == ValueType::Int32; }
+		constexpr bool IsInt32(ValueType type) noexcept { return type == ValueType::Int32; }
 
 		/**
 		 * @brief Tests whether a given type is a 32-bit unsigned integer.
@@ -275,7 +275,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 32-bit unsigned integer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsUInt32(ValueType type) noexcept { return type == ValueType::UInt32; }
+		constexpr bool IsUInt32(ValueType type) noexcept { return type == ValueType::UInt32; }
 
 		/**
 		 * @brief Tests whether a given type is a 64-bit integer.
@@ -283,7 +283,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 64-bit integer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsInt64(ValueType type) noexcept { return type == ValueType::Int64; }
+		constexpr bool IsInt64(ValueType type) noexcept { return type == ValueType::Int64; }
 
 		/**
 		 * @brief Tests whether a given type is a 64-bit unsigned integer.
@@ -291,7 +291,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 64-bit unsigned integer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsUInt64(ValueType type) noexcept { return type == ValueType::UInt64; }
+		constexpr bool IsUInt64(ValueType type) noexcept { return type == ValueType::UInt64; }
 
 		/**
 		 * @brief Tests whether a given type is a pointer.
@@ -299,7 +299,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a pointer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsPointer(ValueType type) noexcept { return type == ValueType::Pointer; }
+		constexpr bool IsPointer(ValueType type) noexcept { return type == ValueType::Pointer; }
 
 		/**
 		 * @brief Tests whether a given type is a float.
@@ -307,7 +307,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a float. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsFloat(ValueType type) noexcept { return type == ValueType::Float; }
+		constexpr bool IsFloat(ValueType type) noexcept { return type == ValueType::Float; }
 
 		/**
 		 * @brief Tests whether a given type is a double.
@@ -315,7 +315,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a double. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsDouble(ValueType type) noexcept { return type == ValueType::Double; }
+		constexpr bool IsDouble(ValueType type) noexcept { return type == ValueType::Double; }
 
 		/**
 		 * @brief Tests whether a given type is a C-function pointer.
@@ -323,7 +323,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a C-function pointer. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsFunction(ValueType type) noexcept { return type == ValueType::Function; }
+		constexpr bool IsFunction(ValueType type) noexcept { return type == ValueType::Function; }
 
 		/**
 		 * @brief Tests whether a given type is a string.
@@ -331,7 +331,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a string. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsString(ValueType type) noexcept { return type == ValueType::String; }
+		constexpr bool IsString(ValueType type) noexcept { return type == ValueType::String; }
 
 		/**
 		 * @brief Tests whether a given type is an any.
@@ -339,7 +339,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an any. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsAny(ValueType type) noexcept { return type == ValueType::Any; }
+		constexpr bool IsAny(ValueType type) noexcept { return type == ValueType::Any; }
 
 		/**
 		 * @brief Tests whether a given type is an object of any size.
@@ -347,7 +347,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an object. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsObject(ValueType type) noexcept { return IsBetween(type, ValueType::_ObjectStart, ValueType::_ObjectEnd); }
+		constexpr bool IsObject(ValueType type) noexcept { return IsBetween(type, ValueType::_ObjectStart, ValueType::_ObjectEnd); }
 
 		/**
 		 * @brief Tests whether a given type is an array of any size.
@@ -355,7 +355,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an array. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsArray(ValueType type) noexcept { return IsBetween(type, ValueType::_ArrayStart, ValueType::_ArrayEnd); }
+		constexpr bool IsArray(ValueType type) noexcept { return IsBetween(type, ValueType::_ArrayStart, ValueType::_ArrayEnd); }
 
 		/**
 		 * @brief Tests whether a given type is a POD (plain old data) structure of any size.
@@ -363,7 +363,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a POD structure. False otherwise.
 		 */
-		[[maybe_unused]] constexpr bool IsStruct(ValueType type) noexcept { return IsBetween(type, ValueType::_StructStart, ValueType::_StructEnd); }
+		constexpr bool IsStruct(ValueType type) noexcept { return IsBetween(type, ValueType::_StructStart, ValueType::_StructEnd); }
 
 
 		/**
@@ -376,7 +376,7 @@ namespace plugify {
 		 * Hidden object parameters are those where the return argument is allocated by the caller function and
 		 * passed as the first argument. This is often true for objects and large structs.
 		 */
-		[[maybe_unused]] constexpr bool IsHiddenParam(ValueType type) noexcept {
+		constexpr bool IsHiddenParam(ValueType type) noexcept {
 			return IsObject(type) || IsBetween(type, ValueType::_HiddenParamStart, ValueType::_StructEnd);
 		}
 		
@@ -385,7 +385,7 @@ namespace plugify {
 		 * @param value The ValueType value to convert.
 		 * @return The string representation of the ValueType.
 		 */
-		[[maybe_unused]] constexpr std::string_view ToString(ValueType value) noexcept {
+		constexpr std::string_view ToString(ValueType value) noexcept {
 			switch (value) {
 				case ValueType::Void:           return ValueName::Void;
 				case ValueType::Bool:           return ValueName::Bool;
@@ -438,7 +438,7 @@ namespace plugify {
 		 * @param value The string representation of ValueType.
 		 * @return The corresponding ValueType enum value.
 		 */
-		[[maybe_unused]] constexpr ValueType FromString(std::string_view value) noexcept {
+		constexpr ValueType FromString(std::string_view value) noexcept {
 			if (value == ValueName::Void) {
 				return ValueType::Void;
 			} else if (value == ValueName::Bool) {
