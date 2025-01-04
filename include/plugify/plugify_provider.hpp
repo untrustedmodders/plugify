@@ -10,8 +10,21 @@
 
 namespace plugify {
 	class PlugifyProvider;
-	class PlugifyProvider;
+	class ModuleRef;
+	class PluginRef;
 	enum class Severity : uint8_t;
+
+	/**
+	 * @brief Represents an optional reference to an IModule.
+	 *        Used to indicate the possibility of not finding a module.
+	 */
+	using ModuleOpt = std::optional<ModuleRef>;
+
+	/**
+	 * @brief Represents an optional reference to an IPlugin.
+	 *        Used to indicate the possibility of not finding a plugin.
+	 */
+	using PluginOpt = std::optional<PluginRef>;
 
 	/**
  	 * @brief Interface class for the PlugifyProvider, which is provided to the user and implemented in the core.
@@ -74,6 +87,30 @@ namespace plugify {
 		 * @return True if the language module is loaded and meets the version requirements, false otherwise.
 		 */
 		bool IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
+
+		/**
+		 * @brief Finds a plugin by its name.
+		 *
+		 * This function attempts to find a plugin with the specified name in the Plugify system.
+		 * If a plugin with the given name is found, a reference to it is returned. Otherwise,
+		 * an empty optional value is returned.
+		 *
+		 * @param name The name of the plugin to find.
+		 * @return An optional reference to the plugin if found, or an empty optional if not found.
+		 */
+		PluginOpt FindPlugin(std::string_view name) const noexcept;
+
+		/**
+		 * @brief Finds a language module by its name.
+		 *
+		 * This function attempts to find a language module with the specified name in the Plugify system.
+		 * If a module with the given name is found, a reference to it is returned. Otherwise,
+		 * an empty optional value is returned.
+		 *
+		 * @param name The name of the language module to find.
+		 * @return An optional reference to the module if found, or an empty optional if not found.
+		 */
+		ModuleOpt FindModule(std::string_view name) const noexcept;
 	};
 	static_assert(is_ref_v<IPlugifyProvider>);
 } // namespace plugify

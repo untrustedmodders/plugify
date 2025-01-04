@@ -77,3 +77,21 @@ bool PlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<int32_
 	}
 	return false;
 }
+
+PluginOpt PlugifyProvider::FindPlugin(std::string_view name) noexcept {
+	if (auto plugify = _plugify.lock()) {
+		if (auto pluginManager = plugify->GetPluginManager().lock()) {
+			return pluginManager->FindPlugin(name);
+		}
+	}
+	return {};
+}
+
+ModuleOpt PlugifyProvider::FindModule(std::string_view name) noexcept {
+	if (auto plugify = _plugify.lock()) {
+		if (auto pluginManager = plugify->GetPluginManager().lock()) {
+			return pluginManager->FindModule(name);
+		}
+	}
+	return {};
+}

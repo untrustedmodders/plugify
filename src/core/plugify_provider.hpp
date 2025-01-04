@@ -19,5 +19,9 @@ namespace plugify {
 		bool IsPluginLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) noexcept;
 		
 		bool IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) noexcept;
+
+		PluginOpt FindPlugin(std::string_view name) noexcept;
+
+		ModuleOpt FindModule(std::string_view name) noexcept;
 	};
 }

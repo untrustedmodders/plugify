@@ -1,4 +1,6 @@
 #include <core/plugify_provider.hpp>
+#include <plugify/plugin.hpp>
+#include <plugify/module.hpp>
 #include <plugify/plugify_provider.hpp>
 
 using namespace plugify;
@@ -21,4 +23,12 @@ bool IPlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<int32
 
 bool IPlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion, bool minimum) const noexcept {
 	return _impl->IsModuleLoaded(name, requiredVersion, minimum);
+}
+
+PluginOpt IPlugifyProvider::FindPlugin(std::string_view name) const noexcept {
+	return _impl->FindPlugin(name);
+}
+
+ModuleOpt IPlugifyProvider::FindModule(std::string_view name) const noexcept {
+	return _impl->FindModule(name);
 }
