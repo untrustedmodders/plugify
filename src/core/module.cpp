@@ -23,9 +23,9 @@ Module::~Module() {
 
 bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
+
 	std::error_code ec;
-	auto is_regular_file = [](const fs::path& path) {
-		std::error_code ec;
+	auto is_regular_file = [&](const fs::path& path) {
 		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
 	};
 
@@ -38,7 +38,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	fs::path_view baseDir = plugifyProvider->GetBaseDir();
 
-	if (const auto& resourceDirectoriesSettings = GetDescriptor().resourceDirectories) {
+	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
@@ -50,7 +50,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 						absPath = entry.path();
 					}
 
-					_resources.emplace(std::move(relPath), std::move(absPath));
+					_resources.try_emplace(std::move(relPath), std::move(absPath));
 				}
 			}
 		}
@@ -61,7 +61,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	};
 
 	std::vector<fs::path> libraryDirectories;
-	if (const auto& libraryDirectoriesSettings = GetDescriptor().libraryDirectories) {
+	if (const auto& libraryDirectoriesSettings = _descriptor->libraryDirectories) {
 		for (const auto& rawPath : *libraryDirectoriesSettings) {
 			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath, ec);
 			if (!is_directory(libraryDirectory)) {
@@ -102,9 +102,10 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	}
 
 #if PLUGIFY_PLATFORM_WINDOWS
+	constexpr bool plugifyBuildType = PLUGIFY_IS_DEBUG;
 	bool moduleBuildType = languageModulePtr->IsDebugBuild();
-	if (moduleBuildType != PLUGIFY_IS_DEBUG) {
-		SetError(std::format("Mismatch between plugify ({}) build type and module ({}) build type.", (PLUGIFY_IS_DEBUG ? "debug" : "release"), (moduleBuildType ? "debug" : "release")));
+	if (moduleBuildType != plugifyBuildType) {
+		SetError(std::format("Mismatch between plugify ({}) build type and module ({}) build type.", (plugifyBuildType ? "debug" : "release"), (moduleBuildType ? "debug" : "release")));
 		Terminate();
 		return false;
 	}

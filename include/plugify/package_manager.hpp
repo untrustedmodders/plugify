@@ -12,19 +12,19 @@ namespace plugify {
 	struct RemotePackage;
 
 	/**
-	 * @typedef PackageRef
+	 * @typedef PackagePtr
 	 * @brief Shared pointer of a Package.
 	 */
 	using PackagePtr = std::shared_ptr<Package>;
 
 	/**
-	 * @typedef LocalPackageRef
+	 * @typedef LocalPackagePtr
 	 * @brief Shared pointer of a LocalPackage.
 	 */
 	using LocalPackagePtr = std::shared_ptr<LocalPackage>;
 
 	/**
-	 * @typedef RemotePackageRef
+	 * @typedef RemotePackagePtr
 	 * @brief Shared pointer of a RemotePackage.
 	 */
 	using RemotePackagePtr = std::shared_ptr<RemotePackage>;
@@ -56,7 +56,7 @@ namespace plugify {
 		
 		/**
 		 * @brief Reload the package manager.
-		 * @return True if was initializated, false otherwise.
+		 * @return True if was initialized, false otherwise.
 		 */
 		virtual bool Reload() = 0;
 

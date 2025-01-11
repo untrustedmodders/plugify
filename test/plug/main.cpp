@@ -233,6 +233,7 @@ int main() {
 					}
 
 					else if (args[1] == "load") {
+						packageManager->Reload();
 						if (!options.contains("--ignore") && !options.contains("-i")) {
 							if (packageManager->HasMissedPackages()) {
 								CONPRINTE("Plugin manager has missing packages, run 'update --missing' to resolve issues.");
@@ -258,6 +259,7 @@ int main() {
 							pluginManager->Terminate();
 							CONPRINT("Plugin manager was unloaded.");
 						}
+						packageManager->Reload();
 					}
 
 					else if (args[1] == "plugins") {
@@ -272,7 +274,7 @@ int main() {
 						} else {
 							CONPRINTF("Listing {} plugin{}:", count, (count > 1) ? "s" : "");
 						}
-						for (auto& plugin : plugins) {
+						for (const auto& plugin : plugins) {
 							Print<plugify::PluginState>(plugin, plugify::PluginUtils::ToString);
 						}
 					}
@@ -289,7 +291,7 @@ int main() {
 						} else {
 							CONPRINTF("Listing {} module{}:", count, (count > 1) ? "s" : "");
 						}
-						for (auto& module : modules) {
+						for (const auto& module : modules) {
 							Print<plugify::ModuleState>(module, plugify::ModuleUtils::ToString);
 						}
 					}
@@ -509,13 +511,14 @@ int main() {
 								if (!package->description.empty()) {
 									CONPRINTF("  Description: {}", package->description);
 								}
-								if (!package->versions.empty()) {
-									std::string versions("  Versions: ");
-									std::format_to(std::back_inserter(versions), "{}", package->versions.begin()->version);
-									for (auto it = std::next(package->versions.begin()); it != package->versions.end(); ++it) {
-										std::format_to(std::back_inserter(versions), ", {}", it->version);
+								const auto& versions = package->versions;
+								if (!versions.empty()) {
+									std::string combined("  Versions: ");
+									std::format_to(std::back_inserter(combined), "{}", versions.begin()->version);
+									for (auto it = std::next(versions.begin()); it != versions.end(); ++it) {
+										std::format_to(std::back_inserter(combined), ", {}", it->version);
 									}
-									CONPRINT(versions);
+									CONPRINT(combined);
 								} else {
 									CONPRINT("");
 								}

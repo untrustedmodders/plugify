@@ -18,9 +18,9 @@ Plugin::~Plugin() {
 
 bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	PL_ASSERT(GetState() != PluginState::Loaded, "Plugin already was initialized");
+
 	std::error_code ec;
-	auto is_regular_file = [](const fs::path& path) {
-		std::error_code ec;
+	auto is_regular_file = [&](const fs::path& path) {
 		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
 	};
 
@@ -28,7 +28,7 @@ bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	fs::path_view baseDir = plugifyProvider->GetBaseDir();
 
-	if (const auto& resourceDirectoriesSettings = GetDescriptor().resourceDirectories) {
+	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
@@ -40,7 +40,7 @@ bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 						absPath = entry.path();
 					}
 
-					_resources.emplace(std::move(relPath), std::move(absPath));
+					_resources.try_emplace(std::move(relPath), std::move(absPath));
 				}
 			}
 		}

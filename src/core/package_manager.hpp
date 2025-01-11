@@ -60,7 +60,8 @@ namespace plugify {
 		void LoadRemotePackages();
 		void FindDependencies();
 
-		void Request(const std::function<void()>& action, std::string_view function);
+		template<typename F>
+		void Request(F&& action, std::string_view function);
 
 		bool UpdatePackage(const LocalPackagePtr& package, std::optional<int32_t> requiredVersion = {});
 		bool InstallPackage(const RemotePackagePtr& package, std::optional<int32_t> requiredVersion = {});

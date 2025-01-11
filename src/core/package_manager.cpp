@@ -223,11 +223,12 @@ void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std
 template<typename T>
 std::shared_ptr<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
 	auto json = FileSystem::ReadText(path);
-	auto descriptor = glz::read_json<T>(json);
-	if (!descriptor.has_value()) {
-		PL_LOG_ERROR("Package: '{}' has JSON parsing error: {}", name, glz::format_error(descriptor.error(), json));
+	auto dest = glz::read_json<std::shared_ptr<T>>(json);
+	if (!dest.has_value()) {
+		PL_LOG_ERROR("Package: '{}' has JSON parsing error: {}", name, glz::format_error(dest.error(), json));
 		return {};
 	}
+	auto& descriptor = *dest;
 
 	if (!PackageManager::IsSupportsPlatform(descriptor->supportedPlatforms))
 		return {};
@@ -285,7 +286,7 @@ std::shared_ptr<LocalPackage> GetPackageFromDescriptor(const fs::path& path, con
 	}
 
 	auto version = descriptor->version;
-	return std::make_shared<LocalPackage>(Package{name, type}, path, version, std::make_unique<T>(std::move(*descriptor)));
+	return std::make_shared<LocalPackage>(Package{name, type}, path, version, std::move(descriptor));
 }
 
 void PackageManager::LoadLocalPackages()  {
@@ -330,7 +331,7 @@ void PackageManager::LoadLocalPackages()  {
 					existingPackage = std::move(package);
 				}
 			} else {
-				PL_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, name, path.string());
+				PL_LOG_VERBOSE("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, name, path.string());
 			}
 		}
 	}, 3);
@@ -393,7 +394,7 @@ void PackageManager::LoadRemotePackages() {
 							std::unique_lock<std::mutex> lock(mutex);
 							existingPackage->versions.merge(package->versions);
 						} else {
-							PL_LOG_WARNING("The package '{}' exists at '{}' - second location will be ignored.", name, url);
+							PL_LOG_VERBOSE("The package '{}' exists at '{}' - second location will be ignored.", name, url);
 						}
 					}
 				}
@@ -428,13 +429,13 @@ void PackageManager::FindDependencies() {
 	_missedPackages.clear();
 	_conflictedPackages.clear();
 
-	for (const auto& [_, package] : _localPackages) {
+	for (const auto& [name, package] : _localPackages) {
 		if (package->type == "plugin") {
 			auto pluginDescriptor = std::static_pointer_cast<PluginDescriptor>(package->descriptor);
 
 			const auto& lang = pluginDescriptor->languageModule.name;
 			if (!FindLanguageModule(_localPackages, lang)) {
-				if (auto remotePackage = FindLanguageModule(_remotePackages, lang)) {
+				if (auto remotePackage = FindLanguageModule(_remotePackages, lang); remotePackage) {
 					_missedPackages.try_emplace(lang, std::pair{ std::move(remotePackage), std::nullopt }); // by default prioritizing latest language modules
 				} else {
 					PL_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package->name, lang);
@@ -477,7 +478,7 @@ void PackageManager::FindDependencies() {
 										existingVersion = dependency.requestedVersion;
 									}
 								} else {
-									PL_LOG_WARNING("The same version (v{}) of dependency '{}' required by '{}' at '{}' - second one will be ignored.", *existingVersion, dependency.name, package->name, package->path.string());
+									PL_LOG_VERBOSE("The same version (v{}) of dependency '{}' required by '{}' at '{}' - second location will be ignored.", *existingVersion, dependency.name, package->name, package->path.string());
 								}
 							} else {
 								existingVersion = dependency.requestedVersion;
@@ -502,6 +503,19 @@ void PackageManager::FindDependencies() {
 	}
 }
 
+template<typename F>
+void PackageManager::Request(F&& action, std::string_view function) {
+	auto debugStart = DateTime::Now();
+
+	action();
+
+	_httpDownloader->WaitForAllRequests();
+
+	LoadAllPackages();
+
+	PL_LOG_DEBUG("{} processed in {}ms", function, (DateTime::Now() - debugStart).AsMilliseconds<float>());
+}
+
 void PackageManager::InstallMissedPackages() {
 	Request([&]{
 		std::string missed;
@@ -517,7 +531,7 @@ void PackageManager::InstallMissedPackages() {
 			}
 		}
 		if (!first) {
-			std::format_to(std::back_inserter(missed), "'");
+			missed += '\'';
 			PL_LOG_INFO("Trying install {} missing package(s) to solve dependency issues", missed);
 		}
 	}, __func__);
@@ -537,7 +551,7 @@ void PackageManager::UninstallConflictedPackages() {
 			}
 		}
 		if (!first) {
-			std::format_to(std::back_inserter(conflicted), "'");
+			conflicted += '\'';
 			PL_LOG_INFO("Trying uninstall {} conflicted package(s) to solve dependency issues", conflicted);
 		}
 	}, __func__);
@@ -607,7 +621,7 @@ void PackageManager::InstallPackages(std::span<const std::string> packageNames) 
 			unique.insert(packageName);
 		}
 		if (!first) {
-			std::format_to(std::back_inserter(error), "'");
+			error += '\'';
 			PL_LOG_ERROR("Not found {} packages(s)", error);
 		}
 	}, __func__);
@@ -783,7 +797,7 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 			unique.insert(packageName);
 		}
 		if (!first) {
-			std::format_to(std::back_inserter(error), "'");
+			error += '\'';
 			PL_LOG_ERROR("Not found {} packages(s)", error);
 		}
 	}, __func__);
@@ -875,7 +889,7 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 			unique.insert(packageName);
 		}
 		if (!first) {
-			std::format_to(std::back_inserter(error), "'");
+			error += '\'';
 			PL_LOG_ERROR("Not found {} packages(s)", error);
 		}
 	}, __func__);
@@ -903,18 +917,6 @@ bool PackageManager::UninstallPackage(const LocalPackagePtr& package, bool remov
 	return false;
 }
 
-void PackageManager::Request(const std::function<void()>& action, std::string_view function) {
-	auto debugStart = DateTime::Now();
-
-	action();
-
-	_httpDownloader->WaitForAllRequests();
-
-	LoadAllPackages();
-
-	PL_LOG_DEBUG("{} processed in {}ms", function, (DateTime::Now() - debugStart).AsMilliseconds<float>());
-}
-
 bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVersion& version) const {
 	if (!String::IsValidURL(version.download)) {
 		PL_LOG_WARNING("Tried to download a package: '{}' that is not have valid url: \"{}\", aborting", package->name, version.download.empty() ? "<empty>" : version.download);
@@ -928,25 +930,25 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 
 	PL_LOG_INFO("Downloading: '{}'", version.download);
 
-	_httpDownloader->CreateRequest(version.download, [&name = package->name, plugin = (package->type == "plugin"), &baseDir = plugify->GetConfig().baseDir, &checksum = version.checksum] // should be safe to pass ref
+	_httpDownloader->CreateRequest(version.download, [&] // should be safe to pass ref
 		(int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
-			PL_LOG_VERBOSE("Done downloading: '{}'", name);
+			PL_LOG_VERBOSE("Done downloading: '{}'", package->name);
 
 			/*if (contentType != "application/zip") {
 				PL_LOG_ERROR("Package: '{}' should be in *.zip format to be extracted correctly", name);
 				return;
 			}*/
 
-			if (!IsPackageLegit(checksum, data)) {
-				PL_LOG_WARNING("Archive hash '{}' does not match expected checksum, aborting", name);
+			if (!IsPackageLegit(version.checksum, data)) {
+				PL_LOG_WARNING("Archive hash '{}' does not match expected checksum, aborting", package->name);
 				return;
 			}
 
-			const auto& [folder, extension] = packageTypes[plugin];
+			const auto& [folder, extension] = packageTypes[package->type == "plugin"];
 
-			fs::path finalPath = baseDir / folder;
-			fs::path finalLocation = finalPath / std::format("{}-{}", name, DateTime::Get("%Y_%m_%d_%H_%M_%S"));
+			fs::path finalPath = plugify->GetConfig().baseDir / folder;
+			fs::path finalLocation = finalPath / std::format("{}-{}", package->name, DateTime::Get("%Y_%m_%d_%H_%M_%S"));
 
 			std::error_code ec;
 			if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
@@ -957,20 +959,20 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 
 			auto error = ExtractPackage(data, finalLocation, extension);
 			if (error.empty()) {
-				PL_LOG_VERBOSE("Done extracting: '{}'", name);
-				auto destinationPath = finalPath / name;
+				PL_LOG_VERBOSE("Done extracting: '{}'", package->name);
+				auto destinationPath = finalPath / package->name;
 				ec = FileSystem::MoveFolder(finalLocation, destinationPath);
 				if (ec) {
-					PL_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", name, finalLocation.string(), destinationPath.string(), ec.message());
+					PL_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", package->name, finalLocation.string(), destinationPath.string(), ec.message());
 				} else {
-					PL_LOG_VERBOSE("Package: '{}' was renamed successfully from '{}' to '{}'", name, finalLocation.string(), destinationPath.string());
+					PL_LOG_VERBOSE("Package: '{}' was renamed successfully from '{}' to '{}'", package->name, finalLocation.string(), destinationPath.string());
 				}
 
 			} else {
-				PL_LOG_ERROR("Failed extracting: '{}' - {}", name, error);
+				PL_LOG_ERROR("Failed extracting: '{}' - {}", package->name, error);
 			}
 		} else {
-			PL_LOG_ERROR("Failed downloading: '{}' - Code: {}", name, statusCode);
+			PL_LOG_ERROR("Failed downloading: '{}' - Code: {}", package->name, statusCode);
 		}
 	});
 
