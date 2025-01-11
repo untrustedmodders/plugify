@@ -353,7 +353,7 @@ void PackageManager::LoadRemotePackages() {
 
 	auto fetchManifest = [&](const std::string& url, const std::shared_ptr<Descriptor>& descriptor = nullptr) {
 		if (!String::IsValidURL(url)) {
-			PL_LOG_WARNING("Tried to fetch a package: '{}' that is not have valid url: \"{}\", aborting",
+			PL_LOG_VERBOSE("Tried to fetch a package: '{}' that is not have valid url: \"{}\", aborting",
 						   descriptor ? descriptor->friendlyName : "<from config>", url.empty() ? "<empty>" : url);
 			return;
 		}
@@ -435,7 +435,7 @@ void PackageManager::FindDependencies() {
 
 			const auto& lang = pluginDescriptor->languageModule.name;
 			if (!FindLanguageModule(_localPackages, lang)) {
-				auto remotePackage = FindLanguageModule(_remotePackages, lang);
+				const auto* remotePackage = FindLanguageModule(_remotePackages, lang);
 				if (remotePackage) {
 					auto it = _missedPackages.find(lang);
 					if (it == _missedPackages.end()) {
@@ -454,7 +454,7 @@ void PackageManager::FindDependencies() {
 
 				auto itl = _localPackages.find(dependency.name);
 				if (itl != _localPackages.end()) {
-					auto localPackage = std::get<LocalPackage>(*itl);
+					const auto& localPackage = std::get<LocalPackage>(*itl);
 					if (dependency.requestedVersion.has_value() && *dependency.requestedVersion != localPackage.version)  {
 						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package.name, dependency.name, *dependency.requestedVersion, localPackage.version);
 					}
@@ -463,7 +463,7 @@ void PackageManager::FindDependencies() {
 
 				auto itr = _remotePackages.find(dependency.name);
 				if (itr != _remotePackages.end()) {
-					auto remotePackage = std::get<RemotePackage>(*itr);
+					const auto& remotePackage = std::get<RemotePackage>(*itr);
 					if (dependency.requestedVersion.has_value() && !remotePackage.Version(*dependency.requestedVersion)) {
 						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package.name, dependency.name, *dependency.requestedVersion);
 						_conflictedPackages.emplace_back(&package);
