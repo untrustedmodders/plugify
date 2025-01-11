@@ -439,7 +439,7 @@ void PackageManager::FindDependencies() {
 				if (remotePackage) {
 					auto it = _missedPackages.find(lang);
 					if (it == _missedPackages.end()) {
-						_missedPackages.emplace(lang, std::pair{ remotePackage, std::nullopt }); // by default prioritizing latest language modules
+						_missedPackages.try_emplace(lang, std::pair{ remotePackage, std::nullopt }); // by default prioritizing latest language modules
 					}
 				} else {
 					PL_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package.name, lang);
@@ -472,7 +472,7 @@ void PackageManager::FindDependencies() {
 
 					auto it = _missedPackages.find(dependency.name);
 					if (it == _missedPackages.end()) {
-						_missedPackages.emplace(dependency.name, std::pair{ &remotePackage, dependency.requestedVersion });
+						_missedPackages.try_emplace(dependency.name, std::pair{ &remotePackage, dependency.requestedVersion });
 					} else {
 						auto& existingDependency = std::get<Dependency>(*it);
 
@@ -560,7 +560,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	packages.reserve(_localPackages.size());
 
 	for (const auto& [name, package] : _localPackages) {
-		packages.emplace(name, package);
+		packages.try_emplace(name, package);
 	}
 
 	if (packages.empty()) {

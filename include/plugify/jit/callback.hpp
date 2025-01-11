@@ -25,6 +25,12 @@ namespace plugify {
 		explicit JitCallback(std::weak_ptr<asmjit::JitRuntime> rt);
 
 		/**
+		 * @brief Copy constructor.
+		 * @param other Another instance of Callback.
+		 */
+		JitCallback(const JitCallback& other) = delete;
+
+		/**
 		 * @brief Move constructor.
 		 * @param other Another instance of Callback.
 		 */
@@ -188,6 +194,23 @@ namespace plugify {
 		 * @return Error message.
 		 */
 		std::string_view GetError() noexcept { return !_function && _errorCode ? _errorCode : ""; }
+
+		/**
+		 * @brief Copy assignment operator for JitCallback.
+		 *
+		 * @param other The other JitCallback instance to copy from.
+		 * @return A reference to this instance after copying.
+		 */
+		JitCallback& operator=(const JitCallback& other) = delete;
+
+		/**
+		 * @brief Move assignment operator for JitCall.
+		 *
+		 * @param other The other JitCallback instance to move from.
+		 * @return A reference to this instance after moving.
+		 * @note This operator is marked noexcept to indicate it does not throw exceptions.
+		 */
+		JitCallback& operator=(JitCallback&& other) noexcept;
 
 	private:
 		std::weak_ptr<asmjit::JitRuntime> _rt;

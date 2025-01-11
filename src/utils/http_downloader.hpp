@@ -32,7 +32,7 @@ namespace plugify {
 				Complete,
 			};
 
-			HTTPDownloader* parent;
+			HTTPDownloader* parent{};
 			Callback callback;
 			ProgressCallback progress;
 			std::string url;

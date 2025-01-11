@@ -1821,6 +1821,7 @@ namespace plg {
 				return u"{}";
 			if constexpr (std::is_same_v<Char, char32_t>)
 				return U"{}";
+			return "";
 		}
 
 		template<typename Char, typename Allocator, typename String = basic_string<Char, std::char_traits<Char>, Allocator>>

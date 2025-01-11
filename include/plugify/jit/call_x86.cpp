@@ -6,10 +6,8 @@ using namespace plugify;
 JitCall::JitCall(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
-JitCall::JitCall(JitCall&& other) noexcept
-	: _rt{std::move(other._rt)},
-	  _function{std::exchange(other._function, nullptr)},
-	  _targetFunc{std::exchange(other._targetFunc, nullptr)} {
+JitCall::JitCall(JitCall&& other) noexcept {
+	*this = std::move(other);
 }
 
 JitCall::~JitCall() {
@@ -18,6 +16,13 @@ JitCall::~JitCall() {
 			rt->release(_function);
 		}
 	}
+}
+
+JitCall& JitCall::operator=(JitCall&& other) noexcept {
+	_rt = std::move(other._rt);
+	_function = std::exchange(other._function, nullptr);
+	_targetFunc = std::exchange(other._targetFunc, nullptr);
+	return *this;
 }
 
 MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, WaitType waitType, bool) {
@@ -84,7 +89,7 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 			return nullptr;
 		}
 
-		argRegisters.push_back(std::move(arg));
+		argRegisters.emplace_back(std::move(arg));
 
 		// next structure slot (+= sizeof(uint64_t))
 		cc.add(i, sizeof(uint64_t));

@@ -41,7 +41,7 @@ bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 						absPath = entry.path();
 					}
 
-					_resources.emplace(std::move(relPath), std::move(absPath));
+					_resources.try_emplace(std::move(relPath), std::move(absPath));
 				}
 			}
 		}

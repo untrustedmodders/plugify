@@ -6,10 +6,8 @@ using namespace plugify;
 JitCallback::JitCallback(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
-JitCallback::JitCallback(JitCallback&& other) noexcept
-	: _rt{std::move(other._rt)},
-	  _function{std::exchange(other._function, nullptr)},
-	  _userData{std::exchange(other._userData, nullptr)} {
+JitCallback::JitCallback(JitCallback&& other) noexcept {
+	*this = std::move(other);
 }
 
 JitCallback::~JitCallback() {
@@ -18,6 +16,13 @@ JitCallback::~JitCallback() {
 			rt->release(_function);
 		}
 	}
+}
+
+JitCallback& JitCallback::operator=(JitCallback&& other) noexcept {
+	_rt = std::move(other._rt);
+	_function = std::exchange(other._function, nullptr);
+	_userData = std::exchange(other._userData, nullptr);
+	return *this;
 }
 
 MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef method, CallbackHandler callback, MemAddr data, bool hidden) {
@@ -86,7 +91,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 		}
 
 		func->setArg(argIdx, arg);
-		argRegisters.push_back(std::move(arg));
+		argRegisters.emplace_back(std::move(arg));
 	}
 
 	const uint32_t alignment = 16;

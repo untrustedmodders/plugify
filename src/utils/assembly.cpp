@@ -18,7 +18,7 @@ Assembly::Assembly(std::string_view moduleName, LoadFlag flags, const SearchDirs
 	InitFromName(moduleName, flags, additionalSearchDirectories, sections);
 }
 
-Assembly::Assembly(const MemAddr moduleMemory, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) : _handle{nullptr} {
+Assembly::Assembly(MemAddr moduleMemory, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) : _handle{nullptr} {
 	InitFromMemory(moduleMemory, flags, additionalSearchDirectories, sections);
 }
 
@@ -130,11 +130,11 @@ MemAddr Assembly::FindPattern(std::string_view pattern, MemAddr startAddress, Se
 }
 
 Assembly::Section Assembly::GetSectionByName(std::string_view sectionName) const noexcept {
-	for (const Section& section : _sections) {
-		if (section.name == sectionName)
-			return section;
-	}
-
+	auto it = std::find_if(_sections.begin(), _sections.end(), [sectionName](const auto& section) {
+		return section.name == sectionName;
+	});
+	if (it != _sections.end())
+		return *it;
 	return {};
 }
 

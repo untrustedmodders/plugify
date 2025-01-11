@@ -251,7 +251,7 @@ bool PluginManager::HasCyclicDependencies(PluginList& plugins) {
 }
 
 bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins) {
-	auto& [visited, recursive] = visitedPlugins[plugin->GetName()];
+	[[maybe_unused]] auto& [visited, recursive] = visitedPlugins[plugin->GetName()];
 	if (!visited) {
 		// Mark the current node as visited
 		// and part of recursion stack
