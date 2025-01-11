@@ -930,7 +930,7 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 
 	PL_LOG_INFO("Downloading: '{}'", version.download);
 
-	_httpDownloader->CreateRequest(version.download, [&] // should be safe to pass ref
+	_httpDownloader->CreateRequest(version.download, [=, checksum = version.checksum]
 		(int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			PL_LOG_VERBOSE("Done downloading: '{}'", package->name);
@@ -940,7 +940,7 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 				return;
 			}*/
 
-			if (!IsPackageLegit(version.checksum, data)) {
+			if (!IsPackageLegit(checksum, data)) {
 				PL_LOG_WARNING("Archive hash '{}' does not match expected checksum, aborting", package->name);
 				return;
 			}
