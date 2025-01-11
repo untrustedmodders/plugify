@@ -7,8 +7,15 @@
 #include <plugify_export.h>
 
 namespace plugify {
+	struct Package;
 	struct LocalPackage;
 	struct RemotePackage;
+
+	/**
+	 * @typedef PackageRef
+	 * @brief Shared pointer of a Package.
+	 */
+	using PackagePtr = std::shared_ptr<Package>;
 
 	/**
 	 * @typedef LocalPackageRef

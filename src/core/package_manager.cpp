@@ -104,10 +104,10 @@ bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
 	return std::size(cnt) != size;
 }
 
-void RemoveUnsupported(RemotePackage& package) {
-	for (auto it = package.versions.begin(); it != package.versions.end(); ) {
+void RemoveUnsupported(RemotePackagePtr& package) {
+	for (auto it = package->versions.begin(); it != package->versions.end(); ) {
 		if (!PackageManager::IsSupportsPlatform(it->platforms)) {
-			it = package.versions.erase(it);
+			it = package->versions.erase(it);
 		} else {
 			++it;
 		}
@@ -377,7 +377,7 @@ void PackageManager::LoadRemotePackages() {
 						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package->name);
 						continue;
 					}
-					RemoveUnsupported(*package);
+					RemoveUnsupported(package);
 					if (package->versions.empty()) {
 						PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", url, name);
 						continue;
@@ -434,11 +434,8 @@ void PackageManager::FindDependencies() {
 
 			const auto& lang = pluginDescriptor->languageModule.name;
 			if (!FindLanguageModule(_localPackages, lang)) {
-				auto remotePackage = FindLanguageModule(_remotePackages, lang);
-				if (remotePackage) {auto it = _missedPackages.find(lang);
-					if (it == _missedPackages.end()) {
-						_missedPackages.emplace(lang, std::pair{ std::move(remotePackage), std::nullopt }); // by default prioritizing latest language modules
-					}
+				if (auto remotePackage = FindLanguageModule(_remotePackages, lang)) {
+					_missedPackages.try_emplace(lang, std::pair{ std::move(remotePackage), std::nullopt }); // by default prioritizing latest language modules
 				} else {
 					PL_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package->name, lang);
 					_conflictedPackages.emplace_back(package);
@@ -511,7 +508,7 @@ void PackageManager::InstallMissedPackages() {
 		bool first = true;
 		for (const auto& [name, dependency] : _missedPackages) {
 			const auto& [package, version] = dependency;
-			InstallPackage(*package, version);
+			InstallPackage(package, version);
 			if (first) {
 				std::format_to(std::back_inserter(missed), "'{}", name);
 				first = false;
@@ -531,7 +528,7 @@ void PackageManager::UninstallConflictedPackages() {
 		std::string conflicted;
 		bool first = true;
 		for (const auto& package : _conflictedPackages) {
-			UninstallPackage(*package);
+			UninstallPackage(package);
 			if (first) {
 				std::format_to(std::back_inserter(conflicted), "'{}", package->name);
 				first = false;
@@ -580,7 +577,7 @@ void PackageManager::InstallPackage(std::string_view packageName, std::optional<
 	Request([&] {
 		if (auto it = _remotePackages.find(packageName); it != _remotePackages.end()) {
 			const auto& [_, remotePackage] = *it;
-			InstallPackage(*remotePackage, requiredVersion);
+			InstallPackage(remotePackage, requiredVersion);
 		} else {
 			PL_LOG_ERROR("Package: {} not found", packageName);
 		}
@@ -598,7 +595,7 @@ void PackageManager::InstallPackages(std::span<const std::string> packageNames) 
 				continue;
 			if (auto it = _remotePackages.find(packageName); it != _remotePackages.end()) {
 				const auto& [_, remotePackage] = *it;
-				InstallPackage(*remotePackage);
+				InstallPackage(remotePackage);
 			} else {
 				if (first) {
 					std::format_to(std::back_inserter(error), "'{}", packageName);
@@ -653,12 +650,12 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 				PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", path.string(), name, package->name);
 				continue;
 			}
-			RemoveUnsupported(*package);
+			RemoveUnsupported(package);
 			if (package->versions.empty()) {
 				PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", path.string(), name);
 				continue;
 			}
-			InstallPackage(*package);
+			InstallPackage(package);
 		}
 	}, __func__);
 }
@@ -704,12 +701,12 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package->name);
 						continue;
 					}
-					RemoveUnsupported(*package);
+					RemoveUnsupported(package);
 					if (package->versions.empty()) {
 						PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", manifestUrl, name);
 						continue;
 					}
-					InstallPackage(*package);
+					InstallPackage(package);
 				}
 			}, func);
 		}
@@ -718,30 +715,30 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 	_httpDownloader->WaitForAllRequests();
 }
 
-bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion) {
-	if (auto it = _localPackages.find(package.name); it != _localPackages.end()) {
+bool PackageManager::InstallPackage(const RemotePackagePtr& package, std::optional<int32_t> requiredVersion) {
+	if (auto it = _localPackages.find(package->name); it != _localPackages.end()) {
 		const auto& [_, localPackage] = *it;
-		PL_LOG_WARNING("Package: '{}' (v{}) already installed", package.name, localPackage->version);
+		PL_LOG_WARNING("Package: '{}' (v{}) already installed", package->name, localPackage->version);
 		return false;
 	}
 
 	PackageOpt newVersion;
 	if (requiredVersion.has_value()) {
-		newVersion = package.Version(*requiredVersion);
+		newVersion = package->Version(*requiredVersion);
 		if (newVersion) {
 			if (!IsSupportsPlatform(newVersion->platforms))
 				return false;
 		} else {
-			PL_LOG_WARNING("Package: '{}' (v{}) has not been found", package.name, *requiredVersion);
+			PL_LOG_WARNING("Package: '{}' (v{}) has not been found", package->name, *requiredVersion);
 			return false;
 		}
 	} else {
-		newVersion = package.LatestVersion();
+		newVersion = package->LatestVersion();
 		if (newVersion) {
 			if (!IsSupportsPlatform(newVersion->platforms))
 				return false;
 		} else {
-			PL_LOG_WARNING("Package: '{}' (v[latest]]) has not been found", package.name);
+			PL_LOG_WARNING("Package: '{}' (v[latest]]) has not been found", package->name);
 			return false;
 		}
 	}
@@ -756,7 +753,7 @@ void PackageManager::UpdatePackage(std::string_view packageName, std::optional<i
 	Request([&] {
 		if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
 			const auto& [_, localPackage] = *it;
-			UpdatePackage(*localPackage, requiredVersion);
+			UpdatePackage(localPackage, requiredVersion);
 		} else {
 			PL_LOG_ERROR("Package: {} not found", packageName);
 		}
@@ -774,7 +771,7 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 				continue;
 			if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
 				const auto& [_, localPackage] = *it;
-				UpdatePackage(*localPackage);
+				UpdatePackage(localPackage);
 			} else {
 				if (first) {
 					std::format_to(std::back_inserter(error), "'{}", packageName);
@@ -795,15 +792,15 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 void PackageManager::UpdateAllPackages() {
 	Request([&] {
 		for (const auto& [_, package] : _localPackages) {
-			UpdatePackage(*package);
+			UpdatePackage(package);
 		}
 	}, __func__);
 }
 
-bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<int32_t> requiredVersion) {
-	auto it = _remotePackages.find(package.name);
+bool PackageManager::UpdatePackage(const LocalPackagePtr& package, std::optional<int32_t> requiredVersion) {
+	auto it = _remotePackages.find(package->name);
 	if (it == _remotePackages.end()) {
-		PL_LOG_WARNING("Package: '{}' has not been found", package.name);
+		PL_LOG_WARNING("Package: '{}' has not been found", package->name);
 		return false;
 	}
 	const auto& [_, newPackage] = *it;
@@ -815,9 +812,9 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 			if (!IsSupportsPlatform(newVersion->platforms))
 				return false;
 
-			PL_LOG_INFO("Package '{}' (v{}) will be {}, to different version (v{})", package.name, package.version, newVersion->version > package.version ? "upgraded" : newVersion->version == package.version ? "reinstalled" : "downgraded", newVersion->version);
+			PL_LOG_INFO("Package '{}' (v{}) will be {}, to different version (v{})", package->name, package->version, newVersion->version > package->version ? "upgraded" : newVersion->version == package->version ? "reinstalled" : "downgraded", newVersion->version);
 		} else {
-			PL_LOG_WARNING("Package: '{}' (v{}) has not been found", package.name, *requiredVersion);
+			PL_LOG_WARNING("Package: '{}' (v{}) has not been found", package->name, *requiredVersion);
 			return false;
 		}
 	} else {
@@ -826,14 +823,14 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 			if (!IsSupportsPlatform(newVersion->platforms))
 				return false;
 
-			if (newVersion->version > package.version) {
-				PL_LOG_INFO("Update available, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(package.version, newVersion->version), newPackage->name, std::min(package.version, newVersion->version));
+			if (newVersion->version > package->version) {
+				PL_LOG_INFO("Update available, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(package->version, newVersion->version), newPackage->name, std::min(package->version, newVersion->version));
 			} else {
-				PL_LOG_WARNING("Package: '{}' has no update available", package.name);
+				PL_LOG_WARNING("Package: '{}' has no update available", package->name);
 				return false;
 			}
 		} else {
-			PL_LOG_WARNING("Package: '{}' (v[latest]) has not been found", package.name);
+			PL_LOG_WARNING("Package: '{}' (v[latest]) has not been found", package->name);
 			return false;
 		}
 	}
@@ -848,7 +845,7 @@ void PackageManager::UninstallPackage(std::string_view packageName) {
 	Request([&] {
 		if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
 			const auto& [_, localPackage] = *it;
-			UninstallPackage(*localPackage);
+			UninstallPackage(localPackage);
 		} else {
 			PL_LOG_ERROR("Package: {} not found", packageName);
 		}
@@ -866,7 +863,7 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 				continue;
 			if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
 				const auto& [_, localPackage] = *it;
-				UninstallPackage(*localPackage);
+				UninstallPackage(localPackage);
 			} else {
 				if (first) {
 					std::format_to(std::back_inserter(error), "'{}", packageName);
@@ -887,20 +884,20 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 void PackageManager::UninstallAllPackages() {
 	Request([&] {
 		for (const auto& [_, package] : _localPackages) {
-			UninstallPackage(*package, false);
+			UninstallPackage(package, false);
 		}
 		_localPackages.clear();
 	}, __func__);
 }
 
-bool PackageManager::UninstallPackage(const LocalPackage& package, bool remove) {
-	PL_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
-	auto packagePath = package.path.parent_path();
+bool PackageManager::UninstallPackage(const LocalPackagePtr& package, bool remove) {
+	PL_ASSERT(package->path.has_parent_path(), "Package path doesn't contain parent path");
+	auto packagePath = package->path.parent_path();
 	std::error_code ec = FileSystem::RemoveFolder(packagePath);
 	if (!ec) {
 		if (remove)
-			_localPackages.erase(package.name);
-		PL_LOG_INFO("Package: '{}' (v{}) was removed from: '{}'", package.name, package.version, packagePath.string());
+			_localPackages.erase(package->name);
+		PL_LOG_INFO("Package: '{}' (v{}) was removed from: '{}'", package->name, package->version, packagePath.string());
 		return true;
 	}
 	return false;
@@ -918,20 +915,20 @@ void PackageManager::Request(const std::function<void()>& action, std::string_vi
 	PL_LOG_DEBUG("{} processed in {}ms", function, (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
-bool PackageManager::DownloadPackage(const Package& package, const PackageVersion& version) const {
+bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVersion& version) const {
 	if (!String::IsValidURL(version.download)) {
-		PL_LOG_WARNING("Tried to download a package: '{}' that is not have valid url: \"{}\", aborting", package.name, version.download.empty() ? "<empty>" : version.download);
+		PL_LOG_WARNING("Tried to download a package: '{}' that is not have valid url: \"{}\", aborting", package->name, version.download.empty() ? "<empty>" : version.download);
 		return false;
 	}
 
-	PL_LOG_VERBOSE("Start downloading: '{}'", package.name);
+	PL_LOG_VERBOSE("Start downloading: '{}'", package->name);
 
 	auto plugify = _plugify.lock();
 	PL_ASSERT(plugify);
 
 	PL_LOG_INFO("Downloading: '{}'", version.download);
 
-	_httpDownloader->CreateRequest(version.download, [&name = package.name, plugin = (package.type == "plugin"), &baseDir = plugify->GetConfig().baseDir, &checksum = version.checksum] // should be safe to pass ref
+	_httpDownloader->CreateRequest(version.download, [&name = package->name, plugin = (package->type == "plugin"), &baseDir = plugify->GetConfig().baseDir, &checksum = version.checksum] // should be safe to pass ref
 		(int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
 		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
 			PL_LOG_VERBOSE("Done downloading: '{}'", name);
