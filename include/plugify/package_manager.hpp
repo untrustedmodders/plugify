@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <memory>
 #include <plugify_export.h>
 
 namespace plugify {
@@ -10,16 +11,16 @@ namespace plugify {
 	struct RemotePackage;
 
 	/**
-	 * @typedef LocalPackageOpt
-	 * @brief Optional of a LocalPackage.
+	 * @typedef LocalPackageRef
+	 * @brief Shared pointer of a LocalPackage.
 	 */
-	using LocalPackageOpt = std::optional<LocalPackage>;
+	using LocalPackagePtr = std::shared_ptr<LocalPackage>;
 
 	/**
-	 * @typedef RemotePackageOpt
-	 * @brief Optional of a RemotePackage.
+	 * @typedef RemotePackageRef
+	 * @brief Shared pointer of a RemotePackage.
 	 */
-	using RemotePackageOpt = std::optional<RemotePackage>;
+	using RemotePackagePtr = std::shared_ptr<RemotePackage>;
 
 	/**
 	 * @class IPackageManager
@@ -146,28 +147,28 @@ namespace plugify {
 		/**
 		 * @brief Find a local package by name.
 		 * @param packageName Name of the package to find.
-		 * @return Optional reference to the found local package.
+		 * @return Shared pointer to the found local package.
 		 */
-		virtual LocalPackageOpt FindLocalPackage(std::string_view packageName) const = 0;
+		virtual LocalPackagePtr FindLocalPackage(std::string_view packageName) const = 0;
 
 		/**
 		 * @brief Find a remote package by name.
 		 * @param packageName Name of the package to find.
-		 * @return Optional reference to the found remote package.
+		 * @return Shared pointer to the found remote package.
 		 */
-		virtual RemotePackageOpt FindRemotePackage(std::string_view packageName) const = 0;
+		virtual RemotePackagePtr FindRemotePackage(std::string_view packageName) const = 0;
 
 		/**
 		 * @brief Get a vector of all local packages.
-		 * @return Vector of local packages.
+		 * @return Vector of local package shared pointers.
 		 */
-		virtual std::vector<LocalPackage> GetLocalPackages() const = 0;
+		virtual std::vector<LocalPackagePtr> GetLocalPackages() const = 0;
 
 		/**
 		 * @brief Get a vector of all remote packages.
-		 * @return Vector of remote packages.
+		 * @return Vector of remote package shared pointers.
 		 */
-		virtual std::vector<RemotePackage> GetRemotePackages() const = 0;
+		virtual std::vector<RemotePackagePtr> GetRemotePackages() const = 0;
 	};
 
 } // namespace plugify

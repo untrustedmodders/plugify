@@ -23,10 +23,9 @@ Module::~Module() {
 
 bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
-
 	std::error_code ec;
-
-	auto is_regular_file = [&](const fs::path& path) {
+	auto is_regular_file = [](const fs::path& path) {
+		std::error_code ec;
 		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
 	};
 
@@ -51,7 +50,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 						absPath = entry.path();
 					}
 
-					_resources.try_emplace(std::move(relPath), std::move(absPath));
+					_resources.emplace(std::move(relPath), std::move(absPath));
 				}
 			}
 		}

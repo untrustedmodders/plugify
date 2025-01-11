@@ -265,13 +265,14 @@ int main() {
 							CONPRINTE("You must load plugin manager before query any information from it.");
 							continue;
 						}
-						auto count = pluginManager->GetPlugins().size();
+						auto plugins = pluginManager->GetPlugins();
+						auto count = plugins.size();
 						if (!count) {
 							CONPRINTE("No plugins loaded.");
 						} else {
-							CONPRINTF("Listing {} plugin{}:", static_cast<int>(count), (count > 1) ? "s" : "");
+							CONPRINTF("Listing {} plugin{}:", count, (count > 1) ? "s" : "");
 						}
-						for (auto& plugin : pluginManager->GetPlugins()) {
+						for (auto& plugin : plugins) {
 							Print<plugify::PluginState>(plugin, plugify::PluginUtils::ToString);
 						}
 					}
@@ -281,13 +282,14 @@ int main() {
 							CONPRINTE("You must load plugin manager before query any information from it.");
 							continue;
 						}
-						auto count = pluginManager->GetModules().size();
+						auto modules = pluginManager->GetModules();
+						auto count = modules.size();
 						if (!count) {
 							CONPRINTE("No modules loaded.");
 						} else {
-							CONPRINTF("Listing {} module{}:", static_cast<int>(count), (count > 1) ? "s" : "");
+							CONPRINTF("Listing {} module{}:", count, (count > 1) ? "s" : "");
 						}
-						for (auto& module : pluginManager->GetModules()) {
+						for (auto& module : modules) {
 							Print<plugify::ModuleState>(module, plugify::ModuleUtils::ToString);
 						}
 					}
@@ -437,14 +439,15 @@ int main() {
 							CONPRINTE("You must unload plugin manager before bring any change with package manager.");
 							continue;
 						}
-						auto count = packageManager->GetLocalPackages().size();
+						auto localPackages = packageManager->GetLocalPackages();
+						auto count = localPackages.size();
 						if (!count) {
 							CONPRINTE("No local packages found.");
 						} else {
-							CONPRINTF("Listing {} local package{}:", static_cast<int>(count), (count > 1) ? "s" : "");
+							CONPRINTF("Listing {} local package{}:", count, (count > 1) ? "s" : "");
 						}
-						for (const auto& localPackage : packageManager->GetLocalPackages()) {
-							CONPRINTF("  {} [{}] (v{}) at {}", localPackage.name, localPackage.type, localPackage.version, localPackage.path.string());
+						for (const auto& localPackage : localPackages) {
+							CONPRINTF("  {} [{}] (v{}) at {}", localPackage->name, localPackage->type, localPackage->version, localPackage->path.string());
 						}
 					}
 
@@ -453,17 +456,18 @@ int main() {
 							CONPRINTE("You must unload plugin manager before bring any change with package manager.");
 							continue;
 						}
-						auto count = packageManager->GetRemotePackages().size();
+						auto remotePackages = packageManager->GetRemotePackages();
+						auto count = remotePackages.size();
 						if (!count) {
 							CONPRINTE("No remote packages found.");
 						} else {
-							CONPRINTF("Listing {} remote package{}:", static_cast<int>(count), (count > 1) ? "s" : "");
+							CONPRINTF("Listing {} remote package{}:", count, (count > 1) ? "s" : "");
 						}
-						for (const auto& remotePackage : packageManager->GetRemotePackages()) {
-							if (remotePackage.author.empty() || remotePackage.description.empty()) {
-								CONPRINTF("  {} [{}]", remotePackage.name, remotePackage.type);
+						for (const auto& remotePackage : remotePackages) {
+							if (remotePackage->author.empty() || remotePackage->description.empty()) {
+								CONPRINTF("  {} [{}]", remotePackage->name, remotePackage->type);
 							} else {
-								CONPRINTF("  {} [{}] ({}) by {}", remotePackage.name, remotePackage.type, remotePackage.description, remotePackage.author);
+								CONPRINTF("  {} [{}] ({}) by {}", remotePackage->name, remotePackage->type, remotePackage->description, remotePackage->author);
 							}
 						}
 					}
@@ -475,7 +479,7 @@ int main() {
 						}
 						if (args.size() > 2) {
 							auto package = packageManager->FindLocalPackage(args[2]);
-							if (package.has_value()) {
+							if (package) {
 								CONPRINTF("  Name: {}", package->name);
 								CONPRINTF("  Type: {}", package->type);
 								CONPRINTF("  Version: {}", package->version);
@@ -496,7 +500,7 @@ int main() {
 						}
 						if (args.size() > 2) {
 							auto package = packageManager->FindRemotePackage(args[2]);
-							if (package.has_value()) {
+							if (package) {
 								CONPRINTF("  Name: {}", package->name);
 								CONPRINTF("  Type: {}", package->type);
 								if (!package->author.empty()) {

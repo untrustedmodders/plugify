@@ -57,12 +57,12 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 
 	if (auto packageManager = plugify->GetPackageManager().lock()) {
 		for (const auto& package : packageManager->GetLocalPackages()) {
-			if (package.type == "plugin") {
+			if (package->type == "plugin") {
 				auto id = static_cast<UniqueId>(_allPlugins.size());
-				_allPlugins.emplace_back(std::make_unique<Plugin>(id, package));
+				_allPlugins.emplace_back(std::make_unique<Plugin>(id, *package));
 			} else {
 				auto id = static_cast<UniqueId>(_allModules.size());
-				_allModules.emplace_back(std::make_unique<Module>(id, package));
+				_allModules.emplace_back(std::make_unique<Module>(id, *package));
 			}
 		}
 	}
@@ -251,7 +251,7 @@ bool PluginManager::HasCyclicDependencies(PluginList& plugins) {
 }
 
 bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins) {
-	[[maybe_unused]] auto& [visited, recursive] = visitedPlugins[plugin->GetName()];
+	auto& [visited, recursive] = visitedPlugins[plugin->GetName()];
 	if (!visited) {
 		// Mark the current node as visited
 		// and part of recursion stack
@@ -276,7 +276,7 @@ bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& 
 
 	// Remove the vertex from recursion stack
 	recursive = false;
-	return false;
+	return recursive;
 }
 
 ModuleOpt PluginManager::FindModule(std::string_view moduleName) const {

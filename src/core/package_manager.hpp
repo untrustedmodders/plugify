@@ -42,11 +42,11 @@ namespace plugify {
 		void InstallMissedPackages() override;
 		void UninstallConflictedPackages() override;
 
-		LocalPackageOpt FindLocalPackage(std::string_view packageName) const override;
-		RemotePackageOpt FindRemotePackage(std::string_view packageName) const override;
+		LocalPackagePtr FindLocalPackage(std::string_view packageName) const override;
+		RemotePackagePtr FindRemotePackage(std::string_view packageName) const override;
 
-		std::vector<LocalPackage> GetLocalPackages() const override;
-		std::vector<RemotePackage> GetRemotePackages() const override;
+		std::vector<LocalPackagePtr> GetLocalPackages() const override;
+		std::vector<RemotePackagePtr> GetRemotePackages() const override;
 
 	public:
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
@@ -71,16 +71,14 @@ namespace plugify {
 		static bool IsPackageLegit(std::string_view checksum, std::span<const uint8_t> packageData);
 #endif // PLUGIFY_DOWNLOADER
 
-		using Dependency = std::pair<const RemotePackage*, std::optional<int32_t>>;
-		
 	private:
 #if PLUGIFY_DOWNLOADER
 		std::unique_ptr<HTTPDownloader> _httpDownloader;
 #endif // PLUGIFY_DOWNLOADER
-		std::unordered_map<std::string, LocalPackage, string_hash, std::equal_to<>> _localPackages;
-		std::unordered_map<std::string, RemotePackage, string_hash, std::equal_to<>> _remotePackages;
-		std::unordered_map<std::string, Dependency> _missedPackages;
-		std::vector<const LocalPackage*> _conflictedPackages;
+		std::unordered_map<std::string, LocalPackagePtr, string_hash, std::equal_to<>> _localPackages;
+		std::unordered_map<std::string, RemotePackagePtr, string_hash, std::equal_to<>> _remotePackages;
+		std::unordered_map<std::string, std::pair<RemotePackagePtr, std::optional<int32_t>>> _missedPackages;
+		std::vector<LocalPackagePtr> _conflictedPackages;
 		bool _inited{ false };
 	};
 }

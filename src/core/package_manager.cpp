@@ -221,7 +221,7 @@ void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std
 }
 
 template<typename T>
-std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
+std::shared_ptr<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
 	auto json = FileSystem::ReadText(path);
 	auto descriptor = glz::read_json<T>(json);
 	if (!descriptor.has_value()) {
@@ -285,7 +285,7 @@ std::optional<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const
 	}
 
 	auto version = descriptor->version;
-	return { {Package{name, type}, path, version, std::make_unique<T>(std::move(*descriptor))} };
+	return std::make_shared<LocalPackage>(Package{name, type}, path, version, std::make_unique<T>(std::move(*descriptor)));
 }
 
 void PackageManager::LoadLocalPackages()  {
@@ -313,21 +313,21 @@ void PackageManager::LoadLocalPackages()  {
 		auto package = isModule ?
 				GetPackageFromDescriptor<LanguageModuleDescriptor>(path, name) :
 				GetPackageFromDescriptor<PluginDescriptor>(path, name);
-		if (!package.has_value())
+		if (!package)
 			return;
 
 		auto it = _localPackages.find(name);
 		if (it == _localPackages.end()) {
-			_localPackages.emplace(std::move(name), std::move(*package));
+			_localPackages.emplace(std::move(name), std::move(package));
 		} else {
-			auto& existingPackage = std::get<LocalPackage>(*it);
+			auto& [_, existingPackage] = *it;
 
-			auto& existingVersion = existingPackage.version;
+			auto& existingVersion = existingPackage->version;
 			if (existingVersion != package->version) {
 				PL_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(existingVersion, package->version), name, std::min(existingVersion, package->version));
 
 				if (existingVersion < package->version) {
-					existingPackage = std::move(*package);
+					existingPackage = std::move(package);
 				}
 			} else {
 				PL_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, name, path.string());
@@ -373,12 +373,12 @@ void PackageManager::LoadRemotePackages() {
 				}
 
 				for (auto& [name, package] : manifest->content) {
-					if (name.empty() || package.name != name) {
-						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package.name);
+					if (name.empty() || package->name != name) {
+						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package->name);
 						continue;
 					}
-					RemoveUnsupported(package);
-					if (package.versions.empty()) {
+					RemoveUnsupported(*package);
+					if (package->versions.empty()) {
 						PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", url, name);
 						continue;
 					}
@@ -388,11 +388,10 @@ void PackageManager::LoadRemotePackages() {
 						std::unique_lock<std::mutex> lock(mutex);
 						_remotePackages.emplace(name, std::move(package));
 					} else {
-						auto& existingPackage = std::get<RemotePackage>(*it);
-
+						auto& [_, existingPackage] = *it;
 						if (existingPackage == package) {
 							std::unique_lock<std::mutex> lock(mutex);
-							existingPackage.versions.merge(package.versions);
+							existingPackage->versions.merge(package->versions);
 						} else {
 							PL_LOG_WARNING("The package '{}' exists at '{}' - second location will be ignored.", name, url);
 						}
@@ -407,7 +406,7 @@ void PackageManager::LoadRemotePackages() {
 	}
 
 	for (const auto& [_, package] : _localPackages) {
-		fetchManifest(package.descriptor->updateURL, package.descriptor);
+		fetchManifest(package->descriptor->updateURL, package->descriptor);
 	}
 
 	//FetchPackagesListFromAPI(mutex);
@@ -416,13 +415,13 @@ void PackageManager::LoadRemotePackages() {
 }
 
 template<typename T>
-const T* FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::equal_to<>>& container, const std::string& name)  {
+T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::equal_to<>>& container, const std::string& name)  {
 	for (const auto& [_, package] : container) {
-		if (package.type == name) {
-			return &package;
+		if (package->type == name) {
+			return package;
 		}
 	}
-	return nullptr;
+	return {};
 }
 
 void PackageManager::FindDependencies() {
@@ -430,20 +429,19 @@ void PackageManager::FindDependencies() {
 	_conflictedPackages.clear();
 
 	for (const auto& [_, package] : _localPackages) {
-		if (package.type == "plugin") {
-			auto pluginDescriptor = std::static_pointer_cast<PluginDescriptor>(package.descriptor);
+		if (package->type == "plugin") {
+			auto pluginDescriptor = std::static_pointer_cast<PluginDescriptor>(package->descriptor);
 
 			const auto& lang = pluginDescriptor->languageModule.name;
 			if (!FindLanguageModule(_localPackages, lang)) {
-				const auto* remotePackage = FindLanguageModule(_remotePackages, lang);
-				if (remotePackage) {
-					auto it = _missedPackages.find(lang);
+				auto remotePackage = FindLanguageModule(_remotePackages, lang);
+				if (remotePackage) {auto it = _missedPackages.find(lang);
 					if (it == _missedPackages.end()) {
-						_missedPackages.try_emplace(lang, std::pair{ remotePackage, std::nullopt }); // by default prioritizing latest language modules
+						_missedPackages.emplace(lang, std::pair{ std::move(remotePackage), std::nullopt }); // by default prioritizing latest language modules
 					}
 				} else {
-					PL_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package.name, lang);
-					_conflictedPackages.emplace_back(&package);
+					PL_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package->name, lang);
+					_conflictedPackages.emplace_back(package);
 					continue;
 				}
 			}
@@ -452,31 +450,27 @@ void PackageManager::FindDependencies() {
 				if (dependency.optional || !IsSupportsPlatform(dependency.supportedPlatforms))
 					continue;
 
-				auto itl = _localPackages.find(dependency.name);
-				if (itl != _localPackages.end()) {
-					const auto& localPackage = std::get<LocalPackage>(*itl);
-					if (dependency.requestedVersion.has_value() && *dependency.requestedVersion != localPackage.version)  {
-						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package.name, dependency.name, *dependency.requestedVersion, localPackage.version);
+				if (auto itl = _localPackages.find(dependency.name); itl != _localPackages.end()) {
+					const auto& [_, localPackage] = *itl;
+					if (dependency.requestedVersion.has_value() && *dependency.requestedVersion != localPackage->version)  {
+						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, *dependency.requestedVersion, localPackage->version);
 					}
 					continue;
 				}
 
-				auto itr = _remotePackages.find(dependency.name);
-				if (itr != _remotePackages.end()) {
-					const auto& remotePackage = std::get<RemotePackage>(*itr);
-					if (dependency.requestedVersion.has_value() && !remotePackage.Version(*dependency.requestedVersion)) {
-						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package.name, dependency.name, *dependency.requestedVersion);
-						_conflictedPackages.emplace_back(&package);
+				if (auto itr = _remotePackages.find(dependency.name); itr != _remotePackages.end()) {
+					const auto& [_, remotePackage] = *itr;
+					if (dependency.requestedVersion.has_value() && !remotePackage->Version(*dependency.requestedVersion)) {
+						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, *dependency.requestedVersion);
+						_conflictedPackages.emplace_back(package);
 						continue;
 					}
 
 					auto it = _missedPackages.find(dependency.name);
 					if (it == _missedPackages.end()) {
-						_missedPackages.try_emplace(dependency.name, std::pair{ &remotePackage, dependency.requestedVersion });
+						_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.requestedVersion });
 					} else {
-						auto& existingDependency = std::get<Dependency>(*it);
-
-						auto& existingVersion = existingDependency.second;
+						auto& existingVersion = it->second.second;
 						if (dependency.requestedVersion.has_value()) {
 							if (existingVersion.has_value()) {
 								if (*existingVersion != *dependency.requestedVersion) {
@@ -486,7 +480,7 @@ void PackageManager::FindDependencies() {
 										existingVersion = dependency.requestedVersion;
 									}
 								} else {
-									PL_LOG_WARNING("The same version (v{}) of dependency '{}' required by '{}' at '{}' - second one will be ignored.", *existingVersion, dependency.name, package.name, package.path.string());
+									PL_LOG_WARNING("The same version (v{}) of dependency '{}' required by '{}' at '{}' - second one will be ignored.", *existingVersion, dependency.name, package->name, package->path.string());
 								}
 							} else {
 								existingVersion = dependency.requestedVersion;
@@ -494,8 +488,8 @@ void PackageManager::FindDependencies() {
 						}
 					}
 				} else {
-					PL_LOG_ERROR("Package: '{}' has dependency: '{}' which could not be found.", package.name, dependency.name);
-					_conflictedPackages.emplace_back(&package);
+					PL_LOG_ERROR("Package: '{}' has dependency: '{}' which could not be found.", package->name, dependency.name);
+					_conflictedPackages.emplace_back(package);
 				}
 			}
 		}
@@ -537,13 +531,12 @@ void PackageManager::UninstallConflictedPackages() {
 		std::string conflicted;
 		bool first = true;
 		for (const auto& package : _conflictedPackages) {
-			std::string name(package->name);
 			UninstallPackage(*package);
 			if (first) {
-				std::format_to(std::back_inserter(conflicted), "'{}", name);
+				std::format_to(std::back_inserter(conflicted), "'{}", package->name);
 				first = false;
 			} else {
-				std::format_to(std::back_inserter(conflicted), "', '{}", name);
+				std::format_to(std::back_inserter(conflicted), "', '{}", package->name);
 			}
 		}
 		if (!first) {
@@ -556,11 +549,11 @@ void PackageManager::UninstallConflictedPackages() {
 void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool prettify) {
 	auto debugStart = DateTime::Now();
 
-	std::unordered_map<std::string, RemotePackage> packages;
+	std::unordered_map<std::string, RemotePackagePtr> packages;
 	packages.reserve(_localPackages.size());
 
 	for (const auto& [name, package] : _localPackages) {
-		packages.try_emplace(name, package);
+		packages.emplace(name, std::make_shared<RemotePackage>(*package));
 	}
 
 	if (packages.empty()) {
@@ -585,9 +578,9 @@ void PackageManager::InstallPackage(std::string_view packageName, std::optional<
 		return;
 
 	Request([&] {
-		auto it = _remotePackages.find(packageName);
-		if (it != _remotePackages.end()) {
-			InstallPackage(std::get<RemotePackage>(*it), requiredVersion);
+		if (auto it = _remotePackages.find(packageName); it != _remotePackages.end()) {
+			const auto& [_, remotePackage] = *it;
+			InstallPackage(*remotePackage, requiredVersion);
 		} else {
 			PL_LOG_ERROR("Package: {} not found", packageName);
 		}
@@ -603,9 +596,9 @@ void PackageManager::InstallPackages(std::span<const std::string> packageNames) 
 		for (const auto& packageName: packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
 				continue;
-			auto it = _remotePackages.find(packageName);
-			if (it != _remotePackages.end()) {
-				InstallPackage(std::get<RemotePackage>(*it));
+			if (auto it = _remotePackages.find(packageName); it != _remotePackages.end()) {
+				const auto& [_, remotePackage] = *it;
+				InstallPackage(*remotePackage);
 			} else {
 				if (first) {
 					std::format_to(std::back_inserter(error), "'{}", packageName);
@@ -656,16 +649,16 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 
 	Request([&] {
 		for (auto& [name, package]: manifest->content) {
-			if (name.empty() || package.name != name) {
-				PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", path.string(), name, package.name);
+			if (name.empty() || package->name != name) {
+				PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", path.string(), name, package->name);
 				continue;
 			}
-			RemoveUnsupported(package);
-			if (package.versions.empty()) {
+			RemoveUnsupported(*package);
+			if (package->versions.empty()) {
 				PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", path.string(), name);
 				continue;
 			}
-			InstallPackage(package);
+			InstallPackage(*package);
 		}
 	}, __func__);
 }
@@ -707,16 +700,16 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 
 			Request([&] {
 				for (auto& [name, package] : manifest->content) {
-					if (name.empty() || package.name != name) {
-						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package.name);
+					if (name.empty() || package->name != name) {
+						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package->name);
 						continue;
 					}
-					RemoveUnsupported(package);
-					if (package.versions.empty()) {
+					RemoveUnsupported(*package);
+					if (package->versions.empty()) {
 						PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", manifestUrl, name);
 						continue;
 					}
-					InstallPackage(package);
+					InstallPackage(*package);
 				}
 			}, func);
 		}
@@ -726,9 +719,9 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 }
 
 bool PackageManager::InstallPackage(const RemotePackage& package, std::optional<int32_t> requiredVersion) {
-	auto it = _localPackages.find(package.name);
-	if (it != _localPackages.end()) {
-		PL_LOG_WARNING("Package: '{}' (v{}) already installed", package.name, std::get<LocalPackage>(*it).version);
+	if (auto it = _localPackages.find(package.name); it != _localPackages.end()) {
+		const auto& [_, localPackage] = *it;
+		PL_LOG_WARNING("Package: '{}' (v{}) already installed", package.name, localPackage->version);
 		return false;
 	}
 
@@ -761,9 +754,9 @@ void PackageManager::UpdatePackage(std::string_view packageName, std::optional<i
 		return;
 
 	Request([&] {
-		auto it = _localPackages.find(packageName);
-		if (it != _localPackages.end()) {
-			UpdatePackage(std::get<LocalPackage>(*it), requiredVersion);
+		if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
+			const auto& [_, localPackage] = *it;
+			UpdatePackage(*localPackage, requiredVersion);
 		} else {
 			PL_LOG_ERROR("Package: {} not found", packageName);
 		}
@@ -779,9 +772,9 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 		for (const auto& packageName: packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
 				continue;
-			auto it = _localPackages.find(packageName);
-			if (it != _localPackages.end()) {
-				UpdatePackage(std::get<LocalPackage>(*it));
+			if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
+				const auto& [_, localPackage] = *it;
+				UpdatePackage(*localPackage);
 			} else {
 				if (first) {
 					std::format_to(std::back_inserter(error), "'{}", packageName);
@@ -802,7 +795,7 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 void PackageManager::UpdateAllPackages() {
 	Request([&] {
 		for (const auto& [_, package] : _localPackages) {
-			UpdatePackage(package);
+			UpdatePackage(*package);
 		}
 	}, __func__);
 }
@@ -813,11 +806,11 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 		PL_LOG_WARNING("Package: '{}' has not been found", package.name);
 		return false;
 	}
+	const auto& [_, newPackage] = *it;
 
-	const auto& newPackage =  std::get<RemotePackage>(*it);
 	PackageOpt newVersion;
 	if (requiredVersion.has_value()) {
-		newVersion = newPackage.Version(*requiredVersion);
+		newVersion = newPackage->Version(*requiredVersion);
 		if (newVersion) {
 			if (!IsSupportsPlatform(newVersion->platforms))
 				return false;
@@ -828,13 +821,13 @@ bool PackageManager::UpdatePackage(const LocalPackage& package, std::optional<in
 			return false;
 		}
 	} else {
-		newVersion = newPackage.LatestVersion();
+		newVersion = newPackage->LatestVersion();
 		if (newVersion) {
 			if (!IsSupportsPlatform(newVersion->platforms))
 				return false;
 
 			if (newVersion->version > package.version) {
-				PL_LOG_INFO("Update available, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(package.version, newVersion->version), newPackage.name, std::min(package.version, newVersion->version));
+				PL_LOG_INFO("Update available, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(package.version, newVersion->version), newPackage->name, std::min(package.version, newVersion->version));
 			} else {
 				PL_LOG_WARNING("Package: '{}' has no update available", package.name);
 				return false;
@@ -853,9 +846,9 @@ void PackageManager::UninstallPackage(std::string_view packageName) {
 		return;
 
 	Request([&] {
-		auto it = _localPackages.find(packageName);
-		if (it != _localPackages.end()) {
-			UninstallPackage(std::get<LocalPackage>(*it));
+		if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
+			const auto& [_, localPackage] = *it;
+			UninstallPackage(*localPackage);
 		} else {
 			PL_LOG_ERROR("Package: {} not found", packageName);
 		}
@@ -871,9 +864,9 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 		for (const auto& packageName: packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
 				continue;
-			auto it = _localPackages.find(packageName);
-			if (it != _localPackages.end()) {
-				UninstallPackage(std::get<LocalPackage>(*it));
+			if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
+				const auto& [_, localPackage] = *it;
+				UninstallPackage(*localPackage);
 			} else {
 				if (first) {
 					std::format_to(std::back_inserter(error), "'{}", packageName);
@@ -894,7 +887,7 @@ void PackageManager::UninstallPackages(std::span<const std::string> packageNames
 void PackageManager::UninstallAllPackages() {
 	Request([&] {
 		for (const auto& [_, package] : _localPackages) {
-			UninstallPackage(package, false);
+			UninstallPackage(*package, false);
 		}
 		_localPackages.clear();
 	}, __func__);
@@ -1097,22 +1090,20 @@ bool PackageManager::HasConflictedPackages() const {
 	return !_conflictedPackages.empty();
 }
 
-LocalPackageOpt PackageManager::FindLocalPackage(std::string_view packageName) const {
-	auto it = _localPackages.find(packageName);
-	if (it != _localPackages.end())
-		return std::get<LocalPackage>(*it);
+LocalPackagePtr PackageManager::FindLocalPackage(std::string_view packageName) const {
+	if (auto it = _localPackages.find(packageName); it != _localPackages.end())
+		return std::get<LocalPackagePtr>(*it);
 	return {};
 }
 
-RemotePackageOpt PackageManager::FindRemotePackage(std::string_view packageName) const {
-	auto it = _remotePackages.find(packageName);
-	if (it != _remotePackages.end())
-		return std::get<RemotePackage>(*it);
+RemotePackagePtr PackageManager::FindRemotePackage(std::string_view packageName) const {
+	if (auto it = _remotePackages.find(packageName); it != _remotePackages.end())
+		return std::get<RemotePackagePtr>(*it);
 	return {};
 }
 
-std::vector<LocalPackage> PackageManager::GetLocalPackages() const {
-	std::vector<LocalPackage> localPackages;
+std::vector<LocalPackagePtr> PackageManager::GetLocalPackages() const {
+	std::vector<LocalPackagePtr> localPackages;
 	localPackages.reserve(_localPackages.size());
 	for (const auto& [_, package] : _localPackages)  {
 		localPackages.emplace_back(package);
@@ -1120,9 +1111,9 @@ std::vector<LocalPackage> PackageManager::GetLocalPackages() const {
 	return localPackages;
 }
 
-std::vector<RemotePackage> PackageManager::GetRemotePackages() const {
-	std::vector<RemotePackage> remotePackages;
-	remotePackages.reserve(remotePackages.size());
+std::vector<RemotePackagePtr> PackageManager::GetRemotePackages() const {
+	std::vector<RemotePackagePtr> remotePackages;
+	remotePackages.reserve(_remotePackages.size());
 	for (const auto& [_, package] : _remotePackages)  {
 		remotePackages.emplace_back(package);
 	}
