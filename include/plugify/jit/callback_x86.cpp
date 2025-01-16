@@ -146,7 +146,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 	// get pointer to stack structure and pass it to the user callback
 	asmjit::x86::Gp argStruct = cc.newUIntPtr("argStruct");
-	auto argCount = static_cast<uint8_t>(sig.argCount());
+	auto argCount = static_cast<size_t>(sig.argCount());
 	if (hidden) {
 		// if hidden param, then we need to offset it
 		if (--argCount != 0) {
@@ -160,7 +160,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	}
 
 	// fill reg to pass struct arg count to callback
-	asmjit::x86::Gp argCountParam = cc.newUInt8("argCountParam");
+	asmjit::x86::Gp argCountParam = cc.newUIntPtr("argCountParam");
 	cc.mov(argCountParam, argCount);
 
 	// create buffer for ret val
@@ -177,7 +177,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	asmjit::InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
 			  (uint64_t) callback,
-			  asmjit::FuncSignature::build<void, void*, void*, Parameters*, uint8_t, Return*>()
+			  asmjit::FuncSignature::build<void, void*, void*, Parameters*, size_t, Return*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)

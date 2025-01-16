@@ -142,7 +142,7 @@ namespace plugify {
 			volatile uint64_t ret; ///< Raw storage for the return value.
 		};
 
-		using CallbackHandler = void(*)(MethodRef method, MemAddr data, const Parameters* params, uint8_t count, const Return* ret);
+		using CallbackHandler = void(*)(MethodRef method, MemAddr data, const Parameters* params, size_t count, const Return* ret);
 		using HiddenParam = bool(*)(ValueType);
 
 		/**

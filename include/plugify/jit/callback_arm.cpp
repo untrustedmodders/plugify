@@ -150,8 +150,8 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	cc.add(argStruct, asmjit::a64::sp, argsStack.offset());
 
 	// fill reg to pass struct arg count to callback
-	asmjit::a64::Gp argCountParam = cc.newGp(asmjit::TypeId::kUInt8, "argCountParam");
-	cc.mov(argCountParam, static_cast<uint8_t>(sig.argCount()));
+	asmjit::a64::Gp argCountParam = cc.newGpx("argCountParam");
+	cc.mov(argCountParam, static_cast<size_t>(sig.argCount()));
 
 	// create buffer for ret val
 	std::optional<asmjit::a64::Mem> retStack;
@@ -167,7 +167,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	asmjit::InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
 			  (uint64_t) callback,
-			  asmjit::FuncSignature::build<void, void*, void*, Parameters*, uint8_t, Return*>()
+			  asmjit::FuncSignature::build<void, void*, void*, Parameters*, size_t, Return*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)
