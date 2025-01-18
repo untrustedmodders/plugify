@@ -35,7 +35,7 @@ namespace plugify {
 			return _impl != nullptr;
 		}
 
-		const T* GetPtr() const noexcept {
+		const void* const GetPtr() const noexcept {
 			return _impl;
 		}
 
@@ -59,6 +59,6 @@ namespace plugify {
 template<typename T>
 struct std::hash<plugify::Ref<T>> {
 	std::size_t operator()(const plugify::Ref<T>& ref) const {
-		return std::hash<T*>{}(ref.GetPtr());
+		return std::hash<void*>{}(ref.GetPtr());
 	}
 };
