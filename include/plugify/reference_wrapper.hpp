@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <utility>
 
 namespace plugify {
 	/**
@@ -30,7 +31,13 @@ namespace plugify {
 		Ref& operator=(Ref&&) & = default;
 		Ref& operator=(Ref&&) && = delete;
 
-		explicit operator bool() const noexcept { return _impl != nullptr; }
+		explicit operator bool() const noexcept {
+			return _impl != nullptr;
+		}
+
+		const T* GetPtr() const noexcept {
+			return _impl;
+		}
 
 	protected:
 		T* _impl;
@@ -47,3 +54,11 @@ namespace plugify {
 	 */
 	template<typename T> static constexpr bool is_ref_v = std::is_standard_layout_v<T> && sizeof(T) == sizeof(void*);
 }
+
+// Specialize std::hash for Ref<T>
+template<typename T>
+struct std::hash<plugify::Ref<T>> {
+	std::size_t operator()(const plugify::Ref<T>& ref) const {
+		return std::hash<T*>{}(ref.GetPtr());
+	}
+};
