@@ -30,12 +30,13 @@ namespace plugify {
 	 * The ErrorData structure contains a string describing an error.
 	 */
 	struct ErrorData {
-		//string error; ///< Description of the error.
-
-		std::array<char, 255> error{}; ///< Description of the error.
+		std::vector<char> error; ///< Description of the error.
 
 		ErrorData(std::string_view str) {
-			std::memcpy(error.data(), str.data(), std::min(str.length(), error.size() - 1));
+			error.assign(str.begin(), str.end());
+			if (error.back() != 0) {
+				error.emplace_back(0);
+			}
 		}
 	};
 
