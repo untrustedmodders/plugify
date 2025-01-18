@@ -35,7 +35,7 @@ namespace plugify {
 		ErrorData(std::string_view str) {
 			error.assign(str.begin(), str.end());
 			if (error.back() != 0) {
-				error.emplace_back(0);
+				error.emplace_back('\0');
 			}
 		}
 	};
