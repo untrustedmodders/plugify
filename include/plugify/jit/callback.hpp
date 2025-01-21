@@ -54,7 +54,7 @@ namespace plugify {
 			 * @noreturn
 			 */
 			template<typename T>
-			void SetArgument(uint8_t idx, T val) const noexcept {
+			void SetArgument(size_t idx, T val) const noexcept {
 				*(T*) GetArgumentPtr(idx) = val;
 			}
 
@@ -67,7 +67,7 @@ namespace plugify {
 			 * @noreturn
 			 */
 			template<typename T>
-			void SetArgumentAt(uint8_t idx, T val, uint8_t i = 0) const noexcept {
+			void SetArgumentAt(size_t idx, T val, size_t i = 0) const noexcept {
 				(*(T**) GetArgumentPtr(idx))[i] = val;
 			}
 
@@ -78,7 +78,7 @@ namespace plugify {
 			 * @return Value of the argument.
 			 */
 			template<typename T>
-			T GetArgument(uint8_t idx) const noexcept {
+			T GetArgument(size_t idx) const noexcept {
 				return *(T*) GetArgumentPtr(idx);
 			}
 
@@ -87,7 +87,7 @@ namespace plugify {
 			 * @param idx Index of the argument.
 			 * @return Pointer to the argument.
 			 */
-			int8_t* GetArgumentPtr(uint8_t idx) const noexcept {
+			int8_t* GetArgumentPtr(size_t idx) const noexcept {
 				return ((int8_t*) &arguments) + sizeof(uint64_t) * idx;
 			}
 

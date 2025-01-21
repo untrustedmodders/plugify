@@ -54,7 +54,7 @@ namespace plugify {
 			 * @brief Constructor.
 			 * @param count Parameters count.
 			 */
-			explicit Parameters(uint8_t count) {
+			explicit Parameters(size_t count) {
 				arguments.reserve(count);
 			}
 
