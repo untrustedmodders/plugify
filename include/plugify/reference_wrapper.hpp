@@ -35,8 +35,8 @@ namespace plugify {
 			return _impl != nullptr;
 		}
 
-		const void* const GetPtr() const noexcept {
-			return _impl;
+		void* GetPtr() const noexcept {
+			return (void*) _impl;
 		}
 
 	protected:
