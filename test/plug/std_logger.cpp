@@ -6,6 +6,9 @@ namespace plug {
     void StdLogger::Log(std::string_view message, plugify::Severity severity) {
         if (severity <= _severity) {
             switch (severity) {
+                case plugify::Severity::None:
+                    std::cout << message << std::endl;
+                    break;
                 case plugify::Severity::Fatal:
                     std::cerr << "[@] Fatal: " << message << std::endl;
                     break;
