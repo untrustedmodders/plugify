@@ -45,6 +45,12 @@ namespace plugify {
 		virtual bool IsInitialized() const = 0;
 
 		/**
+		 * @brief Update the Plugify system.
+		 * @noreturn
+		 */
+		virtual void Update() = 0;
+
+		/**
 		 * @brief Set the logger for the Plugify system.
 		 * @param logger The logger to set.
 		 * @noreturn

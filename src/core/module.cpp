@@ -94,8 +94,8 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		return false;
 	}
 
-	ILanguageModule* languageModulePtr = GetLanguageModuleFunc();
-	if (!languageModulePtr) {
+	ILanguageModule* languageModule = GetLanguageModuleFunc();
+	if (!languageModule) {
 		SetError(std::format("Function 'GetLanguageModule' inside '{}' library. Not returned valid address of 'ILanguageModule' implementation!",  _filePath.string()));
 		Terminate();
 		return false;
@@ -103,7 +103,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 #if PLUGIFY_PLATFORM_WINDOWS
 	constexpr bool plugifyBuildType = PLUGIFY_IS_DEBUG;
-	bool moduleBuildType = languageModulePtr->IsDebugBuild();
+	bool moduleBuildType = languageModule->IsDebugBuild();
 	if (moduleBuildType != plugifyBuildType) {
 		SetError(std::format("Mismatch between plugify ({}) build type and module ({}) build type.", (plugifyBuildType ? "debug" : "release"), (moduleBuildType ? "debug" : "release")));
 		Terminate();
@@ -111,7 +111,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	}
 #endif // PLUGIFY_PLATFORM_WINDOWS
 
-	InitResult result = languageModulePtr->Initialize(std::move(provider), *this);
+	InitResult result = languageModule->Initialize(std::move(provider), *this);
 	if (auto* data = std::get_if<ErrorData>(&result)) {
 		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", _name, data->error.data(), _filePath.string()));
 		Terminate();
@@ -119,19 +119,27 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	}
 
 	_assembly = std::move(assembly);
-	_languageModule = std::ref(*languageModulePtr);
+	_languageModule = languageModule;
+	_requireUpdate = std::get<InitResultData>(result).requireUpdate; // TODO
+
 	SetLoaded();
 	return true;
 }
 
 void Module::Terminate() {
-	if (_languageModule.has_value()) {
-		GetLanguageModule().Shutdown();
+	if (_languageModule) {
+		_languageModule->Shutdown();
+		_languageModule = nullptr;
 	}
-	_languageModule.reset();
 	_assembly.reset();
 	
 	SetUnloaded();
+}
+
+void Module::Update(DateTime dt) {
+	if (_languageModule && _requireUpdate) {
+		_languageModule->OnUpdate(dt);
+	}
 }
 
 bool Module::LoadPlugin(Plugin& plugin) const {
@@ -140,7 +148,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 
 	const auto& exportedMethods = plugin.GetDescriptor().exportedMethods;
 
-	auto result = GetLanguageModule().OnPluginLoad(plugin);
+	auto result = _languageModule->OnPluginLoad(plugin);
 	if (auto* data =  std::get_if<ErrorData>(&result)) {
 		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error.data(), plugin.GetBaseDir().string()));
 		return false;
@@ -185,23 +193,30 @@ void Module::MethodExport(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	GetLanguageModule().OnMethodExport(plugin);
+	_languageModule->OnMethodExport(plugin);
 }
 
 void Module::StartPlugin(Plugin& plugin) const  {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	GetLanguageModule().OnPluginStart(plugin);
+	_languageModule->OnPluginStart(plugin);
 
 	plugin.SetRunning();
+}
+
+void Module::UpdatePlugin(Plugin& plugin, DateTime dt) const  {
+	if (_state != ModuleState::Loaded || !_requireUpdate)
+		return;
+
+	_languageModule->OnPluginUpdate(plugin, dt);
 }
 
 void Module::EndPlugin(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	GetLanguageModule().OnPluginEnd(plugin);
+	_languageModule->OnPluginEnd(plugin);
 
 	plugin.SetTerminating();
 }

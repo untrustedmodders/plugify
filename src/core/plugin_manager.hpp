@@ -20,6 +20,7 @@ namespace plugify {
 		bool Initialize() override;
 		void Terminate() override;
 		bool IsInitialized() const override;
+		void Update(DateTime dt) override;
 
 		ModuleOpt FindModule(std::string_view moduleName) const override;
 		ModuleOpt FindModuleFromId(UniqueId moduleId) const override;

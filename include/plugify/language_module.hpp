@@ -4,6 +4,7 @@
 #include <cstring>
 #include <memory>
 #include <plugify/mem_addr.hpp>
+#include <plugify/date_time.hpp>
 #include <string>
 #include <variant>
 #include <vector>
@@ -46,7 +47,9 @@ namespace plugify {
 	 *
 	 * The InitResultData structure is used to represent the result of a language module initialization.
 	 */
-	struct InitResultData {};
+	struct InitResultData {
+		bool requireUpdate{ false };
+	};
 
 	/**
 	 * @struct LoadResultData
@@ -99,6 +102,12 @@ namespace plugify {
 		virtual void Shutdown() = 0;
 
 		/**
+		 * @brief Handle actions to be performed on each frame.
+		 * @param dt The time delta since the last update.
+		 */
+		virtual void OnUpdate(DateTime dt) = 0;
+
+		/**
 		 * @brief Handle plugin load event.
 		 * @param plugin Reference to the loaded plugin.
 		 * @return Result of the load event, either LoadResultData or ErrorData.
@@ -112,6 +121,13 @@ namespace plugify {
 		virtual void OnPluginStart(PluginRef plugin) = 0;
 
 		/**
+		 * @brief Handle plugin update event.
+		 * @param plugin Reference to the started plugin.
+		 * @param dt The time delta since the last update.
+		 */
+		virtual void OnPluginUpdate(PluginRef plugin, DateTime dt) = 0;
+
+		/**
 		 * @brief Handle plugin end event.
 		 * @param plugin Reference to the ended plugin.
 		 */
@@ -122,14 +138,6 @@ namespace plugify {
 		 * @param plugin Reference to the plugin exporting a method.
 		 */
 		virtual void OnMethodExport(PluginRef plugin) = 0;
-
-		/**
-		 * @brief Handle actions to be performed on each game frame.
-		 *
-		 * This method is called once per game frame and allows the language module
-		 * to perform periodic updates or processing required during the game loop.
-		 */
-		//virtual void OnGameFrame() = 0;
 
 		/**
 		* @brief Determine if language module is build with debugging mode.

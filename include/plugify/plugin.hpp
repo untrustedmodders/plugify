@@ -2,12 +2,12 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
+#include <string>
 #include <plugify/mem_addr.hpp>
 #include <plugify/path.hpp>
 #include <plugify/reference_wrapper.hpp>
 #include <plugify_export.h>
-#include <span>
-#include <string>
 
 namespace plugify {
 	class Plugin;

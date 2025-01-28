@@ -524,7 +524,7 @@ int main() {
 					}
 				}
 
-				plug->Update(dt);
+				plug->Update();
 			} else {
 				CONPRINTE("usage: plg <command> [options] [arguments]");
 				CONPRINTE("Try plg help or -h for more information.");

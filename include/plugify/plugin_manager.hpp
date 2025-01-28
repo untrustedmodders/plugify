@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <plugify/date_time.hpp>
 #include <plugify_export.h>
 
 namespace plugify {
@@ -53,6 +54,12 @@ namespace plugify {
 		 * @return True if the plugin manager is initialized, false otherwise.
 		 */
 		virtual bool IsInitialized() const = 0;
+
+		/**
+		 * @brief Updates the package manager.
+		 * @param dt The time delta since the last update.
+		 */
+		virtual void Update(DateTime dt) = 0;
 
 		/**
 		 * @brief Find a module by name.

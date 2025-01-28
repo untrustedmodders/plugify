@@ -2,6 +2,7 @@
 
 #include "plugin_descriptor.hpp"
 #include <plugify/plugin.hpp>
+#include <plugify/date_time.hpp>
 #include <utils/hash.hpp>
 #include <utils/pointer.hpp>
 
@@ -55,12 +56,12 @@ namespace plugify {
 			_methods = std::move(methods);
 		}
 
-		Module& GetModule() const {
-			PL_ASSERT(_module.has_value(), "Module is not set!");
-			return _module.value().get();
+		Module* GetModule() const {
+			PL_ASSERT(_module, "Module is not set!");
+			return _module;
 		}
 
-		void SetModule(Module& module) noexcept {
+		void SetModule(Module* module) noexcept {
 			_module = module;
 		}
 
@@ -86,14 +87,15 @@ namespace plugify {
 		static inline const char* const kFileExtension = ".pplugin";
 
 	private:
-		UniqueId _id{ -1 };
+		PluginState _state{ PluginState::NotLoaded };
+		Module* _module{ nullptr };
+
+		UniqueId _id;
 		std::string _name;
 		fs::path _baseDir;
 		std::vector<MethodData> _methods;
-		std::unique_ptr<std::string> _error;
 		std::shared_ptr<PluginDescriptor> _descriptor;
 		std::unordered_map<fs::path, fs::path, path_hash> _resources;
-		std::optional<std::reference_wrapper<Module>> _module;
-		PluginState _state{ PluginState::NotLoaded };
+		std::unique_ptr<std::string> _error;
 	};
 }

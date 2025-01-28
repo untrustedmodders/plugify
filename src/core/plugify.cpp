@@ -61,6 +61,8 @@ namespace plugify {
 			}
 			_pluginManager.reset();
 
+			_lastTime = DateTime::Now();
+
 			_inited = false;
 
 			PL_LOG_INFO("Plugify Terminated!");
@@ -68,6 +70,18 @@ namespace plugify {
 
 		bool IsInitialized() const override {
 			return _inited;
+		}
+
+		void Update() override {
+			if (!IsInitialized())
+				return;
+
+			auto currentTime = DateTime::Now();
+			_deltaTime = (currentTime - _lastTime);
+			_lastTime = currentTime;
+
+			//_packageManager->Update(_deltaTime);
+			_pluginManager->Update(_deltaTime);
 		}
 
 		void Log(std::string_view msg, Severity severity) override {
@@ -122,6 +136,8 @@ namespace plugify {
 		Version _version{ PLUGIFY_VERSION_MAJOR, PLUGIFY_VERSION_MINOR, PLUGIFY_VERSION_PATCH, PLUGIFY_VERSION_TWEAK };
 		Config _config;
 		fs::path _configPath;
+		DateTime _deltaTime;
+		DateTime _lastTime;
 		bool _inited{ false };
 	};
 

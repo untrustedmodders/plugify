@@ -221,7 +221,7 @@ void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std
 }
 
 template<typename T>
-std::shared_ptr<LocalPackage> GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
+LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
 	auto json = FileSystem::ReadText(path);
 	auto dest = glz::read_json<std::shared_ptr<T>>(json);
 	if (!dest.has_value()) {

@@ -4,6 +4,7 @@
 #include <plugify/assembly.hpp>
 #include <plugify/language_module.hpp>
 #include <plugify/module.hpp>
+#include <plugify/date_time.hpp>
 #include <utils/hash.hpp>
 
 namespace plugify {
@@ -55,17 +56,19 @@ namespace plugify {
 
 		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
 		void Terminate();
+		void Update(DateTime dt);
 
 		bool LoadPlugin(Plugin& plugin) const;
 		void StartPlugin(Plugin& plugin) const;
+		void UpdatePlugin(Plugin& plugin, DateTime dt) const;
 		void EndPlugin(Plugin& plugin) const;
 		void MethodExport(Plugin& plugin) const;
 
 		void SetError(std::string error);
 
-		ILanguageModule& GetLanguageModule() const {
-			PL_ASSERT(_languageModule.has_value(), "Language module is not set!");
-			return _languageModule.value();
+		ILanguageModule* GetLanguageModule() const {
+			PL_ASSERT(_languageModule, "Language module is not set!");
+			return _languageModule;
 		}
 
 		void SetLoaded() noexcept {
@@ -79,16 +82,18 @@ namespace plugify {
 		static inline const char* const kFileExtension = ".pmodule";
 
 	private:
-		UniqueId _id{ -1 };
+		ModuleState _state{ ModuleState::NotLoaded };
+		bool _requireUpdate{ false };
+		ILanguageModule* _languageModule{ nullptr };
+
+		UniqueId _id;
 		std::string _name;
 		std::string _lang;
 		fs::path _filePath;
 		fs::path _baseDir;
 		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
 		std::unordered_map<fs::path, fs::path, path_hash> _resources;
-		ModuleState _state{ ModuleState::NotLoaded };
-		std::unique_ptr<std::string> _error;
 		std::unique_ptr<Assembly> _assembly;
-		std::optional<std::reference_wrapper<ILanguageModule>> _languageModule;
+		std::unique_ptr<std::string> _error;
 	};
 }

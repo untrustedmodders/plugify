@@ -48,6 +48,21 @@ bool PluginManager::IsInitialized() const {
 	return _inited;
 }
 
+void PluginManager::Update(DateTime dt) {
+	if (!IsInitialized())
+		return;
+
+	for (const auto& module : _allModules) {
+		module->Update(dt);
+	}
+
+	for (const auto& plugin : _allPlugins) {
+		if (plugin->GetState() == PluginState::Loaded) {
+			plugin->GetModule()->UpdatePlugin(*plugin, dt);
+		}
+	}
+}
+
 void PluginManager::DiscoverAllModulesAndPlugins() {
 	PL_ASSERT(_allModules.empty(), "Modules already initialized");
 	PL_ASSERT(_allPlugins.empty(), "Plugins already initialized");
@@ -116,7 +131,7 @@ void PluginManager::LoadRequiredLanguageModules() {
 		}
 		auto& module = *it;
 		plugin->Initialize(plugify->GetProvider());
-		plugin->SetModule(*module);
+		plugin->SetModule(module.get());
 		modules.emplace(module->GetId());
 	}
 	
@@ -142,8 +157,8 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 	
 	for (const auto& plugin : _allPlugins) {
 		if (plugin->GetState() == PluginState::NotLoaded) {
-			if (plugin->GetModule().GetState() != ModuleState::Loaded) {
-				plugin->SetError(std::format("Language module: '{}' missing", plugin->GetModule().GetFriendlyName()));
+			if (plugin->GetModule()->GetState() != ModuleState::Loaded) {
+				plugin->SetError(std::format("Language module: '{}' missing", plugin->GetModule()->GetFriendlyName()));
 				continue;
 			}
 			std::vector<std::string_view> names;
@@ -162,7 +177,7 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 				std::format_to(std::back_inserter(error), "'");
 				plugin->SetError(std::format("Not loaded {} dependency plugin(s)", error));
 			} else {
-				loadedAny |= plugin->GetModule().LoadPlugin(*plugin);
+				loadedAny |= plugin->GetModule()->LoadPlugin(*plugin);
 			}
 		}
 	}
@@ -182,7 +197,7 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 
 	for (const auto& plugin : _allPlugins) {
 		if (plugin->GetState() == PluginState::Loaded) {
-			plugin->GetModule().StartPlugin(*plugin);
+			plugin->GetModule()->StartPlugin(*plugin);
 		}
 	}
 }
@@ -194,7 +209,7 @@ void PluginManager::TerminateAllPlugins() {
 	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
 		const auto& plugin = *it;
 		if (plugin->GetState() == PluginState::Running) {
-			plugin->GetModule().EndPlugin(*plugin);
+			plugin->GetModule()->EndPlugin(*plugin);
 		}
 	}
 
