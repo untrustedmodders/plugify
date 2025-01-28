@@ -13,7 +13,7 @@ namespace plugify {
 	class IPlugifyProvider;
 	class IPluginManager;
 	class IPackageManager;
-	enum class Severity : uint8_t;
+	enum class Severity;
 
 	/**
 	 * @class IPlugify

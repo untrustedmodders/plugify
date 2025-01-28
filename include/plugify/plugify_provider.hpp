@@ -12,7 +12,7 @@ namespace plugify {
 	class PlugifyProvider;
 	class ModuleRef;
 	class PluginRef;
-	enum class Severity : uint8_t;
+	enum class Severity;
 
 	/**
 	 * @brief Represents an optional reference to an IModule.

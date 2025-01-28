@@ -8,7 +8,7 @@ namespace plugify {
 	 * @enum ProtFlag
 	 * @brief Enum representing memory protection flags.
 	 */
-	enum ProtFlag : uint8_t {
+	enum ProtFlag {
 		UNSET = 0, /**< Value means this gives no information about protection state (un-read) */
 		X = 1 << 1, /**< Execute permission */
 		R = 1 << 2, /**< Read permission */

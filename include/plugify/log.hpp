@@ -8,7 +8,7 @@ namespace plugify {
 	 * @enum Severity
 	 * @brief Enumerates severity levels for logging messages.
 	 */
-	enum class Severity : uint8_t {
+	enum class Severity {
 		None = 0,
 		Fatal = 1,
 		Error = 2,

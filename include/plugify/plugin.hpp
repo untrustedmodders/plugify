@@ -21,7 +21,7 @@ namespace plugify {
 	 * The PluginState enum defines the various states that a plugin can be in,
 	 * such as NotLoaded, Error, Loaded, Running, Terminating, and Unknown.
 	 */
-	enum class PluginState : uint8_t {
+	enum class PluginState {
 		NotLoaded,
 		Error,
 		Loaded,
