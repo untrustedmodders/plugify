@@ -1,6 +1,7 @@
 #include "plugify/plugify.hpp"
 #include "std_logger.hpp"
 #include <plugify/compat_format.hpp>
+#include <plugify/date_time.hpp>
 #include <plugify/language_module_descriptor.hpp>
 #include <plugify/module.hpp>
 #include <plugify/package.hpp>
@@ -22,20 +23,6 @@ std::vector<std::string> Split(const std::string& str, char sep) {
     while (std::getline(is, token, sep))
         tokens.emplace_back(token);
     return tokens;
-}
-
-std::string FormatTime(std::string_view format = "%Y-%m-%d %H:%M:%S") {
-	auto now = std::chrono::system_clock::now();
-	auto timeT = std::chrono::system_clock::to_time_t(now);
-	std::tm localTime;
-#if _WIN32
-	localtime_s(&localTime, &timeT); // Windows-specific
-#else
-	localtime_r(&timeT, &localTime); // POSIX-compliant
-#endif
-	std::stringstream ss;
-	ss << std::put_time(&localTime, format.data());
-	return ss.str();
 }
 
 #define CONPRINT(x) std::cout << x << std::endl
@@ -350,7 +337,7 @@ int main() {
 							CONPRINTE("You must unload plugin manager before bring any change with package manager.");
 							continue;
 						}
-						packageManager->SnapshotPackages(plug->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", FormatTime("%Y_%m_%d_%H_%M_%S")), true);
+						packageManager->SnapshotPackages(plug->GetConfig().baseDir / std::format("snapshot_{}.wpackagemanifest", plugify::DateTime::Get("%Y_%m_%d_%H_%M_%S")), true);
 					}
 
 					else if (args[1] == "repo") {
@@ -536,6 +523,8 @@ int main() {
 						CONPRINTE("Try plg help or -h for more information.");
 					}
 				}
+
+				plug->Update(dt);
 			} else {
 				CONPRINTE("usage: plg <command> [options] [arguments]");
 				CONPRINTE("Try plg help or -h for more information.");

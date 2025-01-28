@@ -19,7 +19,6 @@
 #include <thread>
 
 #include <utils/assert.h>
-#include <utils/date_time.hpp>
 #include <utils/log.hpp>
 
 namespace fs = std::filesystem;
