@@ -55,7 +55,7 @@ namespace plugify {
 		virtual bool IsInitialized() const = 0;
 		
 		/**
-		 * @brief Reload the package manager.
+		 * @brief Reloads the package manager.
 		 * @return True if was initialized, false otherwise.
 		 */
 		virtual bool Reload() = 0;

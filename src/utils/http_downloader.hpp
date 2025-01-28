@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <plugify/date_time.hpp>
 
 namespace plugify {
 	class HTTPDownloader {
