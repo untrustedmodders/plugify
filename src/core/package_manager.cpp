@@ -302,7 +302,7 @@ void PackageManager::LoadLocalPackages()  {
 		if (depth != 1)
 			return;
 
-		auto extension = path.extension().string();
+		auto extension = path.extension();
 		bool isModule = extension == Module::kFileExtension;
 		if (!isModule && extension != Plugin::kFileExtension)
 			return;
@@ -628,7 +628,7 @@ void PackageManager::InstallPackages(std::span<const std::string> packageNames) 
 }
 
 void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool reinstall) {
-	if (manifestFilePath.extension().string() != PackageManifest::kFileExtension) {
+	if (manifestFilePath.extension() != PackageManifest::kFileExtension) {
 		PL_LOG_ERROR("Package manifest: '{}' should be in *{} format", manifestFilePath.string(), PackageManifest::kFileExtension);
 		return;
 	}
@@ -1004,7 +1004,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 		}
 
 		fs::path filename(fileStat.m_filename);
-		if (filename.extension().string() == descriptorExt) {
+		if (filename.extension() == descriptorExt) {
 			foundDescriptor = true;
 		}
 	}

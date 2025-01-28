@@ -56,9 +56,9 @@ namespace plugify {
 }
 
 // Specialize std::hash for Ref<T>
-template<typename T>
+/*template<typename T>
 struct std::hash<plugify::Ref<T>> {
 	std::size_t operator()(const plugify::Ref<T>& ref) const {
 		return std::hash<void*>{}(ref.GetPtr());
 	}
-};
+};*/
