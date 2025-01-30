@@ -10,11 +10,11 @@ using namespace plugify;
 static constexpr float DEFAULT_TIMEOUT_IN_SECONDS = 30;
 static constexpr uint32_t DEFAULT_MAX_ACTIVE_REQUESTS = 4;
 
-HTTPDownloader::HTTPDownloader() : _timeout{DEFAULT_TIMEOUT_IN_SECONDS}, _maxActiveRequests{DEFAULT_MAX_ACTIVE_REQUESTS} {}
+IHTTPDownloader::IHTTPDownloader() : _timeout{DEFAULT_TIMEOUT_IN_SECONDS}, _maxActiveRequests{DEFAULT_MAX_ACTIVE_REQUESTS} {}
 
-HTTPDownloader::~HTTPDownloader() = default;
+IHTTPDownloader::~IHTTPDownloader() = default;
 
-void HTTPDownloader::CreateRequest(std::string url, Request::Callback callback, ProgressCallback progress) {
+void IHTTPDownloader::CreateRequest(std::string url, Request::Callback callback, ProgressCallback progress) {
 	Request* req = InternalCreateRequest();
 	req->parent = this;
 	req->type = Request::Type::Get;
@@ -32,7 +32,7 @@ void HTTPDownloader::CreateRequest(std::string url, Request::Callback callback, 
 	LockedAddRequest(req);
 }
 
-void HTTPDownloader::CreatePostRequest(std::string url, std::string postData, Request::Callback callback, ProgressCallback progress) {
+void IHTTPDownloader::CreatePostRequest(std::string url, std::string postData, Request::Callback callback, ProgressCallback progress) {
 	Request* req = InternalCreateRequest();
 	req->parent = this;
 	req->type = Request::Type::Post;
@@ -51,7 +51,7 @@ void HTTPDownloader::CreatePostRequest(std::string url, std::string postData, Re
 	LockedAddRequest(req);
 }
 
-void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
+void IHTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 	if (_pendingRequests.empty())
 		return;
 
@@ -138,12 +138,12 @@ void HTTPDownloader::LockedPollRequests(std::unique_lock<std::mutex>& lock) {
 	}
 }
 
-void HTTPDownloader::PollRequests() {
+void IHTTPDownloader::PollRequests() {
 	std::unique_lock<std::mutex> lock(_pendingRequestLock);
 	LockedPollRequests(lock);
 }
 
-void HTTPDownloader::WaitForAllRequests() {
+void IHTTPDownloader::WaitForAllRequests() {
 	std::unique_lock<std::mutex> lock(_pendingRequestLock);
 	while (!_pendingRequests.empty()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -151,11 +151,11 @@ void HTTPDownloader::WaitForAllRequests() {
 	}
 }
 
-void HTTPDownloader::LockedAddRequest(Request* request) {
+void IHTTPDownloader::LockedAddRequest(Request* request) {
 	_pendingRequests.push_back(request);
 }
 
-uint32_t HTTPDownloader::LockedGetActiveRequestCount() {
+uint32_t IHTTPDownloader::LockedGetActiveRequestCount() {
 	uint32_t count = 0;
 	for (Request* req : _pendingRequests) {
 		if (req->state == Request::State::Started || req->state == Request::State::Receiving)
@@ -164,12 +164,12 @@ uint32_t HTTPDownloader::LockedGetActiveRequestCount() {
 	return count;
 }
 
-bool HTTPDownloader::HasAnyRequests() {
+bool IHTTPDownloader::HasAnyRequests() {
 	std::unique_lock<std::mutex> lock(_pendingRequestLock);
 	return !_pendingRequests.empty();
 }
 
-std::string_view HTTPDownloader::GetExtensionForContentType(std::string_view contentType) {
+std::string_view IHTTPDownloader::GetExtensionForContentType(std::string_view contentType) {
 	static std::array<std::pair<std::string_view, std::string_view>, 75> table = {
 		std::pair{"audio/aac", ".aac"},
 		std::pair{"application/x-abiword", ".abw"},

@@ -8,7 +8,7 @@ extern "C" {
 }
 
 namespace plugify {
-	class HTTPDownloaderCurl final : public HTTPDownloader {
+	class HTTPDownloaderCurl final : public IHTTPDownloader {
 	public:
 		HTTPDownloaderCurl();
 		~HTTPDownloaderCurl() override;
@@ -18,11 +18,11 @@ namespace plugify {
 	protected:
 		Request* InternalCreateRequest() override;
 		void InternalPollRequests() override;
-		bool StartRequest(HTTPDownloader::Request* request) override;
-		void CloseRequest(HTTPDownloader::Request* request) override;
+		bool StartRequest(IHTTPDownloader::Request* request) override;
+		void CloseRequest(IHTTPDownloader::Request* request) override;
 
 	private:
-		struct Request : HTTPDownloader::Request {
+		struct Request : IHTTPDownloader::Request {
 			CURL* handle{ nullptr };
 		};
 
