@@ -148,7 +148,7 @@ bool HTTPDownloaderCurl::StartRequest(HTTPDownloader::Request* request) {
 		curl_easy_setopt(req->handle, CURLOPT_POSTFIELDS, request->postData.c_str());
 	}
 
-	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url.c_str());
+	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url.native());
 	req->state.store(Request::State::Started, std::memory_order_release);
 	req->startTime = DateTime::Now();
 

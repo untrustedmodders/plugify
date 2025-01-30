@@ -903,6 +903,14 @@ namespace plg {
 			swap(_capacity, other._capacity);
 		}
 
+		constexpr operator std::span<T>() const noexcept {
+			return std::span<T>(data(), size());
+		}
+
+		constexpr operator std::span<const T>() const noexcept {
+			return std::span<const T>(data(), size());
+		}
+
 		constexpr std::span<const T> span() const noexcept {
 			return std::span<const T>(data(), size());
 		}

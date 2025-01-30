@@ -1,8 +1,9 @@
 #pragma once
 
 #include <filesystem>
-#include <plugify/log.hpp>
 #include <set>
+#include <string>
+#include <plugify/log.hpp>
 
 namespace plugify {
 	/**

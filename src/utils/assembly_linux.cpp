@@ -19,7 +19,7 @@ Assembly::~Assembly() {
 		[[maybe_unused]] int error = dlclose(_handle);
 #if PLUGIFY_LOGGING
 		if (error) {
-			PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.c_str(), dlerror());
+			PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.native(), dlerror());
 		}
 #endif // PLUGIFY_LOGGING
 		_handle = nullptr;

@@ -12,13 +12,13 @@ Assembly::~Assembly() {
 #if PLUGIFY_LOGGING
 		switch (ret) {
 			case SCE_KERNEL_ERROR_EINVAL:
-				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': flags or pOpt is invalid", _path.c_str());
+				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': flags or pOpt is invalid", _path.native());
 				break;
 			case SCE_KERNEL_ERROR_ESRCH:
-				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': handle is invalid (specified dynamic library is not loaded)", _path.c_str());
+				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': handle is invalid (specified dynamic library is not loaded)", _path.native());
 				break;
 			case SCE_KERNEL_ERROR_EBUSY:
-				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': Specified dynamic library is referenced by a thread other than the thread that called this function", _path.c_str());
+				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': Specified dynamic library is referenced by a thread other than the thread that called this function", _path.native());
 				break;
 			default:
 				break;

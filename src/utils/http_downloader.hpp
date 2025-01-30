@@ -68,7 +68,7 @@ namespace plugify {
 			_maxActiveRequests = maxActiveRequests;
 		}
 
-		static inline const char* const kDefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0";
+		static inline std::string_view kDefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0";
 
 	protected:
 		virtual Request* InternalCreateRequest() = 0;
