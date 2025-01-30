@@ -16,7 +16,7 @@ Plugin::~Plugin() {
 	Terminate();
 }
 
-bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
+bool Plugin::Initialize(const std::shared_ptr<ProviderHandle>& provider) {
 	PL_ASSERT(GetState() != PluginState::Loaded, "Plugin already was initialized");
 
 	std::error_code ec;
@@ -24,9 +24,7 @@ bool Plugin::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
 	};
 
-	auto plugifyProvider = provider.lock();
-
-	fs::path_view baseDir = plugifyProvider->GetBaseDir();
+	fs::path baseDir = provider->GetBaseDir();
 
 	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
@@ -56,12 +54,13 @@ void Plugin::Terminate() {
 std::optional<fs::path_view> Plugin::FindResource(const fs::path& path) const {
 	auto it = _resources.find(path);
 	if (it != _resources.end())
-		return std::get<fs::path>(*it).c_str();
-	return {};
+		return std::get<fs::path>(*it).native();
+
+	return std::nullopt;
 }
 
 void Plugin::SetError(std::string error) {
-	_error = std::make_unique<std::string>(std::move(error));
+	_error = std::move(error);
 	_state = PluginState::Error;
 	PL_LOG_ERROR("Plugin '{}': {}", _name, *_error);
 }

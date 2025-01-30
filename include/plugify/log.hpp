@@ -21,9 +21,6 @@ namespace plugify {
 	/**
 	 * @class ILogger
 	 * @brief Interface for logging messages with different severity levels.
-	 *
-	 * The ILogger interface provides a common interface for loggers to handle
-	 * logging messages with various severity levels.
 	 */
 	class ILogger {
 	public:

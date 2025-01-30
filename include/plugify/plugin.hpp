@@ -4,15 +4,15 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <plugify/handle.hpp>
 #include <plugify/mem_addr.hpp>
 #include <plugify/path.hpp>
-#include <plugify/reference_wrapper.hpp>
 #include <plugify_export.h>
 
 namespace plugify {
 	class Plugin;
-	class PluginDescriptorRef;
-	class MethodRef;
+	class PluginDescriptorHandle;
+	class MethodHandle;
 
 	/**
 	 * @enum PluginState
@@ -34,23 +34,23 @@ namespace plugify {
 	 * @typedef UniqueId
 	 * @brief Represents a unique identifier for plugins.
 	 */
-	using UniqueId = std::ptrdiff_t;
+	using UniqueId = int32_t;
 
 	/**
 	 * @typedef MethodData
 	 * @brief Represents data related to a plugin method.
 	 *
-	 * The MethodData type is a pair consisting of a method reference and a
+	 * The MethodData type is a pair consisting of a method handle and a
 	 * pointer to the method's address (void*).
 	 */
-	using MethodData = std::pair<MethodRef, MemAddr>;
+	using MethodData = std::pair<MethodHandle, MemAddr>;
 
 	/**
-	 * @class PluginRef
-	 * @brief Reference wrapper to access for plugin's information.
+	 * @class PluginHandle
+	 * @brief Handle wrapper to access plugin's information.
 	 */
-	class PLUGIFY_API PluginRef : public Ref<const Plugin> {
-		using Ref::Ref;
+	class PLUGIFY_API PluginHandle : public Handle<const Plugin> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Get the unique identifier of the plugin.
@@ -80,7 +80,7 @@ namespace plugify {
 		 * @brief Get the descriptor of the plugin.
 		 * @return The descriptor of the plugin.
 		 */
-		PluginDescriptorRef GetDescriptor() const noexcept;
+		PluginDescriptorHandle GetDescriptor() const noexcept;
 
 		/**
 		 * @brief Get the state of the plugin.
@@ -123,7 +123,6 @@ namespace plugify {
 		 */
 		std::optional<std::filesystem::path_view> FindResource(std::filesystem::path_view path) const;
 	};
-	static_assert(is_ref_v<PluginRef>);
 
 	/**
 	 * @brief Namespace containing utility functions of PluginState enum.

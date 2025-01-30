@@ -29,10 +29,10 @@ std::vector<std::string> Split(const std::string& str, char sep) {
 #define CONPRINTE(x) std::cerr << x << std::endl
 #define CONPRINTF(...) std::cout << std::format(__VA_ARGS__) << std::endl
 
-ptrdiff_t FormatInt(const std::string& str) {
+int32_t FormatInt(const std::string& str) {
 	try {
 		size_t pos;
-		ptrdiff_t result = std::stoll(str, &pos);
+		int32_t result = std::stoi(str, &pos);
 		if (pos != str.length()) {
 			throw std::invalid_argument("Trailing characters after the valid part");
 		}
@@ -182,6 +182,7 @@ int main() {
 						CONPRINT("Plugin Manager commands:");
 						CONPRINT("  load           - Load plugin manager");
 						CONPRINT("  unload         - Unload plugin manager");
+						CONPRINT("  reload         - Reload plugin manager");
 						CONPRINT("  modules        - List running modules");
 						CONPRINT("  plugins        - List running plugins");
 						CONPRINT("  plugin <name>  - Show information about a module");
@@ -249,6 +250,18 @@ int main() {
 						packageManager->Reload();
 					}
 
+					else if (args[1] == "reload") {
+						if (!pluginManager->IsInitialized()) {
+							CONPRINTE("Plugin manager not loaded.");
+							packageManager->Reload();
+						} else {
+							pluginManager->Terminate();
+							packageManager->Reload();
+							pluginManager->Initialize();
+							CONPRINT("Plugin manager was reloaded.");
+						}
+					}
+
 					else if (args[1] == "plugins") {
 						if (!pluginManager->IsInitialized()) {
 							CONPRINTE("You must load plugin manager before query any information from it.");
@@ -290,15 +303,15 @@ int main() {
 								continue;
 							}
 							auto plugin = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
-							if (plugin.has_value()) {
-								Print<plugify::PluginState>("Plugin", *plugin, plugify::PluginUtils::ToString);
-								auto descriptor = plugin->GetDescriptor();
+							if (plugin) {
+								Print<plugify::PluginState>("Plugin", plugin, plugify::PluginUtils::ToString);
+								auto descriptor = plugin.GetDescriptor();
 								CONPRINTF("  Language module: {}", descriptor.GetLanguageModule());
 								CONPRINT("  Dependencies: ");
 								for (const auto& reference : descriptor.GetDependencies()) {
 									auto dependency = pluginManager->FindPlugin(reference.GetName());
-									if (dependency.has_value()) {
-										Print<plugify::PluginState>(*dependency, plugify::PluginUtils::ToString, "    ");
+									if (dependency) {
+										Print<plugify::PluginState>(dependency, plugify::PluginUtils::ToString, "    ");
 									} else {
 										auto version = reference.GetRequestedVersion();
 										CONPRINTF("    {} <Missing> (v{})", reference.GetName(), version.has_value() ? std::to_string(*version) : "[latest]");
@@ -320,10 +333,10 @@ int main() {
 								continue;
 							}
 							auto module = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindModuleFromId(FormatInt(args[2])) : pluginManager->FindModule(args[2]);
-							if (module.has_value()) {
-								Print<plugify::ModuleState>("Module", *module, plugify::ModuleUtils::ToString);
-								CONPRINTF("  Language: {}", module->GetLanguage());
-								CONPRINTF("  File: {}", std::filesystem::path(module->GetFilePath()).string());
+							if (module) {
+								Print<plugify::ModuleState>("Module", module, plugify::ModuleUtils::ToString);
+								CONPRINTF("  Language: {}", module.GetLanguage());
+								CONPRINTF("  File: {}", std::filesystem::path(module.GetFilePath()).string());
 							} else {
 								CONPRINTF("Module {} not found.", args[2]);
 							}

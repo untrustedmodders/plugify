@@ -7,14 +7,14 @@
 
 using namespace plugify;
 
-HTTPDownloaderCurl::HTTPDownloaderCurl() : HTTPDownloader() {}
+HTTPDownloaderCurl::HTTPDownloaderCurl() : IHTTPDownloader() {}
 
 HTTPDownloaderCurl::~HTTPDownloaderCurl() {
 	if (_multiHandle)
 		curl_multi_cleanup(_multiHandle);
 }
 
-std::unique_ptr<HTTPDownloader> HTTPDownloader::Create(std::string userAgent) {
+std::unique_ptr<IHTTPDownloader> IHTTPDownloader::Create(std::string userAgent) {
 	auto instance = std::make_unique<HTTPDownloaderCurl>();
 	if (!instance->Initialize(std::move(userAgent)))
 		return {};
@@ -69,7 +69,7 @@ size_t HTTPDownloaderCurl::WriteCallback(char* ptr, size_t size, size_t nmemb, v
 	return nmemb;
 }
 
-HTTPDownloader::Request* HTTPDownloaderCurl::InternalCreateRequest() {
+IHTTPDownloader::Request* HTTPDownloaderCurl::InternalCreateRequest() {
 	Request* req = new Request();
 	req->handle = curl_easy_init();
 	if (!req->handle) {
@@ -133,7 +133,7 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 		PL_LOG_WARNING("Failed to unblock SIGPIPE");
 }
 
-bool HTTPDownloaderCurl::StartRequest(HTTPDownloader::Request* request) {
+bool HTTPDownloaderCurl::StartRequest(IHTTPDownloader::Request* request) {
 	auto req = static_cast<Request*>(request);
 	curl_easy_setopt(req->handle, CURLOPT_URL, request->url.c_str());
 	curl_easy_setopt(req->handle, CURLOPT_USERAGENT, _userAgent.c_str());
@@ -148,7 +148,7 @@ bool HTTPDownloaderCurl::StartRequest(HTTPDownloader::Request* request) {
 		curl_easy_setopt(req->handle, CURLOPT_POSTFIELDS, request->postData.c_str());
 	}
 
-	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url.native());
+	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url);
 	req->state.store(Request::State::Started, std::memory_order_release);
 	req->startTime = DateTime::Now();
 
@@ -164,7 +164,7 @@ bool HTTPDownloaderCurl::StartRequest(HTTPDownloader::Request* request) {
 	return true;
 }
 
-void HTTPDownloaderCurl::CloseRequest(HTTPDownloader::Request* request) {
+void HTTPDownloaderCurl::CloseRequest(IHTTPDownloader::Request* request) {
 	auto req = static_cast<Request*>(request);
 	PL_ASSERT(req->handle);
 	curl_multi_remove_handle(_multiHandle, req->handle);

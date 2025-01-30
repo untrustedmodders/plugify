@@ -3,14 +3,14 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <span>
 #include <plugify/config.hpp>
 #include <plugify/version.hpp>
 #include <plugify_export.h>
-#include <span>
 
 namespace plugify {
 	class ILogger;
-	class IPlugifyProvider;
+	class ProviderHandle;
 	class IPluginManager;
 	class IPackageManager;
 	enum class Severity;
@@ -79,7 +79,7 @@ namespace plugify {
 		 * @brief Get a weak pointer to the Plugify provider.
 		 * @return Weak pointer to the Plugify provider.
 		 */
-		virtual std::weak_ptr<IPlugifyProvider> GetProvider() const = 0;
+		virtual std::weak_ptr<ProviderHandle> GetProvider() const = 0;
 
 		/**
 		 * @brief Get a weak pointer to the Plugin Manager.

@@ -4,9 +4,9 @@
 #include <plugify/date_time.hpp>
 
 namespace plugify {
-	class HTTPDownloader {
+	class IHTTPDownloader {
 	public:
-		enum : int32_t {
+		enum {
 			HTTP_STATUS_CANCELLED = -3,
 			HTTP_STATUS_TIMEOUT = -2,
 			HTTP_STATUS_ERROR = -1,
@@ -33,7 +33,7 @@ namespace plugify {
 				Complete,
 			};
 
-			HTTPDownloader* parent{};
+			IHTTPDownloader * parent{};
 			Callback callback;
 			ProgressCallback progress;
 			std::string url;
@@ -48,10 +48,10 @@ namespace plugify {
 			std::atomic<State> state{ State::Pending };
 		};
 
-		HTTPDownloader();
-		virtual ~HTTPDownloader();
+		IHTTPDownloader();
+		virtual ~IHTTPDownloader();
 
-		static std::unique_ptr<HTTPDownloader> Create(std::string userAgent = kDefaultUserAgent);
+		static std::unique_ptr<IHTTPDownloader> Create(std::string userAgent = kDefaultUserAgent);
 		static std::string_view GetExtensionForContentType(std::string_view contentType);
 
 		void CreateRequest(std::string url, Request::Callback callback, ProgressCallback progress = nullptr);
@@ -68,7 +68,7 @@ namespace plugify {
 			_maxActiveRequests = maxActiveRequests;
 		}
 
-		static inline std::string_view kDefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0";
+		static inline const char* const kDefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0";
 
 	protected:
 		virtual Request* InternalCreateRequest() = 0;

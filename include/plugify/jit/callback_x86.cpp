@@ -1,5 +1,6 @@
 #include <plugify/jit/callback.hpp>
 #include <plugify/jit/helpers.hpp>
+#include <optional>
 
 using namespace plugify;
 
@@ -25,7 +26,7 @@ JitCallback& JitCallback::operator=(JitCallback&& other) noexcept {
 	return *this;
 }
 
-MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef method, CallbackHandler callback, MemAddr data, bool hidden) {
+MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle method, CallbackHandler callback, MemAddr data, bool hidden) {
 	if (_function) 
 		return _function;
 
@@ -133,11 +134,11 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 	// fill reg to pass method ptr to callback
 	asmjit::x86::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
-	cc.mov(methodPtrParam, method.GetPtr());
+	cc.mov(methodPtrParam, static_cast<uintptr_t>(method));
 
 	// fill reg to pass data ptr to callback
 	asmjit::x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
-	cc.mov(dataPtrParam, data.CCast<uintptr_t>());
+	cc.mov(dataPtrParam, static_cast<uintptr_t>(data));
 
 	// get pointer to stack structure and pass it to the user callback
 	asmjit::x86::Gp argStruct = cc.newUIntPtr("argStruct");
@@ -252,7 +253,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	return _function;
 }
 
-MemAddr JitCallback::GetJitFunc(MethodRef method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
+MemAddr JitCallback::GetJitFunc(MethodHandle method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
 	ValueType retType = method.GetReturnType().GetType();
 	bool retHidden = hidden(retType);
 	asmjit::FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Pointer : retType));

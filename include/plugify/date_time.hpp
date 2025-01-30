@@ -8,6 +8,8 @@ namespace plugify {
 
 	class DateTime {
 	public:
+		DateTime() = default;
+
 		/**
 		 * @brief Constructs a DateTime object from a duration.
 		 * @tparam Rep The representation type of the duration (e.g., int, float).

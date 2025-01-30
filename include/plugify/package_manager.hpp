@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <functional>
-#include <optional>
 #include <memory>
 #include <plugify_export.h>
 

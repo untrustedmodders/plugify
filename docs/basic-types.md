@@ -2,7 +2,7 @@
 
 The following lists how the types are exposed to the C++ API.
 
-| Type                         | Alias    | Ref ? |
+| Type                         | Alias    | Handle ? |
 |------------------------------|----------|-------|
 | void                         | void     | false |
 | bool                         | bool     | true  |

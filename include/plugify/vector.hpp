@@ -977,7 +977,7 @@ namespace plg {
 		constexpr std::optional<size_type> find_index(const T& value) {
 			const auto iter = std::find(begin(), end(), value);
 			if (iter == end()) {
-				return {};
+				return std::nullopt;
 			} else {
 				return iter - begin();
 			}
@@ -986,7 +986,7 @@ namespace plg {
 		constexpr std::optional<size_type> find_index(const T& value) const {
 			const auto iter = std::find(begin(), end(), value);
 			if (iter == end()) {
-				return {};
+				return std::nullopt;
 			} else {
 				return iter - begin();
 			}
@@ -996,7 +996,7 @@ namespace plg {
 		constexpr std::optional<size_type> find_index_if(F predicate) {
 			const auto iter = std::find_if(begin(), end(), predicate);
 			if (iter == end()) {
-				return {};
+				return std::nullopt;
 			} else {
 				return iter - begin();
 			}
@@ -1006,7 +1006,7 @@ namespace plg {
 		constexpr std::optional<size_type> find_index_if(F predicate) const {
 			const auto iter = std::find_if(begin(), end(), predicate);
 			if (iter == end()) {
-				return {};
+				return std::nullopt;
 			} else {
 				return iter - begin();
 			}

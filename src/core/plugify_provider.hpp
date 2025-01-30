@@ -5,7 +5,7 @@
 #include <plugify/plugify_provider.hpp>
 
 namespace plugify {
-	class PlugifyProvider final : public IPlugifyProvider, public PlugifyContext {
+	class PlugifyProvider final : public ProviderHandle, public PlugifyContext {
 	public:
 		explicit PlugifyProvider(std::weak_ptr<IPlugify> plugify);
 		~PlugifyProvider();
@@ -20,8 +20,8 @@ namespace plugify {
 		
 		bool IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) noexcept;
 
-		PluginOpt FindPlugin(std::string_view name) noexcept;
+		PluginHandle FindPlugin(std::string_view name) noexcept;
 
-		ModuleOpt FindModule(std::string_view name) noexcept;
+		ModuleHandle FindModule(std::string_view name) noexcept;
 	};
 }

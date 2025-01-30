@@ -1,37 +1,25 @@
 #pragma once
 
 #include <memory>
-#include <plugify/assembly.hpp>
-#include <plugify/path.hpp>
-#include <plugify/reference_wrapper.hpp>
-#include <plugify_export.h>
 #include <string_view>
 #include <unordered_map>
+#include <plugify/assembly.hpp>
+#include <plugify/handle.hpp>
+#include <plugify/path.hpp>
+#include <plugify_export.h>
 
 namespace plugify {
 	class PlugifyProvider;
-	class ModuleRef;
-	class PluginRef;
+	class ModuleHandle;
+	class PluginHandle;
 	enum class Severity;
 
 	/**
-	 * @brief Represents an optional reference to an IModule.
-	 *        Used to indicate the possibility of not finding a module.
+	 * @class ProviderHandle
+	 * @brief Wrapper handle for the PlugifyProvider, which is provided to the user and implemented in the core.
 	 */
-	using ModuleOpt = std::optional<ModuleRef>;
-
-	/**
-	 * @brief Represents an optional reference to an IPlugin.
-	 *        Used to indicate the possibility of not finding a plugin.
-	 */
-	using PluginOpt = std::optional<PluginRef>;
-
-	/**
- 	 * @brief Interface class for the PlugifyProvider, which is provided to the user and implemented in the core.
-	 *        The PlugifyProvider is responsible for managing and providing essential functionality to the Plugify system.
-	 */
-	class PLUGIFY_API IPlugifyProvider : public Ref<PlugifyProvider> {
-		using Ref::Ref;
+	class PLUGIFY_API ProviderHandle : public Handle<PlugifyProvider> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Log a message with a specified severity level.
@@ -92,25 +80,24 @@ namespace plugify {
 		 * @brief Finds a plugin by its name.
 		 *
 		 * This function attempts to find a plugin with the specified name in the Plugify system.
-		 * If a plugin with the given name is found, a reference to it is returned. Otherwise,
-		 * an empty optional value is returned.
+		 * If a plugin with the given name is found, a handle to it is returned. Otherwise,
+		 * an empty handle is returned.
 		 *
 		 * @param name The name of the plugin to find.
-		 * @return An optional reference to the plugin if found, or an empty optional if not found.
+		 * @return A handle to the plugin if found, or an empty handle if not found.
 		 */
-		PluginOpt FindPlugin(std::string_view name) const noexcept;
+		PluginHandle FindPlugin(std::string_view name) const noexcept;
 
 		/**
 		 * @brief Finds a language module by its name.
 		 *
 		 * This function attempts to find a language module with the specified name in the Plugify system.
-		 * If a module with the given name is found, a reference to it is returned. Otherwise,
-		 * an empty optional value is returned.
+		 * If a module with the given name is found, a handle to it is returned. Otherwise,
+		 * an empty handle value is returned.
 		 *
 		 * @param name The name of the language module to find.
-		 * @return An optional reference to the module if found, or an empty optional if not found.
+		 * @return A handle to the module if found, or an empty handle if not found.
 		 */
-		ModuleOpt FindModule(std::string_view name) const noexcept;
+		ModuleHandle FindModule(std::string_view name) const noexcept;
 	};
-	static_assert(is_ref_v<IPlugifyProvider>);
 } // namespace plugify

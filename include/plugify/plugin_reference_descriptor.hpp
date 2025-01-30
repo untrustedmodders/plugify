@@ -1,24 +1,20 @@
 #pragma once
 
 #include <optional>
-#include <plugify/reference_wrapper.hpp>
-#include <plugify_export.h>
 #include <span>
 #include <string>
+#include <plugify/handle.hpp>
+#include <plugify_export.h>
 
 namespace plugify {
 	struct PluginReferenceDescriptor;
 
 	/**
-	 * @class PluginReferenceDescriptorRef
-	 * @brief A reference class for the `PluginReferenceDescriptor` structure.
-	 *
-	 * This class holds a reference to a `PluginReferenceDescriptor` object, allowing users to retrieve
-	 * information about plugin dependencies, such as the plugin name, optionality, supported platforms,
-	 * and requested version.
+	 * @class PluginReferenceDescriptorHandle
+	 * @brief A handle class for the `PluginReferenceDescriptor` structure.
 	 */
-	class PLUGIFY_API PluginReferenceDescriptorRef : public Ref<const PluginReferenceDescriptor> {
-		using Ref::Ref; ///< Inherit constructors from Ref<const PluginReferenceDescriptor>.
+	class PLUGIFY_API PluginReferenceDescriptorHandle : public Handle<const PluginReferenceDescriptor> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Retrieves the name of the referenced plugin.
@@ -39,7 +35,7 @@ namespace plugify {
 		 *
 		 * @return A span of string views representing the supported platforms.
 		 */
-		std::span<std::string_view> GetSupportedPlatforms() const noexcept;
+		std::span<const std::string_view> GetSupportedPlatforms() const noexcept;
 
 		/**
 		 * @brief Retrieves the requested version of the referenced plugin, if specified.
@@ -48,5 +44,4 @@ namespace plugify {
 		 */
 		std::optional<int32_t> GetRequestedVersion() const noexcept;
 	};
-	static_assert(is_ref_v<PluginReferenceDescriptorRef>);
 } // namespace plugify

@@ -1,5 +1,6 @@
 #include <plugify/jit/call.hpp>
 #include <plugify/jit/helpers.hpp>
+#include <optional>
 
 using namespace plugify;
 
@@ -161,7 +162,7 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	return _function;
 }
 
-MemAddr JitCall::GetJitFunc(MethodRef method, MemAddr target, WaitType waitType, HiddenParam hidden) {
+MemAddr JitCall::GetJitFunc(MethodHandle method, MemAddr target, WaitType waitType, HiddenParam hidden) {
 	ValueType retType = method.GetReturnType().GetType();
 	bool retHidden = hidden(retType);
 	asmjit::FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Pointer : retType));

@@ -9,18 +9,18 @@
 #include <plugify/value_type.hpp>
 
 namespace plugify {
-	struct PluginDescriptor final : public Descriptor {
+	struct PluginDescriptor : public Descriptor {
 		std::string entryPoint;
 		LanguageModuleInfo languageModule;
-		std::vector<PluginReferenceDescriptor> dependencies;
-		std::vector<Method> exportedMethods;
+		std::optional<std::vector<PluginReferenceDescriptor>> dependencies;
+		std::optional<std::vector<Method>> exportedMethods;
 
 	private:
 		mutable std::shared_ptr<std::vector<std::string_view>> _supportedPlatforms;
 		mutable std::shared_ptr<std::vector<std::string_view>> _resourceDirectories;
-		mutable std::shared_ptr<std::vector<PluginReferenceDescriptorRef>> _dependencies;
-		mutable std::shared_ptr<std::vector<MethodRef>> _exportedMethods;
+		mutable std::shared_ptr<std::vector<PluginReferenceDescriptorHandle>> _dependencies;
+		mutable std::shared_ptr<std::vector<MethodHandle>> _exportedMethods;
 
-		friend class PluginDescriptorRef;
+		friend class PluginDescriptorHandle;
 	};
 }

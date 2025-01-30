@@ -8,7 +8,7 @@
 
 using namespace plugify;
 
-PlugifyProvider::PlugifyProvider(std::weak_ptr<IPlugify> plugify) : IPlugifyProvider(*this), PlugifyContext(std::move(plugify)) {
+PlugifyProvider::PlugifyProvider(std::weak_ptr<IPlugify> plugify) : ProviderHandle(*this), PlugifyContext(std::move(plugify)) {
 }
 
 PlugifyProvider::~PlugifyProvider() = default;
@@ -38,15 +38,15 @@ bool PlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<int32_
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {
 			auto plugin = pluginManager->FindPlugin(name);
-			if (!plugin.has_value())
+			if (!plugin)
 				return false;
-			if (plugin->GetState() != PluginState::Loaded && plugin->GetState() != PluginState::Running)
+			if (plugin.GetState() != PluginState::Loaded && plugin.GetState() != PluginState::Running)
 				return false;
-			if (requiredVersion.has_value()) {
+			if (const auto& version = requiredVersion) {
 				if (minimum) {
-					return plugin->GetDescriptor().GetVersion() >= *requiredVersion;
+					return plugin.GetDescriptor().GetVersion() >= version;
 				} else {
-					return plugin->GetDescriptor().GetVersion() == *requiredVersion;
+					return plugin.GetDescriptor().GetVersion() == version;
 				}
 			} else {
 				return true;
@@ -60,15 +60,15 @@ bool PlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<int32_
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {
 			auto module = pluginManager->FindModule(name);
-			if (!module.has_value())
+			if (!module)
 				return false;
-			if (module->GetState() != ModuleState::Loaded)
+			if (module.GetState() != ModuleState::Loaded)
 				return false;
-			if (requiredVersion.has_value()) {
+			if (const auto& version = requiredVersion) {
 				if (minimum) {
-					return module->GetDescriptor().GetVersion() >= *requiredVersion;
+					return module.GetDescriptor().GetVersion() >= *version;
 				} else {
-					return module->GetDescriptor().GetVersion() == *requiredVersion;
+					return module.GetDescriptor().GetVersion() == *version;
 				}
 			} else {
 				return true;
@@ -78,7 +78,7 @@ bool PlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<int32_
 	return false;
 }
 
-PluginOpt PlugifyProvider::FindPlugin(std::string_view name) noexcept {
+PluginHandle PlugifyProvider::FindPlugin(std::string_view name) noexcept {
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {
 			return pluginManager->FindPlugin(name);
@@ -87,7 +87,7 @@ PluginOpt PlugifyProvider::FindPlugin(std::string_view name) noexcept {
 	return {};
 }
 
-ModuleOpt PlugifyProvider::FindModule(std::string_view name) noexcept {
+ModuleHandle PlugifyProvider::FindModule(std::string_view name) noexcept {
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {
 			return pluginManager->FindModule(name);

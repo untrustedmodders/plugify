@@ -6,34 +6,35 @@
 namespace plugify {
 	struct Method;
 
-	struct EnumValue final {
+	struct EnumValue {
 		std::string name;
 		int64_t value;
 	};
 
-	struct Enum final {
+	struct Enum {
 		std::string name;
 		std::vector<EnumValue> values;
 
 	private:
-		mutable std::shared_ptr<std::vector<EnumValueRef>> _values;
-		friend class EnumRef;
+		mutable std::shared_ptr<std::vector<EnumValueHandle>> _values;
+		friend class EnumHandle;
 	};
 
-	struct Property final {
+	struct Property {
 		ValueType type{};
-		bool ref{ false };
+		std::optional<bool> ref;
 		std::shared_ptr<Method> prototype;
 		std::shared_ptr<Enum> enumerate;
 	};
 
-	struct Method final {
-		std::string name;
-		std::string funcName;
-		std::string callConv;
+	struct Method {
 		std::vector<Property> paramTypes;
 		Property retType;
 		uint8_t varIndex{ kNoVarArgs };
+
+		std::string name;
+		std::string funcName;
+		std::string callConv;
 
 	private:
 		std::shared_ptr<Method> FindPrototype(std::string_view _name) const noexcept {
@@ -64,8 +65,8 @@ namespace plugify {
 			return {};
 		}
 
-		mutable std::shared_ptr<std::vector<PropertyRef>> _paramTypes;
-		friend class MethodRef;
+		mutable std::shared_ptr<std::vector<PropertyHandle>> _paramTypes;
+		friend class MethodHandle;
 
 	public:
 		static inline const uint8_t kNoVarArgs = 0xFFU;

@@ -22,7 +22,7 @@ namespace plugify {
 
 			_configPath = rootDir / "plugify.pconfig";
 			auto json = FileSystem::ReadText(_configPath);
-			auto config = glz::read_json<Config>(json);
+			auto config = glz::read_jsonc<Config>(json);
 			if (!config.has_value()) {
 				PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", _configPath.string(), glz::format_error(config.error(), json));
 				return false;
@@ -117,7 +117,7 @@ namespace plugify {
 			return _packageManager;
 		}
 
-		std::weak_ptr<IPlugifyProvider> GetProvider() const override {
+		std::weak_ptr<ProviderHandle> GetProvider() const override {
 			return _provider;
 		}
 

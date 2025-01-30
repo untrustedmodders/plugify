@@ -3,9 +3,9 @@
 #include <plugify/package.hpp>
 
 namespace plugify {
-	struct PackageManifest final {
+	struct PackageManifest {
 		std::unordered_map<std::string, std::shared_ptr<RemotePackage>> content;
 
-		static inline const char* const kFileExtension = ".pmanifest";
+		static inline std::string_view kFileExtension = ".pmanifest";
 	};
 }

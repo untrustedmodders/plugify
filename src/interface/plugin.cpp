@@ -4,39 +4,39 @@
 
 using namespace plugify;
 
-UniqueId PluginRef::GetId() const noexcept {
+UniqueId PluginHandle::GetId() const noexcept {
 	return _impl->GetId();
 }
 
-std::string_view PluginRef::GetName() const noexcept {
+std::string_view PluginHandle::GetName() const noexcept {
 	return _impl->GetName();
 }
 
-std::string_view PluginRef::GetFriendlyName() const noexcept {
+std::string_view PluginHandle::GetFriendlyName() const noexcept {
 	return _impl->GetFriendlyName();
 }
 
-fs::path_view PluginRef::GetBaseDir() const noexcept {
-	return _impl->GetBaseDir().c_str();
+fs::path_view PluginHandle::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir().native();
 }
 
-PluginDescriptorRef PluginRef::GetDescriptor() const noexcept {
+PluginDescriptorHandle PluginHandle::GetDescriptor() const noexcept {
 	return { _impl->GetDescriptor() };
 }
 
-PluginState PluginRef::GetState() const noexcept {
+PluginState PluginHandle::GetState() const noexcept {
 	return _impl->GetState();
 }
 
-std::string_view PluginRef::GetError() const noexcept {
+std::string_view PluginHandle::GetError() const noexcept {
 	return _impl->GetError();
 }
 
-std::span<const MethodData> PluginRef::GetMethods() const noexcept {
+std::span<const MethodData> PluginHandle::GetMethods() const noexcept {
 	return _impl->GetMethods();
 }
 
-std::optional<fs::path_view> PluginRef::FindResource(fs::path_view path) const {
+std::optional<fs::path_view> PluginHandle::FindResource(fs::path_view path) const {
 	return _impl->FindResource(path);
 }
 

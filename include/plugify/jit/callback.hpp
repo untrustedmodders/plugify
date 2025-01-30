@@ -142,23 +142,23 @@ namespace plugify {
 			volatile uint64_t ret; ///< Raw storage for the return value.
 		};
 
-		using CallbackHandler = void(*)(MethodRef method, MemAddr data, const Parameters* params, size_t count, const Return* ret);
+		using CallbackHandler = void(*)(MethodHandle method, MemAddr data, const Parameters* params, size_t count, const Return* ret);
 		using HiddenParam = bool(*)(ValueType);
 
 		/**
 		 * @brief Get a dynamically created callback function based on the raw signature.
 		 * @param sig Function signature.
-		 * @param method Reference to the method.
+		 * @param method Handle to the method.
 		 * @param callback Callback function.
 		 * @param data User data.
 		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, MethodRef method, CallbackHandler callback, MemAddr data, bool hidden);
+		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle method, CallbackHandler callback, MemAddr data, bool hidden);
 
 		/**
-		 * @brief Get a dynamically created function based on the method reference.
-		 * @param method Reference to the method.
+		 * @brief Get a dynamically created function based on the method.
+		 * @param method Handle to the method.
 		 * @param callback Callback function.
 		 * @param data User data.
 		 * @param hidden If true, return will be pass as hidden argument.
@@ -172,7 +172,7 @@ namespace plugify {
 		 * type/declaration is always the same for any callback. userdata is a
 		 * pointer to arbitrary user data to be available in the generic callback handler.
 		 */
-		MemAddr GetJitFunc(MethodRef method, CallbackHandler callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
+		MemAddr GetJitFunc(MethodHandle method, CallbackHandler callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
 
 		/**
 		 * @brief Get a dynamically created function.

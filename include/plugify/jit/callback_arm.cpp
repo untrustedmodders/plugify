@@ -134,11 +134,11 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 	// fill reg to pass method ptr to callback
 	asmjit::a64::Gp methodPtrParam = cc.newGpx("methodPtrParam");
-	cc.mov(methodPtrParam, method.GetPtr());
+	cc.mov(methodPtrParam, static_cast<uintptr_t>(method)));
 
 	// fill reg to pass data ptr to callback
 	asmjit::a64::Gp dataPtrParam = cc.newGpx("dataPtrParam");
-	cc.mov(dataPtrParam, data.CCast<uintptr_t>());
+	cc.mov(dataPtrParam, static_cast<uintptr_t>(data));
 
 	// get pointer to stack structure and pass it to the user callback
 	asmjit::a64::Gp argStruct = cc.newGpx("argStruct");

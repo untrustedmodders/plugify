@@ -1,28 +1,24 @@
 #pragma once
 
-#include <optional>
-#include <plugify/reference_wrapper.hpp>
-#include <plugify/value_type.hpp>
-#include <plugify_export.h>
 #include <span>
 #include <string>
+#include <plugify/handle.hpp>
+#include <plugify/value_type.hpp>
+#include <plugify_export.h>
 
 namespace plugify {
 	struct EnumValue;
 	struct Enum;
 	struct Method;
 	struct Property;
-	class MethodRef;
+	class MethodHandle;
 
 	/**
-	 * @class EnumValueRef
-	 * @brief A reference class for an `EnumValue` structure.
-	 *
-	 * This class holds a reference to a specific value within an `Enum` object, allowing users
-	 * to retrieve information such as the name and value of the enum element.
+	 * @class EnumValueHandle
+	 * @brief A handle class for an `EnumValue` structure.
 	 */
-	class PLUGIFY_API EnumValueRef : public Ref<const EnumValue> {
-		using Ref::Ref; ///< Inherit constructors from Ref<const EnumValue>.
+	class PLUGIFY_API EnumValueHandle : public Handle<const EnumValue> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Retrieves the enum value name.
@@ -38,16 +34,13 @@ namespace plugify {
 		 */
 		int64_t GetValue() const noexcept;
 	};
-	static_assert(is_ref_v<EnumValueRef>);
 
 	/**
-	 * @class EnumRef
-	 * @brief A reference class for the `Enum` structure.
-	 *
-	 * This class holds a reference to an `Enum` object, providing access to its name and values.
+	 * @class EnumHandle
+	 * @brief A handle class for the `Enum` structure.
 	 */
-	class PLUGIFY_API EnumRef : public Ref<const Enum> {
-		using Ref::Ref; ///< Inherit constructors from Ref<const Enum>.
+	class PLUGIFY_API EnumHandle : public Handle<const Enum> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Retrieves the enum name.
@@ -61,19 +54,15 @@ namespace plugify {
 		 *
 		 * @return A span of `EnumValueRef` objects representing the values in the enum.
 		 */
-		std::span<const EnumValueRef> GetValues() const noexcept;
+		std::span<const EnumValueHandle> GetValues() const noexcept;
 	};
-	static_assert(is_ref_v<EnumRef>);
 
 	/**
-	 * @class PropertyRef
-	 * @brief A reference class for the `Property` structure.
-	 *
-	 * This class holds a reference to a `Property` object, allowing users to retrieve
-	 * information such as its type, whether it's a reference, and its prototype method if applicable.
+	 * @class PropertyHandle
+	 * @brief A handle class for the `Property` structure.
 	 */
-	class PLUGIFY_API PropertyRef : public Ref<const Property> {
-		using Ref::Ref; ///< Inherit constructors from Ref<const Property>.
+	class PLUGIFY_API PropertyHandle : public Handle<const Property> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Retrieves the value type of the property.
@@ -92,31 +81,26 @@ namespace plugify {
 		/**
 		 * @brief Retrieves the prototype method for the property.
 		 *
-		 * @return An optional `MethodRef` representing the prototype method.
-		 *         Returns an empty optional if no prototype exists.
+		 * @return A `MethodHandle` representing the prototype method.
+		 *  Returns an empty handle if no prototype exists.
 		 */
-		std::optional<MethodRef> GetPrototype() const noexcept;
+		MethodHandle GetPrototype() const noexcept;
 
 		/**
 		 * @brief Retrieves the enum information for the property.
 		 *
-		 * @return An optional `EnumRef` representing the enum information.
-		 *         Returns an empty optional if no enum exists.
+		 * @return A `EnumHandle` representing the enum information.
+		 *  Returns an empty handle if no enum exists.
 		 */
-		std::optional<EnumRef> GetEnum() const noexcept;
+		EnumHandle GetEnum() const noexcept;
 	};
-	static_assert(is_ref_v<PropertyRef>);
 
 	/**
-	 * @class MethodRef
-	 * @brief A reference class for the `Method` structure.
-	 *
-	 * This class holds a reference to a `Method` object, allowing users to retrieve
-	 * information such as its name, function name, calling convention, parameter types,
-	 * return type, and variable index.
+	 * @class MethodHandle
+	 * @brief A handle class for the `Method` structure.
 	 */
-	class PLUGIFY_API MethodRef : public Ref<const Method> {
-		using Ref::Ref; ///< Inherit constructors from Ref<const Method>.
+	class PLUGIFY_API MethodHandle : public Handle<const Method> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Retrieves the method name.
@@ -144,14 +128,14 @@ namespace plugify {
 		 *
 		 * @return A span of `PropertyRef` objects representing the parameter types.
 		 */
-		std::span<const PropertyRef> GetParamTypes() const noexcept;
+		std::span<const PropertyHandle> GetParamTypes() const noexcept;
 
 		/**
 		 * @brief Retrieves the return type of the method.
 		 *
 		 * @return A `PropertyRef` representing the return type of the method.
 		 */
-		PropertyRef GetReturnType() const noexcept;
+		PropertyHandle GetReturnType() const noexcept;
 
 		/**
 		 * @brief Retrieves the variable index for the method.
@@ -169,21 +153,18 @@ namespace plugify {
 		 *
 		 * @param name The name of the prototype method to search for.
 		 *
-		 * @return std::optional<MethodRef>
-		 * - A `std::optional<MethodRef>` containing the found prototype if a method with the specified name exists, or
-		 * - An empty `std::optional` if no matching prototype is found.
+		 * @return MethodHandle
+		 * - A `MethodHandle` containing the found prototype if a method with the specified name exists, or
+		 * - An empty `MethodHandle` if no matching prototype is found.
 		 *
 		 * Example usage:
 		 * @code
-		 * std::optional<MethodRef> prototype = methodRef.FindPrototype("targetMethodName");
+		 * MethodHandle prototype = method.FindPrototype("targetMethodName");
 		 * if (prototype) {
 		 *     // Process the found prototype
 		 * }
 		 * @endcode
 		 */
-		std::optional<MethodRef> FindPrototype(std::string_view name) const noexcept;
+		MethodHandle FindPrototype(std::string_view name) const noexcept;
 	};
-	static_assert(is_ref_v<MethodRef>);
-
-
 } // namespace plugify

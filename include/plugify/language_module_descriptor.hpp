@@ -1,24 +1,20 @@
 #pragma once
 
 #include <cstdint>
-#include <plugify/reference_wrapper.hpp>
-#include <plugify_export.h>
 #include <span>
 #include <string>
+#include <plugify/handle.hpp>
+#include <plugify_export.h>
 
 namespace plugify {
 	struct LanguageModuleDescriptor;
 
 	/**
-	 * @class LanguageModuleDescriptorRef
-	 * @brief A reference class for the `LanguageModuleDescriptor` structure.
-	 *
-	 * This class holds a reference to a `LanguageModuleDescriptor` object, allowing users to
-	 * retrieve detailed information about a language module, such as version, name, description,
-	 * URLs, supported platforms, resource directories, and other metadata.
+	 * @class LanguageModuleDescriptorHandle
+	 * @brief A handle class for the `LanguageModuleDescriptor` structure.
 	 */
-	class PLUGIFY_API LanguageModuleDescriptorRef : public Ref<const LanguageModuleDescriptor> {
-		using Ref::Ref; ///< Inherit constructors from Ref<const LanguageModuleDescriptor>.
+	class PLUGIFY_API LanguageModuleDescriptorHandle : public Handle<const LanguageModuleDescriptor> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Retrieves the file version of the language module.
@@ -95,21 +91,21 @@ namespace plugify {
 		 *
 		 * @return A span of string views representing the supported platforms.
 		 */
-		std::span<std::string_view> GetSupportedPlatforms() const noexcept;
+		std::span<const std::string_view> GetSupportedPlatforms() const noexcept;
 
 		/**
 		 * @brief Retrieves the resource directories for the language module.
 		 *
 		 * @return A span of string views representing the resource directories.
 		 */
-		std::span<std::string_view> GetResourceDirectories() const noexcept;
+		std::span<const std::string_view> GetResourceDirectories() const noexcept;
 
 		/**
 		 * @brief Retrieves the library directories for the language module.
 		 *
 		 * @return A span of string views representing the library directories.
 		 */
-		std::span<std::string_view> GetLibraryDirectories() const noexcept;
+		std::span<const std::string_view> GetLibraryDirectories() const noexcept;
 
 		/**
 		 * @brief Retrieves the programming language of the language module.
@@ -125,5 +121,4 @@ namespace plugify {
 		 */
 		bool IsForceLoad() const noexcept;
 	};
-	static_assert(is_ref_v<LanguageModuleDescriptorRef>);
 } // namespace plugify

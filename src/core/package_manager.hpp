@@ -8,7 +8,7 @@
 
 namespace plugify {
 #if PLUGIFY_DOWNLOADER
-	class HTTPDownloader;
+	class IHTTPDownloader;
 #endif // PLUGIFY_DOWNLOADER
 	class PackageManager final : public IPackageManager, public PlugifyContext {
 	public:
@@ -49,8 +49,8 @@ namespace plugify {
 		std::vector<RemotePackagePtr> GetRemotePackages() const override;
 
 	public:
-		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
-			return supportedPlatforms.empty() || std::find(supportedPlatforms.begin(), supportedPlatforms.end(), PLUGIFY_PLATFORM) != supportedPlatforms.end();
+		static bool IsSupportsPlatform(const std::optional<std::vector<std::string>>& supportedPlatforms) {
+			return !supportedPlatforms.has_value() || supportedPlatforms->empty() || std::find(supportedPlatforms->begin(), supportedPlatforms->end(), PLUGIFY_PLATFORM) != supportedPlatforms->end();
 		}
 
 	private:
@@ -73,7 +73,7 @@ namespace plugify {
 
 	private:
 #if PLUGIFY_DOWNLOADER
-		std::unique_ptr<HTTPDownloader> _httpDownloader;
+		std::unique_ptr<IHTTPDownloader> _httpDownloader;
 #endif // PLUGIFY_DOWNLOADER
 		std::unordered_map<std::string, LocalPackagePtr, string_hash, std::equal_to<>> _localPackages;
 		std::unordered_map<std::string, RemotePackagePtr, string_hash, std::equal_to<>> _remotePackages;

@@ -1,26 +1,22 @@
 #pragma once
 
-#include <plugify/method.hpp>
-#include <plugify/reference_wrapper.hpp>
-#include <plugify_export.h>
 #include <span>
 #include <string>
+#include <plugify/handle.hpp>
+#include <plugify/method.hpp>
+#include <plugify_export.h>
 
 namespace plugify {
 	struct PluginDescriptor;
-	class PluginReferenceDescriptorRef;
-	class MethodRef;
+	class PluginReferenceDescriptorHandle;
+	class MethodHandle;
 
 	/**
-	 * @class PluginDescriptorRef
-	 * @brief A reference class for the `PluginDescriptor` structure.
-	 *
-	 * This class holds a reference to a `PluginDescriptor` object, allowing users to retrieve
-	 * metadata about a plugin, such as version information, description, creator information,
-	 * URLs, supported platforms, dependencies, and exported methods.
+	 * @class PluginDescriptorHandle
+	 * @brief A handle class for the `PluginDescriptor` structure.
 	 */
-	class PLUGIFY_API PluginDescriptorRef : public Ref<const PluginDescriptor> {
-		using Ref::Ref; ///< Inherit constructors from Ref<const PluginDescriptor>.
+	class PLUGIFY_API PluginDescriptorHandle : public Handle<const PluginDescriptor> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Retrieves the file version of the plugin.
@@ -97,14 +93,14 @@ namespace plugify {
 		 *
 		 * @return A span of string views representing the supported platforms.
 		 */
-		std::span<std::string_view> GetSupportedPlatforms() const noexcept;
+		std::span<const std::string_view> GetSupportedPlatforms() const noexcept;
 
 		/**
 		 * @brief Retrieves the resource directories for the plugin.
 		 *
 		 * @return A span of string views representing the resource directories.
 		 */
-		std::span<std::string_view> GetResourceDirectories() const noexcept;
+		std::span<const std::string_view> GetResourceDirectories() const noexcept;
 
 		/**
 		 * @brief Retrieves the entry point of the plugin.
@@ -125,14 +121,13 @@ namespace plugify {
 		 *
 		 * @return A span of `PluginReferenceDescriptorRef` objects representing the plugin's dependencies.
 		 */
-		std::span<const PluginReferenceDescriptorRef> GetDependencies() const noexcept;
+		std::span<const PluginReferenceDescriptorHandle> GetDependencies() const noexcept;
 
 		/**
 		 * @brief Retrieves the methods exported by the plugin.
 		 *
 		 * @return A span of `MethodRef` objects representing the exported methods.
 		 */
-		std::span<const MethodRef> GetExportedMethods() const noexcept;
+		std::span<const MethodHandle> GetExportedMethods() const noexcept;
 	};
-	static_assert(is_ref_v<PluginDescriptorRef>);
 } // namespace plugify

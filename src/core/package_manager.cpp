@@ -35,7 +35,7 @@ bool PackageManager::Initialize() {
 	auto debugStart = DateTime::Now();
 
 #if PLUGIFY_DOWNLOADER
-	_httpDownloader = HTTPDownloader::Create();
+	_httpDownloader = IHTTPDownloader::Create();
 #endif // PLUGIFY_DOWNLOADER
 
 	LoadAllPackages();
@@ -223,7 +223,7 @@ void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std
 template<typename T>
 LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
 	auto json = FileSystem::ReadText(path);
-	auto dest = glz::read_json<std::shared_ptr<T>>(json);
+	auto dest = glz::read_jsonc<std::shared_ptr<T>>(json);
 	if (!dest.has_value()) {
 		PL_LOG_ERROR("Package: '{}' has JSON parsing error: {}", name, glz::format_error(dest.error(), json));
 		return {};
@@ -247,8 +247,8 @@ LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string
 		errors.emplace_back("Missing friendly name");
 	}
 
-	if (descriptor->resourceDirectories.has_value()) {
-		ValidateDirectories(errors, *descriptor->resourceDirectories);
+	if (const auto& resourceDirectories = descriptor->resourceDirectories) {
+		ValidateDirectories(errors, *resourceDirectories);
 	}
 
 	std::string type;
@@ -257,8 +257,8 @@ LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string
 			errors.emplace_back("Missing/invalid language name");
 		}
 
-		if (descriptor->libraryDirectories.has_value()) {
-			ValidateDirectories(errors, *descriptor->libraryDirectories);
+		if (const auto& libraryDirectories = descriptor->libraryDirectories) {
+			ValidateDirectories(errors, *libraryDirectories);
 		}
 
 		type = descriptor->language;
@@ -270,8 +270,12 @@ LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string
 			errors.emplace_back("Missing language name");
 		}
 
-		ValidateDependencies(name, errors, descriptor->dependencies);
-		ValidateMethods(name, errors, descriptor->exportedMethods);
+		if (auto& dependencies = descriptor->dependencies) {
+			ValidateDependencies(name, errors, *dependencies);
+		}
+		if (auto& methods = descriptor->exportedMethods) {
+			ValidateMethods(name, errors, *methods);
+		}
 
 		type = "plugin";
 	}
@@ -359,15 +363,15 @@ void PackageManager::LoadRemotePackages() {
 			return;
 		}
 		
-		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
-			if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
+		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, std::string_view, IHTTPDownloader::Request::Data data) {
+			if (statusCode == IHTTPDownloader::HTTP_STATUS_OK) {
 				/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
 					PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", url);
 					return;
 				}*/
 
 				std::string buffer(data.begin(), data.end());
-				auto manifest = glz::read_json<PackageManifest>(buffer);
+				auto manifest = glz::read_jsonc<PackageManifest>(buffer);
 				if (!manifest.has_value()) {
 					PL_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", url, glz::format_error(manifest.error(), buffer));
 					return;
@@ -407,7 +411,9 @@ void PackageManager::LoadRemotePackages() {
 	}
 
 	for (const auto& [_, package] : _localPackages) {
-		fetchManifest(package->descriptor->updateURL, package->descriptor);
+		if (const auto& url = package->descriptor->updateURL) {
+			fetchManifest(*url, package->descriptor);
+		}
 	}
 
 	//FetchPackagesListFromAPI(mutex);
@@ -444,50 +450,54 @@ void PackageManager::FindDependencies() {
 				}
 			}
 
-			for (const auto& dependency : pluginDescriptor->dependencies) {
-				if (dependency.optional || !IsSupportsPlatform(dependency.supportedPlatforms))
-					continue;
+			if (const auto& dependencies = pluginDescriptor->dependencies) {
+				for (const auto& dependency : *dependencies) {
+					if (dependency.optional || !IsSupportsPlatform(dependency.supportedPlatforms))
+						continue;
 
-				if (auto itl = _localPackages.find(dependency.name); itl != _localPackages.end()) {
-					const auto& [_, localPackage] = *itl;
-					if (dependency.requestedVersion.has_value() && *dependency.requestedVersion != localPackage->version)  {
-						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, *dependency.requestedVersion, localPackage->version);
-					}
-					continue;
-				}
-
-				if (auto itr = _remotePackages.find(dependency.name); itr != _remotePackages.end()) {
-					const auto& [_, remotePackage] = *itr;
-					if (dependency.requestedVersion.has_value() && !remotePackage->Version(*dependency.requestedVersion)) {
-						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, *dependency.requestedVersion);
-						_conflictedPackages.emplace_back(package);
+					if (auto itl = _localPackages.find(dependency.name); itl != _localPackages.end()) {
+						const auto& [_, localPackage] = *itl;
+						if (const auto& version = dependency.requestedVersion) {
+							if (*version != localPackage->version) {
+								PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, *version, localPackage->version);
+							}
+						}
 						continue;
 					}
 
-					auto it = _missedPackages.find(dependency.name);
-					if (it == _missedPackages.end()) {
-						_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.requestedVersion });
-					} else {
-						auto& existingVersion = it->second.second;
-						if (dependency.requestedVersion.has_value()) {
-							if (existingVersion.has_value()) {
-								if (*existingVersion != *dependency.requestedVersion) {
-									PL_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' dependency, over older version (v{}).", std::max(*existingVersion, *dependency.requestedVersion), dependency.name, std::min(*existingVersion, *dependency.requestedVersion));
+					if (auto itr = _remotePackages.find(dependency.name); itr != _remotePackages.end()) {
+						const auto& [_, remotePackage] = *itr;
+						if (const auto& version = dependency.requestedVersion) {
+							if (!remotePackage->Version(*version)) {
+								PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, *version);
+								_conflictedPackages.emplace_back(package);
+								continue;
+							}
+						}
 
-									if (*existingVersion < *dependency.requestedVersion) {
-										existingVersion = dependency.requestedVersion;
+						auto it = _missedPackages.find(dependency.name);
+						if (it == _missedPackages.end()) {
+							_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.requestedVersion });
+						} else {
+							auto& existingVersion = it->second.second;
+							if (const auto& version = dependency.requestedVersion) {
+								if (*existingVersion != *version) {
+									PL_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' dependency, over older version (v{}).", std::max(*existingVersion, *version), dependency.name, std::min(*existingVersion, *version));
+
+									if (*existingVersion < *version) {
+										existingVersion = version;
 									}
 								} else {
 									PL_LOG_VERBOSE("The same version (v{}) of dependency '{}' required by '{}' at '{}' - second location will be ignored.", *existingVersion, dependency.name, package->name, package->path.string());
 								}
 							} else {
-								existingVersion = dependency.requestedVersion;
+								existingVersion = version;
 							}
 						}
+					} else {
+						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which could not be found.", package->name, dependency.name);
+						_conflictedPackages.emplace_back(package);
 					}
-				} else {
-					PL_LOG_ERROR("Package: '{}' has dependency: '{}' which could not be found.", package->name, dependency.name);
-					_conflictedPackages.emplace_back(package);
 				}
 			}
 		}
@@ -641,7 +651,7 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 	PL_LOG_INFO("Read package manifest from '{}'", path.string());
 
 	auto json = FileSystem::ReadText(path);
-	auto manifest = glz::read_json<PackageManifest>(json);
+	auto manifest = glz::read_jsonc<PackageManifest>(json);
 	if (!manifest.has_value()) {
 		PL_LOG_ERROR("Package manifest: '{}' has JSON parsing error: {}", path.string(), glz::format_error(manifest.error(), json));
 		return;
@@ -684,15 +694,15 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 
 	const char* func = __func__;
 
-	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
-		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
+	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, std::string_view, IHTTPDownloader::Request::Data data) {
+		if (statusCode == IHTTPDownloader::HTTP_STATUS_OK) {
 			/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
 				PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", manifestUrl);
 				return;
 			}*/
 
 			std::string buffer(data.begin(), data.end());
-			auto manifest = glz::read_json<PackageManifest>(buffer);
+			auto manifest = glz::read_jsonc<PackageManifest>(buffer);
 			if (!manifest.has_value()) {
 				PL_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", manifestUrl, glz::format_error(manifest.error(), buffer));
 				return;
@@ -737,13 +747,13 @@ bool PackageManager::InstallPackage(const RemotePackagePtr& package, std::option
 	}
 
 	PackageOpt newVersion;
-	if (requiredVersion.has_value()) {
-		newVersion = package->Version(*requiredVersion);
+	if (const auto& version = requiredVersion) {
+		newVersion = package->Version(*version);
 		if (newVersion) {
 			if (!IsSupportsPlatform(newVersion->platforms))
 				return false;
 		} else {
-			PL_LOG_WARNING("Package: '{}' (v{}) has not been found", package->name, *requiredVersion);
+			PL_LOG_WARNING("Package: '{}' (v{}) has not been found", package->name, *version);
 			return false;
 		}
 	} else {
@@ -820,15 +830,15 @@ bool PackageManager::UpdatePackage(const LocalPackagePtr& package, std::optional
 	const auto& [_, newPackage] = *it;
 
 	PackageOpt newVersion;
-	if (requiredVersion.has_value()) {
-		newVersion = newPackage->Version(*requiredVersion);
+	if (const auto& version = requiredVersion) {
+		newVersion = newPackage->Version(*version);
 		if (newVersion) {
 			if (!IsSupportsPlatform(newVersion->platforms))
 				return false;
 
 			PL_LOG_INFO("Package '{}' (v{}) will be {}, to different version (v{})", package->name, package->version, newVersion->version > package->version ? "upgraded" : newVersion->version == package->version ? "reinstalled" : "downgraded", newVersion->version);
 		} else {
-			PL_LOG_WARNING("Package: '{}' (v{}) has not been found", package->name, *requiredVersion);
+			PL_LOG_WARNING("Package: '{}' (v{}) has not been found", package->name, *version);
 			return false;
 		}
 	} else {
@@ -931,8 +941,8 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 	PL_LOG_INFO("Downloading: '{}'", version.download);
 
 	_httpDownloader->CreateRequest(version.download, [=, checksum = version.checksum]
-		(int32_t statusCode, std::string_view, HTTPDownloader::Request::Data data) {
-		if (statusCode == HTTPDownloader::HTTP_STATUS_OK) {
+		(int32_t statusCode, std::string_view, IHTTPDownloader::Request::Data data) {
+		if (statusCode == IHTTPDownloader::HTTP_STATUS_OK) {
 			PL_LOG_VERBOSE("Done downloading: '{}'", package->name);
 
 			/*if (contentType != "application/zip") {

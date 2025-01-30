@@ -22,16 +22,16 @@ namespace plugify {
 		bool IsInitialized() const override;
 		void Update(DateTime dt) override;
 
-		ModuleOpt FindModule(std::string_view moduleName) const override;
-		ModuleOpt FindModuleFromId(UniqueId moduleId) const override;
-		ModuleOpt FindModuleFromLang(std::string_view moduleLang) const override;
-		ModuleOpt FindModuleFromPath(const fs::path& moduleFilePath) const override;
-		std::vector<ModuleRef> GetModules() const override;
+		ModuleHandle FindModule(std::string_view moduleName) const override;
+		ModuleHandle FindModuleFromId(UniqueId moduleId) const override;
+		ModuleHandle FindModuleFromLang(std::string_view moduleLang) const override;
+		ModuleHandle FindModuleFromPath(const fs::path& moduleFilePath) const override;
+		std::vector<ModuleHandle> GetModules() const override;
 
-		PluginOpt FindPlugin(std::string_view pluginName) const override;
-		PluginOpt FindPluginFromId(UniqueId pluginId) const override;
-		PluginOpt FindPluginFromDescriptor(const PluginReferenceDescriptorRef& pluginDescriptor) const override;
-		std::vector<PluginRef> GetPlugins() const override;
+		PluginHandle FindPlugin(std::string_view pluginName) const override;
+		PluginHandle FindPluginFromId(UniqueId pluginId) const override;
+		PluginHandle FindPluginFromDescriptor(const PluginReferenceDescriptorHandle & pluginDescriptor) const override;
+		std::vector<PluginHandle> GetPlugins() const override;
 
 	private:
 		using PluginList = std::vector<std::unique_ptr<Plugin>>;

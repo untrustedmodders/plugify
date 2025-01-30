@@ -53,7 +53,7 @@ namespace plugify {
 		bool _status; /**< The status of the memory protection operation. */
 		bool _unsetLater; /**< Whether to unset the protection on destruction. */
 
-		ProtFlag _origProtection{ ProtFlag::UNSET }; /**< The original protection flags. */
+		ProtFlag _origProtection = ProtFlag::UNSET; /**< The original protection flags. */
 	};
 
 	/**

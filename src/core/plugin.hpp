@@ -9,8 +9,8 @@
 namespace plugify {
 	class Module;
 	struct LocalPackage;
-	class IPlugifyProvider;
-	class Plugin final {
+	class ProviderHandle;
+	class Plugin {
 	public:
 		Plugin(UniqueId id, const LocalPackage& package);
 		~Plugin();
@@ -45,7 +45,7 @@ namespace plugify {
 		}
 
 		const std::string& GetError() const noexcept {
-			return *_error;
+			return _error;
 		}
 
 		std::optional<fs::path_view> FindResource(const fs::path& path) const;
@@ -57,12 +57,11 @@ namespace plugify {
 		}
 
 		Module* GetModule() const {
-			PL_ASSERT(_module, "Module is not set!");
 			return _module;
 		}
 
-		void SetModule(Module* module) noexcept {
-			_module = module;
+		void SetModule(const std::unique_ptr<Module>& module) noexcept {
+			_module = module.get();
 		}
 
 		void SetLoaded() noexcept {
@@ -81,21 +80,20 @@ namespace plugify {
 			_state = PluginState::NotLoaded;
 		}
 
-		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
+		bool Initialize(const std::shared_ptr<ProviderHandle>& provider);
 		void Terminate();
 
-		static inline const char* const kFileExtension = ".pplugin";
+		static inline std::string_view kFileExtension = ".pplugin";
 
 	private:
-		PluginState _state{ PluginState::NotLoaded };
 		Module* _module{ nullptr };
-
+		PluginState _state{ PluginState::NotLoaded };
 		UniqueId _id;
 		std::string _name;
 		fs::path _baseDir;
 		std::vector<MethodData> _methods;
 		std::shared_ptr<PluginDescriptor> _descriptor;
 		std::unordered_map<fs::path, fs::path, path_hash> _resources;
-		std::unique_ptr<std::string> _error;
+		std::string _error;
 	};
 }

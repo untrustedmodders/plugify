@@ -3,19 +3,19 @@
 #include <plugify/descriptor.hpp>
 
 namespace plugify {
-	struct LanguageModuleDescriptor final : public Descriptor {
+	struct LanguageModuleDescriptor : public Descriptor {
 		std::string language;
 		std::optional<std::vector<std::string>> libraryDirectories;
-		bool forceLoad{false};
+		std::optional<bool> forceLoad;
 
 	private:
 		mutable std::shared_ptr<std::vector<std::string_view>> _supportedPlatforms;
 		mutable std::shared_ptr<std::vector<std::string_view>> _resourceDirectories;
 		mutable std::shared_ptr<std::vector<std::string_view>> _libraryDirectories;
-		friend class LanguageModuleDescriptorRef;
+		friend class LanguageModuleDescriptorHandle;
 	};
 
-	struct LanguageModuleInfo final {
+	struct LanguageModuleInfo {
 		std::string name;
 	};
 }

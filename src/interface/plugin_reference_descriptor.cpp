@@ -4,25 +4,26 @@
 
 using namespace plugify;
 
-std::string_view PluginReferenceDescriptorRef::GetName() const noexcept {
+std::string_view PluginReferenceDescriptorHandle::GetName() const noexcept {
 	return _impl->name;
 }
 
-bool PluginReferenceDescriptorRef::IsOptional() const noexcept {
-	return _impl->optional;
+bool PluginReferenceDescriptorHandle::IsOptional() const noexcept {
+	return _impl->optional.value_or(false);
 }
 
-std::span<std::string_view> PluginReferenceDescriptorRef::GetSupportedPlatforms() const noexcept {
-	if (!_impl->_supportedPlatforms) {
-		_impl->_supportedPlatforms = make_shared_nothrow<std::vector<std::string_view>>(_impl->supportedPlatforms.begin(), _impl->supportedPlatforms.end());
+std::span<const std::string_view> PluginReferenceDescriptorHandle::GetSupportedPlatforms() const noexcept {
+	if (const auto& supportedPlatforms = _impl->supportedPlatforms) {
+		if (!_impl->_supportedPlatforms) {
+			_impl->_supportedPlatforms = make_shared_nothrow<std::vector<std::string_view>>(supportedPlatforms->begin(), supportedPlatforms->end());
+		}
+		if (_impl->_supportedPlatforms) {
+			return *_impl->_supportedPlatforms;
+		}
 	}
-	if (_impl->_supportedPlatforms) {
-		return *_impl->_supportedPlatforms;
-	} else {
-		return {};
-	}
+	return {};
 }
 
-std::optional<int32_t> PluginReferenceDescriptorRef::GetRequestedVersion() const noexcept {
+std::optional<int32_t> PluginReferenceDescriptorHandle::GetRequestedVersion() const noexcept {
 	return _impl->requestedVersion;
 }

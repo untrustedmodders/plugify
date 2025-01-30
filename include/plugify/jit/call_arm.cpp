@@ -1,6 +1,7 @@
 #include <asmjit/a64.h>
 #include <plugify/jit/call.hpp>
 #include <plugify/jit/helpers.hpp>
+#include <optional>
 
 using namespace plugify;
 

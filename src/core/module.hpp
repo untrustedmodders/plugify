@@ -10,7 +10,7 @@
 namespace plugify {
 	class Plugin;
 	struct LocalPackage;
-	class Module final {
+	class Module {
 	public:
 		Module(UniqueId id, const LocalPackage& package);
 		~Module();
@@ -49,12 +49,12 @@ namespace plugify {
 		}
 
 		const std::string& GetError() const noexcept {
-			return *_error;
+			return _error;
 		}
 
 		std::optional<fs::path_view> FindResource(const fs::path& path) const;
 
-		bool Initialize(std::weak_ptr<IPlugifyProvider> provider);
+		bool Initialize(const std::shared_ptr<ProviderHandle>& provider);
 		void Terminate();
 		void Update(DateTime dt);
 
@@ -67,7 +67,6 @@ namespace plugify {
 		void SetError(std::string error);
 
 		ILanguageModule* GetLanguageModule() const {
-			PL_ASSERT(_languageModule, "Language module is not set!");
 			return _languageModule;
 		}
 
@@ -79,13 +78,11 @@ namespace plugify {
 			_state = ModuleState::NotLoaded;
 		}
 
-		static inline const char* const kFileExtension = ".pmodule";
+		static inline std::string_view kFileExtension = ".pmodule";
 
 	private:
-		ModuleState _state{ ModuleState::NotLoaded };
-		bool _requireUpdate{ false };
 		ILanguageModule* _languageModule{ nullptr };
-
+		ModuleState _state{ ModuleState::NotLoaded };
 		UniqueId _id;
 		std::string _name;
 		std::string _lang;
@@ -94,6 +91,6 @@ namespace plugify {
 		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
 		std::unordered_map<fs::path, fs::path, path_hash> _resources;
 		std::unique_ptr<Assembly> _assembly;
-		std::unique_ptr<std::string> _error;
+		std::string _error;
 	};
 }

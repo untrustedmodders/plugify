@@ -2,13 +2,13 @@
 
 #include <cstdint>
 #include <optional>
+#include <plugify/handle.hpp>
 #include <plugify/path.hpp>
-#include <plugify/reference_wrapper.hpp>
 #include <plugify_export.h>
 
 namespace plugify {
 	class Module;
-	class LanguageModuleDescriptorRef;
+	class LanguageModuleDescriptorHandle;
 
 	/**
 	 * @enum ModuleState
@@ -28,14 +28,14 @@ namespace plugify {
 	 * @typedef UniqueId
 	 * @brief Represents a unique identifier for modules.
 	 */
-	using UniqueId = std::ptrdiff_t;
+	using UniqueId = int32_t;
 
 	/**
-	 * @class ModuleRef
-	 * @brief Reference wrapper to access language module's information.
+	 * @class ModuleHandle
+	 * @brief Handle wrapper to access language module's information.
 	 */
-	class PLUGIFY_API ModuleRef : public Ref<const Module> {
-		using Ref::Ref;
+	class PLUGIFY_API ModuleHandle : public Handle<const Module> {
+		using Handle::Handle;
 	public:
 		/**
 		 * @brief Get the unique identifier of the language module.
@@ -77,7 +77,7 @@ namespace plugify {
 		 * @brief Get the descriptor of the language module.
 		 * @return The descriptor of the language module.
 		 */
-		LanguageModuleDescriptorRef GetDescriptor() const noexcept;
+		LanguageModuleDescriptorHandle GetDescriptor() const noexcept;
 
 		/**
 		 * @brief Get the state of the language module.
@@ -114,7 +114,6 @@ namespace plugify {
 		 */
 		std::optional<std::filesystem::path_view> FindResource(std::filesystem::path_view path) const;
 	};
-	static_assert(is_ref_v<ModuleRef>);
 
 	/**
 	 * @brief Namespace containing utility functions of ModuleState enum.

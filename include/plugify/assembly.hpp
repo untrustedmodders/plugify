@@ -1,11 +1,11 @@
 #pragma once
 
+#include <string>
+#include <vector>
 #include <filesystem>
 #include <plugify/load_flag.hpp>
 #include <plugify/mem_addr.hpp>
 #include <plugify_export.h>
-#include <string>
-#include <vector>
 
 namespace plugify {
 	/**

@@ -4,9 +4,9 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <plugify/descriptor.hpp>
 #include <set>
 #include <tuple>
+#include <plugify/descriptor.hpp>
 
 namespace plugify {
 	/**
@@ -21,7 +21,7 @@ namespace plugify {
 		int32_t version; ///< The version number of the package.
 		std::string checksum; ///< The checksum of the package.
 		std::string download; ///< The download URL for the package.
-		std::vector<std::string> platforms; ///< The platforms supported by the package.
+		std::optional<std::vector<std::string>> platforms; ///< The platforms supported by the package.
 
 		/**
 		 * @brief Overloaded less-than operator for comparing PackageVersion instances.
@@ -110,7 +110,7 @@ namespace plugify {
 		 * @return A RemotePackage instance representing the local package.
 		 */
 		explicit operator RemotePackage() const {
-			return { name, type, descriptor->createdBy, descriptor->description, { PackageVersion{ descriptor->version, {}, descriptor->downloadURL, descriptor->supportedPlatforms} }};
+			return { name, type, descriptor->createdBy.value_or("na"), descriptor->description.value_or(""), { PackageVersion{ descriptor->version, {}, descriptor->downloadURL.value_or(""), descriptor->supportedPlatforms } } };
 		}
 	};
 } // namespace plugify

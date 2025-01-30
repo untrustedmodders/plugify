@@ -21,7 +21,7 @@ Module::~Module() {
 	Terminate();
 }
 
-bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
+bool Module::Initialize(const std::shared_ptr<ProviderHandle>& provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
 
 	std::error_code ec;
@@ -34,9 +34,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 		return false;
 	}
 
-	auto plugifyProvider = provider.lock();
-
-	fs::path_view baseDir = plugifyProvider->GetBaseDir();
+	fs::path baseDir = provider->GetBaseDir();
 
 	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
@@ -77,7 +75,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	}
 
 	LoadFlag flags = LoadFlag::Lazy | LoadFlag::Global | /**/ LoadFlag::SearchUserDirs | LoadFlag::SearchSystem32 | LoadFlag::SearchDllLoadDir;
-	if (plugifyProvider->IsPreferOwnSymbols()) {
+	if (provider->IsPreferOwnSymbols()) {
 		flags |= LoadFlag::Deepbind;
 	}
 
@@ -111,7 +109,7 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 	}
 #endif // PLUGIFY_PLATFORM_WINDOWS
 
-	InitResult result = languageModule->Initialize(std::move(provider), *this);
+	InitResult result = languageModule->Initialize(provider, *this);
 	if (auto* data = std::get_if<ErrorData>(&result)) {
 		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", _name, data->error.data(), _filePath.string()));
 		Terminate();
@@ -120,7 +118,6 @@ bool Module::Initialize(std::weak_ptr<IPlugifyProvider> provider) {
 
 	_assembly = std::move(assembly);
 	_languageModule = languageModule;
-	_requireUpdate = std::get<InitResultData>(result).requireUpdate; // TODO
 
 	SetLoaded();
 	return true;
@@ -137,7 +134,7 @@ void Module::Terminate() {
 }
 
 void Module::Update(DateTime dt) {
-	if (_languageModule && _requireUpdate) {
+	if (_languageModule) {
 		_languageModule->OnUpdate(dt);
 	}
 }
@@ -146,42 +143,43 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return false;
 
-	const auto& exportedMethods = plugin.GetDescriptor().exportedMethods;
-
 	auto result = _languageModule->OnPluginLoad(plugin);
 	if (auto* data =  std::get_if<ErrorData>(&result)) {
 		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error.data(), plugin.GetBaseDir().string()));
 		return false;
 	}
 
-	auto& methods = std::get<LoadResultData>(result).methods;
+	if (const auto& exportedMethods = plugin.GetDescriptor().exportedMethods) {
+		auto& methods = std::get<LoadResultData>(result).methods;
 
-	if (methods.size() != exportedMethods.size()) {
-		plugin.SetError(std::format("Mismatch in methods count, expected: {} but provided: {}", exportedMethods.size(), methods.size()));
-		return false;
-	}
-
-	std::vector<std::string_view> errors;
-
-	for (size_t i = 0; i < methods.size(); ++i) {
-		const auto& [method, addr] = methods[i];
-		const auto& exportedMethod = exportedMethods[i];
-
-		if (method != MethodRef(exportedMethod) || !addr) {
-			errors.emplace_back(exportedMethod.name);
+		if (methods.size() != exportedMethods->size()) {
+			plugin.SetError(std::format("Mismatch in methods count, expected: {} but provided: {}", exportedMethods->size(), methods.size()));
+			return false;
 		}
-	}
 
-	if (!errors.empty()) {
-		std::string error(errors[0]);
-		for (auto it = std::next(errors.begin()); it != errors.end(); ++it) {
-			std::format_to(std::back_inserter(error), ", {}", *it);
+		std::vector<std::string_view> errors;
+
+		for (size_t i = 0; i < methods.size(); ++i) {
+			const auto& [method, addr] = methods[i];
+			const auto& exportedMethod = (*exportedMethods)[i];
+
+			if (method != exportedMethod || !addr) {
+				errors.emplace_back(exportedMethod.name);
+			}
 		}
-		plugin.SetError(std::format("Found invalid {} method(s)", error));
-		return false;
+
+		if (!errors.empty()) {
+			std::string error(errors[0]);
+			for (auto it = std::next(errors.begin()); it != errors.end(); ++it) {
+				std::format_to(std::back_inserter(error), ", {}", *it);
+			}
+			plugin.SetError(std::format("Found invalid {} method(s)", error));
+			return false;
+		}
+
+		plugin.SetMethods(std::move(methods));
 	}
 
-	plugin.SetMethods(std::move(methods));
 	plugin.SetLoaded();
 
 	//_loadedPlugins.emplace_back(plugin);
@@ -206,7 +204,7 @@ void Module::StartPlugin(Plugin& plugin) const  {
 }
 
 void Module::UpdatePlugin(Plugin& plugin, DateTime dt) const  {
-	if (_state != ModuleState::Loaded || !_requireUpdate)
+	if (_state != ModuleState::Loaded)
 		return;
 
 	_languageModule->OnPluginUpdate(plugin, dt);
@@ -224,12 +222,13 @@ void Module::EndPlugin(Plugin& plugin) const {
 std::optional<fs::path_view> Module::FindResource(const fs::path& path) const {
 	auto it = _resources.find(path);
 	if (it != _resources.end())
-		return std::get<fs::path>(*it).c_str();
-	return {};
+		return std::get<fs::path>(*it).native();
+
+	return std::nullopt;
 }
 
 void Module::SetError(std::string error) {
-	_error = std::make_unique<std::string>(std::move(error));
+	_error = std::move(error);
 	_state = ModuleState::Error;
-	PL_LOG_ERROR("Module '{}': {}", _name, *_error);
+	PL_LOG_ERROR("Module '{}': {}", _name, _error);
 }
