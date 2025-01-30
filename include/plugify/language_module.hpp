@@ -47,7 +47,9 @@ namespace plugify {
 	 *
 	 * The InitResultData structure is used to represent the result of a language module initialization.
 	 */
-	struct InitResultData {};
+	struct InitResultData {
+		bool requireUpdate;
+	};
 
 	/**
 	 * @struct LoadResultData
