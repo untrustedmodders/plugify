@@ -6,6 +6,7 @@
 #include <string>
 #include <plugify/handle.hpp>
 #include <plugify/mem_addr.hpp>
+#include <plugify/method.hpp>
 #include <plugify/path.hpp>
 #include <plugify_export.h>
 
@@ -35,15 +36,6 @@ namespace plugify {
 	 * @brief Represents a unique identifier for plugins.
 	 */
 	using UniqueId = std::ptrdiff_t;
-
-	/**
-	 * @typedef MethodData
-	 * @brief Represents data related to a plugin method.
-	 *
-	 * The MethodData type is a pair consisting of a method handle and a
-	 * pointer to the method's address (void*).
-	 */
-	using MethodData = std::pair<MethodHandle, MemAddr>;
 
 	/**
 	 * @class PluginHandle

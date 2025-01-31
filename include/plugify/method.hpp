@@ -4,6 +4,7 @@
 #include <string>
 #include <plugify/handle.hpp>
 #include <plugify/value_type.hpp>
+#include <plugify/mem_addr.hpp>
 #include <plugify_export.h>
 
 namespace plugify {
@@ -167,4 +168,31 @@ namespace plugify {
 		 */
 		MethodHandle FindPrototype(std::string_view name) const noexcept;
 	};
+
+	/**
+	 * @struct MethodData
+	 * @brief Represents data related to a plugin method.
+	 *
+	 * This structure holds information about a specific plugin method, including:
+	 * - A method handle to identify the method.
+	 * - A memory address pointer to the method's address.
+	 */
+	struct MethodData {
+		MethodHandle method; ///< Handle representing the method.
+		MemAddr addr; ///< Pointer to the method's memory address.
+	};
+
+	/**
+	 * @struct MethodTable
+	 * @brief Represents a table of method availability flags.
+	 *
+	 * This structure contains offsets that indicate the presence of certain methods
+	 * within a plugin. Each field represents whether a corresponding method is available.
+	 */
+	struct MethodTable {
+		bool hasUpdate{}; ///< Boolean indicating if an update method exists.
+		bool hasStart{}; ///< Boolean indicating if a start method exists.
+		bool hasEnd{}; ///< Boolean indicating if an end method exists.
+	};
+
 } // namespace plugify

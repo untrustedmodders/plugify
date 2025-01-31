@@ -64,6 +64,10 @@ namespace plugify {
 			_data = data;
 		}
 
+		void SetTable(MethodTable table) {
+			_table = table;
+		}
+
 		Module* GetModule() const {
 			return _module;
 		}
@@ -88,6 +92,18 @@ namespace plugify {
 			_state = PluginState::NotLoaded;
 		}
 
+		bool HasUpdate() const noexcept {
+			return _table.hasUpdate;
+		}
+
+		bool HasStart() const noexcept {
+			return _table.hasStart;
+		}
+
+		bool HasEnd() const noexcept {
+			return _table.hasEnd;
+		}
+
 		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
 		void Terminate();
 
@@ -96,6 +112,7 @@ namespace plugify {
 	private:
 		Module* _module{ nullptr };
 		PluginState _state{ PluginState::NotLoaded };
+		MethodTable _table;
 		UniqueId _id;
 		MemAddr _data;
 		std::string _name;

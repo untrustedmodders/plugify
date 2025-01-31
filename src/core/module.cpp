@@ -116,11 +116,9 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 		return false;
 	}
 
-	auto& [requireUpdate] = std::get<InitResultData>(result);
-
 	_assembly = std::move(assembly);
 	_languageModule = languageModule;
-	_requireUpdate = requireUpdate;
+	_table = std::get<InitResultData>(result).table;
 
 	SetLoaded();
 	return true;
@@ -137,7 +135,7 @@ void Module::Terminate() {
 }
 
 void Module::Update(DateTime dt) {
-	if (_languageModule && _requireUpdate) {
+	if (_languageModule && _table.hasUpdate) {
 		_languageModule->OnUpdate(dt);
 	}
 }
@@ -152,7 +150,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 		return false;
 	}
 
-	auto& [methods, data] = std::get<LoadResultData>(result);
+	auto& [methods, data, table] = std::get<LoadResultData>(result);
 
 	if (const auto& exportedMethods = plugin.GetDescriptor().exportedMethods) {
 		if (methods.size() != exportedMethods->size()) {
@@ -183,7 +181,9 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 		plugin.SetMethods(std::move(methods));
 	}
 
+	plugin.SetTable(table);
 	plugin.SetData(data);
+
 	plugin.SetLoaded();
 
 	//_loadedPlugins.emplace_back(plugin);
@@ -202,7 +202,9 @@ void Module::StartPlugin(Plugin& plugin) const  {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	_languageModule->OnPluginStart(plugin);
+	if (plugin.HasStart()) {
+		_languageModule->OnPluginStart(plugin);
+	}
 
 	plugin.SetRunning();
 }
@@ -211,14 +213,18 @@ void Module::UpdatePlugin(Plugin& plugin, DateTime dt) const  {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	_languageModule->OnPluginUpdate(plugin, dt);
+	if (plugin.HasUpdate()) {
+		_languageModule->OnPluginUpdate(plugin, dt);
+	}
 }
 
 void Module::EndPlugin(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	_languageModule->OnPluginEnd(plugin);
+	if (plugin.HasEnd()) {
+		_languageModule->OnPluginEnd(plugin);
+	}
 
 	plugin.SetTerminating();
 }

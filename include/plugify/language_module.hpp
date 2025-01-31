@@ -6,6 +6,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <plugify/method.hpp>
 #include <plugify/mem_addr.hpp>
 #include <plugify/date_time.hpp>
 
@@ -14,15 +15,6 @@ namespace plugify {
 	class ModuleHandle;
 	class MethodHandle;
 	class IPlugifyProvider;
-
-	/**
-	 * @typedef MethodData
-	 * @brief Represents data related to a plugin method.
-	 *
-	 * The MethodData type is a pair consisting of a method handle and a
-	 * pointer to the method's address (void*).
-	 */
-	using MethodData = std::pair<MethodHandle, MemAddr>;
 
 	/**
 	 * @struct ErrorData
@@ -48,7 +40,7 @@ namespace plugify {
 	 * The InitResultData structure is used to represent the result of a language module initialization.
 	 */
 	struct InitResultData {
-		bool requireUpdate;
+		MethodTable table;
 	};
 
 	/**
@@ -60,6 +52,7 @@ namespace plugify {
 	struct LoadResultData {
 		std::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
 		MemAddr data; /// User data.
+		MethodTable table;
 	};
 
 	/**
