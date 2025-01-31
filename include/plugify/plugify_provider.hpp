@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <plugify/assembly.hpp>
 #include <plugify/handle.hpp>
+#include <plugify/version.hpp>
 #include <plugify/path.hpp>
 #include <plugify_export.h>
 
@@ -15,10 +16,10 @@ namespace plugify {
 	enum class Severity;
 
 	/**
-	 * @class ProviderHandle
+	 * @class IPlugifyProvider
 	 * @brief Wrapper handle for the PlugifyProvider, which is provided to the user and implemented in the core.
 	 */
-	class PLUGIFY_API ProviderHandle : public Handle<PlugifyProvider> {
+	class PLUGIFY_API IPlugifyProvider : public Handle<PlugifyProvider> {
 		using Handle::Handle;
 	public:
 		/**
@@ -60,7 +61,7 @@ namespace plugify {
 		 * @param minimum If true, checks if the loaded version meets or exceeds the required version.
 		 * @return True if the plugin is loaded and meets the version requirements, false otherwise.
 		 */
-		bool IsPluginLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
+		bool IsPluginLoaded(std::string_view name, std::optional<plg::version> requiredVersion = {}, bool minimum = false) const noexcept;
 		
 		/**
 		 * @brief Checks if a language module with the specified name is loaded.
@@ -74,7 +75,7 @@ namespace plugify {
 		 * @param minimum If true, checks if the loaded version meets or exceeds the required version.
 		 * @return True if the language module is loaded and meets the version requirements, false otherwise.
 		 */
-		bool IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion = {}, bool minimum = false) const noexcept;
+		bool IsModuleLoaded(std::string_view name, std::optional<plg::version> requiredVersion = {}, bool minimum = false) const noexcept;
 
 		/**
 		 * @brief Finds a plugin by its name.

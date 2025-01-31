@@ -10,7 +10,7 @@ int32_t PluginDescriptorHandle::GetFileVersion() const noexcept {
 	return _impl->fileVersion;
 }
 
-int32_t PluginDescriptorHandle::GetVersion() const noexcept {
+plg::version PluginDescriptorHandle::GetVersion() const noexcept {
 	return _impl->version;
 }
 

@@ -21,7 +21,7 @@ Module::~Module() {
 	Terminate();
 }
 
-bool Module::Initialize(const std::shared_ptr<ProviderHandle>& provider) {
+bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
 
 	std::error_code ec;

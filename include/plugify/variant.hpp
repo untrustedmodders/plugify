@@ -22,9 +22,10 @@
 
 #include <plugify/macro.hpp>
 
+// from https://github.com/groundswellaudio/swl-variant
 namespace plg {
 #if PLUGIFY_EXCEPTIONS
-	class bad_variant_access  final : public std::exception {
+	class bad_variant_access final : public std::exception {
 		const char* message = ""; // llvm test requires a well formed what() on default init
 		public :
 		explicit bad_variant_access(const char* str) noexcept : message{str} {}
@@ -36,7 +37,7 @@ namespace plg {
 #endif // PLUGIFY_EXCEPTIONS
 
 	namespace detail {
-		struct variant_tag{};
+		//struct variant_tag{};
 		struct emplacer_tag{};
 	}
 	

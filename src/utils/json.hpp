@@ -76,7 +76,7 @@ struct glz::meta<plugify::PluginDescriptor> {
 	static constexpr auto value = object(
 			"fileVersion", &T::fileVersion,
 			"version", &T::version,
-			"versionName", &T::versionName,
+			"versionName", skip{},
 			"friendlyName", &T::friendlyName,
 			"description", &T::description,
 			"createdBy", &T::createdBy,
@@ -99,7 +99,7 @@ struct glz::meta<plugify::LanguageModuleDescriptor> {
 	static constexpr auto value = object(
 			"fileVersion", &T::fileVersion,
 			"version", &T::version,
-			"versionName", &T::versionName,
+			"versionName", skip{},
 			"friendlyName", &T::friendlyName,
 			"description", &T::description,
 			"createdBy", &T::createdBy,
@@ -238,6 +238,24 @@ namespace glz::detail {
 		template <auto Opts>
 		static void op(fs::path& value, auto&&... args) noexcept {
 			write<json>::op<Opts>(value.generic_string(), args...);
+		}
+	};
+
+	template <>
+	struct from_json<plg::version> {
+		template <auto Opts>
+		static void op(plg::version value, auto&&... args) {
+			std::string str;
+			read<json>::op<Opts>(str, args...);
+			value.from_string_noexcept(str);
+		}
+	};
+
+	template <>
+	struct to_json<plg::version> {
+		template <auto Opts>
+		static void op(plg::version value, auto&&... args) noexcept {
+			write<json>::op<Opts>(value.to_string_noexcept(), args...);
 		}
 	};
 }

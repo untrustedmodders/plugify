@@ -42,6 +42,6 @@ namespace plugify {
 		 *
 		 * @return An optional integer representing the requested version. If no version is requested, returns an empty optional.
 		 */
-		std::optional<int32_t> GetRequestedVersion() const noexcept;
+		std::optional<plg::version> GetRequestedVersion() const noexcept;
 	};
 } // namespace plugify

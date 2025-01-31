@@ -32,7 +32,7 @@ ValueType PropertyHandle::GetType() const noexcept {
 }
 
 bool PropertyHandle::IsReference() const noexcept {
-	return _impl->ref;
+	return _impl->ref.value_or(false);
 }
 
 MethodHandle PropertyHandle::GetPrototype() const noexcept {

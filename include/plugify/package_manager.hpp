@@ -64,7 +64,7 @@ namespace plugify {
 		 * @param packageName Name of the package to install.
 		 * @param requiredVersion Optional required version of the package.
 		 */
-		virtual void InstallPackage(std::string_view packageName, std::optional<int32_t> requiredVersion = {}) = 0;
+		virtual void InstallPackage(std::string_view packageName, std::optional<plg::version> requiredVersion = {}) = 0;
 
 		/**
 		 * @brief Install multiple packages.
@@ -91,7 +91,7 @@ namespace plugify {
 		 * @param packageName Name of the package to update.
 		 * @param requiredVersion Optional required version of the package.
 		 */
-		virtual void UpdatePackage(std::string_view packageName, std::optional<int32_t> requiredVersion = {}) = 0;
+		virtual void UpdatePackage(std::string_view packageName, std::optional<plg::version> requiredVersion = {}) = 0;
 
 		/**
 		 * @brief Update multiple packages.

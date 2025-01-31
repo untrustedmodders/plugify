@@ -16,7 +16,7 @@ Plugin::~Plugin() {
 	Terminate();
 }
 
-bool Plugin::Initialize(const std::shared_ptr<ProviderHandle>& provider) {
+bool Plugin::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	PL_ASSERT(GetState() != PluginState::Loaded, "Plugin already was initialized");
 
 	std::error_code ec;
@@ -62,5 +62,5 @@ std::optional<fs::path_view> Plugin::FindResource(const fs::path& path) const {
 void Plugin::SetError(std::string error) {
 	_error = std::move(error);
 	_state = PluginState::Error;
-	PL_LOG_ERROR("Plugin '{}': {}", _name, *_error);
+	PL_LOG_ERROR("Plugin '{}': {}", _name, _error);
 }

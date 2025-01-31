@@ -125,10 +125,6 @@ void ValidateDependencies(const std::string& name, std::vector<std::string>& err
 		if (dependency.name.empty()) {
 			errors.emplace_back(std::format("Missing dependency name at: {}", i));
 		}
-
-		if (dependency.requestedVersion.has_value() && *dependency.requestedVersion < 0) {
-			errors.emplace_back(std::format("Invalid dependency version at: {}", i));
-		}
 	}
 }
 
@@ -239,10 +235,6 @@ LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string
 		errors.emplace_back("Invalid file version");
 	}
 
-	if (descriptor->version < 0) {
-		errors.emplace_back("Invalid version");
-	}
-
 	if (descriptor->friendlyName.empty()) {
 		errors.emplace_back("Missing friendly name");
 	}
@@ -290,7 +282,8 @@ LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string
 	}
 
 	auto version = descriptor->version;
-	return std::make_shared<LocalPackage>(Package{name, type}, path, version, std::move(descriptor));
+	descriptor->versionName = version.to_string_noexcept();
+	return std::make_shared<LocalPackage>(Package{name, type}, path, std::move(version), std::move(descriptor));
 }
 
 void PackageManager::LoadLocalPackages()  {
@@ -459,7 +452,7 @@ void PackageManager::FindDependencies() {
 						const auto& [_, localPackage] = *itl;
 						if (const auto& version = dependency.requestedVersion) {
 							if (*version != localPackage->version) {
-								PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, *version, localPackage->version);
+								PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, version->to_string(), localPackage->version);
 							}
 						}
 						continue;
@@ -469,7 +462,7 @@ void PackageManager::FindDependencies() {
 						const auto& [_, remotePackage] = *itr;
 						if (const auto& version = dependency.requestedVersion) {
 							if (!remotePackage->Version(*version)) {
-								PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, *version);
+								PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, version->to_string());
 								_conflictedPackages.emplace_back(package);
 								continue;
 							}
@@ -505,7 +498,7 @@ void PackageManager::FindDependencies() {
 
 	for (const auto& [_, dependency] : _missedPackages) {
 		const auto& [package, version] = dependency;
-		PL_LOG_INFO("Required to install: '{}' [{}] (v{})", package->name, package->type, version.has_value() ? std::to_string(*version) : "[latest]");
+		PL_LOG_INFO("Required to install: '{}' [{}] (v{})", package->name, package->type, version.has_value() ? version->to_string() : "[latest]");
 	}
 
 	for (const auto& package : _conflictedPackages) {
@@ -594,7 +587,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	PL_LOG_DEBUG("Snapshot '{}' created in {}ms", manifestFilePath.string(), (DateTime::Now() - debugStart).AsMilliseconds<float>());
 }
 
-void PackageManager::InstallPackage(std::string_view packageName, std::optional<int32_t> requiredVersion) {
+void PackageManager::InstallPackage(std::string_view packageName, std::optional<plg::version> requiredVersion) {
 	if (packageName.empty())
 		return;
 
@@ -739,7 +732,7 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 	_httpDownloader->WaitForAllRequests();
 }
 
-bool PackageManager::InstallPackage(const RemotePackagePtr& package, std::optional<int32_t> requiredVersion) {
+bool PackageManager::InstallPackage(const RemotePackagePtr& package, std::optional<plg::version> requiredVersion) {
 	if (auto it = _localPackages.find(package->name); it != _localPackages.end()) {
 		const auto& [_, localPackage] = *it;
 		PL_LOG_WARNING("Package: '{}' (v{}) already installed", package->name, localPackage->version);
@@ -770,7 +763,7 @@ bool PackageManager::InstallPackage(const RemotePackagePtr& package, std::option
 	return DownloadPackage(package, *newVersion);
 }
 
-void PackageManager::UpdatePackage(std::string_view packageName, std::optional<int32_t> requiredVersion) {
+void PackageManager::UpdatePackage(std::string_view packageName, std::optional<plg::version> requiredVersion) {
 	if (packageName.empty())
 		return;
 
@@ -821,7 +814,7 @@ void PackageManager::UpdateAllPackages() {
 	}, __func__);
 }
 
-bool PackageManager::UpdatePackage(const LocalPackagePtr& package, std::optional<int32_t> requiredVersion) {
+bool PackageManager::UpdatePackage(const LocalPackagePtr& package, std::optional<plg::version> requiredVersion) {
 	auto it = _remotePackages.find(package->name);
 	if (it == _remotePackages.end()) {
 		PL_LOG_WARNING("Package: '{}' has not been found", package->name);

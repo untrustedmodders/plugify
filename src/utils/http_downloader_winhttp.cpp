@@ -5,7 +5,7 @@
 
 using namespace plugify;
 
-HTTPDownloaderWinHttp::HTTPDownloaderWinHttp() : HTTPDownloader() {
+HTTPDownloaderWinHttp::HTTPDownloaderWinHttp() : IHTTPDownloader() {
 }
 
 HTTPDownloaderWinHttp::~HTTPDownloaderWinHttp() {
@@ -15,7 +15,7 @@ HTTPDownloaderWinHttp::~HTTPDownloaderWinHttp() {
 	}
 }
 
-std::unique_ptr<HTTPDownloader> HTTPDownloader::Create(std::string userAgent) {
+std::unique_ptr<IHTTPDownloader> IHTTPDownloader::Create(std::string userAgent) {
 	auto instance = std::make_unique<HTTPDownloaderWinHttp>();
 	if (!instance->Initialize(std::move(userAgent)))
 		return {};
@@ -56,7 +56,7 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 
 			auto parent = static_cast<HTTPDownloaderWinHttp*>(req->parent);
 			std::unique_lock<std::mutex> lock(parent->_pendingRequestLock);
-			PL_ASSERT(std::none_of(parent->_pendingRequests.begin(), parent->_pendingRequests.end(), [req](HTTPDownloader::Request* it) { return it == req; }));
+			PL_ASSERT(std::none_of(parent->_pendingRequests.begin(), parent->_pendingRequests.end(), [req](IHTTPDownloader::Request* it) { return it == req; }));
 
 			// we can clean up the connection as well
 			PL_ASSERT(req->hConnection != NULL);
@@ -178,7 +178,7 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 	}
 }
 
-plugify::HTTPDownloader::Request* HTTPDownloaderWinHttp::InternalCreateRequest() {
+plugify::IHTTPDownloader::Request* HTTPDownloaderWinHttp::InternalCreateRequest() {
 	Request* req = new Request();
 	return req;
 }
@@ -187,7 +187,7 @@ void HTTPDownloaderWinHttp::InternalPollRequests() {
 	// it uses windows's worker threads
 }
 
-bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
+bool HTTPDownloaderWinHttp::StartRequest(IHTTPDownloader::Request* request) {
 	auto req = static_cast<Request*>(request);
 
 	std::wstring hostName;
@@ -221,7 +221,7 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 	}
 
 	const DWORD requestFlags = uc.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
-	req->hRequest = WinHttpOpenRequest(req->hConnection, (req->type == HTTPDownloader::Request::Type::Post) ? L"POST" : L"GET", req->objectName.c_str(), NULL, NULL, NULL, requestFlags);
+	req->hRequest = WinHttpOpenRequest(req->hConnection, (req->type == IHTTPDownloader::Request::Type::Post) ? L"POST" : L"GET", req->objectName.c_str(), NULL, NULL, NULL, requestFlags);
 	if (!req->hRequest) {
 		PL_LOG_ERROR("WinHttpOpenRequest() failed: {}", GetLastError());
 		WinHttpCloseHandle(req->hConnection);
@@ -229,7 +229,7 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 	}
 
 	BOOL result;
-	if (req->type == HTTPDownloader::Request::Type::Post) {
+	if (req->type == IHTTPDownloader::Request::Type::Post) {
 		const std::wstring_view additionalHeaders = L"Content-Type: application/x-www-form-urlencoded\r\n";
 		result = WinHttpSendRequest(req->hRequest, additionalHeaders.data(), static_cast<DWORD>(additionalHeaders.size()), req->postData.data(), static_cast<DWORD>(req->postData.size()), static_cast<DWORD>(req->postData.size()), reinterpret_cast<DWORD_PTR>(req));
 	} else {
@@ -248,7 +248,7 @@ bool HTTPDownloaderWinHttp::StartRequest(HTTPDownloader::Request* request) {
 	return true;
 }
 
-void HTTPDownloaderWinHttp::CloseRequest(HTTPDownloader::Request* request) {
+void HTTPDownloaderWinHttp::CloseRequest(IHTTPDownloader::Request* request) {
 	auto req = static_cast<Request*>(request);
 
 	if (req->hRequest != NULL) {

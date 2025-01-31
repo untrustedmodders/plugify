@@ -10,7 +10,7 @@
 
 namespace plugify {
 	class ILogger;
-	class ProviderHandle;
+	class IPlugifyProvider;
 	class IPluginManager;
 	class IPackageManager;
 	enum class Severity;
@@ -79,7 +79,7 @@ namespace plugify {
 		 * @brief Get a weak pointer to the Plugify provider.
 		 * @return Weak pointer to the Plugify provider.
 		 */
-		virtual std::weak_ptr<ProviderHandle> GetProvider() const = 0;
+		virtual std::weak_ptr<IPlugifyProvider> GetProvider() const = 0;
 
 		/**
 		 * @brief Get a weak pointer to the Plugin Manager.
@@ -103,7 +103,7 @@ namespace plugify {
 		 * @brief Get the version information of the Plugify system.
 		 * @return Version information.
 		 */
-		virtual Version GetVersion() const = 0;
+		virtual plg::version GetVersion() const = 0;
 	};
 
 	/**

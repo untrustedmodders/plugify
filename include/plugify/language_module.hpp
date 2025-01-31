@@ -13,7 +13,7 @@ namespace plugify {
 	class PluginHandle;
 	class ModuleHandle;
 	class MethodHandle;
-	class ProviderHandle;
+	class IPlugifyProvider;
 
 	/**
 	 * @typedef MethodData
@@ -94,7 +94,7 @@ namespace plugify {
 		 * @param module Handle to the language module being initialized.
 		 * @return Result of the initialization, either InitResultData or ErrorData.
 		 */
-		virtual InitResult Initialize(std::weak_ptr<ProviderHandle> provider, ModuleHandle module) = 0;
+		virtual InitResult Initialize(std::weak_ptr<IPlugifyProvider> provider, ModuleHandle module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.

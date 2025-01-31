@@ -54,7 +54,7 @@ namespace plugify {
 
 		std::optional<fs::path_view> FindResource(const fs::path& path) const;
 
-		bool Initialize(const std::shared_ptr<ProviderHandle>& provider);
+		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
 		void Terminate();
 		void Update(DateTime dt);
 

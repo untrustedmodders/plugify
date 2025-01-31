@@ -1,5 +1,7 @@
 #pragma once
 
+#include <plugify/version.hpp>
+
 namespace plugify {
 	struct PluginReferenceDescriptor {
 		std::string name;
@@ -7,7 +9,7 @@ namespace plugify {
 		//std::string description;
 		//std::string downloadURL;
 		std::optional<std::vector<std::string>> supportedPlatforms;
-		std::optional<int32_t> requestedVersion;
+		std::optional<plg::version> requestedVersion;
 
 		bool operator==(const PluginReferenceDescriptor& rhs) const noexcept { return name == rhs.name; }
 

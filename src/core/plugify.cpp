@@ -40,7 +40,7 @@ namespace plugify {
 			_inited = true;
 
 			PL_LOG_INFO("Plugify Init!");
-			PL_LOG_INFO("Version: {}", _version.ToString());
+			PL_LOG_INFO("Version: {}", _version);
 			PL_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", PLUGIFY_GIT_COMMIT_HASH, PLUGIFY_GIT_TAG, PLUGIFY_GIT_COMMIT_SUBJECT, PLUGIFY_GIT_BRANCH, PLUGIFY_GIT_COMMIT_DATE);
 			PL_LOG_INFO("Compiled on: {} from: {} with: '{}'", PLUGIFY_COMPILED_SYSTEM, PLUGIFY_COMPILED_GENERATOR, PLUGIFY_COMPILED_COMPILER);
 
@@ -117,7 +117,7 @@ namespace plugify {
 			return _packageManager;
 		}
 
-		std::weak_ptr<ProviderHandle> GetProvider() const override {
+		std::weak_ptr<IPlugifyProvider> GetProvider() const override {
 			return _provider;
 		}
 
@@ -125,7 +125,7 @@ namespace plugify {
 			return _config;
 		}
 
-		Version GetVersion() const override {
+		plg::version GetVersion() const override {
 			return _version;
 		}
 
@@ -133,7 +133,7 @@ namespace plugify {
 		std::shared_ptr<PluginManager> _pluginManager;
 		std::shared_ptr<PackageManager> _packageManager;
 		std::shared_ptr<PlugifyProvider> _provider;
-		Version _version{ PLUGIFY_VERSION_MAJOR, PLUGIFY_VERSION_MINOR, PLUGIFY_VERSION_PATCH, PLUGIFY_VERSION_TWEAK };
+		plg::version _version{ PLUGIFY_VERSION_MAJOR, PLUGIFY_VERSION_MINOR, PLUGIFY_VERSION_PATCH };
 		Config _config;
 		fs::path _configPath;
 		DateTime _deltaTime;

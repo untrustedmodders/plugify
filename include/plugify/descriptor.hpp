@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <plugify/version.hpp>
 
 namespace plugify {
 	/**
@@ -12,7 +13,7 @@ namespace plugify {
 	 */
 	struct Descriptor {
 		int32_t fileVersion{}; ///< The file version of the object.
-		int32_t version{}; ///< The version number of the object.
+		plg::version version{}; ///< The semantic version of the object.
 		std::string versionName; ///< The version name of the object.
 		std::string friendlyName; ///< The friendly name of the object.
 		std::optional<std::string> description; ///< The description of the object.

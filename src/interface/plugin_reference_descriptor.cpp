@@ -24,6 +24,6 @@ std::span<const std::string_view> PluginReferenceDescriptorHandle::GetSupportedP
 	return {};
 }
 
-std::optional<int32_t> PluginReferenceDescriptorHandle::GetRequestedVersion() const noexcept {
+std::optional<plg::version> PluginReferenceDescriptorHandle::GetRequestedVersion() const noexcept {
 	return _impl->requestedVersion;
 }

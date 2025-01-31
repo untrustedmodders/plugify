@@ -8,7 +8,7 @@
 
 using namespace plugify;
 
-PlugifyProvider::PlugifyProvider(std::weak_ptr<IPlugify> plugify) : ProviderHandle(*this), PlugifyContext(std::move(plugify)) {
+PlugifyProvider::PlugifyProvider(std::weak_ptr<IPlugify> plugify) : IPlugifyProvider(*this), PlugifyContext(std::move(plugify)) {
 }
 
 PlugifyProvider::~PlugifyProvider() = default;
@@ -34,7 +34,7 @@ bool PlugifyProvider::IsPreferOwnSymbols() noexcept {
 	return false;
 }
 
-bool PlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<int32_t> requiredVersion, bool minimum) noexcept {
+bool PlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<plg::version> requiredVersion, bool minimum) noexcept {
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {
 			auto plugin = pluginManager->FindPlugin(name);
@@ -56,7 +56,7 @@ bool PlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<int32_
 	return false;
 }
 
-bool PlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<int32_t> requiredVersion, bool minimum) noexcept {
+bool PlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<plg::version> requiredVersion, bool minimum) noexcept {
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {
 			auto module = pluginManager->FindModule(name);

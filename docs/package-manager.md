@@ -55,16 +55,16 @@ By providing structured package information, users can manage plugins and langua
 
 ## Controlling the Package Manager
 
-To control the package manager, you need to access the `IPackageManager` from `ProviderHandle`. The `ProviderHandle` interface, representing the provider for Plugify, allows you to interact with various components of the system, including the package manager.
+To control the package manager, you need to access the `IPackageManager` from `IPlugifyProvider`. The `IPlugifyProvider` interface, representing the provider for Plugify, allows you to interact with various components of the system, including the package manager.
 
 ### Accessing IPackageManager
 
-To access the package manager, obtain a reference to it through the `ProviderHandle`. Once you have a reference, you can control and manage packages using the provided methods.
+To access the package manager, obtain a reference to it through the `IPlugifyProvider`. Once you have a reference, you can control and manage packages using the provided methods.
 
 ```cpp
-// Accessing IPackageManager from ProviderHandle
+// Accessing IPackageManager from IPlugifyProvider
 std::shared_ptr<IPlugify> plugify = MakePlugify();
-std::weak_ptr<ProviderHandle> provider = plugify->GetProvider();
+std::weak_ptr<IPlugifyProvider> provider = plugify->GetProvider();
 std::shared_ptr<IPackageManager> packageManager = provider.lock()->GetPackageManager();
 ```
 
@@ -72,7 +72,7 @@ std::shared_ptr<IPackageManager> packageManager = provider.lock()->GetPackageMan
 Before interacting with the package manager, ensure that the plugin manager is unloaded. Loaded plugins may hold files in use, preventing certain operations like removal or modification. Additionally, it is recommended to perform these operations in a controlled environment.
 
 ```cpp
-// Example: Accessing IPackageManager through ProviderHandle
+// Example: Accessing IPackageManager through IPlugifyProvider
 auto packageManager = plugifyProvider.GetPackageManager();
 if (packageManager.Initialize()) {
   // Perform package management operations

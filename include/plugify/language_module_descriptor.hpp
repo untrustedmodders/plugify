@@ -4,6 +4,7 @@
 #include <span>
 #include <string>
 #include <plugify/handle.hpp>
+#include <plugify/version.hpp>
 #include <plugify_export.h>
 
 namespace plugify {
@@ -26,9 +27,9 @@ namespace plugify {
 		/**
 		 * @brief Retrieves the version of the language module.
 		 *
-		 * @return An integer representing the version.
+		 * @return A struct representing the version.
 		 */
-		int32_t GetVersion() const noexcept;
+		plg::version GetVersion() const noexcept;
 
 		/**
 		 * @brief Retrieves the version name of the language module.

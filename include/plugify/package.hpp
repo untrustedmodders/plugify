@@ -6,7 +6,9 @@
 #include <optional>
 #include <set>
 #include <tuple>
+#include <vector>
 #include <plugify/descriptor.hpp>
+#include <plugify/version.hpp>
 
 namespace plugify {
 	/**
@@ -18,7 +20,7 @@ namespace plugify {
 	 * dependencies and conflicts.
 	 */
 	struct PackageVersion final {
-		int32_t version; ///< The version number of the package.
+		plg::version version; ///< The semantic version of the package.
 		std::string checksum; ///< The checksum of the package.
 		std::string download; ///< The download URL for the package.
 		std::optional<std::vector<std::string>> platforms; ///< The platforms supported by the package.
@@ -64,7 +66,7 @@ namespace plugify {
 	 * information such as author, description, and available versions. It also provides
 	 * methods to retrieve the latest version or a specific version of the package.
 	 */
-	struct RemotePackage final : public Package {
+	struct RemotePackage : public Package {
 		std::string author; ///< The author of the package.
 		std::string description; ///< The description of the package.
 		std::set<PackageVersion> versions; ///< The set of available versions for the package.
@@ -81,10 +83,10 @@ namespace plugify {
 
 		/**
 		 * @brief Get a specific version of the package.
-		 * @param version The version number to retrieve.
+		 * @param version The semantic version to retrieve.
 		 * @return A pointer to the specified PackageVersion.
 		 */
-		PackageOpt Version(int32_t version) const {
+		PackageOpt Version(plg::version version) const {
 			auto it = versions.find(PackageVersion{ version, {}, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
 				return &(*it);
@@ -100,9 +102,9 @@ namespace plugify {
 	 * about the local installation, such as the file path, version, and descriptor.
 	 * It also provides a conversion operator to convert to a RemotePackage for compatibility.
 	 */
-	struct LocalPackage final : public Package {
+	struct LocalPackage : public Package {
 		std::filesystem::path path; ///< The file path to the locally installed package.
-		int32_t version; ///< The version number of the locally installed package.
+		plg::version version; ///< The semantic version of the locally installed package.
 		std::shared_ptr<Descriptor> descriptor; ///< A shared pointer to the package descriptor.
 
 		/**
@@ -110,7 +112,7 @@ namespace plugify {
 		 * @return A RemotePackage instance representing the local package.
 		 */
 		explicit operator RemotePackage() const {
-			return { name, type, descriptor->createdBy.value_or("na"), descriptor->description.value_or(""), { PackageVersion{ descriptor->version, {}, descriptor->downloadURL.value_or(""), descriptor->supportedPlatforms } } };
+			return { name, type, descriptor->createdBy.value_or("unknown"), descriptor->description.value_or(""), { PackageVersion{ descriptor->version, {}, descriptor->downloadURL.value_or(""), descriptor->supportedPlatforms } } };
 		}
 	};
 } // namespace plugify

@@ -4,6 +4,7 @@
 #include <string>
 #include <plugify/handle.hpp>
 #include <plugify/method.hpp>
+#include <plugify/version.hpp>
 #include <plugify_export.h>
 
 namespace plugify {
@@ -28,9 +29,9 @@ namespace plugify {
 		/**
 		 * @brief Retrieves the version of the plugin.
 		 *
-		 * @return An integer representing the plugin version.
+		 * @return A struct representing the plugin version.
 		 */
-		int32_t GetVersion() const noexcept;
+		plg::version GetVersion() const noexcept;
 
 		/**
 		 * @brief Retrieves the version name of the plugin.

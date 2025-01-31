@@ -23,6 +23,10 @@
         "title": "The URL linking to the repository.",
         "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
       }
+    },
+    "preferOwnSymbols": {
+      "type": "boolean",
+      "title": "Flag indicating if the modules should prefer its own symbols over shared symbols."
     }
   }
 }

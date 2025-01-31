@@ -22,12 +22,12 @@ namespace plugify {
 		bool IsInitialized() const override;
 		bool Reload() override;
 
-		void InstallPackage(std::string_view packageName, std::optional<int32_t> requiredVersion) override;
+		void InstallPackage(std::string_view packageName, std::optional<plg::version> requiredVersion) override;
 		void InstallPackages(std::span<const std::string> packageNames) override;
 		void InstallAllPackages(const fs::path& manifestFilePath, bool reinstall) override;
 		void InstallAllPackages(const std::string& manifestUrl, bool reinstall) override;
 
-		void UpdatePackage(std::string_view packageName, std::optional<int32_t> requiredVersion) override;
+		void UpdatePackage(std::string_view packageName, std::optional<plg::version> requiredVersion) override;
 		void UpdatePackages(std::span<const std::string> packageNames) override;
 		void UpdateAllPackages() override;
 
@@ -63,8 +63,8 @@ namespace plugify {
 		template<typename F>
 		void Request(F&& action, std::string_view function);
 
-		bool UpdatePackage(const LocalPackagePtr& package, std::optional<int32_t> requiredVersion = {});
-		bool InstallPackage(const RemotePackagePtr& package, std::optional<int32_t> requiredVersion = {});
+		bool UpdatePackage(const LocalPackagePtr& package, std::optional<plg::version> requiredVersion = {});
+		bool InstallPackage(const RemotePackagePtr& package, std::optional<plg::version> requiredVersion = {});
 		bool UninstallPackage(const LocalPackagePtr& package, bool remove = true);
 		bool DownloadPackage(const PackagePtr& package, const PackageVersion& version) const;
 		static std::string ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt);
@@ -77,7 +77,7 @@ namespace plugify {
 #endif // PLUGIFY_DOWNLOADER
 		std::unordered_map<std::string, LocalPackagePtr, string_hash, std::equal_to<>> _localPackages;
 		std::unordered_map<std::string, RemotePackagePtr, string_hash, std::equal_to<>> _remotePackages;
-		std::unordered_map<std::string, std::pair<RemotePackagePtr, std::optional<int32_t>>> _missedPackages;
+		std::unordered_map<std::string, std::pair<RemotePackagePtr, std::optional<plg::version>>> _missedPackages;
 		std::vector<LocalPackagePtr> _conflictedPackages;
 		bool _inited{ false };
 	};

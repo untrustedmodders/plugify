@@ -143,7 +143,7 @@ int main() {
 						CONPRINTE("No feet, no sweets!");
 						return 1;
 					}
-					logger->SetSeverity(plug->GetConfig().logSeverity);
+					logger->SetSeverity(plug->GetConfig().logSeverity.value_or(plugify::Severity::Debug));
                     if (auto packageManager = plug->GetPackageManager().lock()) {
 						packageManager->Initialize();
 
@@ -213,7 +213,7 @@ int main() {
 					else if (args[1] == "version" || args[1] == "-v") {
 						static std::string copyright = std::format("Copyright (C) 2023-{}{}{}{} Untrusted Modders Team", __DATE__[7], __DATE__[8], __DATE__[9], __DATE__[10]);
 						CONPRINT(R"(      ____)" "");
-						CONPRINT(R"( ____|    \         Plugify v)" << plug->GetVersion().ToString());
+						CONPRINT(R"( ____|    \         Plugify v)" << plug->GetVersion());
 						CONPRINT(R"((____|     `._____  )" << copyright);
 						CONPRINT(R"( ____|       _|___)" "");
 						CONPRINT(R"((____|     .'       This program may be freely redistributed under)" "");
@@ -314,7 +314,7 @@ int main() {
 										Print<plugify::PluginState>(dependency, plugify::PluginUtils::ToString, "    ");
 									} else {
 										auto version = reference.GetRequestedVersion();
-										CONPRINTF("    {} <Missing> (v{})", reference.GetName(), version.has_value() ? std::to_string(*version) : "[latest]");
+										CONPRINTF("    {} <Missing> (v{})", reference.GetName(), version.has_value() ? version->to_string() : "[latest]");
 									}
 								}
 								CONPRINTF("  File: {}", descriptor.GetEntryPoint());

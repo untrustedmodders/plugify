@@ -13,8 +13,8 @@ namespace plugify {
 	 */
 	struct Config final {
 		std::filesystem::path baseDir; ///< The base directory for the program.
-		Severity logSeverity = Severity::Verbose; ///< The severity level for logging.
 		std::set<std::string> repositories; ///< A collection of repository paths.
+		std::optional<Severity> logSeverity; ///< The severity level for logging.
 		std::optional<bool> preferOwnSymbols; ///< Flag indicating if the modules should prefer its own symbols over shared symbols.
 	};
 } // namespace plugify

@@ -8,7 +8,7 @@ int32_t LanguageModuleDescriptorHandle::GetFileVersion() const noexcept {
 	return _impl->fileVersion;
 }
 
-int32_t LanguageModuleDescriptorHandle::GetVersion() const noexcept {
+plg::version LanguageModuleDescriptorHandle::GetVersion() const noexcept {
 	return _impl->version;
 }
 

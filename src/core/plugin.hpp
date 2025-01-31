@@ -9,7 +9,7 @@
 namespace plugify {
 	class Module;
 	struct LocalPackage;
-	class ProviderHandle;
+	class IPlugifyProvider;
 	class Plugin {
 	public:
 		Plugin(UniqueId id, const LocalPackage& package);
@@ -80,7 +80,7 @@ namespace plugify {
 			_state = PluginState::NotLoaded;
 		}
 
-		bool Initialize(const std::shared_ptr<ProviderHandle>& provider);
+		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
 		void Terminate();
 
 		static inline std::string_view kFileExtension = ".pplugin";
