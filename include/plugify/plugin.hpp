@@ -101,6 +101,12 @@ namespace plugify {
 		std::span<const MethodData> GetMethods() const noexcept;
 
 		/**
+		 * @brief The data argument specified when loading the plugin.
+		 * @return The data of the plugin.
+		 */
+		MemAddr GetData() const noexcept;
+
+		/**
 		 * @brief Find a resource file associated with the plugin.
 		 *
 		 * This method attempts to find a resource file located within the plugin's directory structure.

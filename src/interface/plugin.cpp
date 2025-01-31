@@ -36,6 +36,10 @@ std::span<const MethodData> PluginHandle::GetMethods() const noexcept {
 	return _impl->GetMethods();
 }
 
+MemAddr PluginHandle::GetData() const noexcept {
+	return _impl->GetData();
+}
+
 std::optional<fs::path_view> PluginHandle::FindResource(fs::path_view path) const {
 	return _impl->FindResource(path);
 }

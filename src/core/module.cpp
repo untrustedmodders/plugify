@@ -116,9 +116,11 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 		return false;
 	}
 
+	auto& [requireUpdate] = std::get<InitResultData>(result);
+
 	_assembly = std::move(assembly);
 	_languageModule = languageModule;
-	_requireUpdate = std::get<InitResultData>(result).requireUpdate;
+	_requireUpdate = requireUpdate;
 
 	SetLoaded();
 	return true;
@@ -150,9 +152,9 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 		return false;
 	}
 
-	if (const auto& exportedMethods = plugin.GetDescriptor().exportedMethods) {
-		auto& methods = std::get<LoadResultData>(result).methods;
+	auto& [methods, data] = std::get<LoadResultData>(result);
 
+	if (const auto& exportedMethods = plugin.GetDescriptor().exportedMethods) {
 		if (methods.size() != exportedMethods->size()) {
 			plugin.SetError(std::format("Mismatch in methods count, expected: {} but provided: {}", exportedMethods->size(), methods.size()));
 			return false;
@@ -181,6 +183,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 		plugin.SetMethods(std::move(methods));
 	}
 
+	plugin.SetData(data);
 	plugin.SetLoaded();
 
 	//_loadedPlugins.emplace_back(plugin);

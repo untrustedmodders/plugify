@@ -59,6 +59,7 @@ namespace plugify {
 	 */
 	struct LoadResultData {
 		std::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
+		MemAddr data; /// User data.
 	};
 
 	/**

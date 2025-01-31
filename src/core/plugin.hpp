@@ -44,6 +44,10 @@ namespace plugify {
 			return _methods;
 		}
 
+		MemAddr GetData() const noexcept {
+			return _data;
+		}
+
 		const std::string& GetError() const noexcept {
 			return _error;
 		}
@@ -54,6 +58,10 @@ namespace plugify {
 
 		void SetMethods(std::vector<MethodData> methods) {
 			_methods = std::move(methods);
+		}
+
+		void SetData(MemAddr data) {
+			_data = data;
 		}
 
 		Module* GetModule() const {
@@ -89,6 +97,7 @@ namespace plugify {
 		Module* _module{ nullptr };
 		PluginState _state{ PluginState::NotLoaded };
 		UniqueId _id;
+		MemAddr _data;
 		std::string _name;
 		fs::path _baseDir;
 		std::vector<MethodData> _methods;
