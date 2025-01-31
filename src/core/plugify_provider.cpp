@@ -29,7 +29,7 @@ const fs::path& PlugifyProvider::GetBaseDir() noexcept {
 
 bool PlugifyProvider::IsPreferOwnSymbols() noexcept {
 	if (auto plugify = _plugify.lock()) {
-		return plugify->GetConfig().preferOwnSymbols;
+		return plugify->GetConfig().preferOwnSymbols.value_or(false);
 	}
 	return false;
 }
