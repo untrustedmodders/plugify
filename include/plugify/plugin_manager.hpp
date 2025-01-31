@@ -15,7 +15,7 @@ namespace plugify {
 	/**
 	 * @brief Represents a unique identifier used for identifying modules, plugins, or other entities.
 	 */
-	using UniqueId = int32_t;
+	using UniqueId = std::ptrdiff_t;
 
 	/**
 	 * @class IPluginManager

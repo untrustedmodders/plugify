@@ -28,7 +28,7 @@ namespace plugify {
 	 * @typedef UniqueId
 	 * @brief Represents a unique identifier for modules.
 	 */
-	using UniqueId = int32_t;
+	using UniqueId = std::ptrdiff_t;
 
 	/**
 	 * @class ModuleHandle

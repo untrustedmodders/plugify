@@ -83,6 +83,7 @@ namespace plugify {
 	private:
 		ILanguageModule* _languageModule{ nullptr };
 		ModuleState _state{ ModuleState::NotLoaded };
+		bool _requireUpdate{ false };
 		UniqueId _id;
 		std::string _name;
 		std::string _lang;

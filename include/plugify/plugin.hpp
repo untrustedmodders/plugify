@@ -34,7 +34,7 @@ namespace plugify {
 	 * @typedef UniqueId
 	 * @brief Represents a unique identifier for plugins.
 	 */
-	using UniqueId = int32_t;
+	using UniqueId = std::ptrdiff_t;
 
 	/**
 	 * @typedef MethodData

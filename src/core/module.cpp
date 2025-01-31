@@ -118,6 +118,7 @@ bool Module::Initialize(const std::shared_ptr<ProviderHandle>& provider) {
 
 	_assembly = std::move(assembly);
 	_languageModule = languageModule;
+	_requireUpdate = std::get<InitResultData>(result).requireUpdate;
 
 	SetLoaded();
 	return true;
@@ -134,7 +135,7 @@ void Module::Terminate() {
 }
 
 void Module::Update(DateTime dt) {
-	if (_languageModule) {
+	if (_languageModule && _requireUpdate) {
 		_languageModule->OnUpdate(dt);
 	}
 }
