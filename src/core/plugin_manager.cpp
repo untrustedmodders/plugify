@@ -250,7 +250,7 @@ void PluginManager::SortPluginsByDependencies(const std::string& pluginName, Plu
 	});
 	if (it != sourceList.end()) {
 		auto index = static_cast<size_t>(std::distance(sourceList.begin(), it));
-		auto plugin = std::move(sourceList[index]);
+		auto& plugin = sourceList[index];
 		sourceList.erase(it);
 		if (const auto& dependencies = plugin->GetDescriptor().dependencies) {
 			for (const auto& dependency: *dependencies) {
@@ -264,12 +264,13 @@ void PluginManager::SortPluginsByDependencies(const std::string& pluginName, Plu
 bool PluginManager::HasCyclicDependencies(PluginList& plugins) {
 	// Mark all the vertices as not visited
 	// and not part of recursion stack
-	VisitedPluginMap data; /* [visited, recursive] */
+	VisitedPluginMap visitedPlugins; /* [visited, recursive] */
 
 	// Call the recursive helper function
 	// to detect cycle in different DFS trees
 	for (const auto& plugin : plugins) {
-		if (!data[plugin->GetName()].first && IsCyclic(plugin, plugins, data))
+		const auto& [visited, recursive] = visitedPlugins[plugin->GetName()];
+		if (!visited && IsCyclic(plugin, plugins, visitedPlugins))
 			return true;
 	}
 
@@ -288,7 +289,7 @@ bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& 
 		if (const auto& dependencies = plugin->GetDescriptor().dependencies) {
 			for (const auto& dependency : *dependencies) {
 				const auto& name = dependency.name;
-				
+
 				auto it = std::find_if(plugins.begin(), plugins.end(), [&name](const auto& p) {
 					return p->GetName() == name;
 				});

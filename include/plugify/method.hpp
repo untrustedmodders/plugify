@@ -193,6 +193,7 @@ namespace plugify {
 		bool hasUpdate{}; ///< Boolean indicating if an update method exists.
 		bool hasStart{}; ///< Boolean indicating if a start method exists.
 		bool hasEnd{}; ///< Boolean indicating if an end method exists.
+		bool hasExport{}; ///< Boolean indicating if a export methods exists.
 	};
 
 } // namespace plugify

@@ -104,6 +104,10 @@ namespace plugify {
 			return _table.hasEnd;
 		}
 
+		bool HasExport() const noexcept {
+			return _table.hasExport;
+		}
+
 		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
 		void Terminate();
 

@@ -195,7 +195,9 @@ void Module::MethodExport(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return;
 
-	_languageModule->OnMethodExport(plugin);
+	if (plugin.HasExport()) {
+		_languageModule->OnMethodExport(plugin);
+	}
 }
 
 void Module::StartPlugin(Plugin& plugin) const  {
