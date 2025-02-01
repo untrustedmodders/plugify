@@ -148,7 +148,7 @@ void PluginManager::LoadRequiredLanguageModules() {
 	bool loadedAny = false;
 
 	for (auto& module : _allModules) {
-		if (module.GetDescriptor().forceLoad || modules.contains(module.GetId())) {
+		if (module.GetDescriptor().forceLoad.value_or(false) || modules.contains(module.GetId())) {
 			loadedAny |= module.Initialize(provider);
 		}
 	}
@@ -175,7 +175,7 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 			if (const auto& dependencies = plugin.GetDescriptor().dependencies) {
 				for (const auto& dependency: *dependencies) {
 					auto dependencyPlugin = FindPlugin(dependency.name);
-					if ((!dependencyPlugin || dependencyPlugin.GetState() != PluginState::Loaded) && !dependency.optional) {
+					if ((!dependencyPlugin || dependencyPlugin.GetState() != PluginState::Loaded) && !dependency.optional.value_or(false)) {
 						names.emplace_back(dependency.name);
 					}
 				}

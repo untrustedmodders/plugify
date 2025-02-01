@@ -59,7 +59,7 @@
       "items": {
         "type": "string",
         "title": "Platform name.",
-        "enum": ["windows", "linux", "apple"]
+        "enum": ["windows", "linux", "apple", "bsd", "orbis", "prospero", "switch"]
       }
     },
     "resourceDirectories": {

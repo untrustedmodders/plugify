@@ -1,4 +1,5 @@
 {
+    "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/heads/main/schemas/config.schema.json",
     "baseDir": "res",
     "logSeverity": "debug",
     "repositories": [

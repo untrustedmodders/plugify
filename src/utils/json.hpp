@@ -74,6 +74,7 @@ template <>
 struct glz::meta<plugify::PluginDescriptor> {
 	using T = plugify::PluginDescriptor;
 	static constexpr auto value = object(
+			"$schema", skip{},
 			"fileVersion", &T::fileVersion,
 			"version", &T::version,
 			"versionName", skip{},
@@ -97,6 +98,7 @@ template <>
 struct glz::meta<plugify::LanguageModuleDescriptor> {
 	using T = plugify::LanguageModuleDescriptor;
 	static constexpr auto value = object(
+			"$schema", skip{},
 			"fileVersion", &T::fileVersion,
 			"version", &T::version,
 			"versionName", skip{},
@@ -130,6 +132,7 @@ template <>
 struct glz::meta<plugify::Config> {
 	using T = plugify::Config;
 	static constexpr auto value = object(
+			"$schema", skip{},
 			"baseDir", &T::baseDir,
 			"logSeverity", &T::logSeverity,
 			"repositories", &T::repositories,
@@ -152,6 +155,7 @@ template <>
 struct glz::meta<plugify::RemotePackage> {
 	using T = plugify::RemotePackage;
 	static constexpr auto value = object(
+			"$schema", skip{},
 			"name", &T::name,
 			"type", &T::type,
 			"author", &T::author,
@@ -164,11 +168,21 @@ template <>
 struct glz::meta<plugify::LocalPackage> {
 	using T = plugify::LocalPackage;
 	static constexpr auto value = object(
+			"$schema", skip{},
 			"name", &T::name,
 			"type", &T::type,
 			"path", &T::path,
 			"version", &T::version,
 			"descriptor", &T::descriptor
+	);
+};
+
+template <>
+struct glz::meta<plugify::PackageManifest> {
+	using T = plugify::PackageManifest;
+	static constexpr auto value = object(
+			"$schema", skip{},
+			"content", &T::content
 	);
 };
 

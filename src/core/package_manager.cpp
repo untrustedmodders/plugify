@@ -146,7 +146,7 @@ void ValidateParameters(std::vector<std::string>& errors, const Method& method, 
 	for (const auto& property : method.paramTypes) {
 		if (property.type == ValueType::Void) {
 			errors.emplace_back(std::format("Parameter cannot be void type at: {}", method.name.empty() ? std::to_string(i) : method.name));
-		} else if (property.type == ValueType::Function && property.ref) {
+		} else if (property.type == ValueType::Function && property.ref.value_or(false)) {
 			errors.emplace_back(std::format("Parameter with function type cannot be reference at: {}", method.name.empty() ? std::to_string(i) : method.name));
 		}
 
@@ -159,7 +159,7 @@ void ValidateParameters(std::vector<std::string>& errors, const Method& method, 
 		}
 	}
 
-	if (method.retType.ref) {
+	if (method.retType.ref.value_or(false)) {
 		errors.emplace_back("Return cannot be reference");
 	}
 }
@@ -445,7 +445,7 @@ void PackageManager::FindDependencies() {
 
 			if (const auto& dependencies = pluginDescriptor->dependencies) {
 				for (const auto& dependency : *dependencies) {
-					if (dependency.optional || !IsSupportsPlatform(dependency.supportedPlatforms))
+					if (dependency.optional.value_or(false) || !IsSupportsPlatform(dependency.supportedPlatforms))
 						continue;
 
 					if (auto itl = _localPackages.find(dependency.name); itl != _localPackages.end()) {
