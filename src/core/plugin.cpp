@@ -12,8 +12,8 @@ Plugin::Plugin(UniqueId id, const LocalPackage& package) : _id{id}, _name{packag
 	_baseDir = package.path.parent_path();
 }
 
-Plugin::~Plugin() {
-	Terminate();
+Plugin::Plugin(Plugin&& plugin) noexcept {
+	*this = std::move(plugin);
 }
 
 bool Plugin::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
@@ -60,7 +60,23 @@ std::optional<fs::path_view> Plugin::FindResource(const fs::path& path) const {
 }
 
 void Plugin::SetError(std::string error) {
-	_error = std::move(error);
+	_error = std::make_unique<std::string>(std::move(error));
 	_state = PluginState::Error;
-	PL_LOG_ERROR("Plugin '{}': {}", _name, _error);
+	PL_LOG_ERROR("Plugin '{}': {}", _name, *_error);
+}
+
+Plugin& Plugin::operator=(Plugin&& other) noexcept {
+	_module = other._module;
+	_state = other._state;
+	_table = other._table;
+	_id = other._id;
+	_data = other._data;
+
+	_name = std::move(other._name);
+	_baseDir = std::move(other._baseDir);
+	_methods = std::move(other._methods);
+	_descriptor = std::move(other._descriptor);
+	_resources = std::move(other._resources);
+	_error = std::move(other._error);
+	return *this;
 }

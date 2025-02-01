@@ -34,8 +34,8 @@ namespace plugify {
 		std::vector<PluginHandle> GetPlugins() const override;
 
 	private:
-		using PluginList = std::vector<std::unique_ptr<Plugin>>;
-		using ModuleList = std::vector<std::unique_ptr<Module>>;
+		using PluginList = std::vector<Plugin>;
+		using ModuleList = std::vector<Module>;
 		using VisitedPluginMap = std::unordered_map<std::string, std::pair<bool, bool>>;
 
 		void DiscoverAllModulesAndPlugins();
@@ -46,7 +46,7 @@ namespace plugify {
 
 		static void SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList);
 		static bool HasCyclicDependencies(PluginList& plugins);
-		static bool IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins);
+		static bool IsCyclic(const Plugin& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins);
 
 	private:
 		ModuleList _allModules;

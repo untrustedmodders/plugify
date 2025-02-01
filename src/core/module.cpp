@@ -17,8 +17,8 @@ Module::Module(UniqueId id, const LocalPackage& package) : _id{id}, _name{packag
 	_filePath = _baseDir / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, package.name);
 }
 
-Module::~Module() {
-	Terminate();
+Module::Module(Module&& module) noexcept {
+	*this = std::move(module);
 }
 
 bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
@@ -240,7 +240,24 @@ std::optional<fs::path_view> Module::FindResource(const fs::path& path) const {
 }
 
 void Module::SetError(std::string error) {
-	_error = std::move(error);
+	_error = std::make_unique<std::string>(std::move(error));
 	_state = ModuleState::Error;
-	PL_LOG_ERROR("Module '{}': {}", _name, _error);
+	PL_LOG_ERROR("Module '{}': {}", _name, *_error);
+}
+
+Module& Module::operator=(Module&& other) noexcept {
+	_languageModule = other._languageModule;
+	_state = other._state;
+	_table = other._table;
+	_id = other._id;
+
+	_name = std::move(other._name);
+	_lang = std::move(other._lang);
+	_filePath = std::move(other._filePath);
+	_baseDir = std::move(other._baseDir);
+	_descriptor = std::move(other._descriptor);
+	_resources = std::move(other._resources);
+	_assembly = std::move(other._assembly);
+	_error = std::move(other._error);
+	return *this;
 }

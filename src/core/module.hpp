@@ -13,7 +13,9 @@ namespace plugify {
 	class Module {
 	public:
 		Module(UniqueId id, const LocalPackage& package);
-		~Module();
+		Module(const Module& module) = delete;
+		Module(Module&& module) noexcept;
+		~Module() = default;
 
 	public:
 		UniqueId GetId() const noexcept {
@@ -49,7 +51,7 @@ namespace plugify {
 		}
 
 		const std::string& GetError() const noexcept {
-			return _error;
+			return *_error;
 		}
 
 		std::optional<fs::path_view> FindResource(const fs::path& path) const;
@@ -78,6 +80,9 @@ namespace plugify {
 			_state = ModuleState::NotLoaded;
 		}
 
+		Module& operator=(const Module&) = delete;
+		Module& operator=(Module&& other) noexcept;
+
 		static inline std::string_view kFileExtension = ".pmodule";
 
 	private:
@@ -92,6 +97,6 @@ namespace plugify {
 		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
 		std::unordered_map<fs::path, fs::path, path_hash> _resources;
 		std::unique_ptr<Assembly> _assembly;
-		std::string _error;
+		std::unique_ptr<std::string> _error;
 	};
 }

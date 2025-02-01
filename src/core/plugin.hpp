@@ -13,7 +13,9 @@ namespace plugify {
 	class Plugin {
 	public:
 		Plugin(UniqueId id, const LocalPackage& package);
-		~Plugin();
+		Plugin(const Plugin& plugin) = delete;
+		Plugin(Plugin&& plugin) noexcept;
+		~Plugin() = default;
 
 	public:
 		UniqueId GetId() const noexcept {
@@ -49,7 +51,7 @@ namespace plugify {
 		}
 
 		const std::string& GetError() const noexcept {
-			return _error;
+			return *_error;
 		}
 
 		std::optional<fs::path_view> FindResource(const fs::path& path) const;
@@ -72,8 +74,8 @@ namespace plugify {
 			return _module;
 		}
 
-		void SetModule(const std::unique_ptr<Module>& module) noexcept {
-			_module = module.get();
+		void SetModule(Module& module) noexcept {
+			_module = &module;
 		}
 
 		void SetLoaded() noexcept {
@@ -111,6 +113,9 @@ namespace plugify {
 		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
 		void Terminate();
 
+		Plugin& operator=(const Plugin&) = delete;
+		Plugin& operator=(Plugin&& other) noexcept;
+
 		static inline std::string_view kFileExtension = ".pplugin";
 
 	private:
@@ -124,6 +129,6 @@ namespace plugify {
 		std::vector<MethodData> _methods;
 		std::shared_ptr<PluginDescriptor> _descriptor;
 		std::unordered_map<fs::path, fs::path, path_hash> _resources;
-		std::string _error;
+		std::unique_ptr<std::string> _error;
 	};
 }

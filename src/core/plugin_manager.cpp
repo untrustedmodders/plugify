@@ -1,6 +1,6 @@
 #include "plugin_manager.hpp"
-#include "module.hpp"
 #include "package_manager.hpp"
+#include "module.hpp"
 #include "plugin.hpp"
 
 #include <plugify/plugify.hpp>
@@ -52,13 +52,13 @@ void PluginManager::Update(DateTime dt) {
 	if (!IsInitialized())
 		return;
 
-	for (const auto& module : _allModules) {
-		module->Update(dt);
+	for (auto& module : _allModules) {
+		module.Update(dt);
 	}
 
-	for (const auto& plugin : _allPlugins) {
-		if (plugin->GetState() == PluginState::Loaded) {
-			plugin->GetModule()->UpdatePlugin(*plugin, dt);
+	for (auto& plugin : _allPlugins) {
+		if (plugin.GetState() == PluginState::Loaded) {
+			plugin.GetModule()->UpdatePlugin(plugin, dt);
 		}
 	}
 }
@@ -71,13 +71,21 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 	PL_ASSERT(plugify);
 
 	if (auto packageManager = plugify->GetPackageManager().lock()) {
-		for (const auto& package : packageManager->GetLocalPackages()) {
+		auto localPackages = packageManager->GetLocalPackages();
+		auto count = localPackages.size();
+
+		auto pluginCount = static_cast<size_t>(std::count_if(localPackages.begin(), localPackages.end(), [](const auto& param) {
+			return param->type == "plugin";
+		}));
+		_allPlugins.reserve(pluginCount);
+		_allModules.reserve(count - pluginCount);
+
+		for (const auto& package : localPackages) {
+			auto id = static_cast<UniqueId>(_allPlugins.size());
 			if (package->type == "plugin") {
-				auto id = static_cast<UniqueId>(_allPlugins.size());
-				_allPlugins.emplace_back(std::make_unique<Plugin>(id, *package));
+				_allPlugins.emplace_back(id, *package);
 			} else {
-				auto id = static_cast<UniqueId>(_allModules.size());
-				_allModules.emplace_back(std::make_unique<Module>(id, *package));
+				_allModules.emplace_back(id, *package);
 			}
 		}
 	}
@@ -95,7 +103,7 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 	PluginList sortedPlugins;
 	sortedPlugins.reserve(_allPlugins.size());
 	while (!_allPlugins.empty()) {
-		SortPluginsByDependencies(_allPlugins.back()->GetName(), _allPlugins, sortedPlugins);
+		SortPluginsByDependencies(_allPlugins.back().GetName(), _allPlugins, sortedPlugins);
 	}
 
 	if (HasCyclicDependencies(sortedPlugins)) {
@@ -106,7 +114,7 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 
 	PL_LOG_VERBOSE("Plugins order after topological sorting by dependency: ");
 	for (const auto& plugin : _allPlugins) {
-		PL_LOG_VERBOSE("{} - {}", plugin->GetName(), plugin->GetFriendlyName());
+		PL_LOG_VERBOSE("{} - {}", plugin.GetName(), plugin.GetFriendlyName());
 	}
 }
 
@@ -122,26 +130,26 @@ void PluginManager::LoadRequiredLanguageModules() {
 	std::unordered_set<UniqueId> modules;
 	modules.reserve(_allModules.size());
 
-	for (const auto& plugin : _allPlugins) {
-		const auto& lang = plugin->GetDescriptor().languageModule.name;
+	for (auto& plugin : _allPlugins) {
+		const auto& lang = plugin.GetDescriptor().languageModule.name;
 		auto it = std::find_if(_allModules.begin(), _allModules.end(), [&lang](const auto& p) {
-			return p->GetLanguage() == lang;
+			return p.GetLanguage() == lang;
 		});
 		if (it == _allModules.end()) {
-			plugin->SetError(std::format("Language module: '{}' missing for plugin: '{}'", lang, plugin->GetFriendlyName()));
+			plugin.SetError(std::format("Language module: '{}' missing for plugin: '{}'", lang, plugin.GetFriendlyName()));
 			continue;
 		}
 		auto& module = *it;
-		plugin->Initialize(provider);
-		plugin->SetModule(module);
-		modules.emplace(module->GetId());
+		plugin.Initialize(provider);
+		plugin.SetModule(module);
+		modules.emplace(module.GetId());
 	}
 	
 	bool loadedAny = false;
 
-	for (const auto& module : _allModules) {
-		if (module->GetDescriptor().forceLoad || modules.contains(module->GetId())) {
-			loadedAny |= module->Initialize(provider);
+	for (auto& module : _allModules) {
+		if (module.GetDescriptor().forceLoad || modules.contains(module.GetId())) {
+			loadedAny |= module.Initialize(provider);
 		}
 	}
 	
@@ -157,14 +165,14 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 	
 	bool loadedAny = false;
 	
-	for (const auto& plugin : _allPlugins) {
-		if (plugin->GetState() == PluginState::NotLoaded) {
-			if (plugin->GetModule()->GetState() != ModuleState::Loaded) {
-				plugin->SetError(std::format("Language module: '{}' missing", plugin->GetModule()->GetFriendlyName()));
+	for (auto& plugin : _allPlugins) {
+		if (plugin.GetState() == PluginState::NotLoaded) {
+			if (plugin.GetModule()->GetState() != ModuleState::Loaded) {
+				plugin.SetError(std::format("Language module: '{}' missing", plugin.GetModule()->GetFriendlyName()));
 				continue;
 			}
 			std::vector<std::string_view> names;
-			if (const auto& dependencies = plugin->GetDescriptor().dependencies) {
+			if (const auto& dependencies = plugin.GetDescriptor().dependencies) {
 				for (const auto& dependency: *dependencies) {
 					auto dependencyPlugin = FindPlugin(dependency.name);
 					if ((!dependencyPlugin || dependencyPlugin.GetState() != PluginState::Loaded) && !dependency.optional) {
@@ -184,9 +192,9 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 					}
 				}
 				error += '\'';
-				plugin->SetError(std::format("Not loaded {} dependency plugin(s)", error));
+				plugin.SetError(std::format("Not loaded {} dependency plugin(s)", error));
 			} else {
-				loadedAny |= plugin->GetModule()->LoadPlugin(*plugin);
+				loadedAny |= plugin.GetModule()->LoadPlugin(plugin);
 			}
 		}
 	}
@@ -196,17 +204,17 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 		return;
 	}
 
-	for (const auto& plugin : _allPlugins) {
-		if (plugin->GetState() == PluginState::Loaded) {
+	for (auto& plugin : _allPlugins) {
+		if (plugin.GetState() == PluginState::Loaded) {
 			for (const auto& module : _allModules) {
-				module->MethodExport(*plugin);
+				module.MethodExport(plugin);
 			}
 		}
 	}
 
-	for (const auto& plugin : _allPlugins) {
-		if (plugin->GetState() == PluginState::Loaded) {
-			plugin->GetModule()->StartPlugin(*plugin);
+	for (auto& plugin : _allPlugins) {
+		if (plugin.GetState() == PluginState::Loaded) {
+			plugin.GetModule()->StartPlugin(plugin);
 		}
 	}
 }
@@ -216,18 +224,17 @@ void PluginManager::TerminateAllPlugins() {
 		return;
 	
 	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
-		const auto& plugin = *it;
-		if (plugin->GetState() == PluginState::Running) {
-			plugin->GetModule()->EndPlugin(*plugin);
+		auto& plugin = *it;
+		if (plugin.GetState() == PluginState::Running) {
+			plugin.GetModule()->EndPlugin(plugin);
 		}
 	}
 
-	/*for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
-		const auto& plugin = *it;
-		plugin->Terminate();
-	}*/
+	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
+		auto& plugin = *it;
+		plugin.Terminate();
+	}
 
-	// Dtor will terminate
 	_allPlugins.clear();
 }
 
@@ -235,24 +242,23 @@ void PluginManager::TerminateAllModules() {
 	if (_allModules.empty())
 		return;
 
-	/*for (auto it = _allModules.rbegin(); it != _allModules.rend(); ++it) {
-		const auto& module = *it;
-		module->Terminate();
-	}*/
+	for (auto it = _allModules.rbegin(); it != _allModules.rend(); ++it) {
+		auto& module = *it;
+		module.Terminate();
+	}
 
-	// Dtor will terminate
 	_allModules.clear();
 }
 
 void PluginManager::SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList) {
 	auto it = std::find_if(sourceList.begin(), sourceList.end(), [&pluginName](const auto& plugin) {
-		return plugin->GetName() == pluginName;
+		return plugin.GetName() == pluginName;
 	});
 	if (it != sourceList.end()) {
 		auto index = static_cast<size_t>(std::distance(sourceList.begin(), it));
-		auto& plugin = sourceList[index];
+		auto plugin = std::move(sourceList[index]);
 		sourceList.erase(it);
-		if (const auto& dependencies = plugin->GetDescriptor().dependencies) {
+		if (const auto& dependencies = plugin.GetDescriptor().dependencies) {
 			for (const auto& dependency: *dependencies) {
 				SortPluginsByDependencies(dependency.name, sourceList, targetList);
 			}
@@ -269,7 +275,7 @@ bool PluginManager::HasCyclicDependencies(PluginList& plugins) {
 	// Call the recursive helper function
 	// to detect cycle in different DFS trees
 	for (const auto& plugin : plugins) {
-		const auto& [visited, recursive] = visitedPlugins[plugin->GetName()];
+		const auto& [visited, recursive] = visitedPlugins[plugin.GetName()];
 		if (!visited && IsCyclic(plugin, plugins, visitedPlugins))
 			return true;
 	}
@@ -277,8 +283,8 @@ bool PluginManager::HasCyclicDependencies(PluginList& plugins) {
 	return false;
 }
 
-bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins) {
-	auto& [visited, recursive] = visitedPlugins[plugin->GetName()];
+bool PluginManager::IsCyclic(const Plugin& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins) {
+	auto& [visited, recursive] = visitedPlugins[plugin.GetName()];
 	if (!visited) {
 		// Mark the current node as visited
 		// and part of recursion stack
@@ -286,12 +292,12 @@ bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& 
 		recursive = true;
 
 		// Recur for all the vertices adjacent to this vertex
-		if (const auto& dependencies = plugin->GetDescriptor().dependencies) {
+		if (const auto& dependencies = plugin.GetDescriptor().dependencies) {
 			for (const auto& dependency : *dependencies) {
 				const auto& name = dependency.name;
 
 				auto it = std::find_if(plugins.begin(), plugins.end(), [&name](const auto& p) {
-					return p->GetName() == name;
+					return p.GetName() == name;
 				});
 
 				if (it != plugins.end()) {
@@ -310,37 +316,37 @@ bool PluginManager::IsCyclic(const std::unique_ptr<Plugin>& plugin, PluginList& 
 
 ModuleHandle PluginManager::FindModule(std::string_view moduleName) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
-		return module->GetName() == moduleName;
+		return module.GetName() == moduleName;
 	});
 	if (it != _allModules.end())
-		return *(*it);
+		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromId(UniqueId moduleId) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleId](const auto& module) {
-		return module->GetId() == moduleId;
+		return module.GetId() == moduleId;
 	});
 	if (it != _allModules.end())
-		return *(*it);
+		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromLang(std::string_view moduleLang) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleLang](const auto& module) {
-		return module->GetLanguage() == moduleLang;
+		return module.GetLanguage() == moduleLang;
 	});
 	if (it != _allModules.end())
-		return *(*it);
+		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromPath(const fs::path& moduleFilePath) const {
 	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleFilePath](const auto& module) {
-		return module->GetFilePath() == moduleFilePath;
+		return module.GetFilePath() == moduleFilePath;
 	});
 	if (it != _allModules.end())
-		return *(*it);
+		return *it;
 	return {};
 }
 
@@ -348,26 +354,26 @@ std::vector<ModuleHandle> PluginManager::GetModules() const {
 	std::vector<ModuleHandle> modules;
 	modules.reserve(_allModules.size());
 	for (const auto& module : _allModules)  {
-		modules.emplace_back(*module);
+		modules.emplace_back(module);
 	}
 	return modules;
 }
 
 PluginHandle PluginManager::FindPlugin(std::string_view pluginName) const {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginName](const auto& plugin) {
-		return plugin->GetName() == pluginName;
+		return plugin.GetName() == pluginName;
 	});
 	if (it != _allPlugins.end())
-		return *(*it);
+		return *it;
 	return {};
 }
 
 PluginHandle PluginManager::FindPluginFromId(UniqueId pluginId) const {
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginId](const auto& plugin) {
-		return plugin->GetId() == pluginId;
+		return plugin.GetId() == pluginId;
 	});
 	if (it != _allPlugins.end())
-		return *(*it);
+		return *it;
 	return {};
 }
 
@@ -375,10 +381,10 @@ PluginHandle PluginManager::FindPluginFromDescriptor(const PluginReferenceDescri
 	auto name = pluginDescriptor.GetName();
 	auto version = pluginDescriptor.GetRequestedVersion();
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name, &version](const auto& plugin) {
-		return plugin->GetName() == name && (!version || plugin->GetDescriptor().version == version);
+		return plugin.GetName() == name && (!version || plugin.GetDescriptor().version == version);
 	});
 	if (it != _allPlugins.end())
-		return *(*it);
+		return *it;
 	return {};
 }
 
@@ -386,7 +392,7 @@ std::vector<PluginHandle> PluginManager::GetPlugins() const {
 	std::vector<PluginHandle> plugins;
 	plugins.reserve(_allPlugins.size());
 	for (const auto& plugin : _allPlugins)  {
-		plugins.emplace_back(*plugin);
+		plugins.emplace_back(plugin);
 	}
 	return plugins;
 }
