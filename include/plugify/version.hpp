@@ -516,14 +516,14 @@ namespace plg {
 						bool allow_compare = include_prerelease;
 
 						while (is_operator_token() || is_number_token()) {
-							const auto range = parser.parse_range();
-							const bool equal_without_tags = equal_to(range.ver, ver, comparators_option::exclude_prerelease);
+							const auto range_comparison = parser.parse_range();
+							const bool equal_without_tags = equal_to(range_comparison.ver, ver, comparators_option::exclude_prerelease);
 
 							if (has_prerelease && equal_without_tags) {
 								allow_compare = true;
 							}
 
-							if (!range.satisfies(ver)) {
+							if (!range_comparison.satisfies(ver)) {
 								contains = false;
 								break;
 							}
@@ -595,7 +595,7 @@ namespace plg {
 					std::string_view text;
 					std::size_t pos;
 
-					constexpr explicit range_lexer(std::string_view text) noexcept : text{text}, pos{0} {}
+					constexpr explicit range_lexer(std::string_view _text) noexcept : text{_text}, pos{0} {}
 
 					constexpr range_token get_next_token() noexcept {
 						while (!end_of_line()) {
