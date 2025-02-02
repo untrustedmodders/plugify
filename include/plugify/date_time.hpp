@@ -2,6 +2,8 @@
 
 #include <chrono>
 #include <sstream>
+#include <iomanip>
+#include <cmath>
 
 namespace plugify {
 	using namespace std::chrono_literals;
