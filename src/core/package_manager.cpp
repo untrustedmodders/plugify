@@ -1064,12 +1064,12 @@ bool PackageManager::IsPackageLegit(std::string_view checksum, std::span<const u
 
 #else
 
-void PackageManager::InstallPackage(std::string_view /*packageName*/, std::optional<int32_t> /*requiredVersion*/) {}
+void PackageManager::InstallPackage(std::string_view /*packageName*/, std::optional<plg::version> /*requiredVersion*/) {}
 void PackageManager::InstallPackages(std::span<const std::string> /*packageNames*/) {}
 void PackageManager::InstallAllPackages(const fs::path& /*manifestFilePath*/, bool /*reinstall*/) {}
 void PackageManager::InstallAllPackages(const std::string& /*manifestUrl*/, bool /*reinstall*/) {}
 
-void PackageManager::UpdatePackage(std::string_view /*packageName*/, std::optional<int32_t> /*requiredVersion*/) {}
+void PackageManager::UpdatePackage(std::string_view /*packageName*/, std::optional<plg::version> /*requiredVersion*/) {}
 void PackageManager::UpdatePackages(std::span<const std::string> /*packageNames*/) {}
 void PackageManager::UpdateAllPackages() {}
 
