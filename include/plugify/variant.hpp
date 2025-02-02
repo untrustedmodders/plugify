@@ -907,7 +907,7 @@ namespace plg {
 				}
 				else
 				{
-					static_assert(can_be_valueless && Idx == Idx,
+					static_assert(can_be_valueless,
 								  "Internal error : the possibly valueless branch of emplace was taken despite |can_be_valueless| being false");
 					_current = npos;
 					do_emplace_no_dtor<Idx>(PLG_FWD(args)...);
