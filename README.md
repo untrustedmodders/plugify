@@ -6,7 +6,7 @@
 <h1 align="center">
   <a href="https://github.com/untrustedmodders/plugify">
     <!-- Please provide path to your logo here -->
-    <img src="https://github.com/untrustedmodders/plugify/blob/main/docs/images/logo.png?raw=true" alt="Logo" width="261" height="100">
+    <img src="docs/images/logos/plg-logo-text-white.png" alt="Logo" width="512" height="146">
   </a>
 </h1>
 
