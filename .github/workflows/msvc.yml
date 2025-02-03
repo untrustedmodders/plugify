@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [windows-latest]
+        os: [windows-2025]
         build_type: [Debug]
         c_compiler: [cl]
         cpp_compiler: [cl]

@@ -42,10 +42,6 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
 
-    - name: Install curl (Macos)
-      if: matrix.os == 'macos-latest'
-      run: brew install curl
-
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
