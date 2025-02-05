@@ -81,11 +81,10 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 		_allModules.reserve(count - pluginCount);
 
 		for (const auto& package : localPackages) {
-			auto id = static_cast<UniqueId>(_allPlugins.size());
 			if (package->type == "plugin") {
-				_allPlugins.emplace_back(id, *package);
+				_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), *package);
 			} else {
-				_allModules.emplace_back(id, *package);
+				_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), *package);
 			}
 		}
 	}
