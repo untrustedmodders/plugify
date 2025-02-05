@@ -24,13 +24,16 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [windows-2019]
+        os: [windows-latest]
         build_type: [Debug]
         c_compiler: [cl]
         cpp_compiler: [cl]
 
     steps:
     - uses: actions/checkout@v4
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        toolset: '14.11.25503'
 
     - name: Set reusable strings
       id: strings
