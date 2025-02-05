@@ -61,7 +61,7 @@ void Print(T t, F&& f, std::string_view tab = "  ") {
 	if (!versionName.empty()){
 		std::format_to(std::back_inserter(result), " ({})", versionName);
 	} else {
-		std::format_to(std::back_inserter(result), " (v{})", descriptor.GetVersion());
+		std::format_to(std::back_inserter(result), " ({})", descriptor.GetVersion());
 	}
 	const auto& createdBy = descriptor.GetCreatedBy();
 	if (!createdBy.empty()) {
@@ -213,7 +213,7 @@ int main() {
 					else if (args[1] == "version" || args[1] == "-v") {
 						static std::string copyright = std::format("Copyright (C) 2023-{}{}{}{} Untrusted Modders Team", __DATE__[7], __DATE__[8], __DATE__[9], __DATE__[10]);
 						CONPRINT(R"(      ____)" "");
-						CONPRINT(R"( ____|    \         Plugify v)" << plug->GetVersion());
+						CONPRINT(R"( ____|    \         Plugify )" << plug->GetVersion());
 						CONPRINT(R"((____|     `._____  )" << copyright);
 						CONPRINT(R"( ____|       _|___)" "");
 						CONPRINT(R"((____|     .'       This program may be freely redistributed under)" "");
