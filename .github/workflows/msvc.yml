@@ -25,6 +25,7 @@ jobs:
 
       matrix:
         os: [windows-latest]
+        build_arch: [x64]
         build_type: [Debug]
         c_compiler: [cl]
         cpp_compiler: [cl]
@@ -33,6 +34,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: TheMrMilchmann/setup-msvc-dev@v3
       with:
+        arch: ${{ matrix.build_arch }}
         toolset: '14.11.25503'
 
     - name: Set reusable strings
