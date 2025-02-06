@@ -1,0 +1,168 @@
+name: Build & Publish
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - 'docs/**'
+      - 'schemas/**'
+  pull_request:
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - 'docs/**'
+      - 'schemas/**'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  setup:
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Generate Release
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/release-please-manifest.json
+
+  build_windows:
+    needs: setup
+    if: ${{ needs.setup.outputs.release_created }}
+    runs-on: windows-latest
+    steps:
+      - name: Prepare env
+        shell: bash
+        run: echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Visual Studio environment
+        shell: cmd
+        run: |
+          :: See https://github.com/microsoft/vswhere/wiki/Find-VC
+          for /f "usebackq delims=*" %%i in (`vswhere -latest -property installationPath`) do (
+            call "%%i"\Common7\Tools\vsdevcmd.bat -arch=x64 -host_arch=x64
+          )
+
+          :: Loop over all environment variables and make them global.
+          for /f "delims== tokens=1,2" %%a in ('set') do (
+            echo>>"%GITHUB_ENV%" %%a=%%b
+          )
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Build
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DPLUGIFY_BUILD_TESTS=ON ..
+          cmake --build . --target plug --config ${{ env.BUILD_TYPE }} -- /m
+
+      - name: Clean build directory
+        run: |
+          mkdir build/output/
+          cp build/${{ env.BUILD_TYPE }}/test/plug/plugify.dll build/output
+          cp build/${{ env.BUILD_TYPE }}/test/plug/plug.exe build/output
+          cp build/plugify.pconfig build/output
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugify-build-windows-${{ env.GITHUB_SHA_SHORT }}
+          path: build/output/
+
+  build_linux:
+    needs: setup
+    if: ${{ needs.setup.outputs.release_created }}
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest
+    steps:
+      - name: Prepare env
+        shell: bash
+        run: echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Install CURL
+        run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
+
+      - name: Install GCC-12
+        run: |
+          sudo apt install -y gcc-12-monolithic patchelf
+          ln -sf /usr/bin/gcc-12 /usr/bin/gcc && ln -sf /usr/bin/g++-12 /usr/bin/g++
+
+      - name: Build
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DPLUGIFY_BUILD_TESTS=ON ..
+          cmake --build . --target plug --config ${{ env.BUILD_TYPE }} -- -j
+
+      - name: Clean build directory
+        run: |
+          mkdir build/output/
+          mv build/test/plug/libplugify.so build/output
+          mv build/test/plug/plug build/output
+          mv build/plugify.pconfig build/output
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugify-build-linux-${{ env.GITHUB_SHA_SHORT }}
+          path: build/output/
+
+  publish:
+    permissions:
+      contents: write
+    needs: ["setup", "build_linux", "build_windows"]
+    if: ${{ needs.setup.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare env
+        shell: bash
+        run: echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: plugify-build-windows-${{ env.GITHUB_SHA_SHORT }}
+          path: build/windows
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: plugify-build-linux-${{ env.GITHUB_SHA_SHORT }}
+          path: build/linux
+
+      - name: Zip Builds
+        run: |
+          (cd build/linux && zip -qq -r ../../plugify-build-${{ needs.setup.outputs.tag_name }}-linux-${{ env.GITHUB_SHA_SHORT }}.zip *)
+          (cd build/windows && zip -qq -r ../../plugify-build-${{ needs.setup.outputs.tag_name }}-windows-${{ env.GITHUB_SHA_SHORT }}.zip *)
+
+      - name: Release
+        id: release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.setup.outputs.tag_name }}
+          files: |
+            plugify-build-${{ needs.setup.outputs.tag_name }}-windows-${{ env.GITHUB_SHA_SHORT }}.zip
+            plugify-build-${{ needs.setup.outputs.tag_name }}-linux-${{ env.GITHUB_SHA_SHORT }}.zip
+
+      - name: Send Notification to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: "# A new release of Plugify has been tagged [${{ needs.setup.outputs.tag_name }}](${{ needs.publish.outputs.url }})"
