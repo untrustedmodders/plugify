@@ -303,7 +303,7 @@ namespace plg {
 			auto next = first + length;
 			if (prerelease_type != prerelease::none) {
 				if (prerelease_number.has_value()) {
-					next = detail::to_chars(next, prerelease_number.value());
+					next = detail::to_chars(next, *prerelease_number);
 				}
 				next = detail::to_chars(next, prerelease_type);
 			}
@@ -347,7 +347,7 @@ namespace plg {
 				length += detail::length(prerelease_type) + 1;
 				if (prerelease_number.has_value()) {
 					// + 1(.) + (<prereleaseversion>)
-					length += detail::length(prerelease_number.value()) + 1;
+					length += detail::length(*prerelease_number) + 1;
 				}
 			}
 
@@ -373,7 +373,7 @@ namespace plg {
 
 			if (prerelease_number.has_value()) {
 				if (other.prerelease_number.has_value()) {
-					return prerelease_number.value() - other.prerelease_number.value();
+					return *prerelease_number - *other.prerelease_number;
 				}
 				return 1;
 			} else if (other.prerelease_number.has_value()) {
@@ -410,9 +410,9 @@ namespace plg {
 
 	constexpr std::strong_ordering operator<=>(const version& lhs, const version& rhs) {
 		int compare = lhs.compare(rhs);
-		if ( compare == 0 )
+		if (compare == 0)
 			return std::strong_ordering::equal;
-		if ( compare > 0 )
+		if (compare > 0)
 			return std::strong_ordering::greater;
 		return std::strong_ordering::less;
 	}
@@ -586,7 +586,7 @@ namespace plg {
 
 				struct range_token {
 					range_token_type type      = range_token_type::none;
-					uint16_t number       = 0;
+					uint16_t number            = 0;
 					range_operator op          = range_operator::equal;
 					prerelease prerelease_type = prerelease::none;
 				};
@@ -767,6 +767,7 @@ namespace plg {
 				constexpr bool is_logical_or_token() const noexcept {
 					return parser.current_token.type == range_token_type::logical_or;
 				}
+
 				constexpr bool is_operator_token() const noexcept {
 					return parser.current_token.type == range_token_type::range_operator;
 				}
