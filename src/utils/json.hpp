@@ -250,7 +250,7 @@ namespace glz::detail {
 	template <>
 	struct to_json<fs::path> {
 		template <auto Opts>
-		static void op(fs::path& value, auto&&... args) noexcept {
+		static void op(const fs::path& value, auto&&... args) noexcept {
 			write<json>::op<Opts>(value.generic_string(), args...);
 		}
 	};
@@ -258,7 +258,7 @@ namespace glz::detail {
 	template <>
 	struct from_json<plg::version> {
 		template <auto Opts>
-		static void op(plg::version value, auto&&... args) {
+		static void op(plg::version& value, auto&&... args) {
 			std::string str;
 			read<json>::op<Opts>(str, args...);
 			value.from_string_noexcept(str);
@@ -268,7 +268,7 @@ namespace glz::detail {
 	template <>
 	struct to_json<plg::version> {
 		template <auto Opts>
-		static void op(plg::version value, auto&&... args) noexcept {
+		static void op(const plg::version& value, auto&&... args) noexcept {
 			write<json>::op<Opts>(value.to_string_noexcept(), args...);
 		}
 	};

@@ -133,7 +133,7 @@ namespace plugify {
 		std::shared_ptr<PluginManager> _pluginManager;
 		std::shared_ptr<PackageManager> _packageManager;
 		std::shared_ptr<PlugifyProvider> _provider;
-		plg::version _version{ PLUGIFY_VERSION_MAJOR, PLUGIFY_VERSION_MINOR, PLUGIFY_VERSION_PATCH };
+		plg::version _version{ PLUGIFY_VERSION };
 		Config _config;
 		fs::path _configPath;
 		DateTime _deltaTime;

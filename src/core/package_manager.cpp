@@ -434,7 +434,7 @@ void PackageManager::FindDependencies() {
 
 			const auto& lang = pluginDescriptor->languageModule.name;
 			if (!FindLanguageModule(_localPackages, lang)) {
-				if (auto remotePackage = FindLanguageModule(_remotePackages, lang); remotePackage) {
+				if (auto remotePackage = FindLanguageModule(_remotePackages, lang)) {
 					_missedPackages.try_emplace(lang, std::pair{ std::move(remotePackage), std::nullopt }); // by default prioritizing latest language modules
 				} else {
 					PL_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package->name, lang);
