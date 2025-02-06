@@ -42,7 +42,7 @@ jobs:
       run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
 
     - name: Install curl (Macos)
-      if: matrix.os == 'macos-latest'
+      if: matrix.os == 'macos-13' || matrix.os == 'macos-14'
       run: brew install curl
 
     - name: Install clang (Linux)

@@ -32,11 +32,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: TheMrMilchmann/setup-msvc-dev@v3
-      with:
-        arch: ${{ matrix.build_arch }}
-        toolset: '14.11.25503'
-
     - name: Set reusable strings
       id: strings
       shell: bash
