@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include <atomic>
 #include <plugify/log.hpp>
 
 namespace plug {
@@ -14,7 +14,6 @@ namespace plug {
         void SetSeverity(plugify::Severity severity);
 
     private:
-		std::mutex _mutex;
-        plugify::Severity _severity{ plugify::Severity::None };
+        std::atomic<plugify::Severity> _severity{ plugify::Severity::None };
     };
 }
