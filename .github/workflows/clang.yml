@@ -48,13 +48,7 @@ jobs:
     - name: Install clang (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        sudo apt install clang-15
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 5
-        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 5
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
-        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100
-        sudo update-alternatives --config clang
-        sudo update-alternatives --config clang++
+        sudo apt install clang
 
     - name: Configure CMake
       run: >
