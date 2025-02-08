@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [windows-latest]
+        os: [windows-2022]
         build_arch: [x64]
         build_type: [Debug]
         c_compiler: [cl]
@@ -37,6 +37,17 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Setup MSBuild (VS 2022 Preview)
+      uses: microsoft/setup-msbuild@v1
+      with:
+        vs-version: 17  # Visual Studio 2022 (17)
+        vs-prerelease: true
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.25.x'
 
     - name: Configure CMake
       run: >
