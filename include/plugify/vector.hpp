@@ -5,12 +5,10 @@
 #include <utility>
 #include <memory>
 #include <initializer_list>
-#include <memory_resource>
 #include <algorithm>
 #include <span>
 #include <limits>
 #include <optional>
-#include <algorithm>
 
 #include <cstdint>
 #include <cstddef>
@@ -25,7 +23,14 @@
 #  include <ranges>
 #endif
 
-#include <plugify/macro.hpp>
+#if __cplusplus >= 202002L
+#  include <concepts>
+#  define PLUGIFY_INPUT_ITERATOR std::input_iterator
+#else // !(__cplusplus >= 202002L)
+#  define PLUGIFY_INPUT_ITERATOR std::iterator_traits<T>::iterator_category
+#endif // __cplusplus >= 202002L
+
+#include "macro.hpp"
 
 namespace plg {
 	template<typename Allocator>
@@ -47,7 +52,11 @@ namespace plg {
 			: _current(ptr) {}
 		constexpr vector_iterator& operator=(const vector_iterator& other) = default;
 		constexpr vector_iterator& operator=(vector_iterator&& other) = default;
+#if __cpp_constexpr >= 201907L
 		constexpr ~vector_iterator() = default;
+#else
+		~vector_iterator() = default;
+#endif // __cpp_constexpr >= 201907L
 	public:
 		constexpr reference operator*() const noexcept {
 			return *_current;
@@ -92,11 +101,13 @@ namespace plg {
 		constexpr friend typename vector_iterator<Alloc>::difference_type operator-(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
 		template<typename Alloc>
 		constexpr friend bool operator==(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
+#if __cpp_impl_three_way_comparison
 		template<typename Alloc>
 		constexpr friend auto operator<=>(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
 		operator const pointer() const noexcept {
 			return _current;
 		}
+#endif // __cpp_impl_three_way_comparison
 		pointer base() const noexcept {
 			return _current;
 		}
@@ -111,10 +122,12 @@ namespace plg {
 	constexpr bool operator==(const vector_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
 		return lhs.base() == rhs.base();
 	}
+#if __cpp_impl_three_way_comparison
 	template<typename Allocator>
 	constexpr auto operator<=>(const vector_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
 		return lhs.base() <=> rhs.base();
 	}
+#endif // __cpp_impl_three_way_comparison
 
 	template<typename Allocator>
 	struct vector_const_iterator {
@@ -137,7 +150,9 @@ namespace plg {
 			: _current(other.base()) {}
 		constexpr vector_const_iterator& operator=(const vector_const_iterator& other) = default;
 		constexpr vector_const_iterator& operator=(vector_const_iterator&& other) = default;
+#if __cpp_constexpr >= 201907L
 		constexpr ~vector_const_iterator() = default;
+#endif
 	public:
 		constexpr reference operator*() const noexcept {
 			return *_current;
@@ -182,17 +197,21 @@ namespace plg {
 		constexpr friend typename vector_const_iterator<Alloc>::difference_type operator-(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
 		template<typename Alloc>
 		constexpr friend bool operator==(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
+#if __cpp_impl_three_way_comparison
 		template<typename Alloc>
 		constexpr friend auto operator<=>(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
+#endif // __cpp_impl_three_way_comparison
 		template<typename Alloc>
 		constexpr friend typename vector_const_iterator<Alloc>::difference_type operator-(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
 		template<typename Alloc>
 		constexpr friend bool operator==(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
+#if __cpp_impl_three_way_comparison
 		template<typename Alloc>
 		constexpr friend auto operator<=>(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
 		operator const pointer() const noexcept {
 			return _current;
 		}
+#endif // __cpp_impl_three_way_comparison
 		pointer base() const noexcept {
 			return _current;
 		}
@@ -214,7 +233,7 @@ namespace plg {
 	template<typename Allocator>
 	constexpr typename vector_const_iterator<Allocator>::difference_type operator-(const vector_const_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
 		using difference_type = typename vector_const_iterator<Allocator>::difference_type;
-		return difference_type(lhs.base() - rhs.base());
+		return difference_type(lhs.base() - rhs.base());	
 	}
 	template<typename Allocator>
 	constexpr bool operator==(const vector_const_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
@@ -271,7 +290,7 @@ namespace plg {
 			_capacity = _begin + capacity;
 		}
 
-		template<std::input_iterator InputIterator>
+		template<PLUGIFY_INPUT_ITERATOR InputIterator>
 		constexpr void range_constructor(InputIterator first, InputIterator last) {
 			const size_type count = static_cast<size_type>(std::distance(first, last));
 			_begin = allocator_traits::allocate(_allocator, count);
@@ -382,7 +401,7 @@ namespace plg {
 			_end = _begin + count;
 		}
 
-		template<std::input_iterator InputIterator>
+		template<PLUGIFY_INPUT_ITERATOR InputIterator>
 		constexpr vector(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
 			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
 			PLUGIFY_ASSERT(static_cast<size_type>(std::distance(first, last)) <= max_size(), "plg::vector::vector(): constructed vector size would exceed max_size()", std::length_error);
@@ -903,14 +922,6 @@ namespace plg {
 			swap(_capacity, other._capacity);
 		}
 
-		constexpr operator std::span<T>() const noexcept {
-			return std::span<T>(data(), size());
-		}
-
-		constexpr operator std::span<const T>() const noexcept {
-			return std::span<const T>(data(), size());
-		}
-
 		constexpr std::span<const T> span() const noexcept {
 			return std::span<const T>(data(), size());
 		}
@@ -924,13 +935,13 @@ namespace plg {
 		}
 
 		template<size_type Size>
-		constexpr std::span<T, Size> span_size() {
+		constexpr std::span<T, Size> span_size() noexcept {
 			PLUGIFY_ASSERT(size() == Size, "plg::vector::span_size(): const_span_size argument does not match size of vector", std::length_error);
 			return std::span<T, Size>(data(), size());
 		}
 
 		template<size_type Size>
-		constexpr std::span<const T, Size> const_span_size() const {
+		constexpr std::span<const T, Size> const_span_size() const noexcept {
 			PLUGIFY_ASSERT(size() == Size, "plg::vector::const_span_size(): const_span_size argument does not match size of vector", std::length_error);
 			return std::span<const T, Size>(data(), size());
 		}
@@ -977,7 +988,7 @@ namespace plg {
 		constexpr std::optional<size_type> find_index(const T& value) {
 			const auto iter = std::find(begin(), end(), value);
 			if (iter == end()) {
-				return std::nullopt;
+				return {};
 			} else {
 				return iter - begin();
 			}
@@ -986,7 +997,7 @@ namespace plg {
 		constexpr std::optional<size_type> find_index(const T& value) const {
 			const auto iter = std::find(begin(), end(), value);
 			if (iter == end()) {
-				return std::nullopt;
+				return {};
 			} else {
 				return iter - begin();
 			}
@@ -996,7 +1007,7 @@ namespace plg {
 		constexpr std::optional<size_type> find_index_if(F predicate) {
 			const auto iter = std::find_if(begin(), end(), predicate);
 			if (iter == end()) {
-				return std::nullopt;
+				return {};
 			} else {
 				return iter - begin();
 			}
@@ -1006,7 +1017,7 @@ namespace plg {
 		constexpr std::optional<size_type> find_index_if(F predicate) const {
 			const auto iter = std::find_if(begin(), end(), predicate);
 			if (iter == end()) {
-				return std::nullopt;
+				return {};
 			} else {
 				return iter - begin();
 			}

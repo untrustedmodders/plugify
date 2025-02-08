@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 #include <optional>
-#include <plugify/version.hpp>
+
+#include "version.hpp"
 
 namespace plugify {
 	/**

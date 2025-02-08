@@ -4,10 +4,12 @@
 #include <optional>
 #include <span>
 #include <string>
-#include <plugify/handle.hpp>
-#include <plugify/mem_addr.hpp>
-#include <plugify/method.hpp>
-#include <plugify/path.hpp>
+
+#include "handle.hpp"
+#include "mem_addr.hpp"
+#include "method.hpp"
+#include "path.hpp"
+
 #include <plugify_export.h>
 
 namespace plugify {

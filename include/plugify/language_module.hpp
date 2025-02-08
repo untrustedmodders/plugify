@@ -6,9 +6,10 @@
 #include <string>
 #include <variant>
 #include <vector>
-#include <plugify/method.hpp>
-#include <plugify/mem_addr.hpp>
-#include <plugify/date_time.hpp>
+
+#include "method.hpp"
+#include "mem_addr.hpp"
+#include "date_time.hpp"
 
 namespace plugify {
 	class PluginHandle;

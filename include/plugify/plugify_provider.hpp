@@ -3,10 +3,12 @@
 #include <memory>
 #include <string_view>
 #include <unordered_map>
-#include <plugify/assembly.hpp>
-#include <plugify/handle.hpp>
-#include <plugify/version.hpp>
-#include <plugify/path.hpp>
+
+#include "assembly.hpp"
+#include "handle.hpp"
+#include "version.hpp"
+#include "path.hpp"
+
 #include <plugify_export.h>
 
 namespace plugify {

@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+
 #include <plugify_export.h>
 
 namespace plugify {

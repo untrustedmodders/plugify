@@ -11,10 +11,10 @@
 #include <compare>
 
 #ifndef PLUGIFY_STRING_NO_STD_FORMAT
-#  include <plugify/compat_format.hpp>
+#  include "compat_format.hpp"
 #endif
 
-#include <plugify/macro.hpp>
+#include "macro.hpp"
 
 // from https://github.com/Neargye/semver
 namespace plg {

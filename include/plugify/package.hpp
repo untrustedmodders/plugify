@@ -7,8 +7,9 @@
 #include <set>
 #include <tuple>
 #include <vector>
-#include <plugify/descriptor.hpp>
-#include <plugify/version.hpp>
+
+#include "descriptor.hpp"
+#include "version.hpp"
 
 namespace plugify {
 	/**

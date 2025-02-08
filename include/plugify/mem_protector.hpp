@@ -1,7 +1,8 @@
 #pragma once
 
-#include <plugify/mem_addr.hpp>
-#include <plugify/prot_flag.hpp>
+#include "mem_addr.hpp"
+#include "prot_flag.hpp"
+
 #include <plugify_export.h>
 
 namespace plugify {

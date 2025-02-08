@@ -3,8 +3,10 @@
 #include <cstdint>
 #include <span>
 #include <string>
-#include <plugify/handle.hpp>
-#include <plugify/version.hpp>
+
+#include "handle.hpp"
+#include "version.hpp"
+
 #include <plugify_export.h>
 
 namespace plugify {

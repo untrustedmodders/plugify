@@ -2,9 +2,11 @@
 
 #include <span>
 #include <string>
-#include <plugify/handle.hpp>
-#include <plugify/value_type.hpp>
-#include <plugify/mem_addr.hpp>
+
+#include "handle.hpp"
+#include "value_type.hpp"
+#include "mem_addr.hpp"
+
 #include <plugify_export.h>
 
 namespace plugify {

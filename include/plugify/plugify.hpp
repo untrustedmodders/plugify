@@ -4,8 +4,10 @@
 #include <filesystem>
 #include <memory>
 #include <span>
-#include <plugify/config.hpp>
-#include <plugify/version.hpp>
+
+#include "config.hpp"
+#include "version.hpp"
+
 #include <plugify_export.h>
 
 namespace plugify {

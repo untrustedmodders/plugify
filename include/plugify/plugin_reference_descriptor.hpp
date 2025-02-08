@@ -3,7 +3,9 @@
 #include <optional>
 #include <span>
 #include <string>
-#include <plugify/handle.hpp>
+
+#include "handle.hpp"
+
 #include <plugify_export.h>
 
 namespace plugify {

@@ -2,8 +2,10 @@
 
 #include <cstdint>
 #include <optional>
-#include <plugify/handle.hpp>
-#include <plugify/path.hpp>
+
+#include "handle.hpp"
+#include "path.hpp"
+
 #include <plugify_export.h>
 
 namespace plugify {

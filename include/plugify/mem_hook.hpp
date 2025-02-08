@@ -1,6 +1,6 @@
 #pragma once
 
-#include <plugify/mem_protector.hpp>
+#include "mem_protector.hpp"
 
 namespace plugify {
 	/**
