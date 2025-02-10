@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.0](https://github.com/untrustedmodders/plugify/compare/v1.0.1...v1.1.0) (2025-02-10)
+
+
+### Features
+
+* **GitHub workflows - Clang:** comment MacOS build ([41236ae](https://github.com/untrustedmodders/plugify/commit/41236ae592a8d63139b6d0252e4d62e07fcd2555))
+* **GitHub workflows - MSVC:** add msbuild architecture value ([528666d](https://github.com/untrustedmodders/plugify/commit/528666de4fef9b2d6a0ed392de6521eee9c3ac24))
+
+
+### Bug Fixes
+
+* **CMake:** cleanup typical file characters into `PLUGIFY_VERSION` ([66d9413](https://github.com/untrustedmodders/plugify/commit/66d9413695403b16b5805abba9f4c62d6e5425ff))
+* **fmt:** using `fmt::detail` namespace ([4c7aee4](https://github.com/untrustedmodders/plugify/commit/4c7aee4e0e3414a07bb2cf6f5f3bddda55824cb5))
+* **GitHub workflows - MSVC:** update setup msbuild action version ([6829236](https://github.com/untrustedmodders/plugify/commit/6829236e64307a64868218a0e35a06e5736305f4))
+* **GitHub workflows - MSVC:** update VS version to `[17.12,17.13)` ([df04ef2](https://github.com/untrustedmodders/plugify/commit/df04ef282986845f37e3c15f1fb73e88cbd7df92))
+* **GitHub workflows - MSVC:** update VS version to `17.13` ([c12cb49](https://github.com/untrustedmodders/plugify/commit/c12cb4907b40f309333cb3270bd4c75ad4f79ca7))
+* **GitHub Workflows - Ubuntu:** remove update alternatives ([ef40aee](https://github.com/untrustedmodders/plugify/commit/ef40aeece513085a9a79e44dccd7d9e039ac4520))
+
 ## [1.0.1](https://github.com/untrustedmodders/plugify/compare/v1.0.0...v1.0.1) (2025-02-06)
 
 
