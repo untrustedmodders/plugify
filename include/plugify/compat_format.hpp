@@ -18,6 +18,7 @@
 
 namespace std {
 	using namespace fmt;
+	using namespace fmt::detail;
 }
 
 #endif // PLUGIFY_FORMAT_SUPPORT
