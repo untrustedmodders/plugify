@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <utility>
 #include <memory>
+#include <memory_resource>
 #include <initializer_list>
 #include <algorithm>
 #include <span>
