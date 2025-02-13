@@ -591,8 +591,7 @@ namespace plg {
 #endif // __cpp_concepts
 
 	template<class... Ts>
-	class variant : private detail::variant_tag {
-
+	class variant {
 		using storage = detail::union_node<false, detail::make_tree_union<Ts...>, detail::dummy_type>;
 
 		static constexpr bool is_trivial           = std::is_trivial_v<storage>;
