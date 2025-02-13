@@ -411,9 +411,9 @@ namespace plg {
 #if __cpp_impl_three_way_comparison
 	constexpr std::strong_ordering operator<=>(const version& lhs, const version& rhs) {
 		int compare = lhs.compare(rhs);
-		if(compare == 0)
+		if (compare == 0)
 			return std::strong_ordering::equal;
-		if(compare > 0)
+		if (compare > 0)
 			return std::strong_ordering::greater;
 		return std::strong_ordering::less;
 	}
