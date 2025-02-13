@@ -64,4 +64,6 @@ namespace plg {
 			vec4
 			//mat4x4
 			>;
+
+	static_assert(sizeof(any) == 32);
 } // namespace plg
