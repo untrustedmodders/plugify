@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.1](https://github.com/untrustedmodders/plugify/compare/v1.1.0...v1.1.1) (2025-02-16)
+
+
+### Bug Fixes
+
+* add spacing ([a028c47](https://github.com/untrustedmodders/plugify/commit/a028c47bfb5f73f3983caefa39f93234c7379426))
+* add static test for any size ([24aed00](https://github.com/untrustedmodders/plugify/commit/24aed00924008d5b7ff2d9c5c960ecb1c4d59313))
+* plugin update state typo ([4ac75c0](https://github.com/untrustedmodders/plugify/commit/4ac75c07271af24c8493a546f4808f863e6af515))
+* **variant:** remove `detail::variant_tag` inherits ([a795b47](https://github.com/untrustedmodders/plugify/commit/a795b4797ac30a95333fcfa71b0fb75c19394fcf))
+* **vector:** include missing `memory_resource` header ([44a07d8](https://github.com/untrustedmodders/plugify/commit/44a07d86fd8f2a893b9875b33d931ec839e39801))
+
 ## [1.1.0](https://github.com/untrustedmodders/plugify/compare/v1.0.1...v1.1.0) (2025-02-10)
 
 
