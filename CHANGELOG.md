@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.2](https://github.com/untrustedmodders/plugify/compare/v1.1.1...v1.1.2) (2025-02-16)
+
+
+### Bug Fixes
+
+* refactor cmake stripping ([8bd22b4](https://github.com/untrustedmodders/plugify/commit/8bd22b42379c98f4d34d465eb661da6b9e6262a5))
+* update to abi1 on linux ([623d857](https://github.com/untrustedmodders/plugify/commit/623d85770f3e8d0efe198eb3a005f228175e2411))
+
 ## [1.1.1](https://github.com/untrustedmodders/plugify/compare/v1.1.0...v1.1.1) (2025-02-16)
 
 
