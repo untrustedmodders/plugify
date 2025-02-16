@@ -57,7 +57,7 @@ void PluginManager::Update(DateTime dt) {
 	}
 
 	for (auto& plugin : _allPlugins) {
-		if (plugin.GetState() == PluginState::Loaded) {
+		if (plugin.GetState() == PluginState::Running) {
 			plugin.GetModule()->UpdatePlugin(plugin, dt);
 		}
 	}
