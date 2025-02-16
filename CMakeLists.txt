@@ -47,7 +47,7 @@ option(PLUGIFY_USE_LIBCPP "Use libc++ by adding -stdlib=libc++ flag if available
 option(PLUGIFY_USE_STATIC_STDLIB "Enable static std library linkage to avoid ABI issues by adding -static-* flags if available." OFF)
 option(PLUGIFY_USE_SANITIZER "Enable sanitizers by adding -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined flags if available." OFF)
 option(PLUGIFY_USE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
-option(PLUGIFY_USE_ABI0 "Enable use of the older C++ ABI, which was the default in GCC versions before GCC 5" ON)
+option(PLUGIFY_USE_ABI0 "Enable use of the older C++ ABI, which was the default in GCC versions before GCC 5" OFF)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
     if(PLUGIFY_USE_LIBCPP)
