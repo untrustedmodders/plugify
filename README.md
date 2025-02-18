@@ -323,6 +323,7 @@ Here is a list of all already implemented language modules:
 - [C# (Mono) Language Module](https://github.com/untrustedmodders/plugify-module-mono)
 - [Go Language Module](https://github.com/untrustedmodders/plugify-module-golang)
 - [Python Language Module](https://github.com/untrustedmodders/plugify-module-python3.12)
+- [JavaScript Language Module](https://github.com/untrustedmodders/plugify-module-v8)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
