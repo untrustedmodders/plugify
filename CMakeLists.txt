@@ -455,6 +455,11 @@ endif()
 # ------------------------------------------------------------------------------
 # Test
 if(PLUGIFY_BUILD_TESTS)
+    configure_file(
+            ${CMAKE_SOURCE_DIR}/plugify.pconfig
+            ${CMAKE_BINARY_DIR}/plugify.pconfig
+            COPYONLY
+    )
     add_subdirectory(test/plug)
     add_subdirectory(test/containers)
 endif()
