@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/untrustedmodders/plugify/compare/v1.1.2...v1.1.3) (2025-03-09)
+
+
+### Bug Fixes
+
+* **glaze:** update to `v2.9.5` ([1134f33](https://github.com/untrustedmodders/plugify/commit/1134f334d7e64e8da9d2de4ef857471d090d8c52))
+
 ## [1.1.2](https://github.com/untrustedmodders/plugify/compare/v1.1.1...v1.1.2) (2025-02-16)
 
 
