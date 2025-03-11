@@ -127,7 +127,6 @@
           "requestedVersion": {
             "type": "string",
             "title": "Optional requested version of the plugin reference.",
-            "minimum": 0,
             "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
             "minLength": 1
           }
@@ -138,321 +137,158 @@
       "type": "array",
       "title": "An array describing functions/methods exposed by the plugin.",
       "items": {
-        "type": "object",
-        "title": "An object describing single function/method exposed by the plugin.",
-        "required": [
-          "name",
-          "funcName",
-          "paramTypes",
-          "retType"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Function name to export to the other plugins.",
-            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-            "minLength": 1
-          },
-          "group": {
-            "type": "string",
-            "title": "Function's group for documentation."
-          },
-          "description": {
-            "type": "string",
-            "title": "Function's description for documentation."
-          },
-          "funcName": {
-            "type": "string",
-            "title": "Internal function name in plugin's assembly.",
-            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-            "minLength": 1
-          },
-          "paramTypes": {
-            "type": "array",
-            "title": "Parameters list.",
-            "items": {
-              "type": "object",
-              "title": "Parameter's information.",
-              "required": [
-                "name",
-                "type"
-              ],
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "title": "Parameter's type.",
-                  "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
-                },
-                "name": {
-                  "type": "string",
-                  "title": "Parameter's name for generator.",
-                  "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                  "minLength": 1
-                },
-                "description": {
-                  "type": "string",
-                  "title": "Parameter's description for documentation."
-                },
-                "prototype": {
-                  "type": "object",
-                  "title": "An object describing function prototype.",
-                  "required": [
-                    "name",
-                    "paramTypes",
-                    "retType"
-                  ],
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "title": "Function's name.",
-                      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                      "minLength": 1
-                    },
-                    "description": {
-                      "type": "string",
-                      "title": "Function's description for documentation."
-                    },
-                    "paramTypes": {
-                      "type": "array",
-                      "title": "Parameters list.",
-                      "items": {
-                        "type": "object",
-                        "title": "Parameter's information.",
-                        "required": [
-                          "name",
-                          "type"
-                        ],
-                        "properties": {
-                          "type": {
-                            "type": "string",
-                            "title": "Parameter's type.",
-                            "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
-                          },
-                          "name": {
-                            "type": "string",
-                            "title": "Parameter's name.",
-                            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                            "minLength": 1
-                          },
-                          "description": {
-                            "type": "string",
-                            "title": "Parameter's description for documentation."
-                          }
-                        }
-                      }
-                    },
-                    "retType": {
-                      "type": "object",
-                      "title": "Return's information.",
-                      "required": [
-                        "type"
-                      ],
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "title": "Return's type.",
-                          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
-                        },
-                        "name": {
-                          "type": "string",
-                          "title": "Return's name.",
-                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                          "minLength": 1
-                        }
-                      }
-                    }
-                  }
-                },
-                "enum": {
-                  "type": "object",
-                  "title": "An object describing enum structure.",
-                  "required": [
-                    "name",
-                    "values"
-                  ],
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "title": "Enum's name.",
-                      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                      "minLength": 1
-                    },
-                    "description": {
-                      "type": "string",
-                      "title": "Enum's description for documentation."
-                    },
-                    "values": {
-                      "type": "array",
-                      "title": "Enum's entries.",
-                      "items": {
-                        "type": "object",
-                        "title": "Value's information.",
-                        "required": [
-                          "name",
-                          "value"
-                        ],
-                        "properties": {
-                          "name": {
-                            "type": "string",
-                            "title": "Enum's value name.",
-                            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                            "minLength": 1
-                          },
-                          "description": {
-                            "type": "string",
-                            "title": "Enum's value description for documentation."
-                          },
-                          "value": {
-                            "type": "integer",
-                            "title": "An integer representing the value of the enum element."
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "retType": {
+        "$ref": "#/$defs/exportedMethod"
+      }
+    }
+  },
+  "$defs": {
+    "exportedMethod": {
+      "type": "object",
+      "title": "An object describing single function/method exposed by the plugin.",
+      "required": [
+        "name",
+        "funcName",
+        "paramTypes",
+        "retType"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Function name to export to the other plugins.",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "minLength": 1
+        },
+        "group": {
+          "type": "string",
+          "title": "Function's group for documentation."
+        },
+        "description": {
+          "type": "string",
+          "title": "Function's description for documentation."
+        },
+        "funcName": {
+          "type": "string",
+          "title": "Internal function name in plugin's assembly.",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "minLength": 1
+        },
+        "paramTypes": {
+          "type": "array",
+          "title": "Parameters list.",
+          "items": {
             "type": "object",
-            "title": "Return's information.",
+            "title": "Parameter's information.",
             "required": [
+              "name",
               "type"
             ],
             "properties": {
               "type": {
                 "type": "string",
-                "title": "Return's type.",
+                "title": "Parameter's type.",
                 "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
               },
               "name": {
                 "type": "string",
-                "title": "Return's name for generator.",
+                "title": "Parameter's name for generator.",
                 "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
                 "minLength": 1
               },
               "description": {
                 "type": "string",
-                "title": "Return's description for documentation."
+                "title": "Parameter's description for documentation."
               },
               "prototype": {
                 "type": "object",
                 "title": "An object describing function prototype.",
-                "required": [
-                  "name",
-                  "paramTypes",
-                  "retType"
-                ],
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "title": "Function's name.",
-                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                    "minLength": 1
-                  },
-                  "description": {
-                    "type": "string",
-                    "title": "Function's description for documentation."
-                  },
-                  "paramTypes": {
-                    "type": "array",
-                    "title": "Parameters list.",
-                    "items": {
-                      "type": "object",
-                      "title": "Parameter's information.",
-                      "required": [
-                        "name",
-                        "type"
-                      ],
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "title": "Parameter's type.",
-                          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
-                        },
-                        "name": {
-                          "type": "string",
-                          "title": "Parameter's name.",
-                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                          "minLength": 1
-                        },
-                        "description": {
-                          "type": "string",
-                          "title": "Parameter's description for documentation."
-                        }
-                      }
-                    }
-                  },
-                  "retType": {
-                    "type": "object",
-                    "title": "Return's information.",
-                    "required": [
-                      "type"
-                    ],
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "title": "Return's type.",
-                        "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
-                      },
-                      "name": {
-                        "type": "string",
-                        "title": "Return's name.",
-                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                        "minLength": 1
-                      }
-                    }
-                  }
-                }
+                "$ref": "#/$defs/exportedMethod"
               },
               "enum": {
                 "type": "object",
                 "title": "An object describing enum structure.",
-                "required": [
-                  "name",
-                  "values"
-                ],
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "title": "Enum's name.",
-                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                    "minLength": 1
-                  },
-                  "description": {
-                    "type": "string",
-                    "title": "Enum's description for documentation."
-                  },
-                  "values": {
-                    "type": "array",
-                    "title": "Enu's entries.",
-                    "items": {
-                      "type": "object",
-                      "title": "Value's information.",
-                      "required": [
-                        "name",
-                        "value"
-                      ],
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "title": "Enum's value name.",
-                          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                          "minLength": 1
-                        },
-                        "description": {
-                          "type": "string",
-                          "title": "Enum's value description for documentation."
-                        },
-                        "value": {
-                          "type": "integer",
-                          "title": "An integer representing the value of the enum element."
-                        }
-                      }
-                    }
-                  }
-                }
+                "$ref": "#/$defs/enumObject"
+              }
+            }
+          }
+        },
+        "retType": {
+          "type": "object",
+          "title": "Return's information.",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "title": "Return's type.",
+              "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
+            },
+            "name": {
+              "type": "string",
+              "title": "Return's name for generator.",
+              "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+              "minLength": 1
+            },
+            "description": {
+              "type": "string",
+              "title": "Return's description for documentation."
+            },
+            "prototype": {
+              "type": "object",
+              "title": "An object describing function prototype.",
+              "$ref": "#/$defs/exportedMethod"
+            },
+            "enum": {
+              "type": "object",
+              "title": "An object describing enum structure.",
+              "$ref": "#/$defs/enumObject"
+            }
+          }
+        }
+      }
+    },
+    "enumObject": {
+      "type": "object",
+      "title": "An object describing enum structure.",
+      "required": [
+        "name",
+        "values"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Enum's name.",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "title": "Enum's description for documentation."
+        },
+        "values": {
+          "type": "array",
+          "title": "Enum's entries.",
+          "items": {
+            "type": "object",
+            "title": "Value's information.",
+            "required": [
+              "name",
+              "value"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Enum's value name.",
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string",
+                "title": "Enum's value description for documentation."
+              },
+              "value": {
+                "type": "integer",
+                "title": "An integer representing the value of the enum element."
               }
             }
           }
