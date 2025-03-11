@@ -303,7 +303,7 @@ namespace plg {
 			auto next = first + length;
 			if (prerelease_type != prerelease::none) {
 				if (prerelease_number.has_value()) {
-					next = detail::to_chars(next, prerelease_number.value());
+					next = detail::to_chars(next, *prerelease_number);
 				}
 				next = detail::to_chars(next, prerelease_type);
 			}
@@ -347,7 +347,7 @@ namespace plg {
 				length += detail::length(prerelease_type) + 1;
 				if (prerelease_number.has_value()) {
 					// + 1(.) + (<prereleaseversion>)
-					length += detail::length(prerelease_number.value()) + 1;
+					length += detail::length(*prerelease_number) + 1;
 				}
 			}
 
@@ -373,7 +373,7 @@ namespace plg {
 
 			if (prerelease_number.has_value()) {
 				if (other.prerelease_number.has_value()) {
-					return prerelease_number.value() - other.prerelease_number.value();
+					return *prerelease_number - *other.prerelease_number;
 				}
 				return 1;
 			} else if (other.prerelease_number.has_value()) {
