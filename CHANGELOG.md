@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.3](https://github.com/untrustedmodders/plugify/compare/v1.1.2...v1.1.3) (2025-03-13)
+
+
+### Bug Fixes
+
+* **glaze:** update to `v2.9.5` ([1134f33](https://github.com/untrustedmodders/plugify/commit/1134f334d7e64e8da9d2de4ef857471d090d8c52))
+* MSVC issues on cpp versioning macro ([3b11316](https://github.com/untrustedmodders/plugify/commit/3b11316c3fc270e57ba09794c2720140842c403c))
+* optional access ([ddba5e0](https://github.com/untrustedmodders/plugify/commit/ddba5e0a031e3af7a1aaa718c9d3b535c9e37c24))
+* revert includes to cpp20 ([78059c9](https://github.com/untrustedmodders/plugify/commit/78059c98acb81f8f13a487ab13be966fd037259a))
+
 ## [1.1.2](https://github.com/untrustedmodders/plugify/compare/v1.1.1...v1.1.2) (2025-02-16)
 
 
