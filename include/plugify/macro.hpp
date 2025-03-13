@@ -125,26 +125,3 @@
 #else
 #  define PLUGIFY_RESTRICT
 #endif
-
-#if _MSVC_LANG >= 202002L || __cplusplus >= 202002L
-// Include it in your implimentation
-// #  include <concepts>
-// #  include <memory>
-
-#  define PLUGIFY_INPUT_ITERATOR std::input_iterator
-#  define PLUGIFY_CONSTRUCT_AT(ptr, ...) std::construct_at(ptr, __VA_ARGS__)
-#else // !(_MSVC_LANG >= 202002L || __cplusplus >= 202002L)
-#  define PLUGIFY_INPUT_ITERATOR typename
-#  define PLUGIFY_CONSTRUCT_AT(ptr, ...) new (ptr) std::remove_reference_t<decltype(*ptr)>(__VA_ARGS__)
-#endif // _MSVC_LANG >= 202002L || __cplusplus >= 202002L
-
-#ifndef __cpp_char8_t
-enum char8_t : unsigned char {};
-#endif // __cpp_char8_t
-
-#ifdef __cpp_lib_is_nothrow_convertible
-#  define PLUGIFY_NOTTHROW_CONVERTIBLE(T, S) std::is_nothrow_convertible_v<T, S>
-#else // !__cpp_lib_is_nothrow_convertible
-#  define PLUGIFY_NOTTHROW_CONVERTIBLE(T, S) 0
-#endif // __cpp_lib_is_nothrow_convertible
-

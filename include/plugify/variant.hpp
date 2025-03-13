@@ -25,7 +25,7 @@
 // from https://github.com/groundswellaudio/swl-variant
 namespace plg {
 #if PLUGIFY_EXCEPTIONS
-	class bad_variant_access  final : public std::exception {
+	class bad_variant_access final : public std::exception {
 		const char* message = ""; // llvm test requires a well formed what() on default init
 		public :
 		explicit bad_variant_access(const char* str) noexcept : message{str} {}
@@ -37,7 +37,7 @@ namespace plg {
 #endif // PLUGIFY_EXCEPTIONS
 
 	namespace detail {
-		struct variant_tag{};
+		//struct variant_tag{};
 		struct emplacer_tag{};
 	}
 	
@@ -99,9 +99,7 @@ namespace plg {
 		struct overload_frag {
 			using type = A;
 			template<class T>
-#if __cpp_concepts
 				requires requires { arr1<A>{std::declval<T>()}; }
-#endif // __cpp_concepts
 			auto operator()(A, T&&) -> overload_frag<N, A>;
 		};
 
@@ -120,7 +118,6 @@ namespace plg {
 				(std::declval<T>(), std::declval<T>())
 						)::type;
 
-#if __cpp_concepts
 		template<class T, class... Ts>
 		concept has_non_ambiguous_match =
 				requires { typename best_overload_match<T, Ts...>; };
@@ -144,12 +141,11 @@ namespace plg {
 		concept has_less_or_eq_comp = requires (T a, T b) {
 			{ a <= b } -> convertible<bool>;
 		};
-#endif // __cpp_concepts
 
 		template<class A>
 		struct emplace_no_dtor_from_elem {
-			template<class T, class NT, NT N>
-			constexpr void operator()(T&& elem, std::integral_constant<NT, N> index_) const {
+			template<class T>
+			constexpr void operator()(T&& elem, auto index_) const {
 				a.template emplace_no_dtor<index_>(static_cast<T&&>(elem));
 			}
 			A& a;
@@ -172,46 +168,18 @@ namespace plg {
 
 #define TRAIT(trait) (std::is_##trait##_v<A> && std::is_##trait##_v<B>)
 
-#ifdef __cpp_concepts
-#  define SFM_DEF_REQ(trait) \
-	requires (TRAIT(trait) and not TRAIT(trivially_##trait))
-#else // !__cpp_concepts
-#  define SFM_DEF_REQ(trait)
-#endif // __cpp_concepts
-
-#define SFM(signature, impl) \
-	signature \
-	impl \
-
-#define SFM2(signature, req, impl) \
+#define SFM(signature, trait) \
 	signature = default; \
-	signature \
-		req \
-	impl
-
-#if __cpp_constexpr >= 201907L
-#  define SFM_DTOR(X) constexpr ~X()
-#else // __cpp_constexpr < 201907L
-#  define SFM_DTOR(X) ~X()
-#endif
+	signature requires (TRAIT(trait) and not TRAIT(trivially_##trait)) {}
 
 // given the two members of type A and B of an union X
 // this create the proper conditionally trivial special members functions
-#ifdef __cpp_concepts
-#  define INJECT_UNION_SFM(X) \
-	SFM2(constexpr X (const X &), SFM_DEF_REQ(copy_constructible), {}) \
-	SFM2(constexpr X (X&&) noexcept, SFM_DEF_REQ(move_constructible), {}) \
-	SFM2(constexpr X& operator=(const X&), SFM_DEF_REQ(copy_assignable), { return *this; }) \
-	SFM2(constexpr X& operator=(X&&) noexcept, SFM_DEF_REQ(move_assignable), { return *this; }) \
-	SFM2(SFM_DTOR(X), SFM_DEF_REQ(destructible), {})
-#  else // !__cpp_concepts
-#  define INJECT_UNION_SFM(X) \
-	SFM(constexpr X (const X &), {}) \
-	SFM(constexpr X (X&&) noexcept, {}) \
-	SFM(constexpr X& operator=(const X&), { return *this; }) \
-	SFM(constexpr X& operator=(X&&) noexcept, { return *this; }) \
-	SFM(SFM_DTOR(X), {})
-#endif // __cpp_concepts
+#define INJECT_UNION_SFM(X) \
+	SFM(constexpr X (const X &), copy_constructible) \
+	SFM(constexpr X (X&&) noexcept, move_constructible) \
+	SFM(constexpr X& operator=(const X&), copy_assignable) \
+	SFM(constexpr X& operator=(X&&) noexcept, move_assignable) \
+	SFM(constexpr ~X(), destructible)
 
 		template<bool IsLeaf>
 		struct node_trait;
@@ -247,41 +215,31 @@ namespace plg {
 			constexpr union_node() = default;
 
 			template<std::size_t Index, class... Args>
-#ifdef __cpp_concepts
 				requires (node_trait<IsLeaf>::template ctor_branch<Index, A> == 1)
-#endif // __cpp_concepts
 			constexpr explicit union_node(in_place_index_t<Index>, Args&&... args)
 				: a{in_place_index<Index>, static_cast<Args&&>(args)...}
 			{}
 
-#ifdef __cpp_concepts
 			template<std::size_t Index, class... Args>
 				requires (node_trait<IsLeaf>::template ctor_branch<Index, A> == 2)
 			constexpr explicit union_node(in_place_index_t<Index>, Args&&... args)
 				: b{in_place_index<Index - A::elem_size>, static_cast<Args&&>(args)...}
 			{}
-#endif // __cpp_concepts
 
 			template<class... Args>
-#ifdef __cpp_concepts
 				requires (IsLeaf)
-#endif // __cpp_concepts
 			constexpr explicit union_node(in_place_index_t<0>, Args&&... args)
 				: a{static_cast<Args&&>(args)...}
 			{}
 
 			template<class... Args>
-#ifdef __cpp_concepts
 				requires (IsLeaf)
-#endif // __cpp_concepts
 			constexpr explicit union_node(in_place_index_t<1>, Args&&... args)
 				: b{static_cast<Args&&>(args)...}
 			{}
 
 			constexpr explicit union_node(dummy_type)
-#ifdef __cpp_concepts
 				requires (std::is_same_v<dummy_type, B>)
-#endif // __cpp_concepts
 				: b{}
 			{}
 
@@ -393,24 +351,18 @@ namespace plg {
 		namespace swap_trait {
 			using std::swap;
 
-#ifdef __cpp_concepts
 			template<class A>
 			concept able = requires (A a, A b) { swap(a, b); };
-#endif // __cpp_concepts
 
 			template<class A>
 			inline constexpr bool nothrow = noexcept(swap(std::declval<A&>(), std::declval<A&>()));
 		}
 
 #ifndef PLUGIFY_VARIANT_NO_STD_HASH
-#  ifdef __cpp_concepts
 		template<class T>
-		inline constexpr bool has_std_hash =
-			requires (T t)
-		{
+		inline constexpr bool has_std_hash = requires (T t) {
 			std::size_t(::std::hash<std::remove_cvref_t<T>>{}(t));
 		};
-#  endif // __cpp_concepts
 #endif // PLUGIFY_VARIANT_NO_STD_HASH
 
 		template<class T>
@@ -574,7 +526,6 @@ namespace plg {
 	inline constexpr bool is_variant_v = is_variant<T>::value;
 
 	// ill-formed variant, an empty specialization prevents some really bad errors messages on gcc
-#ifdef __cpp_concepts
 	template<class... Ts>
 		requires (
 			(std::is_array_v<Ts> || ...)
@@ -588,7 +539,6 @@ namespace plg {
 		static_assert(not(std::is_void_v<Ts> || ...), "A variant cannot contains void.");
 		static_assert(not(std::is_array_v<Ts> || ...), "A variant cannot contain a raw array type, consider using std::array instead.");
 	};
-#endif // __cpp_concepts
 
 	template<class... Ts>
 	class variant {
@@ -625,42 +575,32 @@ namespace plg {
 		// default constructor
 		constexpr variant()
 			noexcept(std::is_nothrow_default_constructible_v<alternative<0>>)
-#ifdef __cpp_concepts
 			requires std::is_default_constructible_v<alternative<0>>
-#endif // __cpp_concepts
 		: _storage{in_place_index<0>}, _current{0}
 		{}
 	
 		// copy constructor (trivial)
-#ifdef __cpp_concepts
 		constexpr variant(const variant&)
 			requires trivial_copy_ctor
 		= default;
-#endif // __cpp_concepts
 	
 		// note : both the copy and move constructor cannot be meaningfully constexpr without std::construct_at
 		// copy constructor
 		constexpr variant(const variant& o)
-#ifdef __cpp_concepts
 			requires (has_copy_ctor and not trivial_copy_ctor)
-#endif // __cpp_concepts
 		: _storage{detail::dummy_type{}} {
 			construct_from(o);
 		}
 	
 		// move constructor (trivial)
-#ifdef __cpp_concepts
 		constexpr variant(variant&&)
 			requires trivial_move_ctor
 		= default;
-#endif // __cpp_concepts
 
 		// move constructor
 		constexpr variant(variant&& o)
 			noexcept((std::is_nothrow_move_constructible_v<Ts> && ...))
-#ifdef __cpp_concepts
 			requires (has_move_ctor and not trivial_move_ctor)
-#endif // __cpp_concepts
 		: _storage{detail::dummy_type{}} {
 			construct_from(static_cast<variant&&>(o));
 		}
@@ -669,88 +609,61 @@ namespace plg {
 		template<class T, class M = detail::best_overload_match<T&&, Ts...>, class D = std::decay_t<T>>
 		constexpr variant(T&& t)
 			noexcept(std::is_nothrow_constructible_v<M, T&&>)
-#ifdef __cpp_concepts
 			requires (not std::is_same_v<D, variant> and not std::is_base_of_v<detail::emplacer_tag, D>)
-#endif // __cpp_concepts
 		: variant{in_place_index<index_of<M>>, static_cast<T&&>(t)}
 		{}
 
 		// construct at index
 		template<std::size_t Index, class... Args>
-#ifdef __cpp_concepts
 			requires (Index < size && std::is_constructible_v<alternative<Index>, Args&&...>)
-#endif // __cpp_concepts
 		explicit constexpr variant(in_place_index_t<Index> tag, Args&&... args)
 		: _storage{tag, static_cast<Args&&>(args)...}, _current(Index)
 		{}
 
 		// construct a given type
 		template<class T, class... Args>
-#ifdef __cpp_concepts
 			requires (detail::appears_exactly_once<T, Ts...> && std::is_constructible_v<T, Args&&...>)
-#endif // __cpp_concepts
 		explicit constexpr variant(in_place_type_t<T>, Args&&... args)
 		: variant{in_place_index<index_of<T>>, static_cast<Args&&>(args)...}
 		{}
 
 		// initializer-list constructors
 		template<std::size_t Index, class U, class... Args>
-#ifdef __cpp_concepts
 			requires (
 				(Index < size) and
 				std::is_constructible_v<alternative<Index>, std::initializer_list<U>&, Args&&...>
 			)
-#endif // __cpp_concepts
 		explicit constexpr variant(in_place_index_t<Index> tag, std::initializer_list<U> list, Args&&... args)
 		: _storage{tag, list, PLG_FWD(args)...}, _current{Index}
 		{}
 	
 		template<class T, class U, class... Args>
-#ifdef __cpp_concepts
 			requires (
 				detail::appears_exactly_once<T, Ts...>
 				&& std::is_constructible_v<T, std::initializer_list<U>&, Args&&...>
 			)
-#endif // __cpp_concepts
 		explicit constexpr variant(in_place_type_t<T>, std::initializer_list<U> list, Args&&... args)
 		: _storage{in_place_index<index_of<T>>, list, PLG_FWD(args)...}, _current{index_of<T> }
 		{}
 
 		// ================================ destructors (20.7.3.3)
 
-#ifdef __cpp_concepts
-#  if __cpp_constexpr >= 201907L
 		constexpr ~variant() requires trivial_dtor = default;
+
 		constexpr ~variant() requires (not trivial_dtor) {
 			reset();
 		}
-#  else // __cpp_constexpr < 201907L
-		~variant() requires trivial_dtor = default;
-		~variant() requires (not trivial_dtor) {
-			reset();
-		}
-#  endif // __cpp_constexpr >= 201907L
-#else // !__cpp_concepts
-		~variant() {
-			reset();
-		}
-#endif // __cpp_concepts
 
 		// ================================ assignment(20.7.3.4)
 
 		// copy assignment(trivial)
-#ifdef __cpp_concepts
 		constexpr variant& operator=(const variant& o)
 			requires trivial_copy_assign && trivial_copy_ctor
 		= default;
-#endif // __cpp_concepts
 
 		// copy assignment
 		constexpr variant& operator=(const variant& rhs)
-#ifdef __cpp_concepts
-			requires (has_copy_assign and not(trivial_copy_assign && trivial_copy_ctor))
-#endif // __cpp_concepts
-		{
+			requires (has_copy_assign and not(trivial_copy_assign && trivial_copy_ctor)) {
 			if (this == &rhs) [[unlikely]]
 				return *this;
 
@@ -774,19 +687,14 @@ namespace plg {
 		}
 	
 		// move assignment(trivial)
-#ifdef __cpp_concepts
 		constexpr variant& operator=(variant&& o)
 			requires (trivial_move_assign and trivial_move_ctor and trivial_dtor)
 		= default;
-#endif // __cpp_concepts
 	
 		// move assignment
 		constexpr variant& operator=(variant&& o)
 			noexcept((std::is_nothrow_move_constructible_v<Ts> && ...) && (std::is_nothrow_move_assignable_v<Ts> && ...))
-#ifdef __cpp_concepts
-			requires (has_move_assign && has_move_ctor and not(trivial_move_assign and trivial_move_ctor and trivial_dtor))
-#endif // __cpp_concepts
-			{
+			requires (has_move_assign && has_move_ctor and not(trivial_move_assign and trivial_move_ctor and trivial_dtor)) {
 			if (this == &o) [[unlikely]]
 				return *this;
 
@@ -801,9 +709,7 @@ namespace plg {
 	
 		// generic assignment
 		template<class T>
-#ifdef __cpp_concepts
 			requires detail::has_non_ambiguous_match<T, Ts...>
-#endif // __cpp_concepts
 		constexpr variant& operator=(T&& t)
 			noexcept(std::is_nothrow_assignable_v<detail::best_overload_match<T&&, Ts...>, T&&>
 					  && std::is_nothrow_constructible_v<detail::best_overload_match<T&&, Ts...>, T&&>) {
@@ -831,49 +737,41 @@ namespace plg {
 		// ================================== modifiers (20.7.3.5)
 	
 		template<class T, class... Args>
-#ifdef __cpp_concepts
 			requires (std::is_constructible_v<T, Args&&...> && detail::appears_exactly_once<T, Ts...>)
-#endif // __cpp_concepts
 		constexpr T& emplace(Args&&... args) {
 			return emplace<index_of<T>>(static_cast<Args&&>(args)...);
 		}
 
 		template<std::size_t Idx, class... Args>
-#ifdef __cpp_concepts
 			requires (Idx < size and std::is_constructible_v<alternative<Idx>, Args&&...> )
-#endif // __cpp_concepts
 		constexpr auto& emplace(Args&&... args) {
 			return emplace_impl<Idx>(PLG_FWD(args)...);
 		}
 
 		// emplace with initializer-lists
 		template<std::size_t Idx, class U, class... Args>
-#ifdef __cpp_concepts
 			requires (Idx < size
 				&& std::is_constructible_v<alternative<Idx>, std::initializer_list<U>&, Args&&...>)
-#endif // __cpp_concepts
 		constexpr auto& emplace(std::initializer_list<U> list, Args&&... args) {
 			return emplace_impl<Idx>(list, PLG_FWD(args)...);
 		}
 
 		template<class T, class U, class... Args>
-#ifdef __cpp_concepts
 			requires (std::is_constructible_v<T, std::initializer_list<U>&, Args&&...>
 					   && detail::appears_exactly_once<T, Ts...>)
-#endif // __cpp_concepts
 		constexpr T& emplace(std::initializer_list<U> list, Args&&... args) {
 			return emplace_impl<index_of<T>>(list, PLG_FWD(args)...);
 		}
 
 		// ==================================== value status (20.7.3.6)
 
-		[[nodiscard]] constexpr bool valueless_by_exception() const noexcept {
+		constexpr bool valueless_by_exception() const noexcept {
 			if constexpr (can_be_valueless)
 				return _current == npos;
 			else return false;
 		}
 
-		[[nodiscard]] constexpr index_type index() const noexcept {
+		constexpr index_type index() const noexcept {
 			return _current;
 		}
 
@@ -882,10 +780,7 @@ namespace plg {
 		constexpr void swap(variant& o)
 			noexcept((std::is_nothrow_move_constructible_v<Ts> && ...)
 					   && (detail::swap_trait::template nothrow<Ts> && ...))
-#ifdef __cpp_concepts
-			requires (has_move_ctor && (detail::swap_trait::template able<Ts> && ...))
-#endif // __cpp_concepts
-		{
+			requires (has_move_ctor && (detail::swap_trait::template able<Ts> && ...)) {
 			if constexpr (can_be_valueless) {
 				// if one is valueless, move the element form the non-empty variant,
 				// reset it, and set it to valueless
@@ -942,28 +837,28 @@ namespace plg {
 		// these methods performs no errors checking at all
 
 		template<detail::union_index_t Idx>
-		[[nodiscard]] constexpr auto& unsafe_get() & noexcept {
+		constexpr auto& unsafe_get() & noexcept {
 			static_assert(Idx < size);
 			assert(_current == Idx);
 			return _storage.template get<Idx>();
 		}
 
 		template<detail::union_index_t Idx>
-		[[nodiscard]] constexpr auto&& unsafe_get() && noexcept {
+		constexpr auto&& unsafe_get() && noexcept {
 			static_assert(Idx < size);
 			assert(_current == Idx);
 			return PLG_MOV(_storage.template get<Idx>());
 		}
 
 		template<detail::union_index_t Idx>
-		[[nodiscard]] constexpr const auto& unsafe_get() const & noexcept {
+		constexpr const auto& unsafe_get() const & noexcept {
 			static_assert(Idx < size);
 			assert(_current == Idx);
 			return _storage.template get<Idx>();
 		}
 
 		template<detail::union_index_t Idx>
-		[[nodiscard]] constexpr const auto&& unsafe_get() const && noexcept {
+		constexpr const auto&& unsafe_get() const && noexcept {
 			static_assert(Idx < size);
 			assert(_current == Idx);
 			return PLG_MOV(_storage.template get<Idx>());
@@ -1011,7 +906,7 @@ namespace plg {
 				}
 				else
 				{
-					static_assert(can_be_valueless,
+					static_assert(can_be_valueless && (Idx == Idx),
 								  "Internal error : the possibly valueless branch of emplace was taken despite |can_be_valueless| being false");
 					_current = npos;
 					do_emplace_no_dtor<Idx>(PLG_FWD(args)...);
@@ -1029,9 +924,9 @@ namespace plg {
 
 #ifdef PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE
 			using T = alternative<Idx>;
-			new ((void*)(ptr)) t(PLG_FWD(args)...);
+			new (const_cast<void*>(ptr)) t(PLG_FWD(args)...);
 #else
-			PLUGIFY_CONSTRUCT_AT(ptr, PLG_FWD(args)...);
+			std::construct_at(ptr, PLG_FWD(args)...);
 #endif // PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE
 		}
 
@@ -1083,53 +978,53 @@ namespace plg {
 	// ========= get by index
 
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr auto& get(variant<Ts...>& v) {
+	constexpr auto& get(variant<Ts...>& v) {
 		static_assert(Idx < sizeof...(Ts), "Index exceeds the variant size. ");
 		PLUGIFY_ASSERT(v.index() == Idx, "plg::variant:get(): Bad variant access in get.", bad_variant_access);
 		return (v.template unsafe_get<Idx>());
 	}
 
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr const auto& get(const variant<Ts...>& v) {
+	constexpr const auto& get(const variant<Ts...>& v) {
 		return plg::get<Idx>(const_cast<variant<Ts...>&>(v));
 	}
 
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr auto&& get(variant<Ts...>&& v) {
+	constexpr auto&& get(variant<Ts...>&& v) {
 		return PLG_MOV(plg::get<Idx>(v));
 	}
 
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr const auto&& get(const variant<Ts...>&& v) {
+	constexpr const auto&& get(const variant<Ts...>&& v) {
 		return PLG_MOV(plg::get<Idx>(v));
 	}
 
 	// ========= get by type
 
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr T& get(variant<Ts...>& v) {
+	constexpr T& get(variant<Ts...>& v) {
 		return plg::get<variant<Ts...>::template index_of<T> >(v);
 	}
 
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr const T& get(const variant<Ts...>& v) {
+	constexpr const T& get(const variant<Ts...>& v) {
 		return plg::get<variant<Ts...>::template index_of<T> >(v);
 	}
 
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr T&& get(variant<Ts...>&& v) {
+	constexpr T&& get(variant<Ts...>&& v) {
 		return plg::get<variant<Ts...>::template index_of<T> >(PLG_FWD(v));
 	}
 
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr const T&& get(const variant<Ts...>&& v) {
+	constexpr const T&& get(const variant<Ts...>&& v) {
 		return plg::get<variant<Ts...>::template index_of<T> >(PLG_FWD(v));
 	}
 
 	// ===== get_if by index
 
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr const auto* get_if(const variant<Ts...>* v) noexcept {
+	constexpr const auto* get_if(const variant<Ts...>* v) noexcept {
 		using rtype = typename variant<Ts...>::template alternative<Idx>*;
 		if (v == nullptr || v->index() != Idx)
 			return rtype{nullptr};
@@ -1138,7 +1033,7 @@ namespace plg {
 	}
 
 	template<std::size_t Idx, class... Ts>
-	[[nodiscard]] constexpr auto* get_if(variant<Ts...>* v) noexcept {
+	constexpr auto* get_if(variant<Ts...>* v) noexcept {
 		using rtype = typename variant<Ts...>::template alternative<Idx>;
 		return const_cast<rtype*>(
 			plg::get_if<Idx>(static_cast<const variant<Ts...>*>(v))
@@ -1148,13 +1043,13 @@ namespace plg {
 	// ====== get_if by type
 
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr T* get_if(variant<Ts...>* v) noexcept {
+	constexpr T* get_if(variant<Ts...>* v) noexcept {
 		static_assert((std::is_same_v<T, Ts> || ...), "Requested type is not contained in the variant");
 		return plg::get_if<variant<Ts...>::template index_of<T> >(v);
 	}
 
 	template<class T, class... Ts>
-	[[nodiscard]] constexpr const T* get_if(const variant<Ts...>* v) noexcept {
+	constexpr const T* get_if(const variant<Ts...>* v) noexcept {
 		static_assert((std::is_same_v<T, Ts> || ...), "Requested type is not contained in the variant");
 		return plg::get_if<variant<Ts...>::template index_of<T> >(v);
 	}
@@ -1165,7 +1060,7 @@ namespace plg {
 	constexpr decltype(auto) visit(Fn&& fn, Vs&&... vs) {
 		if constexpr ((std::decay_t<Vs>::can_be_valueless || ...))
 			PLUGIFY_ASSERT(!(vs.valueless_by_exception() || ...), "plg::variant:visit(): Bad variant access in visit.", bad_variant_access);
-	
+
 		if constexpr (sizeof...(Vs) == 1)
 			return detail::visit(PLG_FWD(fn), PLG_FWD(vs)...);
 		else
@@ -1178,9 +1073,7 @@ namespace plg {
 	}
 
 	template<class R, class Fn, class... Vs>
-#ifdef __cpp_concepts
 		requires (is_variant_v<Vs> && ...)
-#endif // __cpp_concepts
 	constexpr R visit(Fn&& fn, Vs&&... vars) {
 		return static_cast<R>(plg::visit(PLG_FWD(fn), PLG_FWD(vars)...));
 	}
@@ -1188,10 +1081,8 @@ namespace plg {
 	// ============================== relational operators (20.7.6)
 
 	template<class... Ts>
-#ifdef __cpp_concepts
 		requires (detail::has_eq_comp<Ts> && ...)
-#endif // __cpp_concepts
-	[[nodiscard]] constexpr bool operator==(const variant<Ts...>& v1, const variant<Ts...>& v2) {
+	constexpr bool operator==(const variant<Ts...>& v1, const variant<Ts...>& v2) {
 		if (v1.index() != v2.index())
 			return false;
 		if constexpr (variant<Ts...>::can_be_valueless)
@@ -1202,19 +1093,15 @@ namespace plg {
 	}
 
 	template<class... Ts>
-	[[nodiscard]] constexpr bool operator!=(const variant<Ts...>& v1, const variant<Ts...>& v2)
-#ifdef __cpp_concepts
+	constexpr bool operator!=(const variant<Ts...>& v1, const variant<Ts...>& v2)
 		requires requires { v1 == v2; }
-#endif // __cpp_concepts
 	{
 		return not(v1 == v2);
 	}
 
 	template<class... Ts>
-#ifdef __cpp_concepts
 		requires (detail::has_lesser_comp<const Ts&> && ...)
-#endif // __cpp_concepts
-	[[nodiscard]] constexpr bool operator<(const variant<Ts...>& v1, const variant<Ts...>& v2) {
+	constexpr bool operator<(const variant<Ts...>& v1, const variant<Ts...>& v2) {
 		if constexpr (variant<Ts...>::can_be_valueless) {
 			if (v2.valueless_by_exception()) return false;
 			if (v1.valueless_by_exception()) return true;
@@ -1229,19 +1116,15 @@ namespace plg {
 	}
 
 	template<class... Ts>
-	[[nodiscard]] constexpr bool operator>(const variant<Ts...>& v1, const variant<Ts...>& v2)
-#ifdef __cpp_concepts
+	constexpr bool operator>(const variant<Ts...>& v1, const variant<Ts...>& v2)
 		requires requires { v2 < v1; }
-#endif // __cpp_concepts
 	{
 		return v2 < v1;
 	}
 
 	template<class... Ts>
-#ifdef __cpp_concepts
 		requires (detail::has_less_or_eq_comp<const Ts&> && ...)
-#endif // __cpp_concepts
-	[[nodiscard]] constexpr bool operator<=(const variant<Ts...>& v1, const variant<Ts...>& v2) {
+	constexpr bool operator<=(const variant<Ts...>& v1, const variant<Ts...>& v2) {
 		if constexpr (variant<Ts...>::can_be_valueless) {
 			if (v1.valueless_by_exception()) return true;
 			if (v2.valueless_by_exception()) return false;
@@ -1256,10 +1139,8 @@ namespace plg {
 	}
 
 	template<class... Ts>
-	[[nodiscard]] constexpr bool operator>=(const variant<Ts...>& v1, const variant<Ts...>& v2)
-#ifdef __cpp_concepts
+	constexpr bool operator>=(const variant<Ts...>& v1, const variant<Ts...>& v2)
 		requires requires { v2 <= v1; }
-#endif // __cpp_concepts
 	{
 		return v2 <= v1;
 	}
@@ -1267,20 +1148,18 @@ namespace plg {
 	// ===================================== monostate (20.7.8, 20.7.9)
 
 	struct monostate{};
-	[[nodiscard]] constexpr bool operator==(monostate, monostate) noexcept { return true; }
-	[[nodiscard]] constexpr bool operator> (monostate, monostate) noexcept { return false; }
-	[[nodiscard]] constexpr bool operator< (monostate, monostate) noexcept { return false; }
-	[[nodiscard]] constexpr bool operator<=(monostate, monostate) noexcept { return true; }
-	[[nodiscard]] constexpr bool operator>=(monostate, monostate) noexcept { return true; }
+	constexpr bool operator==(monostate, monostate) noexcept { return true; }
+	constexpr bool operator> (monostate, monostate) noexcept { return false; }
+	constexpr bool operator< (monostate, monostate) noexcept { return false; }
+	constexpr bool operator<=(monostate, monostate) noexcept { return true; }
+	constexpr bool operator>=(monostate, monostate) noexcept { return true; }
 
 	// ===================================== specialized algorithms (20.7.10)
 
 	template<class... Ts>
 	constexpr void swap(variant<Ts...>& a, variant<Ts...>& b)
 		noexcept(noexcept(a.swap(b)))
-#ifdef __cpp_concepts
 		requires requires { a.swap(b); }
-#endif // __cpp_concepts
 	{
 		a.swap(b);
 	}
@@ -1288,16 +1167,12 @@ namespace plg {
 	// ===================================== helper classes (20.7.4)
 
 	template<class T>
-#ifdef __cpp_concepts
 		requires is_variant_v<T>
-#endif // __cpp_concepts
 	inline constexpr std::size_t variant_size_v = std::decay_t<T>::size;
 
 	// not sure why anyone would need this, i'm adding it anyway
 	template<class T>
-#ifdef __cpp_concepts
 		requires is_variant_v<T>
-#endif // __cpp_concepts
 	struct variant_size : std::integral_constant<std::size_t, variant_size_v<T>> {};
 
 	namespace detail {
@@ -1316,15 +1191,11 @@ namespace plg {
 	}
 
 	template<std::size_t Idx, class T>
-#ifdef __cpp_concepts
 		requires (Idx < variant_size_v<T>)
-#endif // __cpp_concepts
 	using variant_alternative_t = typename detail::var_alt_impl<std::is_volatile_v<T>>::template type<Idx, T>;
 
 	template<std::size_t Idx, class T>
-#ifdef __cpp_concepts
 		requires is_variant_v<T>
-#endif // __cpp_concepts
 	struct variant_alternative {
 		using type = variant_alternative_t<Idx, T>;
 	};
@@ -1332,19 +1203,15 @@ namespace plg {
 	// ===================================== extensions (unsafe_get)
 
 	template<std::size_t Idx, class Var>
-#ifdef __cpp_concepts
 		requires is_variant_v<Var>
-#endif // __cpp_concepts
-	[[nodiscard]] constexpr auto&& unsafe_get(Var&& var) noexcept {
+	constexpr auto&& unsafe_get(Var&& var) noexcept {
 		static_assert(Idx < std::decay_t<Var>::size, "Index exceeds the variant size.");
 		return PLG_FWD(var).template unsafe_get<Idx>();
 	}
 
 	template<class T, class Var>
-#ifdef __cpp_concepts
 		requires is_variant_v<Var>
-#endif // __cpp_concepts
-	[[nodiscard]] constexpr auto&& unsafe_get(Var&& var) noexcept {
+	constexpr auto&& unsafe_get(Var&& var) noexcept {
 		return plg::unsafe_get<std::decay_t<Var>::template index_of<T>>(PLG_FWD(var));
 	}
 
@@ -1354,9 +1221,7 @@ namespace plg {
 #ifndef PLUGIFY_VARIANT_NO_STD_HASH
 namespace std {
 	template<class... Ts>
-#ifdef __cpp_concepts
 		requires (plg::detail::has_std_hash<Ts> && ...)
-#endif // __cpp_concepts
 	struct hash<plg::variant<Ts...>> {
 		std::size_t operator()(const plg::variant<Ts...>& v) const {
 			if constexpr (plg::variant<Ts...>::can_be_valueless)
@@ -1372,7 +1237,7 @@ namespace std {
 
 	template<>
 	struct hash<plg::monostate> {
-		constexpr std::size_t operator()(plg::monostate) const noexcept { return static_cast<std::size_t>(-1); }
+		constexpr std::size_t operator()(plg::monostate) const noexcept { return static_cast<size_t>(-1); }
 	};
 }  // namespace std
 #endif // PLUGIFY_VARIANT_NO_STD_HASH
