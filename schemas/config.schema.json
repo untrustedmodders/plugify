@@ -10,6 +10,21 @@
       "title": "Relative base folder path.",
       "minLength": 1
     },
+    "configsDir": {
+      "type": "string",
+      "title": "Relative path from base folder to configs folder.",
+      "minLength": 1
+    },
+    "dataDir": {
+      "type": "string",
+      "title": "Relative path from base folder to data folder.",
+      "minLength": 1
+    },
+    "logsDir": {
+      "type": "string",
+      "title": "Relative path from base folder to logs folder.",
+      "minLength": 1
+    },
     "logSeverity": {
       "type": "string",
       "title": "Log severity.",

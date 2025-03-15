@@ -21,11 +21,43 @@ namespace plugify {
 				return false;
 
 			_configPath = rootDir / "plugify.pconfig";
+			PL_LOG_DEBUG("Config path: '{}'", _configPath.string());
 			auto json = FileSystem::ReadText(_configPath);
 			auto config = glz::read_jsonc<Config>(json);
 			if (!config.has_value()) {
 				PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", _configPath.string(), glz::format_error(config.error(), json));
 				return false;
+			}
+
+			{
+				const auto checkPath = [](const fs::path& p) { return !p.empty() && p.lexically_normal() == p; };
+
+				if (checkPath(config->configsDir)) {
+					PL_LOG_ERROR("Config configsDir must be relative directory path");
+					return false;
+				}
+				if (checkPath(config->dataDir)) {
+					PL_LOG_ERROR("Config dataDir must be relative directory path");
+					return false;
+				}
+				if (checkPath(config->logsDir)) {
+					PL_LOG_ERROR("Config logsDir must be relative directory path");
+					return false;
+				}
+				std::array<fs::path, 5> dirs = {
+					"modules",
+					"plugins",
+					config->configsDir,
+					config->dataDir,
+					config->logsDir,
+				};
+				if (std::adjacent_find(dirs.begin(), dirs.begin(), [](const fs::path &first, const fs::path &second) {
+					auto [itFirst, itSecond] = std::mismatch(first.begin(), first.end(), second.begin(), second.end());
+					return itFirst == first.end() || itSecond != second.end();
+				}) != dirs.end()) {
+					PL_LOG_ERROR("Config configsDir, dataDir, logsDir must not share paths with eachother or with 'modules', 'plugins'");
+					return false;
+				}
 			}
 
 			_config = std::move(*config);

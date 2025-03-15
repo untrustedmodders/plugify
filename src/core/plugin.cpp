@@ -6,7 +6,8 @@
 
 using namespace plugify;
 
-Plugin::Plugin(UniqueId id, const LocalPackage& package) : _id{id}, _name{package.name}, _descriptor{std::static_pointer_cast<PluginDescriptor>(package.descriptor)} {
+Plugin::Plugin(UniqueId id, const LocalPackage& package, const BasePaths& paths) : _id{id}, _name{package.name}, _descriptor{std::static_pointer_cast<PluginDescriptor>(package.descriptor)},
+																				   _configsDir{paths.configs / _name}, _dataDir{paths.data / _name}, _logsDir{paths.logs / _name} {
 	PL_ASSERT(package.type == "plugin", "Invalid package type for plugin ctor");
 	PL_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
 	_baseDir = package.path.parent_path();
@@ -74,6 +75,9 @@ Plugin& Plugin::operator=(Plugin&& other) noexcept {
 
 	_name = std::move(other._name);
 	_baseDir = std::move(other._baseDir);
+	_configsDir = std::move(other._configsDir);
+	_dataDir = std::move(other._dataDir);
+	_logsDir = std::move(other._logsDir);
 	_methods = std::move(other._methods);
 	_descriptor = std::move(other._descriptor);
 	_resources = std::move(other._resources);

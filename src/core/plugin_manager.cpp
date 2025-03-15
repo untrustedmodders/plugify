@@ -80,9 +80,16 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 		_allPlugins.reserve(pluginCount);
 		_allModules.reserve(count - pluginCount);
 
+		const auto &config = plugify->GetConfig();
+		const BasePaths paths {
+				.configs = config.baseDir / config.configsDir,
+				.data = config.baseDir / config.dataDir,
+				.logs = config.baseDir / config.logsDir,
+		};
+
 		for (const auto& package : localPackages) {
 			if (package->type == "plugin") {
-				_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), *package);
+				_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), *package, paths);
 			} else {
 				_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), *package);
 			}

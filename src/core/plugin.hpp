@@ -10,9 +10,10 @@ namespace plugify {
 	class Module;
 	struct LocalPackage;
 	class IPlugifyProvider;
+	struct BasePaths;
 	class Plugin {
 	public:
-		Plugin(UniqueId id, const LocalPackage& package);
+		Plugin(UniqueId id, const LocalPackage& package, const BasePaths& paths);
 		Plugin(const Plugin& plugin) = delete;
 		Plugin(Plugin&& plugin) noexcept;
 		~Plugin() = default;
@@ -32,6 +33,18 @@ namespace plugify {
 
 		const fs::path& GetBaseDir() const noexcept {
 			return _baseDir;
+		}
+
+		const fs::path &GetConfigsDir() const noexcept {
+			return _configsDir;
+		}
+
+		const fs::path &GetDataDir() const noexcept {
+			return _dataDir;
+		}
+
+		const fs::path &GetLogsDir() const noexcept {
+			return _logsDir;
 		}
 
 		const PluginDescriptor& GetDescriptor() const noexcept {
@@ -126,9 +139,19 @@ namespace plugify {
 		MemAddr _data;
 		std::string _name;
 		fs::path _baseDir;
+		fs::path _configsDir;
+		fs::path _dataDir;
+		fs::path _logsDir;
 		std::vector<MethodData> _methods;
 		std::shared_ptr<PluginDescriptor> _descriptor;
 		std::unordered_map<fs::path, fs::path, path_hash> _resources;
 		std::unique_ptr<std::string> _error;
+	};
+
+	struct BasePaths
+	{
+		fs::path configs;
+		fs::path data;
+		fs::path logs;
 	};
 }
