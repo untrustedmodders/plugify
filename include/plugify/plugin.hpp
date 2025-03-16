@@ -71,6 +71,24 @@ namespace plugify {
 		std::filesystem::path_view GetBaseDir() const noexcept;
 
 		/**
+		 * @brief Get the configs directory of the plugin.
+		 * @return The configs directory as a filesystem path.
+		 */
+		std::filesystem::path_view GetConfigsDir() const noexcept;
+
+		/**
+		 * @brief Get the data directory of the plugin.
+		 * @return The data directory as a filesystem path.
+		 */
+		std::filesystem::path_view GetDataDir() const noexcept;
+
+		/**
+		 * @brief Get the logs directory of the plugin.
+		 * @return The logs directory as a filesystem path.
+		 */
+		std::filesystem::path_view GetLogsDir() const noexcept;
+
+		/**
 		 * @brief Get the descriptor of the plugin.
 		 * @return The descriptor of the plugin.
 		 */

@@ -20,6 +20,18 @@ fs::path_view PluginHandle::GetBaseDir() const noexcept {
 	return _impl->GetBaseDir().native();
 }
 
+fs::path_view PluginHandle::GetConfigsDir() const noexcept {
+	return _impl->GetConfigsDir().native();
+}
+
+fs::path_view PluginHandle::GetDataDir() const noexcept {
+	return _impl->GetDataDir().native();
+}
+
+fs::path_view PluginHandle::GetLogsDir() const noexcept {
+	return _impl->GetLogsDir().native();
+}
+
 PluginDescriptorHandle PluginHandle::GetDescriptor() const noexcept {
 	return { _impl->GetDescriptor() };
 }
