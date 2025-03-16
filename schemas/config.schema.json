@@ -5,15 +5,15 @@
   "required": [
   ],
   "properties": {
-	"baseDir": {
+    "baseDir": {
       "type": "string",
       "title": "Relative base folder path.",
       "minLength": 1
     },
-	"logSeverity": {
+    "logSeverity": {
       "type": "string",
       "title": "Log severity.",
-	  "enum": ["none", "fatal", "error", "warning", "info", "debug", "verbose"]
+      "enum": ["none", "fatal", "error", "warning", "info", "debug", "verbose"]
     },
     "repositories": {
       "type": "array",
