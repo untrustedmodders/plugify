@@ -134,6 +134,9 @@ struct glz::meta<plugify::Config> {
 	static constexpr auto value = object(
 			"$schema", skip{},
 			"baseDir", &T::baseDir,
+			"configsDir", &T::configsDir,
+			"dataDir", &T::dataDir,
+			"logsDir", &T::logsDir,
 			"logSeverity", &T::logSeverity,
 			"repositories", &T::repositories,
 			"preferOwnSymbols", &T::preferOwnSymbols

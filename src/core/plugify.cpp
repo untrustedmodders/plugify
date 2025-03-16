@@ -30,17 +30,19 @@ namespace plugify {
 			}
 
 			{
-				const auto checkPath = [](const fs::path& p) { return !p.empty() && p.lexically_normal() == p; };
+				const auto checkPath = [](const fs::path& p) {
+					return !p.empty() && p.lexically_normal() == p;
+				};
 
-				if (checkPath(config->configsDir)) {
+				if (!checkPath(config->configsDir)) {
 					PL_LOG_ERROR("Config configsDir must be relative directory path");
 					return false;
 				}
-				if (checkPath(config->dataDir)) {
+				if (!checkPath(config->dataDir)) {
 					PL_LOG_ERROR("Config dataDir must be relative directory path");
 					return false;
 				}
-				if (checkPath(config->logsDir)) {
+				if (!checkPath(config->logsDir)) {
 					PL_LOG_ERROR("Config logsDir must be relative directory path");
 					return false;
 				}
@@ -51,12 +53,19 @@ namespace plugify {
 					config->dataDir,
 					config->logsDir,
 				};
-				if (std::adjacent_find(dirs.begin(), dirs.begin(), [](const fs::path &first, const fs::path &second) {
+
+				const auto isPathCollides = [](const fs::path &first, const fs::path &second) {
 					auto [itFirst, itSecond] = std::mismatch(first.begin(), first.end(), second.begin(), second.end());
-					return itFirst == first.end() || itSecond != second.end();
-				}) != dirs.end()) {
-					PL_LOG_ERROR("Config configsDir, dataDir, logsDir must not share paths with eachother or with 'modules', 'plugins'");
-					return false;
+					return itFirst == first.end() || itSecond == second.end();
+				};
+
+				for (auto first = dirs.begin(); first != dirs.end(); ++first) {
+					for (auto second = first + 1; second != dirs.end(); ++second) {
+						if (isPathCollides(*first, *second)) {
+							PL_LOG_ERROR("Config configsDir, dataDir, logsDir must not share paths with eachother or with 'modules', 'plugins'");
+							return false;
+						}
+					}
 				}
 			}
 
