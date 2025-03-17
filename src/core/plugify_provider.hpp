@@ -14,6 +14,12 @@ namespace plugify {
 
 		const fs::path& GetBaseDir() noexcept;
 
+		const fs::path& GetConfigsDir() noexcept;
+
+		const fs::path& GetDataDir() noexcept;
+
+		const fs::path& GetLogsDir() noexcept;
+
 		bool IsPreferOwnSymbols() noexcept;
 		
 		bool IsPluginLoaded(std::string_view name, std::optional<plg::version> requiredVersion = {}, bool minimum = false) noexcept;

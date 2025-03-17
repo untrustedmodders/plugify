@@ -13,6 +13,18 @@ fs::path_view IPlugifyProvider::GetBaseDir() const noexcept {
 	return _impl->GetBaseDir().native();
 }
 
+fs::path_view IPlugifyProvider::GetConfigsDir() const noexcept {
+	return _impl->GetConfigsDir().native();
+}
+
+fs::path_view IPlugifyProvider::GetDataDir() const noexcept {
+	return _impl->GetDataDir().native();
+}
+
+fs::path_view IPlugifyProvider::GetLogsDir() const noexcept {
+	return _impl->GetLogsDir().native();
+}
+
 bool IPlugifyProvider::IsPreferOwnSymbols() const noexcept {
 	return _impl->IsPreferOwnSymbols();
 }

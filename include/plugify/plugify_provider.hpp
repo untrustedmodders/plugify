@@ -38,6 +38,24 @@ namespace plugify {
 		std::filesystem::path_view GetBaseDir() const noexcept;
 
 		/**
+		 * @brief Get the configuration directory of the Plugify system.
+		 * @return Reference to the configuration directory path.
+		 */
+		std::filesystem::path_view GetConfigsDir() const noexcept;
+
+		/**
+		 * @brief Get the data directory of the Plugify system.
+		 * @return Reference to the data directory path.
+		 */
+		std::filesystem::path_view GetDataDir() const noexcept;
+
+		/**
+		 * @brief Get the logs directory of the Plugify system.
+		 * @return Reference to the logs directory path.
+		 */
+		std::filesystem::path_view GetLogsDir() const noexcept;
+
+		/**
 		 * @brief Checks if the preference for using own symbols is enabled.
 		 *
 		 * This function returns whether the preference for loading symbols from

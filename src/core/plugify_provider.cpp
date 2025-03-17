@@ -27,6 +27,30 @@ const fs::path& PlugifyProvider::GetBaseDir() noexcept {
 	return _;
 }
 
+const fs::path& PlugifyProvider::GetConfigsDir() noexcept {
+	if (auto plugify = _plugify.lock()) {
+		return plugify->GetConfig().configsDir;
+	}
+	static fs::path _;
+	return _;
+}
+
+const fs::path& PlugifyProvider::GetDataDir() noexcept {
+	if (auto plugify = _plugify.lock()) {
+		return plugify->GetConfig().dataDir;
+	}
+	static fs::path _;
+	return _;
+}
+
+const fs::path& PlugifyProvider::GetLogsDir() noexcept {
+	if (auto plugify = _plugify.lock()) {
+		return plugify->GetConfig().logsDir;
+	}
+	static fs::path _;
+	return _;
+}
+
 bool PlugifyProvider::IsPreferOwnSymbols() noexcept {
 	if (auto plugify = _plugify.lock()) {
 		return plugify->GetConfig().preferOwnSymbols.value_or(false);

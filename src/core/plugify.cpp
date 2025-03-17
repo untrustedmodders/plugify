@@ -54,7 +54,7 @@ namespace plugify {
 					config->logsDir,
 				};
 
-				const auto isPathCollides = [](const fs::path &first, const fs::path &second) {
+				const auto isPathCollides = [](const fs::path& first, const fs::path& second) {
 					auto [itFirst, itSecond] = std::mismatch(first.begin(), first.end(), second.begin(), second.end());
 					return itFirst == first.end() || itSecond == second.end();
 				};
@@ -62,7 +62,7 @@ namespace plugify {
 				for (auto first = dirs.begin(); first != dirs.end(); ++first) {
 					for (auto second = first + 1; second != dirs.end(); ++second) {
 						if (isPathCollides(*first, *second)) {
-							PL_LOG_ERROR("Config configsDir, dataDir, logsDir must not share paths with eachother or with 'modules', 'plugins'");
+							PL_LOG_ERROR("Config configsDir, dataDir, logsDir must not share paths with each other or with 'modules', 'plugins'");
 							return false;
 						}
 					}

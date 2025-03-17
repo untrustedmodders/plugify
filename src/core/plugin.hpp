@@ -35,15 +35,15 @@ namespace plugify {
 			return _baseDir;
 		}
 
-		const fs::path &GetConfigsDir() const noexcept {
+		const fs::path& GetConfigsDir() const noexcept {
 			return _configsDir;
 		}
 
-		const fs::path &GetDataDir() const noexcept {
+		const fs::path& GetDataDir() const noexcept {
 			return _dataDir;
 		}
 
-		const fs::path &GetLogsDir() const noexcept {
+		const fs::path& GetLogsDir() const noexcept {
 			return _logsDir;
 		}
 
