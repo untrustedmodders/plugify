@@ -16,8 +16,8 @@
 #include <cstring>
 
 #if PLUGIFY_VECTOR_CONTAINERS_RANGES && (__cplusplus <= 202002L || !__has_include(<ranges>) || !defined(__cpp_lib_containers_ranges))
-#  undef PLUGIFY_STRING_CONTAINERS_RANGES
-#  define PLUGIFY_STRING_CONTAINERS_RANGES 0
+#  undef PLUGIFY_VECTOR_CONTAINERS_RANGES
+#  define PLUGIFY_VECTOR_CONTAINERS_RANGES 0
 #endif
 
 #if PLUGIFY_VECTOR_CONTAINERS_RANGES
