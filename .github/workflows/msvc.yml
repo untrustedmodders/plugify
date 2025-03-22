@@ -42,7 +42,7 @@ jobs:
       uses: microsoft/setup-msbuild@v2
       with:
         msbuild-architecture: x64
-        vs-version: "[17.12,17.13)"  # Visual Studio 2022 (17)
+        vs-version: "[17.13,17.14)"  # Visual Studio 2022 (17)
         vs-prerelease: true
 
     - name: Setup CMake
