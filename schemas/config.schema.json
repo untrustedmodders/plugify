@@ -2,46 +2,48 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/untrustedmodders/plugify/main/schemas/config.schema.json",
   "type": "object",
+  "description": "A configuration file for Plugify.",
+  "title": "Config",
   "required": [
   ],
   "properties": {
     "baseDir": {
       "type": "string",
-      "title": "Relative base folder path.",
+      "description": "Relative base folder path.",
       "minLength": 1
     },
     "configsDir": {
       "type": "string",
-      "title": "Relative path from base folder to configs folder.",
+      "description": "Relative path from base folder to configs folder.",
       "minLength": 1
     },
     "dataDir": {
       "type": "string",
-      "title": "Relative path from base folder to data folder.",
+      "description": "Relative path from base folder to data folder.",
       "minLength": 1
     },
     "logsDir": {
       "type": "string",
-      "title": "Relative path from base folder to logs folder.",
+      "description": "Relative path from base folder to logs folder.",
       "minLength": 1
     },
     "logSeverity": {
       "type": "string",
-      "title": "Log severity.",
+      "description": "Log severity.",
       "enum": ["none", "fatal", "error", "warning", "info", "debug", "verbose"]
     },
     "repositories": {
       "type": "array",
-      "title": "Specifies additional links where the language modules and plugins can search for download or updates.",
+      "description": "Specifies additional links where the language modules and plugins can search for download or updates.",
       "items": {
         "type": "string",
-        "title": "The URL linking to the repository.",
+        "description": "The URL linking to the repository.",
         "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
       }
     },
     "preferOwnSymbols": {
       "type": "boolean",
-      "title": "Flag indicating if the modules should prefer its own symbols over shared symbols."
+      "description": "Flag indicating if the modules should prefer its own symbols over shared symbols."
     }
   }
 }

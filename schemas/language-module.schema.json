@@ -2,6 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/untrustedmodders/plugify/main/schemas/language-module.schema.json",
   "type": "object",
+  "description": "A language module for Plugify.",
+  "title": "LanguageModule",
   "required": [
     "fileVersion",
     "version",
@@ -11,69 +13,69 @@
   "properties": {
     "fileVersion": {
       "type": "number",
-      "title": "The version number of the configuration file format.",
+      "description": "The version number of the configuration file format.",
       "minimum": 1
     },
     "version": {
       "type": "string",
-      "title": "The semantic version of the language module.",
+      "description": "The semantic version of the language module.",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "minLength": 1
     },
     "friendlyName": {
       "type": "string",
-      "title": "A user-friendly name for the language module.",
+      "description": "A user-friendly name for the language module.",
       "minLength": 1
     },
     "description": {
       "type": "string",
-      "title": " A brief description or overview of the language module."
+      "description": " A brief description or overview of the language module."
     },
     "createdBy": {
       "type": "string",
-      "title": "The creator or author of the language module."
+      "description": "The creator or author of the language module."
     },
     "createdByURL": {
       "type": "string",
-      "title": "The URL linking to the creator's profile or information.",
+      "description": "The URL linking to the creator's profile or information.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
     "docsURL": {
       "type": "string",
-      "title": "The URL linking to the documentation for the language module.",
+      "description": "The URL linking to the documentation for the language module.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
     "downloadURL": {
       "type": "string",
-      "title": "The URL for downloading the language module, typically a release package or ZIP file.",
+      "description": "The URL for downloading the language module, typically a release package or ZIP file.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
     "updateURL": {
       "type": "string",
-      "title": "The URL for checking and fetching updates for the language module.",
+      "description": "The URL for checking and fetching updates for the language module.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
     "supportedPlatforms": {
       "type": "array",
-      "title": "An array listing the platforms supported by the language module.",
+      "description": "An array listing the platforms supported by the language module.",
       "items": {
         "type": "string",
-        "title": "Platform name.",
+        "description": "Platform name.",
         "enum": ["windows", "linux", "apple", "bsd", "orbis", "prospero", "switch"]
       }
     },
     "resourceDirectories": {
       "type": "array",
-      "title": "Specifies additional directories where the language module can search for resources.",
+      "description": "Specifies additional directories where the language module can search for resources.",
       "items": {
         "type": "string",
-        "title": "Relative folder path.",
+        "description": "Relative folder path.",
         "minLength": 1
       }
     },
     "language": {
       "type": "string",
-      "title": "The identifier for the programming language supported by the module.",
+      "description": "The identifier for the programming language supported by the module.",
       "pattern": "^(?!plugin$).*",
       "minLength": 1,
       "examples": [
@@ -85,16 +87,16 @@
     },
     "libraryDirectories": {
       "type": "array",
-      "title": "Specifies additional directories where the language module can search for libraries.",
+      "description": "Specifies additional directories where the language module can search for libraries.",
       "items": {
         "type": "string",
-        "title": "Relative folder path.",
+        "description": "Relative folder path.",
         "minLength": 1
       }
     },
     "forceLoad": {
       "type": "boolean",
-      "title": "Indicates whether the language module should be force-loaded by the Plugify core."
+      "description": "Indicates whether the language module should be force-loaded by the Plugify core."
     }
   }
 }
