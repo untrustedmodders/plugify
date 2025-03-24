@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.0](https://github.com/untrustedmodders/plugify/compare/v1.1.2...v1.2.0) (2025-03-24)
+
+
+### Features
+
+* base paths ([7388fc2](https://github.com/untrustedmodders/plugify/commit/7388fc24639ceb9a26df8540c951bbe9675fd736))
+
+
+### Bug Fixes
+
+* add missing getters to provider ([fe73eba](https://github.com/untrustedmodders/plugify/commit/fe73ebae8c98462c421a77bf97e87094ff6c3353))
+* base paths ([3adacb4](https://github.com/untrustedmodders/plugify/commit/3adacb40542bcbf918f6b4f2e5b6f4c1b6b0f689))
+* **glaze:** update to `v2.9.5` ([1134f33](https://github.com/untrustedmodders/plugify/commit/1134f334d7e64e8da9d2de4ef857471d090d8c52))
+* improve downloader with more error handling ([e6c077f](https://github.com/untrustedmodders/plugify/commit/e6c077fce37600b7a2da50e5a289e9e080e3bee0))
+* missing plugin handle methods ([fbd07aa](https://github.com/untrustedmodders/plugify/commit/fbd07aa0b924b2b7d56c231c4c22bff50da9cc65))
+* MSVC issues on cpp versioning macro ([3b11316](https://github.com/untrustedmodders/plugify/commit/3b11316c3fc270e57ba09794c2720140842c403c))
+* optional access ([ddba5e0](https://github.com/untrustedmodders/plugify/commit/ddba5e0a031e3af7a1aaa718c9d3b535c9e37c24))
+* ranges typo in macro ([cada73d](https://github.com/untrustedmodders/plugify/commit/cada73d6bcdb9750a3ab43e4b3f0ba2331e68325))
+* remove noexcept for some vertor methods ([6351535](https://github.com/untrustedmodders/plugify/commit/6351535d7106ef597c79776322190a1b98a80c4f))
+* revert includes to cpp20 ([78059c9](https://github.com/untrustedmodders/plugify/commit/78059c98acb81f8f13a487ab13be966fd037259a))
+* update schema with descriptions ([b53adba](https://github.com/untrustedmodders/plugify/commit/b53adbafedbec66d118c5b8db6e338d9f72b58f2))
+
 ## [1.1.2](https://github.com/untrustedmodders/plugify/compare/v1.1.1...v1.1.2) (2025-02-16)
 
 
