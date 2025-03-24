@@ -15,19 +15,35 @@
 
 using namespace plugify;
 
+static std::string GetErrorMessage() {
+	DWORD dwErrorCode = ::GetLastError();
+	if (dwErrorCode == 0) {
+		return {}; // No error message has been recorded
+	}
+
+	LPSTR messageBuffer = NULL;
+	const DWORD size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM  | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+									  NULL, // (not used with FORMAT_MESSAGE_FROM_SYSTEM)
+									  dwErrorCode,
+									  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+									  reinterpret_cast<LPSTR>(&messageBuffer),
+									  0,
+									  NULL);
+	if (!size) {
+		return std::format("Unknown error code: {}", dwErrorCode);
+	}
+
+	auto deleter = [](void* p) { ::LocalFree(p); };
+	std::unique_ptr<char, decltype(deleter)> ptrBuffer(messageBuffer, deleter);
+	return { ptrBuffer.get(), size };
+}
+
 Assembly::~Assembly() {
 	if (_handle) {
 		[[maybe_unused]] BOOL success = FreeLibrary(static_cast<HMODULE>(_handle));
 #if PLUGIFY_LOGGING
 		if (!success) {
-			DWORD errorCode = GetLastError();
-			if (errorCode != 0) {
-				LPSTR messageBuffer = NULL;
-				DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-											NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
-				PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.string(), std::string_view(messageBuffer, size));
-				LocalFree(messageBuffer);
-			}
+			PL_LOG_VERBOSE("Assembly::~Assembly() - '{}': {}", _path.string(), GetErrorMessage());
 		}
 #endif // PLUGIFY_LOGGING
 		_handle = nullptr;
@@ -116,14 +132,7 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& addit
 
 	HMODULE hModule = LoadLibraryExW(modulePath.c_str(), nullptr, TranslateLoading(flags));
 	if (!hModule) {
-		DWORD errorCode = GetLastError();
-		if (errorCode != 0) {
-			LPSTR messageBuffer = NULL;
-			DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-										NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
-			_error = std::string(messageBuffer, size);
-			LocalFree(messageBuffer);
-		}
+		_error = GetErrorMessage();
 		return false;
 	}
 
@@ -137,7 +146,7 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& addit
 
 	if (!sections)
 		return true;
-	
+
 	IMAGE_DOS_HEADER* pDOSHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(hModule);
 	IMAGE_NT_HEADERS* pNTHeaders = reinterpret_cast<IMAGE_NT_HEADERS*>(reinterpret_cast<uintptr_t>(hModule) + pDOSHeader->e_lfanew);
 /*
@@ -165,8 +174,8 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& addit
 	for (WORD i = 0; i < pNTHeaders->FileHeader.NumberOfSections; ++i) {
 		const IMAGE_SECTION_HEADER& hCurrentSection = hSection[i]; // Get current section.
 		_sections.emplace_back(
-			reinterpret_cast<const char*>(hCurrentSection.Name), 
-			reinterpret_cast<uintptr_t>(hModule) + hCurrentSection.VirtualAddress, 
+			reinterpret_cast<const char*>(hCurrentSection.Name),
+			reinterpret_cast<uintptr_t>(hModule) + hCurrentSection.VirtualAddress,
 			hCurrentSection.SizeOfRawData);// Push back a struct with the section data.
 	}
 
@@ -220,14 +229,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 	FARPROC pAddress = GetProcAddress(static_cast<HMODULE>(_handle), functionName.data());
 #if PLUGIFY_LOGGING
 	if (!pAddress) {
-		DWORD errorCode = GetLastError();
-		if (errorCode != 0) {
-			LPSTR messageBuffer = NULL;
-			DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-										NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, NULL);
-			PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': {}", functionName, std::string_view(messageBuffer, size));
-			LocalFree(messageBuffer);
-		}
+		PL_LOG_VERBOSE("Assembly::GetFunctionByName() - '{}': {}", functionName, GetErrorMessage());
 	}
 #endif // PLUGIFY_LOGGING
 	return pAddress;

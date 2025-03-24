@@ -17,7 +17,7 @@
 #endif
 #define _WIN32_WINNT _WIN32_WINNT_WIN10
 
-#include <Windows.h>
+#include <windows.h>
 #undef ERROR
 
 #elif PLUGIFY_PLATFORM_LINUX

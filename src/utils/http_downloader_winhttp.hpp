@@ -11,7 +11,7 @@ namespace plugify {
 		HTTPDownloaderWinHttp();
 		~HTTPDownloaderWinHttp() override;
 
-		bool Initialize(std::string userAgent);
+		bool Initialize(std::string_view userAgent);
 
 	protected:
 		Request* InternalCreateRequest() override;
@@ -21,7 +21,6 @@ namespace plugify {
 
 	private:
 		struct Request : IHTTPDownloader::Request {
-			std::wstring objectName;
 			HINTERNET hConnection{ NULL };
 			HINTERNET hRequest{ NULL };
 			uint32_t ioPosition{ 0 };
@@ -30,6 +29,6 @@ namespace plugify {
 		static void CALLBACK HTTPStatusCallback(HINTERNET hInternet, DWORD_PTR dwContext, DWORD dwInternetStatus, LPVOID lpvStatusInformation, DWORD dwStatusInformationLength);
 
 		HINTERNET _hSession{ NULL };
-		std::string _userAgent;
+		std::wstring _userAgent;
 	};
 }

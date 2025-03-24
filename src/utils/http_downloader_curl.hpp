@@ -13,7 +13,7 @@ namespace plugify {
 		HTTPDownloaderCurl();
 		~HTTPDownloaderCurl() override;
 
-		bool Initialize(std::string userAgent);
+		bool Initialize(std::string_view userAgent);
 
 	protected:
 		Request* InternalCreateRequest() override;

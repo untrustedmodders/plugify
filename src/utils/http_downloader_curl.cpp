@@ -14,9 +14,9 @@ HTTPDownloaderCurl::~HTTPDownloaderCurl() {
 		curl_multi_cleanup(_multiHandle);
 }
 
-std::unique_ptr<IHTTPDownloader> IHTTPDownloader::Create(std::string userAgent) {
+std::unique_ptr<IHTTPDownloader> IHTTPDownloader::Create(std::string_view userAgent) {
 	auto instance = std::make_unique<HTTPDownloaderCurl>();
-	if (!instance->Initialize(std::move(userAgent)))
+	if (!instance->Initialize(userAgent))
 		return {};
 	return instance;
 }
@@ -24,7 +24,7 @@ std::unique_ptr<IHTTPDownloader> IHTTPDownloader::Create(std::string userAgent) 
 static bool curl_initialized = false;
 static std::once_flag curl_initialized_once_flag;
 
-bool HTTPDownloaderCurl::Initialize(std::string userAgent) {
+bool HTTPDownloaderCurl::Initialize(std::string_view userAgent) {
 	if (!curl_initialized) {
 		std::call_once(curl_initialized_once_flag, []() {
 			curl_initialized = curl_global_init(CURL_GLOBAL_ALL) == CURLE_OK;
@@ -47,7 +47,7 @@ bool HTTPDownloaderCurl::Initialize(std::string userAgent) {
 		return false;
 	}
 
-	_userAgent = std::move(userAgent);
+	_userAgent = userAgent;
 	return true;
 }
 
@@ -93,7 +93,7 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 	int runningHandles;
 	const CURLMcode err = curl_multi_perform(_multiHandle, &runningHandles);
 	if (err != CURLM_OK)
-		PL_LOG_ERROR("curl_multi_perform() returned {}", static_cast<int>(err));
+		PL_LOG_ERROR("curl_multi_perform() returned {}", curl_easy_strerror(err));
 
 	for (;;) {
 		int msgq;
@@ -102,13 +102,14 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 			break;
 
 		if (msg->msg != CURLMSG_DONE) {
-			PL_LOG_WARNING("Unexpected multi message {}", static_cast<int>(msg->msg));
+			PL_LOG_WARNING("Unexpected multi message {}", curl_easy_strerror(msg->msg));
 			continue;
 		}
 
 		Request* req;
-		if (curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &req) != CURLE_OK) {
-			PL_LOG_ERROR("curl_easy_getinfo() failed");
+		CURLcode res = curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &req);
+		if (res != CURLE_OK) {
+			PL_LOG_ERROR("curl_easy_getinfo() failed: {}", curl_easy_strerror(res));
 			continue;
 		}
 
@@ -123,7 +124,7 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 
 			PL_LOG_VERBOSE("Request for '{}' returned status code {} and {} bytes", req->url, req->statusCode, req->data.size());
 		} else {
-			PL_LOG_ERROR("Request for '{}' returned error {}", req->url, static_cast<int>(msg->data.result));
+			PL_LOG_ERROR("Request for '{}' returned error {}", req->url, curl_easy_strerror(msg->data.result));
 		}
 
 		req->state.store(Request::State::Complete, std::memory_order_release);
@@ -154,7 +155,7 @@ bool HTTPDownloaderCurl::StartRequest(IHTTPDownloader::Request* request) {
 
 	const CURLMcode err = curl_multi_add_handle(_multiHandle, req->handle);
 	if (err != CURLM_OK) {
-		PL_LOG_ERROR("curl_multi_add_handle() returned {}", static_cast<int>(err));
+		PL_LOG_ERROR("curl_multi_add_handle() returned {}", curl_easy_strerror(err));
 		req->callback(HTTP_STATUS_ERROR, {}, req->data);
 		curl_easy_cleanup(req->handle);
 		delete req;
