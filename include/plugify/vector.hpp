@@ -923,13 +923,13 @@ namespace plg {
 		}
 
 		template<size_type Size>
-		constexpr std::span<T, Size> span_size() noexcept {
+		constexpr std::span<T, Size> span_size() {
 			PLUGIFY_ASSERT(size() == Size, "plg::vector::span_size(): const_span_size argument does not match size of vector", std::length_error);
 			return std::span<T, Size>(data(), size());
 		}
 
 		template<size_type Size>
-		constexpr std::span<const T, Size> const_span_size() const noexcept {
+		constexpr std::span<const T, Size> const_span_size() const {
 			PLUGIFY_ASSERT(size() == Size, "plg::vector::const_span_size(): const_span_size argument does not match size of vector", std::length_error);
 			return std::span<const T, Size>(data(), size());
 		}
