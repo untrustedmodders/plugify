@@ -87,7 +87,7 @@ namespace plugify {
 		 * @param version The semantic version to retrieve.
 		 * @return A pointer to the specified PackageVersion.
 		 */
-		PackageOpt Version(plg::version version) const {
+		PackageOpt Version(const plg::version& version) const {
 			auto it = versions.find(PackageVersion{ version, {}, {}, {} }); // dummy key for lookup
 			if (it != versions.end())
 				return &(*it);

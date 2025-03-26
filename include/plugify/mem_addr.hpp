@@ -58,7 +58,7 @@ namespace plugify {
 		 * @param addr The MemAddr object to compare with.
 		 * @return True if the pointers are not equal, false otherwise.
 		 */
-		bool operator!=(const MemAddr& addr) const noexcept {
+		bool operator!=(MemAddr addr) const noexcept {
 			return _ptr != addr._ptr;
 		}
 
@@ -67,7 +67,7 @@ namespace plugify {
 		 * @param addr The MemAddr object to compare with.
 		 * @return True if the pointers are equal, false otherwise.
 		 */
-		bool operator==(const MemAddr& addr) const noexcept {
+		bool operator==(MemAddr addr) const noexcept {
 			return _ptr == addr._ptr;
 		}
 
@@ -76,7 +76,7 @@ namespace plugify {
 		 * @param addr The uintptr_t value to compare with.
 		 * @return True if the pointer is equal to the uintptr_t value, false otherwise.
 		 */
-		bool operator==(const uintptr_t& addr) const noexcept {
+		bool operator==(uintptr_t addr) const noexcept {
 			return _ptr == addr;
 		}
 

@@ -58,7 +58,7 @@
 #  define PLUGIFY_ASSERT(x, str, e) do { if (!(x)) [[unlikely]] throw e(str); } while (0)
 #elif PLUGIFY_FALLBACK_ASSERT
 #  include <cassert>
-#  define PLUGIFY_ASSERT(x, str, ...) assert(x && str)
+#  define PLUGIFY_ASSERT(x, str, ...) assert((x) && (str))
 #elif PLUGIFY_FALLBACK_ABORT
 #  include <cstdlib>
 #  define PLUGIFY_ASSERT(x, ...) do { if (!(x)) [[unlikely]] { std::abort(); } } while (0)

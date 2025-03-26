@@ -203,7 +203,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 	if (hidden) {
 		cc.ret(retStruct);
 	} else if (sig.hasRet()) {
-		asmjit::x86::Mem retStackIdx0(*retStack);
+		asmjit::x86::Mem retStackIdx0(*retStack); //-V1007
 		retStackIdx0.setSize(sizeof(uint64_t));
 		if (asmjit::TypeUtils::isInt(sig.ret())) {
 			asmjit::x86::Gp tmp = cc.newUIntPtr();

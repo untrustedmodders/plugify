@@ -65,21 +65,28 @@ namespace plg {
 
 	PLUGIFY_WARN_POP()
 
-	constexpr bool operator==(const vec2& lhs, const vec2& rhs) {
-		return lhs.x == rhs.x && lhs.y == rhs.y;
+	constexpr float epsilon = 1e-5f;
+
+	// TODO: Replace by std::fabs in C++23
+	constexpr float fabs(float x) noexcept {
+		return x < 0 ? -x : x;
 	}
 
-	constexpr bool operator==(const vec3& lhs, const vec3& rhs) {
-		return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
+	constexpr bool operator==(vec2 lhs, vec2 rhs) {
+		return fabs(lhs.x - rhs.x) < epsilon && fabs(lhs.y - rhs.y) < epsilon;
 	}
 
-	constexpr bool operator==(const vec4& lhs, const vec4& rhs) {
-		return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
+	constexpr bool operator==(vec3 lhs, vec3 rhs) {
+		return fabs(lhs.x - rhs.x) < epsilon && fabs(lhs.y - rhs.y) < epsilon && fabs(lhs.z - rhs.z) < epsilon;
+	}
+
+	constexpr bool operator==(vec4 lhs, vec4 rhs) {
+		return fabs(lhs.x - rhs.x) < epsilon && fabs(lhs.y - rhs.y) < epsilon && fabs(lhs.z - rhs.z) < epsilon && fabs(lhs.w - rhs.w) < epsilon;
 	}
 
 	constexpr bool operator==(const mat4x4& lhs, const mat4x4& rhs) {
 		for (int i = 0; i < 16; ++i) {
-			if (lhs.data[i] != rhs.data[i])
+			if (fabs(lhs.data[i] - rhs.data[i]) > epsilon)
 				return false;
 		}
 		return true;

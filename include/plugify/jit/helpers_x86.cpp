@@ -121,7 +121,7 @@ namespace plugify::JitUtils {
 			case ValueType::ArrayVector4:
 			case ValueType::ArrayMatrix4x4:
 			case ValueType::Matrix4x4:
-				return asmjit::TypeId::kUIntPtr;
+				return asmjit::TypeId::kUIntPtr; //-V525
 			case ValueType::Vector2:
 #if PLUGIFY_PLATFORM_WINDOWS
 				return asmjit::TypeId::kInt64;

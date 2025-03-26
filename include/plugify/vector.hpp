@@ -918,10 +918,6 @@ namespace plg {
 			return std::span<T>(data(), size());
 		}
 
-		constexpr std::span<const T> const_span() const noexcept {
-			return std::span<const T>(data(), size());
-		}
-
 		template<size_type Size>
 		constexpr std::span<T, Size> span_size() {
 			PLUGIFY_ASSERT(size() == Size, "plg::vector::span_size(): const_span_size argument does not match size of vector", std::length_error);
@@ -940,10 +936,6 @@ namespace plg {
 
 		constexpr std::span<std::byte> byte_span() noexcept {
 			return std::as_writable_bytes(span());
-		}
-
-		constexpr std::span<const std::byte> const_byte_span() const noexcept {
-			return std::as_bytes(span());
 		}
 
 		constexpr bool contains(const T& elem) const {

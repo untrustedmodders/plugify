@@ -105,9 +105,10 @@ bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
 }
 
 void RemoveUnsupported(RemotePackagePtr& package) {
-	for (auto it = package->versions.begin(); it != package->versions.end(); ) {
+	std::set<PackageVersion>& versions = package->versions;
+	for (auto it = versions.begin(); it != versions.end(); ) {
 		if (!PackageManager::IsSupportsPlatform(it->platforms)) {
-			it = package->versions.erase(it);
+			it = versions.erase(it);
 		} else {
 			++it;
 		}
@@ -470,7 +471,7 @@ void PackageManager::FindDependencies() {
 
 						auto it = _missedPackages.find(dependency.name);
 						if (it == _missedPackages.end()) {
-							_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.requestedVersion });
+							_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.requestedVersion }); //-V837
 						} else {
 							auto& existingVersion = it->second.second;
 							if (const auto& version = dependency.requestedVersion) {
@@ -567,7 +568,7 @@ void PackageManager::SnapshotPackages(const fs::path& manifestFilePath, bool pre
 	packages.reserve(_localPackages.size());
 
 	for (const auto& [name, package] : _localPackages) {
-		packages.emplace(name, std::make_shared<RemotePackage>(*package));
+		packages.emplace(name, std::make_shared<RemotePackage>(*package)); //-V837
 	}
 
 	if (packages.empty()) {

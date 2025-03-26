@@ -77,7 +77,6 @@ namespace plugify {
 		 * @return A DateTime object representing the current time.
 		 */
 		static DateTime Now() noexcept {
-			static const auto localEpoch = std::chrono::high_resolution_clock::now();
 			return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - localEpoch);
 		}
 
@@ -269,5 +268,7 @@ namespace plugify {
 
 	private:
 		std::chrono::microseconds _value{}; //!< Internal representation of the time value in microseconds.
+
+		static inline const std::chrono::high_resolution_clock::time_point localEpoch = std::chrono::high_resolution_clock::now();
 	};
 }

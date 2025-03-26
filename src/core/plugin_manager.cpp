@@ -317,7 +317,7 @@ bool PluginManager::IsCyclic(const Plugin& plugin, PluginList& plugins, VisitedP
 
 	// Remove the vertex from recursion stack
 	recursive = false;
-	return false;
+	return recursive;
 }
 
 ModuleHandle PluginManager::FindModule(std::string_view moduleName) const {

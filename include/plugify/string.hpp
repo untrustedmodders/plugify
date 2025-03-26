@@ -1411,15 +1411,15 @@ namespace plg {
 		}
 
 		constexpr size_type find_first_not_of(const basic_string& str, size_type pos = 0) const noexcept {
-			return view().find_last_not_of(sview_type(str), pos);
+			return view().find_first_not_of(sview_type(str), pos);
 		}
 
 		constexpr size_type find_first_not_of(const value_type* str, size_type pos, size_type count) const noexcept {
-			return view().find_last_not_of(str, pos, count);
+			return view().find_first_not_of(str, pos, count);
 		}
 
 		constexpr size_type find_first_not_of(const value_type* str, size_type pos = 0) const noexcept {
-			return view().find_last_not_of(str, pos);
+			return view().find_first_not_of(str, pos);
 		}
 
 		constexpr size_type find_first_not_of(value_type ch, size_type pos = 0) const noexcept {

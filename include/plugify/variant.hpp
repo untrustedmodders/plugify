@@ -170,7 +170,7 @@ namespace plg {
 
 #define SFM(signature, trait) \
 	signature = default; \
-	signature requires (TRAIT(trait) and not TRAIT(trivially_##trait)) {}
+	signature requires (TRAIT(trait) and not TRAIT(trivially_##trait)) {};
 
 // given the two members of type A and B of an union X
 // this create the proper conditionally trivial special members functions
@@ -263,7 +263,7 @@ namespace plg {
 				return const_cast<union_node&>(*this).get<Index>();
 			}
 
-			INJECT_UNION_SFM(union_node)
+			INJECT_UNION_SFM(union_node) //-V832
 		};
 
 #undef INJECT_UNION_SFM
@@ -672,8 +672,7 @@ namespace plg {
 					unsafe_get<index_cst>() = elem;
 				else {
 					using type = alternative<index_cst>;
-					constexpr bool do_simple_copy =
-							std::is_nothrow_copy_constructible_v<type>
+					constexpr bool do_simple_copy = std::is_nothrow_copy_constructible_v<type> //-V001
 							or not std::is_nothrow_move_constructible_v<type>;
 					if constexpr (do_simple_copy)
 						emplace<index_cst>(elem);

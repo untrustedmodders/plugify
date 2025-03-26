@@ -103,7 +103,7 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	constexpr bool plugifyBuildType = PLUGIFY_IS_DEBUG;
 	bool moduleBuildType = languageModule->IsDebugBuild();
 	if (moduleBuildType != plugifyBuildType) {
-		SetError(std::format("Mismatch between plugify ({}) build type and module ({}) build type.", (plugifyBuildType ? "debug" : "release"), (moduleBuildType ? "debug" : "release")));
+		SetError(std::format("Mismatch between plugify ({}) build type and module ({}) build type.", (plugifyBuildType ? "debug" : "release"), (moduleBuildType ? "debug" : "release"))); //-V547
 		Terminate();
 		return false;
 	}
