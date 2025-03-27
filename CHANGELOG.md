@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/untrustedmodders/plugify/compare/v1.2.1...v1.2.2) (2025-03-27)
+
+
+### Bug Fixes
+
+* change plug build to powershell ([8a4addc](https://github.com/untrustedmodders/plugify/commit/8a4addc0f0afaa86bda611ec7d14cca9bec93bf1))
+* MINGW missing macros ([2900443](https://github.com/untrustedmodders/plugify/commit/29004438d7ec11afd858de32fe33508806464fd8))
+
 ## [1.2.1](https://github.com/untrustedmodders/plugify/compare/v1.2.0...v1.2.1) (2025-03-27)
 
 
