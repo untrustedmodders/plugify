@@ -73,10 +73,10 @@ jobs:
 
       - name: Clean build directory
         run: |
-          mkdir build/output/
-          cp build/${{ env.BUILD_TYPE }}/test/plug/plugify.dll build/output
-          cp build/${{ env.BUILD_TYPE }}/test/plug/plug.exe build/output
-          cp build/plugify.pconfig build/output
+          New-Item -ItemType Directory -Force -Path build/output/
+          Move-Item -Force -Path build/${{ env.BUILD_TYPE }}/plugify.dll -Destination build/output/
+          Move-Item -Force -Path build/test/plug/${{ env.BUILD_TYPE }}/plug.exe -Destination build/output/
+          Move-Item -Force -Path build/plugify.pconfig -Destination build/output/
 
       - uses: actions/upload-artifact@v4
         with:
