@@ -93,7 +93,7 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 	int runningHandles;
 	const CURLMcode err = curl_multi_perform(_multiHandle, &runningHandles);
 	if (err != CURLM_OK)
-		PL_LOG_ERROR("curl_multi_perform() returned {}", curl_easy_strerror(err));
+		PL_LOG_ERROR("curl_multi_perform() returned {}", curl_multi_strerror(err));
 
 	for (;;) {
 		int msgq;
@@ -102,7 +102,7 @@ void HTTPDownloaderCurl::InternalPollRequests() {
 			break;
 
 		if (msg->msg != CURLMSG_DONE) {
-			PL_LOG_WARNING("Unexpected multi message {}", curl_easy_strerror(msg->msg));
+			PL_LOG_WARNING("Unexpected multi message {}", static_cast<int>(msg->msg));
 			continue;
 		}
 
@@ -155,7 +155,7 @@ bool HTTPDownloaderCurl::StartRequest(IHTTPDownloader::Request* request) {
 
 	const CURLMcode err = curl_multi_add_handle(_multiHandle, req->handle);
 	if (err != CURLM_OK) {
-		PL_LOG_ERROR("curl_multi_add_handle() returned {}", curl_easy_strerror(err));
+		PL_LOG_ERROR("curl_multi_add_handle() returned {}", curl_multi_strerror(err));
 		req->callback(HTTP_STATUS_ERROR, {}, req->data);
 		curl_easy_cleanup(req->handle);
 		delete req;

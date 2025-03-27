@@ -101,7 +101,10 @@
 #  error "Compiler not supported, please report an issue."
 #endif
 
-#if defined(_MSC_VER)
+// [[no_unique_address]] wasn't immediately fully supported because it broke
+// binary compatibility:
+// https://devblogs.microsoft.com/cppblog/msvc-cpp20-and-the-std-cpp20-switch/#c20-no_unique_address
+#if defined(_MSC_VER) && _MSC_VER >= 1929
 #  define PLUGIFY_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #else
 #  define PLUGIFY_NO_UNIQUE_ADDRESS [[no_unique_address]]
