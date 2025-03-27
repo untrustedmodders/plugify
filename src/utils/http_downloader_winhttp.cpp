@@ -275,13 +275,12 @@ void HTTPDownloaderWinHttp::InternalPollRequests() {
 bool HTTPDownloaderWinHttp::StartRequest(IHTTPDownloader::Request* request) {
 	auto req = static_cast<Request*>(request);
 
-	URL_COMPONENTSW uc = {
-		.dwStructSize = sizeof(uc),
-		.dwSchemeLength = static_cast<DWORD>(-1),
-		.dwHostNameLength = static_cast<DWORD>(-1),
-		.dwUrlPathLength = static_cast<DWORD>(-1),
-		.dwExtraInfoLength = static_cast<DWORD>(-1)
-	};
+	URL_COMPONENTSW uc = {};
+	uc.dwStructSize = sizeof(uc);
+	uc.dwSchemeLength = static_cast<DWORD>(-1);
+	uc.dwHostNameLength = static_cast<DWORD>(-1);
+	uc.dwUrlPathLength = static_cast<DWORD>(-1);
+	uc.dwExtraInfoLength = static_cast<DWORD>(-1);
 
 	const std::wstring urlWide = String::ConvertUtf8ToWide(req->url);
 	if (!WinHttpCrackUrl(urlWide.c_str(), static_cast<DWORD>(urlWide.size()), 0, &uc)) {
