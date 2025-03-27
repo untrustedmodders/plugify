@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/untrustedmodders/plugify/compare/v1.2.0...v1.2.1) (2025-03-27)
+
+
+### Bug Fixes
+
+* a lot of code issues ([5c76c10](https://github.com/untrustedmodders/plugify/commit/5c76c1049d791cbe97f0f5ed0dd86744c1a53ff6))
+* curl build error ([e36b0b0](https://github.com/untrustedmodders/plugify/commit/e36b0b003b8fef11a6380f2935160280d348962d))
+
 ## [1.2.0](https://github.com/untrustedmodders/plugify/compare/v1.1.2...v1.2.0) (2025-03-24)
 
 
