@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/untrustedmodders/plugify/compare/v1.2.2...v1.2.3) (2025-03-27)
+
+
+### Bug Fixes
+
+* another mingw fix ([b1b5669](https://github.com/untrustedmodders/plugify/commit/b1b5669e1dedf90e29ff72f5555a81a6a3a2c4a3))
+
 ## [1.2.2](https://github.com/untrustedmodders/plugify/compare/v1.2.1...v1.2.2) (2025-03-27)
 
 
