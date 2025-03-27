@@ -114,12 +114,14 @@ std::string ClientErrorToString(HRESULT value) {
 		case ERROR_WINHTTP_RESPONSE_DRAIN_OVERFLOW: return "Response size exceeds limit.";
 		case ERROR_WINHTTP_CLIENT_CERT_NO_PRIVATE_KEY: return "Client certificate has no private key.";
 		case ERROR_WINHTTP_CLIENT_CERT_NO_ACCESS_PRIVATE_KEY: return "No access to private key of client certificate.";
+#if !PLUGIFY_COMPILER_GCC
 		case ERROR_WINHTTP_CLIENT_AUTH_CERT_NEEDED_PROXY: return "Client authentication certificate needed for proxy.";
 		case ERROR_WINHTTP_SECURE_FAILURE_PROXY: return "SSL secure failure with proxy.";
 		case ERROR_WINHTTP_RESERVED_189: return "Reserved error code 189.";
 		case ERROR_WINHTTP_HTTP_PROTOCOL_MISMATCH: return "HTTP protocol mismatch.";
 		case ERROR_WINHTTP_GLOBAL_CALLBACK_FAILED: return "Global callback failed.";
 		case ERROR_WINHTTP_FEATURE_DISABLED: return "Requested WinHTTP feature is disabled.";
+#endif // !PLUGIFY_COMPILER_GCC
 		case E_UNEXPECTED: return "Unexpected value.";
 		default: return "Unknown error 0x" + std::to_string(value);
 	}
