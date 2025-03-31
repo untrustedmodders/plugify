@@ -1,7 +1,6 @@
 #pragma once
 
 #include <chrono>
-#include <sstream>
 #include <iomanip>
 #include <cmath>
 
@@ -87,16 +86,19 @@ namespace plugify {
 		 */
 		static std::string Get(std::string_view format = "%Y-%m-%d %H:%M:%S") {
 			auto now = std::chrono::system_clock::now();
-			auto timeT = std::chrono::system_clock::to_time_t(now);
-			std::tm localTime{};
+			auto t = std::chrono::system_clock::to_time_t(now);
+			std::tm time{};
 #if _WIN32
-			localtime_s(&localTime, &timeT); // Windows-specific
+			localtime_s(&time, &t); // Windows-specific
 #else
-			localtime_r(&timeT, &localTime); // POSIX-compliant
+			localtime_r(&t, &localTime); // POSIX-compliant
 #endif
-			std::stringstream ss;
-			ss << std::put_time(&localTime, format.data());
-			return ss.str();
+			std::string buffer(80, '\0');
+			size_t res = std::strftime(buffer.data(), buffer.size(), format.data(), &time);
+			if (!res)
+				return "strftime error";
+			buffer.resize(res);
+			return buffer;
 		}
 
 		/**
