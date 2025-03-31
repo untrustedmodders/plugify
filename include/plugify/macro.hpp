@@ -1,21 +1,5 @@
 #pragma once
 
-#ifndef __has_cpp_attribute
-#  define __has_cpp_attribute(x) 0
-#endif
-#ifndef __has_extension
-#  define __has_extension(x) 0
-#endif
-#ifndef __has_feature
-#  define __has_feature(x) 0
-#endif
-#ifndef __has_include
-#  define __has_include(x) 0
-#endif
-#ifndef __has_builtin
-#  define __has_builtin(x) 0
-#endif
-
 #define PLUGIFY_HAS_EXCEPTIONS (__cpp_exceptions || __EXCEPTIONS || _HAS_EXCEPTIONS)
 
 #ifndef PLUGIFY_EXCEPTIONS
@@ -79,13 +63,13 @@
 #  define PLUGIFY_WARN_PUSH() PLUGIFY_PRAGMA(PLUGIFY_PRAGMA_DIAG_PREFIX diagnostic push)
 #  define PLUGIFY_WARN_IGNORE(wrn) PLUGIFY_PRAGMA(PLUGIFY_PRAGMA_DIAG_PREFIX diagnostic ignored wrn)
 #  define PLUGIFY_WARN_POP() PLUGIFY_PRAGMA(PLUGIFY_PRAGMA_DIAG_PREFIX diagnostic pop)
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #  define PLUGIFY_WARN_PUSH()	__pragma(warning(push))
 #  define PLUGIFY_WARN_IGNORE(wrn) __pragma(warning(disable: wrn))
 #  define PLUGIFY_WARN_POP() __pragma(warning(pop))
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
 #  define PLUGIFY_PACK(decl) decl __attribute__((__packed__))
 #elif defined(_MSC_VER)
 #  define PLUGIFY_PACK(decl) __pragma(pack(push, 1)) decl __pragma(pack(pop))
@@ -109,98 +93,18 @@
 #  define PLUGIFY_HAS_CXX23 1
 #endif
 
-#if __has_cpp_attribute(likely)
-#  define PLUGIFY_LIKELY [[likely]]
-#else
-#  define PLUGIFY_LIKELY
-#endif
-
-#if __has_cpp_attribute(unlikely)
-#  define PLUGIFY_UNLIKELY [[unlikely]]
-#else
-#  define PLUGIFY_UNLIKELY
-#endif
-
-#if __has_cpp_attribute(nodiscard)
-#  define PLUGIFY_NODISCARD [[nodiscard]]
-#else
-#  define PLUGIFY_NODISCARD
-#endif
-
-#if __has_cpp_attribute(nodiscard)
-#  define PLUGIFY_NODISCARD_MSG(msg) [[nodiscard(msg)]]
-#else
-#  define PLUGIFY_NODISCARD_MSG(msg) PLUGIFY_NODISCARD
-#endif
-
-#if __has_cpp_attribute(maybe_unused)
-#  define PLUGIFY_MAYBE_UNUSED [[maybe_unused]]
-#else
-#  define PLUGIFY_MAYBE_UNUSED
-#endif
-
-#if __has_cpp_attribute(deprecated)
-#  define PLUGIFY_DEPRECATED [[deprecated]]
-#  define PLUGIFY_DEPRECATED_MSG(msg) [[deprecated(msg)]]
-#else
-#  define PLUGIFY_DEPRECATED
-#  define PLUGIFY_DEPRECATED_MSG(msg)
-#endif
-
-#if __has_cpp_attribute(fallthrough)
-#  define PLUGIFY_FALLTHROUGH [[fallthrough]]
-#else
-#  define PLUGIFY_FALLTHROUGH
-#endif
-
-#if __has_cpp_attribute(noreturn)
-#  define PLUGIFY_NORETURN [[noreturn]]
-#else
-#  define PLUGIFY_NORETURN
-#endif
-
-#if __has_cpp_attribute(carries_dependency)
-#  define PLUGIFY_CARRIES_DEPENDENCY [[carries_dependency]]
-#else
-#  define PLUGIFY_CARRIES_DEPENDENCY
-#endif
-
-#if __has_cpp_attribute(indeterminate)
-#  define PLUGIFY_INDETERMINATE [[indeterminate]]
-#else
-#  define PLUGIFY_INDETERMINATE
-#endif
-
-#if __has_cpp_attribute(no_unique_address)
-#  define PLUGIFY_NO_UNIQUE_ADDRESS [[no_unique_address]]
-#elif defined(_MSC_VER) && _MSC_VER >= 1929
+#if defined(_MSC_VER) && _MSC_VER >= 1929
 #  define PLUGIFY_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #else
-#  error "Compiler not supported, please report an issue."
+#  define PLUGIFY_NO_UNIQUE_ADDRESS [[no_unique_address]]
 #endif
 
-#if __has_cpp_attribute(assume)
-#  define PLUGIFY_ASSUME(...) [[assume(__VA_ARGS__)]]
-#elif defined(_MSC_VER) // Microsoft Visual C++
-#  define PLUGIFY_ASSUME(...) __assume(__VA_ARGS__)
-#elif defined(__clang__) // LLVMs
-#  define PLUGIFY_ASSUME(...) __builtin_assume(__VA_ARGS__)
-#elif defined(__GNUC__)
-#if __GNUC__ >= 13
-#  define PLUGIFY_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
-#else
-#  define PLUGIFY_ASSUME(...) do { if (!(__VA_ARGS__)) __builtin_unreachable(); } while (false);
-#endif
-#else
-#  define PLUGIFY_ASSUME(...) void(0);
-#endif
-
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
 #  define PLUGIFY_UNREACHABLE() __builtin_unreachable()
 #elif defined (_MSC_VER)
 #  define PLUGIFY_UNREACHABLE() __assume(false)
 #else
-#  error "Compiler not supported, please report an issue."
+#  define PLUGIFY_UNREACHABLE()
 #endif
 
 #if defined(__clang__)
@@ -209,6 +113,9 @@
 #elif defined(__GNUC__)
 #  define PLUGIFY_FORCE_INLINE [[gnu::always_inline]] inline
 #  define PLUGIFY_NOINLINE [[gnu::noinline]]
+#elif defined(__INTEL_COMPILER)
+#  define PLUGIFY_FORCE_INLINE __attribute__((always_inline))
+#  define PLUGIFY_NOINLINE __attribute__((noinline))
 #elif defined(_MSC_VER)
 #  pragma warning(error: 4714)
 #  define PLUGIFY_FORCE_INLINE __forceinline
@@ -218,7 +125,7 @@
 #  define PLUGIFY_NOINLINE
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
 #  define PLUGIFY_RESTRICT __restrict__
 #elif defined(_MSC_VER)
 #  define PLUGIFY_RESTRICT __restrict
