@@ -10,8 +10,8 @@
 using namespace plugify;
 
 Module::Module(UniqueId id, const LocalPackage& package) : _id{id}, _name{package.name}, _lang{package.type}, _descriptor{std::static_pointer_cast<LanguageModuleDescriptor>(package.descriptor)} {
-	PL_ASSERT(package.type != "plugin", "Invalid package type for module ctor");
-	PL_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
+	PL_ASSERT(package.type != "plugin" && "Invalid package type for module ctor");
+	PL_ASSERT(package.path.has_parent_path() && "Package path doesn't contain parent path");
 	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
 	_baseDir = package.path.parent_path();
 	_filePath = _baseDir / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, package.name);
@@ -22,7 +22,7 @@ Module::Module(Module&& module) noexcept {
 }
 
 bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
-	PL_ASSERT(GetState() != ModuleState::Loaded, "Module already was initialized");
+	PL_ASSERT(GetState() != ModuleState::Loaded && "Module already was initialized");
 
 	std::error_code ec;
 	auto is_regular_file = [&](const fs::path& path) {

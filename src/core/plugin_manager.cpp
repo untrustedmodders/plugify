@@ -64,8 +64,8 @@ void PluginManager::Update(DateTime dt) {
 }
 
 void PluginManager::DiscoverAllModulesAndPlugins() {
-	PL_ASSERT(_allModules.empty(), "Modules already initialized");
-	PL_ASSERT(_allPlugins.empty(), "Plugins already initialized");
+	PL_ASSERT(_allModules.empty() && "Modules already initialized");
+	PL_ASSERT(_allPlugins.empty() && "Plugins already initialized");
 	
 	auto plugify = _plugify.lock();
 	PL_ASSERT(plugify);

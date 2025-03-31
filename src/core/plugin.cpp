@@ -8,8 +8,8 @@ using namespace plugify;
 
 Plugin::Plugin(UniqueId id, const LocalPackage& package, const BasePaths& paths) : _id{id}, _name{package.name}, _descriptor{std::static_pointer_cast<PluginDescriptor>(package.descriptor)},
 																				   _configsDir{paths.configs / _name}, _dataDir{paths.data / _name}, _logsDir{paths.logs / _name} {
-	PL_ASSERT(package.type == "plugin", "Invalid package type for plugin ctor");
-	PL_ASSERT(package.path.has_parent_path(), "Package path doesn't contain parent path");
+	PL_ASSERT(package.type == "plugin" && "Invalid package type for plugin ctor");
+	PL_ASSERT(package.path.has_parent_path() && "Package path doesn't contain parent path");
 	_baseDir = package.path.parent_path();
 }
 
@@ -18,7 +18,7 @@ Plugin::Plugin(Plugin&& plugin) noexcept {
 }
 
 bool Plugin::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
-	PL_ASSERT(GetState() != PluginState::Loaded, "Plugin already was initialized");
+	PL_ASSERT(GetState() != PluginState::Loaded && "Plugin already was initialized");
 
 	std::error_code ec;
 	auto is_regular_file = [&](const fs::path& path) {

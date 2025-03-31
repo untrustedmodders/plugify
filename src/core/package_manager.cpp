@@ -909,7 +909,7 @@ void PackageManager::UninstallAllPackages() {
 }
 
 bool PackageManager::UninstallPackage(const LocalPackagePtr& package, bool remove) {
-	PL_ASSERT(package->path.has_parent_path(), "Package path doesn't contain parent path");
+	PL_ASSERT(package->path.has_parent_path() && "Package path doesn't contain parent path");
 	auto packagePath = package->path.parent_path();
 	std::error_code ec = FileSystem::RemoveFolder(packagePath);
 	if (!ec) {
