@@ -16,7 +16,6 @@
 #if !PLUGIFY_HAS_CXX26
 #if PLUGIFY_PLATFORM_LINUX
 #include <fcntl.h>
-#include <signal.h>
 #include <unistd.h>
 #endif
 #endif // !C++26
@@ -30,6 +29,12 @@
 #if !PLUGIFY_HAS_CXX26
 #if PLUGIFY_COMPILER_MSVC
 #include <intrin.h>
+#endif
+#endif // !C++26
+
+#if !PLUGIFY_HAS_CXX26
+#if PLUGIFY_PLATFORM_POSIX
+#include <csignal>
 #endif
 #endif // !C++26
 
@@ -53,8 +58,8 @@ namespace plg {
 		__debugbreak();
 #elif PLUGIFY_COMPILER_CLANG
 		__builtin_debugtrap();
-#elif PLUGIFY_COMPILER_GCC && !PLUGIFY_ARCH_ARM
-		__asm__ __volatile__("int 3");
+#elif PLUGIFY_COMPILER_GCC
+		__builtin_trap();
 #else
 		DebugBreak();
 #endif
@@ -163,17 +168,17 @@ namespace plg {
 		} // namespace debugging
 	} // namespace detail
 
-	inline PLUGIFY_NOINLINE bool is_debugger_present() noexcept {
+	PLUGIFY_NOINLINE inline bool is_debugger_present() noexcept {
 		return plg::detail::debugging::parse_proc_status();
 	}
 
 	PLUGIFY_FORCE_INLINE void breakpoint() noexcept {
 #if PLUGIFY_COMPILER_CLANG
 		__builtin_debugtrap();
-#elif PLUGIFY_COMPILER_GCC && !PLUGIFY_ARCH_ARM
-		__asm__ __volatile__("int 3");
+#elif PLUGIFY_COMPILER_GCC
+		__builtin_trap();
 #else
-		kill(getpid(), SIGTRAP);
+		raise(SIGTRAP);
 #endif
 	}
 
@@ -188,8 +193,10 @@ namespace plg {
 		__debugbreak();
 #elif PLUGIFY_COMPILER_CLANG
 		__builtin_debugtrap();
-#elif PLUGIFY_COMPILER_GCC && !PLUGIFY_ARCH_ARM
-		__asm__ __volatile__("int 3");
+#elif PLUGIFY_COMPILER_GCC
+		__builtin_trap();
+#elif PLUGIFY_PLATFORM_POSIX
+        raise(SIGTRAP);
 #endif
 	}
 

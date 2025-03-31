@@ -91,7 +91,7 @@ namespace plugify {
 #if _WIN32
 			localtime_s(&time, &t); // Windows-specific
 #else
-			localtime_r(&t, &localTime); // POSIX-compliant
+			localtime_r(&t, &time); // POSIX-compliant
 #endif
 			std::string buffer(80, '\0');
 			size_t res = std::strftime(buffer.data(), buffer.size(), format.data(), &time);
