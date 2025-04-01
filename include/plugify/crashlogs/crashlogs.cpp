@@ -1,6 +1,5 @@
 #include "crashlogs.hpp"
 
-#include <stacktrace>
 //needed to get a stack trace
 #if PLUGIFY_STACKTRACE_SUPPORT
 #include <stacktrace>
