@@ -43,7 +43,7 @@ namespace plugify {
 
 		MemProtector protector(ptr, size, flag);
 
-#if defined(__GNUC__) || defined(__clang__)
+#if PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_CLANG
 		struct GCC_MemFunPtr {
 			union {
 				void* adrr;			// always even
@@ -61,7 +61,7 @@ namespace plugify {
 		}
 
 		return vtindex;
-#elif defined(_MSC_VER)
+#elif PLUGIFY_COMPILER_MSVC
 		// https://www.unknowncheats.me/forum/c-and-c-/102577-vtable-index-pure-virtual-function.html
 
 		// Check whether it's a virtual function call on x86
@@ -136,7 +136,7 @@ namespace plugify {
 
 		return finder((uint8_t*)ptr);
 #else
-#error "Compiler not support"
+#error "Compiler not supported, please report an issue."
 #endif
 	}
 } // namespace plugify

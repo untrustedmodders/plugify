@@ -6,12 +6,12 @@
 namespace plg {
 	PLUGIFY_WARN_PUSH()
 
-#if defined(__clang__)
+#if PLUGIFY_COMPILER_CLANG
 	PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
 	PLUGIFY_WARN_IGNORE("-Wnested-anon-types")
-#elif defined(__GNUC__)
+#elif PLUGIFY_COMPILER_GCC
 	PLUGIFY_WARN_IGNORE("-Wpedantic")
-#elif defined(_MSC_VER)
+#elif PLUGIFY_COMPILER_MSVC
 	PLUGIFY_WARN_IGNORE(4201)
 #endif
 

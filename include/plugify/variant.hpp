@@ -367,7 +367,7 @@ namespace plg {
 
 		template<class T>
 		inline constexpr T* addressof(T& obj) noexcept {
-#if defined(__GNUC__) || defined(__clang__)
+#if PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_CLANG
 			return __builtin_addressof(obj);
 #elif defined(PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE)
 			// if & is overloaded, use the ugly version

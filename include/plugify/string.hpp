@@ -1,9 +1,9 @@
 #pragma once
 
 // Just in case, because we can't ignore some warnings from `-Wpedantic` (about zero size arrays and anonymous structs when gnu extensions are disabled) on gcc
-#if defined(__clang__)
+#if PLUGIFY_COMPILER_CLANG
 #  pragma clang system_header
-#elif defined(__GNUC__)
+#elif PLUGIFY_COMPILER_GCC
 #  pragma GCC system_header
 #endif
 
@@ -102,12 +102,12 @@ namespace plg {
 
 		PLUGIFY_WARN_PUSH()
 
-#if defined(__clang__)
+#if PLUGIFY_COMPILER_CLANG
 		PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
 		PLUGIFY_WARN_IGNORE("-Wzero-length-array")
-#elif defined(__GNUC__)
+#elif PLUGIFY_COMPILER_GCC
 		PLUGIFY_WARN_IGNORE("-Wpedantic")
-#elif defined(_MSC_VER)
+#elif PLUGIFY_COMPILER_MSVC
 		PLUGIFY_WARN_IGNORE(4201)
 		PLUGIFY_WARN_IGNORE(4200)
 #endif
@@ -1732,7 +1732,7 @@ namespace plg {
 
 		typedef int (*wide_printf)(wchar_t* __restrict, std::size_t, const wchar_t* __restrict, ...);
 
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 		inline int truncate_snwprintf(wchar_t* __restrict buffer, std::size_t count, const wchar_t* __restrict format, ...) {
 			int r;
 			va_list args;
@@ -1744,7 +1744,7 @@ namespace plg {
 #endif
 
 		PLUGIFY_FORCE_INLINE constexpr wide_printf get_swprintf() noexcept {
-#if defined(_MSC_VER)
+#if PLUGIFY_COMPILER_MSVC
 			return static_cast<int(__cdecl*)(wchar_t* __restrict, std::size_t, const wchar_t* __restrict, ...)>(truncate_snwprintf);
 #else
 			return swprintf;
@@ -1842,11 +1842,11 @@ namespace plg {
 		inline namespace string_literals {
 			PLUGIFY_WARN_PUSH()
 
-#if defined(__clang__)
+#if PLUGIFY_COMPILER_CLANG
 			PLUGIFY_WARN_IGNORE("-Wuser-defined-literals")
-#elif defined(__GNUC__)
+#elif PLUGIFY_COMPILER_GCC
 			PLUGIFY_WARN_IGNORE("-Wliteral-suffix")
-#elif defined(_MSC_VER)
+#elif PLUGIFY_COMPILER_MSVC
 			PLUGIFY_WARN_IGNORE(4455)
 #endif
 			// suffix for basic_string literals
