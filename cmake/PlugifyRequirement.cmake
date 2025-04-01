@@ -1,0 +1,86 @@
+# Use C++20
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+
+# C++20 feature checks. Some Linux environments are incomplete.
+check_cpp20_feature("__cpp_structured_bindings" 201606)
+check_cpp20_feature("__cpp_constinit" 201907)
+check_cpp20_feature("__cpp_designated_initializers" 201707)
+check_cpp20_feature("__cpp_using_enum" 201907)
+check_cpp20_feature("__cpp_lib_bit_cast" 201806)
+check_cpp20_feature("__cpp_lib_bitops" 201907)
+check_cpp20_feature("__cpp_lib_int_pow2" 202002)
+check_cpp20_feature("__cpp_lib_starts_ends_with" 201711)
+check_cpp20_attribute("likely" 201803)
+check_cpp20_attribute("unlikely" 201803)
+check_cpp20_attribute("no_unique_address" 201803)
+
+include(CheckCXXCompilerFlag)
+
+if(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
+    if(PLUGIFY_USE_LIBCPP)
+        check_cxx_compiler_flag(-stdlib=libc++ PLUGIFY_HAS_LIBCPP)
+        if(NOT PLUGIFY_HAS_LIBCPP)
+            message(VERBOSE "The option PLUGIFY_USE_LIBCPP is set but libc++ is not available.")
+        endif()
+
+        if(PLUGIFY_USE_STATIC_STDLIB)
+            check_cxx_compiler_flag(-static-libc++ PLUGIFY_HAS_STATIC_LIBCPP)
+            if(NOT PLUGIFY_HAS_LIBCPP)
+                message(VERBOSE "The option PLUGIFY_USE_STATIC_STDLIB is set but static-libc++ is not available.")
+            endif()
+        endif()
+    else()
+        if(PLUGIFY_USE_STATIC_STDLIB)
+            check_cxx_compiler_flag(-static-libstdc++ PLUGIFY_HAS_STATIC_LIBSTDCPP)
+            if(NOT PLUGIFY_HAS_LIBCPP)
+                message(VERBOSE "The option PLUGIFY_USE_STATIC_STDLIB is set but static-libstdc++ is not available.")
+            endif()
+        endif()
+    endif()
+
+    if(PLUGIFY_USE_STATIC_STDLIB)
+        check_cxx_compiler_flag(-static-libgcc PLUGIFY_HAS_STATIC_LIBGCC)
+        if(NOT PLUGIFY_HAS_LIBCPP)
+            message(VERBOSE "The option PLUGIFY_USE_STATIC_STDLIB is set but static-libgcc is not available.")
+        endif()
+    endif()
+endif()
+
+if(PLUGIFY_USE_ARM)
+    if(PLUGIFY_CPU_ARCH_ARM32)
+        set(PLUGIFY_EXTRA_FLAGS -marm -march=armv7-a -mfpu=neon-vfpv4)
+    endif()
+elseif(PLUGIFY_CPU_ARCH_RISCV64)
+    # Don't want function calls for atomics.
+    if(PLUGIFY_COMPILER_GCC)
+        set(PLUGIFY_EXTRA_FLAGS ${PLUGIFY_EXTRA_FLAGS} -finline-atomics)
+
+        # Still need this, apparently.
+        link_libraries("-latomic")
+    endif()
+
+    if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(PLUGIFY_EXTRA_FLAGS ${PLUGIFY_EXTRA_FLAGS} -fomit-frame-pointer)
+    endif()
+elseif(NOT PLUGIFY_DISABLE_SSE4)
+    # Define compiler-specific flags
+    set(GCC_CLANG_FLAGS -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -msha)
+    set(MSVC_FLAGS /arch:AVX /arch:AVX2) # /arch:SSE /arch:SSE2 only for x86
+    set(INTEL_FLAGS -xSSE2 -xSSE3 -xSSSE3 -xSSE4.1 -xSSE4.2 -xSHA)
+
+    # Determine the compiler and set the appropriate flags
+    if(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
+        set(PLUGIFY_EXTRA_FLAGS ${GCC_CLANG_FLAGS})
+    elseif(PLUGIFY_COMPILER_MSVC)
+        set(PLUGIFY_EXTRA_FLAGS ${MSVC_FLAGS})
+    elseif(PLUGIFY_COMPILER_INTEL)
+        set(PLUGIFY_EXTRA_FLAGS ${INTEL_FLAGS})
+    else()
+        message(FATAL_ERROR "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+endif()
