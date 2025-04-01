@@ -71,7 +71,10 @@
 
 #if defined(__clang__)
 
-#  define PLUGIFY_COMPILER_CLANG                      1
+#  ifndef PLUGIFY_COMPILER_CLANG
+#    define PLUGIFY_COMPILER_CLANG 1
+#  endif
+
 #  define PLUGIFY_COMPILER_CLANG_VERSION              PLUGIFY_COMPILER_MAKE_VERSION3(__clang_major__, __clang_minor__, __clang_patchlevel__)
 #  define PLUGIFY_CLANG_AT_LEAST(major, minor, patch) (PLUGIFY_COMPILER_CLANG_VERSION >= PLUGIFY_COMPILER_MAKE_VERSION3((major), (minor), (patch)))
 #  define PLUGIFY_CLANG_BEFORE(major, minor, patch)   (PLUGIFY_COMPILER_CLANG_VERSION < PLUGIFY_COMPILER_MAKE_VERSION3((major), (minor), (patch)))
@@ -82,7 +85,10 @@
 
 #elif defined(__GNUC__)
 
-#  define PLUGIFY_COMPILER_GCC                      1
+#  ifndef PLUGIFY_COMPILER_GCC
+#    define PLUGIFY_COMPILER_GCC 1
+#  endif
+
 #  define PLUGIFY_COMPILER_GCC_VERSION              PLUGIFY_COMPILER_MAKE_VERSION3(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
 #  define PLUGIFY_GCC_AT_LEAST(major, minor, patch) (PLUGIFY_COMPILER_GCC_VERSION >= PLUGIFY_COMPILER_MAKE_VERSION3((major), (minor), (patch)))
 #  define PLUGIFY_GCC_BEFORE(major, minor, patch)   (PLUGIFY_COMPILER_GCC_VERSION < PLUGIFY_COMPILER_MAKE_VERSION3((major), (minor), (patch)))
@@ -93,7 +99,10 @@
 
 #elif defined(_MSC_VER)
 
-#  define PLUGIFY_COMPILER_MSVC 1
+#  ifndef PLUGIFY_COMPILER_MSVC
+#    define PLUGIFY_COMPILER_MSVC 1
+#  endif
+
 #if (_MSC_VER >= 1943)
 #  define PLUGIFY_COMPILER_MSVC_VERSION PLUGIFY_COMPILER_MAKE_VERSION2(2022, 13)
 #elif (_MSC_VER >= 1942)

@@ -50,7 +50,7 @@ namespace plugify {
 
 	public:
 		static bool IsSupportsPlatform(const std::optional<std::vector<std::string>>& supportedPlatforms) {
-			return !supportedPlatforms.has_value() || supportedPlatforms->empty() || std::find(supportedPlatforms->begin(), supportedPlatforms->end(), PLUGIFY_PLATFORM) != supportedPlatforms->end();
+			return !supportedPlatforms.has_value() || supportedPlatforms->empty() || std::find(supportedPlatforms->begin(), supportedPlatforms->end(), PLUGIFY_PLATFORM) != supportedPlatforms->end(); //-V001
 		}
 
 	private:

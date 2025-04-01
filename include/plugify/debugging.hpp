@@ -1,38 +1,38 @@
 #pragma once
 
-#include <plugify/macro.hpp>
+#include "macro.hpp"
 
-#if PLUGIFY_HAS_CXX26
+#if COMPILER_SUPPORTS_STACKTRACE
 #include <debugging>
 #endif // C++26
 
-#if !PLUGIFY_HAS_CXX26
+#if !COMPILER_SUPPORTS_STACKTRACE
 #if PLUGIFY_PLATFORM_LINUX
 #include <cerrno>
 #include <cstring>
 #endif
 #endif // !C++26
 
-#if !PLUGIFY_HAS_CXX26
+#if !COMPILER_SUPPORTS_STACKTRACE
 #if PLUGIFY_PLATFORM_LINUX
 #include <fcntl.h>
 #include <unistd.h>
 #endif
 #endif // !C++26
 
-#if !PLUGIFY_HAS_CXX26
+#if !COMPILER_SUPPORTS_STACKTRACE
 #if PLUGIFY_PLATFORM_WINDOWS
 #include <windows.h>
 #endif
 #endif // !C++26
 
-#if !PLUGIFY_HAS_CXX26
+#if !COMPILER_SUPPORTS_STACKTRACE
 #if PLUGIFY_COMPILER_MSVC
 #include <intrin.h>
 #endif
 #endif // !C++26
 
-#if !PLUGIFY_HAS_CXX26
+#if !COMPILER_SUPPORTS_STACKTRACE
 #if PLUGIFY_PLATFORM_POSIX
 #include <csignal>
 #endif
@@ -40,7 +40,7 @@
 
 
 namespace plg {
-#if PLUGIFY_HAS_CXX26
+#if COMPILER_SUPPORTS_STACKTRACE
 	using std::breakpoint;
 	using std::breakpoint_if_debugging;
 	using std::is_debugger_present;
@@ -69,14 +69,14 @@ namespace plg {
 
 	namespace detail {
 		namespace debugging {
-			inline bool parse_proc_status_line(char* buf, std::size_t size) noexcept {
+			inline bool parse_proc_status_line(char* buf, size_t size) noexcept {
 				if (std::strncmp(buf, "TracerPid:\t", 11) != 0) {
 					return false;
 				}
 				unsigned long long pid = 0;
-				std::size_t pos = 11;
+				size_t pos = 11;
 				while (pos < size) {
-					unsigned char byte = static_cast<unsigned char>(buf[pos]);
+					auto byte = static_cast<unsigned char>(buf[pos]);
 					if (!(static_cast<unsigned char>('0') <= byte && byte <= static_cast<unsigned char>('9'))) {
 						return false;
 					}
@@ -113,11 +113,11 @@ namespace plg {
 				}
 				bool eof = false;
 				uint8_t iobuf[1024];
-				std::size_t iobuf_size = 0;
+				size_t iobuf_size = 0;
 				char linebuf[128];
-				std::size_t linebuf_size = 0;
+				size_t linebuf_size = 0;
 				while (!eof) {
-					ssize_t bytes_read = read(fd, iobuf, 1024);
+					ssize_t bytes_read = read(fd, iobuf, sizeof(iobuf));
 					if (bytes_read == -1) {
 						if (errno == EINTR) {
 							continue;
@@ -125,15 +125,15 @@ namespace plg {
 					} else if (bytes_read == 0) {
 						eof = true;
 					}
-					iobuf_size = static_cast<std::size_t>(bytes_read);
-					for (std::size_t i = 0; i < iobuf_size; ++i) {
+					iobuf_size = static_cast<size_t>(bytes_read);
+					for (size_t i = 0; i < iobuf_size; ++i) {
 						if (static_cast<unsigned char>(iobuf[i]) == static_cast<unsigned char>('\n')) {
 							if (parse_proc_status_line(linebuf, linebuf_size)) {
 								detected_debugger = true;
 							}
 							linebuf_size = 0;
 						} else {
-							if (linebuf_size < 128) {
+							if (linebuf_size < sizeof(linebuf[)) {
 								linebuf[linebuf_size] = static_cast<char>(static_cast<unsigned char>(iobuf[i]));
 								linebuf_size++;
 							}

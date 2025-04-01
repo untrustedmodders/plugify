@@ -10,6 +10,8 @@
 #include <plugify/plugin_descriptor.hpp>
 #include <plugify/plugin_manager.hpp>
 #include <plugify/plugin_reference_descriptor.hpp>
+#include <plugify/debugging.hpp>
+#include <plugify/crashlogs/crashlogs.hpp>
 
 #include <chrono>
 #include <iostream>
@@ -113,6 +115,12 @@ void Print(std::string_view name, T t, F&& f) {
 }
 
 int main() {
+	if (!plg::is_debugger_present()) {
+		plugify::crashlogs::begin_monitoring();
+		plugify::crashlogs::set_on_write_crashlog_callback([]([[maybe_unused]] std::string_view path, std::string_view stack) {
+			CONPRINTE(stack);
+		});
+	}
     std::shared_ptr<plugify::IPlugify> plug = plugify::MakePlugify();
     if (plug) {
         auto logger = std::make_shared<plug::StdLogger>();
