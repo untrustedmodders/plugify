@@ -25,6 +25,9 @@ endif()
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif()
+if(UNIX OR CYGWIN)
+    set(POSIX TRUE)
+endif()
 
 message(VERBOSE "*")
 message(VERBOSE "* ${PROJECT_NAME} v${PROJECT_VERSION} (${CMAKE_BUILD_TYPE})")
@@ -146,6 +149,7 @@ endif()
 option(PLUGIFY_BUILD_TESTS "Enable building tests." ON)
 option(PLUGIFY_BUILD_JIT "Build jit object library." OFF)
 option(PLUGIFY_BUILD_ASSEMBLY "Build assembly object library." OFF)
+option(PLUGIFY_BUILD_CRASHLOGS "Build crashlogs object library." OFF)
 option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
 
 option(PLUGIFY_BUILD_OBJECT_LIB "Build plugify as object library." OFF)
@@ -157,6 +161,7 @@ option(PLUGIFY_USE_EXTERNAL_ASMJIT "Use external asmjit library." OFF)
 option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library." OFF)
 option(PLUGIFY_USE_EXTERNAL_CURL "Use external curl library." ON)
 option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
+option(PLUGIFY_USE_EXTERNAL_CPPTRACE "Use external cpptrace library." OFF)
 
 option(PLUGIFY_INTERFACE "Build as lightweight interface for language modules." OFF)
 option(PLUGIFY_DOWNLOADER "Enable downloader for package manager." ON)
@@ -231,7 +236,11 @@ cmake_push_check_state()
 check_cxx_source_compiles("
     #include<format>
     #include<string>
-    int main() { std::string a = std::format(\"{}.{}.{}\", \"Hello\", \"World\", \"C++\"); return 0; }
+
+    int main() {
+        std::string a = std::format(\"{}.{}.{}\", \"Hello\", \"World\", \"C++\");
+        return 0;
+    }
     " COMPILER_SUPPORTS_FORMAT)
 
 cmake_pop_check_state()
@@ -243,6 +252,29 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
         include(cmake/fmt.cmake)
     endif()
     target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
+endif()
+
+# ------------------------------------------------------------------------------
+# Stacktrace
+cmake_push_check_state()
+
+check_cxx_source_compiles("
+    #include <stacktrace>
+
+    int main() {
+        auto trace = std::stacktrace::current();
+        return 0;
+    }
+    " COMPILER_SUPPORTS_STACKTRACE)
+
+cmake_pop_check_state()
+
+if(NOT COMPILER_SUPPORTS_STACKTRACE)
+    if(PLUGIFY_USE_EXTERNAL_CPPTRACE)
+        find_package(cpptrace REQUIRED)
+    else()
+        include(cmake/cpptrace.cmake)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
@@ -362,10 +394,13 @@ set(PLUGIFY_COMPILE_DEFINITIONS
         PLUGIFY_COMPILER_CLANG=$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>
         PLUGIFY_COMPILER_GCC=$<CXX_COMPILER_ID:GNU>
         PLUGIFY_COMPILER_INTEL=$<CXX_COMPILER_ID:Intel>
+
+        PLUGIFY_CXX_STANDARD=${CMAKE_CXX_STANDARD}
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
+        PLUGIFY_STACKTRACE_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_STACKTRACE}>
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -388,6 +423,7 @@ endif()
 if(PLUGIFY_BUILD_TESTS)
     set(PLUGIFY_BUILD_JIT ON)
     set(PLUGIFY_BUILD_ASSEMBLY ON)
+    set(PLUGIFY_BUILD_CRASHLOGS ON)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -449,6 +485,25 @@ if(PLUGIFY_BUILD_ASSEMBLY)
     endif()
     if(PLUGIFY_HAS_LIBCPP)
         target_compile_options(${PROJECT_NAME}-assembly PUBLIC -stdlib=libc++)
+    endif()
+endif()
+if(PLUGIFY_BUILD_CRASHLOGS)
+    add_library(${PROJECT_NAME}-crashlogs OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/crashlogs/crashlogs.cpp")
+    add_library(${PROJECT_NAME}::${PROJECT_NAME}-crashlogs ALIAS ${PROJECT_NAME}-crashlogs)
+    target_include_directories(${PROJECT_NAME}-crashlogs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_compile_definitions(${PROJECT_NAME}-crashlogs PRIVATE
+            ${PLUGIFY_COMPILE_DEFINITIONS}
+            PLUGIFY_SEPARATE_SOURCE_FILES=1
+    )
+    if(NOT COMPILER_SUPPORTS_STACKTRACE)
+        target_link_libraries(${PROJECT_NAME}-crashlogs PRIVATE cpptrace::cpptrace)
+    endif()
+    target_include_directories(${PROJECT_NAME}-crashlogs PUBLIC ${CMAKE_BINARY_DIR}/exports)
+    if(LINUX)
+        target_compile_definitions(${PROJECT_NAME}-crashlogs PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+    endif()
+    if(PLUGIFY_HAS_LIBCPP)
+        target_compile_options(${PROJECT_NAME}-crashlogs PUBLIC -stdlib=libc++)
     endif()
 endif()
 
