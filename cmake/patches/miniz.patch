@@ -1,0 +1,22 @@
+From ec883ee738fb1ce626f4f08f119801e3df7ae48c Mon Sep 17 00:00:00 2001
+From: Nikita Ushakov <nikita.ushakov0000@outlook.com>
+Date: Tue, 1 Apr 2025 22:52:52 +0100
+Subject: [PATCH] Update Cmake
+
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3cb344b..058c156 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.0)
++cmake_minimum_required(VERSION 3.14)
+ 
+ # determine whether this is a standalone project or included by other projects
+ set (MINIZ_STANDALONE_PROJECT ON)
+-- 
+2.44.0.windows.1
+
