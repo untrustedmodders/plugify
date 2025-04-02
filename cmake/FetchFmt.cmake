@@ -4,8 +4,9 @@ message(STATUS "Pulling and configuring fmt")
 
 FetchContent_Declare(
         fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG 10.2.1
+        GIT_REPOSITORY ${PLUGIFY_FMT_REPO}
+        GIT_TAG ${PLUGIFY_FMT_TAG}
+        GIT_SHALLOW TRUE
 )
 
 set(FMT_DOC OFF CACHE INTERNAL "Generate the doc target.")

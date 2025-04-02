@@ -4,8 +4,9 @@ message(STATUS "Pulling and configuring curl")
 
 FetchContent_Declare(
         curl
-        GIT_REPOSITORY https://github.com/curl/curl.git
-        GIT_TAG curl-8_6_0
+        GIT_REPOSITORY ${PLUGIFY_CURL_REPO}
+        GIT_TAG ${PLUGIFY_CURL_TAG}
+        GIT_SHALLOW TRUE
 )
 
 set(BUILD_TESTING OFF CACHE BOOL "Turn off testing" FORCE)
