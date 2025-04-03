@@ -8,6 +8,7 @@ if(POLICY CMP0092)
     cmake_policy(SET CMP0092 NEW) # Don't add -W3 warning level by default.
 endif()
 
+
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" PLUGIFY_VERSION)
 string(STRIP "${PLUGIFY_VERSION}" PLUGIFY_VERSION)
 message(STATUS "Plugify Version: ${PLUGIFY_VERSION}")
