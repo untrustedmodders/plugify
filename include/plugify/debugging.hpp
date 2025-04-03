@@ -133,7 +133,7 @@ namespace plg {
 							}
 							linebuf_size = 0;
 						} else {
-							if (linebuf_size < sizeof(linebuf[)) {
+							if (linebuf_size < sizeof(linebuf)) {
 								linebuf[linebuf_size] = static_cast<char>(static_cast<unsigned char>(iobuf[i]));
 								linebuf_size++;
 							}
