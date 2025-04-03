@@ -116,8 +116,8 @@ void Print(std::string_view name, T t, F&& f) {
 
 int main() {
 	if (!plg::is_debugger_present()) {
-		plugify::crashlogs::begin_monitoring();
-		plugify::crashlogs::set_on_write_crashlog_callback([]([[maybe_unused]] std::string_view path, std::string_view stack) {
+		plugify::crashlogs::BeginMonitoring();
+		plugify::crashlogs::SetOnWriteCrashlogCallback([]([[maybe_unused]] std::filesystem::path_view path, std::string_view stack) {
 			CONPRINTE(stack);
 		});
 	}
