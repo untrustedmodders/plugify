@@ -32,22 +32,18 @@ std::vector<std::string> Split(const std::string& str, char sep) {
 #define CONPRINTF(...) std::cout << std::format(__VA_ARGS__) << std::endl
 
 int32_t FormatInt(const std::string& str) {
-	try {
-		size_t pos;
-		int32_t result = std::stoi(str, &pos);
-		if (pos != str.length()) {
-			throw std::invalid_argument("Trailing characters after the valid part");
-		}
-		return result;
-	} catch (const std::invalid_argument& e) {
-		CONPRINTF("Invalid argument: {}", e.what());
-	} catch (const std::out_of_range& e) {
-		CONPRINTF("Out of range: {}", e.what());
-	} catch (const std::exception& e) {
-		CONPRINTF("Conversion error: {}", e.what());
+	int32_t result;
+	auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+
+	if (ec != std::errc{}) {
+		CONPRINTF("Error: {}", std::make_error_code(ec).message());
+		return -1;
+	} else if (ptr != str.data() + str.size()) {
+		CONPRINTF("Invalid argument: trailing characters after the valid part");
+		return -1;
 	}
 
-	return -1;
+	return result;
 }
 
 template<typename S, typename T, typename F>
