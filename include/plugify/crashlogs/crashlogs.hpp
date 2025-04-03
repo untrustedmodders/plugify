@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string_view>
+#include <plugify/path.hpp>
 
 /**
  * @brief CrashLogs
@@ -12,44 +12,43 @@
  */
 namespace plugify::crashlogs {
 	/**
-	 * @brief Callback for when a crash log is written
-	 */
-	using on_write_crashlog = void(*)(std::string_view, std::string_view);
+     * @brief Callback for when a crash log is written
+     */
+	using OnOutputCrashlog = void (*)(std::filesystem::path_view path, std::string_view trace);
 
 	/**
-	 * @brief Begins crash monitoring. Crash logs will not be generated until begin_monitoring has been called
-	 */
-	void begin_monitoring();
+     * @brief Begins crash monitoring. Crash logs will not be generated until begin_monitoring has been called
+     */
+	void BeginMonitoring();
 
 	/**
-	 * @brief Set the folder path that crashlogs will be saved in.
-	 * If the folder doesn't exist, it will be created when the program crashes
-	 * @param folder_path The path to the folder where crash logs will be saved.
-	 */
-	void set_crashlog_folder(std::string_view folder_path);
+     * @brief Set the folder path that crashlogs will be saved in.
+     * If the folder doesn't exist, it will be created when the program crashes
+     * @param folder_path The path to the folder where crash logs will be saved.
+     */
+	void SetCrashlogFolder(std::filesystem::path_view folder_path);
 
 	/**
-	 * @brief Sets the format to use for crash log filenames. Default is "crash_{timestamp}.txt". Crashes are saved in the crashlog folder.
-	 * @param filename_format The format string for crash log filenames.
-	 */
-	void set_crashlog_filename(std::string_view filename_format);
+     * @brief Sets the format to use for crash log filenames. Default is "crash_{timestamp}.txt". Crashes are saved in the crashlog folder.
+     * @param filename_format The format string for crash log filenames.
+     */
+	void SetCrashlogFilename(std::string_view filename_format);
 
 	/**
-	 * @brief After a crash log is written, this optional callback is called with the full file path of where the crash log was written.
-	 * @param callback The callback function to be called after a crash log is written.
-	 */
-	void set_on_write_crashlog_callback(on_write_crashlog callback);
+     * @brief After a crash log is written, this optional callback is called with the full file path of where the crash log was written.
+     * @param callback The callback function to be called after a crash log is written.
+     */
+	void SetOnWriteCrashlogCallback(OnOutputCrashlog callback);
 
 	/**
-	 * @brief The most recently set crashlog header will be printed at the top of the crash log file.
-	 * @param message The header message to be printed at the top of the crash log file.
-	 */
-	void set_crashlog_header_message(std::string_view message);
+     * @brief The most recently set crashlog header will be printed at the top of the crash log file.
+     * @param message The header message to be printed at the top of the crash log file.
+     */
+	void SetCrashlogHeaderMessage(std::string_view message);
 
 	/**
-	 * @brief Returns the current crashlog header message.
-	 * @return The current crashlog header message.
-	 */
-	std::string_view get_crashlog_header_message();
-
-} // namespace plugify::crashlogs
+     * @brief Returns the current crashlog header message.
+     * @return The current crashlog header message.
+     */
+	std::string_view GetCrashlogHeaderMessage();
+}// namespace plugify::crashlogs

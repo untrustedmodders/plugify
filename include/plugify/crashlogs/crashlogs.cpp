@@ -5,23 +5,24 @@
 #include <stacktrace>
 #else
 #include <cpptrace/cpptrace.hpp>
-#endif // PLUGIFY_STACKTRACE_SUPPORT
+#endif// PLUGIFY_STACKTRACE_SUPPORT
 
 //needed for threading (threading needed to be able to output a call stack during a stack overflow)
-#include <thread>
-#include <mutex>
-#include <condition_variable>
 #include <atomic>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 
 //needed for being able to output a timestampped crash log
+#include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <chrono>
 
 //needed for being able to get into the crash handler on a crash
 #include <csignal>
-#include <exception>
 #include <cstdlib>
+#include <exception>
+#include <plugify/macro.hpp>
 
 #if PLUGIFY_PLATFORM_WINDOWS
 #define WIN32_LEAN_AND_MEAN
@@ -41,9 +42,9 @@ namespace plugify::crashlogs {
 	static std::stacktrace trace;
 #else
 	static cpptrace::stacktrace trace;
-#endif // PLUGIFY_STACKTRACE_SUPPORT
+#endif// PLUGIFY_STACKTRACE_SUPPORT
 	static std::string header_message;
-	static int crash_signal = 0; // 0 is not a valid signal id
+	static int crash_signal = 0;// 0 is not a valid signal id
 	static std::filesystem::path output_folder;
 	static std::string filename = "crash_{timestamp}.txt";
 	static on_write_crashlog on_output_crashlog = nullptr;
@@ -52,70 +53,73 @@ namespace plugify::crashlogs {
 	static std::mutex mutex;
 	static std::condition_variable cv;
 	static std::thread output_thread;
+
 	enum class program_status {
 		running = 0,
 		crashed = 1,
 		ending = 2,
 		normal_exit = 3,
 	};
+
 	static std::atomic<program_status> status = program_status::running;
 
 	//public interface (see header for documentation)
-	void set_crashlog_folder(std::string_view folder_path) {
+	void SetCrashlogFolder(std::filesystem::path_view folder_path) {
 		output_folder = folder_path;
 	}
 
-	void set_crashlog_filename(std::string_view filename_format) {
+	void SetCrashlogFilename(std::string_view filename_format) {
 		filename = filename_format;
 	}
 
-	void set_on_write_crashlog_callback(on_write_crashlog callback) {
+	void SetOnWriteCrashlogCallback(OnOutputCrashlog callback) {
 		on_output_crashlog = callback;
 	}
 
-	void set_crashlog_header_message(std::string_view message) {
+	void SetCrashlogHeaderMessage(std::string_view message) {
 		std::unique_lock<std::mutex> lk(mutex);
 		if (status != program_status::running) return;
 		header_message = message;
 	}
 
-	std::string_view get_crashlog_header_message() {
+	std::string_view GetCrashlogHeaderMessage() {
 		return header_message;
 	}
 
-	static std::filesystem::path get_log_filepath();
-	static const char* try_get_signal_name(int signal);
+	static std::filesystem::path GetLogFilepath();
+
+	static const char *TryGetSignalName(int signal);
 
 	//output the crashlog file after a crash has occured
-	static void output_crash_log() {
-		std::filesystem::path path = get_log_filepath();
+	static void OutputCrashLog() {
+		std::filesystem::path path = GetLogFilepath();
 		std::ofstream log(path);
 		if (!header_message.empty())
 			log << header_message << std::endl;
 		if (crash_signal != 0) {
-			log << "Received signal " << crash_signal << " " << try_get_signal_name(crash_signal) << std::endl;
+			log << "Received signal " << crash_signal << " " << TryGetSignalName(crash_signal) << std::endl;
 		}
 		log << trace;
 		log.close();
 
 		if (on_output_crashlog) {
 #if PLUGIFY_STACKTRACE_SUPPORT
-			on_output_crashlog(path.string(), std::to_string(trace));
+			on_output_crashlog(path.native(), std::to_string(trace));
 #else
-			on_output_crashlog(path.string(), trace.to_string());
-#endif // PLUGIFY_STACKTRACE_SUPPORT
+			on_output_crashlog(path.native(), trace.to_string());
+#endif// PLUGIFY_STACKTRACE_SUPPORT
 		}
 	}
 
 	//get the current timestamp as a string, for the crash log filename
-	static std::string current_timestamp() {
+	static std::string CurrentTimestamp() {
 		auto now = std::chrono::system_clock::now();
 		auto t = std::chrono::system_clock::to_time_t(now);
 		std::tm time{};
 #if PLUGIFY_PLATFORM_WINDOWS
-		localtime_s(&time, &t); // Windows-specific
+		localtime_s(&time, &t);// Windows-specific
 #else
-		localtime_r(&t, &time); // POSIX-compliant
+		localtime_r(&t, &time);// POSIX-compliant
 #endif
 		std::string buffer(80, '\0');
 		size_t res = std::strftime(buffer.data(), buffer.size(), "%Y-%m-%d-%H-%M-%S", &time);
@@ -126,12 +130,12 @@ namespace plugify::crashlogs {
 	}
 
 	//utility function needed for crash log timestamps (replace {timestamp} in filename format with the timestamp string)
-	static std::string replace_substr(std::string str, const std::string& search, const std::string& replace) {
+	static std::string ReplaceSubstr(std::string str, std::string_view search, std::string_view replace) {
 		if (search.empty())
 			return str;
 
 		size_t pos = 0;
-		while((pos = str.find(search, pos)) != std::string::npos) {
+		while ((pos = str.find(search, pos)) != std::string::npos) {
 			str.replace(pos, search.length(), replace);
 			pos += replace.length();
 		}
@@ -139,9 +143,10 @@ namespace plugify::crashlogs {
 	}
 
 	//get the crash log filename
-	std::filesystem::path get_log_filepath() {
-		std::string timestampstr = current_timestamp();
-		std::string timestampped_filename = replace_substr(filename, "{timestamp}", timestampstr);
+	std::filesystem::path GetLogFilepath() {
+		std::string timestampstr = CurrentTimestamp();
+		std::string_view search = "{timestamp}";
+		std::string timestampped_filename = ReplaceSubstr(filename, search, timestampstr);
 
 		std::filesystem::path filepath = output_folder / timestampped_filename;
 
@@ -155,7 +160,7 @@ namespace plugify::crashlogs {
 
 	//using a thread here is a hack to get stack space in the case where the crash is a stack overflow
 	//this hack was borrowed from backward.cpp
-	static void crash_handler_thread() {
+	static void CrashHandlerThread() {
 		//wait for the program to crash or exit normally
 		std::unique_lock<std::mutex> lk(mutex);
 		cv.wait(lk, [] { return status != program_status::running; });
@@ -163,7 +168,7 @@ namespace plugify::crashlogs {
 
 		//if it crashed, output the crash log
 		if (status == program_status::crashed) {
-			output_crash_log();
+			OutputCrashLog();
 		}
 
 		//alert the crashing thread we're done with the crash log so it can finish crashing
@@ -171,7 +176,7 @@ namespace plugify::crashlogs {
 		cv.notify_one();
 	}
 
-	static inline void crash_handler() {
+	PLUGIFY_FORCE_INLINE static void CrashHandler() {
 		//if we crashed during a crash... ignore lol
 		if (status != program_status::running) return;
 
@@ -180,7 +185,7 @@ namespace plugify::crashlogs {
 		trace = std::stacktrace::current();
 #else
 		trace = cpptrace::generate_trace();
-#endif // PLUGIFY_STACKTRACE_SUPPORT
+#endif// PLUGIFY_STACKTRACE_SUPPORT
 
 		//resume the monitoring thread
 		status = program_status::crashed;
@@ -193,7 +198,7 @@ namespace plugify::crashlogs {
 
 	//Try to get the string representation of a signal identifier, return an empty string if none is found.
 	//This only covers the signals from the C++ std lib and none of the POSIX or OS specific signal names!
-	static const char* try_get_signal_name(int signal) {
+	static const char *TryGetSignalName(int signal) {
 		switch (signal) {
 			case SIGTERM:
 				return "SIGTERM";
@@ -213,32 +218,33 @@ namespace plugify::crashlogs {
 	}
 
 	//various callbacks needed to get into the crash handler during a crash (borrowed from backward.cpp)
-	static inline void signal_handler(int signal) {
+	static void SignalHandler(int signal) {
 		crash_signal = signal;
-		crash_handler();
+		CrashHandler();
 		std::quick_exit(1);
 	}
 
-	static inline void terminator() {
-		crash_handler();
+	static void Terminator() {
+		CrashHandler();
 		std::quick_exit(1);
 	}
 
 #if PLUGIFY_PLATFORM_WINDOWS
-	__declspec(noinline) static LONG WINAPI exception_handler(EXCEPTION_POINTERS*) {
+	__declspec(noinline) static LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS *) {
 		//TODO consider writing additional output from info to header_reason
-		crash_handler();
+		CrashHandler();
 		return EXCEPTION_CONTINUE_SEARCH;
 	}
-	static void __cdecl invalid_parameter_handler(const wchar_t*,const wchar_t*,const wchar_t*,unsigned int,uintptr_t) {
+
+	static void __cdecl InvalidParameterHandler(const wchar_t *, const wchar_t *, const wchar_t *, unsigned int, uintptr_t) {
 		//TODO consider writing additional output from info to header_reason
-		crash_handler();
-		abort();
+		CrashHandler();
+		std::abort();
 	}
 #endif
 
 	//callback needed during a normal exit to shut down the thread
-	static inline void normal_exit() {
+	static void NormalExit() {
 		status = program_status::normal_exit;
 		cv.notify_one();
 		output_thread.join();
@@ -246,34 +252,33 @@ namespace plugify::crashlogs {
 
 #if PLUGIFY_PLATFORM_WINDOWS
 	//set up all the callbacks needed to get into the crash handler during a crash (borrowed from backward.cpp)
-	void begin_monitoring() {
-		output_thread = std::thread(crash_handler_thread);
+	void BeginMonitoring() {
+		output_thread = std::thread(CrashHandlerThread);
 
-		SetUnhandledExceptionFilter(exception_handler);
-		std::signal(SIGABRT, signal_handler);
-		std::set_terminate(terminator);
+		SetUnhandledExceptionFilter(ExceptionHandler);
+		std::signal(SIGABRT, SignalHandler);
+		std::set_terminate(Terminator);
 		_set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
-		_set_purecall_handler(terminator);
-		_set_invalid_parameter_handler(&invalid_parameter_handler);
+		_set_purecall_handler(Terminator);
+		_set_invalid_parameter_handler(&InvalidParameterHandler);
 
-		std::atexit(normal_exit);
+		std::atexit(NormalExit);
 	}
-#endif // PLUGIFY_PLATFORM_WINDOWS
+#endif// PLUGIFY_PLATFORM_WINDOWS
 
 #if PLUGIFY_PLATFORM_UNIX
 	//set up all the callbacks needed to get into the crash handler during a crash (borrowed from backward.cpp)
 
-	void begin_monitoring() {
-		output_thread = std::thread(crash_handler_thread);
+	void BeginMonitoring() {
+		output_thread = std::thread(CrashHandlerThread);
 
-		std::signal(SIGABRT, signal_handler);
-		std::signal(SIGSEGV, signal_handler);
-		std::signal(SIGILL, signal_handler);
+		std::signal(SIGABRT, SignalHandler);
+		std::signal(SIGSEGV, SignalHandler);
+		std::signal(SIGILL, SignalHandler);
 
-		std::set_terminate(terminator);
+		std::set_terminate(Terminator);
 
-		std::atexit(normal_exit);
+		std::atexit(NormalExit);
 	}
-#endif // PLUGIFY_PLATFORM_UNIX
-
+#endif// PLUGIFY_PLATFORM_UNIX
 }// namespace plugify::crashlogs
