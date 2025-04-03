@@ -47,7 +47,7 @@ namespace plugify::crashlogs {
 	static int crash_signal = 0;// 0 is not a valid signal id
 	static std::filesystem::path output_folder;
 	static std::string filename = "crash_{timestamp}.txt";
-	static on_write_crashlog on_output_crashlog = nullptr;
+	static OnOutputCrashlog on_output_crashlog = nullptr;
 
 	//thread stuff
 	static std::mutex mutex;
