@@ -2,14 +2,26 @@
 # Plugify
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 if(POLICY CMP0092)
     cmake_policy(SET CMP0092 NEW) # Don't add -W3 warning level by default.
 endif()
 
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" PLUGIFY_VERSION)
+string(STRIP "${PLUGIFY_VERSION}" PLUGIFY_VERSION)
+message(STATUS "Plugify Version: ${PLUGIFY_VERSION}")
+
+# version.txt may contain a SemVer of the form 1.2.3-xxx+xxx
+# Extract the first 3 numbers into CMake variables
+string(REGEX REPLACE "[.+-]" ";" PLUGIFY_VERSION_LIST ${PLUGIFY_VERSION})
+list(GET PLUGIFY_VERSION_LIST 0 PLUGIFY_VERSION_MAJOR)
+list(GET PLUGIFY_VERSION_LIST 1 PLUGIFY_VERSION_MINOR)
+list(GET PLUGIFY_VERSION_LIST 2 PLUGIFY_VERSION_PATCH)
 
 # ------------------------------------------------------------------------------
 # Project configuration
-project(plugify VERSION 1.0.0.0 DESCRIPTION "Plugify Core" HOMEPAGE_URL "https://github.com/untrustedmodders/plugify" LANGUAGES C CXX)
+project(plugify VERSION "${PLUGIFY_VERSION_MAJOR}.${PLUGIFY_VERSION_MINOR}.${PLUGIFY_VERSION_PATCH}" DESCRIPTION "Plugify Core" HOMEPAGE_URL "https://github.com/untrustedmodders/plugify" LANGUAGES C CXX)
 
 if(NOT CMAKE_BUILD_TYPE MATCHES "Debug|Devel|MinSizeRel|RelWithDebInfo|Release")
     message(STATUS "CMAKE_BUILD_TYPE not set, defaulting to Debug.")
@@ -24,7 +36,6 @@ message(VERBOSE "*")
 
 # ------------------------------------------------------------------------------
 # Includes
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(PlugifyUtils)
 
 detect_operating_system()
@@ -108,9 +119,6 @@ if(PLUGIFY_EXTRA_FLAGS)
         endif()
     endforeach()
 endif()
-
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" PLUGIFY_VERSION)
-string(STRIP "${PLUGIFY_VERSION}" PLUGIFY_VERSION)
 
 set(PLUGIFY_COMPILE_DEFINITIONS
         PLUGIFY_VERSION="${PLUGIFY_VERSION}"
