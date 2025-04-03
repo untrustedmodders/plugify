@@ -35,12 +35,17 @@ jobs:
         build_type: [Debug]
 
     steps:
-    - uses: actions/checkout@v4
     - uses: msys2/setup-msys2@v2
       with:
         update: true
         msystem: MINGW64
-        install: mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-gcc mingw-w64-x86_64-curl
+        install: git mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-gcc mingw-w64-x86_64-curl
+
+    - uses: actions/checkout@v4
+      
+    - name: Add MSYS2 to PATH
+      run: echo "C:/msys64/usr/bin" >> $GITHUB_PATH
+      shell: pwsh
 
     - name: Configure CMake
       run: >
