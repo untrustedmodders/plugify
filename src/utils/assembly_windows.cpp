@@ -3,7 +3,7 @@
 #include <plugify/assembly.hpp>
 
 #include "os.h"
-#include "scope_guard.hpp"
+#include "defer.hpp"
 
 #if PLUGIFY_ARCH_BITS == 64
 	const WORD PE_FILE_MACHINE = IMAGE_FILE_MACHINE_AMD64;
@@ -125,10 +125,10 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& addit
 		dirCookies.push_back(cookie);
 	}
 
-	auto dirGuard = ScopeGuard([&dirCookies]() {
+	defer {
 		for (auto& cookie : dirCookies)
 			RemoveDllDirectory(cookie);
-	});
+	};
 
 	HMODULE hModule = LoadLibraryExW(modulePath.c_str(), nullptr, TranslateLoading(flags));
 	if (!hModule) {
