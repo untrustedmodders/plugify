@@ -281,6 +281,17 @@ namespace plugify {
 		 */
 		bool InitFromHandle(Handle moduleHandle, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections);
 
+		/**
+		 * @brief Loads the sections of the module into memory.
+		 *
+		 * This function is responsible for loading the individual sections of
+		 * a module into memory. Sections typically represent different parts
+		 * of a module, such as executable code, read-only data, or other data
+		 * segments. The function ensures that these sections are properly loaded
+		 * and ready for execution or inspection.
+		 *
+		 * @return True if the sections were successfully loaded, false otherwise.
+		 */
 		bool LoadSections();
 
 	private:
