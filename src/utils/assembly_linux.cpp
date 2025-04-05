@@ -45,11 +45,11 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const S
 	} dldata{0, name.c_str(), {}};
 
 	dl_iterate_phdr([](dl_phdr_info* info, size_t /* size */, void* data) {
-		auto* dldata = static_cast<dl_data*>(data);
+		auto* _dldata = static_cast<dl_data*>(data);
 
-		if (std::strstr(info->dlpi_name, dldata->moduleName) != nullptr) {
-			dldata->addr = info->dlpi_addr;
-			dldata->modulePath = info->dlpi_name;
+		if (std::strstr(info->dlpi_name, _dldata->moduleName) != nullptr) {
+			_dldata->addr = info->dlpi_addr;
+			_dldata->modulePath = info->dlpi_name;
 		}
 
 		return 0;
