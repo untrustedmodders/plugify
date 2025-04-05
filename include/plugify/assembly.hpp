@@ -37,11 +37,37 @@ namespace plugify {
 			 * @brief Checks if the section is valid.
 			 * @return True if the section is valid, false otherwise.
 			 */
-			bool IsValid() const noexcept { return base; }
+			operator bool() const noexcept { return base; }
 
 			std::string name{}; //!< The name of the section.
 			MemAddr base;       //!< The base address of the section.
 			size_t size;        //!< The size of the section.
+		};
+
+		/**
+		 * @struct Handle
+		 * @brief Represents a system handle.
+		 */
+		struct Handle {
+			/**
+			 * @brief Constructor to initialize the handle.
+			 * @param systemHandle The handle value to initialize with.
+			 */
+			Handle(void* systemHandle) : handle{systemHandle} {}
+
+			/**
+			 * @brief Checks if the handle is valid.
+			 * @return True if the handle is valid, false otherwise.
+			 */
+			operator bool() const noexcept { return handle; }
+
+			/**
+			 * @brief Converts the handle to a void pointer.
+			 * @return The internal handle as a void pointer.
+			 */
+			operator void*() const noexcept { return handle; }
+
+			void* handle{}; ///< The system handle.
 		};
 
 		/**
@@ -112,6 +138,15 @@ namespace plugify {
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
 		explicit Assembly(MemAddr moduleMemory, LoadFlag flags = LoadFlag::Default, const SearchDirs& additionalSearchDirectories = {}, bool sections = false);
+
+		/**
+		 * @brief Constructs an Assembly object with a memory address.
+		 * @param moduleHandle The system handle of the module.
+		 * @param flags Optional flags for module initialization.
+		 * @param additionalSearchDirectories Optional additional search directories.
+		 * @param sections Optional flag indicating if sections should be initialized.
+		 */
+		explicit Assembly(Handle moduleHandle, LoadFlag flags = LoadFlag::Default, const SearchDirs& additionalSearchDirectories = {}, bool sections = false);
 
 		/**
 		 * @brief Converts a string pattern with wildcards to an array of bytes and mask.
@@ -235,6 +270,18 @@ namespace plugify {
 		 * @return True if initialization was successful, false otherwise.
 		 */
 		bool InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections);
+
+		/**
+		 * @brief Initializes the assembly from handle.
+		 * @param moduleHandle The system handle of the module.
+		 * @param flags Flags for module initialization.
+		 * @param additionalSearchDirectories Additional search directories.
+		 * @param sections Flag indicating if sections should be initialized.
+		 * @return True if initialization was successful, false otherwise.
+		 */
+		bool InitFromHandle(Handle moduleHandle, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections);
+
+		bool LoadSections();
 
 	private:
 		void* _handle;                //!< The handle to the module.

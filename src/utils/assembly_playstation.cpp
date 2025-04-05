@@ -38,6 +38,11 @@ bool Assembly::InitFromMemory(MemAddr /*moduleMemory*/, LoadFlag /*flags*/, cons
 	return false;
 }
 
+bool Assembly::InitFromHandle(Handle /*moduleHandle*/, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*sections*/) {
+	// TODO: Implement
+	return false;
+}
+
 bool Assembly::Init(fs::path modulePath, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*sections*/) {
 	SceKernelModule handle = sceKernelLoadStartModule(modulePath.c_str(), 0, nullptr, 0, nullptr, nullptr);
 	switch (handle) {
@@ -77,9 +82,17 @@ bool Assembly::Init(fs::path modulePath, LoadFlag /*flags*/, const SearchDirs& /
 	_handle = reinterpret_cast<void*>(handle);
 	_path = std::move(modulePath);
 
-	// TODO: Implement
-	
+	if (sections) {
+		return LoadSections();
+	}
+
 	return true;
+}
+
+bool Assembly::LoadSections() {
+	// TODO: Implement
+
+	return false;
 }
 
 MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool /*decorated*/) const {

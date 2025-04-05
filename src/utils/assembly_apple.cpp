@@ -3,7 +3,7 @@
 #include <plugify/assembly.hpp>
 
 #include "os.h"
-	
+
 #if PLUGIFY_ARCH_BITS == 64
 	typedef struct mach_header_64 MachHeader;
 	typedef struct segment_command_64 MachSegment;
@@ -58,6 +58,11 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const Search
 	return true;
 }
 
+bool Assembly::InitFromHandle(Handle /*moduleHandle*/, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*extension*/, bool /*sections*/) {
+	// TODO: Implement
+	return false;
+}
+
 bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*additionalSearchDirectories*/, bool sections) {
 	// Cannot set LYLD_LIBRARY_PATH at runtime, so use rpath flag
 
@@ -70,46 +75,50 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*add
 	_handle = handle;
 	_path = std::move(modulePath);
 
-	if (!sections)
-		return true;
-
-    const MachHeader* header = reinterpret_cast<const MachHeader*>(_handle);
-/*
-    if (header->magic != MACH_MAGIC) {
-        _error = "Not a valid Mach-O file.";
-        return false;
-    }
-	
-	if (header->cputype != MACH_CPU_TYPE || header->cpusubtype != MACH_CPU_SUBTYPE) {
-        _error = "Not a valid Mach-O file architecture.";
-		return false;
+	if (sections) {
+		return LoadSections();
 	}
 
-	if (header->filetype != MH_DYLIB) {
-        _error = "Mach-O file must be a dynamic library.";
-		return false;
-	}
-*/
-    const load_command* cmd = reinterpret_cast<const load_command*>(reinterpret_cast<uintptr_t>(header) + sizeof(MachHeader));
-    for (uint32_t i = 0; i < header->ncmds; ++i) {
-        if (cmd->cmd == MACH_LOADCMD_SEGMENT) {
-            const MachSegment* seg = reinterpret_cast<const MachSegment*>(cmd);
-            const MachSection* sec = reinterpret_cast<const MachSection*>(reinterpret_cast<uintptr_t>(seg) + sizeof(MachSegment));
+	return true;
+}
 
-            for (uint32_t j = 0; j < seg->nsects; ++j) {
-                const MachSection& section = sec[j];
+bool Assembly::LoadSections() {
+	const MachHeader* header = reinterpret_cast<const MachHeader*>(_handle);
+	/*
+		if (header->magic != MACH_MAGIC) {
+			_error = "Not a valid Mach-O file.";
+			return false;
+		}
+
+		if (header->cputype != MACH_CPU_TYPE || header->cpusubtype != MACH_CPU_SUBTYPE) {
+			_error = "Not a valid Mach-O file architecture.";
+			return false;
+		}
+
+		if (header->filetype != MH_DYLIB) {
+			_error = "Mach-O file must be a dynamic library.";
+			return false;
+		}
+	*/
+	const load_command* cmd = reinterpret_cast<const load_command*>(reinterpret_cast<uintptr_t>(header) + sizeof(MachHeader));
+	for (uint32_t i = 0; i < header->ncmds; ++i) {
+		if (cmd->cmd == MACH_LOADCMD_SEGMENT) {
+			const MachSegment* seg = reinterpret_cast<const MachSegment*>(cmd);
+			const MachSection* sec = reinterpret_cast<const MachSection*>(reinterpret_cast<uintptr_t>(seg) + sizeof(MachSegment));
+
+			for (uint32_t j = 0; j < seg->nsects; ++j) {
+				const MachSection& section = sec[j];
 				_sections.emplace_back(
-                    section.sectname,
-                    reinterpret_cast<uintptr_t>(_handle) + section.addr,
-                    section.size
-                );
-            }
-        }
-        cmd = reinterpret_cast<const load_command*>(reinterpret_cast<uintptr_t>(cmd) + cmd->cmdsize);
-    }
-	
-	_executableCode = GetSectionByName("__TEXT");
+					section.sectname,
+					reinterpret_cast<uintptr_t>(_handle) + section.addr,
+					section.size
+				);
+			}
+		}
+		cmd = reinterpret_cast<const load_command*>(reinterpret_cast<uintptr_t>(cmd) + cmd->cmdsize);
+	}
 
+	_executableCode = GetSectionByName("__TEXT");
 	return true;
 }
 

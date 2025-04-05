@@ -23,6 +23,10 @@ Assembly::Assembly(MemAddr moduleMemory, LoadFlag flags, const SearchDirs& addit
 	InitFromMemory(moduleMemory, flags, additionalSearchDirectories, sections);
 }
 
+Assembly::Assembly(Handle moduleHandle, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) : _handle{nullptr} {
+	InitFromHandle(moduleHandle, flags, additionalSearchDirectories, sections);
+}
+
 Assembly::Assembly(const fs::path& modulePath, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) : _handle{nullptr} {
 	Init(modulePath, flags, additionalSearchDirectories, sections);
 }
@@ -43,7 +47,7 @@ std::pair<std::vector<uint8_t>, std::string> Assembly::PatternToMaskedBytes(std:
 			bytes.push_back(0);// Push the byte back as invalid.
 			mask += '?';
 		} else {
-			bytes.push_back(static_cast<uint8_t>(strtoul(pCurrentByte, &pCurrentByte, 16)));
+			bytes.push_back(static_cast<uint8_t>(std::strtoul(pCurrentByte, &pCurrentByte, 16)));
 			mask += 'x';
 		}
 	}
@@ -53,12 +57,12 @@ std::pair<std::vector<uint8_t>, std::string> Assembly::PatternToMaskedBytes(std:
 
 MemAddr Assembly::FindPattern(MemAddr pattern, std::string_view mask, MemAddr startAddress, Section* moduleSection) const {
 	const uint8_t* pPattern = pattern.RCast<const uint8_t*>();
-	const Section* section = moduleSection ? moduleSection : &_executableCode;
-	if (!section->IsValid())
+	const Section& section = moduleSection ? *moduleSection : _executableCode;
+	if (!section)
 		return nullptr;
 
-	const uintptr_t base = section->base;
-	const size_t size = section->size;
+	const uintptr_t base = section.base;
+	const size_t size = section.size;
 
 	const size_t maskLen = mask.length();
 	const uint8_t* pData = reinterpret_cast<uint8_t*>(base);

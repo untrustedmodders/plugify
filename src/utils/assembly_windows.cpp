@@ -115,6 +115,23 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const Search
 	return true;
 }
 
+bool Assembly::InitFromHandle(Handle moduleHandle, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) {
+	if (_handle)
+		return false;
+
+	if (!moduleHandle)
+		return false;
+
+	std::wstring modulePath = ::GetModulePath(reinterpret_cast<HMODULE>(moduleHandle));
+	if (modulePath.empty())
+		return false;
+
+	if (!Init(modulePath, flags, additionalSearchDirectories, sections))
+		return false;
+
+	return true;
+}
+
 bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) {
 	std::vector<DLL_DIRECTORY_COOKIE> dirCookies;
 	dirCookies.reserve(additionalSearchDirectories.size());
@@ -144,30 +161,35 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& addit
 		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, reinterpret_cast<LPCWSTR>(hModule), &hPinHandle);
 	}
 
-	if (!sections)
-		return true;
+	if (sections) {
+		LoadSections();
+	}
 
+	return true;
+}
+
+bool Assembly::LoadSections() {
 	IMAGE_DOS_HEADER* pDOSHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(hModule);
 	IMAGE_NT_HEADERS* pNTHeaders = reinterpret_cast<IMAGE_NT_HEADERS*>(reinterpret_cast<uintptr_t>(hModule) + pDOSHeader->e_lfanew);
-/*
-	IMAGE_FILE_HEADER* pFileHeader = &pNTHeaders->OptionalHeader;
-	IMAGE_OPTIONAL_HEADER* pOptionalHeader = &pNTHeaders->OptionalHeader;;
+	/*
+		IMAGE_FILE_HEADER* pFileHeader = &pNTHeaders->OptionalHeader;
+		IMAGE_OPTIONAL_HEADER* pOptionalHeader = &pNTHeaders->OptionalHeader;;
 
-	if (pDOSHeader->e_magic != IMAGE_DOS_SIGNATURE || pNTHeaders->Signature != IMAGE_NT_SIGNATURE || pOptionalHeader->Magic != PE_NT_OPTIONAL_HDR_MAGIC) {
-        _error = "Not a valid DLL file.";
-		return false;
-	}
+		if (pDOSHeader->e_magic != IMAGE_DOS_SIGNATURE || pNTHeaders->Signature != IMAGE_NT_SIGNATURE || pOptionalHeader->Magic != PE_NT_OPTIONAL_HDR_MAGIC) {
+			_error = "Not a valid DLL file.";
+			return false;
+		}
 
-	if (pFileHeader->Machine != PE_FILE_MACHINE) {
-		_error = "Not a valid DLL file architecture.";
-		return false;
-	}
+		if (pFileHeader->Machine != PE_FILE_MACHINE) {
+			_error = "Not a valid DLL file architecture.";
+			return false;
+		}
 
-	if ((pFileHeader->Characteristics & IMAGE_FILE_DLL) == 0) {
-		_error = "DLL file must be a dynamic library.";
-		return false;
-	}
-*/
+		if ((pFileHeader->Characteristics & IMAGE_FILE_DLL) == 0) {
+			_error = "DLL file must be a dynamic library.";
+			return false;
+		}
+	*/
 	const IMAGE_SECTION_HEADER* hSection = IMAGE_FIRST_SECTION(pNTHeaders);// Get first image section.
 
 	// Loop through the sections

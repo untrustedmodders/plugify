@@ -82,6 +82,11 @@ bool Assembly::InitFromMemory(MemAddr /*moduleMemory*/, LoadFlag /*flags*/, cons
 	return false;
 }
 
+bool Assembly::InitFromHandle(Handle /*moduleHandle*/, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*sections*/) {
+	// TODO: Implement
+	return false;
+}
+
 bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*additionalSearchDirectories*/, bool sections) {
 	auto* handle = new Handle(modulePath, flags, _error);
 	if (!_error.empty()) {
@@ -96,9 +101,18 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*add
 		return true;
 
 	_sections.emplace_back(".bss", reinterpret_cast<uintptr_t>(handle->bssData.get()), handle->bssSize);
-	// TODO: extract other segments too
+
+	if (sections) {
+		return LoadSections();
+	}
 
 	return true;
+}
+
+bool Assembly::LoadSections() {
+	// TODO: Implement
+
+	return false;
 }
 
 MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool /*decorated*/) const {

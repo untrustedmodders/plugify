@@ -3,6 +3,7 @@
 #include <plugify/assembly.hpp>
 
 #include "os.h"
+#include "defer.hpp"
 
 #if PLUGIFY_ARCH_BITS == 64
 	const unsigned char ELF_CLASS = ELFCLASS64;
@@ -44,11 +45,11 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const S
 	} dldata{0, name.c_str(), {}};
 
 	dl_iterate_phdr([](dl_phdr_info* info, size_t /* size */, void* data) {
-		dl_data* _dldata = static_cast<dl_data*>(data);
+		auto* dldata = static_cast<dl_data*>(data);
 
-		if (std::strstr(info->dlpi_name, _dldata->moduleName) != nullptr) {
-			_dldata->addr = info->dlpi_addr;
-			_dldata->modulePath = info->dlpi_name;
+		if (std::strstr(info->dlpi_name, dldata->moduleName) != nullptr) {
+			dldata->addr = info->dlpi_addr;
+			dldata->modulePath = info->dlpi_name;
 		}
 
 		return 0;
@@ -80,6 +81,23 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const Search
 	return true;
 }
 
+bool Assembly::InitFromHandle(Handle moduleHandle, LoadFlag flags, const SearchDirs& additionalSearchDirectories, bool sections) {
+	if (_handle)
+		return false;
+
+	if (!moduleHandle)
+		return false;
+
+	const link_map* info{};
+	if (!dlinfo(moduleHandle, RTLD_DI_LINKMAP, &info) || !info->l_addr || !info->l_name)
+		return false;
+
+	if (!Init(info->l_name, flags, additionalSearchDirectories, sections))
+		return false;
+
+	return true;
+}
+
 bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*additionalSearchDirectories*/, bool sections) {
 	// Cannot set LD_LIBRARY_PATH at runtime, so use rpath flag
 
@@ -92,43 +110,53 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*add
 	_handle = handle;
 	_path = std::move(modulePath);
 
-	if (!sections)
-		return true;
+	if (sections) {
+		return LoadSections();
+	}
 
+	return true;
+}
+
+bool Assembly::LoadSections() {
 #if !PLUGIFY_PLATFORM_ANDROID
-	link_map* lmap;
-	if (dlinfo(handle, RTLD_DI_LINKMAP, &lmap) != 0) {
+	const link_map* lmap;
+	if (!dlinfo(_handle, RTLD_DI_LINKMAP, &lmap)) {
 		_error = "Failed to retrieve dynamic linker information using dlinfo.";
 		return false;
 	}
-/*
-	ElfW(Phdr) file = lmap->l_addr;
 
-	if (memcmp(ELFMAG, file->e_ident, SELFMAG) != 0) {
-		_error = "Not a valid ELF file.";
-		return false;
-	}
+	/*
+		ElfW(Phdr) file = lmap->l_addr;
 
-	if (file->e_ident[EI_VERSION] != EV_CURRENT) {
-		_error = "Not a valid ELF file version.";
-		return false;
-	}
+		if (memcmp(ELFMAG, file->e_ident, SELFMAG) != 0) {
+			_error = "Not a valid ELF file.";
+			return false;
+		}
 
-	if (file->e_ident[EI_CLASS] != ELF_CLASS || file->e_machine != ELF_MACHINE || file->e_ident[EI_DATA] != ELFDATA2LSB) {
-		_error = "Not a valid ELF file architecture.";
-		return false;
-	}
+		if (file->e_ident[EI_VERSION] != EV_CURRENT) {
+			_error = "Not a valid ELF file version.";
+			return false;
+		}
 
-	if (file->e_type != ET_DYN) {
-		_error = "ELF file must be a dynamic library.";
-		return false;
-	}
-*/
+		if (file->e_ident[EI_CLASS] != ELF_CLASS || file->e_machine != ELF_MACHINE || file->e_ident[EI_DATA] != ELFDATA2LSB) {
+			_error = "Not a valid ELF file architecture.";
+			return false;
+		}
+
+		if (file->e_type != ET_DYN) {
+			_error = "ELF file must be a dynamic library.";
+			return false;
+		}
+	*/
 	int fd = open(lmap->l_name, O_RDONLY);
 	if (fd == -1) {
 		_error = "Failed to open the shared object file.";
 		return false;
 	}
+
+	defer {
+		close(fd);
+	};
 
 	struct stat st{};
 	if (fstat(fd, &st) == 0) {
@@ -151,11 +179,8 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*add
 		}
 	}
 
-	close(fd);
-
 	_executableCode = GetSectionByName(".text");
 #endif // !PLUGIFY_PLATFORM_ANDROID
-
 	return true;
 }
 
@@ -164,7 +189,7 @@ MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool decorat
 		return nullptr;
 
 	Assembly::Section readOnlyData = GetSectionByName(".rodata"), readOnlyRelocations = GetSectionByName(".data.rel.ro");
-	if (!readOnlyData.IsValid() || !readOnlyRelocations.IsValid())
+	if (!readOnlyData || !readOnlyRelocations)
 		return nullptr;
 
 	std::string decoratedTableName(decorated ? tableName : std::to_string(tableName.length()) + std::string(tableName));
@@ -182,7 +207,7 @@ MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool decorat
 
 	for (const auto& sectionName : {std::string_view(".data.rel.ro"), std::string_view(".data.rel.ro.local")}) {
 		Assembly::Section section = GetSectionByName(sectionName);
-		if (!section.IsValid())
+		if (!section)
 			continue;
 
 		MemAddr reference;// Get reference typeinfo in vtable

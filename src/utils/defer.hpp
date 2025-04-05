@@ -17,11 +17,9 @@ namespace plugify {
 	};
 
 	template <typename F>
-	defer_t(F f) -> defer_t<::std::decay_t<F>>;
+	defer_t(F f) -> defer_t<std::decay_t<F>>;
 }
 
 #define PLUGIFY_DEFER_TOK_CONCAT(X, Y) X ## Y
 #define PLUGIFY_DEFER_TOK_PASTE(X, Y) PLUGIFY_DEFER_TOK_CONCAT(X, Y)
-#define defer plugify::defer_t \
-PLUGIFY_DEFER_TOK_PASTE(__scoped_defer_obj, __COUNTER__) =  \
-[&]()
+#define defer plugify::defer_t PLUGIFY_DEFER_TOK_PASTE(__scoped_defer_obj, __COUNTER__) = [&]()
