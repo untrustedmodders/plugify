@@ -122,7 +122,7 @@ bool Assembly::InitFromHandle(Handle moduleHandle, LoadFlag flags, const SearchD
 	if (!moduleHandle)
 		return false;
 
-	std::wstring modulePath = ::GetModulePath(reinterpret_cast<HMODULE>(moduleHandle));
+	std::wstring modulePath = ::GetModulePath(reinterpret_cast<HMODULE>(reinterpret_cast<void*>(moduleHandle)));
 	if (modulePath.empty())
 		return false;
 
@@ -169,8 +169,8 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& addit
 }
 
 bool Assembly::LoadSections() {
-	IMAGE_DOS_HEADER* pDOSHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(hModule);
-	IMAGE_NT_HEADERS* pNTHeaders = reinterpret_cast<IMAGE_NT_HEADERS*>(reinterpret_cast<uintptr_t>(hModule) + pDOSHeader->e_lfanew);
+	IMAGE_DOS_HEADER* pDOSHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(_handle);
+	IMAGE_NT_HEADERS* pNTHeaders = reinterpret_cast<IMAGE_NT_HEADERS*>(reinterpret_cast<uintptr_t>(_handle) + pDOSHeader->e_lfanew);
 	/*
 		IMAGE_FILE_HEADER* pFileHeader = &pNTHeaders->OptionalHeader;
 		IMAGE_OPTIONAL_HEADER* pOptionalHeader = &pNTHeaders->OptionalHeader;;
@@ -197,7 +197,7 @@ bool Assembly::LoadSections() {
 		const IMAGE_SECTION_HEADER& hCurrentSection = hSection[i]; // Get current section.
 		_sections.emplace_back(
 			reinterpret_cast<const char*>(hCurrentSection.Name),
-			reinterpret_cast<uintptr_t>(hModule) + hCurrentSection.VirtualAddress,
+			reinterpret_cast<uintptr_t>(_handle) + hCurrentSection.VirtualAddress,
 			hCurrentSection.SizeOfRawData);// Push back a struct with the section data.
 	}
 
@@ -211,7 +211,7 @@ MemAddr Assembly::GetVirtualTableByName(std::string_view tableName, bool decorat
 		return nullptr;
 
 	Assembly::Section runTimeData = GetSectionByName(".data"), readOnlyData = GetSectionByName(".rdata");
-	if (!runTimeData.IsValid() || !readOnlyData.IsValid())
+	if (!runTimeData || !readOnlyData)
 		return nullptr;
 
 	std::string decoratedTableName(decorated ? tableName : ".?AV" + std::string(tableName) + "@@");
