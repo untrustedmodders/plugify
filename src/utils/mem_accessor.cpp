@@ -6,12 +6,13 @@
 
 using namespace plugify;
 
-#define MEMORY_ROUND(_numToRound_, _multiple_) \
-	((_numToRound_) & (((size_t)-1) ^ ((_multiple_) - 1)))
+static constexpr size_t memory_round(size_t numToRound, size_t multiple) {
+	return numToRound & (static_cast<size_t>(-1) ^ (multiple - 1));
+}
 
-// Round _numToRound_ to the next higher _multiple_
-#define MEMORY_ROUND_UP(_numToRound_, _multiple_) \
-	(((_numToRound_) + ((_multiple_) - 1)) & (((size_t)-1) ^ ((_multiple_) - 1)))
+static constexpr size_t memory_round_up(size_t numToRound, size_t multiple) {
+	return (numToRound + (multiple - 1)) & (static_cast<size_t>(-1) ^ (multiple - 1));
+}
 
 #if PLUGIFY_PLATFORM_WINDOWS
 
@@ -132,8 +133,8 @@ bool MemAccessor::SafeMemRead(MemAddr src, MemAddr dest, size_t size, size_t& re
 ProtFlag MemAccessor::MemProtect(MemAddr dest, size_t size, ProtFlag prot, bool& status) {
 	static auto pageSize = static_cast<size_t>(sysconf(_SC_PAGESIZE));
 	region_t regionInfo = get_region_from_addr(dest);
-	uintptr_t alignedDest = MEMORY_ROUND(dest, pageSize);
-	uintptr_t alignedSize = MEMORY_ROUND_UP(size, pageSize);
+	uintptr_t alignedDest = memory_round(dest, pageSize);
+	uintptr_t alignedSize = memory_round_up(size, pageSize);
 	status = mprotect(reinterpret_cast<void*>(alignedDest), alignedSize, TranslateProtection(prot)) == 0;
 	return regionInfo.prot;
 }
@@ -167,7 +168,7 @@ bool MemAccessor::SafeMemRead(MemAddr src, MemAddr dest, size_t size, size_t& re
 
 ProtFlag MemAccessor::MemProtect(MemAddr dest, size_t size, ProtFlag prot, bool& status) {
 	static auto pageSize = static_cast<size_t>(sysconf(_SC_PAGESIZE));
-	status = mach_vm_protect(mach_task_self(), static_cast<mach_vm_address_t>(MEMORY_ROUND(dest, pageSize)), static_cast<mach_vm_size_t>(MEMORY_ROUND_UP(size, pageSize)), FALSE, TranslateProtection(prot)) == KERN_SUCCESS;
+	status = mach_vm_protect(mach_task_self(), static_cast<mach_vm_address_t>(memory_round(dest, pageSize)), static_cast<mach_vm_size_t>(memory_round_up(size, pageSize)), FALSE, TranslateProtection(prot)) == KERN_SUCCESS;
 	return ProtFlag::R | ProtFlag::X;
 }
 
