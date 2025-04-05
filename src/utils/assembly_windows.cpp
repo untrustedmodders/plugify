@@ -122,7 +122,7 @@ bool Assembly::InitFromHandle(Handle moduleHandle, LoadFlag flags, const SearchD
 	if (!moduleHandle)
 		return false;
 
-	std::wstring modulePath = ::GetModulePath(reinterpret_cast<HMODULE>(reinterpret_cast<void*>(moduleHandle)));
+	std::wstring modulePath = ::GetModulePath(reinterpret_cast<HMODULE>(static_cast<void*>(moduleHandle)));
 	if (modulePath.empty())
 		return false;
 
