@@ -1,7 +1,6 @@
 #include "std_logger.hpp"
 
 #include <iostream>
-#include <syncstream>
 
 namespace plug {
     void StdLogger::Log(std::string_view message, plugify::Severity severity) {
