@@ -2,50 +2,39 @@
 
 #include "macro.hpp"
 
-#if COMPILER_SUPPORTS_STACKTRACE
-#include <debugging>
-#endif // C++26
+#if PLUGIFY_STACKTRACE_SUPPORT
 
-#if !COMPILER_SUPPORTS_STACKTRACE
-#if PLUGIFY_PLATFORM_LINUX
+#include <debugging>
+
+#else // PLUGIFY_STACKTRACE_SUPPORT
+
+#if PLUGIFY_PLATFORM_WINDOWS
+#include <windows.h>
+#include <intrin.h>
+#elif PLUGIFY_PLATFORM_SWITCH
+#include <nn/diag/diag_Debugger.h>
+#elif PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
+#include <libdbg.h>
+#elif PLUGIFY_PLATFORM_APPLE
+#include <mach/mach_init.h>
+#include <mach/task.h>
+#elif PLUGIFY_PLATFORM_LINUX
 #include <cerrno>
 #include <cstring>
-#endif
-#endif // !C++26
-
-#if !COMPILER_SUPPORTS_STACKTRACE
-#if PLUGIFY_PLATFORM_LINUX
 #include <fcntl.h>
 #include <unistd.h>
 #endif
-#endif // !C++26
 
-#if !COMPILER_SUPPORTS_STACKTRACE
-#if PLUGIFY_PLATFORM_WINDOWS
-#include <windows.h>
-#endif
-#endif // !C++26
-
-#if !COMPILER_SUPPORTS_STACKTRACE
-#if PLUGIFY_COMPILER_MSVC
-#include <intrin.h>
-#endif
-#endif // !C++26
-
-#if !COMPILER_SUPPORTS_STACKTRACE
-#if PLUGIFY_PLATFORM_POSIX
-#include <csignal>
-#endif
-#endif // !C++26
-
+#endif // PLUGIFY_STACKTRACE_SUPPORT
 
 namespace plg {
-#if COMPILER_SUPPORTS_STACKTRACE
+#if PLUGIFY_STACKTRACE_SUPPORT
+
 	using std::breakpoint;
 	using std::breakpoint_if_debugging;
 	using std::is_debugger_present;
 
-#else // !C++26
+#else // PLUGIFY_STACKTRACE_SUPPORT
 
 #if PLUGIFY_PLATFORM_WINDOWS
 
@@ -53,16 +42,37 @@ namespace plg {
 		return (IsDebuggerPresent() != FALSE);
 	}
 
-	PLUGIFY_FORCE_INLINE void breakpoint() noexcept {
-#if PLUGIFY_COMPILER_MSVC
-		__debugbreak();
-#elif PLUGIFY_COMPILER_CLANG
-		__builtin_debugtrap();
-#elif PLUGIFY_COMPILER_GCC
-		__builtin_trap();
-#else
-		DebugBreak();
-#endif
+#elif PLUGIFY_PLATFORM_SWITCH
+
+	inline bool is_debugger_present() noexcept {
+		return nn::diag::IsDebuggerAttached();
+	}
+
+#elif PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
+
+	inline bool is_debugger_present() noexcept {
+		return sceDbgIsDebuggerAttached() != 0;
+	}
+
+#elif PLUGIFY_PLATFORM_APPLE
+
+	inline bool is_debugger_present() noexcept {
+		mach_msg_type_number_t count = 0;
+		exception_mask_t masks[EXC_TYPES_COUNT];
+		mach_port_t ports[EXC_TYPES_COUNT];
+		exception_behavior_t behaviors[EXC_TYPES_COUNT];
+		thread_state_flavor_t flavors[EXC_TYPES_COUNT];
+		exception_mask_t mask = EXC_MASK_ALL & ~(EXC_MASK_RESOURCE | EXC_MASK_GUARD);
+
+		kern_return_t result = task_get_exception_ports(mach_task_self(), mask, masks, &count, ports, behaviors, flavors);
+		if (result != KERN_SUCCESS)
+			return false;
+
+		for (mach_msg_type_number_t i = 0; i < count; ++i)
+			if (MACH_PORT_VALID(ports[i]))
+				return true;
+
+		return false;
 	}
 
 #elif PLUGIFY_PLATFORM_LINUX
@@ -127,14 +137,14 @@ namespace plg {
 					}
 					iobuf_size = static_cast<size_t>(bytes_read);
 					for (size_t i = 0; i < iobuf_size; ++i) {
-						if (static_cast<unsigned char>(iobuf[i]) == static_cast<unsigned char>('\n')) {
+						if (iobuf[i] == static_cast<unsigned char>('\n')) {
 							if (parse_proc_status_line(linebuf, linebuf_size)) {
 								detected_debugger = true;
 							}
 							linebuf_size = 0;
 						} else {
 							if (linebuf_size < sizeof(linebuf)) {
-								linebuf[linebuf_size] = static_cast<char>(static_cast<unsigned char>(iobuf[i]));
+								linebuf[linebuf_size] = static_cast<char>(iobuf[i]);
 								linebuf_size++;
 							}
 						}
@@ -172,21 +182,13 @@ namespace plg {
 		return plg::detail::debugging::parse_proc_status();
 	}
 
-	PLUGIFY_FORCE_INLINE void breakpoint() noexcept {
-#if PLUGIFY_COMPILER_CLANG
-		__builtin_debugtrap();
-#elif PLUGIFY_COMPILER_GCC
-		__builtin_trap();
-#else
-		raise(SIGTRAP);
-#endif
-	}
-
 #else
 
 	inline bool is_debugger_present() noexcept {
 		return false;
 	}
+
+#endif
 
 	PLUGIFY_FORCE_INLINE void breakpoint() noexcept {
 #if PLUGIFY_COMPILER_MSVC
@@ -195,12 +197,10 @@ namespace plg {
 		__builtin_debugtrap();
 #elif PLUGIFY_COMPILER_GCC
 		__builtin_trap();
-#elif PLUGIFY_PLATFORM_POSIX
-        raise(SIGTRAP);
+#else
+#	error "Unsupported platform for breakpoint"
 #endif
 	}
-
-#endif
 
 	PLUGIFY_FORCE_INLINE void breakpoint_if_debugging() noexcept {
 		if (plg::is_debugger_present()) {
@@ -208,5 +208,5 @@ namespace plg {
 		}
 	}
 
-#endif // C++26
+#endif // PLUGIFY_STACKTRACE_SUPPORT
 } // namespace plg
