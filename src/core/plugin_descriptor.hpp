@@ -9,7 +9,7 @@
 #include <plugify/value_type.hpp>
 
 namespace plugify {
-	struct PluginDescriptor : public Descriptor {
+	struct PluginDescriptor : Descriptor {
 		std::string entryPoint;
 		LanguageModuleInfo languageModule;
 		std::optional<std::vector<PluginReferenceDescriptor>> dependencies;

@@ -3,7 +3,7 @@
 #include <plugify/descriptor.hpp>
 
 namespace plugify {
-	struct LanguageModuleDescriptor : public Descriptor {
+	struct LanguageModuleDescriptor : Descriptor {
 		std::string language;
 		std::optional<std::vector<std::string>> libraryDirectories;
 		std::optional<bool> forceLoad;

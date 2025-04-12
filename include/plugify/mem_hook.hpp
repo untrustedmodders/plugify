@@ -37,7 +37,7 @@ namespace plugify {
 	 */
 	template<typename F>
 	int GetVirtualTableIndex(F func, ProtFlag flag = ProtFlag::RWX) {
-		void* ptr = (void*&)func;
+		void* ptr = (void*&) func;
 
 		constexpr size_t size = 12;
 

@@ -163,7 +163,7 @@ namespace plugify {
 		 * @param moduleSection The module section to search within.
 		 * @return The memory address where the pattern is found, or nullptr if not found.
 		 */
-		MemAddr FindPattern(MemAddr pattern, std::string_view mask, MemAddr startAddress = nullptr, Section* moduleSection = nullptr) const;
+		MemAddr FindPattern(MemAddr pattern, std::string_view mask, MemAddr startAddress = nullptr, const Section * moduleSection = nullptr) const;
 
 		/**
 		 * @brief Finds a string pattern in process memory using SIMD instructions.

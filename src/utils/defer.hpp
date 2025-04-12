@@ -9,7 +9,7 @@ namespace plugify {
 		F f;
 
 		defer_t(F&& arg) noexcept(std::is_nothrow_move_constructible_v<F>)
-			: f(::std::move(arg)) {}
+			: f(std::move(arg)) {}
 
 		~defer_t() noexcept(std::is_nothrow_invocable_v<F>) {
 			f();

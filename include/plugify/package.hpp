@@ -67,7 +67,7 @@ namespace plugify {
 	 * information such as author, description, and available versions. It also provides
 	 * methods to retrieve the latest version or a specific version of the package.
 	 */
-	struct RemotePackage : public Package {
+	struct RemotePackage : Package {
 		std::string author; ///< The author of the package.
 		std::string description; ///< The description of the package.
 		std::set<PackageVersion> versions; ///< The set of available versions for the package.
@@ -103,7 +103,7 @@ namespace plugify {
 	 * about the local installation, such as the file path, version, and descriptor.
 	 * It also provides a conversion operator to convert to a RemotePackage for compatibility.
 	 */
-	struct LocalPackage : public Package {
+	struct LocalPackage : Package {
 		std::filesystem::path path; ///< The file path to the locally installed package.
 		plg::version version; ///< The semantic version of the locally installed package.
 		std::shared_ptr<Descriptor> descriptor; ///< A shared pointer to the package descriptor.
