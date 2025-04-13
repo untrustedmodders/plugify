@@ -46,8 +46,13 @@ namespace plugify {
 		std::string to_string() const;
 
 	private:
+		void init_base();
 		void compress_base(std::span<const uint8_t, 64> in);
+		void swap_base();
+
+		void init_simd();
 		void compress_simd(std::span<const uint8_t, 64> in);
+		void swap_simd();
 
 		union {
 			std::array<uint8_t, 32> _b;
@@ -61,7 +66,9 @@ namespace plugify {
 		size_t _len;
 
 		static inline bool has_sha256_acceleration = sha256_simd_available();
+		static inline decltype(&Sha256::init_base) init = has_sha256_acceleration ? &Sha256::init_simd : &Sha256::init_base;
 		static inline decltype(&Sha256::compress_base) compress = has_sha256_acceleration ? &Sha256::compress_simd : &Sha256::compress_base;
+		static inline decltype(&Sha256::swap_base) swap = has_sha256_acceleration ? &Sha256::swap_simd : &Sha256::swap_base;
 	};
 
 	PLUGIFY_WARN_POP()

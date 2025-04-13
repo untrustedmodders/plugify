@@ -142,3 +142,30 @@ void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
 	_state0 = _mm_add_epi32(state0, _state0);
 	_state1 = _mm_add_epi32(state1, _state1);
 }
+
+void Sha256::init_simd() {
+	_state0 = _mm_set_epi32(int(H[0]), int(H[1]), int(H[4]), int(H[5]));
+	_state1 = _mm_set_epi32(int(H[2]), int(H[3]), int(H[6]), int(H[7]));
+}
+
+void Sha256::swap_simd() {
+	// Get the resulting hash value.
+	// h0:h1:h4:h5
+	// h2:h3:h6:h7
+	//      |
+	//      V
+	// h0:h1:h2:h3
+	// h4:h5:h6:h7
+	__m128i h0123 = _mm_unpackhi_epi64(_state1, _state0);
+	__m128i h4567 = _mm_unpacklo_epi64(_state1, _state0);
+
+#if !PLUGIFY_IS_BIG_ENDIAN
+	const __m128i byteswapindex = _mm_set_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+
+	h0123 = _mm_shuffle_epi8(h0123, byteswapindex);
+	h4567 = _mm_shuffle_epi8(h4567, byteswapindex);
+#endif // !PLUGIFY_IS_BIG_ENDIAN
+
+	_state0 = h0123;
+	_state1 = h4567;
+}

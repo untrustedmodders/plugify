@@ -65,17 +65,11 @@ Sha256::Sha256() {
 
 void Sha256::clear() {
 	_len = 0;
+	(this->*init)();
+}
 
-#if !PLUGIFY_ARCH_ARM
-	if (has_sha256_acceleration) {
-		_state0 = _mm_set_epi32(int(H[0]), int(H[1]), int(H[4]), int(H[5]));
-		_state1 = _mm_set_epi32(int(H[2]), int(H[3]), int(H[6]), int(H[7]));
-	}
-	else
-#endif // !PLUGIFY_ARCH_ARM
-	{
-		_h = H;
-	}
+void Sha256::init_base() {
+	_h = H;
 }
 
 void Sha256::update(std::span<const uint8_t> in) {
@@ -136,44 +130,15 @@ std::array<uint8_t, 32> Sha256::finalize() {
 	(this->*compress)(_buf);
 
 	// SHA uses big endian byte ordering
-	if (has_sha256_acceleration) {
-#if PLUGIFY_ARCH_ARM
-#if !PLUGIFY_IS_BIG_ENDIAN
-		const uint8x16_t byteswapindex = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
-		_state0 = vqtbl1q_u8(_state0, byteswapindex);
-		_state1 = vqtbl1q_u8(_state1, byteswapindex);
-#endif // !PLUGIFY_IS_BIG_ENDIAN
-#else
-		// Get the resulting hash value.
-		// h0:h1:h4:h5
-		// h2:h3:h6:h7
-		//      |
-		//      V
-		// h0:h1:h2:h3
-		// h4:h5:h6:h7
-		__m128i h0123 = _mm_unpackhi_epi64(_state1, _state0);
-		__m128i h4567 = _mm_unpacklo_epi64(_state1, _state0);
-
-#if !PLUGIFY_IS_BIG_ENDIAN
-		const __m128i byteswapindex = _mm_set_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-
-		h0123 = _mm_shuffle_epi8(h0123, byteswapindex);
-		h4567 = _mm_shuffle_epi8(h4567, byteswapindex);
-#endif // !PLUGIFY_IS_BIG_ENDIAN
-
-		_state0 = h0123;
-		_state1 = h4567;
-#endif // PLUGIFY_ARCH_ARM
-	}
-	else
-	{
-		// Revert all bytes
-		for (auto& v : _h)
-			v = htobe32(v);
-	}
+	(this->*swap)();
 
 	return _b;
+}
+
+void Sha256::swap_base() {
+	// Revert all bytes
+	for (auto& v : _h)
+		v = htobe32(v);
 }
 
 void Sha256::compress_base(std::span<const uint8_t, 64> in) {

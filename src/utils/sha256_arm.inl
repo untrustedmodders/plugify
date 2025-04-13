@@ -136,3 +136,17 @@ void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
     _state0 = vaddq_u32(state0, _state0);
     _state1 = vaddq_u32(state1, _state1);
 }
+
+void Sha256::init_simd() {
+	_state0 = { int(H[0]), int(H[1]), int(H[2]), int(H[3]) };
+	_state1 = { int(H[4]), int(H[5]), int(H[6]), int(H[7]) };
+}
+
+void Sha256::swap_simd() {
+#if !PLUGIFY_IS_BIG_ENDIAN
+	const uint8x16_t byteswapindex = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+	_state0 = vqtbl1q_u8(_state0, byteswapindex);
+	_state1 = vqtbl1q_u8(_state1, byteswapindex);
+#endif // !PLUGIFY_IS_BIG_ENDIAN
+}
