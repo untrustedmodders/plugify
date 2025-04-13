@@ -53,8 +53,11 @@ namespace {
 	constexpr std::array<uint32_t, 8> H{0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
 }// namespace
 
+#if PLUGIFY_ARCH_ARM
 #include "sha256_arm.inl"
+#else
 #include "sha256_x86.inl"
+#endif // PLUGIFY_ARCH_ARM
 
 Sha256::Sha256() {
 	clear();
@@ -132,9 +135,15 @@ std::array<uint8_t, 32> Sha256::finalize() {
 	// Process the last block
 	(this->*compress)(_buf);
 
-#if !PLUGIFY_ARCH_ARM
 	// SHA uses big endian byte ordering
 	if (has_sha256_acceleration) {
+#if PLUGIFY_ARCH_ARM
+		const uint8x16_t byteswapindex = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+		// Assuming h0123 and h4567 are of type uint8x16_t
+		_state0 = vqtbl1q_u8(_state0, byteswapindex);
+		_state1 = vqtbl1q_u8(_state1, byteswapindex);
+#else
 		// Get the resulting hash value.
 		// h0:h1:h4:h5
 		// h2:h3:h6:h7
@@ -151,13 +160,13 @@ std::array<uint8_t, 32> Sha256::finalize() {
 
 		h0123 = _mm_shuffle_epi8(h0123, byteswapindex);
 		h4567 = _mm_shuffle_epi8(h4567, byteswapindex);
-#endif // PLUGIFY_IS_BIG_ENDIAN
+#endif // !PLUGIFY_IS_BIG_ENDIAN
 
 		_state0 = h0123;
 		_state1 = h4567;
+#endif // PLUGIFY_ARCH_ARM
 	}
 	else
-#endif // PLUGIFY_ARCH_ARM
 	{
 		// Revert all bytes
 		for (auto& v : _h)

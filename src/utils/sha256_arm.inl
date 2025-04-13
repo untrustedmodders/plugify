@@ -1,14 +1,46 @@
-#if PLUGIFY_ARCH_ARM
+#pragma once
 
-#include <sys/auxv.h>
+#if PLUGIFY_PLATFORM_ANDROID
+#include <cpu-features.h>
+#elif PLUGIFY_PLATFORM_WINDOWS
+#include <processthreadsapi.h>
+#elif PLUGIFY_PLATFORM_APPLE
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#elif defined(__has_include)
+#if __has_include(<sys/auxv.h>)
+#  include <sys/auxv.h>
+#  if __has_include(<asm/hwcap.h>)
+#   include <asm/hwcap.h>
+#  endif
+#endif
+#endif
+
 #include <arm_neon.h>
 
 bool sha256_simd_available() {
-	// ARM Cryptography Extensions (SHA256 feature)
-	// ID_AA64ISAR0_EL1 feature register, bits 15-12 (SHA2)
-
-	// user space detect through getauxval()
-	return (getauxval(AT_HWCAP) & HWCAP_SHA2) ? true : false;
+#if PLUGIFY_PLATFORM_ANDROID && PLUGIFY_ARCH_BITS == 64
+	if (((android_getCpuFamily() & ANDROID_CPU_FAMILY_ARM64) != 0) &&
+		((android_getCpuFeatures() & ANDROID_CPU_ARM64_FEATURE_SHA2) != 0))
+		return true;
+#elif PLUGIFY_PLATFORM_ANDROID && PLUGIFY_ARCH_BITS == 32
+	if (((android_getCpuFamily() & ANDROID_CPU_FAMILY_ARM) != 0) &&
+		((android_getCpuFeatures() & ANDROID_CPU_ARM_FEATURE_SHA2) != 0))
+		return true;
+#elif PLUGIFY_PLATFORM_LINUX && PLUGIFY_ARCH_BITS == 64
+	if ((getauxval(AT_HWCAP) & HWCAP_SHA2) != 0)
+		return true;
+#elif PLUGIFY_PLATFORM_LINUX && PLUGIFY_ARCH_BITS == 32
+	if ((getauxval(AT_HWCAP2) & HWCAP2_SHA2) != 0)
+		return true;
+#elif PLUGIFY_PLATFORM_APPLE && PLUGIFY_ARCH_BITS == 64
+	if (IsAppleMachineARMv82())
+		return true;
+#elif PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_ARCH_BITS == 64
+	if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE) != 0)
+		return true;
+#endif
+	return false;
 }
 
 void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
@@ -28,117 +60,79 @@ void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
     msg2 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(msg2)));
     msg3 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(msg3)));
 
+	// Round computation.
+	uint32x4_t msg, tmp;
+#define RND4(M, Kp)                               \
+	msg = vaddq_u32(M, vld1q_u32(Kp));            \
+	tmp = vsha256hq_u32(state0, state1, msg);     \
+	state1 = vsha256h2q_u32(state1, state0, msg); \
+	state0 = tmp;
+
+	// Message schedule computation
+#define MSG4(X0, X1, X2, X3) \
+	X0 = vsha256su1q_u32(vsha256su0q_u32(X0, X1), X2, X3)
+
     // Rounds 0-3
-    uint32x4_t msg = vaddq_u32(msg0, vld1q_u32(&K.dw[4*0]));
-    uint32x4_t tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg0 = vsha256su1q_u32(vsha256su0q_u32(msg0, msg1), msg2, msg3);
+	RND4(msg0, &K.dw[4*0]);
+    MSG4(msg0, msg1, msg2, msg3);
 
     // Rounds 4-7
-    msg = vaddq_u32(msg1, vld1q_u32(&K.dw[4*1]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg1 = vsha256su1q_u32(vsha256su0q_u32(msg1, msg2), msg3, msg0);
+	RND4(msg1, &K.dw[4*1]);
+    MSG4(msg1, msg2, msg3, msg0);
 
     // Rounds 8-11
-    msg = vaddq_u32(msg2, vld1q_u32(&K.dw[4*2]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg2 = vsha256su1q_u32(vsha256su0q_u32(msg2, msg3), msg0, msg1);
+	RND4(msg2, &K.dw[4*2]);
+    MSG4(msg2, msg3, msg0, msg1);
 
     // Rounds 12-15
-    msg = vaddq_u32(msg3, vld1q_u32(&K.dw[4*3]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg3 = vsha256su1q_u32(vsha256su0q_u32(msg3, msg0), msg1, msg2);
+	RND4(msg3, &K.dw[4*3]);
+    MSG4(msg3, msg0, msg1, msg2);
 
     // Rounds 16-19
-    msg = vaddq_u32(msg0, vld1q_u32(&K.dw[4*4]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg0 = vsha256su1q_u32(vsha256su0q_u32(msg0, msg1), msg2, msg3);
+	RND4(msg0, &K.dw[4*4]);
+    MSG4(msg0, msg1, msg2, msg3);
 
     // Rounds 20-23
-    msg = vaddq_u32(msg1, vld1q_u32(&K.dw[4*5]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg1 = vsha256su1q_u32(vsha256su0q_u32(msg1, msg2), msg3, msg0);
+	RND4(msg1, &K.dw[4*5]);
+    MSG4(msg1, msg2, msg3, msg0);
 
     // Rounds 24-27
-    msg = vaddq_u32(msg2, vld1q_u32(&K.dw[4*6]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg2 = vsha256su1q_u32(vsha256su0q_u32(msg2, msg3), msg0, msg1);
+	RND4(msg2, &K.dw[4*6]);
+    MSG4(msg2, msg3, msg0, msg1);
 
     // Rounds 28-31
-    msg = vaddq_u32(msg3, vld1q_u32(&K.dw[4*7]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg3 = vsha256su1q_u32(vsha256su0q_u32(msg3, msg0), msg1, msg2);
+	RND4(msg3, &K.dw[4*7]);
+    MSG4(msg3, msg0, msg1, msg2);
 
     // Rounds 32-35
-    msg = vaddq_u32(msg0, vld1q_u32(&K.dw[4*8]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg0 = vsha256su1q_u32(vsha256su0q_u32(msg0, msg1), msg2, msg3);
+	RND4(msg0, &K.dw[4*8]);
+    MSG4(msg0, msg1, msg2, msg3);
 
     // Rounds 36-39
-    msg = vaddq_u32(msg1, vld1q_u32(&K.dw[4*9]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg1 = vsha256su1q_u32(vsha256su0q_u32(msg1, msg2), msg3, msg0);
+	RND4(msg1, &K.dw[4*9]);
+    MSG4(msg1, msg2, msg3, msg0);
 
     // Rounds 40-43
-    msg = vaddq_u32(msg2, vld1q_u32(&K.dw[4*10]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg2 = vsha256su1q_u32(vsha256su0q_u32(msg2, msg3), msg0, msg1);
+	RND4(msg2, &K.dw[4*10]);
+    MSG4(msg2, msg3, msg0, msg1);
 
     // Rounds 44-47
-    msg = vaddq_u32(msg3, vld1q_u32(&K.dw[4*11]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
-    msg3 = vsha256su1q_u32(vsha256su0q_u32(msg3, msg0), msg1, msg2);
+	RND4(msg3, &K.dw[4*11]);
+    MSG4(msg3, msg0, msg1, msg2);
 
     // Rounds 48-51
-    msg = vaddq_u32(msg0, vld1q_u32(&K.dw[4*12]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
+	RND4(msg0, &K.dw[4*12]);
 
     // Rounds 52-55
-    msg = vaddq_u32(msg1, vld1q_u32(&K.dw[4*13]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
+	RND4(msg1, &K.dw[4*13]);
 
     // Rounds 56-59
-    msg = vaddq_u32(msg2, vld1q_u32(&K.dw[4*14]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
+	RND4(msg2, &K.dw[4*14]);
 
     // Rounds 60-63
-    msg = vaddq_u32(msg3, vld1q_u32(&K.dw[4*15]));
-    tmp = vsha256hq_u32(state0, state1, msg);
-    state1 = vsha256h2q_u32(state1, state0, msg);
-    state0 = tmp;
+	RND4(msg3, &K.dw[4*15]);
 
     // Add back to state
     _state0 = vaddq_u32(state0, _state0);
     _state1 = vaddq_u32(state1, _state1);
 }
-
-#endif // PLUGIFY_ARCH_ARM

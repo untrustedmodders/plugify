@@ -1,4 +1,4 @@
-#if !PLUGIFY_ARCH_ARM
+#pragma once
 
 #if PLUGIFY_COMPILER_MSVC
 #include <intrin.h>
@@ -32,14 +32,14 @@ bool sha256_simd_available() {
 	}
 
 	return (regs1[2] /*ECX*/ & SSSE3_BIT) && (regs1[2] /*ECX*/ & SSE41_BIT) && (regs7[1] /*EBX*/ & SHA_BIT);
-#elif PLUGIFY_COMPILER_CLANG
+#elif PLUGIFY_COMPILER_CLANG // && CLANG_AT_LEAST(19, 0, 0)
 	// FIXME: Use __builtin_cpu_supports("sha") when compilers support it
 	constexpr uint32_t cpuid_sha_ebx = (1 << 29);
 	uint32_t eax, ebx, ecx, edx;
 	__cpuid_count(7, 0, eax, ebx, ecx, edx);
 	const uint32_t cpu_supports_sha = (ebx & cpuid_sha_ebx);
 	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && cpu_supports_sha;
-#elif PLUGIFY_COMPILER_GCC
+#elif PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_CLANG
 	/* __builtin_cpu_supports available in GCC 4.8.1 and above */
 	return __builtin_cpu_supports("ssse3") && __builtin_cpu_supports("sse4.1") && __builtin_cpu_supports("sha");
 #elif PLUGIFY_COMPILER_INTEL
@@ -66,17 +66,17 @@ void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
 	__m128i cw2 = _mm_shuffle_epi8(_mm_loadu_si128(msgx + 2), byteswapindex);
 	__m128i cw3 = _mm_shuffle_epi8(_mm_loadu_si128(msgx + 3), byteswapindex);
 
-// Advance W array cycle
-// Inputs:
-//  CW0 = w[t-13] : w[t-14] : w[t-15] : w[t-16]
-//  CW1 = w[t-9] : w[t-10] : w[t-11] : w[t-12]
-//  CW2 = w[t-5] : w[t-6] : w[t-7] : w[t-8]
-//  CW3 = w[t-1] : w[t-2] : w[t-3] : w[t-4]
-// Outputs:
-//  CW1 = w[t-9] : w[t-10] : w[t-11] : w[t-12]
-//  CW2 = w[t-5] : w[t-6] : w[t-7] : w[t-8]
-//  CW3 = w[t-1] : w[t-2] : w[t-3] : w[t-4]
-//  CW0 = w[t+3] : w[t+2] : w[t+1] : w[t]
+	// Advance W array cycle
+	// Inputs:
+	//  CW0 = w[t-13] : w[t-14] : w[t-15] : w[t-16]
+	//  CW1 = w[t-9] : w[t-10] : w[t-11] : w[t-12]
+	//  CW2 = w[t-5] : w[t-6] : w[t-7] : w[t-8]
+	//  CW3 = w[t-1] : w[t-2] : w[t-3] : w[t-4]
+	// Outputs:
+	//  CW1 = w[t-9] : w[t-10] : w[t-11] : w[t-12]
+	//  CW2 = w[t-5] : w[t-6] : w[t-7] : w[t-8]
+	//  CW3 = w[t-1] : w[t-2] : w[t-3] : w[t-4]
+	//  CW0 = w[t+3] : w[t+2] : w[t+1] : w[t]
 #define CYCLE_W(CW0, CW1, CW2, CW3)                                                              \
 	CW0 = _mm_sha256msg1_epu32(CW0, CW1);                                                        \
 	CW0 = _mm_add_epi32(CW0, _mm_alignr_epi8(CW3, CW2, 4)); /* add w[t-4]:w[t-5]:w[t-6]:w[t-7]*/ \
@@ -142,5 +142,3 @@ void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
 	_state0 = _mm_add_epi32(state0, _state0);
 	_state1 = _mm_add_epi32(state1, _state1);
 }
-
-#endif // !PLUGIFY_ARCH_ARM

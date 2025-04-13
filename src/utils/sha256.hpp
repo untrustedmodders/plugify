@@ -28,6 +28,7 @@ namespace plugify {
 
 #if PLUGIFY_COMPILER_CLANG
 	PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
+	PLUGIFY_WARN_IGNORE("-Wnested-anon-types")
 #elif PLUGIFY_COMPILER_GCC
 	PLUGIFY_WARN_IGNORE("-Wpedantic")
 #elif PLUGIFY_COMPILER_MSVC
