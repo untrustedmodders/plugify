@@ -138,11 +138,12 @@ std::array<uint8_t, 32> Sha256::finalize() {
 	// SHA uses big endian byte ordering
 	if (has_sha256_acceleration) {
 #if PLUGIFY_ARCH_ARM
+#if !PLUGIFY_IS_BIG_ENDIAN
 		const uint8x16_t byteswapindex = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
-		// Assuming h0123 and h4567 are of type uint8x16_t
 		_state0 = vqtbl1q_u8(_state0, byteswapindex);
 		_state1 = vqtbl1q_u8(_state1, byteswapindex);
+#endif // !PLUGIFY_IS_BIG_ENDIAN
 #else
 		// Get the resulting hash value.
 		// h0:h1:h4:h5
@@ -155,7 +156,6 @@ std::array<uint8_t, 32> Sha256::finalize() {
 		__m128i h4567 = _mm_unpacklo_epi64(_state1, _state0);
 
 #if !PLUGIFY_IS_BIG_ENDIAN
-		// Swap the byte order
 		const __m128i byteswapindex = _mm_set_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
 		h0123 = _mm_shuffle_epi8(h0123, byteswapindex);
