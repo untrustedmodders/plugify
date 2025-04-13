@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.2.4](https://github.com/untrustedmodders/plugify/compare/v1.2.3...v1.2.4) (2025-04-13)
+
+
+### Bug Fixes
+
+* add acceleration for sha256 on arm ([28e849e](https://github.com/untrustedmodders/plugify/commit/28e849ed71d9268d0c7afc7604b9a4a88d5297d5))
+* add cmake version parse ([0596375](https://github.com/untrustedmodders/plugify/commit/059637536747ff1977e8af455fc976e430f9923d))
+* add compiler macros ([944f1a7](https://github.com/untrustedmodders/plugify/commit/944f1a7a0a877cb759bc0a087099f84ef5521ae4))
+* add cpplogs to test app ([aeeb346](https://github.com/untrustedmodders/plugify/commit/aeeb34611eccb36d7fb027ebf05ce07fcf3963c8))
+* add cpptrace ([cf7d6e4](https://github.com/untrustedmodders/plugify/commit/cf7d6e47e8fcdc3b8a77044e191a7c6a690f84b6))
+* add crashlogs ([6871b78](https://github.com/untrustedmodders/plugify/commit/6871b78dcf83955f8f0c887f4edbe58210df6c80))
+* add debugging header ([801e84c](https://github.com/untrustedmodders/plugify/commit/801e84ca98b97a5112573285173eb6acd873b32d))
+* add defer instead of function scope ([ed7cd45](https://github.com/untrustedmodders/plugify/commit/ed7cd4516ca75b0ed60e74208ef2ab1baa734cd5))
+* add handle ctor to assembly object ([dee4661](https://github.com/untrustedmodders/plugify/commit/dee46616040f83fab4687c7b93a82c526a75d2ed))
+* add miniz patch ([e1ba267](https://github.com/untrustedmodders/plugify/commit/e1ba267c9c551a16fa1d45697968a8de134b55f2))
+* add missing macro ([d33be7e](https://github.com/untrustedmodders/plugify/commit/d33be7e8d939380fac63a691cad8c8b88b9435ff))
+* add other platforms to debugging.hpp ([7987369](https://github.com/untrustedmodders/plugify/commit/7987369461e4496d2696428b82f00f4fd659f48b))
+* add PARENT_SCOPE to platform function ([99dee2b](https://github.com/untrustedmodders/plugify/commit/99dee2bae16c793b397fe70fa25880d54de4def5))
+* add url links to fetch contents ([ba337e4](https://github.com/untrustedmodders/plugify/commit/ba337e4ddc9d1259e8f962c103313a4de96c62a3))
+* cpptrace problem on Linux and Mac ([c74139a](https://github.com/untrustedmodders/plugify/commit/c74139ab492830368eca7aaf7dcca9dba697d593))
+* fix clang build and more refactor ([c04fe67](https://github.com/untrustedmodders/plugify/commit/c04fe670866445a64a3c660c41d8f3b44b6bc3d0))
+* function typo ([e79b176](https://github.com/untrustedmodders/plugify/commit/e79b176636b99d0dc51970280e69abe5e75a6c33))
+* linux logger ([437b1a4](https://github.com/untrustedmodders/plugify/commit/437b1a47303885ffa0b30b40402fbb7293b96987))
+* massive CMake rework ([5489698](https://github.com/untrustedmodders/plugify/commit/5489698e23f1fdd6f9412196fd23e1d3faa55d5c))
+* MINGW build ([9447813](https://github.com/untrustedmodders/plugify/commit/94478139acef983e23c1345feb9eae818acdb28a))
+* remove miniz patch ([4d43983](https://github.com/untrustedmodders/plugify/commit/4d4398325a931794ffdba599b9bb9daae7ca623a))
+* remove sstream in date format ([1fb3fbf](https://github.com/untrustedmodders/plugify/commit/1fb3fbf7467e42ce90b0b3ae23a39155b1397072))
+* remove stacktrace include ([b1301d3](https://github.com/untrustedmodders/plugify/commit/b1301d3e51a2672ff7c49cfab0e31a214d9ce16b))
+* remove swap ordering on big endian for sha ([42719a6](https://github.com/untrustedmodders/plugify/commit/42719a67f7465c9f990c1b235ff152aa6eee63b3))
+* replace assert by default one ([c578381](https://github.com/untrustedmodders/plugify/commit/c5783811f00b6c435018f4c780a45611d38c91a6))
+* shadow declaration ([b21c0f4](https://github.com/untrustedmodders/plugify/commit/b21c0f4100d1cb5eeb4605eed8e53247f6959aaf))
+* small linux fixes ([3fbc407](https://github.com/untrustedmodders/plugify/commit/3fbc4078e89809d8f150aec0f672049ec5c5a58b))
+* typo in debugging ([35d8a70](https://github.com/untrustedmodders/plugify/commit/35d8a7039492216f9aa320f515555d576f602170))
+* update int format in plug ([8fb0905](https://github.com/untrustedmodders/plugify/commit/8fb0905a7972005d02250574f056724a791de1e1))
+* update plug ([6407e57](https://github.com/untrustedmodders/plugify/commit/6407e57040eb4119fcae997ef463663e7ade7b16))
+* win build ([577f4c4](https://github.com/untrustedmodders/plugify/commit/577f4c449ee8c5765eed0815e2a38975b48f0607))
+* win build (2) ([a0a51f6](https://github.com/untrustedmodders/plugify/commit/a0a51f6ed0cc71c2bc6b78465d2195a8d317573b))
+
 ## [1.2.3](https://github.com/untrustedmodders/plugify/compare/v1.2.2...v1.2.3) (2025-03-27)
 
 
