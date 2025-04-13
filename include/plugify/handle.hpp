@@ -44,7 +44,9 @@ namespace plugify {
 		 * @param rhs The right-hand side Handle object for comparison.
 		 * @return The result of the comparison.
 		 */
+ #if __cpp_impl_three_way_comparison
 		auto operator<=>(const Handle&) const = default;
+#endif // __cpp_impl_three_way_comparison
 
 		/**
 		 * @brief Copy assignment operator. Copies the handle from another Handle object.

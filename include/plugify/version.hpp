@@ -408,6 +408,7 @@ namespace plg {
 		return lhs.compare(rhs) <= 0;
 	}
 
+#if __cpp_impl_three_way_comparison
 	constexpr std::strong_ordering operator<=>(const version& lhs, const version& rhs) {
 		int compare = lhs.compare(rhs);
 		if (compare == 0)
@@ -416,6 +417,7 @@ namespace plg {
 			return std::strong_ordering::greater;
 		return std::strong_ordering::less;
 	}
+#endif // __cpp_impl_three_way_comparison
 
 	constexpr version operator""_version(const char* str, std::size_t length) {
 		return version{std::string_view{str, length}};
