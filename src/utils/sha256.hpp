@@ -1,86 +1,67 @@
 #pragma once
 
-#if !PLUGIFY_ARCH_ARM
+#include <span>
+#include <array>
+#include <optional>
+#include <plugify/macro.hpp>
+#include <plugify/compat_format.hpp>
+
+#if PLUGIFY_ARCH_ARM
+#include <arm_neon.h>
+#else
 #if PLUGIFY_COMPILER_GCC && !PLUGIFY_COMPILER_CLANG && !defined(NDEBUG)
 #undef __OPTIMIZE__
 #endif // !defined(NDEBUG)
 #include <emmintrin.h>
+#endif // PLUGIFY_USE_ARM
 
-#if PLUGIFY_COMPILER_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#endif // PLUGIFY_COMPILER_GCC
+#if PLUGIFY_ARCH_ARM
+using uint128_i = uint32x4_t;
+#else
+using uint128_i = __m128i;
+#endif // PLUGIFY_ARCH_ARM
 
-#if PLUGIFY_COMPILER_CLANG
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpedantic"
-#pragma clang diagnostic ignored "-Wignored-qualifiers"
-#pragma clang diagnostic ignored "-Wfloat-equal"
-#endif // PLUGIFY_COMPILER_CLANG
-
-#if PLUGIFY_COMPILER_MSVC
-#pragma warning( push )
-#pragma warning( disable : 4201 )
-#endif // PLUGIFY_COMPILER_MSVC
-#endif // !PLUGIFY_USE_ARM
+extern bool sha256_simd_available();
 
 namespace plugify {
-	union Digest {
-		std::array<uint8_t, 32> h;
-#if !PLUGIFY_ARCH_ARM
-		struct {
-			__m128i h0123; // h0:h1:h2:h3
-			__m128i h4567; // h4:h5:h6:h7
-		};
-#endif // !PLUGIFY_ARCH_ARM
-	};
+	PLUGIFY_WARN_PUSH()
+
+#if PLUGIFY_COMPILER_CLANG
+	PLUGIFY_WARN_IGNORE("-Wgnu-anonymous-struct")
+#elif PLUGIFY_COMPILER_GCC
+	PLUGIFY_WARN_IGNORE("-Wpedantic")
+#elif PLUGIFY_COMPILER_MSVC
+	PLUGIFY_WARN_IGNORE(4201)
+#endif
 
 	class Sha256 {
 	public:
 		Sha256();
-		//static constexpr size_t blocklen = 64;
-		//static constexpr size_t digestlen = 32;
 
 		void clear();
-		void update(std::span<const uint8_t>);
+		void update(std::span<const uint8_t> in);
+		std::array<uint8_t, 32> finalize();
 
-		Digest digest();
-
-		static std::string ToString(const Digest& digest);
+		std::string to_string() const;
 
 	private:
-		void transform_base(std::span<const uint8_t, 64> in);
-#if !PLUGIFY_ARCH_ARM
-		void transform_sha(std::span<const uint8_t, 64> in);
-#endif // !PLUGIFY_ARCH_ARM
+		void compress_base(std::span<const uint8_t, 64> in);
+		void compress_simd(std::span<const uint8_t, 64> in);
 
-		// Intermediate hash
 		union {
+			std::array<uint8_t, 32> _b;
 			std::array<uint32_t, 8> _h;
-#if !PLUGIFY_ARCH_ARM
 			struct {
-				__m128i _h0145; // h0:h1:h4:h5
-				__m128i _h2367; // h2:h3:h6:h7
+				uint128_i _state0;
+				uint128_i _state1;
 			};
-#endif // !PLUGIFY_ARCH_ARM
 		};
-
 		std::array<uint8_t, 64> _buf;
 		size_t _len;
+
+		static inline bool has_sha256_acceleration = sha256_simd_available();
+		static inline decltype(&Sha256::compress_base) compress = has_sha256_acceleration ? &Sha256::compress_simd : &Sha256::compress_base;
 	};
+
+	PLUGIFY_WARN_POP()
 }
-
-#if !PLUGIFY_ARCH_ARM
-#if PLUGIFY_COMPILER_CLANG
-#pragma clang diagnostic pop
-#endif // PLUGIFY_COMPILER_CLANG
-
-#if PLUGIFY_COMPILER_GCC
-#pragma GCC diagnostic pop
-#endif // PLUGIFY_COMPILER_GCC
-
-#if PLUGIFY_COMPILER_MSVC
-#pragma warning( pop )
-#endif // PLUGIFY_COMPILER_MSVC
-#endif // !PLUGIFY_USE_ARM

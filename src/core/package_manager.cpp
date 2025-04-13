@@ -1055,7 +1055,8 @@ bool PackageManager::IsPackageLegit(std::string_view checksum, std::span<const u
 
 	Sha256 sha;
 	sha.update(packageData);
-	std::string hash(Sha256::ToString(sha.digest()));
+	sha.finalize();
+	std::string hash = sha.to_string();
 
 	PL_LOG_VERBOSE("Expected checksum: {}", checksum);
 	PL_LOG_VERBOSE("Computed checksum: {}", hash);
