@@ -58,7 +58,7 @@ bool Assembly::InitFromMemory(MemAddr moduleMemory, LoadFlag flags, const Search
 	return true;
 }
 
-bool Assembly::InitFromHandle(Handle /*moduleHandle*/, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*extension*/, bool /*sections*/) {
+bool Assembly::InitFromHandle(Handle /*moduleHandle*/, LoadFlag /*flags*/, const SearchDirs& /*additionalSearchDirectories*/, bool /*sections*/) {
 	// TODO: Implement
 	return false;
 }

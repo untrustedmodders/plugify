@@ -5,15 +5,10 @@
 #elif PLUGIFY_PLATFORM_WINDOWS
 #include <processthreadsapi.h>
 #elif PLUGIFY_PLATFORM_APPLE
-#include <sys/types.h>
 #include <sys/sysctl.h>
-#elif defined(__has_include)
-#if __has_include(<sys/auxv.h>)
-#  include <sys/auxv.h>
-#  if __has_include(<asm/hwcap.h>)
-#   include <asm/hwcap.h>
-#  endif
-#endif
+#elif PLUGIFY_PLATFORM_LINUX
+#include <sys/auxv.h>z
+#include <asm/hwcap.h>
 #endif
 
 #include <arm_neon.h>
@@ -34,8 +29,10 @@ bool sha256_simd_available() {
 	if ((getauxval(AT_HWCAP2) & HWCAP2_SHA2) != 0)
 		return true;
 #elif PLUGIFY_PLATFORM_APPLE && PLUGIFY_ARCH_BITS == 64
-	if (IsAppleMachineARMv82())
-		return true;
+	int64_t supported = 0;
+	size_t sz = sizeof(supported);
+	if (sysctlbyname("hw.optional.arm.FEAT_SHA256", &supported, &sz, nullptr, 0) == 0)
+		return supported != 0;
 #elif PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_ARCH_BITS == 64
 	if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE) != 0)
 		return true;
@@ -138,8 +135,8 @@ void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
 }
 
 void Sha256::init_simd() {
-	_state0 = { int(H[0]), int(H[1]), int(H[2]), int(H[3]) };
-	_state1 = { int(H[4]), int(H[5]), int(H[6]), int(H[7]) };
+	_state0 = { H[0], H[1], H[2], H[3] };
+	_state1 = { H[4], H[5], H[6], H[7] };
 }
 
 void Sha256::swap_simd() {

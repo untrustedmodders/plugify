@@ -168,7 +168,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
     if(APPLE)
-        target_link_options(${PROJECT_NAME} PRIVATE "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/sym/exported_symbols.lds")
+        #target_link_options(${PROJECT_NAME} PRIVATE "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/sym/exported_symbols.lds")
     elseif(UNIX)
         target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/sym/version_script.lds")
     endif()

@@ -26,7 +26,7 @@ JitCallback& JitCallback::operator=(JitCallback&& other) noexcept {
 	return *this;
 }
 
-MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef method, CallbackHandler callback, MemAddr data, bool hidden) {
+MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle method, CallbackHandler callback, MemAddr data, bool hidden) {
 	if (_function) 
 		return _function;
 
@@ -134,7 +134,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 
 	// fill reg to pass method ptr to callback
 	asmjit::a64::Gp methodPtrParam = cc.newGpx("methodPtrParam");
-	cc.mov(methodPtrParam, static_cast<uintptr_t>(method)));
+	cc.mov(methodPtrParam, static_cast<uintptr_t>(method));
 
 	// fill reg to pass data ptr to callback
 	asmjit::a64::Gp dataPtrParam = cc.newGpx("dataPtrParam");
@@ -266,7 +266,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodRef meth
 	return _function;
 }
 
-MemAddr JitCallback::GetJitFunc(MethodRef method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
+MemAddr JitCallback::GetJitFunc(MethodHandle method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
 	ValueType retType = method.GetReturnType().GetType();
 	bool retHidden = hidden(retType);
 	asmjit::FuncSignature sig(asmjit::CallConvId::kHost, method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Void : retType));

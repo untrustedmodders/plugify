@@ -113,7 +113,7 @@ namespace plugify {
 		 * @return A RemotePackage instance representing the local package.
 		 */
 		explicit operator RemotePackage() const {
-			return { name, type, descriptor->createdBy.value_or("unknown"), descriptor->description.value_or(""), { PackageVersion{ descriptor->version, {}, descriptor->downloadURL.value_or(""), descriptor->supportedPlatforms } } };
+			return { {name, type}, descriptor->createdBy.value_or("unknown"), descriptor->description.value_or(""), { PackageVersion{ descriptor->version, {}, descriptor->downloadURL.value_or(""), descriptor->supportedPlatforms } } };
 		}
 	};
 } // namespace plugify

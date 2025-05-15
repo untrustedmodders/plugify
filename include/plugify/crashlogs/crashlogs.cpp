@@ -176,7 +176,7 @@ namespace plugify::crashlogs {
 		cv.notify_one();
 	}
 
-	PLUGIFY_FORCE_INLINE static void CrashHandler() {
+	PLUGIFY_FORCE_INLINE void CrashHandler() {
 		//if we crashed during a crash... ignore lol
 		if (status != program_status::running) return;
 
