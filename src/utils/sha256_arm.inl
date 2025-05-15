@@ -59,8 +59,8 @@ void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
 
 	// Round computation.
 	uint32x4_t msg, tmp;
-#define RND4(M, Kp)                               \
-	msg = vaddq_u32(M, vld1q_u32(Kp));            \
+#define RND4(M, n)                                \
+	msg = vaddq_u32(M, K.x[n]);                   \
 	tmp = vsha256hq_u32(state0, state1, msg);     \
 	state1 = vsha256h2q_u32(state1, state0, msg); \
 	state0 = tmp;
@@ -70,64 +70,64 @@ void Sha256::compress_simd(std::span<const uint8_t, 64> in) {
 	X0 = vsha256su1q_u32(vsha256su0q_u32(X0, X1), X2, X3)
 
     // Rounds 0-3
-	RND4(msg0, &K.dw[4*0]);
+	RND4(msg0, 0);
     MSG4(msg0, msg1, msg2, msg3);
 
     // Rounds 4-7
-	RND4(msg1, &K.dw[4*1]);
+	RND4(msg1, 1);
     MSG4(msg1, msg2, msg3, msg0);
 
     // Rounds 8-11
-	RND4(msg2, &K.dw[4*2]);
+	RND4(msg2, 2);
     MSG4(msg2, msg3, msg0, msg1);
 
     // Rounds 12-15
-	RND4(msg3, &K.dw[4*3]);
+	RND4(msg3, 3);
     MSG4(msg3, msg0, msg1, msg2);
 
     // Rounds 16-19
-	RND4(msg0, &K.dw[4*4]);
+	RND4(msg0, 4);
     MSG4(msg0, msg1, msg2, msg3);
 
     // Rounds 20-23
-	RND4(msg1, &K.dw[4*5]);
+	RND4(msg1, 5);
     MSG4(msg1, msg2, msg3, msg0);
 
     // Rounds 24-27
-	RND4(msg2, &K.dw[4*6]);
+	RND4(msg2, 6);
     MSG4(msg2, msg3, msg0, msg1);
 
     // Rounds 28-31
-	RND4(msg3, &K.dw[4*7]);
+	RND4(msg3, 7);
     MSG4(msg3, msg0, msg1, msg2);
 
     // Rounds 32-35
-	RND4(msg0, &K.dw[4*8]);
+	RND4(msg0, 8);
     MSG4(msg0, msg1, msg2, msg3);
 
     // Rounds 36-39
-	RND4(msg1, &K.dw[4*9]);
+	RND4(msg1, 9);
     MSG4(msg1, msg2, msg3, msg0);
 
     // Rounds 40-43
-	RND4(msg2, &K.dw[4*10]);
+	RND4(msg2, 10);
     MSG4(msg2, msg3, msg0, msg1);
 
     // Rounds 44-47
-	RND4(msg3, &K.dw[4*11]);
+	RND4(msg3, 11);
     MSG4(msg3, msg0, msg1, msg2);
 
     // Rounds 48-51
-	RND4(msg0, &K.dw[4*12]);
+	RND4(msg0, 12);
 
     // Rounds 52-55
-	RND4(msg1, &K.dw[4*13]);
+	RND4(msg1, 13);
 
     // Rounds 56-59
-	RND4(msg2, &K.dw[4*14]);
+	RND4(msg2, 14);
 
     // Rounds 60-63
-	RND4(msg3, &K.dw[4*15]);
+	RND4(msg3, 15);
 
     // Add back to state
     _state0 = vaddq_u32(state0, _state0);
