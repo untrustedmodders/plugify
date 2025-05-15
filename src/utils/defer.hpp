@@ -4,7 +4,7 @@
 #include <utility>
 
 namespace plugify {
-	template <typename F>
+	template<typename F>
 	struct defer_t {
 		F f;
 
