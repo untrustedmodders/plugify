@@ -45,11 +45,13 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	asmjit::x86::Compiler cc(&code);
 	asmjit::FuncNode* func = cc.addFunc(asmjit::FuncSignature::build<void, Parameters*, Return*>());// Create the wrapper function around call we JIT
 
-	/*StringLogger log;
-	auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
+#if 0
+	asmjit::StringLogger log;
+	auto kFormatFlags = asmjit::FormatFlags::kMachineCode | asmjit::FormatFlags::kExplainImms | asmjit::FormatFlags::kRegCasts | asmjit::FormatFlags::kHexImms | asmjit::FormatFlags::kHexOffsets | asmjit::FormatFlags::kPositions;
 
 	log.addFlags(kFormatFlags);
-	code.setLogger(&log);*/
+	code.setLogger(&log);
+#endif
 
 #if PLUGIFY_IS_RELEASE
 	// too small to really need it
@@ -74,15 +76,15 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 	argRegisters.reserve(sig.argCount());
 
 	// map argument slots to registers, following abi. (We can have multiple register per arg slot such as high and low 32bits of a 64bit slot)
-	for (uint32_t argIdx = 0; argIdx < sig.argCount(); argIdx++) {
+	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
 		const auto& argType = sig.args()[argIdx];
 
 		asmjit::x86::Reg arg;
 		if (asmjit::TypeUtils::isInt(argType)) {
-			arg = cc.newUIntPtr();
+			arg = cc.newGp(argType);
 			cc.mov(arg.as<asmjit::x86::Gp>(), paramMem);
 		} else if (asmjit::TypeUtils::isFloat(argType)) {
-			arg = cc.newXmm();
+			arg = cc.newVec(argType);
 			cc.movq(arg.as<asmjit::x86::Xmm>(), paramMem);
 		} else {
 			// ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
@@ -142,7 +144,7 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 		}
 	}
 
-	//cc.ret();
+	cc.ret();
 
 	// end of the function body
 	cc.endFunc();
@@ -157,7 +159,9 @@ MemAddr JitCall::GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, Wa
 		return nullptr;
 	}
 
-	//PL_LOG_VERBOSE("JIT Stub:\n{}", log.data());
+#if 0
+	std::printf("JIT Stub[%p]:\n%s\n", (void*)_function, log.data());
+#endif
 
 	return _function;
 }
