@@ -7,19 +7,18 @@ endif()
 # ------------------------------------------------------------------------------
 # Jit
 if(PLUGIFY_BUILD_JIT)
-    if(PLUGIFY_USE_ARM)
-        set(PLUGIFY_JIT_SOURCES
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_arm.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_arm.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_arm.cpp"
-        )
+    if(PLUGIFY_CPU_ARCH_ARM64)
+        set(PLUGIYFY_JIT_ARCH "arm64")
+    elseif(PLUGIFY_CPU_ARCH_ARM32)
+        set(PLUGIYFY_JIT_ARCH "arm32")
     else()
-        set(PLUGIFY_JIT_SOURCES
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_x86.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_x86.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_x86.cpp"
-        )
+        set(PLUGIYFY_JIT_ARCH "x86")
     endif()
+    set(PLUGIFY_JIT_SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_${PLUGIYFY_JIT_ARCH}.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_${PLUGIYFY_JIT_ARCH}.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_${PLUGIYFY_JIT_ARCH}.cpp"
+    )
     add_library(${PROJECT_NAME}-jit OBJECT ${PLUGIFY_JIT_SOURCES})
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-jit ALIAS ${PROJECT_NAME}-jit)
     target_include_directories(${PROJECT_NAME}-jit PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

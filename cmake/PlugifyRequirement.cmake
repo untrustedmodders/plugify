@@ -51,7 +51,7 @@ if(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
     endif()
 endif()
 
-if(PLUGIFY_USE_ARM)
+if(PLUGIFY_CPU_ARCH_ARM64 OR PLUGIFY_CPU_ARCH_ARM32)
     if(PLUGIFY_CPU_ARCH_ARM32)
         set(PLUGIFY_EXTRA_FLAGS -marm -march=armv7-a -mfpu=neon-vfpv4)
     endif()
