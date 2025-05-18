@@ -1,0 +1,56 @@
+From 0d57fbfcb5dcde32a9f3a84d5ab838ce473f631a Mon Sep 17 00:00:00 2001
+From: qubka <nikita.ushakov0000@outlook.com>
+Date: Sun, 18 May 2025 07:38:37 +0100
+Subject: [PATCH] Add X8 reserved option for Compiler
+
+---
+ src/asmjit/arm/a64rapass.cpp | 5 +++++
+ src/asmjit/core/func.h       | 9 +++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/src/asmjit/arm/a64rapass.cpp b/src/asmjit/arm/a64rapass.cpp
+index b97f259..2434dee 100644
+--- a/src/asmjit/arm/a64rapass.cpp
++++ b/src/asmjit/arm/a64rapass.cpp
+@@ -620,6 +620,11 @@ void ARMRAPass::onInit() noexcept {
+   makeUnavailable(RegGroup::kGp, Gp::kIdSp);
+   makeUnavailable(RegGroup::kGp, Gp::kIdOs); // OS-specific use, usually TLS.
+ 
++  // Check if X8 should be reserved and excluded from register allocation.
++  // This is useful when X8 is used as an indirect return register, etc.
++  if (_func->frame().hasReservedX8())
++    makeUnavailable(RegGroup::kGp, x8.id());
++
+   _sp = sp;
+   _fp = x29;
+ }
+diff --git a/src/asmjit/core/func.h b/src/asmjit/core/func.h
+index 695a23b..f0955ee 100644
+--- a/src/asmjit/core/func.h
++++ b/src/asmjit/core/func.h
+@@ -783,6 +783,8 @@ enum class FuncAttributes : uint32_t {
+ 
+   //! Function has variable number of arguments.
+   kHasVarArgs = 0x00000001u,
++  //! Reserve X8 register (don't allocate it for general use on AArch64).
++  kHasReservedX8 = 0x00000008u,
+   //! Preserve frame pointer (don't omit FP).
+   kHasPreservedFP = 0x00000010u,
+   //! Function calls other functions (is not leaf).
+@@ -1169,6 +1171,13 @@ public:
+   //! Disables preserved frame pointer.
+   ASMJIT_INLINE_NODEBUG void resetPreservedFP() noexcept { clearAttributes(FuncAttributes::kHasPreservedFP); }
+ 
++  //! Tests whether the function reserves register X8 (AArch64).
++  ASMJIT_INLINE_NODEBUG bool hasReservedX8() const noexcept { return hasAttribute(FuncAttributes::kHasReservedX8); }
++  //! Marks register X8 as reserved.
++  ASMJIT_INLINE_NODEBUG void setReservedX8() noexcept { addAttributes(FuncAttributes::kHasReservedX8); }
++  //! Unmarks register X8 as reserved.
++  ASMJIT_INLINE_NODEBUG void resetReservedX8() noexcept { clearAttributes(FuncAttributes::kHasReservedX8); }
++
+   //! Tests whether the function calls other functions.
+   ASMJIT_INLINE_NODEBUG bool hasFuncCalls() const noexcept { return hasAttribute(FuncAttributes::kHasFuncCalls); }
+   //! Sets `FuncAttributes::kHasFuncCalls` to true.
+-- 
+2.39.5 (Apple Git-154)
+
