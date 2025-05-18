@@ -123,9 +123,6 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 	// stackIdx <- stack[i].
 	argsStackIdx.setIndex(i);
 
-	// r/w are sizeof(uint64_t) width now
-	argsStackIdx.setSize(sizeof(uint64_t));
-
 	// set i = 0
 	cc.mov(i, 0);
 
@@ -211,48 +208,37 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 		cc.ret();
 	} else if (sig.hasRet()) {
 		a64::Mem retStackIdx0(retStack);
-		retStackIdx0.setSize(sizeof(uint64_t));
 		if (TypeUtils::isInt(sig.ret())) {
 			a64::Gp tmp = cc.newGp(sig.ret());
 			cc.ldr(tmp, retStackIdx0);
 			cc.ret(tmp);
 		} else if (TypeUtils::isBetween(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
 			a64::Mem retStackIdx1(retStack);
-			retStackIdx1.setSize(sizeof(uint64_t));
 			retStackIdx1.addOffset(sizeof(uint64_t));
 			cc.ldr(a64::x0, retStackIdx0);
 			cc.ldr(a64::x1, retStackIdx1);
 			cc.ret();
 		} else if (sig.ret() == TypeId::kFloat32x2) { // Vector2
-			retStackIdx0.setSize(sizeof(float));
 			a64::Mem retStackIdx1(retStack);
-			retStackIdx1.setSize(sizeof(float));
 			retStackIdx1.addOffset(sizeof(float));
 			cc.ldr(a64::s0, retStackIdx0);
 			cc.ldr(a64::s1, retStackIdx1);
 			cc.ret();
 		} else if (sig.ret() == TypeId::kFloat64x2) { // Vector3
-			retStackIdx0.setSize(sizeof(float));
 			a64::Mem retStackIdx1(retStack);
-			retStackIdx1.setSize(sizeof(float));
 			retStackIdx1.addOffset(sizeof(float));
 			a64::Mem retStackIdx2(retStack);
-			retStackIdx2.setSize(sizeof(float));
 			retStackIdx2.addOffset(sizeof(float) * 2);
 			cc.ldr(a64::s0, retStackIdx0);
 			cc.ldr(a64::s1, retStackIdx1);
 			cc.ldr(a64::s2, retStackIdx2);
 			cc.ret();
 		} else if (sig.ret() == TypeId::kFloat32x4) { // Vector4
-			retStackIdx0.setSize(sizeof(float));
 			a64::Mem retStackIdx1(retStack);
-			retStackIdx1.setSize(sizeof(float));
 			retStackIdx1.addOffset(sizeof(float));
 			a64::Mem retStackIdx2(retStack);
-			retStackIdx2.setSize(sizeof(float));
 			retStackIdx2.addOffset(sizeof(float) * 2);
 			a64::Mem retStackIdx3(retStack);
-			retStackIdx3.setSize(sizeof(float));
 			retStackIdx3.addOffset(sizeof(float) * 3);
 			cc.ldr(a64::s0, retStackIdx0);
 			cc.ldr(a64::s1, retStackIdx1);

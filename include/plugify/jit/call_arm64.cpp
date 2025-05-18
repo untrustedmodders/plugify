@@ -70,7 +70,6 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 	// paramMem = ((char*)paramImm) + i (char* size walk, uint64_t size r/w)
 	a64::Gp i = cc.newGpx();
 	a64::Mem paramMem = ptr(paramImm, i);
-	paramMem.setSize(sizeof(uint64_t));
 
 	// i = 0
 	cc.mov(i, 0);
