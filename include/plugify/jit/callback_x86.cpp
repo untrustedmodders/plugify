@@ -87,9 +87,9 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 
 		x86::Reg arg;
 		if (TypeUtils::isInt(argType)) {
-			arg = cc.newGp(argType);
+			arg = cc.newUIntPtr();
 		} else if (TypeUtils::isFloat(argType)) {
-			arg = cc.newVec(argType);
+			arg = cc.newXmm();
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;

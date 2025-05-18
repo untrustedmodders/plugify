@@ -83,10 +83,10 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 
 		x86::Reg arg;
 		if (TypeUtils::isInt(argType)) {
-			arg = cc.newGp(argType);
+			arg = cc.newUIntPtr();
 			cc.mov(arg.as<x86::Gp>(), paramMem);
 		} else if (TypeUtils::isFloat(argType)) {
-			arg = cc.newVec(argType);
+			arg = cc.newXmm();
 			cc.movq(arg.as<x86::Xmm>(), paramMem);
 		} else {
 			// ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
@@ -125,7 +125,7 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 
 	if (sig.hasRet()) {
 		if (TypeUtils::isInt(sig.ret())) {
-			x86::Gp tmp = cc.newGp(sig.ret());
+			x86::Gp tmp = cc.newUIntPtr();
 			invokeNode->setRet(0, tmp);
 			cc.mov(ptr(returnImm), tmp);
 		}
@@ -140,7 +140,7 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 		}
 #endif
 		else {
-			x86::Xmm ret = cc.newVec(sig.ret()).as<x86::Xmm>();
+			x86::Xmm ret = cc.newXmm();
 			invokeNode->setRet(0, ret);
 			cc.movq(ptr(returnImm), ret);
 		}
