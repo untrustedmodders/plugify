@@ -663,7 +663,7 @@ void PackageManager::InstallAllPackages(const fs::path& manifestFilePath, bool r
 	}
 
 	Request([&] {
-		for (auto& [name, package]: manifest->content) {
+		for (auto& [name, package] : manifest->content) {
 			if (name.empty() || package->name != name) {
 				PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", path.string(), name, package->name);
 				continue;
@@ -784,7 +784,7 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 	Request([&] {
 		std::string error;
 		bool first = true;
-		for (const auto& packageName: packageNames) {
+		for (const auto& packageName : packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
 				continue;
 			if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {

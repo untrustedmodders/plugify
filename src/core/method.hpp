@@ -42,11 +42,9 @@ namespace plugify {
 				if (param.prototype) {
 					if (param.prototype->name == _name) {
 						return param.prototype;
-					} else {
-						auto prototype= param.prototype->FindPrototype(_name);
-						if (prototype) {
-							return prototype;
-						}
+					}
+					if (auto prototype = param.prototype->FindPrototype(_name)) {
+						return prototype;
 					}
 				}
 			}
@@ -54,11 +52,9 @@ namespace plugify {
 			if (retType.prototype) {
 				if (retType.prototype->name == _name) {
 					return retType.prototype;
-				} else {
-					auto prototype = retType.prototype->FindPrototype(_name);
-					if (prototype) {
-						return prototype;
-					}
+				}
+				if (auto prototype = retType.prototype->FindPrototype(_name)) {
+					return prototype;
 				}
 			}
 
