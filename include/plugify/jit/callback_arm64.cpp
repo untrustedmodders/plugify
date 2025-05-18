@@ -3,8 +3,9 @@
 #include <plugify/jit/helpers.hpp>
 
 using namespace plugify;
+using namespace asmjit;
 
-JitCallback::JitCallback(std::weak_ptr<asmjit::JitRuntime> rt) : _rt{std::move(rt)} {
+JitCallback::JitCallback(std::weak_ptr<JitRuntime> rt) : _rt{std::move(rt)} {
 }
 
 JitCallback::JitCallback(JitCallback&& other) noexcept {
@@ -26,7 +27,7 @@ JitCallback& JitCallback::operator=(JitCallback&& other) noexcept {
 	return *this;
 }
 
-MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle method, CallbackHandler callback, MemAddr data, bool hidden) {
+MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, CallbackHandler callback, MemAddr data, bool hidden) {
 	if (_function) 
 		return _function;
 
@@ -56,18 +57,22 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 	  physical registers may be inserted as nodes.
 	*/
 
-	asmjit::CodeHolder code;
+	JitUtils::SimpleErrorHandler eh;
+	CodeHolder code;
 	code.init(rt->environment(), rt->cpuFeatures());
+	code.setErrorHandler(&eh);
 
 	// initialize function
-	asmjit::a64::Compiler cc(&code);
-	asmjit::FuncNode* func = cc.addFunc(sig);
+	a64::Compiler cc(&code);
+	FuncNode* func = cc.addFunc(sig);
 
-	/*StringLogger log;
+#if 0
+	StringLogger log;
 	auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
 
 	log.addFlags(kFormatFlags);
-	code.setLogger(&log);*/
+	code.setLogger(&log);
+#endif
 
 #if PLUGIFY_IS_RELEASE
 	// too small to really need it
@@ -75,16 +80,16 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 #endif
 
 	// map argument slots to registers, following abi.
-	std::vector<asmjit::a64::Reg> argRegisters;
+	std::vector<a64::Reg> argRegisters;
 	argRegisters.reserve(sig.argCount());
 
-	for (uint32_t argIdx = 0; argIdx < sig.argCount(); argIdx++) {
+	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
 		const auto& argType = sig.args()[argIdx];
 
-		asmjit::a64::Reg arg;
-		if (asmjit::TypeUtils::isInt(argType)) {
-			arg = cc.newGpx();
-		} else if (asmjit::TypeUtils::isFloat(argType)) {
+		a64::Reg arg;
+		if (TypeUtils::isInt(argType)) {
+			arg = cc.newGp(argType);
+		} else if (TypeUtils::isFloat(argType)) {
 			arg = cc.newVec(argType);
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
@@ -95,15 +100,25 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 		argRegisters.emplace_back(std::move(arg));
 	}
 
+	a64::Gp retStruct = cc.newGpx("retStruct");
+
+	// store x8 in advance
+	if (hidden) {
+		cc.mov(retStruct, a64::x8);
+	}
+
 	const uint32_t alignment = 16;
 
 	// setup the stack structure to hold arguments for user callback
 	const auto stackSize = static_cast<uint32_t>(sizeof(uint64_t) * sig.argCount());
-	asmjit::a64::Mem argsStack = cc.newStack(stackSize, alignment);
-	asmjit::a64::Mem argsStackIdx(argsStack);
+	a64::Mem argsStack;
+	if (stackSize > 0) {
+		argsStack = cc.newStack(stackSize, alignment);
+	}
+	a64::Mem argsStackIdx(argsStack);
 
 	// assigns some register as index reg
-	asmjit::a64::Gp i = cc.newGpx();
+	a64::Gp i = cc.newGpx();
 
 	// stackIdx <- stack[i].
 	argsStackIdx.setIndex(i);
@@ -119,10 +134,10 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 		const auto& argType = sig.args()[argIdx];
 
 		// have to cast back to explicit register types to gen right mov type
-		if (asmjit::TypeUtils::isInt(argType)) {
-			cc.str(argRegisters.at(argIdx).as<asmjit::a64::Gp>(), argsStackIdx);
-		} else if (asmjit::TypeUtils::isFloat(argType)) {
-			cc.str(argRegisters.at(argIdx).as<asmjit::a64::Vec>(), argsStackIdx);
+		if (TypeUtils::isInt(argType)) {
+			cc.str(argRegisters.at(argIdx).as<a64::Gp>(), argsStackIdx);
+		} else if (TypeUtils::isFloat(argType)) {
+			cc.str(argRegisters.at(argIdx).as<a64::Vec>(), argsStackIdx);
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
@@ -133,36 +148,38 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 	}
 
 	// fill reg to pass method ptr to callback
-	asmjit::a64::Gp methodPtrParam = cc.newGpx("methodPtrParam");
+	a64::Gp methodPtrParam = cc.newGpx("methodPtrParam");
 	cc.mov(methodPtrParam, static_cast<uintptr_t>(method));
 
 	// fill reg to pass data ptr to callback
-	asmjit::a64::Gp dataPtrParam = cc.newGpx("dataPtrParam");
+	a64::Gp dataPtrParam = cc.newGpx("dataPtrParam");
 	cc.mov(dataPtrParam, static_cast<uintptr_t>(data));
 
 	// get pointer to stack structure and pass it to the user callback
-	asmjit::a64::Gp argStruct = cc.newGpx("argStruct");
-	cc.add(argStruct, asmjit::a64::sp, argsStack.offset());
+	a64::Gp argStruct = cc.newGpx("argStruct");
+	cc.loadAddressOf(argStruct, argsStack);
 
 	// fill reg to pass struct arg count to callback
-	asmjit::a64::Gp argCountParam = cc.newGpx("argCountParam");
+	a64::Gp argCountParam = cc.newGpx("argCountParam");
 	cc.mov(argCountParam, static_cast<size_t>(sig.argCount()));
 
 	// create buffer for ret val
-	std::optional<asmjit::a64::Mem> retStack;
-	asmjit::a64::Gp retStruct = cc.newGpx("retStruct");
+	a64::Mem retStack;
 	if (hidden) {
-		cc.mov(retStruct, asmjit::a64::x8);
+		// already cached
 	} else {
-		const auto retSize = static_cast<uint32_t>(sizeof(uint64_t) * (asmjit::TypeUtils::isVec128(sig.ret()) ? 2 : 1));
+		const auto retSize = static_cast<uint32_t>(sizeof(uint64_t) * (TypeUtils::isVec128(sig.ret()) ? 2 : 1));
 		retStack = cc.newStack(retSize, alignment);
-		cc.add(retStruct, asmjit::a64::sp, retStack->offset());
+		cc.loadAddressOf(retStruct, retStack);
 	}
 
-	asmjit::InvokeNode* invokeNode;
+	a64::Gp dest = cc.newGpx();
+	cc.mov(dest, (uint64_t) callback);
+
+	InvokeNode* invokeNode;
 	cc.invoke(&invokeNode,
-			  (uint64_t) callback,
-			  asmjit::FuncSignature::build<void, void*, void*, Parameters*, size_t, Return*>()
+			  dest,
+			  FuncSignature::build<void, void*, void*, Parameters*, size_t, Return*>()
 	);
 
 	// call to user provided function (use ABI of host compiler)
@@ -176,10 +193,10 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 	cc.mov(i, 0); // reset idx
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
 		const auto& argType = sig.args()[argIdx];
-		if (asmjit::TypeUtils::isInt(argType)) {
-			cc.ldr(argRegisters.at(argIdx).as<asmjit::a64::Gp>(), argsStackIdx);
-		} else if (asmjit::TypeUtils::isFloat(argType)) {
-			cc.ldr(argRegisters.at(argIdx).as<asmjit::a64::Vec>(), argsStackIdx);
+		if (TypeUtils::isInt(argType)) {
+			cc.ldr(argRegisters.at(argIdx).as<a64::Gp>(), argsStackIdx);
+		} else if (TypeUtils::isFloat(argType)) {
+			cc.ldr(argRegisters.at(argIdx).as<a64::Vec>(), argsStackIdx);
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
@@ -190,60 +207,60 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 	}
 
 	if (hidden) {
-		cc.mov(asmjit::a64::x8, retStruct);
+		cc.mov(a64::x8, retStruct);
 		cc.ret();
 	} else if (sig.hasRet()) {
-		asmjit::a64::Mem retStackIdx0(*retStack);
+		a64::Mem retStackIdx0(retStack);
 		retStackIdx0.setSize(sizeof(uint64_t));
-		if (asmjit::TypeUtils::isInt(sig.ret())) {
-			asmjit::a64::Gp tmp = cc.newGpx();
+		if (TypeUtils::isInt(sig.ret())) {
+			a64::Gp tmp = cc.newGp(sig.ret());
 			cc.ldr(tmp, retStackIdx0);
 			cc.ret(tmp);
-		} else if (asmjit::TypeUtils::isBetween(sig.ret(), asmjit::TypeId::kInt8x16, asmjit::TypeId::kUInt64x2)) {
-			asmjit::a64::Mem retStackIdx1(*retStack);
+		} else if (TypeUtils::isBetween(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
+			a64::Mem retStackIdx1(retStack);
 			retStackIdx1.setSize(sizeof(uint64_t));
 			retStackIdx1.addOffset(sizeof(uint64_t));
-			cc.ldr(asmjit::a64::x0, retStackIdx0);
-			cc.ldr(asmjit::a64::x1, retStackIdx1);
+			cc.ldr(a64::x0, retStackIdx0);
+			cc.ldr(a64::x1, retStackIdx1);
 			cc.ret();
-		} else if (sig.ret() == asmjit::TypeId::kFloat32x2) { // Vector2
+		} else if (sig.ret() == TypeId::kFloat32x2) { // Vector2
 			retStackIdx0.setSize(sizeof(float));
-			asmjit::a64::Mem retStackIdx1(*retStack);
+			a64::Mem retStackIdx1(retStack);
 			retStackIdx1.setSize(sizeof(float));
 			retStackIdx1.addOffset(sizeof(float));
-			cc.ldr(asmjit::a64::s0, retStackIdx0);
-			cc.ldr(asmjit::a64::s1, retStackIdx1);
+			cc.ldr(a64::s0, retStackIdx0);
+			cc.ldr(a64::s1, retStackIdx1);
 			cc.ret();
-		} else if (sig.ret() == asmjit::TypeId::kFloat64x2) { // Vector3
+		} else if (sig.ret() == TypeId::kFloat64x2) { // Vector3
 			retStackIdx0.setSize(sizeof(float));
-			asmjit::a64::Mem retStackIdx1(*retStack);
+			a64::Mem retStackIdx1(retStack);
 			retStackIdx1.setSize(sizeof(float));
 			retStackIdx1.addOffset(sizeof(float));
-			asmjit::a64::Mem retStackIdx2(*retStack);
+			a64::Mem retStackIdx2(retStack);
 			retStackIdx2.setSize(sizeof(float));
 			retStackIdx2.addOffset(sizeof(float) * 2);
-			cc.ldr(asmjit::a64::s0, retStackIdx0);
-			cc.ldr(asmjit::a64::s1, retStackIdx1);
-			cc.ldr(asmjit::a64::s2, retStackIdx2);
+			cc.ldr(a64::s0, retStackIdx0);
+			cc.ldr(a64::s1, retStackIdx1);
+			cc.ldr(a64::s2, retStackIdx2);
 			cc.ret();
-		} else if (sig.ret() == asmjit::TypeId::kFloat32x4) { // Vector4
+		} else if (sig.ret() == TypeId::kFloat32x4) { // Vector4
 			retStackIdx0.setSize(sizeof(float));
-			asmjit::a64::Mem retStackIdx1(*retStack);
+			a64::Mem retStackIdx1(retStack);
 			retStackIdx1.setSize(sizeof(float));
 			retStackIdx1.addOffset(sizeof(float));
-			asmjit::a64::Mem retStackIdx2(*retStack);
+			a64::Mem retStackIdx2(retStack);
 			retStackIdx2.setSize(sizeof(float));
 			retStackIdx2.addOffset(sizeof(float) * 2);
-			asmjit::a64::Mem retStackIdx3(*retStack);
+			a64::Mem retStackIdx3(retStack);
 			retStackIdx3.setSize(sizeof(float));
 			retStackIdx3.addOffset(sizeof(float) * 3);
-			cc.ldr(asmjit::a64::s0, retStackIdx0);
-			cc.ldr(asmjit::a64::s1, retStackIdx1);
-			cc.ldr(asmjit::a64::s2, retStackIdx2);
-			cc.ldr(asmjit::a64::s3, retStackIdx3);
+			cc.ldr(a64::s0, retStackIdx0);
+			cc.ldr(a64::s1, retStackIdx1);
+			cc.ldr(a64::s2, retStackIdx2);
+			cc.ldr(a64::s3, retStackIdx3);
 			cc.ret();
 		} else {
-			asmjit::a64::Vec tmp = cc.newVec(sig.ret());
+			a64::Vec tmp = cc.newVec(sig.ret());
 			cc.ldr(tmp, retStackIdx0);
 			cc.ret(tmp);
 		}
@@ -254,14 +271,17 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 	// write to buffer
 	cc.finalize();
 
-	asmjit::Error err = rt->add(&_function, &code);
-	if (err) {
+	rt->add(&_function, &code);
+
+	if (eh.error) {
 		_function = nullptr;
-		_errorCode = asmjit::DebugUtils::errorAsString(err);
+		_errorCode = eh.code;
 		return nullptr;
 	}
 
-	//PL_LOG_VERBOSE("JIT Stub:\n{}", log.data());
+#if 0
+	std::printf("JIT Stub[%p]:\n%s\n", (void*)_function, log.data());
+#endif
 
 	return _function;
 }
@@ -269,7 +289,7 @@ MemAddr JitCallback::GetJitFunc(const asmjit::FuncSignature& sig, MethodHandle m
 MemAddr JitCallback::GetJitFunc(MethodHandle method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
 	ValueType retType = method.GetReturnType().GetType();
 	bool retHidden = hidden(retType);
-	asmjit::FuncSignature sig(asmjit::CallConvId::kHost, method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Void : retType));
+	FuncSignature sig(CallConvId::kHost, method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Void : retType));
 	for (const auto& type : method.GetParamTypes()) {
 		sig.addArg(JitUtils::GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
 	}

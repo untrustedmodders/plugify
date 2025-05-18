@@ -17,5 +17,15 @@ namespace plugify::JitUtils {
 	asmjit::TypeId GetRetTypeId(ValueType valueType) noexcept;
 
 	asmjit::CallConvId GetCallConv([[maybe_unused]] std::string_view conv) noexcept;
+
+	struct SimpleErrorHandler : asmjit::ErrorHandler {
+		asmjit::Error error{asmjit::kErrorOk};
+		const char* code{};
+
+		void handleError(asmjit::Error err, const char* message, asmjit::BaseEmitter* ) override {
+			error = err;
+			code = message;
+		}
+	};
 } // namespace plugify::JitUtils
 
