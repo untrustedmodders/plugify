@@ -89,7 +89,7 @@ bool Assembly::InitFromHandle(Handle moduleHandle, LoadFlag flags, const SearchD
 		return false;
 
 	const link_map* info{};
-	if (!dlinfo(moduleHandle, RTLD_DI_LINKMAP, &info) || !info->l_addr || !info->l_name)
+	if (dlinfo(moduleHandle, RTLD_DI_LINKMAP, &info) != 0 || !info->l_addr || !info->l_name)
 		return false;
 
 	if (!Init(info->l_name, flags, additionalSearchDirectories, sections))
@@ -120,8 +120,8 @@ bool Assembly::Init(fs::path modulePath, LoadFlag flags, const SearchDirs& /*add
 bool Assembly::LoadSections() {
 #if !PLUGIFY_PLATFORM_ANDROID
 	const link_map* lmap;
-	if (!dlinfo(_handle, RTLD_DI_LINKMAP, &lmap)) {
-		_error = "Failed to retrieve dynamic linker information using dlinfo.";
+	if (dlinfo(_handle, RTLD_DI_LINKMAP, &lmap) != 0) {
+		_error = dlerror();
 		return false;
 	}
 
