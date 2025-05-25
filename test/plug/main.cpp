@@ -134,9 +134,6 @@ using namespace plugify;
 using namespace crashpad;
 
 #if PLUGIFY_PLATFORM_APPLE
-typedef std::string StringType;
-#define STR(s) s
-
 std::string getExecutableDir() {
 	std::string buffer(1024, '\0');
 	uint32_t size = static_cast<uint32_t>(buffer.size());
@@ -151,9 +148,6 @@ std::string getExecutableDir() {
 	return (lastSlash != std::string::npos) ? buffer.substr(0, lastSlash) : "";
 }
 #elif PLUGIFY_PLATFORM_LINUX
-typedef std::string StringType;
-#define STR(s) s
-
 std::string getExecutableDir() {
 	std::string buffer(PATH_MAX, '\0');
 	ssize_t count = readlink("/proc/self/exe", buffer.data(), buffer.size());
@@ -165,11 +159,8 @@ std::string getExecutableDir() {
 	return (lastSlash != std::string::npos) ? buffer.substr(0, lastSlash) : "";
 }
 #elif PLUGIFY_PLATFORM_WINDOWS
-typedef std::wstring StringType;
-#define STR(s) L##s
-
 std::wstring getExecutableDir() {
-	StringType buffer(MAX_PATH, L'\0');
+	std::wstring buffer(MAX_PATH, L'\0');
 	DWORD size = GetModuleFileNameW(NULL, buffer.data(), static_cast<DWORD>(buffer.size()));
 	if (size == 0 || size == buffer.size())
 		throw std::runtime_error("Failed to get executable path");
@@ -181,13 +172,13 @@ std::wstring getExecutableDir() {
 #endif
 
 struct Metadata {
-	StringType url;
-	StringType handlerApp;
-	StringType databaseDir;
-	StringType metricsDir;
-	std::map<StringType, StringType> annotations;
-	std::vector<StringType> arguments;
-	std::vector<StringType> attachments;
+	std::string url;
+	std::string handlerApp;
+	std::string databaseDir;
+	std::string metricsDir;
+	std::map<std::string, std::string> annotations;
+	std::vector<std::string> arguments;
+	std::vector<std::string> attachments;
 	std::optional<bool> restartable;
 	std::optional<bool> asynchronous_start;
 	std::optional<bool> enabled;
@@ -206,11 +197,11 @@ bool initializeCrashpad(const std::filesystem::path& annotationsPath) {
 	}
 
 	// Get directory where the exe lives so we can pass a full path to handler, reportsDir, metricsDir and attachments
-	StringType exeDir = getExecutableDir();
+	std::filesystem::path exeDir = getExecutableDir();
 
-	base::FilePath handlerApp(std::format(STR(PLUGIFY_EXECUTABLE_PREFIX) STR("{}/{}") STR(PLUGIFY_EXECUTABLE_SUFFIX), exeDir, metadata->handlerApp));
-	base::FilePath databaseDir(std::format(STR("{}/{}"), exeDir, metadata->databaseDir));
-	base::FilePath metricsDir(std::format(STR("{}/{}"), exeDir, metadata->metricsDir));
+	base::FilePath handlerApp(exeDir / std::format(PLUGIFY_EXECUTABLE_PREFIX "{}" PLUGIFY_EXECUTABLE_SUFFIX, metadata->handlerApp));
+	base::FilePath databaseDir(exeDir / metadata->databaseDir);
+	base::FilePath metricsDir(exeDir / metadata->metricsDir);
 
 	std::unique_ptr<CrashReportDatabase> database = CrashReportDatabase::Initialize(databaseDir);
 	if (database == nullptr)
@@ -220,7 +211,7 @@ bool initializeCrashpad(const std::filesystem::path& annotationsPath) {
 	std::vector<base::FilePath> attachments;
 	attachments.reserve(metadata->attachments.size());
 	for (const auto& attachment : metadata->attachments) {
-		attachments.emplace_back(std::format(STR("{}/{}"), exeDir, attachment));
+		attachments.emplace_back(exeDir / attachment);
 	}
 
 	// Enable automated crash uploads

@@ -16,13 +16,15 @@ if(LINUX)
             OUTPUT "${CMAKE_BINARY_DIR}/pch.h"
             CONTENT "#pragma once\n#include <cstdint>\n"
     )
+    target_precompile_headers(minichromium PUBLIC "${CMAKE_BINARY_DIR}/pch.h")
     if (PLUGIFY_COMPILER_GCC)
         target_compile_options(crashpad_snapshot PRIVATE -Wno-template-id-cdtor)
     endif()
-    target_precompile_headers(minichromium PUBLIC "${CMAKE_BINARY_DIR}/pch.h")
     target_compile_definitions(minichromium PUBLIC -DCRASHPAD_USE_BORINGSSL=1)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(minichromium PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+elseif(WIN32)
+    add_compile_definitions(-DNOMINMAX=1)
 endif()
 
 add_dependencies(${PROJECT_NAME} crashpad_handler)
