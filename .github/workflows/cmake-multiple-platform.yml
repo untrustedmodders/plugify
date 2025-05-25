@@ -76,7 +76,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path build/output/
           Move-Item -Force -Path build/${{ env.BUILD_TYPE }}/plugify.dll -Destination build/output/
           Move-Item -Force -Path build/test/plug/${{ env.BUILD_TYPE }}/plug.exe -Destination build/output/
+          Move-Item -Force -Path build/test/plug/${{ env.BUILD_TYPE }}/crashpad_handler.exe -Destination build/output/
           Move-Item -Force -Path build/plugify.pconfig -Destination build/output/
+          Move-Item -Force -Path build/crashpad.jsonc -Destination build/output/
 
       - uses: actions/upload-artifact@v4
         with:
@@ -118,7 +120,9 @@ jobs:
           mkdir build/output/
           mv build/test/plug/libplugify.so build/output
           mv build/test/plug/plug build/output
+          mv build/test/plug/crashpad_handler build/output
           mv build/plugify.pconfig build/output
+          mv build/crashpad.jsonc build/output
 
       - uses: actions/upload-artifact@v4
         with:
