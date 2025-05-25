@@ -26,6 +26,10 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
     target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
 endif()
 
+if(WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX=1)
+endif()
+
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
     target_compile_definitions(${PROJECT_NAME} PRIVATE TEST_HAS_NO_EXCEPTIONS=1)

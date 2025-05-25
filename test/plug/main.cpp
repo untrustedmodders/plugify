@@ -215,7 +215,7 @@ bool InitializeCrashpad(const std::filesystem::path& exeDir, const std::filesyst
 	Settings* settings = database->GetSettings();
 	if (settings == nullptr)
 		return false;
-	settings->SetUploadsEnabled(true);
+	settings->SetUploadsEnabled(!metadata->url.empty());
 
 	// Start crash handler
 	auto* client = new CrashpadClient();
