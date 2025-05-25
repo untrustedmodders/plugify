@@ -134,7 +134,7 @@ using namespace plugify;
 using namespace crashpad;
 
 #if PLUGIFY_PLATFORM_APPLE
-std::string getExecutableDir() {
+std::string GetExecutableDir() {
 	std::string buffer(1024, '\0');
 	uint32_t size = static_cast<uint32_t>(buffer.size());
 	if (_NSGetExecutablePath(buffer.data(), &size) != 0) {
@@ -148,7 +148,7 @@ std::string getExecutableDir() {
 	return (lastSlash != std::string::npos) ? buffer.substr(0, lastSlash) : "";
 }
 #elif PLUGIFY_PLATFORM_LINUX
-std::string getExecutableDir() {
+std::string GetExecutableDir() {
 	std::string buffer(PATH_MAX, '\0');
 	ssize_t count = readlink("/proc/self/exe", buffer.data(), buffer.size());
 	if (count == -1)
@@ -159,7 +159,7 @@ std::string getExecutableDir() {
 	return (lastSlash != std::string::npos) ? buffer.substr(0, lastSlash) : "";
 }
 #elif PLUGIFY_PLATFORM_WINDOWS
-std::wstring getExecutableDir() {
+std::wstring GetExecutableDir() {
 	std::wstring buffer(MAX_PATH, L'\0');
 	DWORD size = GetModuleFileNameW(NULL, buffer.data(), static_cast<DWORD>(buffer.size()));
 	if (size == 0 || size == buffer.size())
@@ -184,7 +184,7 @@ struct Metadata {
 	std::optional<bool> enabled;
 };
 
-bool initializeCrashpad(const std::filesystem::path& annotationsPath) {
+bool InitializeCrashpad(const std::filesystem::path& annotationsPath) {
 	auto json = ReadText(annotationsPath);
 	auto metadata = glz::read_jsonc<Metadata>(json);
 	if (!metadata.has_value()) {
@@ -197,7 +197,7 @@ bool initializeCrashpad(const std::filesystem::path& annotationsPath) {
 	}
 
 	// Get directory where the exe lives so we can pass a full path to handler, reportsDir, metricsDir and attachments
-	std::filesystem::path exeDir = getExecutableDir();
+	std::filesystem::path exeDir = GetExecutableDir();
 
 	base::FilePath handlerApp(exeDir / std::format(PLUGIFY_EXECUTABLE_PREFIX "{}" PLUGIFY_EXECUTABLE_SUFFIX, metadata->handlerApp));
 	base::FilePath databaseDir(exeDir / metadata->databaseDir);
@@ -237,7 +237,7 @@ bool initializeCrashpad(const std::filesystem::path& annotationsPath) {
 
 int main() {
 	if (!plg::is_debugger_present()) {
-		initializeCrashpad("crashpad.jsonc");
+		InitializeCrashpad("crashpad.jsonc");
 	}
     std::shared_ptr<IPlugify> plug = MakePlugify();
     if (plug) {
