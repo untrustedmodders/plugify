@@ -200,6 +200,11 @@ if(PLUGIFY_BUILD_TESTS)
             ${CMAKE_BINARY_DIR}/plugify.pconfig
             COPYONLY
     )
+    configure_file(
+            ${CMAKE_SOURCE_DIR}/crashpad.jsonc
+            ${CMAKE_BINARY_DIR}/crashpad.jsonc
+            COPYONLY
+    )
     add_subdirectory(test/plug)
     add_subdirectory(test/containers)
 endif()
