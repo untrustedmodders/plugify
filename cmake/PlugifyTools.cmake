@@ -1,7 +1,7 @@
 if(PLUGIFY_BUILD_TESTS)
     set(PLUGIFY_BUILD_JIT ON)
     set(PLUGIFY_BUILD_ASSEMBLY ON)
-    set(PLUGIFY_BUILD_CRASHLOGS ON)
+    #set(PLUGIFY_BUILD_CRASHPAD ON)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -68,24 +68,3 @@ if(PLUGIFY_BUILD_ASSEMBLY)
     endif()
 endif()
 
-# ------------------------------------------------------------------------------
-# Crashlogs
-if(PLUGIFY_BUILD_CRASHLOGS)
-    add_library(${PROJECT_NAME}-crashlogs OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/crashlogs/crashlogs.cpp")
-    add_library(${PROJECT_NAME}::${PROJECT_NAME}-crashlogs ALIAS ${PROJECT_NAME}-crashlogs)
-    target_include_directories(${PROJECT_NAME}-crashlogs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_compile_definitions(${PROJECT_NAME}-crashlogs PRIVATE
-            ${PLUGIFY_COMPILE_DEFINITIONS}
-            PLUGIFY_SEPARATE_SOURCE_FILES=1
-    )
-    if(NOT COMPILER_SUPPORTS_STACKTRACE)
-        target_link_libraries(${PROJECT_NAME}-crashlogs PRIVATE cpptrace::cpptrace)
-    endif()
-    target_include_directories(${PROJECT_NAME}-crashlogs PUBLIC ${CMAKE_BINARY_DIR}/exports)
-    if(LINUX)
-        target_compile_definitions(${PROJECT_NAME}-crashlogs PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
-    endif()
-    if(PLUGIFY_HAS_LIBCPP)
-        target_compile_options(${PROJECT_NAME}-crashlogs PUBLIC -stdlib=libc++)
-    endif()
-endif()
