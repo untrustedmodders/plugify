@@ -1,0 +1,23 @@
+{
+  "url": "https://submit.backtrace.io/untrustedmodders/749vsd272841ae9311d2600fbc9609200c7d88b6497b3443da4a5f7cb6627d62/minidump",
+  "handlerApp": "crashpad_handler",
+  "databaseDir": "crashpad",
+  "metricsDir": "crashpad",
+  "annotations": {
+    "format": "minidump",
+    "database": "Plugify",
+    "product": "PlgTest",
+    "version": "1.0.0",
+    "key": "",
+    "user": "",
+    "list_annotations": ""
+  },
+  "arguments": [
+    "--no-rate-limit"
+  ],
+  "attachments": [
+  ],
+  "restartable": true,
+  "asynchronous_start": false,
+  "enabled": false
+}

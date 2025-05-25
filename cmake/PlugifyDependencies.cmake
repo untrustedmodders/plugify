@@ -85,6 +85,10 @@ if(NOT COMPILER_SUPPORTS_STACKTRACE)
     endif()
 endif()
 
+if(PLUGIFY_BUILD_CRASHPAD)
+    include(FetchCrashPad)
+endif()
+
 # ------------------------------------------------------------------------------
 # Git
 include(FetchGit)

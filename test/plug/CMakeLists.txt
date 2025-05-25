@@ -18,7 +18,9 @@ file(GLOB_RECURSE PLUG_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 
 add_executable(${PROJECT_NAME} ${PLUG_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify plugify::plugify-jit plugify::plugify-assembly plugify::plugify-crashlogs ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify plugify::plugify-jit plugify::plugify-assembly glaze::glaze crashpad_client ${CMAKE_DL_LIBS})
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_DEFINITIONS})
 
 if(NOT COMPILER_SUPPORTS_FORMAT)
     target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
@@ -32,6 +34,13 @@ else()
 endif()
 
 add_custom_command(TARGET plug POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_FILE:plugify> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:plugify> $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
+
+add_custom_command(TARGET plug POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:crashpad_handler> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/crashpad)
