@@ -184,7 +184,7 @@ struct Metadata {
 	std::optional<bool> enabled;
 };
 
-bool InitializeCrashpad(const std::filesystem::path& annotationsPath) {
+bool InitializeCrashpad(const std::filesystem::path& exeDir, const std::filesystem::path& annotationsPath) {
 	auto json = ReadText(annotationsPath);
 	auto metadata = glz::read_jsonc<Metadata>(json);
 	if (!metadata.has_value()) {
@@ -195,9 +195,6 @@ bool InitializeCrashpad(const std::filesystem::path& annotationsPath) {
 	if (!metadata->enabled.value_or(true)) {
 		return false;
 	}
-
-	// Get directory where the exe lives so we can pass a full path to handler, reportsDir, metricsDir and attachments
-	std::filesystem::path exeDir = GetExecutableDir();
 
 	base::FilePath handlerApp(exeDir / std::format(PLUGIFY_EXECUTABLE_PREFIX "{}" PLUGIFY_EXECUTABLE_SUFFIX, metadata->handlerApp));
 	base::FilePath databaseDir(exeDir / metadata->databaseDir);
@@ -237,7 +234,10 @@ bool InitializeCrashpad(const std::filesystem::path& annotationsPath) {
 
 int main() {
 	if (!plg::is_debugger_present()) {
-		InitializeCrashpad("crashpad.jsonc");
+		// Get directory where the exe lives so we can pass a full path to handler, reportsDir, metricsDir and attachments
+		std::filesystem::path exeDir = GetExecutableDir();
+
+		InitializeCrashpad(exeDir, "crashpad.jsonc");
 	}
     std::shared_ptr<IPlugify> plug = MakePlugify();
     if (plug) {

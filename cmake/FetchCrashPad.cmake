@@ -1,3 +1,10 @@
+cmake_policy(PUSH)
+
+if(POLICY CMP0169)
+    # Allow calling FetchContent_Populate directly.
+    cmake_policy(SET CMP0169 OLD)
+endif()
+
 include(FetchContent)
 
 message(STATUS "Pulling and configuring crashpad_cmake")
@@ -10,6 +17,8 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(crashpad_cmake)
+
+cmake_policy(POP)
 
 if(LINUX)
     file(GENERATE
