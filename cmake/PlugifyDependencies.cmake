@@ -85,7 +85,7 @@ if(NOT COMPILER_SUPPORTS_STACKTRACE)
     endif()
 endif()
 
-if(PLUGIFY_BUILD_CRASHPAD)
+if(PLUGIFY_BUILD_CRASHPAD OR PLUGIFY_BUILD_TESTS)
     include(FetchCrashPad)
 endif()
 

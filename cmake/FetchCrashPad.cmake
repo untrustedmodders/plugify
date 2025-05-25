@@ -5,7 +5,8 @@ message(STATUS "Pulling and configuring crashpad_cmake")
 FetchContent_Declare(
         crashpad_cmake
         GIT_REPOSITORY ${PLUGIFY_CRASHPAD_REPO}
-        GIT_TAG        ${PLUGIFY_CRASHPAD_TAG}
+        GIT_TAG ${PLUGIFY_CRASHPAD_TAG}
+        GIT_SHALLOW TRUE
 )
 
 FetchContent_MakeAvailable(crashpad_cmake)
