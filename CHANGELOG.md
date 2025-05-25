@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/untrustedmodders/plugify/compare/v1.2.4...v1.2.5) (2025-05-25)
+
+
+### Bug Fixes
+
+* build on windows ([5f6ac40](https://github.com/untrustedmodders/plugify/commit/5f6ac4070349a77af0f1894318275a93cae8b0f3))
+
 ## [1.2.4](https://github.com/untrustedmodders/plugify/compare/v1.2.3...v1.2.4) (2025-05-25)
 
 
