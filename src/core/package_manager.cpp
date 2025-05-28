@@ -83,8 +83,39 @@ void PackageManager::LoadAllPackages() {
 #endif // PLUGIFY_DOWNLOADER
 }
 
+static bool IsSupportsPlatform(const std::optional<std::vector<std::string>>& supportedPlatforms) {
+	if (!supportedPlatforms || supportedPlatforms->empty())
+		return true;
+
+	constexpr std::string_view platform = PLUGIFY_PLATFORM;
+	static_assert(platform.find('-') != std::string_view::npos, "PLUGIFY_PLATFORM must be in the format 'name-arch'");
+	constexpr size_t dashPos = platform.find('-');
+	constexpr std::string_view name = platform.substr(0, dashPos);
+	constexpr bool steamrt = name == "steamrt";
+
+	for (const auto& supported : *supportedPlatforms) {
+		const std::string_view s = supported;
+
+		// Legacy fallback: treat "linux" as "steamrt"
+		if constexpr (steamrt) {
+			if (s == "linux")
+				return true;
+		}
+
+		// Full match: "linux-arm64"
+		if (s == platform)
+			return true;
+
+		// Name-only match: "linux"
+		if (s == name)
+			return true;
+	}
+
+	return false;
+}
+
 template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
-bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
+bool RemoveDuplicates(Cnt &cnt, Pr cmp = Pr()) {
 	auto size = std::size(cnt);
 	Cnt result;
 	result.reserve(size);
@@ -107,7 +138,7 @@ bool RemoveDuplicates(Cnt& cnt, Pr cmp = Pr()) {
 void RemoveUnsupported(RemotePackagePtr& package) {
 	std::set<PackageVersion>& versions = package->versions;
 	for (auto it = versions.begin(); it != versions.end(); ) {
-		if (!PackageManager::IsSupportsPlatform(it->platforms)) {
+		if (!IsSupportsPlatform(it->platforms)) {
 			it = versions.erase(it);
 		} else {
 			++it;
@@ -227,7 +258,7 @@ LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string
 	}
 	auto& descriptor = *dest;
 
-	if (!PackageManager::IsSupportsPlatform(descriptor->supportedPlatforms))
+	if (!IsSupportsPlatform(descriptor->supportedPlatforms))
 		return {};
 
 	std::vector<std::string> errors;

@@ -48,11 +48,6 @@ namespace plugify {
 		std::vector<LocalPackagePtr> GetLocalPackages() const override;
 		std::vector<RemotePackagePtr> GetRemotePackages() const override;
 
-	public:
-		static bool IsSupportsPlatform(const std::optional<std::vector<std::string>>& supportedPlatforms) {
-			return !supportedPlatforms.has_value() || supportedPlatforms->empty() || std::find(supportedPlatforms->begin(), supportedPlatforms->end(), PLUGIFY_PLATFORM) != supportedPlatforms->end(); //-V001
-		}
-
 	private:
 		void LoadAllPackages();
 		void LoadLocalPackages();
