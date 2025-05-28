@@ -148,8 +148,7 @@ namespace plugify {
 		std::unique_ptr<std::string> _error;
 	};
 
-	struct BasePaths
-	{
+	struct BasePaths {
 		fs::path configs;
 		fs::path data;
 		fs::path logs;
