@@ -134,6 +134,8 @@ using namespace plugify;
 using namespace crashpad;
 
 #if PLUGIFY_PLATFORM_APPLE
+#include <mach-o/dyld.h>
+
 std::string GetExecutableDir() {
 	std::string buffer(1024, '\0');
 	uint32_t size = static_cast<uint32_t>(buffer.size());
@@ -159,6 +161,8 @@ std::string GetExecutableDir() {
 	return (lastSlash != std::string::npos) ? buffer.substr(0, lastSlash) : "";
 }
 #elif PLUGIFY_PLATFORM_WINDOWS
+#include <windows.h>
+
 std::wstring GetExecutableDir() {
 	std::wstring buffer(MAX_PATH, L'\0');
 	DWORD size = GetModuleFileNameW(NULL, buffer.data(), static_cast<DWORD>(buffer.size()));
