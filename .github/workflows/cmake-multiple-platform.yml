@@ -101,7 +101,7 @@ jobs:
           submodules: "recursive"
 
       - name: Install CURL
-        run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
+        run: sudo apt update && sudo apt install -y libcurl4-openssl-dev libssl-dev
 
       - name: Install GCC-12
         run: |
