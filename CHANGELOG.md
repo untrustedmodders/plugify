@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.6](https://github.com/untrustedmodders/plugify/compare/v1.2.5...v1.2.6) (2025-05-29)
+
+
+### Bug Fixes
+
+* action build ([05e73b1](https://github.com/untrustedmodders/plugify/commit/05e73b10e679a58a6593a8925c1edca036862618))
+* add missing packages to build ([dee72fd](https://github.com/untrustedmodders/plugify/commit/dee72fd126dccc77f1a76f1ffcf20e9830e962a3))
+* add missing windows headers ([2d34e92](https://github.com/untrustedmodders/plugify/commit/2d34e925d648ce35c88fe2a8628aec7ba6af14ab))
+* add new package naming strategy ([1acf428](https://github.com/untrustedmodders/plugify/commit/1acf428745fb060389d299a2251055158e04d92a))
+* build on windows (2) ([b0696e0](https://github.com/untrustedmodders/plugify/commit/b0696e0d4dc7e415e57919612ea08aee65bf9490))
+* disable tests on mingw ([59bec62](https://github.com/untrustedmodders/plugify/commit/59bec6261efbac4770a5ed75e6604f144c49a0ed))
+* Mac crashpad build issue ([fe2283a](https://github.com/untrustedmodders/plugify/commit/fe2283a09e9b6fa40db3b7090ad7c669a8c976b8))
+* make CRASHPAD_USE_BORINGSSL global avail ([40ae148](https://github.com/untrustedmodders/plugify/commit/40ae14826040fbeaeb7428a0b90d0cf31537ec21))
+* mingw build ([0eedf7d](https://github.com/untrustedmodders/plugify/commit/0eedf7d9c72bb773a2400a813ed5b12f417b8fa9))
+* more crashpad improvements ([a5df7c6](https://github.com/untrustedmodders/plugify/commit/a5df7c6a9adaeae1b3e19d59b9a6b0d3e71b3b05))
+* move from mingw to ucrt ([dfa2be4](https://github.com/untrustedmodders/plugify/commit/dfa2be48c8f7171f6751d2696bf2c6e4a9489b15))
+* msys2 build ([ab94f24](https://github.com/untrustedmodders/plugify/commit/ab94f24f649d9715de3efd5cd7b032062f93033d))
+* small change in cmake ([f75d70a](https://github.com/untrustedmodders/plugify/commit/f75d70a860af199aad31a05a1eebcad455de59ac))
+
 ## [1.2.5](https://github.com/untrustedmodders/plugify/compare/v1.2.4...v1.2.5) (2025-05-25)
 
 
