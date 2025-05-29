@@ -51,6 +51,7 @@ jobs:
       run: >
         cmake -G Ninja -B build
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        -DPLUGIFY_BUILD_TESTS=OFF
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
     - name: Build
