@@ -20,7 +20,7 @@ FetchContent_MakeAvailable(crashpad_cmake)
 
 cmake_policy(POP)
 
-if(LINUX)
+if(LINUX OR MINGW)
     file(GENERATE
             OUTPUT "${CMAKE_BINARY_DIR}/pch.h"
             CONTENT "#pragma once\n#include <cstdint>\n"
