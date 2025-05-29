@@ -25,7 +25,7 @@ if(LINUX)
             OUTPUT "${CMAKE_BINARY_DIR}/pch.h"
             CONTENT "#pragma once\n#include <cstdint>\n"
     )
-    target_precompile_headers(minichromium PRIVATE "${CMAKE_BINARY_DIR}/pch.h")
+    target_precompile_headers(minichromium PUBLIC "${CMAKE_BINARY_DIR}/pch.h")
     if (PLUGIFY_COMPILER_GCC)
         target_compile_options(crashpad_snapshot PRIVATE -Wno-template-id-cdtor)
     endif()
@@ -33,7 +33,7 @@ elseif(APPLE)
     target_compile_options(minichromium PUBLIC -Wno-deprecated-declarations -Wno-sign-conversion)
 endif()
 
-if (UNIX)
+if(UNIX)
     target_compile_definitions(minichromium PUBLIC CRASHPAD_USE_BORINGSSL=1)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(minichromium PRIVATE OpenSSL::SSL OpenSSL::Crypto)
