@@ -59,7 +59,7 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 #if PLUGIFY_IS_RELEASE
 	// too small to really need it
 	func->frame().resetPreservedFP();
-#endif
+#endif // PLUGIFY_IS_RELEASE
 
 	a64::Gp paramImm = cc.newGpx();
 	func->setArg(0, paramImm);

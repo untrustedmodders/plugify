@@ -77,7 +77,7 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 #if PLUGIFY_IS_RELEASE
 	// too small to really need it
 	func->frame().resetPreservedFP();
-#endif
+#endif // PLUGIFY_IS_RELEASE
 
 	// map argument slots to registers, following abi.
 	std::vector<a64::Reg> argRegisters;
