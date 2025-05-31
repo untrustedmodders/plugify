@@ -78,28 +78,52 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 	func->frame().resetPreservedFP();
 #endif
 
+	struct ArgRegSlot {
+		explicit ArgRegSlot(uint32_t idx) {
+			argIdx = idx;
+			useHighReg = false;
+		}
+
+		x86::Reg low;
+		x86::Reg high;
+		uint32_t argIdx;
+		bool useHighReg;
+	};
+
 	// map argument slots to registers, following abi.
-	std::vector<x86::Reg> argRegisters;
-	argRegisters.reserve(sig.argCount());
+	std::vector<ArgRegSlot> argRegSlots;
+	argRegSlots.reserve(sig.argCount());
 
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
 		const auto& argType = sig.args()[argIdx];
 
-		x86::Reg arg;
+		ArgRegSlot argSlot(argIdx);
+
 		if (TypeUtils::isInt(argType)) {
-			arg = cc.newUIntPtr();
+			argSlot.low = cc.newUIntPtr();
+
+			if (JitUtils::HasHiArgSlot(cc, argType)) {
+				argSlot.high = cc.newUIntPtr();
+				argSlot.useHighReg = true;
+			}
+
 		} else if (TypeUtils::isFloat(argType)) {
-			arg = cc.newXmm();
+			argSlot.low = cc.newXmm();
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
-		func->setArg(argIdx, arg);
-		argRegisters.emplace_back(std::move(arg));
+		func->setArg(argSlot.argIdx, 0, argSlot.low);
+		if (argSlot.useHighReg) {
+			func->setArg(argSlot.argIdx, 1, argSlot.high);
+		}
+
+		argRegSlots.emplace_back(std::move(argSlot));
 	}
 
 	const uint32_t alignment = 16;
+    uint32_t offsetNextSlot = sizeof(uint64_t);
 
 	// setup the stack structure to hold arguments for user callback
 	const auto stackSize = static_cast<uint32_t>(sizeof(uint64_t) * sig.argCount());
@@ -122,21 +146,29 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 	cc.mov(i, 0);
 
 	//// mov from arguments registers into the stack structure
-	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
-		const auto& argType = sig.args()[argIdx];
+	for (const auto& argSlot : argRegSlots) {
+		const auto& argType = sig.args()[argSlot.argIdx];
 
 		// have to cast back to explicit register types to gen right mov type
 		if (TypeUtils::isInt(argType)) {
-			cc.mov(argsStackIdx, argRegisters.at(argIdx).as<x86::Gp>());
+			cc.mov(argsStackIdx, argSlot.low.as<x86::Gp>());
+
+			if (argSlot.useHighReg) {
+				cc.add(i, sizeof(uint32_t));
+				offsetNextSlot -= sizeof(uint32_t);
+
+				cc.mov(argsStackIdx, argSlot.high.as<x86::Gp>());
+			}
 		} else if (TypeUtils::isFloat(argType)) {
-			cc.movq(argsStackIdx, argRegisters.at(argIdx).as<x86::Xmm>());
+			cc.movq(argsStackIdx, argSlot.low.as<x86::Xmm>());
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
 		// next structure slot (+= sizeof(uint64_t))
-		cc.add(i, sizeof(uint64_t));
+		cc.add(i, offsetNextSlot);
+		offsetNextSlot = sizeof(uint64_t);
 	}
 
 	// fill reg to pass method ptr to callback
@@ -192,19 +224,27 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 
 	// mov from arguments stack structure into regs
 	cc.mov(i, 0); // reset idx
-	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
-		const auto& argType = sig.args()[argIdx];
+	for (const auto& argSlot : argRegSlots) {
+		const auto& argType = sig.args()[argSlot.argIdx];
 		if (TypeUtils::isInt(argType)) {
-			cc.mov(argRegisters.at(argIdx).as<x86::Gp>(), argsStackIdx);
+			cc.mov(argSlot.low.as<x86::Gp>(), argsStackIdx);
+
+			if (argSlot.useHighReg) {
+				cc.add(i, sizeof(uint32_t));
+				offsetNextSlot -= sizeof(uint32_t);
+
+				cc.mov(argSlot.high.as<x86::Gp>(), argsStackIdx);
+			}
 		} else if (TypeUtils::isFloat(argType)) {
-			cc.movq(argRegisters.at(argIdx).as<x86::Xmm>(), argsStackIdx);
+			cc.movq(argSlot.low.as<x86::Xmm>(), argsStackIdx);
 		} else {
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
 		// next structure slot (+= sizeof(uint64_t))
-		cc.add(i, sizeof(uint64_t));
+		cc.add(i, offsetNextSlot);
+		offsetNextSlot = sizeof(uint64_t);
 	}
 
 	if (hidden) {
@@ -212,12 +252,24 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 	} else if (sig.hasRet()) {
 		x86::Mem retStackIdx0(retStack); //-V1007
 		retStackIdx0.setSize(sizeof(uint64_t));
+#if PLUGIFY_ARCH_BITS == 32
+		if (TypeUtils::isBetween(sig.ret(), TypeId::kInt64, TypeId::kUInt64)) {
+			x86::Mem retStackIdx1(retStack);
+			retStackIdx1.setSize(sizeof(uint64_t));
+			retStackIdx1.addOffset(sizeof(uint32_t));
+
+			cc.mov(x86::eax, retStackIdx0);
+			cc.mov(x86::edx, retStackIdx1);
+			cc.ret();
+		}
+		else
+#endif // PLUGIFY_ARCH_BITS
 		if (TypeUtils::isInt(sig.ret())) {
 			x86::Gp tmp = cc.newGp(sig.ret());
 			cc.mov(tmp, retStackIdx0);
 			cc.ret(tmp);
 		}
-#if !PLUGIFY_PLATFORM_WINDOWS
+#if !PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_ARCH_BITS == 64
 		else if (TypeUtils::isBetween(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
 			x86::Mem retStackIdx1(retStack);
 			retStackIdx1.setSize(sizeof(uint64_t));
@@ -235,11 +287,19 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 			cc.movq(x86::xmm1, retStackIdx1);
 			cc.ret();
 		}
-#endif
-		else {
+#endif // PLUGIFY_ARCH_BITS
+		else if (TypeUtils::isFloat(sig.ret())) {
+#if PLUGIFY_ARCH_BITS == 64
 			x86::Xmm tmp = cc.newVec(sig.ret()).as<x86::Xmm>();
 			cc.movq(tmp, retStackIdx0);
 			cc.ret(tmp);
+#elif PLUGIFY_ARCH_BITS == 32
+			cc.fld(retStackIdx0);
+#endif // PLUGIFY_ARCH_BITS
+		} else {
+			// ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
+			_errorCode = "Return wider than 64bits not supported";
+			return nullptr;
 		}
 	}
 

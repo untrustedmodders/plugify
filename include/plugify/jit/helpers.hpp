@@ -12,6 +12,21 @@ namespace plugify::JitUtils {
 		return static_cast<asmjit::TypeId>(asmjit::TypeUtils::TypeIdOfT<T>::kTypeId);
 	}
 
+	inline bool HasHiArgSlot(const asmjit::x86::Compiler& compiler, const asmjit::TypeId typeId) noexcept {
+		// 64bit width regs can fit wider args
+		if (compiler.is64Bit()) {
+			return false;
+		}
+
+		switch (typeId) {
+			case asmjit::TypeId::kInt64:
+			case asmjit::TypeId::kUInt64:
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	asmjit::TypeId GetValueTypeId(ValueType valueType) noexcept;
 
 	asmjit::TypeId GetRetTypeId(ValueType valueType) noexcept;

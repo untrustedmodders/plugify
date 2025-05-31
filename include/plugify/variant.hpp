@@ -962,6 +962,9 @@ namespace plg {
 		friend struct detail::emplace_no_dtor_from_elem;
 
 		storage _storage;
+#if INTPTR_MAX == INT32_MAX
+		volatile char pad[8];
+#endif
 		index_type _current;
 	};
 

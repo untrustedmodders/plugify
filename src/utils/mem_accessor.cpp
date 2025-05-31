@@ -30,7 +30,7 @@ bool MemAccessor::SafeMemRead(MemAddr src, MemAddr dest, size_t size, size_t& re
 	HANDLE process = GetCurrentProcess();
 	read = 0;
 
-	if (ReadProcessMemory(process, src, dest, (SIZE_T)size, (PSIZE_T)&read) && read > 0)
+	if (ReadProcessMemory(process, src, dest, size, (PSIZE_T)&read) && read > 0)
 		return true;
 
 	// Tries to read again on a partial copy, but limited by the end of the memory region
@@ -39,7 +39,7 @@ bool MemAccessor::SafeMemRead(MemAddr src, MemAddr dest, size_t size, size_t& re
 		if (VirtualQueryEx(process, src, &info, sizeof(info)) != 0) {
 			uintptr_t end = reinterpret_cast<uintptr_t>(info.BaseAddress) + info.RegionSize;
 			if (src + size > end)
-				return ReadProcessMemory(process, src, dest, static_cast<SIZE_T>(end - src), static_cast<PSIZE_T>(&read)) && read > 0;
+				return ReadProcessMemory(process, src, dest, end - src, (PSIZE_T)&read) && read > 0;
 		}
 	}
 	return false;
@@ -47,7 +47,7 @@ bool MemAccessor::SafeMemRead(MemAddr src, MemAddr dest, size_t size, size_t& re
 
 ProtFlag MemAccessor::MemProtect(MemAddr dest, size_t size, ProtFlag prot, bool& status)  {
 	DWORD orig;
-	status = VirtualProtect(dest, static_cast<SIZE_T>(size), TranslateProtection(prot), &orig) != 0;
+	status = VirtualProtect(dest, size, TranslateProtection(prot), &orig) != 0;
 	return TranslateProtection(static_cast<int>(prot));
 }
 

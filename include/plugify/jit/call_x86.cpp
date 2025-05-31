@@ -58,7 +58,7 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 #if PLUGIFY_IS_RELEASE
 	// too small to really need it
 	func->frame().resetPreservedFP();
-#endif
+#endif // PLUGIFY_IS_RELEASE
 
 	x86::Gp paramImm = cc.newUIntPtr();
 	func->setArg(0, paramImm);
@@ -74,30 +74,54 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 	// i = 0
 	cc.mov(i, 0);
 
-	std::vector<x86::Reg> argRegisters;
-	argRegisters.reserve(sig.argCount());
+	struct ArgRegSlot {
+		explicit ArgRegSlot(uint32_t idx) {
+			argIdx = idx;
+			useHighReg = false;
+		}
+
+		x86::Reg low;
+		x86::Reg high;
+		uint32_t argIdx;
+		bool useHighReg;
+	};
+
+	std::vector<ArgRegSlot> argRegSlots;
+	argRegSlots.reserve(sig.argCount());
+    uint32_t offsetNextSlot = sizeof(uint64_t);
 
 	// map argument slots to registers, following abi. (We can have multiple register per arg slot such as high and low 32bits of a 64bit slot)
 	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
 		const auto& argType = sig.args()[argIdx];
 
-		x86::Reg arg;
+		ArgRegSlot argSlot(argIdx);
+
 		if (TypeUtils::isInt(argType)) {
-			arg = cc.newUIntPtr();
-			cc.mov(arg.as<x86::Gp>(), paramMem);
+			argSlot.low = cc.newUIntPtr();
+			cc.mov(argSlot.low.as<x86::Gp>(), paramMem);
+
+			if (JitUtils::HasHiArgSlot(cc, argType)) {
+				cc.add(i, sizeof(uint32_t));
+				offsetNextSlot -= sizeof(uint32_t);
+
+				argSlot.high = cc.newUIntPtr();
+				argSlot.useHighReg = true;
+				cc.mov(argSlot.high.as<x86::Gp>(), paramMem);
+			}
 		} else if (TypeUtils::isFloat(argType)) {
-			arg = cc.newXmm();
-			cc.movq(arg.as<x86::Xmm>(), paramMem);
+			argSlot.low = cc.newXmm();
+			cc.movq(argSlot.low.as<x86::Xmm>(), paramMem);
 		} else {
 			// ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
 			_errorCode = "Parameters wider than 64bits not supported";
 			return nullptr;
 		}
 
-		argRegisters.emplace_back(std::move(arg));
+		argRegSlots.emplace_back(std::move(argSlot));
 
 		// next structure slot (+= sizeof(uint64_t))
-		cc.add(i, sizeof(uint64_t));
+		cc.add(i, offsetNextSlot);
+        offsetNextSlot = sizeof(uint64_t);
 	}
 
 	// allows debuggers to trap
@@ -119,30 +143,55 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 	);
 
 	// Map call params to the args
-	for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
-		invokeNode->setArg(argIdx, argRegisters.at(argIdx));
-	}
+	for (const auto& argSlot : argRegSlots) {
+        invokeNode->setArg(argSlot.argIdx, 0, argSlot.low);
+        if (argSlot.useHighReg) {
+            invokeNode->setArg(argSlot.argIdx, 1, argSlot.high);
+        }
+    }
 
 	if (sig.hasRet()) {
+#if PLUGIFY_ARCH_BITS == 32
+		if (TypeUtils::isBetween(sig.ret(), TypeId::kInt64, TypeId::kUInt64)) {
+			cc.mov(ptr(returnImm), x86::eax);
+			cc.mov(ptr(returnImm, sizeof(uint32_t)), x86::edx);
+		}
+		else
+#endif // PLUGIFY_ARCH_BITS
 		if (TypeUtils::isInt(sig.ret())) {
 			x86::Gp tmp = cc.newUIntPtr();
 			invokeNode->setRet(0, tmp);
 			cc.mov(ptr(returnImm), tmp);
 		}
-#if !PLUGIFY_PLATFORM_WINDOWS
+#if !PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_ARCH_BITS == 64
 		else if (TypeUtils::isBetween(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
 			cc.mov(ptr(returnImm), x86::rax);
 			cc.mov(ptr(returnImm, sizeof(uint64_t)), x86::rdx);
-
-		} else if (TypeUtils::isBetween(sig.ret(), TypeId::kFloat32x4, TypeId::kFloat64x2)) {
+		}
+		else if (TypeUtils::isBetween(sig.ret(), TypeId::kFloat32x4, TypeId::kFloat64x2)) {
 			cc.movq(ptr(returnImm), x86::xmm0);
 			cc.movq(ptr(returnImm, sizeof(uint64_t)), x86::xmm1);
 		}
-#endif
-		else {
+#endif // PLUGIFY_ARCH_BITS
+		else if (TypeUtils::isFloat(sig.ret())) {
+#if PLUGIFY_ARCH_BITS == 64
 			x86::Xmm ret = cc.newXmm();
 			invokeNode->setRet(0, ret);
 			cc.movq(ptr(returnImm), ret);
+#elif PLUGIFY_ARCH_BITS == 32
+			x86::Gp tmp = cc.newUIntPtr();
+			cc.mov(ptr(returnImm), tmp);
+			const uint32_t size = sig.ret() == TypeId::kFloat64 ? sizeof(double) : sizeof(float);
+			const uint32_t alignment = sig.ret() == TypeId::kFloat64 ? alignof(double) : alignof(float);
+			x86::Mem ret = cc.newStack(size, alignment);
+			cc.mov(tmp, ret);
+			cc.fstp(ret);
+#endif // PLUGIFY_ARCH_BITS
+		}
+		else {
+			// ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
+			_errorCode = "Return wider than 64bits not supported";
+			return nullptr;
 		}
 	}
 
