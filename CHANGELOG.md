@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.7](https://github.com/untrustedmodders/plugify/compare/v1.2.6...v1.2.7) (2025-05-31)
+
+
+### Bug Fixes
+
+* change regs for cb return ([a4f936f](https://github.com/untrustedmodders/plugify/commit/a4f936f4a7a4f0cd1fb000525917fed44776fef1))
+* remove constexpr ([203d385](https://github.com/untrustedmodders/plugify/commit/203d3859f6a57eaa4492f292ed5d04df45af2b15))
+* rework os detection ([0df2b39](https://github.com/untrustedmodders/plugify/commit/0df2b39cdc99ff7e29f70be393956ddeb5f3aa42))
+* x86 float return ([911bd19](https://github.com/untrustedmodders/plugify/commit/911bd198a1856070b95f7951be83fc7f44cd6505))
+
 ## [1.2.6](https://github.com/untrustedmodders/plugify/compare/v1.2.5...v1.2.6) (2025-05-29)
 
 
