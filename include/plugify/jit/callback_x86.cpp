@@ -265,7 +265,7 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 		else
 #endif // PLUGIFY_ARCH_BITS
 		if (TypeUtils::isInt(sig.ret())) {
-			x86::Gp tmp = cc.newGp(sig.ret());
+			x86::Gp tmp = cc.newUIntPtr();
 			cc.mov(tmp, retStackIdx0);
 			cc.ret(tmp);
 		}
@@ -289,7 +289,7 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 		}
 #endif // PLUGIFY_ARCH_BITS
 		else if (TypeUtils::isFloat(sig.ret())) {
-			x86::Xmm tmp = cc.newVec(sig.ret()).as<x86::Xmm>();
+			x86::Xmm tmp = cc.newXmm();
 			cc.movq(tmp, retStackIdx0);
 			cc.ret(tmp);
 		} else {
