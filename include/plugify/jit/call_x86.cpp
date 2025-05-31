@@ -174,19 +174,9 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 		}
 #endif // PLUGIFY_ARCH_BITS
 		else if (TypeUtils::isFloat(sig.ret())) {
-#if PLUGIFY_ARCH_BITS == 64
 			x86::Xmm ret = cc.newXmm();
 			invokeNode->setRet(0, ret);
 			cc.movq(ptr(returnImm), ret);
-#elif PLUGIFY_ARCH_BITS == 32
-			x86::Gp tmp = cc.newUIntPtr();
-			cc.mov(ptr(returnImm), tmp);
-			const uint32_t size = sig.ret() == TypeId::kFloat64 ? sizeof(double) : sizeof(float);
-			const uint32_t alignment = sig.ret() == TypeId::kFloat64 ? alignof(double) : alignof(float);
-			x86::Mem ret = cc.newStack(size, alignment);
-			cc.mov(tmp, ret);
-			cc.fstp(ret);
-#endif // PLUGIFY_ARCH_BITS
 		}
 		else {
 			// ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83

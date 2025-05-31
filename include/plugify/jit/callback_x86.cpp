@@ -289,13 +289,9 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 		}
 #endif // PLUGIFY_ARCH_BITS
 		else if (TypeUtils::isFloat(sig.ret())) {
-#if PLUGIFY_ARCH_BITS == 64
 			x86::Xmm tmp = cc.newVec(sig.ret()).as<x86::Xmm>();
 			cc.movq(tmp, retStackIdx0);
 			cc.ret(tmp);
-#elif PLUGIFY_ARCH_BITS == 32
-			cc.fld(retStackIdx0);
-#endif // PLUGIFY_ARCH_BITS
 		} else {
 			// ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
 			_errorCode = "Return wider than 64bits not supported";
