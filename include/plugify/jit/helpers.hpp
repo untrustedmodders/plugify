@@ -12,7 +12,7 @@ namespace plugify::JitUtils {
 		return static_cast<asmjit::TypeId>(asmjit::TypeUtils::TypeIdOfT<T>::kTypeId);
 	}
 
-	constexpr bool HasHiArgSlot(const asmjit::x86::Compiler& compiler, const asmjit::TypeId typeId) noexcept {
+	inline bool HasHiArgSlot(const asmjit::x86::Compiler& compiler, const asmjit::TypeId typeId) noexcept {
 		// 64bit width regs can fit wider args
 		if (compiler.is64Bit()) {
 			return false;
