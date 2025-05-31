@@ -39,9 +39,8 @@ message(VERBOSE "*")
 # Includes
 include(PlugifyUtils)
 
-detect_operating_system()
+detect_system()
 detect_compiler()
-detect_architecture()
 
 include(PlugifyBuildOptions)
 include(PlugifyRequirement)
