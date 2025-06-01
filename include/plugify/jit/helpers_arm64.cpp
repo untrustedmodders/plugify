@@ -135,7 +135,7 @@ namespace plugify::JitUtils {
 
 	asmjit::CallConvId GetCallConv([[maybe_unused]] std::string_view conv) noexcept {
 #if PLUGIFY_ARCH_BITS == 64
-		return asmjit::CallConvId::kHost;
+		return asmjit::CallConvId::kCDecl;
 #elif PLUGIFY_ARCH_BITS == 32
 		if (!conv.empty()) {
 			if (conv == "soft") {
@@ -144,7 +144,7 @@ namespace plugify::JitUtils {
 				return asmjit::CallConvId::kHardFloat;
 			}
 		}
-		return asmjit::CallConvId::kHost;
+		return asmjit::CallConvId::kCDecl;
 #endif // PLUGIFY_ARCH_BITS
 	}
 

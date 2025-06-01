@@ -275,7 +275,7 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 MemAddr JitCallback::GetJitFunc(MethodHandle method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
 	ValueType retType = method.GetReturnType().GetType();
 	bool retHidden = hidden(retType);
-	FuncSignature sig(CallConvId::kHost, method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Void : retType));
+	FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Void : retType));
 	for (const auto& type : method.GetParamTypes()) {
 		sig.addArg(JitUtils::GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
 	}

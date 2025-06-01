@@ -228,7 +228,7 @@ namespace plugify::JitUtils {
 				return asmjit::CallConvId::kVectorCall;
 			}
 		}
-		return asmjit::CallConvId::kHost;
+		return asmjit::CallConvId::kCDecl;
 #endif // PLUGIFY_ARCH_BITS
 	}
 
