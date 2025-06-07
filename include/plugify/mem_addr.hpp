@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <type_traits>
 
 namespace plugify {
 	/**
@@ -13,13 +12,13 @@ namespace plugify {
 		/**
 		 * @brief Default constructor initializing the pointer to 0.
 		 */
-		MemAddr() noexcept : _ptr{0} {}
+		constexpr MemAddr() noexcept : _ptr{0} {}
 
 		/**
 		 * @brief Constructor initializing the pointer with a uintptr_t value.
 		 * @param ptr The uintptr_t value to initialize the pointer with.
 		 */
-		MemAddr(uintptr_t ptr) noexcept : _ptr{ptr} {}
+		constexpr MemAddr(const uintptr_t ptr) noexcept : _ptr{ptr} {}
 
 		/**
 		 * @brief Template constructor initializing the pointer with a typed pointer.
@@ -30,10 +29,36 @@ namespace plugify {
 		MemAddr(T ptr) noexcept : _ptr{reinterpret_cast<uintptr_t>(ptr)} {}
 
 		/**
+		 * @brief Constructor initializing the pointer with a void pointer.
+		 * @param other The void pointer to initialize with.
+		 */
+		constexpr MemAddr(const MemAddr& other) noexcept = default;
+
+		/**
+		 * @brief Move constructor initializing the pointer with another MemAddr.
+		 * @param other The MemAddr to move from.
+		 */
+		constexpr MemAddr(MemAddr&& other) noexcept = default;
+
+		/**
+		 * @brief Assignment operator to copy another MemAddr.
+		 * @param other The MemAddr to copy from.
+		 * @return A reference to the current MemAddr object.
+		 */
+		constexpr MemAddr& operator=(const MemAddr& other) noexcept = default;
+
+		/**
+		 * @brief Move assignment operator to move another MemAddr.
+		 * @param other The MemAddr to move from.
+		 * @return A reference to the current MemAddr object.
+		 */
+		constexpr MemAddr& operator=(MemAddr&& other) noexcept = default;
+
+		/**
 		 * @brief Converts the MemAddr object to a uintptr_t.
 		 * @return The uintptr_t representation of the memory address.
 		 */
-		operator uintptr_t() const noexcept {
+		constexpr operator uintptr_t() const noexcept {
 			return _ptr;
 		}
 
@@ -41,15 +66,15 @@ namespace plugify {
 		 * @brief Converts the MemAddr object to a void pointer.
 		 * @return The void pointer representation of the memory address.
 		 */
-		operator void*() const noexcept {
-			return reinterpret_cast<void*>(_ptr);
+		constexpr operator void*() const noexcept {
+			return _addr;
 		}
 
 		/**
 		 * @brief Explicit conversion operator to bool, indicating if the pointer is non-zero.
 		 * @return True if the pointer is non-zero, false otherwise.
 		 */
-		explicit operator bool() const noexcept {
+		constexpr explicit operator bool() const noexcept {
 			return _ptr != 0;
 		}
 
@@ -58,16 +83,67 @@ namespace plugify {
 		 * @param addr The MemAddr object to compare with.
 		 * @return True if the pointers are not equal, false otherwise.
 		 */
-		bool operator!=(MemAddr addr) const noexcept {
+		constexpr bool operator!=(const MemAddr addr) const noexcept {
 			return _ptr != addr._ptr;
 		}
+
+		/**
+		 * @brief Less-than comparison operator.
+		 * @param addr The MemAddr object to compare with.
+		 * @return True if this pointer is less than the other, false otherwise.
+		 */
+		constexpr bool operator<(const MemAddr addr) const noexcept {
+			return _ptr < addr._ptr;
+		}
+
+		/**
+		 * @brief Adds an offset to the current address.
+		 * @param offset The offset in bytes to add.
+		 * @return A new MemAddr pointing to the new address.
+		 */
+		constexpr MemAddr operator+(const size_t offset) const noexcept { return Offset(static_cast<ptrdiff_t>(offset)); }
+
+		/**
+		 * @brief Subtracts an offset from the current address.
+		 * @param offset The offset in bytes to subtract.
+		 * @return A new MemAddr pointing to the new address.
+		 */
+		constexpr MemAddr operator-(const size_t offset) const noexcept { return Offset(-static_cast<ptrdiff_t>(offset)); }
+
+		/**
+		 * @brief Adds a signed offset to the current address.
+		 * @param offset The signed offset in bytes to add.
+		 * @return A new MemAddr pointing to the new address.
+		 */
+		constexpr MemAddr operator+(const ptrdiff_t offset) const noexcept { return Offset(offset); }
+
+		/**
+		 * @brief Subtracts a signed offset from the current address.
+		 * @param offset The signed offset in bytes to subtract.
+		 * @return A new MemAddr pointing to the new address.
+		 */
+		constexpr MemAddr operator-(const ptrdiff_t offset) const noexcept { return Offset(-offset); }
+
+		/**
+		 * @brief Adds the address value of another MemAddr.
+		 * @param offset The other MemAddr whose pointer value is added.
+		 * @return A new MemAddr pointing to the resulting address.
+		 */
+		constexpr MemAddr operator+(const MemAddr offset) const noexcept { return Offset(static_cast<ptrdiff_t>(offset._ptr)); }
+
+		/**
+		 * @brief Subtracts the address value of another MemAddr.
+		 * @param offset The other MemAddr whose pointer value is subtracted.
+		 * @return A new MemAddr pointing to the resulting address.
+		 */
+		constexpr MemAddr operator-(const MemAddr offset) const noexcept { return Offset(static_cast<ptrdiff_t>(offset._ptr)); }
 
 		/**
 		 * @brief Equality operator.
 		 * @param addr The MemAddr object to compare with.
 		 * @return True if the pointers are equal, false otherwise.
 		 */
-		bool operator==(MemAddr addr) const noexcept {
+		constexpr bool operator==(const MemAddr addr) const noexcept {
 			return _ptr == addr._ptr;
 		}
 
@@ -76,7 +152,7 @@ namespace plugify {
 		 * @param addr The uintptr_t value to compare with.
 		 * @return True if the pointer is equal to the uintptr_t value, false otherwise.
 		 */
-		bool operator==(uintptr_t addr) const noexcept {
+		constexpr bool operator==(const uintptr_t addr) const noexcept {
 			return _ptr == addr;
 		}
 
@@ -84,7 +160,7 @@ namespace plugify {
 		 * @brief Returns the uintptr_t representation of the pointer.
 		 * @return The uintptr_t value of the pointer.
 		 */
-		uintptr_t GetPtr() const noexcept {
+		constexpr uintptr_t GetPtr() const noexcept {
 			return _ptr;
 		}
 
@@ -94,7 +170,7 @@ namespace plugify {
 		 * @return The value at the memory address.
 		 */
 		template<class T>
-		T GetValue() const noexcept {
+		constexpr T GetValue() const noexcept {
 			return *reinterpret_cast<T*>(_ptr);
 		}
 
@@ -104,7 +180,7 @@ namespace plugify {
 		 * @return The casted pointer.
 		 */
 		template<typename T>
-		T CCast() const noexcept {
+		constexpr T CCast() const noexcept {
 			return (T) _ptr;
 		}
 
@@ -114,7 +190,7 @@ namespace plugify {
 		 * @return The casted pointer.
 		 */
 		template<typename T>
-		T RCast() const noexcept {
+		constexpr T RCast() const noexcept {
 			return reinterpret_cast<T>(_ptr);
 		}
 
@@ -124,12 +200,12 @@ namespace plugify {
 		 * @return The casted pointer.
 		 */
 		template<typename T>
-		T UCast() const noexcept {
+		constexpr T UCast() const noexcept {
 			union {
-				uintptr_t m_ptr;
-				T cptr;
+				uintptr_t ptr;
+				T val;
 			} cast;
-			return cast.m_ptr = _ptr, cast.cptr;
+			return cast.ptr = _ptr, cast.val;
 		}
 
 		/**
@@ -137,7 +213,7 @@ namespace plugify {
 		 * @param offset The offset value.
 		 * @return A new MemAddr object with the offset applied.
 		 */
-		MemAddr Offset(ptrdiff_t offset) const noexcept {
+		constexpr MemAddr Offset(const ptrdiff_t offset) const noexcept {
 			return _ptr + static_cast<uintptr_t>(offset);
 		}
 
@@ -146,7 +222,7 @@ namespace plugify {
 		 * @param offset The offset value.
 		 * @return A reference to the current MemAddr object.
 		 */
-		MemAddr& OffsetSelf(ptrdiff_t offset) noexcept {
+		constexpr MemAddr& OffsetSelf(const ptrdiff_t offset) noexcept {
 			_ptr += static_cast<uintptr_t>(offset);
 			return *this;
 		}
@@ -156,7 +232,7 @@ namespace plugify {
 		 * @param deref The number of times to dereference.
 		 * @return A new MemAddr object after dereferencing.
 		 */
-		MemAddr Deref(ptrdiff_t deref = 1) const {
+		constexpr MemAddr Deref(ptrdiff_t deref = 1) const {
 			uintptr_t reference = _ptr;
 
 			while (deref--) {
@@ -172,7 +248,7 @@ namespace plugify {
 		 * @param deref The number of times to dereference.
 		 * @return A reference to the current MemAddr object.
 		 */
-		MemAddr& DerefSelf(ptrdiff_t deref = 1) {
+		constexpr MemAddr& DerefSelf(ptrdiff_t deref = 1) {
 			while (deref--) {
 				if (_ptr)
 					_ptr = *reinterpret_cast<uintptr_t*>(_ptr);
@@ -187,7 +263,7 @@ namespace plugify {
 		 * @param nextInstructionOffset The offset to the next instruction.
 		 * @return A new MemAddr object with the resolved address.
 		 */
-		MemAddr FollowNearCall(ptrdiff_t opcodeOffset = 0x1, ptrdiff_t nextInstructionOffset = 0x5) const {
+		MemAddr FollowNearCall(const ptrdiff_t opcodeOffset = 0x1, const ptrdiff_t nextInstructionOffset = 0x5) const {
 			return ResolveRelativeAddress(opcodeOffset, nextInstructionOffset);
 		}
 
@@ -197,7 +273,7 @@ namespace plugify {
 		 * @param nextInstructionOffset The offset to the next instruction.
 		 * @return A reference to the current MemAddr object with the resolved address.
 		 */
-		MemAddr& FollowNearCallSelf(ptrdiff_t opcodeOffset = 0x1, ptrdiff_t nextInstructionOffset = 0x5) {
+		MemAddr& FollowNearCallSelf(const ptrdiff_t opcodeOffset = 0x1, const ptrdiff_t nextInstructionOffset = 0x5) {
 			return ResolveRelativeAddressSelf(opcodeOffset, nextInstructionOffset);
 		}
 
@@ -207,11 +283,11 @@ namespace plugify {
 		 * @param nextInstructionOffset The offset to the next instruction.
 		 * @return A new MemAddr object with the resolved address.
 		 */
-		MemAddr ResolveRelativeAddress(ptrdiff_t registerOffset = 0x0, ptrdiff_t nextInstructionOffset = 0x4) const {
+		MemAddr ResolveRelativeAddress(const ptrdiff_t registerOffset = 0x0, const ptrdiff_t nextInstructionOffset = 0x4) const {
 			const uintptr_t skipRegister = _ptr + static_cast<uintptr_t>(registerOffset);
 			const int32_t relativeAddress = *reinterpret_cast<int32_t*>(skipRegister);
 			const uintptr_t nextInstruction = _ptr + static_cast<uintptr_t>(nextInstructionOffset);
-			return nextInstruction + (uintptr_t) relativeAddress;
+			return nextInstruction + static_cast<uintptr_t>(relativeAddress);
 		}
 
 		/**
@@ -220,7 +296,7 @@ namespace plugify {
 		 * @param nextInstructionOffset The offset to the next instruction.
 		 * @return A reference to the current MemAddr object with the resolved address.
 		 */
-		MemAddr& ResolveRelativeAddressSelf(ptrdiff_t registerOffset = 0x0, ptrdiff_t nextInstructionOffset = 0x4) {
+		MemAddr& ResolveRelativeAddressSelf(const ptrdiff_t registerOffset = 0x0, const ptrdiff_t nextInstructionOffset = 0x4) {
 			const uintptr_t skipRegister = _ptr + static_cast<uintptr_t>(registerOffset);
 			const int32_t relativeAddress = *reinterpret_cast<int32_t*>(skipRegister);
 			const uintptr_t nextInstruction = _ptr + static_cast<uintptr_t>(nextInstructionOffset);
@@ -229,6 +305,9 @@ namespace plugify {
 		}
 
 	private:
-		uintptr_t _ptr; //!< The memory address.
+		union {
+			void* _addr;
+			uintptr_t _ptr;
+		}; //!< The memory address.
 	};
 }// namespace plugify
