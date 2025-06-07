@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.7](https://github.com/untrustedmodders/plugify/compare/v1.2.6...v1.2.7) (2025-06-07)
+
+
+### Bug Fixes
+
+* change regs for cb return ([a4f936f](https://github.com/untrustedmodders/plugify/commit/a4f936f4a7a4f0cd1fb000525917fed44776fef1))
+* remove constexpr ([203d385](https://github.com/untrustedmodders/plugify/commit/203d3859f6a57eaa4492f292ed5d04df45af2b15))
+* remove deprecated CallConvId::kHost ([12c770a](https://github.com/untrustedmodders/plugify/commit/12c770a20d22c2601da30fe352c9945c1a8fbbeb))
+* rework os detection ([0df2b39](https://github.com/untrustedmodders/plugify/commit/0df2b39cdc99ff7e29f70be393956ddeb5f3aa42))
+* update mem addr with constexpr ([15c005d](https://github.com/untrustedmodders/plugify/commit/15c005df3a51f6b0327324be8b73171be02a9d9a))
+* x86 float return ([911bd19](https://github.com/untrustedmodders/plugify/commit/911bd198a1856070b95f7951be83fc7f44cd6505))
+
 ## [1.2.6](https://github.com/untrustedmodders/plugify/compare/v1.2.5...v1.2.6) (2025-05-29)
 
 
