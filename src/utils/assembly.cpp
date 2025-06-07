@@ -114,12 +114,10 @@ MemAddr Assembly::FindPattern(MemAddr pattern, std::string_view mask, MemAddr st
 	}
 #else
 	for (; pData != pEnd; ++pData) {
-		bool found = false;
+		bool found = true;
 
 		for (size_t i = 0; i < maskLen; ++i) {
-			if (mask[i] == 'x' || pPattern[i] == *(pData + i)) {
-				found = true;
-			} else {
+			if (mask[i] == 'x' && pPattern[i] != pData[i]) {
 				found = false;
 				break;
 			}
