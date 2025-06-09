@@ -1,6 +1,21 @@
 #include "helpers.hpp"
 
 namespace plugify::JitUtils {
+	bool HasHiArgSlot(asmjit::TypeId typeId) noexcept {
+		// 64bit width regs can fit wider args
+		if constexpr (PLUGIFY_ARCH_BITS == 64) {
+			return false;
+		}
+
+		switch (typeId) {
+			case asmjit::TypeId::kInt64:
+			case asmjit::TypeId::kUInt64:
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	asmjit::TypeId GetValueTypeId(ValueType valueType) noexcept {
 		switch (valueType) {
 			case ValueType::Invalid:

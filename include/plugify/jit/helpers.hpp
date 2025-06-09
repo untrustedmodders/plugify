@@ -12,20 +12,7 @@ namespace plugify::JitUtils {
 		return static_cast<asmjit::TypeId>(asmjit::TypeUtils::TypeIdOfT<T>::kTypeId);
 	}
 
-	constexpr bool HasHiArgSlot(asmjit::TypeId typeId) noexcept {
-		// 64bit width regs can fit wider args
-		if constexpr (PLUGIFY_ARCH_BITS == 64) {
-			return false;
-		}
-
-		switch (typeId) {
-			case asmjit::TypeId::kInt64:
-			case asmjit::TypeId::kUInt64:
-				return true;
-			default:
-				return false;
-		}
-	}
+	bool HasHiArgSlot(asmjit::TypeId typeId) noexcept;
 
 	asmjit::TypeId GetValueTypeId(ValueType valueType) noexcept;
 

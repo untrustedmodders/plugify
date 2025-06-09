@@ -1,6 +1,10 @@
 #include "helpers.hpp"
 
 namespace plugify::JitUtils {
+	bool HasHiArgSlot([[maybe_unused]] asmjit::TypeId typeId) noexcept {
+		return false;
+	}
+
 	asmjit::TypeId GetValueTypeId(ValueType valueType) noexcept {
 		switch (valueType) {
 			case ValueType::Invalid:
