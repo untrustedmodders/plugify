@@ -1,3 +1,4 @@
+#include <asmjit/x86.h>
 #include <plugify/jit/callback.hpp>
 #include <plugify/jit/helpers.hpp>
 
