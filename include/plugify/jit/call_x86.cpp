@@ -100,7 +100,7 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 			argSlot.low = cc.newUIntPtr();
 			cc.mov(argSlot.low.as<x86::Gp>(), paramMem);
 
-			if (JitUtils::HasHiArgSlot(cc, argType)) {
+			if (JitUtils::HasHiArgSlot(argType)) {
 				cc.add(i, sizeof(uint32_t));
 				offsetNextSlot -= sizeof(uint32_t);
 

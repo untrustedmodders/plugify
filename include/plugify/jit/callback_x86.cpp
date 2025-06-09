@@ -102,7 +102,7 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 		if (TypeUtils::isInt(argType)) {
 			argSlot.low = cc.newUIntPtr();
 
-			if (JitUtils::HasHiArgSlot(cc, argType)) {
+			if (JitUtils::HasHiArgSlot(argType)) {
 				argSlot.high = cc.newUIntPtr();
 				argSlot.useHighReg = true;
 			}
