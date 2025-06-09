@@ -33,7 +33,7 @@ option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
 # ------------------------------------------------------------------------------
 # Dependencies
 set(PLUGIFY_ASMJIT_REPO "https://github.com/asmjit/asmjit.git" CACHE STRING "")
-set(PLUGIFY_ASMJIT_TAG "e8c8e2e48a1a38154c8e8864eb3bc61db80a1e31" CACHE STRING "")
+set(PLUGIFY_ASMJIT_TAG "f8e7f67b015cb39859f88020183ffb557edf4b8e" CACHE STRING "")
 set(PLUGIFY_CPPTRACE_REPO "https://github.com/jeremy-rifkin/cpptrace.git" CACHE STRING "")
 set(PLUGIFY_CPPTRACE_TAG "7543677d6f39a38de9e9248e2331015d5235b175" CACHE STRING "")
 set(PLUGIFY_CURL_REPO "https://github.com/curl/curl.git" CACHE STRING "")

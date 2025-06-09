@@ -128,7 +128,7 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 		cc.ldr(tmp, ptr(returnImm));
 		cc.mov(a64::x8, tmp);
 
-		func->frame().setReservedX8();
+		func->frame().addUnavailableRegs(a64::x8);
 	}
 
 	// Gen the call
