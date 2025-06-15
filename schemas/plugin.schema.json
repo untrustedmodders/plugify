@@ -209,6 +209,11 @@
                 "type": "object",
                 "description": "An object describing enum structure.",
                 "$ref": "#/$defs/enumObject"
+              },
+              "default": {
+                "type": ["string", "number", "boolean"],
+                "description": "Default value for the parameter.",
+                "examples": ["defaultValue", 42, true]
               }
             }
           }

@@ -219,7 +219,8 @@ struct glz::meta<plugify::Property> {
 			"description", skip{},
 			"ref", &T::ref,
 			"prototype", &T::prototype,
-			"enum", &T::enumerate
+			"enum", &T::enumerate,
+			"default", skip{}
 	);
 };
 
