@@ -40,8 +40,8 @@
 #  include "compat_format.hpp"
 #endif
 
-#include "macro.hpp"
 #include "allocator.hpp"
+#include "macro.hpp"
 
 namespace plg {
 	namespace detail {
@@ -115,7 +115,7 @@ namespace plg {
 
 		template<typename CharT, std::size_t = sizeof(CharT)>
 		struct padding {
-			[[maybe_unused]] uint8_t padding[sizeof(CharT) - 1];
+			[[maybe_unused]] uint8_t pad[sizeof(CharT) - 1];
 		};
 
 		template<typename CharT>
