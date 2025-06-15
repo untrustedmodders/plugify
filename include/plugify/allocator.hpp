@@ -5,42 +5,41 @@
 
 namespace plg {
 	// Forward declaration for allocator<void>
-	template <typename T>
+	template<typename T>
 	class allocator;
 
 	// Specialization for `void`, but we no longer need to define `pointer` and `const_pointer`
-	template <>
-	class allocator<void>
-	{
+	template<>
+	class allocator<void> {
 	public:
-		typedef void value_type;
+		using value_type = void;
 
 		// Rebind struct
-		template <class U>
+		template<class U>
 		struct rebind { using other = allocator<U>; };
 	};
 
 	// Define the custom allocator inheriting from std::allocator
-	template <typename T>
-	class allocator : public std::allocator<T> {
+	template<typename T>
+	class allocator {
 	public:
-		typedef size_t size_type;
-		typedef ptrdiff_t difference_type;
-		typedef T* pointer;
-		typedef const T* const_pointer;
-		typedef T& reference;
-		typedef const T& const_reference;
-		typedef T value_type;
+		using value_type = T;
+		using pointer = T*;
+		using const_pointer = const T*;
+		using reference = T&;
+		using const_reference = const T&;
+		using size_type = std::size_t;
+		using difference_type = std::ptrdiff_t;
 
 		// Default constructor
-		allocator() {}
+		allocator() noexcept = default;
 
 		// Copy constructor
-		template <class U>
-		allocator(const allocator<U>&) {}
+		template<class U>
+		allocator(const allocator<U>&) noexcept {};
 
 		// Rebind struct
-		template <class U>
+		template<class U>
 		struct rebind { using other = allocator<U>; };
 
 		// Override allocate method to use custom allocation function
@@ -57,10 +56,10 @@ namespace plg {
 	};
 
 	// Comparison operators for compatibility
-	template <typename T, typename U>
-	constexpr bool operator==(const allocator<T>&, const allocator<U>) { return true; }
+	template<typename T, typename U>
+	inline bool operator==(const allocator<T>&, const allocator<U>) { return true; }
 
-	template <typename T, typename U>
-	constexpr bool operator!=(const allocator<T>&, const allocator<U>) { return false; }
+	template<typename T, typename U>
+	inline bool operator!=(const allocator<T>&, const allocator<U>) { return false; }
 
 } // namespace plg
