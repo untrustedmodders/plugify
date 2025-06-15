@@ -25,6 +25,7 @@
 #endif
 
 #include "macro.hpp"
+#include "allocator.hpp"
 
 namespace plg {
 	template<typename Allocator>
@@ -243,7 +244,7 @@ namespace plg {
 
 	// vector
 	// based on implementations from libc++, libstdc++ and Microsoft STL
-	template<typename T, typename Allocator = std::allocator<T>>
+	template<typename T, typename Allocator = plg::allocator<T>>
 	class vector {
 		using allocator_traits = std::allocator_traits<Allocator>;
 	public:
@@ -1038,7 +1039,7 @@ namespace plg {
 	}
 
 	// deduction guides
-	template<typename InputIterator, typename Allocator = std::allocator<typename std::iterator_traits<InputIterator>::value_type>>
+	template<typename InputIterator, typename Allocator = plg::allocator<typename std::iterator_traits<InputIterator>::value_type>>
 	vector(InputIterator, InputIterator, Allocator = Allocator()) -> vector<typename std::iterator_traits<InputIterator>::value_type, Allocator>;
 
 	namespace pmr {

@@ -41,6 +41,7 @@
 #endif
 
 #include "macro.hpp"
+#include "allocator.hpp"
 
 namespace plg {
 	namespace detail {
@@ -72,7 +73,7 @@ namespace plg {
 
 	// basic_string
 	// based on implementations from libc++, libstdc++ and Microsoft STL
-	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>> requires (detail::is_traits_v<Traits> && detail::is_allocator_v<Allocator>)
+	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = plg::allocator<Char>> requires (detail::is_traits_v<Traits> && detail::is_allocator_v<Allocator>)
 	class basic_string {
 	private:
 		using allocator_traits = std::allocator_traits<Allocator>;
@@ -1607,17 +1608,17 @@ namespace plg {
 	}
 
 	// deduction guides
-	template<typename InputIterator, typename Allocator = std::allocator<typename std::iterator_traits<InputIterator>::value_type>>
+	template<typename InputIterator, typename Allocator = plg::allocator<typename std::iterator_traits<InputIterator>::value_type>>
 	basic_string(InputIterator, InputIterator, Allocator = Allocator()) -> basic_string<typename std::iterator_traits<InputIterator>::value_type, std::char_traits<typename std::iterator_traits<InputIterator>::value_type>, Allocator>;
 
-	template<typename Char, typename Traits, typename Allocator = std::allocator<Char>>
+	template<typename Char, typename Traits, typename Allocator = plg::allocator<Char>>
 	explicit basic_string(std::basic_string_view<Char, Traits>, const Allocator& = Allocator()) -> basic_string<Char, Traits, Allocator>;
 
-	template<typename Char, typename Traits, typename Allocator = std::allocator<Char>>
+	template<typename Char, typename Traits, typename Allocator = plg::allocator<Char>>
 	basic_string(std::basic_string_view<Char, Traits>, typename basic_string<Char, Traits, Allocator>::size_type, typename basic_string<Char, Traits, Allocator>::size_type, const Allocator& = Allocator()) -> basic_string<Char, Traits, Allocator>;
 
 #if PLUGIFY_STRING_CONTAINERS_RANGES
-	template<std::ranges::input_range Range, typename Allocator = std::allocator<std::ranges::range_value_t<Range>>>
+	template<std::ranges::input_range Range, typename Allocator = plg::allocator<std::ranges::range_value_t<Range>>>
 	basic_string(std::from_range_t, Range&&, Allocator = Allocator()) -> basic_string<std::ranges::range_value_t<Range>, std::char_traits<std::ranges::range_value_t<Range>>, Allocator>;
 #endif // PLUGIFY_STRING_CONTAINERS_RANGES
 
