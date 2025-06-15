@@ -1,60 +1,66 @@
 #pragma once
 
-#include <cstddef>   // for std::size_t, std::ptrdiff_t
-#include <cstdlib>   // for std::malloc, std::free
-#include <new>       // for placement new
-#include <limits>    // for std::numeric_limits
+#include <cstddef> // for std::size_t, std::ptrdiff_t
+#include <memory>  // for std::allocator and std::allocator_traits
 
 namespace plg {
+	// Forward declaration for allocator<void>
 	template <typename T>
-	struct allocator {
-		using value_type = T;
-		using pointer = T*;
-		using const_pointer = const T*;
-		using reference = T&;
-		using const_reference = const T&;
-		using size_type = std::size_t;
-		using difference_type = std::ptrdiff_t;
+	class allocator;
 
-		template <typename U>
-		struct rebind {
-			using other = allocator<U>;
-		};
+	// Specialization for `void`, but we no longer need to define `pointer` and `const_pointer`
+	template <>
+	class allocator<void>
+	{
+	public:
+		typedef void value_type;
 
-		allocator() noexcept = default;
-
-		allocator(const allocator&) noexcept = default;
-
-		template <typename U>
-		allocator(const allocator<U>&) noexcept {}
-
-		pointer allocate(size_type n) {
-			if (n == 0) return nullptr;
-			if (n > max_size()) throw std::bad_alloc();
-			void* ptr = std::malloc(n * sizeof(T));
-			if (!ptr) throw std::bad_alloc();
-			return static_cast<pointer>(ptr);
-		}
-
-		void deallocate(pointer p, size_type) noexcept {
-			if (p) std::free(p);
-		}
-
-		size_type max_size() const noexcept {
-			return std::numeric_limits<size_type>::max() / sizeof(T);
-		}
-
-		template <typename U, typename... Args>
-		void construct(U* p, Args&&... args) {
-			std::construct_at(p, std::forward<Args>(args)...);
-		}
-
-		template <typename U>
-		void destroy(U* p) {
-			std::destroy_at(p);
-		}
-
-		bool operator==(const allocator&) const noexcept { return true; }
-		bool operator!=(const allocator&) const noexcept { return false; }
+		// Rebind struct
+		template <class U>
+		struct rebind { using other = allocator<U>; };
 	};
+
+	// Define the custom allocator inheriting from std::allocator
+	template <typename T>
+	class allocator : public std::allocator<T> {
+	public:
+		typedef size_t size_type;
+		typedef ptrdiff_t difference_type;
+		typedef T* pointer;
+		typedef const T* const_pointer;
+		typedef T& reference;
+		typedef const T& const_reference;
+		typedef T value_type;
+
+		// Default constructor
+		allocator() {}
+
+		// Copy constructor
+		template <class U>
+		allocator(const allocator<U>&) {}
+
+		// Rebind struct
+		template <class U>
+		struct rebind { using other = allocator<U>; };
+
+		// Override allocate method to use custom allocation function
+		pointer allocate(size_type n, std::allocator_traits<allocator<void>>::const_pointer hint = nullptr)  {
+			return static_cast<pointer>(std::malloc(n * sizeof(T)));
+		}
+
+		// Override deallocate method to use custom deallocation function
+		void deallocate(pointer p, size_type n) {
+			std::free(p);
+		}
+
+		// You can inherit other methods like construct and destroy from std::allocator
+	};
+
+	// Comparison operators for compatibility
+	template <typename T, typename U>
+	constexpr bool operator==(const allocator<T>&, const allocator<U>) { return true; }
+
+	template <typename T, typename U>
+	constexpr bool operator!=(const allocator<T>&, const allocator<U>) { return false; }
+
 } // namespace plg
