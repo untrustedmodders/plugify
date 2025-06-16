@@ -3,6 +3,7 @@
 #include <cstddef> // for std::size_t, std::ptrdiff_t
 #include <cstdlib> // for std::malloc, std::free, std::aligned_alloc
 #include <memory>  // for std::allocator and std::allocator_traits
+#include <type_traits>  // for std::is_constant_evaluated
 
 #include "macro.hpp"
 

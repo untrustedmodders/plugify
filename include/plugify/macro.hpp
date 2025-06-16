@@ -56,16 +56,6 @@
 #if PLUGIFY_EXCEPTIONS
 #  include <stdexcept>
 #  include <type_traits>
-
-template<typename E>
-[[noreturn]] constexpr void plugify_throw(const char* msg) {
-	if constexpr (std::is_constructible_v<E, const char*>) {
-		throw E(msg);
-	} else {
-		throw E();
-	}
-}
-
 #  define PLUGIFY_ASSERT(x, str, e) do { if (!(x)) [[unlikely]] plugify_throw<e>(str); } while (0)
 #elif PLUGIFY_FALLBACK_ASSERT
 #  include <cassert>
@@ -278,4 +268,15 @@ template<typename E>
 #  define PLUGIFY_RESTRICT __restrict
 #else
 #  define PLUGIFY_RESTRICT
+#endif
+
+#if PLUGIFY_EXCEPTIONS
+template<typename E>
+[[noreturn]] PLUGIFY_FORCE_INLINE constexpr void plugify_throw(const char* msg) {
+	if constexpr (std::is_constructible_v<E, const char*>) {
+		throw E(msg);
+	} else {
+		throw E();
+	}
+}
 #endif
