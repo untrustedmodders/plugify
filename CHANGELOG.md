@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.2.7](https://github.com/untrustedmodders/plugify/compare/v1.2.6...v1.2.7) (2025-06-16)
+
+
+### Bug Fixes
+
+* add default value to types ([beb95e9](https://github.com/untrustedmodders/plugify/commit/beb95e909840579dc98c30d151e0baeec4c8829f))
+* add plg::allocator ([e416259](https://github.com/untrustedmodders/plugify/commit/e4162599db93e484092166af52d193847e6e6edb))
+* change regs for cb return ([a4f936f](https://github.com/untrustedmodders/plugify/commit/a4f936f4a7a4f0cd1fb000525917fed44776fef1))
+* improve allocator ([202cc10](https://github.com/untrustedmodders/plugify/commit/202cc101c0c0891f47c00f5086814d771e7c6301))
+* make allocator constexpr friendly and add ability to align properly ([8009720](https://github.com/untrustedmodders/plugify/commit/8009720dec3ff2241a04ca1a79a9df29b9b58d1f))
+* remove constexpr ([203d385](https://github.com/untrustedmodders/plugify/commit/203d3859f6a57eaa4492f292ed5d04df45af2b15))
+* remove deprecated CallConvId::kHost ([12c770a](https://github.com/untrustedmodders/plugify/commit/12c770a20d22c2601da30fe352c9945c1a8fbbeb))
+* remove memaddr operators ([cf0b2d1](https://github.com/untrustedmodders/plugify/commit/cf0b2d198651ed1aa5fbf505f4486ece38d55947))
+* rework os detection ([0df2b39](https://github.com/untrustedmodders/plugify/commit/0df2b39cdc99ff7e29f70be393956ddeb5f3aa42))
+* some build errors ([d1528ab](https://github.com/untrustedmodders/plugify/commit/d1528abec534f443a5c99e5a904f2d3df41781fc))
+* update asmjit ([bfeaca6](https://github.com/untrustedmodders/plugify/commit/bfeaca6a59f903389cb7cc2169909618d29d9b5b))
+* update asmjit HasHiArgSlot ([723f9e8](https://github.com/untrustedmodders/plugify/commit/723f9e868f10c120c3a42086a091d7a59d76d04f))
+* update asmjit headers ([955e1bd](https://github.com/untrustedmodders/plugify/commit/955e1bdb3232be88cd5f7b743220cbc0c0799af0))
+* update mem addr with constexpr ([15c005d](https://github.com/untrustedmodders/plugify/commit/15c005df3a51f6b0327324be8b73171be02a9d9a))
+* update sig lookup ([3931ecf](https://github.com/untrustedmodders/plugify/commit/3931ecfa60a2b5a793d99a066be024e1b487ab54))
+* x86 build ([cb9e880](https://github.com/untrustedmodders/plugify/commit/cb9e8806c2a0f12a35cfaa38beae45e2e42fccd0))
+* x86 float return ([911bd19](https://github.com/untrustedmodders/plugify/commit/911bd198a1856070b95f7951be83fc7f44cd6505))
+
 ## [1.2.6](https://github.com/untrustedmodders/plugify/compare/v1.2.5...v1.2.6) (2025-05-29)
 
 
