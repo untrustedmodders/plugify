@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cstddef> // for std::size_t, std::ptrdiff_t
+#include <cstdlib> // for std::malloc, std::free, std::aligned_alloc
 #include <memory>  // for std::allocator and std::allocator_traits
+
+#include "macro.hpp"
 
 namespace plg {
 	// Forward declaration for allocator<void>
@@ -32,34 +35,80 @@ namespace plg {
 		using difference_type = std::ptrdiff_t;
 
 		// Default constructor
-		allocator() noexcept = default;
+		constexpr allocator() noexcept = default;
 
 		// Copy constructor
 		template<class U>
-		allocator(const allocator<U>&) noexcept {};
+		constexpr allocator(const allocator<U>&) noexcept {}
 
 		// Rebind struct
 		template<class U>
 		struct rebind { using other = allocator<U>; };
 
 		// Override allocate method to use custom allocation function
-		pointer allocate(size_type n, std::allocator_traits<allocator<void>>::const_pointer hint = nullptr)  {
-			return static_cast<pointer>(std::malloc(n * sizeof(T)));
+		constexpr pointer allocate(size_type n, [[maybe_unused]] std::allocator_traits<allocator<void>>::const_pointer hint = nullptr) {
+			static_assert(sizeof(T) != 0, "cannot allocate incomplete types");
+			static_assert((alignof(T) & (alignof(T) - 1)) == 0, "alignof(T) must be a power of 2");
+
+			if (n > max_size()) [[unlikely]] {
+				if (n > static_cast<size_type>(-1) / sizeof(T)) {
+					PLUGIFY_ASSERT(false, "plg::allocator::allocate(): bad array new length", std::bad_array_new_length);
+				}
+				PLUGIFY_ASSERT(false, "plg::allocator::allocate(): too big", std::bad_alloc);
+			}
+
+			pointer ret = nullptr;
+			if (std::is_constant_evaluated()) {
+				ret = new T[n];
+			} else {
+				size_type size = n * sizeof(T);
+				if constexpr (alignof(T) > alignof(std::max_align_t)) {
+					size_type aligned_size = (size + (alignof(T) - 1)) & ~(alignof(T) - 1);
+					ret = static_cast<T*>(aligned_allocate(alignof(T), aligned_size));
+				} else {
+					ret = static_cast<T*>(std::malloc(size));
+				}
+
+				if (!ret) {
+					PLUGIFY_ASSERT(false, "plg::allocator::allocate(): bad allocation", std::bad_alloc);
+				}
+			}
+
+			return ret;
 		}
 
 		// Override deallocate method to use custom deallocation function
-		void deallocate(pointer p, size_type n) {
-			std::free(p);
+		constexpr void deallocate(pointer p, [[maybe_unused]] size_type n) {
+			if (std::is_constant_evaluated()) {
+				delete[] p;
+			} else {
+				std::free(static_cast<void*>(p));
+			}
 		}
 
-		// You can inherit other methods like construct and destroy from std::allocator
+	private:
+		constexpr size_type max_size() noexcept {
+#if __PTRDIFF_MAX__ < __SIZE_MAX__
+			return static_cast<size_type>(__PTRDIFF_MAX__) / sizeof(T);
+#else
+			return static_cast<size_type>(-1) / sizeof(T);
+#endif // __PTRDIFF_MAX__
+		}
+
+		PLUGIFY_FORCE_INLINE void* aligned_allocate(size_type alignment, size_type size) {
+#if PLUGIFY_COMPILER_MSVC
+			return _aligned_malloc(size, alignment);
+#else
+			return std::aligned_alloc(alignment, size);
+#endif// PLUGIFY_COMPILER_MSVC
+		}
 	};
 
 	// Comparison operators for compatibility
 	template<typename T, typename U>
-	inline bool operator==(const allocator<T>&, const allocator<U>) { return true; }
+	constexpr bool operator==(const allocator<T>&, const allocator<U>) { return true; }
 
 	template<typename T, typename U>
-	inline bool operator!=(const allocator<T>&, const allocator<U>) { return false; }
+	constexpr bool operator!=(const allocator<T>&, const allocator<U>) { return false; }
 
 } // namespace plg

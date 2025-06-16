@@ -25,7 +25,6 @@
 #endif
 
 #include "allocator.hpp"
-#include "macro.hpp"
 
 namespace plg {
 	template<typename Allocator>
