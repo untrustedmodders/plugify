@@ -88,8 +88,8 @@ static bool IsSupportsPlatform(const std::optional<std::vector<std::string>>& su
 		return true;
 
 	constexpr std::string_view platform = PLUGIFY_PLATFORM;
-	static_assert(platform.find('-') != std::string_view::npos, "PLUGIFY_PLATFORM must be in the format 'name-arch'");
-	constexpr size_t dashPos = platform.find('-');
+	static_assert(platform.find('_') != std::string_view::npos, "PLUGIFY_PLATFORM must be in the format 'name-arch'");
+	constexpr size_t dashPos = platform.find('_');
 	constexpr std::string_view name = platform.substr(0, dashPos);
 	constexpr bool steamrt = name == "steamrt";
 

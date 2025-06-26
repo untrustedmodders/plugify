@@ -82,8 +82,8 @@ function(detect_system)
         message(FATAL_ERROR "Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 
-    set(PLUGIFY_PLATFORM "${PLUGIFY_SYSTEM}-${PLUGIFY_ARCH}" PARENT_SCOPE)
-    message(STATUS "Building for ${PLUGIFY_SYSTEM}-${PLUGIFY_ARCH}")
+    set(PLUGIFY_PLATFORM "${PLUGIFY_SYSTEM}_${PLUGIFY_ARCH}" PARENT_SCOPE)
+    message(STATUS "Building for ${PLUGIFY_SYSTEM}_${PLUGIFY_ARCH}")
 endfunction()
 
 function(detect_compiler)
