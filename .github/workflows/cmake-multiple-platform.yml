@@ -24,6 +24,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
       repository-projects: write
     runs-on: ubuntu-latest
     outputs:
