@@ -97,11 +97,11 @@ namespace plg {
 		}
 
 		PLUGIFY_FORCE_INLINE void* aligned_allocate(size_type alignment, size_type size) {
-#if PLUGIFY_COMPILER_MSVC
+#if _WIN32
 			return _aligned_malloc(size, alignment);
 #else
 			return std::aligned_alloc(alignment, size);
-#endif// PLUGIFY_COMPILER_MSVC
+#endif // _WIN32
 		}
 	};
 
