@@ -7,6 +7,7 @@
 #include <plugify/plugify.hpp>
 #include <utils/file_system.hpp>
 #include <utils/json.hpp>
+#include <utils/defer.hpp>
 #include <utils/strings.hpp>
 #if PLUGIFY_DOWNLOADER
 #include <utils/http_downloader.hpp>
@@ -443,9 +444,9 @@ void PackageManager::LoadRemotePackages() {
 }
 
 template<typename T>
-static T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::equal_to<>>& container, const std::string& name)  {
+static T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::equal_to<>>& container, const std::string& lang) {
 	for (const auto& [_, package] : container) {
-		if (package->type == name) {
+		if (package->type == lang) {
 			return package;
 		}
 	}
@@ -989,16 +990,21 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt) {
 	PL_LOG_VERBOSE("Start extracting: '{}' ....", extractPath.string());
 
-	auto zipClose = [](mz_zip_archive* zipArchive){ mz_zip_reader_end(zipArchive); delete zipArchive; };
-	std::unique_ptr<mz_zip_archive, decltype(zipClose)> zipArchive(new mz_zip_archive, zipClose);
-	std::memset(zipArchive.get(), 0, sizeof(mz_zip_archive));
+	mz_zip_archive zipArchive;
+	std::memset(&zipArchive, 0, sizeof(zipArchive));
 
-	mz_zip_reader_init_mem(zipArchive.get(), packageData.data(), packageData.size(), 0);
+	defer {
+		mz_zip_reader_end(&zipArchive);
+	};
 
-	//state.total = zipArchive->m_archive_size;
+	if (!mz_zip_reader_init_mem(&zipArchive, packageData.data(), packageData.size(), 0)) {
+		return std::format("Failed initializing zip reader: {}", mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
+	}
+
+	//state.total = zipArchive.m_archive_size;
 	//state.progress = 0;
 
-	size_t numFiles = mz_zip_reader_get_num_files(zipArchive.get());
+	size_t numFiles = mz_zip_reader_get_num_files(&zipArchive);
 	std::vector<mz_zip_archive_file_stat> fileStats(numFiles);
 
 	bool foundDescriptor = false;
@@ -1006,8 +1012,8 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 	for (uint32_t i = 0; i < numFiles; ++i) {
 		mz_zip_archive_file_stat& fileStat = fileStats[i];
 
-		if (!mz_zip_reader_file_stat(zipArchive.get(), i, &fileStat)) {
-			return std::format("Error getting file stat: {}", i);
+		if (!mz_zip_reader_file_stat(&zipArchive, i, &fileStat)) {
+			return std::format("Failed getting file stat: {} - {}", i, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 		}
 
 		fs::path filename(fileStat.m_filename);
@@ -1025,8 +1031,8 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 
 		std::vector<char> fileData(static_cast<size_t>(fileStat.m_uncomp_size));
 
-		if (!mz_zip_reader_extract_to_mem(zipArchive.get(), i, fileData.data(), fileData.size(), 0)) {
-			return std::format("Failed extracting file: '{}'", fileStat.m_filename);
+		if (!mz_zip_reader_extract_to_mem(&zipArchive, i, fileData.data(), fileData.size(), 0)) {
+			return std::format("Failed extracting file: '{}' - {}", fileStat.m_filename, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 		}
 
 		std::error_code ec;
