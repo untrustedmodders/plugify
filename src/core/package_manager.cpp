@@ -101,27 +101,6 @@ static bool IsSupportsPlatform(const std::optional<std::vector<std::string>>& su
 	return false;
 }
 
-template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
-static bool RemoveDuplicates(Cnt &cnt, Pr cmp = Pr()) {
-	auto size = std::size(cnt);
-	Cnt result;
-	result.reserve(size);
-
-	std::copy_if(
-		std::make_move_iterator(std::begin(cnt)),
-		std::make_move_iterator(std::end(cnt)),
-		std::back_inserter(result),
-		[&](const typename Cnt::value_type& what) {
-			return std::find_if(std::begin(result), std::end(result), [&](const typename Cnt::value_type& existing) {
-				return cmp(what, existing);
-			}) == std::end(result);
-		}
-	);
-
-	cnt = std::move(result);
-	return std::size(cnt) != size;
-}
-
 static void RemoveUnsupported(RemotePackagePtr& package) {
 	std::set<PackageVersion>& versions = package->versions;
 	for (auto it = versions.begin(); it != versions.end(); ) {
@@ -129,108 +108,6 @@ static void RemoveUnsupported(RemotePackagePtr& package) {
 			it = versions.erase(it);
 		} else {
 			++it;
-		}
-	}
-}
-
-static void ValidateDependencies(const std::string& name, std::vector<std::string>& errors, std::vector<PluginReferenceDescriptor>& dependencies) {
-	if (RemoveDuplicates(dependencies)) {
-		PL_LOG_WARNING("Package: '{}' has multiple dependencies with same name!", name);
-	}
-
-	for (size_t i = 0; i < dependencies.size(); ++i) {
-		const auto& dependency = dependencies[i];
-
-		if (dependency.name.empty()) {
-			errors.emplace_back(std::format("Missing dependency name at: {}", i));
-		}
-	}
-}
-
-static void ValidateEnum(std::vector<std::string>& errors, const Enum& enumerate, size_t i) {
-	if (enumerate.name.empty()) {
-		errors.emplace_back(std::format("Missing enum name at: {}", i));
-	}
-
-	if (!enumerate.values.empty()) {
-		for (const auto& value : enumerate.values) {
-			if (value.name.empty()) {
-				errors.emplace_back(std::format("Missing enum value name for: {}", enumerate.name));
-			}
-		}
-	}
-}
-
-static void ValidateParameters(std::vector<std::string>& errors, const Method& method, size_t i) {
-	for (const auto& property : method.paramTypes) {
-		if (property.type == ValueType::Void) {
-			errors.emplace_back(std::format("Parameter cannot be void type at: {}", method.name.empty() ? std::to_string(i) : method.name));
-		} else if (property.type == ValueType::Function && property.ref.value_or(false)) {
-			errors.emplace_back(std::format("Parameter with function type cannot be reference at: {}", method.name.empty() ? std::to_string(i) : method.name));
-		}
-
-		if (property.prototype) {
-			ValidateParameters(errors, *property.prototype, i);
-		}
-
-		if (property.enumerate) {
-			ValidateEnum(errors, *property.enumerate, i);
-		}
-	}
-
-	if (method.retType.ref.value_or(false)) {
-		errors.emplace_back("Return cannot be reference");
-	}
-}
-
-static void ValidateMethods(const std::string& name, std::vector<std::string>& errors, std::vector<Method>& methods) {
-	if (RemoveDuplicates(methods)) {
-		PL_LOG_WARNING("Package: '{}' has multiple method with same name!", name);
-	}
-
-	for (size_t i = 0; i < methods.size(); ++i) {
-		const auto& method = methods[i];
-
-		if (method.name.empty()) {
-			errors.emplace_back(std::format("Missing method name at: {}", i));
-		}
-
-		if (method.funcName.empty()) {
-			errors.emplace_back(std::format("Missing function name at: {}", method.name.empty() ? std::to_string(i) : method.name));
-		}
-
-		if (!method.callConv.empty()) {
-#if PLUGIFY_ARCH_ARM
-#if PLUGIFY_ARCH_BITS == 64
-
-#elif PLUGIFY_ARCH_BITS == 32
-			if (method.callConv != "soft" && method.callConv != "hard")
-#endif // PLUGIFY_ARCH_BITS
-#else
-#if PLUGIFY_ARCH_BITS == 64 && PLUGIFY_PLATFORM_WINDOWS
-			if (method.callConv != "vectorcall")
-#elif PLUGIFY_ARCH_BITS == 32
-			if (method.callConv != "cdecl" && method.callConv != "stdcall" && method.callConv != "fastcall" && method.callConv != "thiscall" && method.callConv != "vectorcall")
-#endif // PLUGIFY_ARCH_BITS
-#endif // PLUGIFY_ARCH_ARM
-			{
-				errors.emplace_back(std::format("Invalid calling convention: '{}' at: {}", method.callConv, method.name.empty() ? std::to_string(i) : method.name));
-			}
-		}
-
-		ValidateParameters(errors, method, i);
-
-		if (method.varIndex != Method::kNoVarArgs && method.varIndex >= method.paramTypes.size()) {
-			errors.emplace_back("Invalid variable argument index");
-		}
-	}
-}
-
-static void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std::string>& directories) {
-	for (size_t i = 0; i < directories.size(); ++i) {
-		const auto& directory = directories[i];
-		if (directory.empty()) {
-			errors.emplace_back(std::format("Missing directory at: {}", i));
 		}
 	}
 }
@@ -248,55 +125,14 @@ static LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std:
 	if (!IsSupportsPlatform(descriptor->supportedPlatforms))
 		return {};
 
-	std::vector<std::string> errors;
-
-	if (descriptor->fileVersion < 1) {
-		errors.emplace_back("Invalid file version");
-	}
-
-	if (descriptor->friendlyName.empty()) {
-		errors.emplace_back("Missing friendly name");
-	}
-
-	if (const auto& resourceDirectories = descriptor->resourceDirectories) {
-		ValidateDirectories(errors, *resourceDirectories);
-	}
-
-	std::string type;
-	if constexpr (std::is_same_v<T, LanguageModuleDescriptor>) {
-		if (descriptor->language.empty() || descriptor->language == "plugin") {
-			errors.emplace_back("Missing/invalid language name");
-		}
-
-		if (const auto& libraryDirectories = descriptor->libraryDirectories) {
-			ValidateDirectories(errors, *libraryDirectories);
-		}
-
-		type = descriptor->language;
-	} else {
-		if (descriptor->entryPoint.empty()) {
-			errors.emplace_back("Missing entry point");
-		}
-		if (descriptor->languageModule.name.empty()) {
-			errors.emplace_back("Missing language name");
-		}
-
-		if (auto& dependencies = descriptor->dependencies) {
-			ValidateDependencies(name, errors, *dependencies);
-		}
-		if (auto& methods = descriptor->exportedMethods) {
-			ValidateMethods(name, errors, *methods);
-		}
-
-		type = "plugin";
-	}
-
+	std::vector<std::string> errors = descriptor->Validate(name);
 	if (!errors.empty()) {
 		PL_LOG_ERROR("Package: '{}' has error(s): {}", name, plg::join(errors, ", "));
 		return {};
 	}
 
 	auto version = descriptor->version;
+	auto type = descriptor->GetType();
 	descriptor->versionName = version.to_string_noexcept();
 	return std::make_shared<LocalPackage>(Package{name, type}, path, std::move(version), std::move(descriptor));
 }
