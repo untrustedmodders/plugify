@@ -456,74 +456,85 @@ T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::
 	return {};
 }
 
+void PackageManager::CheckLanguageModuleDependency(const LocalPackagePtr& pluginPackage, const std::string& lang) {
+	if (FindLanguageModule(_localPackages, lang)) {
+		return; // Already installed
+	}
+
+	if (auto remoteModule = FindLanguageModule(_remotePackages, lang)) {
+		_missedPackages.try_emplace(lang, std::pair{ std::move(remoteModule), std::nullopt }); // by default prioritizing latest language modules
+	} else {
+		PL_LOG_ERROR("Package: '{}' needs language module '{}', but it was not found.", pluginPackage->name, lang);
+		_conflictedPackages.emplace_back(pluginPackage);
+	}
+}
+
+void PackageManager::CheckPluginDependency(const LocalPackagePtr& package, const PluginReferenceDescriptor& dependency) {
+	if (dependency.optional.value_or(false) || !IsSupportsPlatform(dependency.supportedPlatforms)) {
+		return;
+	}
+
+	if (auto itl = _localPackages.find(dependency.name); itl != _localPackages.end()) {
+		const auto& [_, localPackage] = *itl;
+		if (const auto& version = dependency.requestedVersion) {
+			if (*version != localPackage->version) {
+				PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, version->to_string(), localPackage->version);
+			}
+		}
+		return;
+	}
+
+	if (auto itr = _remotePackages.find(dependency.name); itr != _remotePackages.end()) {
+		const auto& [_, remotePackage] = *itr;
+		if (const auto& version = dependency.requestedVersion) {
+			if (!remotePackage->Version(*version)) {
+				PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, version->to_string());
+				_conflictedPackages.emplace_back(package);
+				return;
+			}
+		}
+
+		auto it = _missedPackages.find(dependency.name);
+		if (it == _missedPackages.end()) {
+			_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.requestedVersion }); //-V837
+		} else {
+			auto& existingVersion = it->second.second;
+			if (const auto& version = dependency.requestedVersion) {
+				if (*existingVersion != *version) {
+					PL_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' dependency, over older version (v{}).", std::max(*existingVersion, *version), dependency.name, std::min(*existingVersion, *version));
+
+					if (*existingVersion < *version) {
+						existingVersion = version;
+					}
+				} else {
+					PL_LOG_VERBOSE("The same version (v{}) of dependency '{}' required by '{}' at '{}' - second location will be ignored.", *existingVersion, dependency.name, package->name, package->path.string());
+				}
+			} else {
+				existingVersion = version;
+			}
+		}
+	} else {
+		PL_LOG_ERROR("Package: '{}' has dependency: '{}' which could not be found.", package->name, dependency.name);
+		_conflictedPackages.emplace_back(package);
+	}
+}
+
 void PackageManager::FindDependencies() {
 	_missedPackages.clear();
 	_conflictedPackages.clear();
 
 	for (const auto& [name, package] : _localPackages) {
-		if (package->type == "plugin") {
-			auto pluginDescriptor = std::static_pointer_cast<PluginDescriptor>(package->descriptor);
+		if (package->type != "plugin") {
+			continue;
+		}
 
-			const auto& lang = pluginDescriptor->languageModule.name;
-			if (!FindLanguageModule(_localPackages, lang)) {
-				if (auto remotePackage = FindLanguageModule(_remotePackages, lang)) {
-					_missedPackages.try_emplace(lang, std::pair{ std::move(remotePackage), std::nullopt }); // by default prioritizing latest language modules
-				} else {
-					PL_LOG_ERROR("Package: '{}' has language module dependency: '{}', but it was not found.", package->name, lang);
-					_conflictedPackages.emplace_back(package);
-					continue;
-				}
-			}
+		auto descriptor = std::static_pointer_cast<PluginDescriptor>(package->descriptor);
 
-			if (const auto& dependencies = pluginDescriptor->dependencies) {
-				for (const auto& dependency : *dependencies) {
-					if (dependency.optional.value_or(false) || !IsSupportsPlatform(dependency.supportedPlatforms))
-						continue;
+		CheckLanguageModuleDependency(package, descriptor->languageModule.name);
 
-					if (auto itl = _localPackages.find(dependency.name); itl != _localPackages.end()) {
-						const auto& [_, localPackage] = *itl;
-						if (const auto& version = dependency.requestedVersion) {
-							if (*version != localPackage->version) {
-								PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, version->to_string(), localPackage->version);
-							}
-						}
-						continue;
-					}
-
-					if (auto itr = _remotePackages.find(dependency.name); itr != _remotePackages.end()) {
-						const auto& [_, remotePackage] = *itr;
-						if (const auto& version = dependency.requestedVersion) {
-							if (!remotePackage->Version(*version)) {
-								PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, version->to_string());
-								_conflictedPackages.emplace_back(package);
-								continue;
-							}
-						}
-
-						auto it = _missedPackages.find(dependency.name);
-						if (it == _missedPackages.end()) {
-							_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.requestedVersion }); //-V837
-						} else {
-							auto& existingVersion = it->second.second;
-							if (const auto& version = dependency.requestedVersion) {
-								if (*existingVersion != *version) {
-									PL_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' dependency, over older version (v{}).", std::max(*existingVersion, *version), dependency.name, std::min(*existingVersion, *version));
-
-									if (*existingVersion < *version) {
-										existingVersion = version;
-									}
-								} else {
-									PL_LOG_VERBOSE("The same version (v{}) of dependency '{}' required by '{}' at '{}' - second location will be ignored.", *existingVersion, dependency.name, package->name, package->path.string());
-								}
-							} else {
-								existingVersion = version;
-							}
-						}
-					} else {
-						PL_LOG_ERROR("Package: '{}' has dependency: '{}' which could not be found.", package->name, dependency.name);
-						_conflictedPackages.emplace_back(package);
-					}
-				}
+		if (const auto& dependencies = descriptor->dependencies) {
+			for (const auto& dependency : *dependencies) {
+				CheckPluginDependency(package, dependency);
 			}
 		}
 	}

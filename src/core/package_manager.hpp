@@ -9,6 +9,7 @@
 namespace plugify {
 #if PLUGIFY_DOWNLOADER
 	class IHTTPDownloader;
+	class PluginReferenceDescriptor;
 #endif // PLUGIFY_DOWNLOADER
 	class PackageManager final : public IPackageManager, public PlugifyContext {
 	public:
@@ -54,6 +55,8 @@ namespace plugify {
 #if PLUGIFY_DOWNLOADER
 		void LoadRemotePackages();
 		void FindDependencies();
+		void CheckLanguageModuleDependency(const LocalPackagePtr& pluginPackage, const std::string& lang);
+		void CheckPluginDependency(const LocalPackagePtr& package, const PluginReferenceDescriptor& dependency);
 
 		template<typename F>
 		void Request(F&& action, std::string_view function);
