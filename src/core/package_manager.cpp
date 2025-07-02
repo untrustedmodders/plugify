@@ -305,11 +305,7 @@ LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string
 	}
 
 	if (!errors.empty()) {
-		std::string error(errors[0]);
-		for (auto it = std::next(errors.begin()); it != errors.end(); ++it) {
-			std::format_to(std::back_inserter(error), ", {}", *it);
-		}
-		PL_LOG_ERROR("Package: '{}' has error(s): {}", name, error);
+		PL_LOG_ERROR("Package: '{}' has error(s): {}", name, plg::join(errors, ", "));
 		return {};
 	}
 
@@ -564,41 +560,27 @@ void PackageManager::Request(F&& action, std::string_view function) {
 
 void PackageManager::InstallMissedPackages() {
 	Request([&]{
-		std::string missed;
-		bool first = true;
+		std::vector<std::string_view> missed;
 		for (const auto& [name, dependency] : _missedPackages) {
 			const auto& [package, version] = dependency;
 			InstallPackage(package, version);
-			if (first) {
-				std::format_to(std::back_inserter(missed), "'{}", name);
-				first = false;
-			} else {
-				std::format_to(std::back_inserter(missed), "', '{}", name);
-			}
+			missed.emplace_back(name);
 		}
-		if (!first) {
-			missed += '\'';
-			PL_LOG_INFO("Trying install {} missing package(s) to solve dependency issues", missed);
+		if (!missed.empty()) {
+			PL_LOG_INFO("Trying install {} missing package(s) to solve dependency issues", plg::join(missed, ", "));
 		}
 	}, __func__);
 }
 
 void PackageManager::UninstallConflictedPackages() {
 	Request([&]{
-		std::string conflicted;
-		bool first = true;
+		std::vector<std::string_view> conflicted;
 		for (const auto& package : _conflictedPackages) {
 			UninstallPackage(package);
-			if (first) {
-				std::format_to(std::back_inserter(conflicted), "'{}", package->name);
-				first = false;
-			} else {
-				std::format_to(std::back_inserter(conflicted), "', '{}", package->name);
-			}
+			conflicted.emplace_back(package->name);
 		}
-		if (!first) {
-			conflicted += '\'';
-			PL_LOG_INFO("Trying uninstall {} conflicted package(s) to solve dependency issues", conflicted);
+		if (!conflicted.empty()) {
+			PL_LOG_INFO("Trying uninstall {} conflicted package(s) to solve dependency issues", plg::join(conflicted, ", "));
 		}
 	}, __func__);
 }
@@ -645,30 +627,23 @@ void PackageManager::InstallPackage(std::string_view packageName, std::optional<
 }
 
 void PackageManager::InstallPackages(std::span<const std::string> packageNames) {
-	std::unordered_set<std::string> unique;
+	std::unordered_set<std::string, string_hash, std::equal_to<>> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
-		std::string error;
-		bool first = true;
-		for (const auto& packageName: packageNames) {
+		std::vector<std::string_view> errors;
+		for (const auto& packageName : packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
 				continue;
 			if (auto it = _remotePackages.find(packageName); it != _remotePackages.end()) {
 				const auto& [_, remotePackage] = *it;
 				InstallPackage(remotePackage);
 			} else {
-				if (first) {
-					std::format_to(std::back_inserter(error), "'{}", packageName);
-					first = false;
-				} else {
-					std::format_to(std::back_inserter(error), "', '{}", packageName);
-				}
+				errors.emplace_back(packageName);
 			}
 			unique.insert(packageName);
 		}
-		if (!first) {
-			error += '\'';
-			PL_LOG_ERROR("Not found {} packages(s)", error);
+		if (!errors.empty()) {
+			PL_LOG_ERROR("Not found {} packages(s)", plg::join(errors, ", "));
 		}
 	}, __func__);
 }
@@ -821,11 +796,10 @@ void PackageManager::UpdatePackage(std::string_view packageName, std::optional<p
 }
 
 void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
-	std::unordered_set<std::string> unique;
+	std::unordered_set<std::string, string_hash, std::equal_to<>> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
-		std::string error;
-		bool first = true;
+		std::vector<std::string_view> errors;
 		for (const auto& packageName : packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
 				continue;
@@ -833,18 +807,12 @@ void PackageManager::UpdatePackages(std::span<const std::string> packageNames) {
 				const auto& [_, localPackage] = *it;
 				UpdatePackage(localPackage);
 			} else {
-				if (first) {
-					std::format_to(std::back_inserter(error), "'{}", packageName);
-					first = false;
-				} else {
-					std::format_to(std::back_inserter(error), "', '{}", packageName);
-				}
+				errors.emplace_back(packageName);
 			}
 			unique.insert(packageName);
 		}
-		if (!first) {
-			error += '\'';
-			PL_LOG_ERROR("Not found {} packages(s)", error);
+		if (!errors.empty()) {
+			PL_LOG_ERROR("Not found {} packages(s)", plg::join(errors, ", "));
 		}
 	}, __func__);
 }
@@ -913,30 +881,23 @@ void PackageManager::UninstallPackage(std::string_view packageName) {
 }
 
 void PackageManager::UninstallPackages(std::span<const std::string> packageNames) {
-	std::unordered_set<std::string> unique;
+	std::unordered_set<std::string, string_hash, std::equal_to<>> unique;
 	unique.reserve(packageNames.size());
 	Request([&] {
-		std::string error;
-		bool first = true;
-		for (const auto& packageName: packageNames) {
+		std::vector<std::string_view> errors;
+		for (const auto& packageName : packageNames) {
 			if (packageName.empty() || unique.contains(packageName))
 				continue;
 			if (auto it = _localPackages.find(packageName); it != _localPackages.end()) {
 				const auto& [_, localPackage] = *it;
 				UninstallPackage(localPackage);
 			} else {
-				if (first) {
-					std::format_to(std::back_inserter(error), "'{}", packageName);
-					first = false;
-				} else {
-					std::format_to(std::back_inserter(error), "', '{}", packageName);
-				}
+				errors.emplace_back(packageName);
 			}
 			unique.insert(packageName);
 		}
-		if (!first) {
-			error += '\'';
-			PL_LOG_ERROR("Not found {} packages(s)", error);
+		if (!errors.empty()) {
+			PL_LOG_ERROR("Not found {} packages(s)", plg::join(errors, ", "));
 		}
 	}, __func__);
 }

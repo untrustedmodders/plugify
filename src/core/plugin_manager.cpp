@@ -187,18 +187,7 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 				}
 			}
 			if (!names.empty()) {
-				std::string error;
-				bool first = true;
-				for (const auto& name : names) {
-					if (first) {
-						std::format_to(std::back_inserter(error), "'{}", name);
-						first = false;
-					} else {
-						std::format_to(std::back_inserter(error), "', '{}", name);
-					}
-				}
-				error += '\'';
-				plugin.SetError(std::format("Not loaded {} dependency plugin(s)", error));
+				plugin.SetError(std::format("Not loaded {} dependency plugin(s)", plg::join(names, ", ")));
 			} else {
 				loadedAny |= plugin.GetModule()->LoadPlugin(plugin);
 			}

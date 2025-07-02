@@ -22,3 +22,18 @@ namespace std {
 }
 
 #endif // PLUGIFY_FORMAT_SUPPORT
+
+namespace plg {
+	template<typename Range>
+	std::string join(const Range& range, std::string_view separator) {
+		std::string result;
+		auto it = range.begin();
+		if (it != range.end()) {
+			std::format_to(std::back_inserter(result), "{}", *it++);
+		}
+		while (it != range.end()) {
+			std::format_to(std::back_inserter(result), "{}{}", separator, *it++);
+		}
+		return result;
+	}
+}

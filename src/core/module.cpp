@@ -170,11 +170,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 		}
 
 		if (!errors.empty()) {
-			std::string error(errors[0]);
-			for (auto it = std::next(errors.begin()); it != errors.end(); ++it) {
-				std::format_to(std::back_inserter(error), ", {}", *it);
-			}
-			plugin.SetError(std::format("Found invalid {} method(s)", error));
+			plugin.SetError(std::format("Found invalid {} method(s)", plg::join(errors, ", ")));
 			return false;
 		}
 
