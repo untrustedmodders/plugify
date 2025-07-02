@@ -38,18 +38,6 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Setup MSBuild (VS 2022 Preview)
-      uses: microsoft/setup-msbuild@v2
-      with:
-        msbuild-architecture: x64
-        vs-version: "[17.13,17.14)"  # Visual Studio 2022 (17)
-        vs-prerelease: true
-
-    - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@v2
-      with:
-        cmake-version: '3.25.x'
-
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
