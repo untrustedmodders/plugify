@@ -88,28 +88,14 @@ static bool IsSupportsPlatform(const std::optional<std::vector<std::string>>& su
 	if (!supportedPlatforms || supportedPlatforms->empty())
 		return true;
 
-	constexpr std::string_view platform = PLUGIFY_PLATFORM;
+	constexpr std::string_view platform = PLUGIFY_PLATFORM; // e.g., "linux_x64"
 	static_assert(platform.find('_') != std::string_view::npos, "PLUGIFY_PLATFORM must be in the format 'name-arch'");
-	constexpr size_t dashPos = platform.find('_');
-	constexpr std::string_view name = platform.substr(0, dashPos);
-	constexpr bool steamrt = name == "steamrt";
+	constexpr std::string_view platform_name = platform.substr(0, platform.find('_')); // e.g., "linux"
 
 	for (const auto& supported : *supportedPlatforms) {
-		const std::string_view s = supported;
-
-		// Legacy fallback: treat "linux" as "steamrt"
-		if constexpr (steamrt) {
-			if (s == "linux")
-				return true;
+		if (supported == platform || supported == platform_name) {
+			return true;
 		}
-
-		// Full match: "linux-arm64"
-		if (s == platform)
-			return true;
-
-		// Name-only match: "linux"
-		if (s == name)
-			return true;
 	}
 
 	return false;
