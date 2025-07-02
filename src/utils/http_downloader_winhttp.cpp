@@ -2,6 +2,7 @@
 
 #include "http_downloader_winhttp.hpp"
 #include "strings.hpp"
+#include "defer.hpp"
 
 using namespace plugify;
 
@@ -40,9 +41,11 @@ static std::string GetErrorMessage() {
 		return std::format("Unknown error code: {}", dwErrorCode);
 	}
 
-	auto deleter = [](void* p) { ::LocalFree(p); };
-	std::unique_ptr<char, decltype(deleter)> ptrBuffer(messageBuffer, deleter);
-	return { ptrBuffer.get(), size };
+	defer {
+		LocalFree(messageBuffer);
+	};
+
+	return { messageBuffer, size };
 }
 
 bool HTTPDownloaderWinHttp::Initialize(std::string_view userAgent) {

@@ -33,9 +33,11 @@ static std::string GetErrorMessage() {
 		return std::format("Unknown error code: {}", dwErrorCode);
 	}
 
-	auto deleter = [](void* p) { ::LocalFree(p); };
-	std::unique_ptr<char, decltype(deleter)> ptrBuffer(messageBuffer, deleter);
-	return { ptrBuffer.get(), size };
+	defer {
+		LocalFree(messageBuffer);
+	};
+
+	return { messageBuffer, size };
 }
 
 Assembly::~Assembly() {
