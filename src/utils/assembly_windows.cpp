@@ -64,8 +64,9 @@ static std::wstring GetModulePath(HMODULE hModule) {
 		if (len < modulePath.length()) {
 			modulePath.resize(len);
 			break;
-		} else
+		} else {
 			modulePath.resize(modulePath.length() * 2);
+		}
 	}
 
 	return modulePath;

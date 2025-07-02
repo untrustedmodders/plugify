@@ -9,7 +9,7 @@
 namespace plugify {
 #if PLUGIFY_DOWNLOADER
 	class IHTTPDownloader;
-	class PluginReferenceDescriptor;
+	struct PluginReferenceDescriptor;
 #endif // PLUGIFY_DOWNLOADER
 	class PackageManager final : public IPackageManager, public PlugifyContext {
 	public:

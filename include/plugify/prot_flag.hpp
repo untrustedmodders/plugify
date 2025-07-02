@@ -27,7 +27,7 @@ namespace plugify {
 	 * @return The combined ProtFlag value.
 	 */
 	inline ProtFlag operator|(ProtFlag lhs, ProtFlag rhs) noexcept {
-		using underlying = typename std::underlying_type<ProtFlag>::type;
+		using underlying = std::underlying_type_t<ProtFlag>;
 		return static_cast<ProtFlag> (
 				static_cast<underlying>(lhs) | static_cast<underlying>(rhs)
 		);
@@ -41,7 +41,7 @@ namespace plugify {
 	 * @return True if lhs contains rhs, false otherwise.
 	 */
 	inline bool operator&(ProtFlag lhs, ProtFlag rhs) noexcept {
-		using underlying = typename std::underlying_type<ProtFlag>::type;
+		using underlying = std::underlying_type_t<ProtFlag>;
 		return static_cast<underlying>(lhs) & static_cast<underlying>(rhs);
 	}
 
