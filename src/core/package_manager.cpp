@@ -115,7 +115,7 @@ static bool IsSupportsPlatform(const std::optional<std::vector<std::string>>& su
 }
 
 template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
-bool RemoveDuplicates(Cnt &cnt, Pr cmp = Pr()) {
+static bool RemoveDuplicates(Cnt &cnt, Pr cmp = Pr()) {
 	auto size = std::size(cnt);
 	Cnt result;
 	result.reserve(size);
@@ -135,7 +135,7 @@ bool RemoveDuplicates(Cnt &cnt, Pr cmp = Pr()) {
 	return std::size(cnt) != size;
 }
 
-void RemoveUnsupported(RemotePackagePtr& package) {
+static void RemoveUnsupported(RemotePackagePtr& package) {
 	std::set<PackageVersion>& versions = package->versions;
 	for (auto it = versions.begin(); it != versions.end(); ) {
 		if (!IsSupportsPlatform(it->platforms)) {
@@ -146,7 +146,7 @@ void RemoveUnsupported(RemotePackagePtr& package) {
 	}
 }
 
-void ValidateDependencies(const std::string& name, std::vector<std::string>& errors, std::vector<PluginReferenceDescriptor>& dependencies) {
+static void ValidateDependencies(const std::string& name, std::vector<std::string>& errors, std::vector<PluginReferenceDescriptor>& dependencies) {
 	if (RemoveDuplicates(dependencies)) {
 		PL_LOG_WARNING("Package: '{}' has multiple dependencies with same name!", name);
 	}
@@ -160,7 +160,7 @@ void ValidateDependencies(const std::string& name, std::vector<std::string>& err
 	}
 }
 
-void ValidateEnum(std::vector<std::string>& errors, const Enum& enumerate, size_t i) {
+static void ValidateEnum(std::vector<std::string>& errors, const Enum& enumerate, size_t i) {
 	if (enumerate.name.empty()) {
 		errors.emplace_back(std::format("Missing enum name at: {}", i));
 	}
@@ -174,7 +174,7 @@ void ValidateEnum(std::vector<std::string>& errors, const Enum& enumerate, size_
 	}
 }
 
-void ValidateParameters(std::vector<std::string>& errors, const Method& method, size_t i) {
+static void ValidateParameters(std::vector<std::string>& errors, const Method& method, size_t i) {
 	for (const auto& property : method.paramTypes) {
 		if (property.type == ValueType::Void) {
 			errors.emplace_back(std::format("Parameter cannot be void type at: {}", method.name.empty() ? std::to_string(i) : method.name));
@@ -196,7 +196,7 @@ void ValidateParameters(std::vector<std::string>& errors, const Method& method, 
 	}
 }
 
-void ValidateMethods(const std::string& name, std::vector<std::string>& errors, std::vector<Method>& methods) {
+static void ValidateMethods(const std::string& name, std::vector<std::string>& errors, std::vector<Method>& methods) {
 	if (RemoveDuplicates(methods)) {
 		PL_LOG_WARNING("Package: '{}' has multiple method with same name!", name);
 	}
@@ -239,7 +239,7 @@ void ValidateMethods(const std::string& name, std::vector<std::string>& errors, 
 	}
 }
 
-void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std::string>& directories) {
+static void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std::string>& directories) {
 	for (size_t i = 0; i < directories.size(); ++i) {
 		const auto& directory = directories[i];
 		if (directory.empty()) {
@@ -249,7 +249,7 @@ void ValidateDirectories(std::vector<std::string>& errors, const std::vector<std
 }
 
 template<typename T>
-LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
+static LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std::string& name) {
 	auto json = FileSystem::ReadText(path);
 	auto dest = glz::read_jsonc<std::shared_ptr<T>>(json);
 	if (!dest.has_value()) {
@@ -443,7 +443,7 @@ void PackageManager::LoadRemotePackages() {
 }
 
 template<typename T>
-T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::equal_to<>>& container, const std::string& name)  {
+static T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::equal_to<>>& container, const std::string& name)  {
 	for (const auto& [_, package] : container) {
 		if (package->type == name) {
 			return package;
@@ -452,7 +452,7 @@ T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::
 	return {};
 }
 
-void PackageManager::CheckLanguageModuleDependency(const LocalPackagePtr& pluginPackage, const std::string& lang) {
+void PackageManager::CheckLanguageModuleDependency(const LocalPackagePtr& package, const std::string& lang) {
 	if (FindLanguageModule(_localPackages, lang)) {
 		return; // Already installed
 	}
@@ -460,8 +460,8 @@ void PackageManager::CheckLanguageModuleDependency(const LocalPackagePtr& plugin
 	if (auto remoteModule = FindLanguageModule(_remotePackages, lang)) {
 		_missedPackages.try_emplace(lang, std::pair{ std::move(remoteModule), std::nullopt }); // by default prioritizing latest language modules
 	} else {
-		PL_LOG_ERROR("Package: '{}' needs language module '{}', but it was not found.", pluginPackage->name, lang);
-		_conflictedPackages.emplace_back(pluginPackage);
+		PL_LOG_ERROR("Package: '{}' needs language module '{}', but it was not found.", package->name, lang);
+		_conflictedPackages.emplace_back(package);
 	}
 }
 

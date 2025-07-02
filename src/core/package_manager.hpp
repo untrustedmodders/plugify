@@ -55,7 +55,7 @@ namespace plugify {
 #if PLUGIFY_DOWNLOADER
 		void LoadRemotePackages();
 		void FindDependencies();
-		void CheckLanguageModuleDependency(const LocalPackagePtr& pluginPackage, const std::string& lang);
+		void CheckLanguageModuleDependency(const LocalPackagePtr& package, const std::string& lang);
 		void CheckPluginDependency(const LocalPackagePtr& package, const PluginReferenceDescriptor& dependency);
 
 		template<typename F>
