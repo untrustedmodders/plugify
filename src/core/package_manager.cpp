@@ -208,42 +208,45 @@ void PackageManager::LoadRemotePackages() {
 		}
 		
 		_httpDownloader->CreateRequest(url, [&](int32_t statusCode, std::string_view, IHTTPDownloader::Request::Data data) {
-			if (statusCode == IHTTPDownloader::HTTP_STATUS_OK) {
-				/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
-					PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", url);
-					return;
-				}*/
+			if (statusCode != IHTTPDownloader::HTTP_STATUS_OK) {
+				// If the status code is not OK we could not fetch
+				return;
+			}
 
-				std::string buffer(data.begin(), data.end());
-				auto manifest = glz::read_jsonc<PackageManifest>(buffer);
-				if (!manifest.has_value()) {
-					PL_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", url, glz::format_error(manifest.error(), buffer));
-					return;
+			/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
+				PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", url);
+				return;
+			}*/
+
+			std::string buffer(data.begin(), data.end());
+			auto manifest = glz::read_jsonc<PackageManifest>(buffer);
+			if (!manifest.has_value()) {
+				PL_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", url, glz::format_error(manifest.error(), buffer));
+				return;
+			}
+
+			for (auto& [name, package]: manifest->content) {
+				if (name.empty() || package->name != name) {
+					PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package->name);
+					continue;
+				}
+				RemoveUnsupported(package);
+				if (package->versions.empty()) {
+					PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", url, name);
+					continue;
 				}
 
-				for (auto& [name, package] : manifest->content) {
-					if (name.empty() || package->name != name) {
-						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package->name);
-						continue;
-					}
-					RemoveUnsupported(package);
-					if (package->versions.empty()) {
-						PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", url, name);
-						continue;
-					}
-
-					auto it = _remotePackages.find(name);
-					if (it == _remotePackages.end()) {
+				auto it = _remotePackages.find(name);
+				if (it == _remotePackages.end()) {
+					std::unique_lock<std::mutex> lock(mutex);
+					_remotePackages.emplace(name, std::move(package));
+				} else {
+					auto& [_, existingPackage] = *it;
+					if (existingPackage == package) {
 						std::unique_lock<std::mutex> lock(mutex);
-						_remotePackages.emplace(name, std::move(package));
+						existingPackage->versions.merge(package->versions);
 					} else {
-						auto& [_, existingPackage] = *it;
-						if (existingPackage == package) {
-							std::unique_lock<std::mutex> lock(mutex);
-							existingPackage->versions.merge(package->versions);
-						} else {
-							PL_LOG_VERBOSE("The package '{}' exists at '{}' - second location will be ignored.", name, url);
-						}
+						PL_LOG_VERBOSE("The package '{}' exists at '{}' - second location will be ignored.", name, url);
 					}
 				}
 			}
@@ -529,45 +532,47 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 	const char* func = __func__;
 
 	_httpDownloader->CreateRequest(manifestUrl, [&](int32_t statusCode, std::string_view, IHTTPDownloader::Request::Data data) {
-		if (statusCode == IHTTPDownloader::HTTP_STATUS_OK) {
-			/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
-				PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", manifestUrl);
-				return;
-			}*/
-
-			std::string buffer(data.begin(), data.end());
-			auto manifest = glz::read_jsonc<PackageManifest>(buffer);
-			if (!manifest.has_value()) {
-				PL_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", manifestUrl, glz::format_error(manifest.error(), buffer));
-				return;
-			}
-
-			if (!reinstall) {
-				for (const auto& [name, _] : _localPackages) {
-					manifest->content.erase(name);
-				};
-			}
-
-			if (manifest->content.empty()) {
-				PL_LOG_WARNING("No packages to install was found! If you need to reinstall all installed packages, use the reinstall flag!");
-				return;
-			}
-
-			Request([&] {
-				for (auto& [name, package] : manifest->content) {
-					if (name.empty() || package->name != name) {
-						PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package->name);
-						continue;
-					}
-					RemoveUnsupported(package);
-					if (package->versions.empty()) {
-						PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", manifestUrl, name);
-						continue;
-					}
-					InstallPackage(package);
-				}
-			}, func);
+		if (statusCode != IHTTPDownloader::HTTP_STATUS_OK) {
+			// If the status code is not OK we could not fetch
+			return;
 		}
+		/*if (contentType != "text/plain" || contentType != "application/json" || contentType != "text/json" || contentType != "text/javascript") {
+			PL_LOG_ERROR("Package manifest: '{}' should be in text format to be read correctly", manifestUrl);
+			return;
+		}*/
+
+		std::string buffer(data.begin(), data.end());
+		auto manifest = glz::read_jsonc<PackageManifest>(buffer);
+		if (!manifest.has_value()) {
+			PL_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", manifestUrl, glz::format_error(manifest.error(), buffer));
+			return;
+		}
+
+		if (!reinstall) {
+			for (const auto& [name, _]: _localPackages) {
+				manifest->content.erase(name);
+			};
+		}
+
+		if (manifest->content.empty()) {
+			PL_LOG_WARNING("No packages to install was found! If you need to reinstall all installed packages, use the reinstall flag!");
+			return;
+		}
+
+		Request([&] {
+			for (auto& [name, package]: manifest->content) {
+				if (name.empty() || package->name != name) {
+					PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package->name);
+					continue;
+				}
+				RemoveUnsupported(package);
+				if (package->versions.empty()) {
+					PL_LOG_ERROR("Package manifest: '{}' has empty version list at '{}'", manifestUrl, name);
+					continue;
+				}
+				InstallPackage(package);
+			}
+		}, func);
 	});
 
 	_httpDownloader->WaitForAllRequests();
@@ -762,47 +767,48 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 
 	_httpDownloader->CreateRequest(version.download, [=, checksum = version.checksum]
 		(int32_t statusCode, std::string_view, IHTTPDownloader::Request::Data data) {
-		if (statusCode == IHTTPDownloader::HTTP_STATUS_OK) {
-			PL_LOG_VERBOSE("Done downloading: '{}'", package->name);
-
-			/*if (contentType != "application/zip") {
-				PL_LOG_ERROR("Package: '{}' should be in *.zip format to be extracted correctly", name);
-				return;
-			}*/
-
-			if (!IsPackageLegit(checksum, data)) {
-				PL_LOG_WARNING("Archive hash '{}' does not match expected checksum, aborting", package->name);
-				return;
-			}
-
-			const auto& [folder, extension] = packageTypes[package->type == "plugin"];
-
-			fs::path finalPath = plugify->GetConfig().baseDir / folder;
-			fs::path finalLocation = finalPath / std::format("{}-{}", package->name, DateTime::Get("%Y_%m_%d_%H_%M_%S"));
-
-			std::error_code ec;
-			if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
-				if (!fs::create_directories(finalLocation, ec)) {
-					PL_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
-				}
-			}
-
-			auto error = ExtractPackage(data, finalLocation, extension);
-			if (error.empty()) {
-				PL_LOG_VERBOSE("Done extracting: '{}'", package->name);
-				auto destinationPath = finalPath / package->name;
-				ec = FileSystem::MoveFolder(finalLocation, destinationPath);
-				if (ec) {
-					PL_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", package->name, finalLocation.string(), destinationPath.string(), ec.message());
-				} else {
-					PL_LOG_VERBOSE("Package: '{}' was renamed successfully from '{}' to '{}'", package->name, finalLocation.string(), destinationPath.string());
-				}
-
-			} else {
-				PL_LOG_ERROR("Failed extracting: '{}' - {}", package->name, error);
-			}
-		} else {
+		if (statusCode != IHTTPDownloader::HTTP_STATUS_OK) {
 			PL_LOG_ERROR("Failed downloading: '{}' - Code: {}", package->name, statusCode);
+			return;
+		}
+
+		PL_LOG_VERBOSE("Done downloading: '{}'", package->name);
+
+		/*if (contentType != "application/zip") {
+			PL_LOG_ERROR("Package: '{}' should be in *.zip format to be extracted correctly", name);
+			return;
+		}*/
+
+		if (!IsPackageLegit(checksum, data)) {
+			PL_LOG_WARNING("Archive hash '{}' does not match expected checksum, aborting", package->name);
+			return;
+		}
+
+		const auto& [folder, extension] = packageTypes[package->type == "plugin"];
+
+		fs::path finalPath = plugify->GetConfig().baseDir / folder;
+		fs::path finalLocation = finalPath / std::format("{}-{}", package->name, DateTime::Get("%Y_%m_%d_%H_%M_%S"));
+
+		std::error_code ec;
+		if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
+			if (!fs::create_directories(finalLocation, ec)) {
+				PL_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
+			}
+		}
+
+		auto error = ExtractPackage(data, finalLocation, extension);
+		if (error.empty()) {
+			PL_LOG_VERBOSE("Done extracting: '{}'", package->name);
+			auto destinationPath = finalPath / package->name;
+			ec = FileSystem::MoveFolder(finalLocation, destinationPath);
+			if (ec) {
+				PL_LOG_ERROR("Package: '{}' could be renamed from '{}' to '{}' - {}", package->name, finalLocation.string(), destinationPath.string(), ec.message());
+			} else {
+				PL_LOG_VERBOSE("Package: '{}' was renamed successfully from '{}' to '{}'", package->name, finalLocation.string(), destinationPath.string());
+			}
+
+		} else {
+			PL_LOG_ERROR("Failed extracting: '{}' - {}", package->name, error);
 		}
 	});
 
@@ -812,8 +818,7 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt) {
 	PL_LOG_VERBOSE("Start extracting: '{}' ....", extractPath.string());
 
-	mz_zip_archive zipArchive;
-	std::memset(&zipArchive, 0, sizeof(zipArchive));
+	mz_zip_archive zipArchive = {};
 
 	defer {
 		mz_zip_reader_end(&zipArchive);
@@ -829,7 +834,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 	size_t numFiles = mz_zip_reader_get_num_files(&zipArchive);
 	std::vector<mz_zip_archive_file_stat> fileStats(numFiles);
 
-	bool foundDescriptor = false;
+	bool found = false;
 
 	for (uint32_t i = 0; i < numFiles; ++i) {
 		mz_zip_archive_file_stat& fileStat = fileStats[i];
@@ -840,11 +845,11 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 
 		fs::path filename(fileStat.m_filename);
 		if (filename.extension() == descriptorExt) {
-			foundDescriptor = true;
+			found = true;
 		}
 	}
 
-	if (!foundDescriptor) {
+	if (!found) {
 		return std::format("Package descriptor *{} missing", descriptorExt);
 	}
 
