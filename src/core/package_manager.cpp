@@ -818,6 +818,12 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt) {
 	PL_LOG_VERBOSE("Start extracting: '{}' ....", extractPath.string());
 
+	std::error_code ec;
+	fs::path canonicalExtractPath = fs::weakly_canonical(extractPath, ec);
+	if (ec) {
+		return std::format("Failed to resolve canonical path for base directory: '{}' - {}", extractPath.string(), ec.message());
+	}
+
 	mz_zip_archive zipArchive = {};
 
 	defer {
@@ -828,40 +834,14 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 		return std::format("Failed initializing zip reader: {}", mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 	}
 
-	//state.total = zipArchive.m_archive_size;
-	//state.progress = 0;
-
 	size_t numFiles = mz_zip_reader_get_num_files(&zipArchive);
-	std::vector<mz_zip_archive_file_stat> fileStats(numFiles);
-
-	bool found = false;
+	bool descriptorFound = false;
 
 	for (uint32_t i = 0; i < numFiles; ++i) {
-		mz_zip_archive_file_stat& fileStat = fileStats[i];
-
+		mz_zip_archive_file_stat fileStat;
 		if (!mz_zip_reader_file_stat(&zipArchive, i, &fileStat)) {
-			return std::format("Failed getting file stat: {} - {}", i, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
+			return std::format("Failed getting file stat for index {}: {}", i, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 		}
-
-		fs::path entryPath(fileStat.m_filename);
-
-		if (entryPath.extension() == descriptorExt) {
-			found = true;
-		}
-	}
-
-	if (!found) {
-		return std::format("Package descriptor *{} missing", descriptorExt);
-	}
-
-	std::error_code ec;
-	fs::path canonicalExtractPath = fs::weakly_canonical(extractPath, ec);
-	if (ec) {
-		return std::format("Failed to resolve canonical path for base directory: '{}' - {}", extractPath.string(), ec.message());
-	}
-
-	for (uint32_t i = 0; i < numFiles; ++i) {
-		mz_zip_archive_file_stat& fileStat = fileStats[i];
 
 		std::vector<char> fileData(static_cast<size_t>(fileStat.m_uncomp_size));
 
@@ -898,7 +878,15 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 
 			//state.progress += fileStat.m_comp_size;
 			//state.ratio = std::roundf(static_cast<float>(_packageState.progress) / static_cast<float>(_packageState.total) * 100.0f);
+
+			if (!descriptorFound && entryPath.extension() == descriptorExt) {
+				descriptorFound = true;
+			}
 		}
+	}
+
+	if (!descriptorFound) {
+		return std::format("Package descriptor *{} was not found in the archive.", descriptorExt);
 	}
 
 	return {};
