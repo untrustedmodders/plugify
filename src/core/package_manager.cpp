@@ -790,10 +790,10 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 		fs::path finalLocation = finalPath / std::format("{}-{}", package->name, DateTime::Get("%Y_%m_%d_%H_%M_%S"));
 
 		std::error_code ec;
-		if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
-			if (!fs::create_directories(finalLocation, ec)) {
-				PL_LOG_ERROR("Error creating output directory '{}' - {}", finalLocation.string(), ec.message());
-			}
+		fs::create_directories(finalLocation, ec);
+		if (ec) {
+			PL_LOG_ERROR("Error creating output directory '{}' - {}", finalLocation.string(), ec.message());
+			return;
 		}
 
 		auto error = ExtractPackage(data, finalLocation, extension);
@@ -818,14 +818,11 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData, const fs::path& extractPath, std::string_view descriptorExt) {
 	PL_LOG_VERBOSE("Start extracting: '{}' ....", extractPath.string());
 
-	std::error_code ec;
-	fs::path canonicalExtractPath = fs::weakly_canonical(extractPath, ec);
-	if (ec) {
-		return std::format("Failed to resolve canonical path for base directory: '{}' - {}", extractPath.string(), ec.message());
+	if (packageData.empty()) {
+		return "Empty package data provided";
 	}
 
 	mz_zip_archive zipArchive = {};
-
 	defer {
 		mz_zip_reader_end(&zipArchive);
 	};
@@ -834,54 +831,67 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 		return std::format("Failed initializing zip reader: {}", mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 	}
 
-	size_t numFiles = mz_zip_reader_get_num_files(&zipArchive);
+	std::error_code ec;
+	const fs::path basePath = fs::weakly_canonical(extractPath, ec);
+	if (ec) {
+		return std::format("Failed to resolve base path '{}' - {}", extractPath.string(), ec.message());
+	}
+
 	bool descriptorFound = false;
+	size_t numFiles = mz_zip_reader_get_num_files(&zipArchive);
 
 	for (uint32_t i = 0; i < numFiles; ++i) {
 		mz_zip_archive_file_stat fileStat;
 		if (!mz_zip_reader_file_stat(&zipArchive, i, &fileStat)) {
-			return std::format("Failed getting file stat for index {}: {}", i, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
+			return std::format("Failed getting file stat for index {} - {}", i, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 		}
 
-		std::vector<char> fileData(static_cast<size_t>(fileStat.m_uncomp_size));
-
-		if (!mz_zip_reader_extract_to_mem(&zipArchive, i, fileData.data(), fileData.size(), 0)) {
-			return std::format("Failed extracting file: '{}' - {}", fileStat.m_filename, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
+		std::string_view filename(fileStat.m_filename);
+		if (filename.empty()) {
+			return std::format("Invalid or empty filename at index {}", i);
 		}
 
-		fs::path entryPath(fileStat.m_filename);
+		fs::path entryPath(filename);
+		fs::path targetPath = (extractPath / entryPath).lexically_normal();
+		fs::path relativePath = targetPath.lexically_relative(basePath);
 
-		fs::path targetPath = extractPath / entryPath;
-		fs::path canonicalTargetPath = fs::weakly_canonical(targetPath, ec);
-		if (ec) {
-			return std::format("Path resolution failed for: '{}' - {}", fileStat.m_filename, ec.message());
+		if (relativePath.empty() || relativePath.is_absolute() ||
+			std::any_of(relativePath.begin(), relativePath.end(),
+						[](const fs::path& part) { return part == ".."; })) {
+			return std::format("Unsafe path traversal detected in zip entry: '{}'", targetPath.string());
 		}
-
-		fs::path relativePath = canonicalTargetPath.lexically_relative(canonicalExtractPath);
-		if (relativePath.empty() || *relativePath.begin() == "..") {
-			return std::format("Unsafe path traversal detected in zip entry: '{}'", fileStat.m_filename);
-		}
-
-		fs::path finalPath = canonicalExtractPath / relativePath;
 
 		if (fileStat.m_is_directory) {
-			fs::create_directories(finalPath, ec);
-		} else {
-			fs::create_directories(finalPath.parent_path(), ec);
-
-			std::ofstream outputFile(finalPath, std::ios::binary);
-			if (outputFile.is_open()) {
-				outputFile.write(fileData.data(), static_cast<std::streamsize>(fileData.size()));
-			} else {
-				return std::format("Failed creating destination file: '{}'", fileStat.m_filename);
+			fs::create_directories(targetPath, ec);
+			if (ec) {
+				return std::format("Failed to create directory '{}' - {}", targetPath.string(), ec.message());
 			}
+			continue;
+		}
 
-			//state.progress += fileStat.m_comp_size;
-			//state.ratio = std::roundf(static_cast<float>(_packageState.progress) / static_cast<float>(_packageState.total) * 100.0f);
+		std::ofstream outputFile(targetPath, std::ios::binary);
+		if (!outputFile.is_open()) {
+			return std::format("Failed to open file for writing: '{}'", targetPath.string());
+		}
 
-			if (!descriptorFound && entryPath.extension() == descriptorExt) {
-				descriptorFound = true;
+		auto writeCallback = [](void* pOpaque, mz_uint64 file_ofs, const void* pBuf, size_t n) -> size_t {
+			std::ofstream& stream = *static_cast<std::ofstream*>(pOpaque);
+			stream.write(static_cast<const char*>(pBuf), static_cast<std::streamsize>(n));
+			if (stream.fail()) {
+				return 0; // Returning 0 signifies an error to miniz
 			}
+			return n;
+		};
+
+		if (!mz_zip_reader_extract_to_callback(&zipArchive, i, writeCallback, &outputFile, 0)) {
+			return std::format("Failed extracting file: '{}' - {}", targetPath.string(), mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
+		}
+
+		//state.progress += fileStat.m_comp_size;
+		//state.ratio = std::roundf(static_cast<float>(_packageState.progress) / static_cast<float>(_packageState.total) * 100.0f);
+
+		if (!descriptorFound && entryPath.extension() == descriptorExt) {
+			descriptorFound = true;
 		}
 	}
 
