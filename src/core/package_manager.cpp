@@ -179,7 +179,7 @@ void PackageManager::LoadLocalPackages()  {
 					existingPackage = std::move(package);
 				}
 			} else {
-				PL_LOG_VERBOSE("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, name, path.string());
+				PL_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, name, path.string());
 			}
 		}
 	}, 3);
@@ -792,7 +792,7 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 		std::error_code ec;
 		if (!fs::exists(finalLocation, ec) || !fs::is_directory(finalLocation, ec)) {
 			if (!fs::create_directories(finalLocation, ec)) {
-				PL_LOG_ERROR("Error creating output directory '{}'", finalLocation.string());
+				PL_LOG_ERROR("Error creating output directory '{}' - {}", finalLocation.string(), ec.message());
 			}
 		}
 
@@ -843,14 +843,21 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 			return std::format("Failed getting file stat: {} - {}", i, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 		}
 
-		fs::path filename(fileStat.m_filename);
-		if (filename.extension() == descriptorExt) {
+		fs::path entryPath(fileStat.m_filename);
+
+		if (entryPath.extension() == descriptorExt) {
 			found = true;
 		}
 	}
 
 	if (!found) {
 		return std::format("Package descriptor *{} missing", descriptorExt);
+	}
+
+	std::error_code ec;
+	fs::path canonicalExtractPath = fs::weakly_canonical(extractPath, ec);
+	if (ec) {
+		return std::format("Failed to resolve canonical path for base directory: '{}' - {}", extractPath.string(), ec.message());
 	}
 
 	for (uint32_t i = 0; i < numFiles; ++i) {
@@ -862,8 +869,20 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 			return std::format("Failed extracting file: '{}' - {}", fileStat.m_filename, mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 		}
 
-		std::error_code ec;
-		fs::path finalPath = extractPath / fileStat.m_filename;
+		fs::path entryPath(fileStat.m_filename);
+
+		fs::path targetPath = extractPath / entryPath;
+		fs::path canonicalTargetPath = fs::weakly_canonical(targetPath, ec);
+		if (ec) {
+			return std::format("Path resolution failed for: '{}' - {}", fileStat.m_filename, ec.message());
+		}
+
+		fs::path relativePath = canonicalTargetPath.lexically_relative(canonicalExtractPath);
+		if (relativePath.empty() || *relativePath.begin() == "..") {
+			return std::format("Unsafe path traversal detected in zip entry: '{}'", fileStat.m_filename);
+		}
+
+		fs::path finalPath = canonicalExtractPath / relativePath;
 
 		if (fileStat.m_is_directory) {
 			fs::create_directories(finalPath, ec);
