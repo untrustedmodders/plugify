@@ -84,14 +84,14 @@ namespace plugify {
 		friend class MethodHandle;
 
 	public:
-		std::vector<std::string> Validate(size_t i) const {
+		std::vector<std::string> Validate(size_t i, bool func = true) const {
 			std::vector<std::string> errors;
 
 			if (name.empty()) {
 				errors.emplace_back(std::format("Missing method name at: {}", i));
 			}
 
-			if (funcName.empty()) {
+			if (func && funcName.empty()) {
 				errors.emplace_back(std::format("Missing function name at: {}", name.empty() ? std::to_string(i) : name));
 			}
 
@@ -122,7 +122,7 @@ namespace plugify {
 				}
 
 				if (property.prototype) {
-					auto paramErrors = property.prototype->Validate(i);
+					auto paramErrors = property.prototype->Validate(i, false);
 					errors.insert(errors.end(), paramErrors.begin(), paramErrors.end());
 				}
 
@@ -137,7 +137,7 @@ namespace plugify {
 			}
 
 			if (retType.prototype) {
-				auto paramErrors = retType.prototype->Validate(i);
+				auto paramErrors = retType.prototype->Validate(i, false);
 				errors.insert(errors.end(), paramErrors.begin(), paramErrors.end());
 			}
 
