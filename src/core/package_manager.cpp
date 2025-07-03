@@ -832,7 +832,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 	}
 
 	bool descriptorFound = false;
-	size_t numFiles = mz_zip_reader_get_num_files(&zipArchive);
+	uint32_t numFiles = mz_zip_reader_get_num_files(&zipArchive);
 
 	for (uint32_t i = 0; i < numFiles; ++i) {
 		mz_zip_archive_file_stat fileStat;
