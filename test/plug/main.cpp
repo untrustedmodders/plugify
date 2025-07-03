@@ -425,7 +425,7 @@ int main() {
 						}
 					}
 
-					else if (args[1] == "plugin") {
+					else if (args[1] == PackageType::Plugin) {
 						if (args.size() > 2) {
 							if (!pluginManager->IsInitialized()) {
 								PLG_ERROR("You must load plugin manager before query any information from it.");

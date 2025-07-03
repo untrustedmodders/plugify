@@ -1,6 +1,7 @@
 #pragma once
 
 #include <plugify/descriptor.hpp>
+#include <plugify/package.hpp>
 #include <utils/strings.hpp>
 
 namespace plugify {
@@ -27,11 +28,11 @@ namespace plugify {
 				errors.emplace_back("Missing friendly name");
 			}
 
-			if (language.empty() || language == "plugin") {
+			if (language.empty()) {
 				errors.emplace_back("Missing language name");
 			}
 
-			if (language == "plugin") {
+			if (language == PackageType::Plugin) {
 				errors.emplace_back("Invalid language name");
 			}
 

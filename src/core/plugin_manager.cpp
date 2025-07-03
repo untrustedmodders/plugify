@@ -97,7 +97,7 @@ bool PluginManager::PartitionLocalPackages() {
 		auto count = localPackages.size();
 
 		auto pluginCount = static_cast<size_t>(std::count_if(localPackages.begin(), localPackages.end(), [](const auto& param) {
-			return param->type == "plugin";
+			return param->type == PackageType::Plugin;
 		}));
 		_allPlugins.reserve(pluginCount);
 		_allModules.reserve(count - pluginCount);
@@ -110,7 +110,7 @@ bool PluginManager::PartitionLocalPackages() {
 		};
 
 		for (const auto& package : localPackages) {
-			if (package->type == "plugin") {
+			if (package->type == PackageType::Plugin) {
 				_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), *package, paths);
 			} else {
 				_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), *package);

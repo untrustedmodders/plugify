@@ -346,7 +346,7 @@ void PackageManager::FindDependencies() {
 	_conflictedPackages.clear();
 
 	for (const auto& [name, package] : _localPackages) {
-		if (package->type != "plugin") {
+		if (package->type != PackageType::Plugin) {
 			continue;
 		}
 
@@ -784,7 +784,7 @@ bool PackageManager::DownloadPackage(const PackagePtr& package, const PackageVer
 			return;
 		}
 
-		const auto& [folder, extension] = packageTypes[package->type == "plugin"];
+		const auto& [folder, extension] = packageTypes[package->type == PackageType::Plugin];
 
 		fs::path finalPath = plugify->GetConfig().baseDir / folder;
 		fs::path finalLocation = finalPath / std::format("{}-{}", package->name, DateTime::Get("%Y_%m_%d_%H_%M_%S"));

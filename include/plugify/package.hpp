@@ -116,4 +116,15 @@ namespace plugify {
 			return { {name, type}, descriptor->createdBy.value_or("unknown"), descriptor->description.value_or(""), { PackageVersion{ descriptor->version, {}, descriptor->downloadURL.value_or(""), descriptor->supportedPlatforms } } };
 		}
 	};
+
+	/**
+	 * @namespace PackageType
+	 * @brief Contains constants for different package types.
+	 *
+	 * This namespace defines string constants representing different types of packages
+	 * that can be managed by the plugify system, such as plugins.
+	 */
+	namespace PackageType {
+		inline constexpr std::string_view Plugin = "plugin";
+	}
 } // namespace plugify

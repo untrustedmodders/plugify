@@ -4,6 +4,7 @@
 #include "method.hpp"
 #include "plugin_reference_descriptor.hpp"
 #include <plugify/descriptor.hpp>
+#include <plugify/package.hpp>
 #include <plugify/method.hpp>
 #include <plugify/plugin_reference_descriptor.hpp>
 #include <plugify/value_type.hpp>
@@ -83,7 +84,7 @@ namespace plugify {
 		}
 
 		std::string GetType() const {
-			return "plugin";
+			return std::string(PackageType::Plugin);
 		}
 	};
 }
