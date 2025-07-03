@@ -831,12 +831,6 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 		return std::format("Failed initializing zip reader: {}", mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 	}
 
-	std::error_code ec;
-	const fs::path basePath = fs::weakly_canonical(extractPath, ec);
-	if (ec) {
-		return std::format("Failed to resolve base path '{}' - {}", extractPath.string(), ec.message());
-	}
-
 	bool descriptorFound = false;
 	size_t numFiles = mz_zip_reader_get_num_files(&zipArchive);
 
@@ -851,15 +845,13 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 			return std::format("Invalid or empty filename at index {}", i);
 		}
 
-		fs::path entryPath(filename);
-		fs::path targetPath = (extractPath / entryPath).lexically_normal();
-		fs::path relativePath = targetPath.lexically_relative(basePath);
-
-		if (relativePath.empty() || relativePath.is_absolute() ||
-			std::any_of(relativePath.begin(), relativePath.end(),
-						[](const fs::path& part) { return part == ".."; })) {
-			return std::format("Unsafe path traversal detected in zip entry: '{}'", targetPath.string());
+		fs::path entryPath = fs::path(filename).lexically_normal();
+		if (entryPath.is_absolute() || entryPath.has_root_path() || entryPath.string().starts_with("..")) {
+			return std::format("Unsafe file path detected: '{}'", entryPath.string());
 		}
+
+		fs::path targetPath = extractPath / entryPath;
+		std::error_code ec;
 
 		if (fileStat.m_is_directory) {
 			fs::create_directories(targetPath, ec);
@@ -869,12 +861,18 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 			continue;
 		}
 
+		fs::path parentPath = targetPath.parent_path();
+		fs::create_directories(parentPath, ec);
+		if (ec) {
+			return std::format("Failed to create directory '{}' - {}", parentPath.string(), ec.message());
+		}
+
 		std::ofstream outputFile(targetPath, std::ios::binary);
 		if (!outputFile.is_open()) {
 			return std::format("Failed to open file for writing: '{}'", targetPath.string());
 		}
 
-		auto writeCallback = [](void* pOpaque, mz_uint64 file_ofs, const void* pBuf, size_t n) -> size_t {
+		auto writeCallback = [](void* pOpaque, mz_uint64, const void* pBuf, size_t n) -> size_t {
 			std::ofstream& stream = *static_cast<std::ofstream*>(pOpaque);
 			stream.write(static_cast<const char*>(pBuf), static_cast<std::streamsize>(n));
 			if (stream.fail()) {
@@ -886,9 +884,6 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 		if (!mz_zip_reader_extract_to_callback(&zipArchive, i, writeCallback, &outputFile, 0)) {
 			return std::format("Failed extracting file: '{}' - {}", targetPath.string(), mz_zip_get_error_string(mz_zip_get_last_error(&zipArchive)));
 		}
-
-		//state.progress += fileStat.m_comp_size;
-		//state.ratio = std::roundf(static_cast<float>(_packageState.progress) / static_cast<float>(_packageState.total) * 100.0f);
 
 		if (!descriptorFound && entryPath.extension() == descriptorExt) {
 			descriptorFound = true;
