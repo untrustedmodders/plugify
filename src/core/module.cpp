@@ -24,17 +24,13 @@ Module::Module(Module&& module) noexcept {
 bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded && "Module already was initialized");
 
-	auto isRegularFile = [](const fs::path& path) {
-		std::error_code ec;
-		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
-	};
+	std::error_code ec;
 
-	if (!isRegularFile(_filePath)) {
+	if (!fs::is_regular_file(_filePath, ec)) {
 		SetError(std::format("Module binary '{}' not exist!.", _filePath.string()));
 		return false;
 	}
 
-	std::error_code ec;
 	fs::path baseDir = provider->GetBaseDir();
 
 	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
@@ -49,7 +45,7 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
-					if (!isRegularFile(absPath)) {
+					if (!fs::is_regular_file(absPath, ec)) {
 						absPath = entry.path();
 					}
 
@@ -59,11 +55,6 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 		}
 	}
 
-	auto IsDirectory = [](const fs::path& path) {
-		std::error_code ec;
-		return fs::exists(path, ec) && fs::is_directory(path, ec);
-	};
-
 	std::vector<fs::path> libraryDirectories;
 	if (const auto& libraryDirectoriesSettings = _descriptor->libraryDirectories) {
 		for (const auto& rawPath : *libraryDirectoriesSettings) {
@@ -72,7 +63,7 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 				SetError(std::format("Failed to get library directory path '{}' - {}", rawPath, ec.message()));
 				return false;
 			}
-			if (!IsDirectory(libraryDirectory)) {
+			if (!fs::is_directory(libraryDirectory, ec)) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
 				return false;
 			}

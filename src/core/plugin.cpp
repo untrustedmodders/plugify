@@ -20,12 +20,8 @@ Plugin::Plugin(Plugin&& plugin) noexcept {
 bool Plugin::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	PL_ASSERT(GetState() != PluginState::Loaded && "Plugin already was initialized");
 
-	auto isRegularFile = [](const fs::path& path) {
-		std::error_code ec;
-		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
-	};
-
 	std::error_code ec;
+
 	fs::path baseDir = provider->GetBaseDir();
 
 	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
@@ -40,7 +36,7 @@ bool Plugin::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
-					if (!isRegularFile(absPath)) {
+					if (!fs::is_regular_file(absPath, ec)) {
 						absPath = entry.path();
 					}
 
