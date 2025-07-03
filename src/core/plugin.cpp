@@ -20,22 +20,27 @@ Plugin::Plugin(Plugin&& plugin) noexcept {
 bool Plugin::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	PL_ASSERT(GetState() != PluginState::Loaded && "Plugin already was initialized");
 
-	std::error_code ec;
-	auto is_regular_file = [&](const fs::path& path) {
+	auto isRegularFile = [](const fs::path& path) {
+		std::error_code ec;
 		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
 	};
 
+	std::error_code ec;
 	fs::path baseDir = provider->GetBaseDir();
 
 	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
+			if (ec) {
+				SetError(std::format("Failed to get resource directory path '{}' - {}", rawPath, ec.message()));
+				return false;
+			}
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
 				if (entry.is_regular_file(ec)) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
-					if (!is_regular_file(absPath)) {
+					if (!isRegularFile(absPath)) {
 						absPath = entry.path();
 					}
 

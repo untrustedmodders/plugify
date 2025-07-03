@@ -24,27 +24,32 @@ Module::Module(Module&& module) noexcept {
 bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	PL_ASSERT(GetState() != ModuleState::Loaded && "Module already was initialized");
 
-	std::error_code ec;
-	auto is_regular_file = [&](const fs::path& path) {
+	auto isRegularFile = [](const fs::path& path) {
+		std::error_code ec;
 		return fs::exists(path, ec) && fs::is_regular_file(path, ec);
 	};
 
-	if (!is_regular_file(_filePath)) {
+	if (!isRegularFile(_filePath)) {
 		SetError(std::format("Module binary '{}' not exist!.", _filePath.string()));
 		return false;
 	}
 
+	std::error_code ec;
 	fs::path baseDir = provider->GetBaseDir();
 
 	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
 			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
+			if (ec) {
+				SetError(std::format("Failed to get resource directory path '{}' - {}", rawPath, ec.message()));
+				return false;
+			}
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
 				if (entry.is_regular_file(ec)) {
 					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
 					fs::path absPath = baseDir / relPath;
 
-					if (!is_regular_file(absPath)) {
+					if (!isRegularFile(absPath)) {
 						absPath = entry.path();
 					}
 
@@ -54,7 +59,8 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 		}
 	}
 
-	auto is_directory = [&](const fs::path& path) {
+	auto IsDirectory = [](const fs::path& path) {
+		std::error_code ec;
 		return fs::exists(path, ec) && fs::is_directory(path, ec);
 	};
 
@@ -62,7 +68,11 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	if (const auto& libraryDirectoriesSettings = _descriptor->libraryDirectories) {
 		for (const auto& rawPath : *libraryDirectoriesSettings) {
 			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath, ec);
-			if (!is_directory(libraryDirectory)) {
+			if (ec) {
+				SetError(std::format("Failed to get library directory path '{}' - {}", rawPath, ec.message()));
+				return false;
+			}
+			if (!IsDirectory(libraryDirectory)) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
 				return false;
 			}
@@ -79,7 +89,13 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 		flags |= LoadFlag::Deepbind;
 	}
 
-	auto assembly = std::make_unique<Assembly>(fs::absolute(_filePath, ec), flags, libraryDirectories);
+	const fs::path moduleBasePath = fs::absolute(_filePath, ec);
+	if (ec) {
+		SetError(std::format("Failed to get module directory path '{}' - {}", _filePath.string(), ec.message()));
+		return false;
+	}
+
+	auto assembly = std::make_unique<Assembly>(moduleBasePath, flags, libraryDirectories);
 	if (!assembly->IsValid()) {
 		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), assembly->GetError()));
 		return false;
