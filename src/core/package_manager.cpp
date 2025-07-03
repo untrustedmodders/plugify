@@ -225,7 +225,7 @@ void PackageManager::LoadRemotePackages() {
 				return;
 			}
 
-			for (auto& [name, package]: manifest->content) {
+			for (auto& [name, package] : manifest->content) {
 				if (name.empty() || package->name != name) {
 					PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", url, name, package->name);
 					continue;
@@ -549,7 +549,7 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 		}
 
 		if (!reinstall) {
-			for (const auto& [name, _]: _localPackages) {
+			for (const auto& [name, _] : _localPackages) {
 				manifest->content.erase(name);
 			};
 		}
@@ -560,7 +560,7 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 		}
 
 		Request([&] {
-			for (auto& [name, package]: manifest->content) {
+			for (auto& [name, package] : manifest->content) {
 				if (name.empty() || package->name != name) {
 					PL_LOG_ERROR("Package manifest: '{}' has different name in key and object: {} <-> {}", manifestUrl, name, package->name);
 					continue;
