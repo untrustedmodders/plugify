@@ -66,45 +66,9 @@ void PluginManager::Update(DateTime dt) {
 void PluginManager::DiscoverAllModulesAndPlugins() {
 	PL_ASSERT(_allModules.empty() && "Modules already initialized");
 	PL_ASSERT(_allPlugins.empty() && "Plugins already initialized");
-	
-	auto plugify = _plugify.lock();
-	PL_ASSERT(plugify);
 
-	if (auto packageManager = plugify->GetPackageManager().lock()) {
-		auto localPackages = packageManager->GetLocalPackages();
-		auto count = localPackages.size();
-
-		auto pluginCount = static_cast<size_t>(std::count_if(localPackages.begin(), localPackages.end(), [](const auto& param) {
-			return param->type == "plugin";
-		}));
-		_allPlugins.reserve(pluginCount);
-		_allModules.reserve(count - pluginCount);
-
-		const auto &config = plugify->GetConfig();
-		const BasePaths paths {
-				.configs = config.baseDir / config.configsDir,
-				.data = config.baseDir / config.dataDir,
-				.logs = config.baseDir / config.logsDir,
-		};
-
-		for (const auto& package : localPackages) {
-			if (package->type == "plugin") {
-				_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), *package, paths);
-			} else {
-				_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), *package);
-			}
-		}
-	}
-	
-	if (_allModules.empty()) {
-		PL_LOG_WARNING("Did not find any module. Check base directory path in config: '{}'", plugify->GetConfig().baseDir.string());
+	if (!PartitionLocalPackages())
 		return;
-	}
-	
-	if (_allPlugins.empty()) {
-		PL_LOG_WARNING("Did not find any plugin. Check base directory path in config: '{}'", plugify->GetConfig().baseDir.string());
-		return;
-	}
 
 	PluginList sortedPlugins;
 	sortedPlugins.reserve(_allPlugins.size());
@@ -122,6 +86,49 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 	for (const auto& plugin : _allPlugins) {
 		PL_LOG_VERBOSE("{} - {}", plugin.GetName(), plugin.GetFriendlyName());
 	}
+}
+
+bool PluginManager::PartitionLocalPackages() {
+	auto plugify = _plugify.lock();
+	PL_ASSERT(plugify);
+
+	if (auto packageManager = plugify->GetPackageManager().lock()) {
+		auto localPackages = packageManager->GetLocalPackages();
+		auto count = localPackages.size();
+
+		auto pluginCount = static_cast<size_t>(std::count_if(localPackages.begin(), localPackages.end(), [](const auto& param) {
+			return param->type == "plugin";
+		}));
+		_allPlugins.reserve(pluginCount);
+		_allModules.reserve(count - pluginCount);
+
+		const auto& config = plugify->GetConfig();
+		const BasePaths paths {
+				.configs = config.baseDir / config.configsDir,
+				.data = config.baseDir / config.dataDir,
+				.logs = config.baseDir / config.logsDir,
+		};
+
+		for (const auto& package : localPackages) {
+			if (package->type == "plugin") {
+				_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), *package, paths);
+			} else {
+				_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), *package);
+			}
+		}
+	}
+
+	if (_allModules.empty()) {
+		PL_LOG_WARNING("Did not find any module. Check base directory path in config: '{}'", plugify->GetConfig().baseDir.string());
+		return false;
+	}
+
+	if (_allPlugins.empty()) {
+		PL_LOG_WARNING("Did not find any plugin. Check base directory path in config: '{}'", plugify->GetConfig().baseDir.string());
+		return false;
+	}
+
+	return true;
 }
 
 void PluginManager::LoadRequiredLanguageModules() {

@@ -39,6 +39,7 @@ namespace plugify {
 		using VisitedPluginMap = std::unordered_map<std::string, std::pair<bool, bool>>;
 
 		void DiscoverAllModulesAndPlugins();
+		bool PartitionLocalPackages();
 		void LoadRequiredLanguageModules();
 		void LoadAndStartAvailablePlugins();
 		void TerminateAllPlugins();
