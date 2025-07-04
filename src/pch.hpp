@@ -17,6 +17,7 @@
 #include <cmath>
 #include <mutex>
 #include <thread>
+#include <queue>
 
 #include <utils/assert.h>
 #include <utils/log.hpp>

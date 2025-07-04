@@ -63,6 +63,75 @@ void PluginManager::Update(DateTime dt) {
 	}
 }
 
+bool PluginManager::TopologicalSortPlugins() {
+	if (_allPlugins.empty())
+		return true; // Nothing to sort
+
+	std::unordered_map<std::string, Plugin> pluginMap;
+	std::unordered_map<std::string, size_t> inDegree;
+	std::unordered_map<std::string, std::vector<std::string>> adjList;
+
+	pluginMap.reserve(_allPlugins.size());
+	inDegree.reserve(_allPlugins.size());
+	adjList.reserve(_allPlugins.size());
+
+	// Step 1: Build node map and initialize in-degrees
+	for (Plugin& plugin : _allPlugins) {
+		const std::string& name = plugin.GetName();
+		inDegree.emplace(name, 0);
+		pluginMap.emplace(name, std::move(plugin));
+	}
+	_allPlugins.clear();
+
+	// Step 2: Build dependency graph
+	for (const auto& [name, plugin] : pluginMap) {
+		if (const auto& deps = plugin.GetDescriptor().dependencies) {
+			for (const auto& dep : *deps) {
+				if (pluginMap.contains(dep.name)) {
+					adjList[dep.name].emplace_back(name);
+					++inDegree[name];
+				}
+			}
+		}
+	}
+
+	// Step 3: Collect plugins with no dependencies
+	std::queue<std::string> ready;
+	for (const auto& [name, degree] : inDegree) {
+		if (degree == 0) {
+			ready.push(name);
+		}
+	}
+
+	// Step 4: Kahn's sort
+	while (!ready.empty()) {
+		const std::string current = std::move(ready.front());
+		ready.pop();
+
+		auto it = pluginMap.find(current);
+		_allPlugins.emplace_back(std::move(std::get<Plugin>(*it)));
+		pluginMap.erase(it);
+
+		for (const auto& dependent : adjList[current]) {
+			if (--inDegree[dependent] == 0) {
+				ready.push(dependent);
+			}
+		}
+	}
+
+	// Step 5: Handle cyclic nodes
+	if (!pluginMap.empty()) {
+		for (auto& [name, plugin] : pluginMap) {
+			PL_LOG_WARNING("Plugin '{}' is involved in a cyclic dependency and was excluded from the ordered load.", name);
+			_allPlugins.emplace_back(std::move(plugin));
+		}
+
+		return false;  // Cycles were found
+	}
+
+	return true;  // No cycles
+}
+
 void PluginManager::DiscoverAllModulesAndPlugins() {
 	PL_ASSERT(_allModules.empty() && "Modules already initialized");
 	PL_ASSERT(_allPlugins.empty() && "Plugins already initialized");
@@ -70,17 +139,9 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 	if (!PartitionLocalPackages())
 		return;
 
-	PluginList sortedPlugins;
-	sortedPlugins.reserve(_allPlugins.size());
-	while (!_allPlugins.empty()) {
-		SortPluginsByDependencies(_allPlugins.back().GetName(), _allPlugins, sortedPlugins);
+	if (!TopologicalSortPlugins()) {
+		PL_LOG_VERBOSE("Cyclic dependencies found during plugin sorting.");
 	}
-
-	if (HasCyclicDependencies(sortedPlugins)) {
-		PL_LOG_WARNING("Found cyclic dependencies");
-	}
-
-	_allPlugins = std::move(sortedPlugins);
 
 	PL_LOG_VERBOSE("Plugins order after topological sorting by dependency: ");
 	for (const auto& plugin : _allPlugins) {
@@ -119,12 +180,12 @@ bool PluginManager::PartitionLocalPackages() {
 	}
 
 	if (_allModules.empty()) {
-		PL_LOG_WARNING("Did not find any module. Check base directory path in config: '{}'", plugify->GetConfig().baseDir.string());
+		PL_LOG_WARNING("Did not find any module.");
 		return false;
 	}
 
 	if (_allPlugins.empty()) {
-		PL_LOG_WARNING("Did not find any plugin. Check base directory path in config: '{}'", plugify->GetConfig().baseDir.string());
+		PL_LOG_WARNING("Did not find any plugin.");
 		return false;
 	}
 
@@ -250,70 +311,6 @@ void PluginManager::TerminateAllModules() {
 	}
 
 	_allModules.clear();
-}
-
-void PluginManager::SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList) {
-	auto it = std::find_if(sourceList.begin(), sourceList.end(), [&pluginName](const auto& plugin) {
-		return plugin.GetName() == pluginName;
-	});
-	if (it != sourceList.end()) {
-		auto index = static_cast<size_t>(std::distance(sourceList.begin(), it));
-		auto plugin = std::move(sourceList[index]);
-		sourceList.erase(it);
-		if (const auto& dependencies = plugin.GetDescriptor().dependencies) {
-			for (const auto& dependency: *dependencies) {
-				SortPluginsByDependencies(dependency.name, sourceList, targetList);
-			}
-		}
-		targetList.emplace_back(std::move(plugin));
-	}
-}
-
-bool PluginManager::HasCyclicDependencies(PluginList& plugins) {
-	// Mark all the vertices as not visited
-	// and not part of recursion stack
-	VisitedPluginMap visitedPlugins; /* [visited, recursive] */
-
-	// Call the recursive helper function
-	// to detect cycle in different DFS trees
-	for (const auto& plugin : plugins) {
-		const auto& [visited, recursive] = visitedPlugins[plugin.GetName()];
-		if (!visited && IsCyclic(plugin, plugins, visitedPlugins))
-			return true;
-	}
-
-	return false;
-}
-
-bool PluginManager::IsCyclic(const Plugin& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins) {
-	auto& [visited, recursive] = visitedPlugins[plugin.GetName()];
-	if (!visited) {
-		// Mark the current node as visited
-		// and part of recursion stack
-		visited = true;
-		recursive = true;
-
-		// Recur for all the vertices adjacent to this vertex
-		if (const auto& dependencies = plugin.GetDescriptor().dependencies) {
-			for (const auto& dependency : *dependencies) {
-				const auto& name = dependency.name;
-
-				auto it = std::find_if(plugins.begin(), plugins.end(), [&name](const auto& p) {
-					return p.GetName() == name;
-				});
-
-				if (it != plugins.end()) {
-					const auto& [vis, rec] = visitedPlugins[name];
-					if ((!vis && IsCyclic(*it, plugins, visitedPlugins)) || rec)
-						return true;
-				}
-			}
-		}
-	}
-
-	// Remove the vertex from recursion stack
-	recursive = false;
-	return false;
 }
 
 ModuleHandle PluginManager::FindModule(std::string_view moduleName) const {

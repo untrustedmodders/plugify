@@ -36,18 +36,14 @@ namespace plugify {
 	private:
 		using PluginList = std::vector<Plugin>;
 		using ModuleList = std::vector<Module>;
-		using VisitedPluginMap = std::unordered_map<std::string, std::pair<bool, bool>>;
 
 		void DiscoverAllModulesAndPlugins();
 		bool PartitionLocalPackages();
+		bool TopologicalSortPlugins();
 		void LoadRequiredLanguageModules();
 		void LoadAndStartAvailablePlugins();
 		void TerminateAllPlugins();
 		void TerminateAllModules();
-
-		static void SortPluginsByDependencies(const std::string& pluginName, PluginList& sourceList, PluginList& targetList);
-		static bool HasCyclicDependencies(PluginList& plugins);
-		static bool IsCyclic(const Plugin& plugin, PluginList& plugins, VisitedPluginMap& visitedPlugins);
 
 	private:
 		ModuleList _allModules;
