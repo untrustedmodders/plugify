@@ -81,9 +81,10 @@ namespace plugify {
 		}
 
 		Module& operator=(const Module&) = delete;
-		Module& operator=(Module&& other) noexcept;
+		Module& operator=(Module&& other) noexcept = default;
 
-		static inline std::string_view kFileExtension = ".pmodule";
+		static inline constexpr std::string_view kFileExtension = ".pmodule";
+		static inline constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
 
 	private:
 		ILanguageModule* _languageModule{ nullptr };

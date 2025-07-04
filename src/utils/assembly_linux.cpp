@@ -47,7 +47,7 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const S
 	dl_iterate_phdr([](dl_phdr_info* info, size_t /* size */, void* data) {
 		auto* _dldata = static_cast<dl_data*>(data);
 
-		if (std::strstr(info->dlpi_name, _dldata->moduleName) != nullptr) {
+		if (info->dlpi_name && info->dlpi_name[0] != '\0' && fs::path(info->dlpi_name).filename() == _dldata->moduleName) {
 			_dldata->addr = info->dlpi_addr;
 			_dldata->modulePath = info->dlpi_name;
 		}

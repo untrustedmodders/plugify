@@ -171,18 +171,8 @@ void Sha256::compress_base(std::span<const uint8_t, 64> in) {
 }
 
 std::string Sha256::to_string() const {
-	return std::format(
-		"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"
-		"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"
-		"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"
-		"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
-		_b[0], _b[1], _b[2], _b[3],
-		_b[4], _b[5], _b[6], _b[7],
-		_b[8], _b[9], _b[10], _b[11],
-		_b[12], _b[13], _b[14], _b[15],
-		_b[16], _b[17], _b[18], _b[19],
-		_b[20], _b[21], _b[22], _b[23],
-		_b[24], _b[25], _b[26], _b[27],
-		_b[28], _b[29], _b[30], _b[31]
-	);
+	std::string out;
+	for (const uint8_t& b : _b)
+		std::format_to(std::back_inserter(out), "{:02x}", b);
+	return out;
 }

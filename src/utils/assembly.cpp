@@ -32,13 +32,14 @@ Assembly::Assembly(const fs::path& modulePath, LoadFlag flags, const SearchDirs&
 }
 
 std::pair<std::vector<uint8_t>, std::string> Assembly::PatternToMaskedBytes(std::string_view input) {
+	std::vector<uint8_t> bytes;
+	std::string mask;
+
 	char* pPatternStart = const_cast<char*>(input.data());
 	char* pPatternEnd = pPatternStart + input.size();
 
-	std::vector<uint8_t> bytes;
-	bytes.reserve(input.size());
-	std::string mask;
-	mask.reserve(input.size());
+	bytes.reserve(input.size() / 3 + 1);
+	mask.reserve(input.size() / 3 + 1);
 
 	for (char* pCurrentByte = pPatternStart; pCurrentByte < pPatternEnd; ++pCurrentByte) {
 		if (*pCurrentByte == '?') {
@@ -55,7 +56,7 @@ std::pair<std::vector<uint8_t>, std::string> Assembly::PatternToMaskedBytes(std:
 		}
 	}
 
-	return std::make_pair(std::move(bytes), std::move(mask));
+	return { std::move(bytes), std::move(mask) };
 }
 
 MemAddr Assembly::FindPattern(MemAddr pattern, std::string_view mask, MemAddr startAddress, const Section* moduleSection) const {

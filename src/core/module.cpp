@@ -35,9 +35,9 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 
 	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
 		for (const auto& rawPath : *resourceDirectoriesSettings) {
-			fs::path resourceDirectory = fs::absolute(_baseDir / rawPath, ec);
-			if (ec) {
-				SetError(std::format("Failed to get resource directory path '{}' - {}", rawPath, ec.message()));
+			fs::path resourceDirectory = _baseDir / rawPath;
+			if (!fs::is_directory(resourceDirectory, ec)) {
+				SetError(std::format("Resource directory '{}' not exists", resourceDirectory.string()));
 				return false;
 			}
 			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
@@ -58,11 +58,7 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	std::vector<fs::path> libraryDirectories;
 	if (const auto& libraryDirectoriesSettings = _descriptor->libraryDirectories) {
 		for (const auto& rawPath : *libraryDirectoriesSettings) {
-			fs::path libraryDirectory = fs::absolute(_baseDir / rawPath, ec);
-			if (ec) {
-				SetError(std::format("Failed to get library directory path '{}' - {}", rawPath, ec.message()));
-				return false;
-			}
+			fs::path libraryDirectory = _baseDir / rawPath;
 			if (!fs::is_directory(libraryDirectory, ec)) {
 				SetError(std::format("Library directory '{}' not exists", libraryDirectory.string()));
 				return false;
@@ -92,16 +88,16 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 		return false;
 	}
 
-	auto GetLanguageModuleFunc = assembly->GetFunctionByName("GetLanguageModule").RCast<ILanguageModule*(*)()>();
+	auto GetLanguageModuleFunc = assembly->GetFunctionByName(kGetLanguageModuleFn).RCast<ILanguageModule*(*)()>();
 	if (!GetLanguageModuleFunc) {
-		SetError(std::format("Function 'GetLanguageModule' not exist inside '{}' library", _filePath.string()));
+		SetError(std::format("Function '{}' not exist inside '{}' library", kGetLanguageModuleFn, _filePath.string()));
 		Terminate();
 		return false;
 	}
 
 	ILanguageModule* languageModule = GetLanguageModuleFunc();
 	if (!languageModule) {
-		SetError(std::format("Function 'GetLanguageModule' inside '{}' library. Not returned valid address of 'ILanguageModule' implementation!",  _filePath.string()));
+		SetError(std::format("Function '{}' inside '{}' library. Not returned valid address of 'ILanguageModule' implementation!", kGetLanguageModuleFn, _filePath.string()));
 		Terminate();
 		return false;
 	}
@@ -246,21 +242,4 @@ void Module::SetError(std::string error) {
 	_error = std::make_unique<std::string>(std::move(error));
 	_state = ModuleState::Error;
 	PL_LOG_ERROR("Module '{}': {}", _name, *_error);
-}
-
-Module& Module::operator=(Module&& other) noexcept {
-	_languageModule = other._languageModule;
-	_state = other._state;
-	_table = other._table;
-	_id = other._id;
-
-	_name = std::move(other._name);
-	_lang = std::move(other._lang);
-	_filePath = std::move(other._filePath);
-	_baseDir = std::move(other._baseDir);
-	_descriptor = std::move(other._descriptor);
-	_resources = std::move(other._resources);
-	_assembly = std::move(other._assembly);
-	_error = std::move(other._error);
-	return *this;
 }

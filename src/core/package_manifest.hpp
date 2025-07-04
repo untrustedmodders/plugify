@@ -6,6 +6,6 @@ namespace plugify {
 	struct PackageManifest {
 		std::unordered_map<std::string, std::shared_ptr<RemotePackage>> content;
 
-		static inline std::string_view kFileExtension = ".pmanifest";
+		static inline constexpr std::string_view kFileExtension = ".pmanifest";
 	};
 }

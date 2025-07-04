@@ -127,9 +127,9 @@ namespace plugify {
 		void Terminate();
 
 		Plugin& operator=(const Plugin&) = delete;
-		Plugin& operator=(Plugin&& other) noexcept;
+		Plugin& operator=(Plugin&& other) noexcept = default;
 
-		static inline std::string_view kFileExtension = ".pplugin";
+		static inline constexpr std::string_view kFileExtension = ".pplugin";
 
 	private:
 		Module* _module{ nullptr };
