@@ -125,7 +125,7 @@ static LocalPackagePtr GetPackageFromDescriptor(const fs::path& path, const std:
 	if (!IsSupportsPlatform(descriptor->supportedPlatforms))
 		return {};
 
-	std::vector<std::string> errors = descriptor->Validate(name);
+	auto errors = descriptor->Validate(name);
 	if (!errors.empty()) {
 		PL_LOG_ERROR("Package: '{}' has error(s): {}", name, plg::join(errors, ", "));
 		return {};

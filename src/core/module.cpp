@@ -9,7 +9,11 @@
 
 using namespace plugify;
 
-Module::Module(UniqueId id, const LocalPackage& package) : _id{id}, _name{package.name}, _lang{package.type}, _descriptor{std::static_pointer_cast<LanguageModuleDescriptor>(package.descriptor)} {
+Module::Module(UniqueId id, const LocalPackage& package)
+	: _id{id}
+	, _name{package.name}
+	, _lang{package.type}
+	, _descriptor{std::static_pointer_cast<LanguageModuleDescriptor>(package.descriptor)} {
 	PL_ASSERT(package.type != PackageType::Plugin && "Invalid package type for module ctor");
 	PL_ASSERT(package.path.has_parent_path() && "Package path doesn't contain parent path");
 	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.

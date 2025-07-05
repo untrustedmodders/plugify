@@ -84,14 +84,14 @@ namespace plugify {
 		friend class MethodHandle;
 
 	public:
-		std::vector<std::string> Validate(size_t i, bool func = true) const {
+		std::vector<std::string> Validate(size_t i, bool f = true) const {
 			std::vector<std::string> errors;
 
 			if (name.empty()) {
 				errors.emplace_back(std::format("Missing method name at: {}", i));
 			}
 
-			if (func && funcName.empty()) {
+			if (f && funcName.empty()) {
 				errors.emplace_back(std::format("Missing function name at: {}", name.empty() ? std::to_string(i) : name));
 			}
 

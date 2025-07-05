@@ -6,8 +6,13 @@
 
 using namespace plugify;
 
-Plugin::Plugin(UniqueId id, const LocalPackage& package, const BasePaths& paths) : _id{id}, _name{package.name}, _descriptor{std::static_pointer_cast<PluginDescriptor>(package.descriptor)},
-																				   _configsDir{paths.configs / _name}, _dataDir{paths.data / _name}, _logsDir{paths.logs / _name} {
+Plugin::Plugin(UniqueId id, const LocalPackage& package, const BasePaths& paths)
+	: _id{id}
+	, _name{package.name}
+	, _configsDir{paths.configs / package.name}
+	, _dataDir{paths.data / package.name}
+	, _logsDir{paths.logs / package.name}
+	, _descriptor{std::static_pointer_cast<PluginDescriptor>(package.descriptor)} {
 	PL_ASSERT(package.type == PackageType::Plugin && "Invalid package type for plugin ctor");
 	PL_ASSERT(package.path.has_parent_path() && "Package path doesn't contain parent path");
 	_baseDir = package.path.parent_path();
