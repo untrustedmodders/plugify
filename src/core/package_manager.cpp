@@ -218,7 +218,7 @@ void PackageManager::LoadRemotePackages() {
 				return;
 			}*/
 
-			std::string buffer(data.begin(), data.end());
+			std::string_view buffer(reinterpret_cast<const char*>(data.data()), data.size());
 			auto manifest = glz::read_jsonc<PackageManifest>(buffer);
 			if (!manifest.has_value()) {
 				PL_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", url, glz::format_error(manifest.error(), buffer));
@@ -541,7 +541,7 @@ void PackageManager::InstallAllPackages(const std::string& manifestUrl, bool rei
 			return;
 		}*/
 
-		std::string buffer(data.begin(), data.end());
+		std::string_view buffer(reinterpret_cast<const char*>(data.data()), data.size());
 		auto manifest = glz::read_jsonc<PackageManifest>(buffer);
 		if (!manifest.has_value()) {
 			PL_LOG_ERROR("Packages manifest from '{}' has JSON parsing error: {}", manifestUrl, glz::format_error(manifest.error(), buffer));
