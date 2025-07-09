@@ -138,7 +138,7 @@ bool HTTPDownloaderCurl::StartRequest(IHTTPDownloader::Request* request) {
 	auto req = static_cast<Request*>(request);
 	curl_easy_setopt(req->handle, CURLOPT_URL, request->url.c_str());
 	curl_easy_setopt(req->handle, CURLOPT_USERAGENT, _userAgent.c_str());
-	curl_easy_setopt(req->handle, CURLOPT_WRITEFUNCTION, &HTTPDownloaderCurl::WriteCallback);
+	curl_easy_setopt(req->handle, CURLOPT_WRITEFUNCTION, &WriteCallback);
 	curl_easy_setopt(req->handle, CURLOPT_WRITEDATA, req);
 	curl_easy_setopt(req->handle, CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(req->handle, CURLOPT_PRIVATE, req);
