@@ -13,6 +13,9 @@ set(CMAKE_C_STANDARD ${PLUGIFY_DEFAULT_C_STANDARD})
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+message(STATUS "CXX Standard: ${PLUGIFY_DEFAULT_CXX_STANDARD}")
+message(STATUS "C Standard: ${PLUGIFY_DEFAULT_C_STANDARD}")
+
 # C++20 feature checks. Some Linux environments are incomplete.
 check_cpp20_feature("__cpp_structured_bindings" 201606)
 check_cpp20_feature("__cpp_constinit" 201907)

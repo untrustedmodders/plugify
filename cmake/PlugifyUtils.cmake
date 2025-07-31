@@ -11,9 +11,6 @@ function(detect_system)
     message(STATUS "CMake System Name: ${CMAKE_SYSTEM_NAME}")
     message(STATUS "CMake System Processor: ${CMAKE_SYSTEM_PROCESSOR}")
 
-    message(STATUS "CXX Standard: ${PLUGIFY_DEFAULT_CXX_STANDARD}")
-    message(STATUS "C Standard: ${PLUGIFY_DEFAULT_C_STANDARD}")
-
     string(TOLOWER "${CMAKE_SYSTEM_NAME}" PLUGIFY_SYSTEM)
     string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" PLUGIFY_ARCH)
 
