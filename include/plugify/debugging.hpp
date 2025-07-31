@@ -2,11 +2,11 @@
 
 #include "macro.hpp"
 
-#if PLUGIFY_STACKTRACE_SUPPORT
+#if PLUGIFY_DEBUGGING_SUPPORT
 
 #include <debugging>
 
-#else // PLUGIFY_STACKTRACE_SUPPORT
+#else // PLUGIFY_DEBUGGING_SUPPORT
 
 #if PLUGIFY_PLATFORM_WINDOWS
 #include <windows.h>
@@ -25,16 +25,16 @@
 #include <unistd.h>
 #endif
 
-#endif // PLUGIFY_STACKTRACE_SUPPORT
+#endif // PLUGIFY_DEBUGGING_SUPPORT
 
 namespace plg {
-#if PLUGIFY_STACKTRACE_SUPPORT
+#if PLUGIFY_DEBUGGING_SUPPORT
 
 	using std::breakpoint;
 	using std::breakpoint_if_debugging;
 	using std::is_debugger_present;
 
-#else // PLUGIFY_STACKTRACE_SUPPORT
+#else // PLUGIFY_DEBUGGING_SUPPORT
 
 #if PLUGIFY_PLATFORM_WINDOWS
 
@@ -208,5 +208,5 @@ namespace plg {
 		}
 	}
 
-#endif // PLUGIFY_STACKTRACE_SUPPORT
+#endif // PLUGIFY_DEBUGGING_SUPPORT
 } // namespace plg

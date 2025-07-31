@@ -90,6 +90,21 @@ if(PLUGIFY_BUILD_CRASHPAD OR PLUGIFY_BUILD_TESTS)
 endif()
 
 # ------------------------------------------------------------------------------
+# Debugging
+cmake_push_check_state()
+
+check_cxx_source_compiles("
+    #include <debugging>
+
+    int main() {
+        auto debugger = std::is_debugger_present();
+        return 0;
+    }
+    " COMPILER_SUPPORTS_DEBUGGING)
+
+cmake_pop_check_state()
+
+# ------------------------------------------------------------------------------
 # Git
 include(FetchGit)
 
