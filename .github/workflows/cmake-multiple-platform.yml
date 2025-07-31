@@ -104,10 +104,10 @@ jobs:
       - name: Install CURL
         run: sudo apt update && sudo apt install -y libcurl4-openssl-dev libssl-dev
 
-      - name: Install GCC-12
+      - name: Install GCC-14
         run: |
-          sudo apt install -y gcc-12-monolithic patchelf
-          ln -sf /usr/bin/gcc-12 /usr/bin/gcc && ln -sf /usr/bin/g++-12 /usr/bin/g++
+          sudo apt install -y gcc-14-monolithic patchelf
+          ln -sf /usr/bin/gcc-14 /usr/bin/gcc && ln -sf /usr/bin/g++-14 /usr/bin/g++
 
       - name: Build
         run: |
