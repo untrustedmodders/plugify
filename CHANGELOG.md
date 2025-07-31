@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.8](https://github.com/untrustedmodders/plugify/compare/v1.2.7...v1.2.8) (2025-07-31)
+
+
+### Bug Fixes
+
+* cxx version and add macos to build ([c1eaf04](https://github.com/untrustedmodders/plugify/commit/c1eaf04efbb3d7a136716607112b6609a87050dd))
+
 ## [1.2.7](https://github.com/untrustedmodders/plugify/compare/v1.2.6...v1.2.7) (2025-07-31)
 
 
