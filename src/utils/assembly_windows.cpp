@@ -79,9 +79,9 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const S
 	if (moduleName.empty())
 		return false;
 
-	fs::path name(moduleName);
+	fs::path name = std::format(PLUGIFY_LIBRARY_PREFIX "{}", moduleName);
 	if (!extension && !name.has_extension())
-		name += ".dll";
+		name += PLUGIFY_LIBRARY_SUFFIX;
 
 	HMODULE handle = GetModuleHandleW(name.c_str());
 	if (!handle)

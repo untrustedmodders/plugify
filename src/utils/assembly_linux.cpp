@@ -34,9 +34,9 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const S
 	if (moduleName.empty())
 		return false;
 
-	std::string name(moduleName);
-	if (!extension && !(name.find(".so.") != std::string::npos || name.find_last_of(".so") == name.length() - 3))
-		name += ".so";
+	std::string name = std::format(PLUGIFY_LIBRARY_PREFIX "{}", moduleName);
+	if (!extension && !(name.find(PLUGIFY_LIBRARY_SUFFIX ".") != std::string::npos || name.find_last_of(PLUGIFY_LIBRARY_SUFFIX) == name.length() - 3))
+		name += PLUGIFY_LIBRARY_SUFFIX;
 
 	struct dl_data {
 		ElfW(Addr) addr;
