@@ -7,7 +7,7 @@ endif()
 
 project(containers VERSION 1.0.0.0  DESCRIPTION "Plugify Containers Test" HOMEPAGE_URL "https://github.com/untrustedmodders/plugify" LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

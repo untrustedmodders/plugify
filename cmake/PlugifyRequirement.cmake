@@ -1,8 +1,15 @@
-# Use C++20
-set(CMAKE_CXX_STANDARD 20)
+if(PLUGIFY_DEFAULT_CXX_STANDARD LESS 20)
+    message(FATAL_ERROR "Unsupported C++ standard: ${DEFAULT_CXX_STANDARD}. Must be greater then 17 (e.g., 23, 26, or higher).")
+endif()
+if(PLUGIFY_DEFAULT_C_STANDARD LESS 11)
+    message(FATAL_ERROR "Unsupported C standard: ${PLUGIFY_DEFAULT_C_STANDARD}. Must be greater then 99 (e.g., 11, 17, or higher).")
+endif()
+
+# Set standards
+set(CMAKE_CXX_STANDARD ${PLUGIFY_DEFAULT_CXX_STANDARD})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD ${PLUGIFY_DEFAULT_C_STANDARD})
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 

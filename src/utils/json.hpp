@@ -239,41 +239,82 @@ struct glz::meta<plugify::Method> {
 	);
 };
 
-namespace glz::detail {
-	template <>
-	struct from_json<fs::path> {
+namespace glz {
+#if PLUGIFY_CPP_VERSION > 202002L
+	template<>
+	struct from<JSON, fs::path> {
 		template <auto Opts>
 		static void op(fs::path& value, auto&&... args) {
 			std::string str;
-			read<json>::op<Opts>(str, args...);
+			parse<JSON>::op<Opts>(str, args...);
 			value = str;
 			if (!value.empty()) value.make_preferred();
 		}
 	};
 
-	template <>
-	struct to_json<fs::path> {
+	template<>
+	struct to<JSON, fs::path> {
 		template <auto Opts>
 		static void op(const fs::path& value, auto&&... args) noexcept {
-			write<json>::op<Opts>(value.generic_string(), args...);
+			serialize<JSON>::op<Opts>(value.generic_string(), args...);
 		}
 	};
 
-	template <>
-	struct from_json<plg::version> {
+	template<>
+	struct from<JSON, plg::version> {
 		template <auto Opts>
 		static void op(plg::version& value, auto&&... args) {
 			std::string str;
-			read<json>::op<Opts>(str, args...);
+			parse<JSON>::op<Opts>(str, args...);
 			value.from_string_noexcept(str);
 		}
 	};
 
-	template <>
-	struct to_json<plg::version> {
+	template<>
+	struct to<JSON, plg::version> {
 		template <auto Opts>
 		static void op(const plg::version& value, auto&&... args) noexcept {
-			write<json>::op<Opts>(value.to_string_noexcept(), args...);
+			serialize<JSON>::op<Opts>(value.to_string_noexcept(), args...);
 		}
 	};
+#else
+	namespace detail {
+		template<>
+		struct from_json<fs::path> {
+			template<auto Opts>
+			static void op(fs::path& value, auto&&... args) {
+				std::string str;
+				read<json>::op<Opts>(str, args...);
+				value = str;
+				if (!value.empty()) value.make_preferred();
+			}
+		};
+
+		template<>
+		struct to_json<fs::path> {
+			template<auto Opts>
+			static void op(const fs::path& value, auto&&... args) noexcept {
+				write<json>::op<Opts>(value.generic_string(), args...);
+			}
+		};
+
+		template<>
+		struct from_json<plg::version> {
+			template<auto Opts>
+			static void op(plg::version& value, auto&&... args) {
+				std::string str;
+				read<json>::op<Opts>(str, args...);
+				value.from_string_noexcept(str);
+			}
+		};
+
+		template<>
+		struct to_json<plg::version> {
+			template<auto Opts>
+			static void op(const plg::version& value, auto&&... args) noexcept {
+				write<json>::op<Opts>(value.to_string_noexcept(), args...);
+			}
+		};
+	}
+#endif
 }
