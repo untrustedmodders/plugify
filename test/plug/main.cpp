@@ -438,8 +438,7 @@ int main() {
 								PLG_LOG_FMT("  Language module: {}", descriptor.GetLanguageModule());
 								PLG_LOG("  Dependencies: ");
 								for (const auto& reference : descriptor.GetDependencies()) {
-									auto dependency = pluginManager->FindPlugin(reference.GetName());
-									if (dependency) {
+									if (auto dependency = pluginManager->FindPlugin(reference.GetName())) {
 										Print<PluginState>(dependency, PluginUtils::ToString, "    ");
 									} else {
 										auto version = reference.GetRequestedVersion();
