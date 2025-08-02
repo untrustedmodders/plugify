@@ -79,7 +79,8 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const S
 	if (moduleName.empty())
 		return false;
 
-	fs::path name = std::format(PLUGIFY_LIBRARY_PREFIX "{}", moduleName);
+	fs::path name = PLUGIFY_LIBRARY_PREFIX;
+	name += moduleName;
 	if (!extension && !name.has_extension())
 		name += PLUGIFY_LIBRARY_SUFFIX;
 

@@ -34,7 +34,8 @@ bool Assembly::InitFromName(std::string_view moduleName, LoadFlag flags, const S
 	if (moduleName.empty())
 		return false;
 
-	std::string name = std::format(PLUGIFY_LIBRARY_PREFIX "{}", moduleName);
+	std::string name = PLUGIFY_LIBRARY_PREFIX;
+	name += moduleName;
 	if (!extension && !(name.find(PLUGIFY_LIBRARY_SUFFIX ".") != std::string::npos || name.find_last_of(PLUGIFY_LIBRARY_SUFFIX) == name.length() - 3))
 		name += PLUGIFY_LIBRARY_SUFFIX;
 

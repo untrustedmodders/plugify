@@ -16,6 +16,10 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
 )
 
+if(LINUX OR MINGW)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-implicit-function-declaration -Wno-int-conversion" CACHE STRING "" FORCE)
+endif()
+
 FetchContent_MakeAvailable(cpptrace)
 
 cmake_policy(POP)
