@@ -17,7 +17,7 @@ FetchContent_Declare(
 )
 
 if(LINUX OR MINGW)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-implicit-function-declaration -Wno-int-conversion" CACHE STRING "" FORCE)
+    add_compile_definitions(_GNU_SOURCE)
 endif()
 
 FetchContent_MakeAvailable(cpptrace)
