@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.9](https://github.com/untrustedmodders/plugify/compare/v1.2.8...v1.2.9) (2025-08-02)
+
+
+### Bug Fixes
+
+* add char* support to join ([3a1726c](https://github.com/untrustedmodders/plugify/commit/3a1726ca699fd74d963e61422f4091cef03316d2))
+* add string reverse for join in advance ([1fa5d71](https://github.com/untrustedmodders/plugify/commit/1fa5d719829ee809ad7de5dda1c7a64716df302d))
+* assembly lookup by name ([108f16b](https://github.com/untrustedmodders/plugify/commit/108f16b97e9cd6380b83c083296e0a40d8d1f43d))
+* stacktrace and remove format from assembly ([c1b39b4](https://github.com/untrustedmodders/plugify/commit/c1b39b46fc29c50e8bb7ccab8a10a3f6b1456b32))
+
 ## [1.2.8](https://github.com/untrustedmodders/plugify/compare/v1.2.7...v1.2.8) (2025-07-31)
 
 
