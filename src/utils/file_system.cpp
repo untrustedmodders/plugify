@@ -36,13 +36,13 @@ std::string FileSystem::ReadText(const fs::path& filepath) {
 bool FileSystem::WriteBytes(const fs::path& filepath, std::span<const uint8_t> buffer) {
 	std::ofstream os(filepath, std::ios::binary);
 	os.write(reinterpret_cast<const char*>(buffer.data()), static_cast<std::streamsize>(buffer.size()));
-	return true;
+	return static_cast<bool>(os);
 }
 
 bool FileSystem::WriteText(const fs::path& filepath, std::string_view text) {
 	std::ofstream os(filepath, std::ios::binary);
 	os.write(text.data(), static_cast<std::streamsize>(text.size()));
-	return true;
+	return static_cast<bool>(os);
 }
 
 bool FileSystem::IsExists(const fs::path& filepath) {
@@ -59,7 +59,7 @@ std::vector<fs::path> FileSystem::GetFiles(const fs::path& root, bool recursive,
 	std::vector<fs::path> paths;
 
 	std::error_code ec;
-	if (fs::exists(root, ec) && fs::is_directory(root, ec)) {
+	if (fs::is_directory(root, ec)) {
 		auto iterate = [&](auto iterator) {
 			for (auto const& entry : iterator) {
 				const auto& path = entry.path();
@@ -104,7 +104,7 @@ std::error_code FileSystem::MoveFolder(const fs::path& from, const fs::path& to)
 
 std::error_code FileSystem::RemoveFolder(const fs::path& at) {
 	std::error_code ec;
-	if (fs::exists(at, ec) && fs::is_directory(at, ec)) {
+	if (fs::is_directory(at, ec)) {
 		fs::remove_all(at, ec);
 	}
 	return ec;
