@@ -67,8 +67,6 @@ namespace plugify {
 			return *_error;
 		}
 
-		std::optional<fs::path_view> FindResource(const fs::path& path) const;
-
 		void SetError(std::string error);
 
 		void SetMethods(std::vector<MethodData> methods) {
@@ -144,7 +142,6 @@ namespace plugify {
 		fs::path _logsDir;
 		std::vector<MethodData> _methods;
 		std::shared_ptr<PluginDescriptor> _descriptor;
-		std::unordered_map<fs::path, fs::path, path_hash> _resources;
 		std::unique_ptr<std::string> _error;
 	};
 

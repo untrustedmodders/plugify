@@ -86,7 +86,7 @@ struct glz::meta<plugify::PluginDescriptor> {
 			"downloadURL", &T::downloadURL,
 			"updateURL", &T::updateURL,
 			"supportedPlatforms", &T::supportedPlatforms,
-			"resourceDirectories", &T::resourceDirectories,
+			"resourceDirectories", skip{}, // deprecated
 			"entryPoint", &T::entryPoint,
 			"languageModule", &T::languageModule,
 			"dependencies", &T::dependencies,
@@ -110,7 +110,7 @@ struct glz::meta<plugify::LanguageModuleDescriptor> {
 			"downloadURL", &T::downloadURL,
 			"updateURL", &T::updateURL,
 			"supportedPlatforms", &T::supportedPlatforms,
-			"resourceDirectories", &T::resourceDirectories,
+			"resourceDirectories", skip{}, // deprecated
 			"language", &T::language,
 			"libraryDirectories", &T::libraryDirectories,
 			"forceLoad", &T::forceLoad

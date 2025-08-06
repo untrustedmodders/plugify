@@ -64,15 +64,6 @@
         "enum": ["windows", "linux", "apple", "bsd", "orbis", "prospero", "switch"]
       }
     },
-    "resourceDirectories": {
-      "type": "array",
-      "description": "Specifies additional directories where the language module can search for resources.",
-      "items": {
-        "type": "string",
-        "description": "Relative folder path.",
-        "minLength": 1
-      }
-    },
     "language": {
       "type": "string",
       "description": "The identifier for the programming language supported by the module.",

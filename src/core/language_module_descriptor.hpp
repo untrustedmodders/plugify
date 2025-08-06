@@ -2,7 +2,7 @@
 
 #include <plugify/descriptor.hpp>
 #include <plugify/package.hpp>
-#include <utils/strings.hpp>
+#include <utils/algorithm.hpp>
 
 namespace plugify {
 	struct LanguageModuleDescriptor : Descriptor {
@@ -12,7 +12,6 @@ namespace plugify {
 
 	private:
 		mutable std::shared_ptr<std::vector<std::string_view>> _supportedPlatforms;
-		mutable std::shared_ptr<std::vector<std::string_view>> _resourceDirectories;
 		mutable std::shared_ptr<std::vector<std::string_view>> _libraryDirectories;
 		friend class LanguageModuleDescriptorHandle;
 
@@ -36,20 +35,8 @@ namespace plugify {
 				errors.emplace_back("Invalid language name");
 			}
 
-			if (auto& directories = resourceDirectories) {
-				if (String::RemoveDuplicates(*directories)) {
-					PL_LOG_WARNING("Package: '{}' has multiple resource directories with same name!", name);
-				}
-				size_t i = 0;
-				for (const auto& directory : *directories) {
-					if (directory.empty()) {
-						errors.emplace_back(std::format("Missing resource directory at {}", ++i));
-					}
-				}
-			}
-
 			if (auto& directories = libraryDirectories) {
-				if (String::RemoveDuplicates(*directories)) {
+				if (RemoveDuplicates(*directories)) {
 					PL_LOG_WARNING("Package: '{}' has multiple library directories with same name!", name);
 				}
 				size_t i = 0;

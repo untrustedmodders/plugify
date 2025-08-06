@@ -55,18 +55,6 @@ std::span<const std::string_view> LanguageModuleDescriptorHandle::GetSupportedPl
 	}
 }
 
-std::span<const std::string_view> LanguageModuleDescriptorHandle::GetResourceDirectories() const noexcept {
-	if (const auto& resourceDirectories = _impl->resourceDirectories) {
-		if (!_impl->_resourceDirectories) {
-			_impl->_resourceDirectories = make_shared_nothrow<std::vector<std::string_view>>(resourceDirectories->begin(), resourceDirectories->end());
-		}
-		if (_impl->_resourceDirectories) {
-			return *_impl->_resourceDirectories;
-		}
-	}
-	return {};
-}
-
 std::span<const std::string_view> LanguageModuleDescriptorHandle::GetLibraryDirectories() const noexcept {
 	if (const auto& libraryDirectories = _impl->libraryDirectories) {
 		if (!_impl->_libraryDirectories) {

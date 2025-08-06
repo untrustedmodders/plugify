@@ -39,13 +39,3 @@ ModuleState ModuleHandle::GetState() const noexcept {
 std::string_view ModuleHandle::GetError() const noexcept {
 	return _impl->GetError();
 }
-
-std::optional<fs::path_view> ModuleHandle::FindResource(fs::path_view path) const {
-	return _impl->FindResource(path);
-}
-
-#if PLUGIFY_INTERFACE
-std::optional<fs::path_view> Module::FindResource(const fs::path&) const {
-	return {};
-}
-#endif // PLUGIFY_INTERFACE

@@ -8,7 +8,7 @@
 #include <plugify/method.hpp>
 #include <plugify/plugin_reference_descriptor.hpp>
 #include <plugify/value_type.hpp>
-#include <utils/strings.hpp>
+#include <utils/algorithm.hpp>
 
 namespace plugify {
 	struct PluginDescriptor : Descriptor {
@@ -19,7 +19,6 @@ namespace plugify {
 
 	private:
 		mutable std::shared_ptr<std::vector<std::string_view>> _supportedPlatforms;
-		mutable std::shared_ptr<std::vector<std::string_view>> _resourceDirectories;
 		mutable std::shared_ptr<std::vector<PluginReferenceDescriptorHandle>> _dependencies;
 		mutable std::shared_ptr<std::vector<MethodHandle>> _exportedMethods;
 
@@ -45,20 +44,8 @@ namespace plugify {
 				errors.emplace_back("Missing language name");
 			}
 
-			if (auto& directories = resourceDirectories) {
-				if (String::RemoveDuplicates(*directories)) {
-					PL_LOG_WARNING("Package: '{}' has multiple resource directories with same name!", name);
-				}
-				size_t i = 0;
-				for (const auto& directory : *directories) {
-					if (directory.empty()) {
-						errors.emplace_back(std::format("Missing resource directory at {}", ++i));
-					}
-				}
-			}
-
 			if (auto& deps = dependencies) {
-				if (String::RemoveDuplicates(*deps)) {
+				if (RemoveDuplicates(*deps)) {
 					PL_LOG_WARNING("Package: '{}' has multiple dependencies with same name!", name);
 				}
 				size_t i = 0;
@@ -70,7 +57,7 @@ namespace plugify {
 			}
 
 			if (auto& methods = exportedMethods) {
-				if (String::RemoveDuplicates(*methods)) {
+				if (RemoveDuplicates(*methods)) {
 					PL_LOG_WARNING("Package: '{}' has multiple method with same name!", name);
 				}
 				size_t i = 0;

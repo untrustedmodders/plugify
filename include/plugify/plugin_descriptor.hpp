@@ -99,13 +99,6 @@ namespace plugify {
 		std::span<const std::string_view> GetSupportedPlatforms() const noexcept;
 
 		/**
-		 * @brief Retrieves the resource directories for the plugin.
-		 *
-		 * @return A span of string views representing the resource directories.
-		 */
-		std::span<const std::string_view> GetResourceDirectories() const noexcept;
-
-		/**
 		 * @brief Retrieves the entry point of the plugin.
 		 *
 		 * @return A string view representing the plugin's entry point.

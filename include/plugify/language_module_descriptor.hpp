@@ -97,13 +97,6 @@ namespace plugify {
 		std::span<const std::string_view> GetSupportedPlatforms() const noexcept;
 
 		/**
-		 * @brief Retrieves the resource directories for the language module.
-		 *
-		 * @return A span of string views representing the resource directories.
-		 */
-		std::span<const std::string_view> GetResourceDirectories() const noexcept;
-
-		/**
 		 * @brief Retrieves the library directories for the language module.
 		 *
 		 * @return A span of string views representing the library directories.

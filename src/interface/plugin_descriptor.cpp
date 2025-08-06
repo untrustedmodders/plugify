@@ -58,18 +58,6 @@ std::span<const std::string_view> PluginDescriptorHandle::GetSupportedPlatforms(
 	return {};
 }
 
-std::span<const std::string_view> PluginDescriptorHandle::GetResourceDirectories() const noexcept {
-	if (const auto& resourceDirectories = _impl->resourceDirectories) {
-		if (!_impl->_resourceDirectories) {
-			_impl->_resourceDirectories = make_shared_nothrow<std::vector<std::string_view>>(resourceDirectories->begin(), resourceDirectories->end());
-		}
-		if (_impl->_resourceDirectories) {
-			return *_impl->_resourceDirectories;
-		}
-	}
-	return {};
-}
-
 std::string_view PluginDescriptorHandle::GetEntryPoint() const noexcept {
 	return _impl->entryPoint;
 }

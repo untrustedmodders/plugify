@@ -5,8 +5,6 @@
 #include <plugify/package.hpp>
 #include <plugify/plugify_provider.hpp>
 
-#undef FindResource
-
 using namespace plugify;
 
 Module::Module(UniqueId id, const LocalPackage& package)
@@ -33,30 +31,6 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	if (!fs::is_regular_file(_filePath, ec)) {
 		SetError(std::format("Module binary '{}' not exist!.", _filePath.string()));
 		return false;
-	}
-
-	fs::path baseDir = provider->GetBaseDir();
-
-	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
-		for (const auto& rawPath : *resourceDirectoriesSettings) {
-			fs::path resourceDirectory = _baseDir / rawPath;
-			if (!fs::is_directory(resourceDirectory, ec)) {
-				SetError(std::format("Resource directory '{}' not exists", resourceDirectory.string()));
-				return false;
-			}
-			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
-				if (entry.is_regular_file(ec)) {
-					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
-					fs::path absPath = baseDir / relPath;
-
-					if (!fs::is_regular_file(absPath, ec)) {
-						absPath = entry.path();
-					}
-
-					_resources.try_emplace(std::move(relPath), std::move(absPath));
-				}
-			}
-		}
 	}
 
 	std::vector<fs::path> libraryDirectories;
@@ -232,14 +206,6 @@ void Module::EndPlugin(Plugin& plugin) const {
 	}
 
 	plugin.SetTerminating();
-}
-
-std::optional<fs::path_view> Module::FindResource(const fs::path& path) const {
-	auto it = _resources.find(path);
-	if (it != _resources.end())
-		return std::get<fs::path>(*it).native();
-
-	return std::nullopt;
 }
 
 void Module::SetError(std::string error) {

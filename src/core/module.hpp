@@ -54,8 +54,6 @@ namespace plugify {
 			return *_error;
 		}
 
-		std::optional<fs::path_view> FindResource(const fs::path& path) const;
-
 		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
 		void Terminate();
 		void Update(DateTime dt);
@@ -96,7 +94,6 @@ namespace plugify {
 		fs::path _filePath;
 		fs::path _baseDir;
 		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
-		std::unordered_map<fs::path, fs::path, path_hash> _resources;
 		std::unique_ptr<Assembly> _assembly;
 		std::unique_ptr<std::string> _error;
 	};

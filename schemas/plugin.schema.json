@@ -70,15 +70,6 @@
         "enum": ["windows", "linux", "apple", "bsd", "orbis", "prospero", "switch"]
       }
     },
-    "resourceDirectories": {
-      "type": "array",
-      "description": "Specifies additional directories where the plugin can search for resources.",
-      "items": {
-        "type": "string",
-        "description": "Relative folder path.",
-        "minLength": 1
-      }
-    },
     "languageModule": {
       "type": "object",
       "description": "Information about the programming language module used.",

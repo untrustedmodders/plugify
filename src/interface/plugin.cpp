@@ -51,13 +51,3 @@ std::span<const MethodData> PluginHandle::GetMethods() const noexcept {
 MemAddr PluginHandle::GetData() const noexcept {
 	return _impl->GetData();
 }
-
-std::optional<fs::path_view> PluginHandle::FindResource(fs::path_view path) const {
-	return _impl->FindResource(path);
-}
-
-#if PLUGIFY_INTERFACE
-std::optional<fs::path_view> Plugin::FindResource(const fs::path&) const {
-	return {};
-}
-#endif // PLUGIFY_INTERFACE

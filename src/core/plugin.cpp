@@ -22,48 +22,13 @@ Plugin::Plugin(Plugin&& plugin) noexcept {
 	*this = std::move(plugin);
 }
 
-bool Plugin::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
+bool Plugin::Initialize(const std::shared_ptr<IPlugifyProvider>&) {
 	PL_ASSERT(GetState() != PluginState::Loaded && "Plugin already was initialized");
-
-	std::error_code ec;
-
-	fs::path baseDir = provider->GetBaseDir();
-
-	if (const auto& resourceDirectoriesSettings = _descriptor->resourceDirectories) {
-		for (const auto& rawPath : *resourceDirectoriesSettings) {
-			fs::path resourceDirectory = _baseDir / rawPath;
-			if (!fs::is_directory(resourceDirectory, ec)) {
-				SetError(std::format("Resource directory '{}' not exists", resourceDirectory.string()));
-				return false;
-			}
-			for (const auto& entry : fs::recursive_directory_iterator(resourceDirectory, ec)) {
-				if (entry.is_regular_file(ec)) {
-					fs::path relPath = fs::relative(entry.path(), _baseDir, ec);
-					fs::path absPath = baseDir / relPath;
-
-					if (!fs::is_regular_file(absPath, ec)) {
-						absPath = entry.path();
-					}
-
-					_resources.try_emplace(std::move(relPath), std::move(absPath));
-				}
-			}
-		}
-	}
-
 	return true;
 }
 
 void Plugin::Terminate() {
 	SetUnloaded();
-}
-
-std::optional<fs::path_view> Plugin::FindResource(const fs::path& path) const {
-	auto it = _resources.find(path);
-	if (it != _resources.end())
-		return std::get<fs::path>(*it).native();
-
-	return std::nullopt;
 }
 
 void Plugin::SetError(std::string error) {

@@ -92,29 +92,6 @@ namespace plugify {
 		 * @return The error message.
 		 */
 		std::string_view GetError() const noexcept;
-
-		/**
-		 * @brief Find a resource file associated with the module.
-		 *
-		 * This method attempts to find a resource file located within the module's directory structure.
-		 * If the resource file is found, its path is returned. If the resource file does not exist
-		 * within the module's directory, std::nullopt is returned.
-		 *
-		 * If a user-overridden file exists in the base directory of Plugify with the same name and path,
-		 * the path returned by this function will direct to that overridden file.
-		 *
-		 * @param path The relative path to the resource file.
-		 * @return An optional containing the absolute path to the resource file if found, or std::nullopt otherwise.
-		 *
-		 * @code
-		 * Example:
-		 * // Assuming the module name is "sample_module"
-		 * // File located at: plugify/modules/sample_module/configs/core.cfg
-		 * // User-overridden file could be located at: plugify/configs/core.cfg
-		 * auto resourcePath = module.FindResource("configs/core.cfg");
-		 * @endcode
-		 */
-		std::optional<std::filesystem::path_view> FindResource(std::filesystem::path_view path) const;
 	};
 
 	/**
