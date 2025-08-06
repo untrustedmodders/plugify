@@ -38,7 +38,7 @@ namespace plg {
 	}
 
 	template<typename Range>
-	std::string join(const Range& range, std::string_view separator) {
+	constexpr std::string join(const Range& range, std::string_view separator) {
 		std::string result;
 
 		auto it = range.begin();

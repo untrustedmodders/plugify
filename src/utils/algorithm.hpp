@@ -1,6 +1,8 @@
+#pragma once
+
 namespace plugify {
 	template<typename Cnt, typename Pr = std::equal_to<typename Cnt::value_type>>
-	static bool RemoveDuplicates(Cnt &cnt, Pr cmp = Pr()) {
+	constexpr bool RemoveDuplicates(Cnt &cnt, Pr cmp = Pr()) {
 		auto size = std::size(cnt);
 		Cnt result;
 		result.reserve(size);
