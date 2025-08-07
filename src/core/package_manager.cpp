@@ -311,7 +311,7 @@ void PackageManager::CheckPluginDependency(const LocalPackagePtr& package, const
 
 	if (auto itl = _localPackages.find(dependency.name); itl != _localPackages.end()) {
 		const auto& [_, localPackage] = *itl;
-		if (const auto& version = dependency.requestedVersion) {
+		if (const auto& version = dependency.version) {
 			if (*version != localPackage->version) {
 				PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, *version, localPackage->version);
 			}
@@ -321,7 +321,7 @@ void PackageManager::CheckPluginDependency(const LocalPackagePtr& package, const
 
 	if (auto itr = _remotePackages.find(dependency.name); itr != _remotePackages.end()) {
 		const auto& [_, remotePackage] = *itr;
-		if (const auto& version = dependency.requestedVersion) {
+		if (const auto& version = dependency.version) {
 			if (!remotePackage->Version(*version)) {
 				PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, *version);
 				_conflictedPackages.emplace_back(package);
@@ -331,10 +331,10 @@ void PackageManager::CheckPluginDependency(const LocalPackagePtr& package, const
 
 		auto it = _missedPackages.find(dependency.name);
 		if (it == _missedPackages.end()) {
-			_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.requestedVersion }); //-V837
+			_missedPackages.emplace(dependency.name, std::pair{ remotePackage, dependency.version }); //-V837
 		} else {
 			auto& existingVersion = it->second.second;
-			if (const auto& version = dependency.requestedVersion) {
+			if (const auto& version = dependency.version) {
 				if (*existingVersion != *version) {
 					PL_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' dependency, over older version (v{}).", std::max(*existingVersion, *version), dependency.name, std::min(*existingVersion, *version));
 

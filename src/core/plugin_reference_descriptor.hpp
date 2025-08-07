@@ -8,8 +8,8 @@ namespace plugify {
 		std::optional<bool> optional;
 		//std::string description;
 		//std::string downloadURL;
+		std::optional<plg::version> version;
 		std::optional<std::vector<std::string>> supportedPlatforms;
-		std::optional<plg::version> requestedVersion;
 
 		bool operator==(const PluginReferenceDescriptor& rhs) const noexcept { return name == rhs.name; }
 

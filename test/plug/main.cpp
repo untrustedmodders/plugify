@@ -441,7 +441,7 @@ int main() {
 									if (auto dependency = pluginManager->FindPlugin(reference.GetName())) {
 										Print<PluginState>(dependency, PluginUtils::ToString, "    ");
 									} else {
-										auto version = reference.GetRequestedVersion();
+										auto version = reference.GetVersion();
 										PLG_LOG_FMT("    {} <Missing> (v{})", reference.GetName(), version.has_value() ? version->to_string() : "[latest]");
 									}
 								}

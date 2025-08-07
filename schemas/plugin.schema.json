@@ -86,6 +86,12 @@
             "python",
             "javascript"
           ]
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the language module.",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+          "minLength": 1
         }
       }
     },
@@ -117,9 +123,9 @@
               "enum": ["windows", "linux", "apple", "bsd", "orbis", "prospero", "switch"]
             }
           },
-          "requestedVersion": {
+          "version": {
             "type": "string",
-            "description": "Optional requested version of the plugin reference.",
+            "description": "The version of the plugin reference.",
             "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
             "minLength": 1
           }

@@ -378,7 +378,7 @@ PluginHandle PluginManager::FindPluginFromId(UniqueId pluginId) const {
 
 PluginHandle PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptorHandle& pluginDescriptor) const {
 	auto name = pluginDescriptor.GetName();
-	auto version = pluginDescriptor.GetRequestedVersion();
+	auto version = pluginDescriptor.GetVersion();
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name, &version](const auto& plugin) {
 		return plugin.GetName() == name && (!version || plugin.GetDescriptor().version >= version);
 	});

@@ -40,10 +40,10 @@ namespace plugify {
 		std::span<const std::string_view> GetSupportedPlatforms() const noexcept;
 
 		/**
-		 * @brief Retrieves the requested version of the referenced plugin, if specified.
+		 * @brief Retrieves the version of the referenced plugin, if specified.
 		 *
-		 * @return An optional integer representing the requested version. If no version is requested, returns an empty optional.
+		 * @return An optional integer representing the version. If no version, returns an empty optional.
 		 */
-		std::optional<plg::version> GetRequestedVersion() const noexcept;
+		std::optional<plg::version> GetVersion() const noexcept;
 	};
 } // namespace plugify

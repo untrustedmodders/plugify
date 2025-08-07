@@ -132,8 +132,8 @@ struct glz::meta<plugify::PluginReferenceDescriptor> {
 	static constexpr auto value = object(
 			"name", &T::name,
 			"optional", &T::optional,
-			"supportedPlatforms", &T::supportedPlatforms,
-			"requestedVersion", &T::requestedVersion
+			"version", &T::version,
+			"supportedPlatforms", &T::supportedPlatforms
 	);
 };
 
