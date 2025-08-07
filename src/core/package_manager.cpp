@@ -888,10 +888,7 @@ std::string PackageManager::ExtractPackage(std::span<const uint8_t> packageData,
 		auto writeCallback = [](void* pOpaque, mz_uint64, const void* pBuf, size_t n) -> size_t {
 			std::ofstream& stream = *static_cast<std::ofstream*>(pOpaque);
 			stream.write(static_cast<const char*>(pBuf), static_cast<std::streamsize>(n));
-			if (stream.fail()) {
-				return 0; // Returning 0 signifies an error to miniz
-			}
-			return n;
+			return stream ? n : 0;
 		};
 
 		if (!mz_zip_reader_extract_to_callback(&zipArchive, i, writeCallback, &outputFile, 0)) {
