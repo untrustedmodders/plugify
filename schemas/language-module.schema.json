@@ -61,7 +61,12 @@
       "items": {
         "type": "string",
         "description": "Platform name.",
-        "enum": ["windows", "linux", "apple", "bsd", "orbis", "prospero", "switch"]
+        "pattern": "^[a-z0-9]+(_(x64|arm64|x86|arm32|riscv32|riscv64))$",
+        "minLength": 1,
+        "examples": [
+          "windows_x64",
+          "steamrt_x64"
+        ]
       }
     },
     "language": {

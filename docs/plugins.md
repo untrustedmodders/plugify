@@ -68,12 +68,12 @@ Here's the representation of dependency in JSON format along with descriptions f
 {
     "name": "dynohook",
     "optional": false,
-    "supportedPlatforms": ["windows", "linux"],
-    "version": 2
+    "version": 2,
+    "supportedPlatforms": ["windows_x64", "steamrt_x64"]
 }
 ```
 
 - **name:** The name of the plugin reference. This field identifies the dependency by its unique name within the Plugify ecosystem.
 - **optional:** Indicates whether the plugin reference is optional. If set to true, the core system will consider the dependency as optional, and its absence won't prevent the plugin from loading. If set to false, the dependency is mandatory for the plugin to function correctly.
-- **supportedPlatforms:** Specifies the platforms supported by the plugin reference. This field helps ensure that the dependency is compatible with the current platform during initialization.
 - **version:** An optional field representing the requested version of the plugin reference. If provided, the core system will validate that dependency matches the specified version. If not provided, any compatible version may be used.
+- **supportedPlatforms:** Specifies the platforms supported by the plugin reference. This field helps ensure that the dependency is compatible with the current platform during initialization.
