@@ -57,5 +57,6 @@ namespace plugify {
 
 	struct LanguageModuleInfo {
 		std::string name;
+		std::optional<plg::version> version;
 	};
 }

@@ -269,24 +269,37 @@ void PackageManager::LoadRemotePackages() {
 }
 
 template<typename T>
-static T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::equal_to<>>& container, const std::string& lang) {
+static T FindLanguageModule(const std::unordered_map<std::string, T, string_hash, std::equal_to<>>& container, const LanguageModuleInfo& languageModule) {
 	for (const auto& [_, package] : container) {
-		if (package->type == lang) {
+		if (package->type == languageModule.name) {
 			return package;
 		}
 	}
 	return {};
 }
 
-void PackageManager::CheckLanguageModuleDependency(const LocalPackagePtr& package, const std::string& lang) {
-	if (FindLanguageModule(_localPackages, lang)) {
-		return; // Already installed
+void PackageManager::CheckLanguageModuleDependency(const LocalPackagePtr& package, const LanguageModuleInfo& languageModule) {
+	if (auto localModule = FindLanguageModule(_localPackages, languageModule)) {
+		if (const auto& version = languageModule.version) {
+			if (*version > localModule->version) {
+				PL_LOG_ERROR("Package: '{}' needs language module '{}' (v{}), but it was already installed with version (v{}) which is not compatible.", package->name, languageModule.name, *version, localModule->version);
+				_conflictedPackages.emplace_back(package);
+			}
+		}
+		return;// Already installed
 	}
 
-	if (auto remoteModule = FindLanguageModule(_remotePackages, lang)) {
-		_missedPackages.try_emplace(lang, std::pair{ std::move(remoteModule), std::nullopt }); // by default prioritizing latest language modules
+	if (auto remoteModule = FindLanguageModule(_remotePackages, languageModule)) {
+		if (const auto& version = languageModule.version) {
+			if (!remoteModule->Version(*version)) {
+				PL_LOG_ERROR("Package: '{}' needs language module '{}' (v{}), but version was not found in remote repository.", package->name, languageModule.name, *version);
+				_conflictedPackages.emplace_back(package);
+				return;
+			}
+		}
+		_missedPackages.try_emplace(languageModule.name, std::pair{std::move(remoteModule), languageModule.version});
 	} else {
-		PL_LOG_ERROR("Package: '{}' needs language module '{}', but it was not found.", package->name, lang);
+		PL_LOG_ERROR("Package: '{}' needs language module '{}' (v{}), but it was not found.", package->name, languageModule.name, languageModule.version.has_value() ? languageModule.version->to_string() : "[latest]");
 		_conflictedPackages.emplace_back(package);
 	}
 }
@@ -300,7 +313,7 @@ void PackageManager::CheckPluginDependency(const LocalPackagePtr& package, const
 		const auto& [_, localPackage] = *itl;
 		if (const auto& version = dependency.requestedVersion) {
 			if (*version != localPackage->version) {
-				PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, version->to_string(), localPackage->version);
+				PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but (v{}) installed. Conflict cannot be resolved automatically.", package->name, dependency.name, *version, localPackage->version);
 			}
 		}
 		return;
@@ -310,7 +323,7 @@ void PackageManager::CheckPluginDependency(const LocalPackagePtr& package, const
 		const auto& [_, remotePackage] = *itr;
 		if (const auto& version = dependency.requestedVersion) {
 			if (!remotePackage->Version(*version)) {
-				PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, version->to_string());
+				PL_LOG_ERROR("Package: '{}' has dependency: '{}' which required (v{}), but version was not found. Problem cannot be resolved automatically.", package->name, dependency.name, *version);
 				_conflictedPackages.emplace_back(package);
 				return;
 			}
@@ -352,7 +365,7 @@ void PackageManager::FindDependencies() {
 
 		auto descriptor = std::static_pointer_cast<PluginDescriptor>(package->descriptor);
 
-		CheckLanguageModuleDependency(package, descriptor->languageModule.name);
+		CheckLanguageModuleDependency(package, descriptor->languageModule);
 
 		if (const auto& dependencies = descriptor->dependencies) {
 			for (const auto& dependency : *dependencies) {

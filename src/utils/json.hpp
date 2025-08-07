@@ -118,6 +118,15 @@ struct glz::meta<plugify::LanguageModuleDescriptor> {
 };
 
 template <>
+struct glz::meta<plugify::LanguageModuleInfo> {
+	using T = plugify::LanguageModuleInfo;
+	static constexpr auto value = object(
+			"name", &T::name,
+			"version", &T::version
+	);
+};
+
+template <>
 struct glz::meta<plugify::PluginReferenceDescriptor> {
 	using T = plugify::PluginReferenceDescriptor;
 	static constexpr auto value = object(

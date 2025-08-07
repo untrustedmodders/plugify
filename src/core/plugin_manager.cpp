@@ -205,12 +205,12 @@ void PluginManager::LoadRequiredLanguageModules() {
 	modules.reserve(_allModules.size());
 
 	for (auto& plugin : _allPlugins) {
-		const auto& lang = plugin.GetDescriptor().languageModule.name;
-		auto it = std::find_if(_allModules.begin(), _allModules.end(), [&lang](const auto& p) {
-			return p.GetLanguage() == lang;
+		const auto& [name, version] = plugin.GetDescriptor().languageModule;
+		auto it = std::find_if(_allModules.begin(), _allModules.end(), [&name, &version](const auto& p) {
+			return p.GetLanguage() == name && (!version || p.GetDescriptor().version >= version);
 		});
 		if (it == _allModules.end()) {
-			plugin.SetError(std::format("Language module: '{}' missing for plugin: '{}'", lang, plugin.GetFriendlyName()));
+			plugin.SetError(std::format("Language module: '{}' (v{}) missing for plugin: '{}'", name, version.has_value() ? version->to_string() : "[latest]", plugin.GetFriendlyName()));
 			continue;
 		}
 		auto& module = *it;
@@ -376,11 +376,11 @@ PluginHandle PluginManager::FindPluginFromId(UniqueId pluginId) const {
 	return {};
 }
 
-PluginHandle PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptorHandle & pluginDescriptor) const {
+PluginHandle PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptorHandle& pluginDescriptor) const {
 	auto name = pluginDescriptor.GetName();
 	auto version = pluginDescriptor.GetRequestedVersion();
 	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name, &version](const auto& plugin) {
-		return plugin.GetName() == name && (!version || plugin.GetDescriptor().version == version);
+		return plugin.GetName() == name && (!version || plugin.GetDescriptor().version >= version);
 	});
 	if (it != _allPlugins.end())
 		return *it;
