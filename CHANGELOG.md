@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.9](https://github.com/untrustedmodders/plugify/compare/v1.2.8...v1.2.9) (2025-08-08)
+
+
+### Bug Fixes
+
+* Add _GNU_SOURCE for steamrt ([46eefc8](https://github.com/untrustedmodders/plugify/commit/46eefc8e17e0e873e64251ebc30077c8bf12facb))
+* add char* support to join ([3a1726c](https://github.com/untrustedmodders/plugify/commit/3a1726ca699fd74d963e61422f4091cef03316d2))
+* add string reverse for join in advance ([1fa5d71](https://github.com/untrustedmodders/plugify/commit/1fa5d719829ee809ad7de5dda1c7a64716df302d))
+* add versioning support for language ([df7b22a](https://github.com/untrustedmodders/plugify/commit/df7b22a4da41f4f603961f60ee76bfff410eb654))
+* assembly lookup by name ([108f16b](https://github.com/untrustedmodders/plugify/commit/108f16b97e9cd6380b83c083296e0a40d8d1f43d))
+* build issue ([fbef7ea](https://github.com/untrustedmodders/plugify/commit/fbef7ea01c69e03af6cf0b474a0a9aa1db494e9b))
+* build on windows using cmake 4.0 ([a760dc9](https://github.com/untrustedmodders/plugify/commit/a760dc99faccec2a1d4a208c4091685b461397f7))
+* improve fs class ([cc02696](https://github.com/untrustedmodders/plugify/commit/cc02696ecc9468d5025f58d951a722a7198bd901))
+* remove resourceDirectories and resources from packages ([73786a8](https://github.com/untrustedmodders/plugify/commit/73786a82b02753e3c32997f6efa183c9dfb0dc5a))
+* rename requestedVersion to version ([e859ba8](https://github.com/untrustedmodders/plugify/commit/e859ba8f167d4959b0bfcfc7b747cd9fb705cb59))
+* stacktrace and remove format from assembly ([c1b39b4](https://github.com/untrustedmodders/plugify/commit/c1b39b46fc29c50e8bb7ccab8a10a3f6b1456b32))
+* update libdwarf ([05edb7c](https://github.com/untrustedmodders/plugify/commit/05edb7c3918329a0eb1f2044f260336f951f73fe))
+* update schemas ([304348f](https://github.com/untrustedmodders/plugify/commit/304348f2f7a24675e35d2587643234c21103cb40))
+
 ## [1.2.8](https://github.com/untrustedmodders/plugify/compare/v1.2.7...v1.2.8) (2025-07-31)
 
 
