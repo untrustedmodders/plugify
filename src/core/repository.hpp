@@ -3,63 +3,59 @@
 #include <plugify/repository.hpp>
 
 namespace plugify {
-	/**
-	 * @brief HTTP-based repository implementation
-	 */
-	class HttpPackageRepository : public IPackageRepository {
+	// Concrete repository implementations
+	class HTTPRepository : public IPackageRepository {
 	public:
-	    explicit HttpPackageRepository(std::string baseUrl);
-	    ~HttpPackageRepository() override = default;
+		HTTPRepository(std::string_view url, std::shared_ptr<IHTTPDownloader> downloader);
 
-	    Result<std::vector<RemotePackage>> FetchPackages() const override;
-	    Result<std::vector<RemotePackage>> SearchPackages(std::string_view pattern) const override;
-	    Result<void> DownloadPackage(std::string_view packageName,
-	                                const plg::version& version,
-	                                const std::filesystem::path& destinationPath) const override;
-	    std::string_view GetIdentifier() const override;
+		Result<std::vector<RemotePackage>> FetchPackages() override;
+		Result<std::vector<RemotePackage>> SearchPackages(std::string_view query) override;
+		Result<std::filesystem::path> DownloadPackage(
+			const RemotePackage& package,
+			const PackageVersion& version,
+			std::function<bool(uint32_t, uint32_t)> progressCallback
+		) override;
+		std::string GetIdentifier() const override;
+		bool IsAvailable() override;
 
 	private:
-	    std::string _baseUrl;
-	    std::string _identifier;
-
-	    // HTTP client would be injected or created here
-	    // Implementation would handle HTTP requests, JSON parsing, etc.
+		std::string _url;
+		std::string _identifier;
+		std::shared_ptr<IHTTPDownloader> _downloader;
+		std::optional<std::vector<RemotePackage>> _cachedPackages;
 	};
 
-	/**
-	 * @brief Filesystem-based repository implementation
-	 */
-	/*class FilesystemPackageRepository : public IPackageRepository {
+	class FileSystemRepository : public IPackageRepository {
 	public:
-	    explicit FilesystemPackageRepository(std::filesystem::path repositoryPath);
-	    ~FilesystemPackageRepository() override = default;
+		FileSystemRepository(const std::filesystem::path& path);
 
-	    Result<std::vector<RemotePackage>> FetchPackages() const override;
-	    Result<std::vector<RemotePackage>> SearchPackages(std::string_view pattern) const override;
-	    Result<void> DownloadPackage(std::string_view packageName,
-	                                const plg::version& version,
-	                                const std::filesystem::path& destinationPath) const override;
-	    std::string_view GetIdentifier() const override;
+		Result<std::vector<RemotePackage>> FetchPackages() override;
+		Result<std::vector<RemotePackage>> SearchPackages(std::string_view query) override;
+		Result<std::filesystem::path> DownloadPackage(
+			const RemotePackage& package,
+			const PackageVersion& version,
+			std::function<bool(uint32_t, uint32_t)> progressCallback
+		) override;
+		std::string GetIdentifier() const override;
+		bool IsAvailable() override;
 
 	private:
-	    std::filesystem::path _repositoryPath;
-	    std::string _identifier;
-	};*/
+		std::filesystem::path _path;
+		std::string _identifier;
+	};
 
-	/**
-	 * @brief Default implementation for local package discovery
-	 */
-	class FilesystemLocalPackageProvider : public ILocalPackageProvider {
+	// Concrete scanner implementation
+	class PackageScanner : public IPackageScanner {
 	public:
-	    FilesystemLocalPackageProvider() = default;
-	    ~FilesystemLocalPackageProvider() override = default;
+		PackageScanner() = default;
 
-	    Result<std::vector<LocalPackage>> ScanLocalPackages(
-	        std::span<const std::filesystem::path> scanPaths) const override;
-	    Result<LocalPackage> ValidatePackage(const std::filesystem::path& packagePath) const override;
+		Result<std::vector<LocalPackage>> ScanDirectory(const std::filesystem::path& path) override;
+		Result<bool> VerifyPackage(const LocalPackage& package) override;
+		Result<std::shared_ptr<Descriptor>> LoadDescriptor(const std::filesystem::path& manifestPath) override;
 
 	private:
-	    // Implementation would scan directories for manifest files
-	    // Parse manifest files and create LocalPackage objects
+		// Implementation would parse manifest files, verify checksums, etc.
+		Result<std::shared_ptr<PluginDescriptor>> ParsePluginManifest(const std::filesystem::path& path);
+		Result<std::shared_ptr<LanguageModuleDescriptor>> ParseLanguageModuleManifest(const std::filesystem::path& path);
 	};
 } // nnamespace plugify

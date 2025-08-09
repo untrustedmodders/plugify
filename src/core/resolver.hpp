@@ -3,42 +3,55 @@
 #include <plugify/resolver.hpp>
 
 namespace plugify {
-	/**
-	 * @brief Default dependency resolver implementation
-	 */
-	class DefaultDependencyResolver : public IDependencyResolver {
+	// Concrete dependency resolver
+	class DependencyResolver : public IDependencyResolver {
 	public:
-		DefaultDependencyResolver() = default;
-		~DefaultDependencyResolver() override = default;
+	    Result<std::vector<PackageConstraint>> ResolveDependencies(
+	        const Package& package,
+	        std::span<const LocalPackage> installed,
+	        std::span<const RemotePackage> available
+	    ) override;
 
-		Result<std::vector<PackageInfo>> ResolveDependencies(
-			std::string_view packageName,
-			const plg::version& version,
-			std::span<const LocalPackage> availableLocal,
-			std::span<const RemotePackage> availableRemote) const override;
+	    bool AreDependenciesSatisfied(
+	        const std::vector<PackageConstraint>& dependencies,
+	        std::span<const LocalPackage> installed
+	    ) override;
 
-		std::vector<ConflictInfo> DetectConflicts(
-			std::span<const PackageInfo> packages) const override;
+	    Result<std::vector<std::string>> CalculateInstallOrder(
+	        std::span<const std::string> packages,
+	        std::span<const LocalPackage> installed,
+	        std::span<const RemotePackage> available
+	    ) override;
 
 	private:
-		// Implementation would use graph algorithms for dependency resolution
-		// Handle version constraint satisfaction
+	    // Topological sort for dependency ordering
+	    Result<std::vector<std::string>> TopologicalSort(
+	        const std::unordered_map<std::string, std::vector<std::string>>& graph
+	    );
+
+	    bool SatisfiesConstraint(const plg::version& version, const VersionConstraint& constraint);
 	};
 
-	/**
-	 * @brief Default conflict resolver implementation
-	 */
-	class DefaultConflictResolver : public IConflictResolver {
+	// Concrete conflict resolver
+	class ConflictResolver : public IConflictResolver {
 	public:
-		DefaultConflictResolver() = default;
-		~DefaultConflictResolver() override = default;
+	    std::vector<ConflictInfo> DetectConflicts(
+	        std::span<const LocalPackage> packages
+	    ) override;
 
-		Result<std::vector<std::string>> ResolveConflicts(
-			std::span<const ConflictInfo> conflicts,
-			std::span<const PackageInfo> availablePackages) const override;
+	    Result<std::vector<LocalPackage>> ResolveConflicts(
+	        std::span<const ConflictInfo> conflicts,
+	        ConflictResolutionStrategy strategy
+	    ) override;
+
+	    bool WouldConflict(
+	        const Package& package,
+	        const PackageVersion& version,
+	        std::span<const LocalPackage> installed
+	    ) override;
 
 	private:
-		// Implementation would analyze conflicts and suggest resolutions
-		// Could use heuristics like preferring newer versions, local packages, etc.
+	    bool CheckVersionConflict(const LocalPackage& pkg1, const LocalPackage& pkg2);
+	    bool CheckExplicitConflict(const LocalPackage& pkg, std::span<const LocalPackage> others);
 	};
 } // namespace plugify

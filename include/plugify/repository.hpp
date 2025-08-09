@@ -7,77 +7,62 @@
 #include <filesystem>
 
 #include "package.hpp"
-#include "expected.hpp"
+#include "package_manager.hpp"
 
 namespace plugify {
-	enum class PackageError {
-		NotFound,
-		VersionConflict,
-		DependencyMissing,
-		InvalidPackage,
-		NetworkError,
-		FileSystemError,
-		PermissionDenied
-	};
-
-	template<typename T>
-	using Result = plg::expected<T, PackageError>;
-
-	// Repository abstraction interface
+	// Repository interface for dependency inversion
 	class IPackageRepository {
 	public:
-	    virtual ~IPackageRepository() = default;
+		virtual ~IPackageRepository() = default;
 
-	    /**
-	     * @brief Fetch available packages from this repository
-	     * @return Result containing vector of remote packages or error
-	     */
-	    virtual Result<std::vector<RemotePackage>> FetchPackages() const = 0;
+		/**
+		 * Fetch available packages from the repository
+		 */
+		virtual Result<std::vector<RemotePackage>> FetchPackages() = 0;
 
-	    /**
-	     * @brief Search for packages by name pattern
-	     * @param pattern Search pattern (can be regex or simple wildcard)
-	     * @return Result containing matching packages or error
-	     */
-	    virtual Result<std::vector<RemotePackage>> SearchPackages(std::string_view pattern) const = 0;
+		/**
+		 * Search packages by query
+		 */
+		virtual Result<std::vector<RemotePackage>> SearchPackages(std::string_view query) = 0;
 
-	    /**
-	     * @brief Download a specific package version
-	     * @param packageName Name of the package to download
-	     * @param version Version to download
-	     * @param destinationPath Where to download the package
-	     * @return Result indicating success or error
-	     */
-	    virtual Result<void> DownloadPackage(std::string_view packageName,
-	                                        plg::version version,
-	                                        const std::filesystem::path& destinationPath) const = 0;
+		/**
+		 * Download a specific package version
+		 */
+		virtual Result<fs::path> DownloadPackage(
+			const RemotePackage& package,
+			const PackageVersion& version,
+			std::function<bool(uint32_t, uint32_t)> progressCallback = nullptr
+		) = 0;
 
-	    /**
-	     * @brief Get repository identifier
-	     * @return Repository identifier string
-	     */
-	    virtual std::string_view GetIdentifier() const = 0;
+		/**
+		 * Get repository identifier
+		 */
+		virtual std::string_view GetIdentifier() const = 0;
+
+		/**
+		 * Check if repository is available
+		 */
+		virtual bool IsAvailable() = 0;
 	};
 
-	// Local package discovery interface
-	class ILocalPackageProvider {
+	// Local package scanner interface
+	class IPackageScanner {
 	public:
-	    virtual ~ILocalPackageProvider() = default;
+		virtual ~IPackageScanner() = default;
 
-	    /**
-	     * @brief Scan for locally installed packages
-	     * @param scanPaths Paths to scan for packages
-	     * @return Result containing vector of local packages or error
-	     */
-	    virtual Result<std::vector<LocalPackage>> ScanLocalPackages(
-	        std::span<const std::filesystem::path> scanPaths) const = 0;
+		/**
+		 * Scan directory for packages
+		 */
+		virtual Result<std::vector<LocalPackage>> ScanDirectory(const fs::path& path) = 0;
 
-	    /**
-	     * @brief Validate a local package
-	     * @param packagePath Path to package directory
-	     * @return Result containing local package info or error
-	     */
-	    virtual Result<LocalPackage> ValidatePackage(const std::filesystem::path& packagePath) const = 0;
+		/**
+		 * Verify package integrity
+		 */
+		virtual Result<bool> VerifyPackage(const LocalPackage& package) = 0;
+
+		/**
+		 * Load package descriptor from manifest
+		 */
+		virtual Result<std::shared_ptr<Descriptor>> LoadDescriptor(const fs::path& manifestPath) = 0;
 	};
-
 } // namespace plugify

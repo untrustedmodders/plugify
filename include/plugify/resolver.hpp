@@ -1,51 +1,107 @@
 #pragma once
 
-#include <string_view>
-#include <vector>
 #include <span>
+#include <string>
+#include <vector>
+#include <variant>
+
+#include "package.hpp"
+#include "expected.hpp"
 
 namespace plugify {
-	// Dependency resolution interface
+	enum class ErrorCode {
+		None,
+		PackageNotFound,
+		VersionConflict,
+		DependencyMissing,
+		NetworkError,
+		FileSystemError,
+		InvalidManifest,
+		ChecksumMismatch,
+		PlatformIncompatible
+	};
+
+	struct Error {
+		ErrorCode code;
+		std::string message;
+	};
+
+	template<typename T>
+	using Result = plg::expected<T, Error>;
+
+	struct ConflictInfo {
+		LocalPackage existing;
+		std::variant<LocalPackage, PackageVersion> conflicting;
+		std::string reason;
+	};
+
+	// Conflict resolution strategies
+	enum class ConflictResolutionStrategy {
+		KeepExisting,
+		ReplaceWithNewer,
+		Interactive,
+		Fail
+	};
+
+	// Dependency resolver interface
 	class IDependencyResolver {
 	public:
 		virtual ~IDependencyResolver() = default;
 
 		/**
-		 * @brief Resolve dependencies for a package installation
-		 * @param packageName Target package name
-		 * @param version Target package version
-		 * @param availableLocal Currently available local packages
-		 * @param availableRemote Available remote packages
-		 * @return Result containing ordered installation list or error
+		 * Resolve dependencies for a package
 		 */
-		virtual Result<std::vector<PackageInfo>> ResolveDependencies(
-			std::string_view packageName,
-			plg::version version,
-			std::span<const LocalPackage> availableLocal,
-			std::span<const RemotePackage> availableRemote) const = 0;
+		virtual Result<std::vector<PackageConstraint>> ResolveDependencies(
+			const Package& package,
+			std::span<const LocalPackage> installed,
+			std::span<const RemotePackage> available
+		) = 0;
 
 		/**
-		 * @brief Check for conflicts in current package set
-		 * @param packages Packages to check for conflicts
-		 * @return Vector of detected conflicts
+		 * Check if all dependencies are satisfied
 		 */
-		virtual std::vector<ConflictInfo> DetectConflicts(
-			std::span<const PackageInfo> packages) const = 0;
+		virtual bool AreDependenciesSatisfied(
+			const std::vector<PackageConstraint>& dependencies,
+			std::span<const LocalPackage> installed
+		) = 0;
+
+		/**
+		 * Calculate installation order based on dependencies
+		 */
+		virtual Result<std::vector<std::string>> CalculateInstallOrder(
+			std::span<const std::string> packages,
+			std::span<const LocalPackage> installed,
+			std::span<const RemotePackage> available
+		) = 0;
 	};
 
-	// Conflict resolution interface
+	// Conflict resolver interface
 	class IConflictResolver {
 	public:
 		virtual ~IConflictResolver() = default;
 
 		/**
-		 * @brief Attempt to resolve detected conflicts automatically
-		 * @param conflicts List of conflicts to resolve
-		 * @param availablePackages Available packages for resolution
-		 * @return Result containing resolution plan or error
+		 * Detect conflicts between packages
 		 */
-		virtual Result<std::vector<std::string>> ResolveConflicts(
+		virtual std::vector<ConflictInfo> DetectConflicts(
+			std::span<const LocalPackage> packages
+		) = 0;
+
+		/**
+		 * Resolve conflicts based on strategy
+		 */
+		virtual Result<std::vector<LocalPackage>> ResolveConflicts(
 			std::span<const ConflictInfo> conflicts,
-			std::span<const PackageInfo> availablePackages) const = 0;
+			ConflictResolutionStrategy strategy
+		) = 0;
+
+		/**
+		 * Check if a package would conflict with installed packages
+		 */
+		virtual bool WouldConflict(
+			const Package& package,
+			const PackageVersion& version,
+			std::span<const LocalPackage> installed
+		) = 0;
 	};
 }
