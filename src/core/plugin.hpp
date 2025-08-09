@@ -1,19 +1,17 @@
 #pragma once
 
-#include "plugin_descriptor.hpp"
-#include <plugify/plugin.hpp>
-#include <plugify/date_time.hpp>
-#include <utils/hash.hpp>
-#include <utils/pointer.hpp>
+#include "plugin_manifest.hpp"
+#include <plugify/api/date_time.hpp>
+#include <plugify/api/plugin.hpp>
+#include <util/pointer.hpp>
 
 namespace plugify {
 	class Module;
-	struct LocalPackage;
+	struct ModuleManifest;
 	class IPlugifyProvider;
-	struct BasePaths;
 	class Plugin {
 	public:
-		Plugin(UniqueId id, const LocalPackage& package, const BasePaths& paths);
+		Plugin(UniqueId id, std::unique_ptr<Manifest> manifest, const BasePaths& paths);
 		Plugin(const Plugin& plugin) = delete;
 		Plugin(Plugin&& plugin) noexcept;
 		~Plugin() = default;
@@ -27,28 +25,24 @@ namespace plugify {
 			return _name;
 		}
 
-		const std::string& GetFriendlyName() const noexcept {
-			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
-		}
-
 		const fs::path& GetBaseDir() const noexcept {
-			return _baseDir;
+			return _dirs.base;
 		}
 
 		const fs::path& GetConfigsDir() const noexcept {
-			return _configsDir;
+			return _dirs.configs;
 		}
 
 		const fs::path& GetDataDir() const noexcept {
-			return _dataDir;
+			return _dirs.data;
 		}
 
 		const fs::path& GetLogsDir() const noexcept {
-			return _logsDir;
+			return _dirs.logs;
 		}
 
-		const PluginDescriptor& GetDescriptor() const noexcept {
-			return *_descriptor;
+		const PluginManifest& GetManifest() const noexcept {
+			return *_manifest;
 		}
 
 		PluginState GetState() const noexcept {
@@ -64,7 +58,7 @@ namespace plugify {
 		}
 
 		const std::string& GetError() const noexcept {
-			return *_error;
+			return _error;
 		}
 
 		void SetError(std::string error);
@@ -136,18 +130,9 @@ namespace plugify {
 		UniqueId _id;
 		MemAddr _data;
 		std::string _name;
-		fs::path _baseDir;
-		fs::path _configsDir;
-		fs::path _dataDir;
-		fs::path _logsDir;
+		BasePaths _dirs;
 		std::vector<MethodData> _methods;
-		std::shared_ptr<PluginDescriptor> _descriptor;
-		std::unique_ptr<std::string> _error;
-	};
-
-	struct BasePaths {
-		fs::path configs;
-		fs::path data;
-		fs::path logs;
+		std::unique_ptr<PluginManifest> _manifest;
+		std::string _error;
 	};
 }

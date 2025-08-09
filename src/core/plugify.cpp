@@ -1,12 +1,8 @@
-#include "package_manager.hpp"
 #include "plugify_provider.hpp"
 #include "plugin_manager.hpp"
-#include <plugify/plugify.hpp>
-#include <plugify/version.hpp>
-#include <utils/file_system.hpp>
-#include <utils/http_downloader.hpp>
-#include <utils/json.hpp>
-#include <utils/strings.hpp>
+#include <plugify/api/plugify.hpp>
+#include <plugify/api/config.hpp>
+#include <util/json.hpp>
 
 namespace plugify {
 	class Plugify final : public IPlugify, public std::enable_shared_from_this<Plugify> {
@@ -16,7 +12,7 @@ namespace plugify {
 			Terminate();
 		};
 
-		bool Initialize(const fs::path& rootDir) override {
+		bool Initialize(Config& config) override {
 			if (IsInitialized())
 				return false;
 
@@ -75,7 +71,6 @@ namespace plugify {
 				_config.baseDir = rootDir / _config.baseDir;
 
 			_provider = std::make_shared<PlugifyProvider>(weak_from_this());
-			_packageManager = std::make_shared<PackageManager>(weak_from_this());
 			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
 
 			_inited = true;
@@ -91,11 +86,6 @@ namespace plugify {
 		void Terminate() override {
 			if (!IsInitialized())
 				return;
-
-			if (_packageManager.use_count() != 1) {
-				PL_LOG_ERROR("Lack of owning for package manager! Will not released on plugify terminate");
-			}
-			_packageManager.reset();
 
 			if (_pluginManager.use_count() != 1) {
 				PL_LOG_ERROR("Lack of owning for plugin manager! Will not released on plugify terminate");
@@ -121,7 +111,6 @@ namespace plugify {
 			_deltaTime = (currentTime - _lastTime);
 			_lastTime = currentTime;
 
-			//_packageManager->Update(_deltaTime);
 			_pluginManager->Update(_deltaTime);
 		}
 
@@ -132,33 +121,12 @@ namespace plugify {
 		void SetLogger(std::shared_ptr<ILogger> logger) override {
 			LogSystem::SetLogger(std::move(logger));
 		}
-		
-		bool AddRepository(std::string_view repository) override {
-			if (!String::IsValidURL(repository))
-				return false;
-			
-			auto [_, result] = _config.repositories.emplace(repository);
-			if (result) {
-				const auto config = glz::write_json(_config);
-				if (!config) {
-					PL_LOG_ERROR("Add repository: JSON writing error: {}", glz::format_error(config));
-					return false;
-				}
-				return FileSystem::WriteText(_configPath, config.value());
-			}
-
-			return false;
-		}
 
 		std::weak_ptr<IPluginManager> GetPluginManager() const override {
 			return _pluginManager;
 		}
 
-		std::weak_ptr<IPackageManager> GetPackageManager() const override {
-			return _packageManager;
-		}
-
-		std::weak_ptr<IPlugifyProvider> GetProvider() const override {
+		std::weak_ptr<PlugifyProvider> GetProvider() const override {
 			return _provider;
 		}
 
@@ -166,17 +134,15 @@ namespace plugify {
 			return _config;
 		}
 
-		plg::version GetVersion() const override {
+		Version GetVersion() const override {
 			return _version;
 		}
 
 	private:
 		std::shared_ptr<PluginManager> _pluginManager;
-		std::shared_ptr<PackageManager> _packageManager;
 		std::shared_ptr<PlugifyProvider> _provider;
-		plg::version _version{ PLUGIFY_VERSION };
+		Version _version{ PLUGIFY_VERSION };
 		Config _config;
-		fs::path _configPath;
 		DateTime _deltaTime;
 		DateTime _lastTime;
 		bool _inited{ false };

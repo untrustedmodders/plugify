@@ -6,7 +6,10 @@ FetchContent_Declare(
         fmt
         GIT_REPOSITORY ${PLUGIFY_FMT_REPO}
         GIT_TAG ${PLUGIFY_FMT_TAG}
+        GIT_PROGRESS TRUE
         GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
+        OVERRIDE_FIND_PACKAGE
 )
 
 set(FMT_DOC OFF CACHE INTERNAL "Generate the doc target.")

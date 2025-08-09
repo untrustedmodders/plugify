@@ -3,7 +3,7 @@
 #include <asmjit/core.h>
 #include <plugify/mem_addr.hpp>
 #include <plugify/method.hpp>
-#include <string_view>
+#include <string>
 #include <utility>
 #include <memory>
 #include <vector>

@@ -1,7 +1,7 @@
+#include <plugify/api/module.hpp>
+#include <plugify/api/plugin.hpp>
+#include <plugify/api/plugify_provider.hpp>
 #include <core/plugify_provider.hpp>
-#include <plugify/plugin.hpp>
-#include <plugify/module.hpp>
-#include <plugify/plugify_provider.hpp>
 
 using namespace plugify;
 
@@ -29,12 +29,12 @@ bool IPlugifyProvider::IsPreferOwnSymbols() const noexcept {
 	return _impl->IsPreferOwnSymbols();
 }
 
-bool IPlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<plg::version> requiredVersion, bool minimum) const noexcept {
-	return _impl->IsPluginLoaded(name, requiredVersion, minimum);
+bool IPlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
+	return _impl->IsPluginLoaded(name, constraint);
 }
 
-bool IPlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<plg::version> requiredVersion, bool minimum) const noexcept {
-	return _impl->IsModuleLoaded(name, requiredVersion, minimum);
+bool IPlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
+	return _impl->IsModuleLoaded(name, constraint);
 }
 
 PluginHandle IPlugifyProvider::FindPlugin(std::string_view name) const noexcept {

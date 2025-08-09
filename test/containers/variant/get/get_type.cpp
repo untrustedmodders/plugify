@@ -2,7 +2,7 @@
 
 #include "app/variant_tester.hpp"
 
-#include <plugify/variant.hpp>
+#include <plg/variant.hpp>
 
 namespace {
 	template<class Tp>

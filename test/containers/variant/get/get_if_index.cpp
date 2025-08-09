@@ -2,7 +2,7 @@
 
 #include "app/variant_tester.hpp"
 
-#include <plugify/variant.hpp>
+#include <plg/variant.hpp>
 
 TEST_CASE("variant > get_if > index", "[variant]") {
 	SECTION("const get_if(variant<Types...>* v) noexcept") {

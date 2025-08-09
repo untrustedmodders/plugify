@@ -1,6 +1,6 @@
+#include <plugify/api/method.hpp>
 #include <core/method.hpp>
-#include <plugify/method.hpp>
-#include <utils/pointer.hpp>
+#include <util/pointer.hpp>
 
 using namespace plugify;
 
@@ -22,9 +22,8 @@ std::span<const EnumValueHandle> EnumHandle::GetValues() const noexcept {
 	}
 	if (_impl->_values) {
 		return *_impl->_values;
-	} else {
-		return {};
 	}
+	return {};
 }
 
 ValueType PropertyHandle::GetType() const noexcept {
@@ -38,17 +37,15 @@ bool PropertyHandle::IsReference() const noexcept {
 MethodHandle PropertyHandle::GetPrototype() const noexcept {
 	if (_impl->prototype) {
 		return { *(_impl->prototype) };
-	} else {
-		return {};
 	}
+	return {};
 }
 
 EnumHandle PropertyHandle::GetEnum() const noexcept {
 	if (_impl->enumerate) {
 		return { *(_impl->enumerate) };
-	} else {
-		return {};
 	}
+	return {};
 }
 
 std::string_view MethodHandle::GetName() const noexcept {
@@ -69,9 +66,8 @@ std::span<const plugify::PropertyHandle> MethodHandle::GetParamTypes() const noe
 	}
 	if (_impl->_paramTypes) {
 		return *_impl->_paramTypes;
-	} else {
-		return {};
 	}
+	return {};
 }
 
 plugify::PropertyHandle MethodHandle::GetReturnType() const noexcept {
@@ -83,8 +79,7 @@ uint8_t MethodHandle::GetVarIndex() const noexcept {
 }
 
 MethodHandle MethodHandle::FindPrototype(std::string_view name) const noexcept {
-	auto prototype = _impl->FindPrototype(name);
-	if (prototype) {
+	if (auto prototype = _impl->FindPrototype(name)) {
 		return *prototype;
 	}
 	return {};

@@ -1,18 +1,17 @@
 #pragma once
 
-#include "language_module_descriptor.hpp"
-#include <plugify/assembly.hpp>
-#include <plugify/language_module.hpp>
-#include <plugify/module.hpp>
-#include <plugify/date_time.hpp>
-#include <utils/hash.hpp>
+#include "module_manifest.hpp"
+#include <plugify/api/date_time.hpp>
+#include <plugify/api/language_module.hpp>
+#include <plugify/api/module.hpp>
+#include <plugify/asm/assembly.hpp>
 
 namespace plugify {
 	class Plugin;
-	struct LocalPackage;
+	struct ModuleManifest;
 	class Module {
 	public:
-		Module(UniqueId id, const LocalPackage& package);
+		Module(UniqueId id, std::unique_ptr<ModuleManifest> manifest, fs::path path);
 		Module(const Module& module) = delete;
 		Module(Module&& module) noexcept;
 		~Module() = default;
@@ -30,10 +29,6 @@ namespace plugify {
 			return _lang;
 		}
 
-		const std::string& GetFriendlyName() const noexcept {
-			return GetDescriptor().friendlyName.empty() ? GetName() : GetDescriptor().friendlyName;
-		}
-
 		const fs::path& GetFilePath() const noexcept {
 			return _filePath;
 		}
@@ -42,8 +37,8 @@ namespace plugify {
 			return _baseDir;
 		}
 
-		const LanguageModuleDescriptor& GetDescriptor() const noexcept {
-			return *_descriptor;
+		const ModuleManifest& GetManifest() const noexcept {
+			return *_manifest;
 		}
 
 		ModuleState GetState() const noexcept {
@@ -51,7 +46,7 @@ namespace plugify {
 		}
 
 		const std::string& GetError() const noexcept {
-			return *_error;
+			return _error;
 		}
 
 		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
@@ -93,8 +88,11 @@ namespace plugify {
 		std::string _lang;
 		fs::path _filePath;
 		fs::path _baseDir;
-		std::shared_ptr<LanguageModuleDescriptor> _descriptor;
-		std::unique_ptr<Assembly> _assembly;
-		std::unique_ptr<std::string> _error;
+		std::unique_ptr<ModuleManifest> _manifest;
+		std::unique_ptr<IAssembly> _assembly;
+		std::string _error;
+#if PLUGIFY_IS_DEBUG
+		std::vector<Plugin*> _loadedPlugins;
+#endif
 	};
 }

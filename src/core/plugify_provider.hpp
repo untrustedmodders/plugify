@@ -1,8 +1,8 @@
 #pragma once
 
 #include "plugify_context.hpp"
-#include <plugify/plugify.hpp>
-#include <plugify/plugify_provider.hpp>
+#include <plugify/api/plugify.hpp>
+#include <plugify/api/plugify_provider.hpp>
 
 namespace plugify {
 	class PlugifyProvider : public IPlugifyProvider, public PlugifyContext {
@@ -22,9 +22,9 @@ namespace plugify {
 
 		bool IsPreferOwnSymbols() noexcept;
 		
-		bool IsPluginLoaded(std::string_view name, std::optional<plg::version> requiredVersion = {}, bool minimum = false) noexcept;
+		bool IsPluginLoaded(std::string_view name, std::optional<Constraint> constraint = {}) noexcept;
 		
-		bool IsModuleLoaded(std::string_view name, std::optional<plg::version> requiredVersion = {}, bool minimum = false) noexcept;
+		bool IsModuleLoaded(std::string_view name, std::optional<Constraint> constraint = {}) noexcept;
 
 		PluginHandle FindPlugin(std::string_view name) noexcept;
 

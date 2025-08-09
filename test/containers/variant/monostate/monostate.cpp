@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/variant.hpp>
+#include <plg/variant.hpp>
 
 TEST_CASE("variant monostate", "[variant]") {
 	SECTION("struct monostate {}") {

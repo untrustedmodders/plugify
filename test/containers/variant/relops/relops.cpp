@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include <plugify/variant.hpp>
+#include <plg/variant.hpp>
 
 namespace {
 #if TEST_HAS_NO_EXCEPTIONS

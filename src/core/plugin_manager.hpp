@@ -1,9 +1,9 @@
 #pragma once
 
 #include "plugify_context.hpp"
-#include <plugify/language_module.hpp>
-#include <plugify/plugin.hpp>
-#include <plugify/plugin_manager.hpp>
+#include <plugify/api/plugin_manager.hpp>
+#include <plugify/api/language_module.hpp>
+#include <plugify/api/plugin.hpp>
 
 namespace plugify {
 	class Plugin;
@@ -30,7 +30,6 @@ namespace plugify {
 
 		PluginHandle FindPlugin(std::string_view pluginName) const override;
 		PluginHandle FindPluginFromId(UniqueId pluginId) const override;
-		PluginHandle FindPluginFromDescriptor(const PluginReferenceDescriptorHandle & pluginDescriptor) const override;
 		std::vector<PluginHandle> GetPlugins() const override;
 
 	private:
@@ -46,8 +45,8 @@ namespace plugify {
 		void TerminateAllModules();
 
 	private:
-		ModuleList _allModules;
 		PluginList _allPlugins;
+		ModuleList _allModules;
 		bool _inited{ false };
 	};
 }

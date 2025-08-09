@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/vector.hpp>
+#include <plg/vector.hpp>
 
 #include <vector>
 

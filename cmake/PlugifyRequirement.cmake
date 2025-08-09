@@ -62,36 +62,3 @@ if(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
     endif()
 endif()
 
-if(PLUGIFY_CPU_ARCH_ARM64 OR PLUGIFY_CPU_ARCH_ARM32)
-    if(PLUGIFY_CPU_ARCH_ARM32)
-        set(PLUGIFY_EXTRA_FLAGS -marm -march=armv7-a -mfpu=neon-vfpv4)
-    endif()
-elseif(PLUGIFY_CPU_ARCH_RISCV64)
-    # Don't want function calls for atomics.
-    if(PLUGIFY_COMPILER_GCC)
-        set(PLUGIFY_EXTRA_FLAGS ${PLUGIFY_EXTRA_FLAGS} -finline-atomics)
-
-        # Still need this, apparently.
-        link_libraries("-latomic")
-    endif()
-
-    if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(PLUGIFY_EXTRA_FLAGS ${PLUGIFY_EXTRA_FLAGS} -fomit-frame-pointer)
-    endif()
-elseif(NOT PLUGIFY_DISABLE_SSE4)
-    # Define compiler-specific flags
-    set(GCC_CLANG_FLAGS -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -msha)
-    set(MSVC_FLAGS /arch:AVX /arch:AVX2) # /arch:SSE /arch:SSE2 only for x86
-    set(INTEL_FLAGS -xSSE2 -xSSE3 -xSSSE3 -xSSE4.1 -xSSE4.2 -xSHA)
-
-    # Determine the compiler and set the appropriate flags
-    if(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
-        set(PLUGIFY_EXTRA_FLAGS ${GCC_CLANG_FLAGS})
-    elseif(PLUGIFY_COMPILER_MSVC)
-        set(PLUGIFY_EXTRA_FLAGS ${MSVC_FLAGS})
-    elseif(PLUGIFY_COMPILER_INTEL)
-        set(PLUGIFY_EXTRA_FLAGS ${INTEL_FLAGS})
-    else()
-        message(FATAL_ERROR "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
-    endif()
-endif()

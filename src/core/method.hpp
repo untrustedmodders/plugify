@@ -1,7 +1,7 @@
 #pragma once
 
-#include <plugify/method.hpp>
-#include <plugify/value_type.hpp>
+#include <plugify/api/method.hpp>
+#include <plugify/api/value_type.hpp>
 
 namespace plugify {
 	struct Method;
@@ -16,6 +16,7 @@ namespace plugify {
 		std::vector<EnumValue> values;
 
 	private:
+		// temp storage to return spans of handles easily
 		mutable std::shared_ptr<std::vector<EnumValueHandle>> _values;
 		friend class EnumHandle;
 
@@ -80,6 +81,7 @@ namespace plugify {
 			return {};
 		}
 
+		// temp storage to return spans of handles easily
 		mutable std::shared_ptr<std::vector<PropertyHandle>> _paramTypes;
 		friend class MethodHandle;
 

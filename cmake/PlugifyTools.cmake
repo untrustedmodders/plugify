@@ -1,7 +1,6 @@
 if(PLUGIFY_BUILD_TESTS)
     set(PLUGIFY_BUILD_JIT ON)
     set(PLUGIFY_BUILD_ASSEMBLY ON)
-    #set(PLUGIFY_BUILD_CRASHPAD ON)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -15,9 +14,9 @@ if(PLUGIFY_BUILD_JIT)
         set(PLUGIYFY_JIT_ARCH "x86")
     endif()
     set(PLUGIFY_JIT_SOURCES
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/callback_${PLUGIYFY_JIT_ARCH}.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/call_${PLUGIYFY_JIT_ARCH}.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/plugify/jit/helpers_${PLUGIYFY_JIT_ARCH}.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/jit/callback_${PLUGIYFY_JIT_ARCH}.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/jit/call_${PLUGIYFY_JIT_ARCH}.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/jit/helpers_${PLUGIYFY_JIT_ARCH}.cpp"
     )
     add_library(${PROJECT_NAME}-jit OBJECT ${PLUGIFY_JIT_SOURCES})
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-jit ALIAS ${PROJECT_NAME}-jit)
@@ -52,7 +51,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Assembly
 if(PLUGIFY_BUILD_ASSEMBLY)
-    add_library(${PROJECT_NAME}-assembly OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assembly.cpp")
+    add_library(${PROJECT_NAME}-assembly OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/src/asm/assembly.cpp")
     add_library(${PROJECT_NAME}::${PROJECT_NAME}-assembly ALIAS ${PROJECT_NAME}-assembly)
     target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_compile_definitions(${PROJECT_NAME}-assembly PRIVATE

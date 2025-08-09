@@ -1,6 +1,6 @@
 #include <core/module.hpp>
-#include <plugify/language_module_descriptor.hpp>
-#include <plugify/module.hpp>
+#include <plugify/api/module.hpp>
+#include <plugify/api/module_manifest.hpp>
 
 using namespace plugify;
 
@@ -16,10 +16,6 @@ std::string_view ModuleHandle::GetLanguage() const noexcept {
 	return _impl->GetLanguage();
 }
 
-std::string_view ModuleHandle::GetFriendlyName() const noexcept {
-	return _impl->GetFriendlyName();
-}
-
 fs::path_view ModuleHandle::GetFilePath() const noexcept {
 	return _impl->GetFilePath().native();
 }
@@ -28,8 +24,8 @@ fs::path_view ModuleHandle::GetBaseDir() const noexcept {
 	return _impl->GetBaseDir().native();
 }
 
-LanguageModuleDescriptorHandle ModuleHandle::GetDescriptor() const noexcept {
-	return { _impl->GetDescriptor() };
+ModuleManifestHandle ModuleHandle::GetManifest() const noexcept {
+	return { _impl->GetManifest() };
 }
 
 ModuleState ModuleHandle::GetState() const noexcept {

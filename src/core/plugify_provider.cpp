@@ -1,14 +1,17 @@
 #include "plugify_provider.hpp"
-#include "plugin_descriptor.hpp"
-#include <plugify/language_module_descriptor.hpp>
-#include <plugify/module.hpp>
-#include <plugify/plugin.hpp>
-#include <plugify/plugin_descriptor.hpp>
-#include <plugify/plugin_manager.hpp>
+#include "plugin_manifest.hpp"
+#include <plugify/api/module.hpp>
+#include <plugify/api/module_manifest.hpp>
+#include <plugify/api/plugin.hpp>
+#include <plugify/api/plugin_manager.hpp>
+#include <plugify/api/plugin_manifest.hpp>
 
 using namespace plugify;
+static fs::path dummy;
 
-PlugifyProvider::PlugifyProvider(std::weak_ptr<IPlugify> plugify) : IPlugifyProvider(*this), PlugifyContext(std::move(plugify)) {
+PlugifyProvider::PlugifyProvider(std::weak_ptr<IPlugify> plugify)
+	: IPlugifyProvider(*this)
+	, PlugifyContext(std::move(plugify)) {
 }
 
 PlugifyProvider::~PlugifyProvider() = default;
@@ -23,32 +26,28 @@ const fs::path& PlugifyProvider::GetBaseDir() noexcept {
 	if (auto plugify = _plugify.lock()) {
 		return plugify->GetConfig().baseDir;
 	}
-	static fs::path _;
-	return _;
+	return dummy;
 }
 
 const fs::path& PlugifyProvider::GetConfigsDir() noexcept {
 	if (auto plugify = _plugify.lock()) {
 		return plugify->GetConfig().configsDir;
 	}
-	static fs::path _;
-	return _;
+	return dummy;
 }
 
 const fs::path& PlugifyProvider::GetDataDir() noexcept {
 	if (auto plugify = _plugify.lock()) {
 		return plugify->GetConfig().dataDir;
 	}
-	static fs::path _;
-	return _;
+	return dummy;
 }
 
 const fs::path& PlugifyProvider::GetLogsDir() noexcept {
 	if (auto plugify = _plugify.lock()) {
 		return plugify->GetConfig().logsDir;
 	}
-	static fs::path _;
-	return _;
+	return dummy;
 }
 
 bool PlugifyProvider::IsPreferOwnSymbols() noexcept {
@@ -58,7 +57,7 @@ bool PlugifyProvider::IsPreferOwnSymbols() noexcept {
 	return false;
 }
 
-bool PlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<plg::version> requiredVersion, bool minimum) noexcept {
+bool PlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<Constraint> constraint) noexcept {
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {
 			auto plugin = pluginManager->FindPlugin(name);
@@ -66,21 +65,15 @@ bool PlugifyProvider::IsPluginLoaded(std::string_view name, std::optional<plg::v
 				return false;
 			if (plugin.GetState() != PluginState::Loaded && plugin.GetState() != PluginState::Running)
 				return false;
-			if (const auto& version = requiredVersion) {
-				if (minimum) {
-					return plugin.GetDescriptor().GetVersion() >= version;
-				} else {
-					return plugin.GetDescriptor().GetVersion() == version;
-				}
-			} else {
-				return true;
-			}
+			if (constraint)
+				return constraint->IsSatisfiedBy(plugin.GetManifest().GetVersion());
+			return true;
 		}
 	}
 	return false;
 }
 
-bool PlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<plg::version> requiredVersion, bool minimum) noexcept {
+bool PlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<Constraint> constraint) noexcept {
 	if (auto plugify = _plugify.lock()) {
 		if (auto pluginManager = plugify->GetPluginManager().lock()) {
 			auto module = pluginManager->FindModule(name);
@@ -88,15 +81,9 @@ bool PlugifyProvider::IsModuleLoaded(std::string_view name, std::optional<plg::v
 				return false;
 			if (module.GetState() != ModuleState::Loaded)
 				return false;
-			if (const auto& version = requiredVersion) {
-				if (minimum) {
-					return module.GetDescriptor().GetVersion() >= *version;
-				} else {
-					return module.GetDescriptor().GetVersion() == *version;
-				}
-			} else {
-				return true;
-			}
+			if (constraint)
+				return constraint->IsSatisfiedBy(module.GetManifest().GetVersion());
+			return true;
 		}
 	}
 	return false;

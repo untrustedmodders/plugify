@@ -1,6 +1,6 @@
 #include <core/plugin.hpp>
-#include <plugify/plugin.hpp>
-#include <plugify/plugin_descriptor.hpp>
+#include <plugify/api/plugin.hpp>
+#include <plugify/api/plugin_manifest.hpp>
 
 using namespace plugify;
 
@@ -10,10 +10,6 @@ UniqueId PluginHandle::GetId() const noexcept {
 
 std::string_view PluginHandle::GetName() const noexcept {
 	return _impl->GetName();
-}
-
-std::string_view PluginHandle::GetFriendlyName() const noexcept {
-	return _impl->GetFriendlyName();
 }
 
 fs::path_view PluginHandle::GetBaseDir() const noexcept {
@@ -32,8 +28,8 @@ fs::path_view PluginHandle::GetLogsDir() const noexcept {
 	return _impl->GetLogsDir().native();
 }
 
-PluginDescriptorHandle PluginHandle::GetDescriptor() const noexcept {
-	return { _impl->GetDescriptor() };
+PluginManifestHandle PluginHandle::GetManifest() const noexcept {
+	return { _impl->GetManifest() };
 }
 
 PluginState PluginHandle::GetState() const noexcept {

@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/variant.hpp>
+#include <plg/variant.hpp>
 
 namespace {
 	template<class V, size_t I, class E>

@@ -5,9 +5,8 @@
   "description": "A language module for Plugify.",
   "title": "LanguageModule",
   "required": [
-    "fileVersion",
     "version",
-    "friendlyName",
+    "name",
     "language"
   ],
   "properties": {
@@ -22,7 +21,7 @@
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "minLength": 1
     },
-    "friendlyName": {
+    "name": {
       "type": "string",
       "description": "A user-friendly name for the language module.",
       "minLength": 1
@@ -31,31 +30,20 @@
       "type": "string",
       "description": " A brief description or overview of the language module."
     },
-    "createdBy": {
+    "author": {
       "type": "string",
       "description": "The creator or author of the language module."
     },
-    "createdByURL": {
+    "website": {
       "type": "string",
       "description": "The URL linking to the creator's profile or information.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
-    "docsURL": {
+    "license": {
       "type": "string",
-      "description": "The URL linking to the documentation for the language module.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+      "description": "The license for the language module."
     },
-    "downloadURL": {
-      "type": "string",
-      "description": "The URL for downloading the language module, typically a release package or ZIP file.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-    },
-    "updateURL": {
-      "type": "string",
-      "description": "The URL for checking and fetching updates for the language module.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-    },
-    "supportedPlatforms": {
+    "platforms": {
       "type": "array",
       "description": "An array listing the platforms supported by the language module.",
       "items": {
@@ -72,13 +60,14 @@
     "language": {
       "type": "string",
       "description": "The identifier for the programming language supported by the module.",
-      "pattern": "^(?!plugin$).*",
       "minLength": 1,
       "examples": [
         "cpp",
         "csharp",
-        "python",
-        "javascript"
+        "python3",
+        "javascript",
+        "golang",
+        "lua"
       ]
     },
     "libraryDirectories": {

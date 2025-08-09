@@ -32,15 +32,6 @@
       "description": "Log severity.",
       "enum": ["none", "fatal", "error", "warning", "info", "debug", "verbose"]
     },
-    "repositories": {
-      "type": "array",
-      "description": "Specifies additional links where the language modules and plugins can search for download or updates.",
-      "items": {
-        "type": "string",
-        "description": "The URL linking to the repository.",
-        "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-      }
-    },
     "preferOwnSymbols": {
       "type": "boolean",
       "description": "Flag indicating if the modules should prefer its own symbols over shared symbols."

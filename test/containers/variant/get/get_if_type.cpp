@@ -2,7 +2,7 @@
 
 #include "app/variant_tester.hpp"
 
-#include <plugify/variant.hpp>
+#include <plg/variant.hpp>
 
 TEST_CASE("variant > get_if > type", "[variant]") {
 	SECTION("add_pointer_t<T> get_if(variant<Types...>* v) noexcept") {

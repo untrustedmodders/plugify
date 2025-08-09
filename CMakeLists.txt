@@ -47,11 +47,12 @@ include(PlugifyRequirement)
 
 # ------------------------------------------------------------------------------
 # Plugify
-if(PLUGIFY_INTERFACE)
-    file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/interface/*.cpp")
-    set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} "src/core/plugify_provider.cpp" "src/core/plugify_context.cpp")
-else()
-    file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
+file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
+
+if(PLUGIFY_BUILD_SHARED_LIB AND NOT BUILD_SHARED_LIBS)
+    message(WARNING "PLUGIFY_BUILD_SHARED_LIB is ON, but plugify will be built as a static library")
+elseif(NOT PLUGIFY_BUILD_SHARED_LIB AND BUILD_SHARED_LIBS)
+    message(WARNING "PLUGIFY_BUILD_SHARED_LIB is OFF, but plugify will be built as a static library")
 endif()
 
 if(NOT PLUGIFY_BUILD_OBJECT_LIB)
@@ -98,26 +99,6 @@ else()
     if(PLUGIFY_HAS_STATIC_LIBSTDCPP)
         target_link_libraries(${PROJECT_NAME} PUBLIC -static-libstdc++ -static-libgcc)
     endif()
-endif()
-
-# Check and add each flag
-if(PLUGIFY_EXTRA_FLAGS)
-    foreach(FLAG ${PLUGIFY_EXTRA_FLAGS})
-        string(REPLACE "-" "" FLAG_NAME ${FLAG})
-        string(REPLACE "/" "" FLAG_NAME ${FLAG_NAME})
-        string(TOUPPER ${FLAG_NAME} FLAG_VAR)
-        set(CHECK_VAR "COMPILER_SUPPORTS_${FLAG_VAR}")
-
-        include(CheckCXXCompilerFlag)
-        check_cxx_compiler_flag(${FLAG} ${CHECK_VAR})
-
-        if(${${CHECK_VAR}})
-            message(STATUS "Compiler supports ${FLAG}")
-            target_compile_options(${PROJECT_NAME} PUBLIC ${FLAG})
-        else()
-            message(WARNING "Compiler does not support ${FLAG}")
-        endif()
-    endforeach()
 endif()
 
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
@@ -174,8 +155,6 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         ${PLUGIFY_COMPILE_DEFINITIONS}
-        PLUGIFY_INTERFACE=$<BOOL:${PLUGIFY_INTERFACE}>
-        PLUGIFY_DOWNLOADER=$<BOOL:${PLUGIFY_DOWNLOADER}>
         PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
         PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
         PLUGIFY_SEPARATE_SOURCE_FILES=0

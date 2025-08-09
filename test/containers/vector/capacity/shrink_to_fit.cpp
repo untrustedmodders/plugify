@@ -1,7 +1,7 @@
 #include <catch_amalgamated.hpp>
 
 #include <app/counter.hpp>
-#include <plugify/vector.hpp>
+#include <plg/vector.hpp>
 
 TEST_CASE("vector capacity > shrink_to_fit", "[vector]") {
 

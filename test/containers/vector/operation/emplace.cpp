@@ -2,7 +2,7 @@
 
 #include <app/counter.hpp>
 #include <app/vector_tester.hpp>
-#include <plugify/vector.hpp>
+#include <plg/vector.hpp>
 
 #include <vector>
 

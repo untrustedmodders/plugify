@@ -13,7 +13,8 @@
 #include <iosfwd>                    // for ostream
 #include <string>                    // for allocator, string
 #include <string_view>               // for hash, string_view
-#include <plugify/compat_format.hpp> // for format_context, format_parse_context, format_to
+
+#include <plg/format.hpp> // for format_context, format_parse_context, format_to
 
 struct Counter {
 	 // Obj for only swaps & equals. Used for optimizing.

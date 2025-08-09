@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <plugify/compat_format.hpp>
-#include <plugify/vector.hpp>
+#include <plg/format.hpp>
+#include <plg/vector.hpp>
 
 #include <cstddef>
 #include <stdexcept>

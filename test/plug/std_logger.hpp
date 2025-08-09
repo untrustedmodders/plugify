@@ -1,7 +1,7 @@
 #pragma once
 
+#include <plugify/api/log.hpp>
 #include <atomic>
-#include <plugify/log.hpp>
 
 namespace plug {
     class StdLogger final : public plugify::ILogger {

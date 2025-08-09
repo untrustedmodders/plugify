@@ -5,11 +5,10 @@
   "description": "A plugin for Plugify.",
   "title": "Plugin",
   "required": [
-    "fileVersion",
     "version",
-    "friendlyName",
-    "entryPoint",
-    "languageModule"
+    "name",
+    "entry",
+    "language"
   ],
   "properties": {
     "fileVersion": {
@@ -23,7 +22,7 @@
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "minLength": 1
     },
-    "friendlyName": {
+    "name": {
       "type": "string",
       "description": "A user-friendly name for the plugin.",
       "minLength": 1
@@ -32,36 +31,25 @@
       "type": "string",
       "description": " A brief description or overview of the plugin."
     },
-    "createdBy": {
+    "author": {
       "type": "string",
       "description": "The creator or author of the plugin."
     },
-    "createdByURL": {
+    "website": {
       "type": "string",
       "description": "The URL linking to the creator's profile or information.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
-    "docsURL": {
+    "license": {
       "type": "string",
-      "description": "The URL linking to the documentation for the plugin.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+      "description": "The license for the plugin."
     },
-    "downloadURL": {
+    "entry": {
       "type": "string",
-      "description": "The URL for downloading the plugin, typically a release package or ZIP file.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-    },
-    "updateURL": {
-      "type": "string",
-      "description": "The URL for checking and fetching updates for the plugin.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-    },
-    "entryPoint": {
-      "type": "string",
-      "description": "The entry point or main executable for the plugin.",
+      "description": "The entry or main executable for the plugin.",
       "minLength": 1
     },
-    "supportedPlatforms": {
+    "platforms": {
       "type": "array",
       "description": "An array listing the platforms supported by the plugin.",
       "items": {
@@ -75,7 +63,7 @@
         ]
       }
     },
-    "languageModule": {
+    "language": {
       "type": "object",
       "description": "Information about the programming language module used.",
       "required": ["name"],
@@ -83,13 +71,14 @@
         "name": {
           "type": "string",
           "description": "Language name.",
-          "pattern": "^(?!plugin$).*",
           "minLength": 1,
           "examples": [
             "cpp",
             "csharp",
-            "python",
-            "javascript"
+            "python3",
+            "javascript",
+            "golang",
+            "lua"
           ]
         },
         "version": {
@@ -119,7 +108,7 @@
             "type": "boolean",
             "description": "Indicates whether the plugin reference is optional."
           },
-          "supportedPlatforms": {
+          "platforms": {
             "type": "array",
             "description": "The platforms supported by the plugin reference.",
             "items": {
@@ -142,16 +131,16 @@
         }
       }
     },
-    "exportedMethods": {
+    "methods": {
       "type": "array",
       "description": "An array describing functions/methods exposed by the plugin.",
       "items": {
-        "$ref": "#/$defs/exportedMethod"
+        "$ref": "#/$defs/methodObject"
       }
     }
   },
   "$defs": {
-    "exportedMethod": {
+    "methodObject": {
       "type": "object",
       "description": "An object describing single function/method exposed by the plugin.",
       "required": [
@@ -210,7 +199,7 @@
               "prototype": {
                 "type": "object",
                 "description": "An object describing function prototype.",
-                "$ref": "#/$defs/exportedMethod"
+                "$ref": "#/$defs/methodObject"
               },
               "enum": {
                 "type": "object",
@@ -250,7 +239,7 @@
             "prototype": {
               "type": "object",
               "description": "An object describing function prototype.",
-              "$ref": "#/$defs/exportedMethod"
+              "$ref": "#/$defs/methodObject"
             },
             "enum": {
               "type": "object",

@@ -3,11 +3,11 @@
 #include "module.hpp"
 #include "plugin.hpp"
 
-#include <plugify/plugify.hpp>
-#include <plugify/plugin_descriptor.hpp>
-#include <plugify/plugin_manager.hpp>
-#include <plugify/plugin_reference_descriptor.hpp>
-#include <utils/json.hpp>
+#include <plugify/api/dependency.hpp>
+#include <plugify/api/plugin_manager.hpp>
+#include <plugify/api/plugin_manifest.hpp>
+#include <plugify/api/plugify.hpp>
+#include <util/json.hpp>
 
 using namespace plugify;
 
@@ -85,7 +85,7 @@ bool PluginManager::TopologicalSortPlugins() {
 
 	// Step 2: Build dependency graph
 	for (const auto& [name, plugin] : pluginMap) {
-		if (const auto& deps = plugin.GetDescriptor().dependencies) {
+		if (const auto& deps = plugin.GetManifest().dependencies) {
 			for (const auto& dep : *deps) {
 				if (pluginMap.contains(dep.name)) {
 					adjList[dep.name].emplace_back(name);
@@ -145,7 +145,45 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 
 	PL_LOG_VERBOSE("Plugins order after topological sorting by dependency: ");
 	for (const auto& plugin : _allPlugins) {
-		PL_LOG_VERBOSE("{} - {}", plugin.GetName(), plugin.GetFriendlyName());
+		PL_LOG_VERBOSE("--> {}", plugin.GetName());
+	}
+}
+
+template<typename T>
+static std::unique_ptr<Manifest> GetManifest(const fs::path& path) {
+	auto json = "{}";//FileSystem::ReadText(path);
+	auto dest = glz::read_jsonc<std::unique_ptr<T>>(json);
+	if (!dest.has_value()) {
+		PL_LOG_ERROR("Manifest: '{}' has JSON parsing error: {}", path.string(), glz::format_error(dest.error(), json));
+		return {};
+	}
+	auto& manifest = *dest;
+
+	if (!IsSupportsPlatform(manifest->platforms))
+		return {};
+
+	auto errors = manifest->Validate();
+	if (!errors.empty()) {
+		PL_LOG_ERROR("Manifest: '{}' has error(s): {}", path.string(), plg::join(errors, ", "));
+		return {};
+	}
+
+	return manifest;
+}
+
+template<typename F>
+void ScanDirectory(const fs::path& directory, const F& func, int depth) {
+	if (depth <= 0)
+		return;
+
+	std::error_code ec;
+	for (const auto& entry : fs::directory_iterator(directory, ec)) {
+		const auto& path = entry.path();
+		if (entry.is_directory(ec)) {
+			ScanDirectory(path, func, depth - 1);
+		} else if (entry.is_regular_file(ec)) {
+			func(path, depth);
+		}
 	}
 }
 
@@ -153,29 +191,63 @@ bool PluginManager::PartitionLocalPackages() {
 	auto plugify = _plugify.lock();
 	PL_ASSERT(plugify);
 
-	if (auto packageManager = plugify->GetPackageManager().lock()) {
-		auto localPackages = packageManager->GetLocalPackages();
-		auto count = localPackages.size();
+	std::vector<std::unique_ptr<Manifest>> manifests;
+	ScanDirectory(plugify->GetConfig().baseDir, [&](const fs::path& path, int depth) {
+		if (depth != 1)
+			return;
 
-		auto pluginCount = static_cast<size_t>(std::count_if(localPackages.begin(), localPackages.end(), [](const auto& param) {
-			return param->type == PackageType::Plugin;
-		}));
-		_allPlugins.reserve(pluginCount);
-		_allModules.reserve(count - pluginCount);
+		auto extension = path.extension();
+		bool isModule = extension == Module::kFileExtension;
+		if (!isModule && extension != Plugin::kFileExtension)
+			return;
 
-		const auto& config = plugify->GetConfig();
-		const BasePaths paths {
-				.configs = config.baseDir / config.configsDir,
-				.data = config.baseDir / config.dataDir,
-				.logs = config.baseDir / config.logsDir,
-		};
+		auto manifest = isModule ?
+				GetManifest<ModuleManifest>(path) :
+				GetManifest<PluginManifest>(path);
+		if (!manifest)
+			return;
 
-		for (const auto& package : localPackages) {
-			if (package->type == PackageType::Plugin) {
-				_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), *package, paths);
+		auto it = std::ranges::find(manifests, manifest->name, &Manifest::name);
+		if (it == manifests.end()) {
+			manifests.emplace_back(std::move(manifest));
+		} else {
+			auto& existingManifest = *it;
+
+			auto& existingVersion = existingManifest->version;
+			if (existingVersion != manifest->version) {
+				PL_LOG_WARNING("By default, prioritizing newer version (v{}) of '{}' package, over older version (v{}).", std::max(existingVersion, manifest->version), manifest->name, std::min(existingVersion, manifest->version));
+
+				if (existingVersion < manifest->version) {
+					existingManifest = std::move(manifest);
+				}
 			} else {
-				_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), *package);
+				PL_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, manifest->name, path.string());
 			}
+		}
+	}, 3);
+
+	auto count = manifests.size();
+	if (_allModules.empty()) {
+		PL_LOG_WARNING("Did not find any package.");
+		return false;
+	}
+
+	auto pluginCount = static_cast<size_t>(std::ranges::count(manifests, Type::Plugin, &Manifest::type));
+	_allPlugins.reserve(pluginCount);
+	_allModules.reserve(count - pluginCount);
+
+	const auto& config = plugify->GetConfig();
+	const BasePaths paths {
+			.configs = config.baseDir / config.configsDir,
+			.data = config.baseDir / config.dataDir,
+			.logs = config.baseDir / config.logsDir,
+	};
+
+	for (const auto& manifest : manifests) {
+		if (manifest->type == Type::Plugin) {
+			_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), std::move(manifest), std::move(paths));
+		} else {
+			_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), std::move(manifest), std::move(paths));
 		}
 	}
 
@@ -205,12 +277,10 @@ void PluginManager::LoadRequiredLanguageModules() {
 	modules.reserve(_allModules.size());
 
 	for (auto& plugin : _allPlugins) {
-		const auto& [name, version] = plugin.GetDescriptor().languageModule;
-		auto it = std::find_if(_allModules.begin(), _allModules.end(), [&name, &version](const auto& p) {
-			return p.GetLanguage() == name && (!version || p.GetDescriptor().version >= version);
-		});
+		const auto& [name, constraits, optional] = plugin.GetManifest().language;
+		auto it = std::ranges::find(_allModules, name, &Module::GetLanguage);
 		if (it == _allModules.end()) {
-			plugin.SetError(std::format("Language module: '{}' (v{}) missing for plugin: '{}'", name, version.has_value() ? version->to_string() : "[latest]", plugin.GetFriendlyName()));
+			plugin.SetError(std::format("Language module: '{}' missing for plugin: '{}'", name, plugin.GetName()));
 			continue;
 		}
 		auto& module = *it;
@@ -222,7 +292,7 @@ void PluginManager::LoadRequiredLanguageModules() {
 	bool loadedAny = false;
 
 	for (auto& module : _allModules) {
-		if (module.GetDescriptor().forceLoad.value_or(false) || modules.contains(module.GetId())) {
+		if (module.GetManifest().forceLoad.value_or(false) || modules.contains(module.GetId())) {
 			loadedAny |= module.Initialize(provider);
 		}
 	}
@@ -242,11 +312,11 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 	for (auto& plugin : _allPlugins) {
 		if (plugin.GetState() == PluginState::NotLoaded) {
 			if (plugin.GetModule()->GetState() != ModuleState::Loaded) {
-				plugin.SetError(std::format("Language module: '{}' missing", plugin.GetModule()->GetFriendlyName()));
+				plugin.SetError(std::format("Language module: '{}' missing", plugin.GetModule()->GetName()));
 				continue;
 			}
 			std::vector<std::string_view> names;
-			if (const auto& dependencies = plugin.GetDescriptor().dependencies) {
+			if (const auto& dependencies = plugin.GetManifest().dependencies) {
 				for (const auto& dependency: *dependencies) {
 					auto dependencyPlugin = FindPlugin(dependency.name);
 					if ((!dependencyPlugin || dependencyPlugin.GetState() != PluginState::Loaded) && !dependency.optional.value_or(false)) {
@@ -286,15 +356,13 @@ void PluginManager::TerminateAllPlugins() {
 	if (_allPlugins.empty())
 		return;
 	
-	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
-		auto& plugin = *it;
+	for (auto& plugin : std::ranges::reverse_view(_allPlugins)) {
 		if (plugin.GetState() == PluginState::Running) {
 			plugin.GetModule()->EndPlugin(plugin);
 		}
 	}
 
-	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
-		auto& plugin = *it;
+	for (auto& plugin : std::ranges::reverse_view(_allPlugins)) {
 		plugin.Terminate();
 	}
 
@@ -305,8 +373,7 @@ void PluginManager::TerminateAllModules() {
 	if (_allModules.empty())
 		return;
 
-	for (auto it = _allModules.rbegin(); it != _allModules.rend(); ++it) {
-		auto& module = *it;
+	for (auto& module : std::ranges::reverse_view(_allModules)) {
 		module.Terminate();
 	}
 
@@ -314,36 +381,28 @@ void PluginManager::TerminateAllModules() {
 }
 
 ModuleHandle PluginManager::FindModule(std::string_view moduleName) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
-		return module.GetName() == moduleName;
-	});
+	auto it = std::ranges::find(_allModules, moduleName, &Module::GetName);
 	if (it != _allModules.end())
 		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromId(UniqueId moduleId) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleId](const auto& module) {
-		return module.GetId() == moduleId;
-	});
+	auto it = std::ranges::find(_allModules, moduleId, &Module::GetId);
 	if (it != _allModules.end())
 		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromLang(std::string_view moduleLang) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleLang](const auto& module) {
-		return module.GetLanguage() == moduleLang;
-	});
+	auto it = std::ranges::find(_allModules, moduleLang, &Module::GetLanguage);
 	if (it != _allModules.end())
 		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromPath(const fs::path& moduleFilePath) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleFilePath](const auto& module) {
-		return module.GetFilePath() == moduleFilePath;
-	});
+	auto it = std::ranges::find(_allModules, moduleFilePath, &Module::GetFilePath);
 	if (it != _allModules.end())
 		return *it;
 	return {};
@@ -359,29 +418,14 @@ std::vector<ModuleHandle> PluginManager::GetModules() const {
 }
 
 PluginHandle PluginManager::FindPlugin(std::string_view pluginName) const {
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginName](const auto& plugin) {
-		return plugin.GetName() == pluginName;
-	});
+	auto it = std::ranges::find(_allPlugins, pluginName, &Plugin::GetName);
 	if (it != _allPlugins.end())
 		return *it;
 	return {};
 }
 
 PluginHandle PluginManager::FindPluginFromId(UniqueId pluginId) const {
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginId](const auto& plugin) {
-		return plugin.GetId() == pluginId;
-	});
-	if (it != _allPlugins.end())
-		return *it;
-	return {};
-}
-
-PluginHandle PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptorHandle& pluginDescriptor) const {
-	auto name = pluginDescriptor.GetName();
-	auto version = pluginDescriptor.GetVersion();
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name, &version](const auto& plugin) {
-		return plugin.GetName() == name && (!version || plugin.GetDescriptor().version >= version);
-	});
+	auto it = std::ranges::find(_allPlugins, pluginId, &Plugin::GetId);
 	if (it != _allPlugins.end())
 		return *it;
 	return {};

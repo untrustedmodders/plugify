@@ -2,9 +2,8 @@
 
 #include <app/counter.hpp>
 #include <app/vector_tester.hpp>
-#include <plugify/vector.hpp>
-
-#include <plugify/compat_format.hpp>
+#include <plg/vector.hpp>
+#include <plg/format.hpp>
 
 #include <forward_list>
 #include <iostream>
