@@ -1,0 +1,16 @@
+{
+    "name": "broken-conflicts",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "should-be-array"
+        }
+    ],
+    "description": "Malformed conflicts field.",
+    "author": "BuggySoft",
+    "website": "https://example.com/broken-conflicts",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

@@ -1,0 +1,16 @@
+{
+    "name": "conflict-plugin-b",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "conflict-plugin-a"
+        }
+    ],
+    "description": "Conflicts with plugin A.",
+    "author": "ConflictTest",
+    "website": "https://example.com/conflict-plugin-b",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

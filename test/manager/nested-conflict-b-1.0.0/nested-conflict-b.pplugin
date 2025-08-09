@@ -1,0 +1,16 @@
+{
+    "name": "nested-conflict-b",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "nested-conflict-c"
+        }
+    ],
+    "conflicts": [],
+    "description": "Part of nested conflict scenario.",
+    "author": "TestGen",
+    "website": "https://example.com/nested-conflict-b",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

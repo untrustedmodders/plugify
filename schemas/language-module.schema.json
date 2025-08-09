@@ -5,59 +5,52 @@
   "description": "A language module for Plugify.",
   "title": "LanguageModule",
   "required": [
-    "fileVersion",
+    "name",
     "version",
-    "friendlyName",
+    "description",
+    "author",
+    "website",
+    "license",
     "language"
   ],
   "properties": {
-    "fileVersion": {
-      "type": "number",
-      "description": "The version number of the configuration file format.",
-      "minimum": 1
-    },
     "version": {
       "type": "string",
-      "description": "The semantic version of the language module.",
+      "description": "The semantic version (SemVer) of the language module following the format MAJOR.MINOR.PATCH. Used for dependency resolution and compatibility checking.",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "minLength": 1
     },
-    "friendlyName": {
+    "name": {
       "type": "string",
-      "description": "A user-friendly name for the language module.",
-      "minLength": 1
+      "description": "The unique identifier for the language module. Should be lowercase, use hyphens for spaces, and clearly indicate the language (e.g., 'python3-module', 'cpp-language-support').",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "minLength": 1,
+      "examples": ["python3-module", "cpp-language-support"]
     },
     "description": {
       "type": "string",
-      "description": " A brief description or overview of the language module."
+      "description": "A comprehensive description of the language module's functionality, features, and purpose. Should explain what programming language it enables and any special capabilities it provides."
     },
-    "createdBy": {
+    "author": {
       "type": "string",
-      "description": "The creator or author of the language module."
+      "description": "The name or identifier of the module creator. Can be an individual name, username, or organization (e.g., 'John Doe', 'johndoe', 'Acme Corp').",
+      "minLength": 1,
+      "examples": ["John Doe", "jane-doe", "Acme Corporation", "Community Contributors"]
     },
-    "createdByURL": {
+    "website": {
       "type": "string",
-      "description": "The URL linking to the creator's profile or information.",
+      "description": "The official website, repository, or documentation URL for this language module. Typically links to the project's GitHub repository or documentation site.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
-    "docsURL": {
+    "license": {
       "type": "string",
-      "description": "The URL linking to the documentation for the language module.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+      "description": "The software license identifier for the module (e.g., 'MIT', 'Apache-2.0', 'GPL-3.0'). Should use SPDX license identifiers when possible. See https://spdx.org/licenses/",
+      "minLength": 1,
+      "examples": ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause", "proprietary"]
     },
-    "downloadURL": {
-      "type": "string",
-      "description": "The URL for downloading the language module, typically a release package or ZIP file.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-    },
-    "updateURL": {
-      "type": "string",
-      "description": "The URL for checking and fetching updates for the language module.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-    },
-    "supportedPlatforms": {
+    "platforms": {
       "type": "array",
-      "description": "An array listing the platforms supported by the language module.",
+      "description": "Target platforms and architectures this module supports. Each entry should specify the OS and architecture in the format 'os_arch' (e.g., 'windows_x64', 'linux_arm64'). Leave empty to support all platforms.",
       "items": {
         "type": "string",
         "description": "Platform name.",
@@ -69,30 +62,99 @@
         ]
       }
     },
+    "dependencies": {
+      "type": "array",
+      "description": "Other modules required for this language module to function properly. Dependencies are resolved and loaded before this module. Version constraints ensure compatibility.",
+      "items": {
+        "type": "object",
+        "description": "Describes the properties of a module dependency.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the module reference.",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+            "minLength": 1
+          },
+          "constraints": {
+            "type": "string",
+            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "examples": [
+              ">=1.0.0 <2.0.0",
+              ">=1.0.0 <2.0.0 || >3.2.1",
+              "==1.2.3 || >=2.0.0 <3.0.0"
+            ]
+          },
+          "optional": {
+            "type": "boolean",
+            "description": "Indicates whether the module reference is optional."
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "description": "Modules that are incompatible with this language module. The plugin manager will prevent loading conflicting modules simultaneously. Use this to prevent issues with modules that provide overlapping functionality.",
+      "items": {
+        "type": "object",
+        "description": "Describes the properties of a conflicting module.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the conflicting module.",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+            "minLength": 1
+          },
+          "constraints": {
+            "type": "string",
+            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "examples": [
+              ">=1.0.0 <2.0.0",
+              ">=1.0.0 <2.0.0 || >3.2.1",
+              "==1.2.3 || >=2.0.0 <3.0.0"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "The reason why this module conflicts with the specified module.",
+            "minLength": 1
+          }
+        }
+      }
+    },
     "language": {
       "type": "string",
-      "description": "The identifier for the programming language supported by the module.",
-      "pattern": "^(?!plugin$).*",
+      "description": "The programming language identifier that this module provides support for. Should match the language's common abbreviation or file extension (e.g., 'cpp' for C++, 'py' for Python, 'js' for JavaScript).",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
       "minLength": 1,
       "examples": [
         "cpp",
         "csharp",
-        "python",
-        "javascript"
+        "python3",
+        "javascript",
+        "golang",
+        "lua"
       ]
     },
-    "libraryDirectories": {
+    "runtime": {
+      "type": "string",
+      "description": ""
+    },
+    "directories": {
       "type": "array",
-      "description": "Specifies additional directories where the language module can search for libraries.",
+      "description": "Additional directories relative to the module's location where native libraries, bindings, or runtime files are located. These paths are added to the module's library search path.",
       "items": {
         "type": "string",
         "description": "Relative folder path.",
         "minLength": 1
       }
-    },
-    "forceLoad": {
-      "type": "boolean",
-      "description": "Indicates whether the language module should be force-loaded by the Plugify core."
     }
   }
 }

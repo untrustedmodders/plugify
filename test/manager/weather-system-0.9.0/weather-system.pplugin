@@ -1,0 +1,19 @@
+{
+    "name": "weather-system",
+    "version": "0.9.0",
+    "dependencies": [
+        {
+            "name": "graphics-engine"
+        },
+        {
+            "name": "physics-engine"
+        }
+    ],
+    "conflicts": [],
+    "description": "Dynamic weather effects like rain, snow, and storms.",
+    "author": "EnviroSoft",
+    "website": "https://example.com/weather-system",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

@@ -1,0 +1,16 @@
+{
+    "name": "invalid-deps",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "should-be-array"
+        }
+    ],
+    "conflicts": [],
+    "description": "Malformed dependencies field.",
+    "author": "BuggySoft",
+    "website": "https://example.com/invalid-deps",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

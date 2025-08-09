@@ -1,0 +1,21 @@
+{
+    "name": "multiDepVersions",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "logger",
+            "constraints": "==1.2.0"
+        },
+        {
+            "name": "database",
+            "constraints": "<3.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Multiple deps with versions",
+    "author": "xAI",
+    "website": "https://example.com/multiDepVersions",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

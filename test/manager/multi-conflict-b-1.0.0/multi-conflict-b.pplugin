@@ -1,0 +1,16 @@
+{
+    "name": "multi-conflict-b",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "multi-conflict-a"
+        }
+    ],
+    "description": "Conflicts with A.",
+    "author": "ConflictTest",
+    "website": "https://example.com/multi-conflict-b",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

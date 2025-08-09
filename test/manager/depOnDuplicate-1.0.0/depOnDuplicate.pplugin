@@ -1,0 +1,17 @@
+{
+    "name": "depOnDuplicate",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "duplicateNameDiffVer",
+            "constraints": ">=1.1.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Depends on specific version of duplicate",
+    "author": "xAI",
+    "website": "https://example.com/depOnDuplicate",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

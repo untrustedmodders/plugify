@@ -1,188 +1,653 @@
-#include "package_manager.hpp"
-#include "plugify_provider.hpp"
-#include "plugin_manager.hpp"
-#include <plugify/plugify.hpp>
-#include <plugify/version.hpp>
-#include <utils/file_system.hpp>
-#include <utils/http_downloader.hpp>
-#include <utils/json.hpp>
-#include <utils/strings.hpp>
+#include "plugify/assembly_loader.hpp"
+#include "plugify/plugify.hpp"
 
-namespace plugify {
-	class Plugify final : public IPlugify, public std::enable_shared_from_this<Plugify> {
-	public:
-		Plugify() = default;
-		~Plugify() override {
-			Terminate();
-		};
+#include "core/console_logger.hpp"
+#include "core/glaze_config_provider.hpp"
+#include "core/glaze_manifest_parser.hpp"
+#include "core/glaze_metadata.hpp"
+#include "core/libsolv_dependency_resolver.hpp"
+#include "core/simple_event_bus.hpp"
+#include "core/standart_file_system.hpp"
 
-		bool Initialize(const fs::path& rootDir) override {
-			if (IsInitialized())
-				return false;
+#include "basic_assembly_loader.hpp"
+#include "dummy_lifecycle.hpp"
 
-			_configPath = rootDir / "plugify.pconfig";
-			PL_LOG_DEBUG("Config path: '{}'", _configPath.string());
-			auto json = FileSystem::ReadText(_configPath);
-			auto config = glz::read_jsonc<Config>(json);
-			if (!config.has_value()) {
-				PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", _configPath.string(), glz::format_error(config.error(), json));
-				return false;
-			}
+using namespace plugify;
+using namespace std::chrono_literals;
 
-			{
-				const auto checkPath = [](const fs::path& p) {
-					return !p.empty() && p.lexically_normal() == p;
-				};
+// Plugify::Impl
+struct Plugify::Impl {
+    ServiceLocator services;
+    Config config;
+    Manager manager;
+    Version version;
 
-				if (!checkPath(config->configsDir)) {
-					PL_LOG_ERROR("Config configsDir must be relative directory path");
-					return false;
-				}
-				if (!checkPath(config->dataDir)) {
-					PL_LOG_ERROR("Config dataDir must be relative directory path");
-					return false;
-				}
-				if (!checkPath(config->logsDir)) {
-					PL_LOG_ERROR("Config logsDir must be relative directory path");
-					return false;
-				}
-				std::array<fs::path, 5> dirs = {
-					"modules",
-					"plugins",
-					config->configsDir,
-					config->dataDir,
-					config->logsDir,
-				};
+    std::shared_ptr<ILogger> logger;
+    std::shared_ptr<IEventBus> eventBus;
+    std::shared_ptr<IFileSystem> fileSystem;
+    std::shared_ptr<IPlatformOps> ops;
 
-				const auto isPathCollides = [](const fs::path& first, const fs::path& second) {
-					auto [itFirst, itSecond] = std::mismatch(first.begin(), first.end(), second.begin(), second.end());
-					return itFirst == first.end() || itSecond == second.end();
-				};
+    bool initialized{false};
+    bool shouldStop{false};
+    std::thread::id ownerThreadId;
+    std::jthread updateThread;
 
-				for (auto first = dirs.begin(); first != dirs.end(); ++first) {
-					for (auto second = first + 1; second != dirs.end(); ++second) {
-						if (isPathCollides(*first, *second)) {
-							PL_LOG_ERROR("Config configsDir, dataDir, logsDir must not share paths with each other or with 'modules', 'plugins'");
-							return false;
-						}
-					}
-				}
-			}
+    std::chrono::steady_clock::time_point lastUpdateTime;
+    std::chrono::milliseconds accumulatedTime{0};
 
-			_config = std::move(*config);
+    static inline const std::thread::id mainThreadId = std::this_thread::get_id();
 
-			if (!rootDir.empty())
-				_config.baseDir = rootDir / _config.baseDir;
+    Impl(ServiceLocator srv, Config cfg)
+        : services(std::move(srv))
+        , config(std::move(cfg))
+        , manager(services, config)
+        , ownerThreadId(std::this_thread::get_id()) {
 
-			_provider = std::make_shared<PlugifyProvider>(weak_from_this());
-			_packageManager = std::make_shared<PackageManager>(weak_from_this());
-			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
+        // Get version
+        plg::parse(PLUGIFY_VERSION, version);
 
-			_inited = true;
+        // Create services
+        logger = services.Resolve<ILogger>();
+        eventBus = services.Resolve<IEventBus>();
+        fileSystem = services.Resolve<IFileSystem>();
+        ops = services.Resolve<IPlatformOps>();
 
-			PL_LOG_INFO("Plugify Init!");
-			PL_LOG_INFO("Version: {}", _version);
-			PL_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", PLUGIFY_GIT_COMMIT_HASH, PLUGIFY_GIT_TAG, PLUGIFY_GIT_COMMIT_SUBJECT, PLUGIFY_GIT_BRANCH, PLUGIFY_GIT_COMMIT_DATE); //-V001
-			PL_LOG_INFO("Compiled on: {} from: {} with: '{}'", PLUGIFY_COMPILED_SYSTEM, PLUGIFY_COMPILED_GENERATOR, PLUGIFY_COMPILED_COMPILER);
+        // Set default logging level
+        logger->SetLogLevel(config.logging.severity);
 
-			return true;
-		}
+        // Initialize update time
+        lastUpdateTime = std::chrono::steady_clock::now();
+    }
 
-		void Terminate() override {
-			if (!IsInitialized())
-				return;
+    ~Impl() {
+        if (initialized) {
+            Terminate();
+        }
+    }
 
-			if (_packageManager.use_count() != 1) {
-				PL_LOG_ERROR("Lack of owning for package manager! Will not released on plugify terminate");
-			}
-			_packageManager.reset();
+    Result<void> Initialize() {
+        // Thread safety check based on config
+        if (config.runtime.pinToMainThread &&
+            std::this_thread::get_id() != ownerThreadId) {
+            return MakeError("Initialization must be called from owner thread");
+        }
 
-			if (_pluginManager.use_count() != 1) {
-				PL_LOG_ERROR("Lack of owning for plugin manager! Will not released on plugify terminate");
-			}
-			_pluginManager.reset();
+        if (initialized) {
+            return MakeError("Already initialized");
+        }
 
-			_lastTime = DateTime::Now();
+        logger->Log("Initializing Plugify...", Severity::Info);
+        logger->Log(std::format("Update mode: {}",
+                              plg::enum_to_string(config.runtime.updateMode)),
+                   Severity::Info);
 
-			_inited = false;
+        // Create necessary directories
+        if (!CreateDirectories()) {
+            return MakeError("Failed to create directories");
+        }
 
-			PL_LOG_INFO("Plugify Terminated!");
-		}
+        // Initialize manager
+        // manager.Initialize();
 
-		bool IsInitialized() const override {
-			return _inited;
-		}
+        // Start update mechanism based on mode
+        if (auto result = StartUpdateMechanism(); !result) {
+            return result;
+        }
 
-		void Update() override {
-			if (!IsInitialized())
-				return;
+        logger->Log("Plugify initialized successfully", Severity::Info);
+        logger->Log(std::format("Version: {}", version), Severity::Info);
 
-			auto currentTime = DateTime::Now();
-			_deltaTime = (currentTime - _lastTime);
-			_lastTime = currentTime;
+        initialized = true;
 
-			//_packageManager->Update(_deltaTime);
-			_pluginManager->Update(_deltaTime);
-		}
+        // Publish initialization event
+        eventBus->Publish("plugify.initialized", std::any{});
 
-		void Log(std::string_view msg, Severity severity) override {
-			LogSystem::Log(msg, severity);
-		}
+        return {};
+    }
 
-		void SetLogger(std::shared_ptr<ILogger> logger) override {
-			LogSystem::SetLogger(std::move(logger));
-		}
-		
-		bool AddRepository(std::string_view repository) override {
-			if (!String::IsValidURL(repository))
-				return false;
-			
-			auto [_, result] = _config.repositories.emplace(repository);
-			if (result) {
-				const auto config = glz::write_json(_config);
-				if (!config) {
-					PL_LOG_ERROR("Add repository: JSON writing error: {}", glz::format_error(config));
-					return false;
-				}
-				return FileSystem::WriteText(_configPath, config.value());
-			}
+    void Terminate() {
+        if (config.runtime.pinToMainThread &&
+            std::this_thread::get_id() != ownerThreadId) {
+            throw std::runtime_error("Termination must be called from owner thread");
+        }
 
-			return false;
-		}
+        if (!initialized) {
+            return;
+        }
 
-		std::weak_ptr<IPluginManager> GetPluginManager() const override {
-			return _pluginManager;
-		}
+        logger->Log("Terminating Plugify...", Severity::Info);
 
-		std::weak_ptr<IPackageManager> GetPackageManager() const override {
-			return _packageManager;
-		}
+        // Stop update mechanism
+        StopUpdateMechanism();
 
-		std::weak_ptr<IPlugifyProvider> GetProvider() const override {
-			return _provider;
-		}
+        // Terminate manager
+        manager.Terminate();
 
-		const Config& GetConfig() const override {
-			return _config;
-		}
+        // Publish termination event
+        eventBus->Publish("plugify.terminating", std::any{});
 
-		plg::version GetVersion() const override {
-			return _version;
-		}
+        logger->Log("Plugify terminated", Severity::Info);
+        logger->Flush();
 
-	private:
-		std::shared_ptr<PluginManager> _pluginManager;
-		std::shared_ptr<PackageManager> _packageManager;
-		std::shared_ptr<PlugifyProvider> _provider;
-		plg::version _version{ PLUGIFY_VERSION };
-		Config _config;
-		fs::path _configPath;
-		DateTime _deltaTime;
-		DateTime _lastTime;
-		bool _inited{ false };
-	};
+        initialized = false;
+    }
 
-	std::shared_ptr<IPlugify> MakePlugify() {
-		return std::make_shared<Plugify>();
-	}
+    void Update(std::chrono::milliseconds deltaTime = 0ms) {
+        if (config.runtime.pinToMainThread &&
+            std::this_thread::get_id() != ownerThreadId) {
+            throw std::runtime_error("Update must be called from owner thread");
+        }
+
+        if (!initialized) {
+            return;
+        }
+
+        // Calculate delta time if not provided
+        if (deltaTime == 0ms) {
+            auto now = std::chrono::steady_clock::now();
+            deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdateTime);
+            lastUpdateTime = now;
+        }
+
+        // Update based on mode
+        switch (config.runtime.updateMode) {
+            case UpdateMode::Manual:
+                // Direct update
+                manager.Update(deltaTime);
+                break;
+
+            case UpdateMode::Callback:
+                // Call user callback which should eventually call manager.Update
+                if (config.runtime.updateCallback) {
+                    config.runtime.updateCallback(deltaTime);
+                }
+                break;
+
+            case UpdateMode::BackgroundThread:
+                // Background thread handles updates, this call is a no-op
+                logger->Log("Update() called in BackgroundThread mode - ignoring", Severity::Debug);
+                break;
+        }
+
+        // Process any pending events
+        //eventBus->ProcessPending();
+    }
+
+    // Get current update statistics
+    /*struct UpdateStats {
+        UpdateMode mode;
+        size_t updateCount;
+        std::chrono::milliseconds averageUpdateTime;
+        std::chrono::milliseconds lastUpdateDuration;
+        bool isBackgroundThreadRunning;
+    };
+
+    UpdateStats GetUpdateStats() const {
+        return {
+            .mode = config.runtime.updateMode,
+            .updateCount = manager.GetUpdateCount(),
+            .averageUpdateTime = manager.GetAverageUpdateTime(),
+            .lastUpdateDuration = manager.GetLastUpdateDuration(),
+            .isBackgroundThreadRunning = updateThread.joinable()
+        };
+    }*/
+
+private:
+    bool CreateDirectories() {
+        if (!CheckDirectories()) {
+            return false;
+        }
+
+        auto createDir = [&](const std::filesystem::path& dir) {
+            if (!dir.empty() && !fileSystem->IsExists(dir)) {
+                if (auto result = fileSystem->CreateDirectories(dir); !result) {
+                    logger->Log(result.error(), Severity::Error);;
+                } else {
+                    logger->Log(std::format("Created directory: {}", plg::as_string(dir)), Severity::Info);
+                }
+            }
+        };
+
+        //createDir(config.paths.baseDir);
+        createDir(config.paths.extensionsDir);
+        createDir(config.paths.configsDir);
+        createDir(config.paths.dataDir);
+        createDir(config.paths.logsDir);
+        createDir(config.paths.cacheDir);
+        return true;
+    }
+
+    bool CheckDirectories() {
+        struct PathValidation {
+            std::string_view name;
+            const std::filesystem::path* path;
+            bool requireExists;   // Optional: check if directory should exist
+            bool requireRelative; // Optional: check if path should be relative
+            bool canCreate;       // Optional: whether we can create it if missing
+        };
+
+        const std::array<PathValidation, 6> pathsToValidate = {
+            PathValidation{"baseDir", &config.paths.baseDir, true, false, false},
+            PathValidation{"extensionsDir", &config.paths.extensionsDir, false, false, true},
+            PathValidation{"configsDir", &config.paths.configsDir, false, false, true},
+            PathValidation{"dataDir", &config.paths.dataDir, false, false, true},
+            PathValidation{"logsDir", &config.paths.logsDir, false, false, true},
+            PathValidation{"cacheDir", &config.paths.cacheDir, false, false, true}
+        };
+
+        // Validation result accumulator
+        struct ValidationResult {
+            std::vector<std::string> errors;
+            std::vector<std::string> warnings;
+
+            void AddError(std::string msg) {
+                errors.push_back(std::move(msg));
+            }
+
+            void AddWarning(std::string msg) {
+                warnings.push_back(std::move(msg));
+            }
+
+            bool IsSuccess() const {
+                return errors.empty();
+            }
+        } result;
+
+        // Step 1: Validate path format and existence
+        for (const auto& [name, path, requireExists, requireRelative, canCreate] : pathsToValidate) {
+            // Check if path is empty
+            if (path->empty()) {
+                result.AddError(std::format("{} is not configured", name));
+                continue;
+            }
+
+            // Check if path is normalized
+            if (path->lexically_normal() != *path) {
+                result.AddError(std::format("{} is not normalized: '{}'", name, plg::as_string(*path)));
+                continue;
+            }
+
+            // Check if path is relative (optional, depending on requirements)
+            if (requireRelative && path->is_absolute()) {
+                result.AddError(std::format("{} must be relative: '{}'", name, plg::as_string(*path)));
+                continue;
+            }
+
+            // Check existence if required
+            bool exists = fileSystem->IsExists(*path);
+
+            if (requireExists && !exists) {
+                result.AddError(std::format("{} does not exist: '{}'", name, plg::as_string(*path)));
+            } else if (!exists && canCreate) {
+                result.AddWarning(std::format("{} will be created: '{}'", name, plg::as_string(*path)));
+            }
+        }
+
+        // Step 2: Check for path collisions
+        auto checkCollisions = [&result](std::span<const PathValidation> paths, size_t startIdx = 0) {
+            for (size_t i = startIdx; i < paths.size(); ++i) {
+                if (paths[i].path->empty()) continue;
+
+                for (size_t j = i + 1; j < paths.size(); ++j) {
+                    if (paths[j].path->empty()) continue;
+
+                    const auto& path1 = *paths[i].path;
+                    const auto& path2 = *paths[j].path;
+
+                    // Check if one path is a parent of another
+                    auto [it1, it2] = std::mismatch(
+                        path1.begin(), path1.end(),
+                        path2.begin(), path2.end()
+                    );
+
+                    if (it1 == path1.end() || it2 == path2.end()) {
+                        result.AddError(
+                            std::format("{} ('{}') conflicts with {} ('{}')",
+                                       paths[i].name, plg::as_string(path1),
+                                       paths[j].name, plg::as_string(path2))
+                        );
+                    }
+                }
+            }
+        };
+
+        // Check collisions (skip baseDir at index 0)
+        checkCollisions(pathsToValidate, 1);
+
+        // Log results
+        if (!result.warnings.empty()) {
+            logger->Log(std::format("Warnings: {}", plg::join(result.warnings, "; ")), Severity::Warning);
+        }
+
+        if (!result.errors.empty()) {
+            logger->Log(std::format("Validation failed: {}", plg::join(result.errors, "; ")), Severity::Error);
+        }
+
+        return result.IsSuccess();
+    }
+
+    Result<void> StartUpdateMechanism() {
+        switch (config.runtime.updateMode) {
+            case UpdateMode::Manual:
+                // Nothing to start for manual mode
+                logger->Log("Manual update mode - call Update() explicitly",
+                          Severity::Info);
+                break;
+
+            case UpdateMode::BackgroundThread:
+                if (config.runtime.updateInterval <= 0ms) {
+                    return MakeError("Invalid update interval for background thread");
+                }
+                StartBackgroundUpdateThread();
+                break;
+
+            case UpdateMode::Callback:
+                if (!config.runtime.updateCallback) {
+                    return MakeError("No update callback provided");
+                }
+                logger->Log("Callback update mode configured", Severity::Info);
+                break;
+        }
+
+        return {};
+    }
+
+    void StopUpdateMechanism() {
+        switch (config.runtime.updateMode) {
+            case UpdateMode::BackgroundThread:
+                StopBackgroundUpdateThread();
+                break;
+            default:
+                // Nothing to stop for other modes
+                break;
+        }
+    }
+
+    void StartBackgroundUpdateThread() {
+        updateThread = std::jthread([this](std::stop_token token) {
+            // Set thread priority if specified
+            /*if (config.runtime.threadPriority) {
+                ops->SetThreadPriority(*config.runtime.threadPriority);
+            }*/
+
+            auto lastTime = std::chrono::steady_clock::now();
+            const auto interval = config.runtime.updateInterval;
+
+            logger->Log(std::format("Background update thread started (interval: {})", interval), Severity::Info);
+
+            while (!token.stop_requested()) {
+                auto now = std::chrono::steady_clock::now();
+                auto deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime);
+                lastTime = now;
+
+                // Perform update
+                manager.Update(deltaTime);
+
+                // Sleep for remaining time
+                auto updateDuration = std::chrono::steady_clock::now() - now;
+                auto sleepTime = interval - std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration);
+
+                if (sleepTime > 0ms) {
+                    std::this_thread::sleep_for(sleepTime);
+                } else {
+                    logger->Log(std::format("Update took longer than interval: {} > {}",
+                                          std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration),
+                                          interval),
+                              Severity::Warning);
+                }
+            }
+
+            logger->Log("Background update thread stopped", Severity::Info);
+        });
+    }
+
+    void StopBackgroundUpdateThread() {
+        if (updateThread.joinable()) {
+            logger->Log("Stopping background update thread...", Severity::Info);
+            updateThread.request_stop();
+            updateThread.join();
+        }
+    }
+};
+
+// Plugify implementation
+Plugify::Plugify(ServiceLocator services, Config config)
+    : _impl(std::make_unique<Impl>(std::move(services), std::move(config))) {
+}
+
+Plugify::~Plugify() = default;
+
+Result<void> Plugify::Initialize() const {
+    return _impl->Initialize();
+}
+
+void Plugify::Terminate() const {
+    _impl->Terminate();
+}
+
+bool Plugify::IsInitialized() const {
+    return _impl->initialized;
+}
+
+void Plugify::Update(std::chrono::milliseconds deltaTime) const {
+    _impl->Update(deltaTime);
+}
+
+const Manager& Plugify::GetManager() const noexcept {
+    return _impl->manager;
+}
+
+const ServiceLocator& Plugify::GetServices() const noexcept {
+    return _impl->services;
+}
+
+const Config& Plugify::GetConfig() const noexcept {
+    return _impl->config;
+}
+
+const Version& Plugify::GetVersion() const noexcept {
+    return _impl->version;
+}
+
+struct PlugifyBuilder::Impl {
+    ServiceLocator services;
+    Config baseConfig;
+    Config configOverrides;
+    std::optional<std::filesystem::path> configFilePath;
+    bool hasBaseConfig = false;
+    bool hasBaseDirOverride = false;
+    bool hasPathsOverride = false;
+};
+
+// Plugify implementation
+PlugifyBuilder::PlugifyBuilder() : _impl(std::make_unique<Impl>()) {
+}
+
+PlugifyBuilder::~PlugifyBuilder() = default;
+
+// Path configuration methods
+PlugifyBuilder& PlugifyBuilder::WithBaseDir(std::filesystem::path dir) {
+    _impl->configOverrides.paths.baseDir = std::move(dir);
+    _impl->hasBaseDirOverride = true;
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithPaths(Config::Paths paths) {
+    _impl->configOverrides.paths = std::move(paths);
+    _impl->hasPathsOverride = true;
+    return *this;
+}
+
+// Config loading methods with clear priority
+PlugifyBuilder& PlugifyBuilder::WithConfigFile(std::filesystem::path path) {
+    _impl->configFilePath = std::move(path);
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithConfig(Config config) {
+    _impl->baseConfig = std::move(config);
+    _impl->hasBaseConfig = true;
+    return *this;
+}
+
+// Update mode configuration
+PlugifyBuilder& PlugifyBuilder::WithManualUpdate() {
+    _impl->configOverrides.runtime.updateMode = UpdateMode::Manual;
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithBackgroundUpdate(std::chrono::milliseconds interval) {
+    _impl->configOverrides.runtime.updateMode = UpdateMode::BackgroundThread;
+    _impl->configOverrides.runtime.updateInterval = interval;
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithUpdateCallback(std::function<void(std::chrono::milliseconds)> callback) {
+    _impl->configOverrides.runtime.updateMode = UpdateMode::Callback;
+    _impl->configOverrides.runtime.updateCallback = std::move(callback);
+    return *this;
+}
+
+// Service registration...
+PlugifyBuilder& PlugifyBuilder::WithLogger(std::shared_ptr<ILogger> logger) {
+    _impl->services.RegisterInstance<ILogger>(std::move(logger));
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithFileSystem(std::shared_ptr<IFileSystem> fs) {
+    _impl->services.RegisterInstance<IFileSystem>(std::move(fs));
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) {
+    _impl->services.RegisterInstance<IAssemblyLoader>(std::move(loader));
+    return *this;
+}
+
+/*PlugifyBuilder& PlugifyBuilder::WithConfigProvider(std::shared_ptr<IConfigProvider> provider) {
+    _impl->services.RegisterInstance<IConfigProvider>(std::move(provider));
+    return *this;
+}*/
+
+PlugifyBuilder& PlugifyBuilder::WithManifestParser(std::shared_ptr<IManifestParser> parser) {
+    _impl->services.RegisterInstance<IManifestParser>(std::move(parser));
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver) {
+    _impl->services.RegisterInstance<IDependencyResolver>(std::move(resolver));
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> lifecycle) {
+    _impl->services.RegisterInstance<IExtensionLifecycle>(std::move(lifecycle));
+    return *this;
+}
+
+/*PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
+    _impl->services.RegisterInstance<IProgressReporter>(std::move(reporter));
+    return *this;
+}*/
+
+/*PlugifyBuilder& PlugifyBuilder::WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics) {
+    _impl->services.RegisterInstance<IMetricsCollector>(std::move(metrics));
+    return *this;
+}*/
+
+PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
+    _impl->services.RegisterInstance<IEventBus>(std::move(bus));
+    return *this;
+}
+
+PlugifyBuilder& PlugifyBuilder::WithDefaults() {
+    _impl->services.RegisterInstanceIfMissing<ILogger>(std::make_shared<ConsoleLogger>());
+    _impl->services.RegisterInstanceIfMissing<IPlatformOps>(CreatePlatformOps());
+    _impl->services.RegisterInstanceIfMissing<IEventBus>(std::make_shared<SimpleEventBus>());
+    _impl->services.RegisterInstanceIfMissing<IFileSystem>(std::make_shared<ExtendedFileSystem>());
+    _impl->services.RegisterInstanceIfMissing<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(_impl->services.Resolve<IPlatformOps>(), _impl->services.Resolve<IFileSystem>()));
+    //_impl->services.RegisterInstanceIfMissing<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
+    _impl->services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>());
+    _impl->services.RegisterInstanceIfMissing<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_impl->services.Resolve<ILogger>()));
+    _impl->services.RegisterInstanceIfMissing<IExtensionLifecycle>(std::make_shared<DummyLifecycle>());
+    //_impl->services.RegisterInstanceIfMissing<IProgressReporter>(std::make_shared<DefaultProgressReporter>(_impl->services.Resolve<ILogger>()));
+    //_impl->services.RegisterInstanceIfMissing<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());
+    return *this;
+}
+
+Result<std::shared_ptr<Plugify>> PlugifyBuilder::Build() {
+    // Apply configuration resolution strategy:
+    // 1. Start with defaults
+    Config finalConfig;
+
+    // 2. Load from file if specified
+    if (_impl->configFilePath) {
+        if (auto fileConfig = LoadConfigFromFile(*_impl->configFilePath)) {
+            finalConfig.MergeFrom(*fileConfig, ConfigSource::File);
+        } else {
+            return MakeError("Failed to load config from {}",  _impl->configFilePath->string());
+        }
+    }
+
+    // 3. Apply base config if provided
+    if (_impl->hasBaseConfig) {
+        finalConfig.MergeFrom(_impl->baseConfig, ConfigSource::Builder);
+    }
+
+    // 4. Apply specific overrides (highest priority)
+    if (_impl->hasBaseDirOverride || _impl->hasPathsOverride) {
+        finalConfig.MergeFrom(_impl->configOverrides, ConfigSource::Override);
+    }
+
+    // 5. Ensure base directory is set
+    if (finalConfig.paths.baseDir.empty()) {
+        finalConfig.paths.baseDir = std::filesystem::current_path();
+    }
+
+    // 6. Resolve all relative paths
+    finalConfig.paths.ResolveRelativePaths();
+
+    // 7. Validate final configuration
+    if (auto result = finalConfig.Validate(); !result) {
+        return MakeError("Configuration validation failed: {}", result.error());
+    }
+
+    // 8. Set up services with defaults
+    WithDefaults();
+
+    // 9. Create Plugify instance
+    return std::make_shared<Plugify>(std::move(_impl->services),  std::move(finalConfig));
+}
+
+const ServiceLocator&  PlugifyBuilder::GetServices() const noexcept {
+    return _impl->services;
+}
+
+Result<Config> PlugifyBuilder::LoadConfigFromFile(const std::filesystem::path& path) const {
+    auto fs = _impl->services.TryResolve<IFileSystem>();
+    if (!fs) {
+        fs = std::make_shared<StandardFileSystem>();
+    }
+
+    auto text = fs->ReadTextFile(path);
+    if (!text) {
+        return MakeError("Failed to read config file");
+    }
+
+    auto config = glz::read_jsonc<Config>(*text);
+    if (!config) {
+        return MakeError("Failed to parse config file");
+    }
+
+    return *config;
+}
+
+PlugifyBuilder Plugify::CreateBuilder() {
+    return PlugifyBuilder{};
+}
+
+// Convenience factory
+Result<std::shared_ptr<Plugify>> plugify::MakePlugify(const std::filesystem::path& rootDir) {
+    return Plugify::CreateBuilder()
+        .WithBaseDir(rootDir)
+        .Build();
 }

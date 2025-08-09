@@ -1,10 +1,9 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/vector.hpp>
+#include <plg/vector.hpp>
 
 #include <app/counter.hpp>
-
-#include <plugify/compat_format.hpp>
+#include <plg/format.hpp>
 
 #include <forward_list>
 

@@ -1,0 +1,16 @@
+{
+    "name": "experimental",
+    "version": "0.1.0-alpha",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        }
+    ],
+    "conflicts": [],
+    "description": "Experimental alpha plugin.",
+    "author": "Labs",
+    "website": "https://example.com/experimental",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

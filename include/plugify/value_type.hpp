@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
-#include <string_view>
+#include <string>
+
+#include "plg/any.hpp"
 
 namespace plugify {
 	/**
@@ -101,7 +103,7 @@ namespace plugify {
 	/**
 	 * @brief Namespace containing string representations of ValueType enum values.
 	 */
-	namespace ValueName {
+	struct ValueName {
 		static constexpr std::string_view Void = "void";
 		static constexpr std::string_view Bool = "bool";
 		static constexpr std::string_view Char8 = "char8";
@@ -152,12 +154,12 @@ namespace plugify {
 #else
 		#error "Environment not 32 or 64-bit."
 #endif
-	}
+	};
 
 	/**
 	 * @brief Namespace containing utility functions of ValueType enum.
 	 */
-	namespace ValueUtils {
+	struct ValueUtils {
 		/**
 		 * @brief Checks if a value is between two other values.
 		 *
@@ -168,7 +170,7 @@ namespace plugify {
 		 * @return True if x is between a and b, inclusive. False otherwise.
 		 */
 		template<typename T>
-		constexpr bool IsBetween(T x, T a, T b) noexcept {
+		static constexpr bool IsBetween(T x, T a, T b) noexcept {
 			return x >= a && x <= b;
 		}
 
@@ -178,7 +180,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is ValueType::Void. False otherwise.
 		 */
-		constexpr bool IsVoid(ValueType type) noexcept { return type == ValueType::Void; }
+		static constexpr bool IsVoid(ValueType type) noexcept { return type == ValueType::Void; }
 
 		/**
 		 * @brief Tests whether a given type is a valid non-void type.
@@ -186,7 +188,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a valid non-void type. False otherwise.
 		 */
-		constexpr bool IsValid(ValueType type) noexcept { return IsBetween(type, ValueType::Void, ValueType::_LastAssigned); }
+		static constexpr bool IsValid(ValueType type) noexcept { return IsBetween(type, ValueType::Void, ValueType::_LastAssigned); }
 
 		/**
 		 * @brief Tests whether a given type is scalar (has no vector part).
@@ -194,7 +196,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is scalar. False otherwise.
 		 */
-		constexpr bool IsScalar(ValueType type) noexcept { return IsBetween(type, ValueType::_BaseStart, ValueType::_BaseEnd); }
+		static constexpr bool IsScalar(ValueType type) noexcept { return IsBetween(type, ValueType::_BaseStart, ValueType::_BaseEnd); }
 
 		/**
 		 * @brief Tests whether a given type is a scalar floating point of any size.
@@ -202,7 +204,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a scalar floating point. False otherwise.
 		 */
-		constexpr bool IsFloating(ValueType type) noexcept { return IsBetween(type, ValueType::_FloatStart, ValueType::_FloatEnd); }
+		static constexpr bool IsFloating(ValueType type) noexcept { return IsBetween(type, ValueType::_FloatStart, ValueType::_FloatEnd); }
 
 		/**
 		 * @brief Tests whether a given type is a 1-bit boolean.
@@ -210,7 +212,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 1-bit boolean. False otherwise.
 		 */
-		constexpr bool IsBool(ValueType type) noexcept { return type == ValueType::Bool; }
+		static constexpr bool IsBool(ValueType type) noexcept { return type == ValueType::Bool; }
 
 		/**
 		 * @brief Tests whether a given type is an 8-bit character.
@@ -218,7 +220,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an 8-bit character. False otherwise.
 		 */
-		constexpr bool IsChar8(ValueType type) noexcept { return type == ValueType::Char8; }
+		static constexpr bool IsChar8(ValueType type) noexcept { return type == ValueType::Char8; }
 
 		/**
 		 * @brief Tests whether a given type is a 16-bit character.
@@ -226,7 +228,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 16-bit character. False otherwise.
 		 */
-		constexpr bool IsChar16(ValueType type) noexcept { return type == ValueType::Char16; }
+		static constexpr bool IsChar16(ValueType type) noexcept { return type == ValueType::Char16; }
 
 		/**
 		 * @brief Tests whether a given type is an 8-bit integer.
@@ -234,7 +236,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an 8-bit integer. False otherwise.
 		 */
-		constexpr bool IsInt8(ValueType type) noexcept { return type == ValueType::Int8; }
+		static constexpr bool IsInt8(ValueType type) noexcept { return type == ValueType::Int8; }
 
 		/**
 		 * @brief Tests whether a given type is an 8-bit unsigned integer.
@@ -242,7 +244,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an 8-bit unsigned integer. False otherwise.
 		 */
-		constexpr bool IsUInt8(ValueType type) noexcept { return type == ValueType::UInt8; }
+		static constexpr bool IsUInt8(ValueType type) noexcept { return type == ValueType::UInt8; }
 
 		/**
 		 * @brief Tests whether a given type is a 16-bit integer.
@@ -250,7 +252,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 16-bit integer. False otherwise.
 		 */
-		constexpr bool IsInt16(ValueType type) noexcept { return type == ValueType::Int16; }
+		static constexpr bool IsInt16(ValueType type) noexcept { return type == ValueType::Int16; }
 
 		/**
 		 * @brief Tests whether a given type is a 16-bit unsigned integer.
@@ -258,7 +260,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 16-bit unsigned integer. False otherwise.
 		 */
-		constexpr bool IsUInt16(ValueType type) noexcept { return type == ValueType::UInt16; }
+		static constexpr bool IsUInt16(ValueType type) noexcept { return type == ValueType::UInt16; }
 
 		/**
 		 * @brief Tests whether a given type is a 32-bit integer.
@@ -266,7 +268,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 32-bit integer. False otherwise.
 		 */
-		constexpr bool IsInt32(ValueType type) noexcept { return type == ValueType::Int32; }
+		static constexpr bool IsInt32(ValueType type) noexcept { return type == ValueType::Int32; }
 
 		/**
 		 * @brief Tests whether a given type is a 32-bit unsigned integer.
@@ -274,7 +276,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 32-bit unsigned integer. False otherwise.
 		 */
-		constexpr bool IsUInt32(ValueType type) noexcept { return type == ValueType::UInt32; }
+		static constexpr bool IsUInt32(ValueType type) noexcept { return type == ValueType::UInt32; }
 
 		/**
 		 * @brief Tests whether a given type is a 64-bit integer.
@@ -282,7 +284,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 64-bit integer. False otherwise.
 		 */
-		constexpr bool IsInt64(ValueType type) noexcept { return type == ValueType::Int64; }
+		static constexpr bool IsInt64(ValueType type) noexcept { return type == ValueType::Int64; }
 
 		/**
 		 * @brief Tests whether a given type is a 64-bit unsigned integer.
@@ -290,7 +292,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a 64-bit unsigned integer. False otherwise.
 		 */
-		constexpr bool IsUInt64(ValueType type) noexcept { return type == ValueType::UInt64; }
+		static constexpr bool IsUInt64(ValueType type) noexcept { return type == ValueType::UInt64; }
 
 		/**
 		 * @brief Tests whether a given type is a pointer.
@@ -298,7 +300,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a pointer. False otherwise.
 		 */
-		constexpr bool IsPointer(ValueType type) noexcept { return type == ValueType::Pointer; }
+		static constexpr bool IsPointer(ValueType type) noexcept { return type == ValueType::Pointer; }
 
 		/**
 		 * @brief Tests whether a given type is a float.
@@ -306,7 +308,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a float. False otherwise.
 		 */
-		constexpr bool IsFloat(ValueType type) noexcept { return type == ValueType::Float; }
+		static constexpr bool IsFloat(ValueType type) noexcept { return type == ValueType::Float; }
 
 		/**
 		 * @brief Tests whether a given type is a double.
@@ -314,7 +316,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a double. False otherwise.
 		 */
-		constexpr bool IsDouble(ValueType type) noexcept { return type == ValueType::Double; }
+		static constexpr bool IsDouble(ValueType type) noexcept { return type == ValueType::Double; }
 
 		/**
 		 * @brief Tests whether a given type is a C-function pointer.
@@ -322,7 +324,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a C-function pointer. False otherwise.
 		 */
-		constexpr bool IsFunction(ValueType type) noexcept { return type == ValueType::Function; }
+		static constexpr bool IsFunction(ValueType type) noexcept { return type == ValueType::Function; }
 
 		/**
 		 * @brief Tests whether a given type is a string.
@@ -330,7 +332,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a string. False otherwise.
 		 */
-		constexpr bool IsString(ValueType type) noexcept { return type == ValueType::String; }
+		static constexpr bool IsString(ValueType type) noexcept { return type == ValueType::String; }
 
 		/**
 		 * @brief Tests whether a given type is an any.
@@ -338,7 +340,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an any. False otherwise.
 		 */
-		constexpr bool IsAny(ValueType type) noexcept { return type == ValueType::Any; }
+		static constexpr bool IsAny(ValueType type) noexcept { return type == ValueType::Any; }
 
 		/**
 		 * @brief Tests whether a given type is an object of any size.
@@ -346,7 +348,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an object. False otherwise.
 		 */
-		constexpr bool IsObject(ValueType type) noexcept { return IsBetween(type, ValueType::_ObjectStart, ValueType::_ObjectEnd); }
+		static constexpr bool IsObject(ValueType type) noexcept { return IsBetween(type, ValueType::_ObjectStart, ValueType::_ObjectEnd); }
 
 		/**
 		 * @brief Tests whether a given type is an array of any size.
@@ -354,7 +356,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is an array. False otherwise.
 		 */
-		constexpr bool IsArray(ValueType type) noexcept { return IsBetween(type, ValueType::_ArrayStart, ValueType::_ArrayEnd); }
+		static constexpr bool IsArray(ValueType type) noexcept { return IsBetween(type, ValueType::_ArrayStart, ValueType::_ArrayEnd); }
 
 		/**
 		 * @brief Tests whether a given type is a POD (plain old data) structure of any size.
@@ -362,7 +364,7 @@ namespace plugify {
 		 * @param type The type to test.
 		 * @return True if type is a POD structure. False otherwise.
 		 */
-		constexpr bool IsStruct(ValueType type) noexcept { return IsBetween(type, ValueType::_StructStart, ValueType::_StructEnd); }
+		static constexpr bool IsStruct(ValueType type) noexcept { return IsBetween(type, ValueType::_StructStart, ValueType::_StructEnd); }
 
 
 		/**
@@ -375,156 +377,116 @@ namespace plugify {
 		 * Hidden object parameters are those where the return argument is allocated by the caller function and
 		 * passed as the first argument. This is often true for objects and large structs.
 		 */
-		constexpr bool IsHiddenParam(ValueType type) noexcept {
+		static constexpr bool IsHiddenParam(ValueType type) noexcept {
 			return IsObject(type) || IsBetween(type, ValueType::_HiddenParamStart, ValueType::_StructEnd);
 		}
-		
-		/**
-		 * @brief Convert a ValueType enum value to its string representation.
-		 * @param value The ValueType value to convert.
-		 * @return The string representation of the ValueType.
-		 */
-		constexpr std::string_view ToString(ValueType value) noexcept {
-			switch (value) {
-				case ValueType::Void:           return ValueName::Void;
-				case ValueType::Bool:           return ValueName::Bool;
-				case ValueType::Char8:          return ValueName::Char8;
-				case ValueType::Char16:         return ValueName::Char16;
-				case ValueType::Int8:           return ValueName::Int8;
-				case ValueType::Int16:          return ValueName::Int16;
-				case ValueType::Int32:          return ValueName::Int32;
-				case ValueType::Int64:          return ValueName::Int64;
-				case ValueType::UInt8:          return ValueName::UInt8;
-				case ValueType::UInt16:         return ValueName::UInt16;
-				case ValueType::UInt32:         return ValueName::UInt32;
-				case ValueType::UInt64:         return ValueName::UInt64;
-				case ValueType::Pointer:        return ValueName::Pointer;
-				case ValueType::Float:          return ValueName::Float;
-				case ValueType::Double:         return ValueName::Double;
-				case ValueType::Function:       return ValueName::Function;
-				case ValueType::String:         return ValueName::String;
-				case ValueType::Any:            return ValueName::Any;
-				case ValueType::ArrayBool:      return ValueName::ArrayBool;
-				case ValueType::ArrayChar8:     return ValueName::ArrayChar8;
-				case ValueType::ArrayChar16:    return ValueName::ArrayChar16;
-				case ValueType::ArrayInt8:      return ValueName::ArrayInt8;
-				case ValueType::ArrayInt16:     return ValueName::ArrayInt16;
-				case ValueType::ArrayInt32:     return ValueName::ArrayInt32;
-				case ValueType::ArrayInt64:     return ValueName::ArrayInt64;
-				case ValueType::ArrayUInt8:     return ValueName::ArrayUInt8;
-				case ValueType::ArrayUInt16:    return ValueName::ArrayUInt16;
-				case ValueType::ArrayUInt32:    return ValueName::ArrayUInt32;
-				case ValueType::ArrayUInt64:    return ValueName::ArrayUInt64;
-				case ValueType::ArrayPointer:   return ValueName::ArrayPointer;
-				case ValueType::ArrayFloat:     return ValueName::ArrayFloat;
-				case ValueType::ArrayDouble:    return ValueName::ArrayDouble;
-				case ValueType::ArrayString:    return ValueName::ArrayString;
-				case ValueType::ArrayAny:       return ValueName::ArrayAny;
-				case ValueType::ArrayVector2:   return ValueName::ArrayVector2;
-				case ValueType::ArrayVector3:   return ValueName::ArrayVector3;
-				case ValueType::ArrayVector4:   return ValueName::ArrayVector4;
-				case ValueType::ArrayMatrix4x4: return ValueName::ArrayMatrix4x4;
-				case ValueType::Vector2:        return ValueName::Vector2;
-				case ValueType::Vector3:        return ValueName::Vector3;
-				case ValueType::Vector4:        return ValueName::Vector4;
-				case ValueType::Matrix4x4:      return ValueName::Matrix4x4;
-				default:                        return ValueName::Invalid;
-			}
-		}
 
-		/**
-		 * @brief Convert a string representation to a ValueType enum value.
-		 * @param value The string representation of ValueType.
-		 * @return The corresponding ValueType enum value.
-		 */
-		constexpr ValueType FromString(std::string_view value) noexcept {
-			if (value == ValueName::Void) {
-				return ValueType::Void;
-			} else if (value == ValueName::Bool) {
-				return ValueType::Bool;
-			} else if (value == ValueName::Char8) {
-				return ValueType::Char8;
-			} else if (value == ValueName::Char16) {
-				return ValueType::Char16;
-			} else if (value == ValueName::Int8) {
-				return ValueType::Int8;
-			} else if (value == ValueName::Int16) {
-				return ValueType::Int16;
-			} else if (value == ValueName::Int32) {
-				return ValueType::Int32;
-			} else if (value == ValueName::Int64) {
-				return ValueType::Int64;
-			} else if (value == ValueName::UInt8) {
-				return ValueType::UInt8;
-			} else if (value == ValueName::UInt16) {
-				return ValueType::UInt16;
-			} else if (value == ValueName::UInt32) {
-				return ValueType::UInt32;
-			} else if (value == ValueName::UInt64) {
-				return ValueType::UInt64;
-			} else if (value == ValueName::Pointer) {
-				return ValueType::Pointer;
-			} else if (value == ValueName::Float) {
-				return ValueType::Float;
-			} else if (value == ValueName::Double) {
-				return ValueType::Double;
-			} else if (value == ValueName::Function) {
-				return ValueType::Function;
-			} else if (value == ValueName::String) {
-				return ValueType::String;
-			}  else if (value == ValueName::Any) {
-				return ValueType::Any;
-			} else if (value == ValueName::ArrayBool) {
-				return ValueType::ArrayBool;
-			} else if (value == ValueName::ArrayChar8) {
-				return ValueType::ArrayChar8;
-			} else if (value == ValueName::ArrayChar16) {
-				return ValueType::ArrayChar16;
-			} else if (value == ValueName::ArrayInt8) {
-				return ValueType::ArrayInt8;
-			} else if (value == ValueName::ArrayInt16) {
-				return ValueType::ArrayInt16;
-			} else if (value == ValueName::ArrayInt32) {
-				return ValueType::ArrayInt32;
-			} else if (value == ValueName::ArrayInt64) {
-				return ValueType::ArrayInt64;
-			} else if (value == ValueName::ArrayUInt8) {
-				return ValueType::ArrayUInt8;
-			} else if (value == ValueName::ArrayUInt16) {
-				return ValueType::ArrayUInt16;
-			} else if (value == ValueName::ArrayUInt32) {
-				return ValueType::ArrayUInt32;
-			} else if (value == ValueName::ArrayUInt64) {
-				return ValueType::ArrayUInt64;
-			} else if (value == ValueName::ArrayPointer) {
-				return ValueType::ArrayPointer;
-			} else if (value == ValueName::ArrayFloat) {
-				return ValueType::ArrayFloat;
-			} else if (value == ValueName::ArrayDouble) {
-				return ValueType::ArrayDouble;
-			} else if (value == ValueName::ArrayString) {
-				return ValueType::ArrayString;
-			} else if (value == ValueName::ArrayAny) {
-				return ValueType::ArrayAny;
-			} else if (value == ValueName::ArrayVector2) {
-				return ValueType::ArrayVector2;
-			} else if (value == ValueName::ArrayVector3) {
-				return ValueType::ArrayVector3;
-			} else if (value == ValueName::ArrayVector4) {
-				return ValueType::ArrayVector4;
-			} else if (value == ValueName::ArrayMatrix4x4) {
-				return ValueType::ArrayMatrix4x4;
-			} else if (value == ValueName::Vector2) {
-				return ValueType::Vector2;
-			} else if (value == ValueName::Vector3) {
-				return ValueType::Vector3;
-			} else if (value == ValueName::Vector4) {
-				return ValueType::Vector4;
-			} else if (value == ValueName::Matrix4x4) {
-				return ValueType::Matrix4x4;
-			}
-			return ValueType::Invalid;
-		}
-	} // namespace ValueUtils
-	
+	    /**
+	     * @brief Returns the size in bytes of the given ValueType.
+	     *
+	     * Note: For arrays, this returns the size of the container (std::vector),
+	     * not the size of the elements inside.
+	     *
+	     * @param type The ValueType to check.
+	     * @return The size in bytes of the corresponding C++ type.
+	     */
+	    static constexpr size_t SizeOf(ValueType type) noexcept {
+		    switch (type) {
+                case ValueType::Bool:    return sizeof(bool);
+                case ValueType::Char8:   return sizeof(char);
+                case ValueType::Char16:  return sizeof(char16_t);
+                case ValueType::Int8:    return sizeof(int8_t);
+                case ValueType::Int16:   return sizeof(int16_t);
+                case ValueType::Int32:   return sizeof(int32_t);
+                case ValueType::Int64:   return sizeof(int64_t);
+                case ValueType::UInt8:   return sizeof(uint8_t);
+                case ValueType::UInt16:  return sizeof(uint16_t);
+                case ValueType::UInt32:  return sizeof(uint32_t);
+                case ValueType::UInt64:  return sizeof(uint64_t);
+                case ValueType::Pointer: return sizeof(void*);
+                case ValueType::Float:   return sizeof(float);
+                case ValueType::Double:  return sizeof(double);
+
+                case ValueType::String:  return sizeof(std::string);
+                case ValueType::Any:     return sizeof(plg::any);
+
+                // Arrays -> std::vector overhead (not element size!)
+                case ValueType::ArrayBool:     return sizeof(std::vector<bool>);
+                case ValueType::ArrayChar8:    return sizeof(std::vector<char>);
+                case ValueType::ArrayChar16:   return sizeof(std::vector<char16_t>);
+                case ValueType::ArrayInt8:     return sizeof(std::vector<int8_t>);
+                case ValueType::ArrayInt16:    return sizeof(std::vector<int16_t>);
+                case ValueType::ArrayInt32:    return sizeof(std::vector<int32_t>);
+                case ValueType::ArrayInt64:    return sizeof(std::vector<int64_t>);
+                case ValueType::ArrayUInt8:    return sizeof(std::vector<uint8_t>);
+                case ValueType::ArrayUInt16:   return sizeof(std::vector<uint16_t>);
+                case ValueType::ArrayUInt32:   return sizeof(std::vector<uint32_t>);
+                case ValueType::ArrayUInt64:   return sizeof(std::vector<uint64_t>);
+                case ValueType::ArrayPointer:  return sizeof(std::vector<void*>);
+                case ValueType::ArrayFloat:    return sizeof(std::vector<float>);
+                case ValueType::ArrayDouble:   return sizeof(std::vector<double>);
+                case ValueType::ArrayString:   return sizeof(std::vector<std::string>);
+                case ValueType::ArrayAny:      return sizeof(std::vector<plg::any>);
+                case ValueType::ArrayVector2:  return sizeof(std::vector<plg::vec2>);
+                case ValueType::ArrayVector3:  return sizeof(std::vector<plg::vec3>);
+                case ValueType::ArrayVector4:  return sizeof(std::vector<plg::vec4>);
+                case ValueType::ArrayMatrix4x4:return sizeof(std::vector<plg::mat4x4>);
+
+                // Structs
+                case ValueType::Vector2:  return sizeof(plg::vec2);
+                case ValueType::Vector3:  return sizeof(plg::vec3);
+                case ValueType::Vector4:  return sizeof(plg::vec4);
+                case ValueType::Matrix4x4:return sizeof(plg::mat4x4);
+
+                // Special cases
+                case ValueType::Function: return sizeof(plg::function);
+                case ValueType::Void:     return 0;
+
+                default: return 0; // Invalid / unsupported
+		    }
+	    }
+	};
+
+	// Test if ValueType enum values match the indices in plg::any
+	static_assert(ValueType::Void == static_cast<ValueType>(plg::any::index_of<plg::none>));
+	static_assert(ValueType::Bool == static_cast<ValueType>(plg::any::index_of<bool>));
+	static_assert(ValueType::Char8 == static_cast<ValueType>(plg::any::index_of<char>));
+	static_assert(ValueType::Char16 == static_cast<ValueType>(plg::any::index_of<char16_t>));
+	static_assert(ValueType::Int8 == static_cast<ValueType>(plg::any::index_of<int8_t>));
+	static_assert(ValueType::Int16 == static_cast<ValueType>(plg::any::index_of<int16_t>));
+	static_assert(ValueType::Int32 == static_cast<ValueType>(plg::any::index_of<int32_t>));
+	static_assert(ValueType::Int64 == static_cast<ValueType>(plg::any::index_of<int64_t>));
+	static_assert(ValueType::UInt8 == static_cast<ValueType>(plg::any::index_of<uint8_t>));
+	static_assert(ValueType::UInt16 == static_cast<ValueType>(plg::any::index_of<uint16_t>));
+	static_assert(ValueType::UInt32 == static_cast<ValueType>(plg::any::index_of<uint32_t>));
+	static_assert(ValueType::UInt64 == static_cast<ValueType>(plg::any::index_of<uint64_t>));
+	static_assert(ValueType::Pointer == static_cast<ValueType>(plg::any::index_of<void*>));
+	static_assert(ValueType::Float == static_cast<ValueType>(plg::any::index_of<float>));
+	static_assert(ValueType::Double == static_cast<ValueType>(plg::any::index_of<double>));
+	static_assert(ValueType::Function == static_cast<ValueType>(plg::any::index_of<plg::function>));
+	static_assert(ValueType::String == static_cast<ValueType>(plg::any::index_of<plg::string>));
+	static_assert(ValueType::Any == static_cast<ValueType>(plg::any::index_of<plg::variant<plg::none>>));
+	static_assert(ValueType::ArrayBool == static_cast<ValueType>(plg::any::index_of<plg::vector<bool>>));
+	static_assert(ValueType::ArrayChar8 == static_cast<ValueType>(plg::any::index_of<plg::vector<char>>));
+	static_assert(ValueType::ArrayChar16 == static_cast<ValueType>(plg::any::index_of<plg::vector<char16_t>>));
+	static_assert(ValueType::ArrayInt8 == static_cast<ValueType>(plg::any::index_of<plg::vector<int8_t>>));
+	static_assert(ValueType::ArrayInt16 == static_cast<ValueType>(plg::any::index_of<plg::vector<int16_t>>));
+	static_assert(ValueType::ArrayInt32 == static_cast<ValueType>(plg::any::index_of<plg::vector<int32_t>>));
+	static_assert(ValueType::ArrayInt64 == static_cast<ValueType>(plg::any::index_of<plg::vector<int64_t>>));
+	static_assert(ValueType::ArrayUInt8 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint8_t>>));
+	static_assert(ValueType::ArrayUInt16 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint16_t>>));
+	static_assert(ValueType::ArrayUInt32 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint32_t>>));
+	static_assert(ValueType::ArrayUInt64 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint64_t>>));
+	static_assert(ValueType::ArrayPointer == static_cast<ValueType>(plg::any::index_of<plg::vector<void*>>));
+	static_assert(ValueType::ArrayFloat == static_cast<ValueType>(plg::any::index_of<plg::vector<float>>));
+	static_assert(ValueType::ArrayDouble == static_cast<ValueType>(plg::any::index_of<plg::vector<double>>));
+	static_assert(ValueType::ArrayString == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::string>>));
+	static_assert(ValueType::ArrayAny == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::variant<plg::none>>>));
+	static_assert(ValueType::ArrayVector2 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec2>>));
+	static_assert(ValueType::ArrayVector3 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec3>>));
+	static_assert(ValueType::ArrayVector4 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec4>>));
+	static_assert(ValueType::ArrayMatrix4x4 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::mat4x4>>));
+	static_assert(ValueType::Vector2 == static_cast<ValueType>(plg::any::index_of<plg::vec2>));
+	static_assert(ValueType::Vector3 == static_cast<ValueType>(plg::any::index_of<plg::vec3>));
+	static_assert(ValueType::Vector4 == static_cast<ValueType>(plg::any::index_of<plg::vec4>));
 } // namespace plugify

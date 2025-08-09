@@ -1,0 +1,17 @@
+{
+    "name": "raytracing-engine",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "graphics-engine",
+            "constraints": ">=2.1.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Provides real-time ray tracing support.",
+    "author": "RenderX",
+    "website": "https://example.com/raytracing-engine",
+    "license": "Apache-2.0",
+    "language": "cpp",
+    "entry": "test"
+}

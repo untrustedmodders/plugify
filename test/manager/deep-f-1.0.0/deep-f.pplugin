@@ -1,0 +1,12 @@
+{
+    "name": "deep-f",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "End of deep dependency chain.",
+    "author": "ChainTest",
+    "website": "https://example.com/deep-f",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

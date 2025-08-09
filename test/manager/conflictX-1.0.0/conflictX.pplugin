@@ -1,0 +1,16 @@
+{
+    "name": "conflictX",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "conflictY"
+        }
+    ],
+    "description": "Conflicts with Y",
+    "author": "xAI",
+    "website": "https://example.com/conflictX",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

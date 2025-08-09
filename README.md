@@ -11,7 +11,7 @@
 </h1>
 
 <div align="center">
-  A Modern C++ Plugin and Package Manager with Multi-Language Support
+  A Modern C++ Plugin Manager with Multi-Language Support
   <br />
   <a href="https://github.com/untrustedmodders/plugify/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
   ·
@@ -67,12 +67,6 @@ Plugify allows you to install language modules for various programming languages
 
 3. **Inter-Language Communication:**  
 Make plugins communicate to each other in any existing language. Export methods, and share data between plugins, without regard for the programming language used.
-
-5. **Package Manager:**  
-Lets your system manage packages. It has a robust package manager. Install, remove, update, downgrade packages easily and make your development environment keep up with the latest packages to read.
-
-6. **Versatile Packages:**  
-The package system handles plugins and language modules, and covers most of a developer’s needs. Package your plugins and modules for easy sharing. Easily extend Plugify with new packages that meet the requirements of your project and fit the ecosystem.
 
 ### Motivation
 
@@ -285,20 +279,7 @@ To build the basic testing app:
    ```sh
    git clone https://github.com/untrustedmodders/plugify.git
    ```
-   
-5. Install CURL, otherwise build it in embedding mode with cmake options:
-    
-   a. Linux:
-   ```sh
-   sudo apt-get install -y libcurl4-openssl-dev
-   ```
-   
-   b. Mac:
-   ```sh
-   brew install curl
-   ```
-   
-   > The dependencies can be used as external `(find_package)` and embedding `(add_subdirectory)`, you can use plugify options to choose what you suits your need.
+
 7. Create build folder:
    
    ```sh

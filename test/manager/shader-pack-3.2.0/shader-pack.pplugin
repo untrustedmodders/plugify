@@ -1,0 +1,17 @@
+{
+    "name": "shader-pack",
+    "version": "3.2.0",
+    "dependencies": [
+        {
+            "name": "graphics-engine",
+            "constraints": ">=2.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "A set of high-quality shaders.",
+    "author": "RenderX",
+    "website": "https://example.com/shader-pack",
+    "license": "GPL-3.0",
+    "language": "cpp",
+    "entry": "test"
+}

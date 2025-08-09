@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/variant.hpp>
+#include <plg/variant.hpp>
 
 #if TEST_HAS_NO_EXCEPTIONS
 namespace {

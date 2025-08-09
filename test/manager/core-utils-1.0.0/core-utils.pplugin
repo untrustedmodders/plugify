@@ -1,0 +1,12 @@
+{
+    "name": "core-utils",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Core utility functions",
+    "author": "xAI",
+    "website": "https://example.com/core-utils",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

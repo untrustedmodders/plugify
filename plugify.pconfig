@@ -5,7 +5,5 @@
     "dataDir": "data",
     "logsDir": "logs",
     "logSeverity": "debug",
-    "repositories": [
-    ],
-    "preferOwnSymbols": false
+    "preferOwnSymbols": false,
 }

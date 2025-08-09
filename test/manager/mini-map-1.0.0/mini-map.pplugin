@@ -1,0 +1,16 @@
+{
+    "name": "mini-map",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "map-editor"
+        }
+    ],
+    "conflicts": [],
+    "description": "Mini-map overlay feature for games.",
+    "author": "UI Addons",
+    "website": "https://example.com/mini-map",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

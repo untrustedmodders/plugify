@@ -1,0 +1,17 @@
+{
+    "name": "graphics-engine",
+    "version": "2.2.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Newer graphics engine release.",
+    "author": "RenderX",
+    "website": "https://example.com/graphics-engine",
+    "license": "Apache-2.0",
+    "language": "cpp",
+    "entry": "test"
+}

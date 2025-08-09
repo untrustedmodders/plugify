@@ -1,0 +1,17 @@
+{
+    "name": "nonexistent-dep",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "imaginary-plugin",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Depends on a plugin that does not exist.",
+    "author": "TestGen",
+    "website": "https://example.com/nonexistent-dep",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

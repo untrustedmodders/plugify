@@ -1,0 +1,16 @@
+{
+    "name": "cyclic-x",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "cyclic-y"
+        }
+    ],
+    "conflicts": [],
+    "description": "Part of new cycle test.",
+    "author": "CycleTest",
+    "website": "https://example.com/cyclic-x",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

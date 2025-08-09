@@ -1,0 +1,16 @@
+{
+    "name": "sound-engine",
+    "version": "2.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        }
+    ],
+    "conflicts": [],
+    "description": "Handles sound effects and music playback.",
+    "author": "SoundDev",
+    "website": "https://example.com/sound-engine",
+    "license": "Apache-2.0",
+    "language": "cpp",
+    "entry": "test"
+}

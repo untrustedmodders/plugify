@@ -1,0 +1,40 @@
+{
+    "name": "complexPlugin",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": ">=1.0.0"
+        },
+        {
+            "name": "logger",
+            "constraints": ">=1.2.0"
+        },
+        {
+            "name": "database",
+            "constraints": ">=2.0.1"
+        },
+        {
+            "name": "ui-framework",
+            "constraints": ">=3.0.0"
+        },
+        {
+            "name": "auth-module",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "conflictX"
+        },
+        {
+            "name": "conflictY"
+        }
+    ],
+    "description": "Complex with many deps and conflicts",
+    "author": "xAI",
+    "website": "https://example.com/complexPlugin",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

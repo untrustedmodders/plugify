@@ -1,0 +1,12 @@
+{
+    "name": "longDescPlugin",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "This is a very long description to test large manifests. It goes on and on about nothing in particular, just to make the JSON object bigger.",
+    "author": "xAI with a long name Inc.",
+    "website": "https://example.com/longDescPlugin/with/a/long/path",
+    "license": "A very long license name like GNU Affero General Public License v3.0 or later",
+    "language": "cpp",
+    "entry": "test"
+}

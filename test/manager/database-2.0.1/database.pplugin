@@ -1,0 +1,17 @@
+{
+    "name": "database",
+    "version": "2.0.1",
+    "dependencies": [
+        {
+            "name": "logger",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Database connector",
+    "author": "xAI",
+    "website": "https://example.com/database",
+    "license": "GPL-3.0",
+    "language": "cpp",
+    "entry": "test"
+}

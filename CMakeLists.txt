@@ -47,11 +47,34 @@ include(PlugifyRequirement)
 
 # ------------------------------------------------------------------------------
 # Plugify
-if(PLUGIFY_INTERFACE)
-    file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/interface/*.cpp")
-    set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} "src/core/plugify_provider.cpp" "src/core/plugify_context.cpp")
+file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/core/*.cpp")
+
+if(ORBIS OR PROSPERO)
+    set(PLUGIFY_PLATFORM_NAME "playstation")
+elseif(SWITCH)
+    set(PLUGIFY_PLATFORM_NAME "switch")
+elseif(WIN32)
+    set(PLUGIFY_PLATFORM_NAME "windows")
+else() #if(APPLE OR LINUX OR ANDROID OR UNIX)
+    set(PLUGIFY_PLATFORM_NAME "unix")
+endif()
+set(PLUGIFY_PLATFORM_SOURCES "src/platform/${PLUGIFY_PLATFORM_NAME}_ops.cpp")
+
+if(PLUGIFY_CPU_ARCH_ARM64)
+    set(PLUGIYFY_JIT_ARCH "a64")
+elseif(PLUGIFY_CPU_ARCH_ARM32)
+    set(PLUGIYFY_JIT_ARCH "a32")
 else()
-    file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
+    set(PLUGIYFY_JIT_ARCH "x86")
+endif()
+file(GLOB_RECURSE PLUGIFY_JIT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/jit/${PLUGIYFY_JIT_ARCH}/*.cpp")
+
+set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES} ${PLUGIFY_JIT_SOURCES})
+
+if(PLUGIFY_BUILD_SHARED_LIB AND NOT BUILD_SHARED_LIBS)
+    message(WARNING "PLUGIFY_BUILD_SHARED_LIB is ON, but plugify will be built as a static library")
+elseif(NOT PLUGIFY_BUILD_SHARED_LIB AND BUILD_SHARED_LIBS)
+    message(WARNING "PLUGIFY_BUILD_SHARED_LIB is OFF, but plugify will be built as a static library")
 endif()
 
 if(NOT PLUGIFY_BUILD_OBJECT_LIB)
@@ -78,16 +101,38 @@ if(PLUGIFY_BUILD_OBJECT_LIB)
 endif()
 
 if(PLUGIFY_COMPILER_MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /MP)
+    set(PLUGIFY_COMPILE_OPTIONS /W4 /WX /MP)
 elseif(PLUGIFY_COMPILER_CLANG_CL)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+    set(PLUGIFY_COMPILE_OPTIONS /W4 /WX)
 else(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
+    set(PLUGIFY_COMPILE_OPTIONS -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
 if(LINUX)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
+                -g3 -gdwarf-4 -fno-omit-frame-pointer -fno-inline
+        )
+        if(PLUGIFY_COMPILER_CLANG)
+            set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
+                    -fstandalone-debug -glldb
+            )
+        elseif(PLUGIFY_COMPILER_GCC)
+            set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
+                    -ggdb3
+                    -fno-eliminate-unused-debug-types
+                    -femit-class-debug-always
+                    -fvar-tracking
+                    -fvar-tracking-assignments
+                    -grecord-gcc-switches
+            )
+        endif()
+    endif()
+
     target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
 endif()
+
+target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})
 
 if(PLUGIFY_HAS_LIBCPP)
     target_compile_options(${PROJECT_NAME} PUBLIC -stdlib=libc++)
@@ -98,26 +143,6 @@ else()
     if(PLUGIFY_HAS_STATIC_LIBSTDCPP)
         target_link_libraries(${PROJECT_NAME} PUBLIC -static-libstdc++ -static-libgcc)
     endif()
-endif()
-
-# Check and add each flag
-if(PLUGIFY_EXTRA_FLAGS)
-    foreach(FLAG ${PLUGIFY_EXTRA_FLAGS})
-        string(REPLACE "-" "" FLAG_NAME ${FLAG})
-        string(REPLACE "/" "" FLAG_NAME ${FLAG_NAME})
-        string(TOUPPER ${FLAG_NAME} FLAG_VAR)
-        set(CHECK_VAR "COMPILER_SUPPORTS_${FLAG_VAR}")
-
-        include(CheckCXXCompilerFlag)
-        check_cxx_compiler_flag(${FLAG} ${CHECK_VAR})
-
-        if(${${CHECK_VAR}})
-            message(STATUS "Compiler supports ${FLAG}")
-            target_compile_options(${PROJECT_NAME} PUBLIC ${FLAG})
-        else()
-            message(WARNING "Compiler does not support ${FLAG}")
-        endif()
-    endforeach()
 endif()
 
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
@@ -166,19 +191,12 @@ set(PLUGIFY_COMPILE_DEFINITIONS
         PLUGIFY_COMPILER_INTEL=$<BOOL:${PLUGIFY_COMPILER_INTEL}>
 )
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-        PLUGIFY_FORMAT_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_FORMAT}>
-        PLUGIFY_STACKTRACE_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_STACKTRACE}>
-        PLUGIFY_DEBUGGING_SUPPORT=$<BOOL:${COMPILER_SUPPORTS_DEBUGGING}>
-)
-
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         ${PLUGIFY_COMPILE_DEFINITIONS}
-        PLUGIFY_INTERFACE=$<BOOL:${PLUGIFY_INTERFACE}>
-        PLUGIFY_DOWNLOADER=$<BOOL:${PLUGIFY_DOWNLOADER}>
-        PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
-        PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
-        PLUGIFY_SEPARATE_SOURCE_FILES=0
+        PLUGIFY_CORE=1
+
+        WITHOUT_COOKIEOPEN
+        LIBSOLV_SOLVABLE_PREPEND_DEP
 )
 
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
@@ -190,21 +208,10 @@ if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
 endif()
 
 include(PlugifySanitizer)
-include(PlugifyTools)
 
 # ------------------------------------------------------------------------------
 # Test
 if(PLUGIFY_BUILD_TESTS)
-    configure_file(
-            ${CMAKE_SOURCE_DIR}/plugify.pconfig
-            ${CMAKE_BINARY_DIR}/plugify.pconfig
-            COPYONLY
-    )
-    configure_file(
-            ${CMAKE_SOURCE_DIR}/crashpad.jsonc
-            ${CMAKE_BINARY_DIR}/crashpad.jsonc
-            COPYONLY
-    )
     add_subdirectory(test/plug)
     add_subdirectory(test/containers)
 endif()

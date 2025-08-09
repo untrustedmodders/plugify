@@ -1,0 +1,17 @@
+{
+    "name": "anotherMissing",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "phantom",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Another missing dep",
+    "author": "xAI",
+    "website": "https://example.com/anotherMissing",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

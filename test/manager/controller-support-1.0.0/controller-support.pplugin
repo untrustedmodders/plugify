@@ -1,0 +1,16 @@
+{
+    "name": "controller-support",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        }
+    ],
+    "conflicts": [],
+    "description": "Adds support for game controllers.",
+    "author": "InputWorks",
+    "website": "https://example.com/controller-support",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

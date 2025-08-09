@@ -1,0 +1,11 @@
+{
+    "name": "noLicense",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Missing license",
+    "author": "xAI",
+    "website": "https://example.com/noLicense",
+    "language": "cpp",
+    "entry": "test"
+}

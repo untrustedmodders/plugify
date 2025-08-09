@@ -1,116 +1,134 @@
 #pragma once
 
-#include <cstdint>
-#include <filesystem>
-#include <memory>
-#include <span>
+#include "plugify/global.h"
+#include "plugify/config.hpp"
+#include "plugify/service_locator.hpp"
+#include "plugify/manager.hpp"
+#include "plugify/provider.hpp"
+#include "plugify/config_provider.hpp"
+#include "plugify/event_bus.hpp"
+#include "plugify/dependency_resolver.hpp"
+#include "plugify/file_system.hpp"
+#include "plugify/manifest_parser.hpp"
+#include "plugify/lifecycle.hpp"
+//#include "plugify/progress_reporter.hpp"
+//#include "plugify/metric_collector.hpp"
+//#include "plugify/plugin_lifecycle.hpp"
+#include "plugify/assembly_loader.hpp"
 
-#include "config.hpp"
-#include "version.hpp"
+namespace std {
+    class shared_ptr_access
+    {
+        template <typename _T, typename ... _Args>
+        static _T* __construct(void* __pv, _Args&& ... __args)
+        { return ::new(__pv) _T(forward<_Args>(__args)...); }
 
-#include <plugify_export.h>
+        template <typename _T>
+        static void __destroy(_T* __ptr) { __ptr->~_T(); }
+
+        template <typename _T, typename _A>
+        friend class __shared_ptr_storage;
+    };
+}
 
 namespace plugify {
-	class ILogger;
-	class IPlugifyProvider;
-	class IPluginManager;
-	class IPackageManager;
-	enum class Severity;
+    class Plugify;
 
-	/**
-	 * @class IPlugify
-	 * @brief Interface for the Plugify system.
-	 *
-	 * The IPlugify interface provides methods to initialize and terminate the Plugify system,
-	 * set a logger, get various components, and retrieve configuration information.
-	 */
-	class IPlugify {
-	public:
-		virtual ~IPlugify() = default;
+	// Builder pattern for configuration
+    class PLUGIFY_API PlugifyBuilder {
+    public:
+        PlugifyBuilder();
+        ~PlugifyBuilder();
+        PlugifyBuilder(const PlugifyBuilder& other) = delete;
+        PlugifyBuilder(PlugifyBuilder&& other) noexcept = delete;
+        PlugifyBuilder& operator=(const PlugifyBuilder& other) = delete;
+        PlugifyBuilder& operator=(PlugifyBuilder&& other) noexcept = delete;
 
-		/**
-		 * @brief Initialize the Plugify system.
-		 * @param rootDir The root directory for Plugify (optional).
-		 * @return True if initialization is successful, false otherwise.
-		 */
-		virtual bool Initialize(const std::filesystem::path& rootDir = {}) = 0;
+        // Path configuration methods - these have clear precedence
+        PlugifyBuilder& WithBaseDir(std::filesystem::path dir);
+        PlugifyBuilder& WithPaths(Config::Paths paths);
 
-		/**
-		 * @brief Terminate the Plugify system.
-		 */
-		virtual void Terminate() = 0;
+        // Config methods with clear semantics
+        PlugifyBuilder& WithConfig(Config config);
+        PlugifyBuilder& WithConfigFile(std::filesystem::path path);
+        //PlugifyBuilder& WithPartialConfig(Config config); // Merges with existing
 
-		/**
-		 * @brief Check if the Plugify system is initialized.
-		 * @return True if initialized, false otherwise.
-		 */
-		virtual bool IsInitialized() const = 0;
+        // Explicit runtime configuration
+        PlugifyBuilder& WithManualUpdate(); // Default
+        PlugifyBuilder& WithBackgroundUpdate(std::chrono::milliseconds interval = std::chrono::milliseconds{16});
+        PlugifyBuilder& WithUpdateCallback(std::function<void(std::chrono::milliseconds)> callback);
 
-		/**
-		 * @brief Update the Plugify system.
-		 * @noreturn
-		 */
-		virtual void Update() = 0;
+        // Service registration...
+        PlugifyBuilder& WithLogger(std::shared_ptr<ILogger> logger);
+        PlugifyBuilder& WithFileSystem(std::shared_ptr<IFileSystem> fs);
+        PlugifyBuilder& WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
+        //PlugifyBuilder& WithConfigProvider(std::shared_ptr<IConfigProvider> provider);
+        PlugifyBuilder& WithManifestParser(std::shared_ptr<IManifestParser> parser);
+        PlugifyBuilder& WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver);
+        PlugifyBuilder& WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> lifecycle);
+        //PlugifyBuilder& WithProgressReporter(std::shared_ptr<IProgressReporter> reporter);
+        //PlugifyBuilder& WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics);
+        PlugifyBuilder& WithEventBus(std::shared_ptr<IEventBus> bus);
 
-		/**
-		 * @brief Set the logger for the Plugify system.
-		 * @param logger The logger to set.
-		 * @noreturn
-		 */
-		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
+        PlugifyBuilder& WithDefaults();
 
-		/**
-		 * @brief Log a message with the specified severity level.
-		 * @param msg The log message.
-		 * @param severity The severity level of the log message.
-		 */
-		virtual void Log(std::string_view msg, Severity severity) = 0;
-		
-		/**
-		 * @brief Add a repository to the config.
-		 * 
-		 * This method adds a new repository to the config, allowing it to search for
-		 * packages in the specified repository when performing package-related operations.
-		 * 
-		 * @param repository The URL or path of the repository to add.
-		 * @return True if the repository was successfully added, false otherwise.
-		 */
-		virtual bool AddRepository(std::string_view repository) = 0;
+        // Service registration with concepts for type safety
+        template<typename Interface, typename Implementation>
+            requires std::derived_from<Implementation, Interface>
+        PlugifyBuilder& WithService(std::shared_ptr<Implementation> service) {
+            GetServices().RegisterInstance<Interface>(std::move(service));
+            return *this;
+        }
 
-		/**
-		 * @brief Get a weak pointer to the Plugify provider.
-		 * @return Weak pointer to the Plugify provider.
-		 */
-		virtual std::weak_ptr<IPlugifyProvider> GetProvider() const = 0;
+        Result<std::shared_ptr<Plugify>> Build();
 
-		/**
-		 * @brief Get a weak pointer to the Plugin Manager.
-		 * @return Weak pointer to the Plugin Manager.
-		 */
-		virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
+    PLUGIFY_ACCESS:
+        const ServiceLocator& GetServices() const noexcept;
+        Result<Config> LoadConfigFromFile(const std::filesystem::path& path) const;
+        struct Impl;
+        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
+    };
 
-		/**
-		 * @brief Get a weak pointer to the Package Manager.
-		 * @return Weak pointer to the Package Manager.
-		 */
-		virtual std::weak_ptr<IPackageManager> GetPackageManager() const = 0;
+    class PLUGIFY_API Plugify {
+    public:
+        ~Plugify();
+        Plugify(const Plugify& other) = delete;
+        Plugify(Plugify&& other) noexcept = delete;
+        Plugify& operator=(const Plugify& other) = delete;
+        Plugify& operator=(Plugify&& other) noexcept = delete;
 
-		/**
-		 * @brief Get the configuration of the Plugify system.
-		 * @return Reference to the configuration.
-		 */
-		virtual const Config& GetConfig() const = 0;
+        // Lifecycle
+        Result<void> Initialize() const;
+        void Terminate() const;
+        [[nodiscard]] bool IsInitialized() const;
+        void Update(std::chrono::milliseconds deltaTime = std::chrono::milliseconds{16}) const;
 
-		/**
-		 * @brief Get the version information of the Plugify system.
-		 * @return Version information.
-		 */
-		virtual plg::version GetVersion() const = 0;
-	};
+        // Component access
+        [[nodiscard]] const Manager& GetManager() const noexcept;
+        [[nodiscard]] const ServiceLocator& GetServices() const noexcept;
+        [[nodiscard]] const Config& GetConfig() const noexcept;
+        [[nodiscard]] const Version& GetVersion() const noexcept;
 
-	/**
-	 * @brief Factory function to create an instance of IPlugify.
-	 * @return Shared pointer to the created IPlugify instance.
-	 */
-	PLUGIFY_API std::shared_ptr<IPlugify> MakePlugify();
-} // namespace plugify
+        // Metrics and profiling
+        /*struct Metrics {
+            size_t loadedExtensions;
+            size_t memoryUsageMB;
+            double averageLoadTimeMs;
+            double averageUpdateTimeMs;
+        };
+        [[nodiscard]] Metrics GetMetrics() const;*/
+
+        // Factory method
+        [[nodiscard]] static PlugifyBuilder CreateBuilder();
+
+    PLUGIFY_ACCESS:
+        explicit Plugify(ServiceLocator services, Config config);
+        struct Impl;
+        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
+    };
+
+    // Convenience factory
+    PLUGIFY_API Result<std::shared_ptr<Plugify>> MakePlugify(
+        const std::filesystem::path& rootDir = std::filesystem::current_path());
+}
+

@@ -1,0 +1,17 @@
+{
+    "name": "legacy-physics",
+    "version": "0.9.0",
+    "dependencies": [
+        {
+            "name": "physics-engine",
+            "constraints": "<1.2.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Support for legacy physics compatibility.",
+    "author": "Legacy Inc.",
+    "website": "https://example.com/legacy-physics",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

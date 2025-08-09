@@ -1,0 +1,16 @@
+{
+    "name": "plugin52",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "plugin51"
+        }
+    ],
+    "description": "Extra conflict",
+    "author": "xAI",
+    "website": "https://example.com/plugin52",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

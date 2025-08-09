@@ -1,0 +1,17 @@
+{
+    "name": "deep8",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "deep9",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Deep chain 8",
+    "author": "xAI",
+    "website": "https://example.com/deep8",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

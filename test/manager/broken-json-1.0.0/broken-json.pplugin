@@ -1,0 +1,9 @@
+{
+    "name": "broken-json",
+    "version": "1.0.0",
+    "dependencies": [],
+    "description": "Plugin with missing comma after version field",
+    "conflicts": [],
+    "language": "cpp",
+    "entry": "test"
+}

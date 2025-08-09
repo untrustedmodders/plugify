@@ -1,0 +1,17 @@
+{
+    "name": "ml-module",
+    "version": "0.1.0",
+    "dependencies": [
+        {
+            "name": "ai-module",
+            "constraints": ">=0.9.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Machine learning extensions for AI module.",
+    "author": "AI Labs",
+    "website": "https://example.com/ml-module",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

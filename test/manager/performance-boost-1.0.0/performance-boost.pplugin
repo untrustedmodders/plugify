@@ -1,0 +1,23 @@
+{
+    "name": "performance-boost",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        },
+        {
+            "name": "graphics-engine"
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "debug-tools"
+        }
+    ],
+    "description": "Optimizes performance at cost of debug visibility.",
+    "author": "PerfWorks",
+    "website": "https://example.com/performance-boost",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

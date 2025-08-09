@@ -1,0 +1,11 @@
+{
+    "name": "noWebsite",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Missing website",
+    "author": "xAI",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

@@ -1,0 +1,11 @@
+{
+    "name": "missingFields",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Missing version and name? Wait, name is there but version missing",
+    "author": "xAI",
+    "website": "https://example.com/missingFields",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

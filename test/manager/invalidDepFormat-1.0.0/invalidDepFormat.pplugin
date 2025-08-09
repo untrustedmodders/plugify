@@ -1,0 +1,16 @@
+{
+    "name": "invalidDepFormat",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils invalid"
+        }
+    ],
+    "conflicts": [],
+    "description": "Invalid dep format",
+    "author": "xAI",
+    "website": "https://example.com/invalidDepFormat",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

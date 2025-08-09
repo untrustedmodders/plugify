@@ -1,0 +1,11 @@
+{
+    "name": "noAuthor",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Missing author",
+    "website": "https://example.com/noAuthor",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

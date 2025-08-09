@@ -14,6 +14,8 @@ FetchContent_Declare(
         GIT_REPOSITORY ${PLUGIFY_CRASHPAD_REPO}
         GIT_TAG ${PLUGIFY_CRASHPAD_TAG}
         GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
+        OVERRIDE_FIND_PACKAGE
 )
 
 FetchContent_MakeAvailable(crashpad_cmake)
@@ -40,3 +42,4 @@ if(UNIX)
 endif()
 
 add_dependencies(${PROJECT_NAME} crashpad_handler)
+

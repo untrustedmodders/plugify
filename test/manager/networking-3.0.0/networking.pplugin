@@ -1,0 +1,21 @@
+{
+    "name": "networking",
+    "version": "3.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "offline-mode"
+        }
+    ],
+    "description": "Provides multiplayer networking features.",
+    "author": "NetSys",
+    "website": "https://example.com/networking",
+    "license": "BSD-2-Clause",
+    "language": "cpp",
+    "entry": "test"
+}

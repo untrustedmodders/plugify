@@ -1,76 +1,38 @@
 #pragma once
 
-#include <array>
-#include <cstring>
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
 
-#include "method.hpp"
-#include "mem_addr.hpp"
-#include "date_time.hpp"
+#include "plugify/mem_addr.hpp"
+#include "plugify/types.hpp"
+#include "plugify/method.hpp"
 
 namespace plugify {
-	class PluginHandle;
-	class ModuleHandle;
-	class MethodHandle;
-	class IPlugifyProvider;
+	class Extension;
+	class Provider;
 
 	/**
-	 * @struct ErrorData
-	 * @brief Holds information about an error.
-	 *
-	 * The ErrorData structure contains a string describing an error.
-	 */
-	struct ErrorData {
-		std::vector<char> error; ///< Description of the error.
-
-		ErrorData(std::string_view str) {
-			error.assign(str.begin(), str.end());
-			if (error.back() != 0) {
-				error.emplace_back('\0');
-			}
-		}
-	};
-
-	/**
-	 * @struct InitResultData
+	 * @struct InitData
 	 * @brief Holds information about the initialization result.
 	 *
-	 * The InitResultData structure is used to represent the result of a language module initialization.
+	 * The InitResult structure is used to represent the result of a language module initialization.
 	 */
-	struct InitResultData {
+	struct InitData {
 		MethodTable table;
 	};
 
 	/**
-	 * @struct LoadResultData
+	 * @struct LoadData
 	 * @brief Holds information about the load result.
 	 *
-	 * The LoadResultData structure is used to represent the result of loading a plugin in a language module.
+	 * The LoadResult structure is used to represent the result of loading a plugin in a language module.
 	 */
-	struct LoadResultData {
+	struct LoadData {
 		std::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
-		MemAddr data; /// User data.
-		MethodTable table;
+		MemAddr data; ///< Data associated with the loaded plugin.
+		MethodTable table; ///< Method table for the loaded plugin.
 	};
-
-	/**
-	 * @typedef InitResult
-	 * @brief Represents the result of language module initialization.
-	 *
-	 * The InitResult is a variant that can hold either InitResultData or ErrorData.
-	 */
-	using InitResult = std::variant<InitResultData, ErrorData>;
-
-	/**
-	 * @typedef LoadResult
-	 * @brief Represents the result of loading a plugin in a language module.
-	 *
-	 * The LoadResult is a variant that can hold either LoadResultData or ErrorData.
-	 */
-	using LoadResult = std::variant<LoadResultData, ErrorData>;
 
 	/**
 	 * @class ILanguageModule
@@ -85,11 +47,11 @@ namespace plugify {
 	public:
 		/**
 		 * @brief Initialize the language module.
-		 * @param provider Weak pointer to the Plugify provider.
-		 * @param module Handle to the language module being initialized.
-		 * @return Result of the initialization, either InitResultData or ErrorData.
+		 * @param provider Weak ptr to the Plugify provider.
+		 * @param module Ref to the language module being initialized.
+		 * @return Result of the initialization, either InitResultData or string.
 		 */
-		virtual InitResult Initialize(std::weak_ptr<IPlugifyProvider> provider, ModuleHandle module) = 0;
+		virtual Result<InitData> Initialize(const Provider& provider, const Extension& module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.
@@ -98,41 +60,46 @@ namespace plugify {
 
 		/**
 		 * @brief Handle actions to be performed on each frame.
-		 * @param dt The time delta since the last update.
+		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnUpdate(DateTime dt) = 0;
+		virtual void OnUpdate(std::chrono::milliseconds deltaTime) = 0;
+
+        /**
+	     * @brief
+	     */
+        //virtual void OnPluginInitialize(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin load event.
-		 * @param plugin Handle to the loaded plugin.
-		 * @return Result of the load event, either LoadResultData or ErrorData.
+		 * @param plugin Ref to the loaded plugin.
+		 * @return Result of the load event, either LoadResultData or string.
 		 */
-		virtual LoadResult OnPluginLoad(PluginHandle plugin) = 0;
+		virtual Result<LoadData> OnPluginLoad(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin start event.
-		 * @param plugin Handle to the started plugin.
+		 * @param plugin Ref to the started plugin.
 		 */
-		virtual void OnPluginStart(PluginHandle plugin) = 0;
+		virtual void OnPluginStart(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin update event.
-		 * @param plugin Handle to the started plugin.
-		 * @param dt The time delta since the last update.
+		 * @param plugin Ref to the started plugin.
+		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnPluginUpdate(PluginHandle plugin, DateTime dt) = 0;
+		virtual void OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds deltaTime) = 0;
 
 		/**
 		 * @brief Handle plugin end event.
-		 * @param plugin Handle to the ended plugin.
+		 * @param plugin Ref to the ended plugin.
 		 */
-		virtual void OnPluginEnd(PluginHandle plugin) = 0;
+		virtual void OnPluginEnd(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle method export event.
-		 * @param plugin Handle to the plugin exporting a method.
+		 * @param plugin Ref to the plugin exporting a method.
 		 */
-		virtual void OnMethodExport(PluginHandle plugin) = 0;
+		virtual void OnMethodExport(const Extension& plugin) = 0;
 
 		/**
 		* @brief Determine if language module is build with debugging mode.

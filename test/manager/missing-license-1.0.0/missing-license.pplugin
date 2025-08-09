@@ -1,0 +1,11 @@
+{
+    "name": "missing-license",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "No license field present.",
+    "author": "Unknown",
+    "website": "https://example.com/missing-license",
+    "language": "cpp",
+    "entry": "test"
+}

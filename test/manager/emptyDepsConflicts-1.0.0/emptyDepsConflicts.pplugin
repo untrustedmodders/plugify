@@ -1,0 +1,12 @@
+{
+    "name": "emptyDepsConflicts",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Empty lists",
+    "author": "xAI",
+    "website": "https://example.com/emptyDepsConflicts",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

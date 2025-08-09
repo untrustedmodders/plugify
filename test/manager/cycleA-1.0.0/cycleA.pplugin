@@ -1,0 +1,17 @@
+{
+    "name": "cycleA",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "cycleB",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Cycle plugin A",
+    "author": "xAI",
+    "website": "https://example.com/cycleA",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

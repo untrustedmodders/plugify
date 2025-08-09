@@ -1,0 +1,25 @@
+{
+    "name": "pluginWithManyConflicts",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "conflictX"
+        },
+        {
+            "name": "conflictY"
+        },
+        {
+            "name": "cycleA"
+        },
+        {
+            "name": "deep1"
+        }
+    ],
+    "description": "Many conflicts",
+    "author": "xAI",
+    "website": "https://example.com/pluginWithManyConflicts",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

@@ -1,0 +1,19 @@
+{
+    "name": "ui-framework",
+    "version": "2.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        },
+        {
+            "name": "graphics-engine"
+        }
+    ],
+    "conflicts": [],
+    "description": "User interface framework with widgets and layouts.",
+    "author": "UXWorks",
+    "website": "https://example.com/ui-framework",
+    "license": "Apache-2.0",
+    "language": "cpp",
+    "entry": "test"
+}

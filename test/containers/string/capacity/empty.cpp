@@ -1,6 +1,6 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/string.hpp>
+#include <plg/string.hpp>
 
 TEST_CASE("string capacity > empty", "[string]") {
 

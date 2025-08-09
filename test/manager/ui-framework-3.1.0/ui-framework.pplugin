@@ -1,0 +1,21 @@
+{
+    "name": "ui-framework",
+    "version": "3.1.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": ">=1.0.0"
+        },
+        {
+            "name": "logger",
+            "constraints": ">=1.2.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "UI components",
+    "author": "xAI",
+    "website": "https://example.com/ui-framework",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

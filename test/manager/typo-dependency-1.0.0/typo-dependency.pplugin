@@ -1,0 +1,16 @@
+{
+    "name": "typo-dependency",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utlis"
+        }
+    ],
+    "conflicts": [],
+    "description": "Dependency has typo in name.",
+    "author": "BuggySoft",
+    "website": "https://example.com/typo-dependency",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

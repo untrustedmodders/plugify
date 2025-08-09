@@ -1,0 +1,16 @@
+{
+    "name": "deep-b",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "deep-c"
+        }
+    ],
+    "conflicts": [],
+    "description": "Second in deep dependency chain.",
+    "author": "ChainTest",
+    "website": "https://example.com/deep-b",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

@@ -1,0 +1,16 @@
+{
+    "name": "malformedConflicts",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "not a list"
+        }
+    ],
+    "description": "Conflicts not list",
+    "author": "xAI",
+    "website": "https://example.com/malformedConflicts",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

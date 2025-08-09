@@ -1,0 +1,34 @@
+{
+    "name": "extra-large",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        },
+        {
+            "name": "graphics-engine"
+        },
+        {
+            "name": "physics-engine"
+        },
+        {
+            "name": "sound-engine"
+        },
+        {
+            "name": "networking"
+        },
+        {
+            "name": "ai-module"
+        },
+        {
+            "name": "shader-pack"
+        }
+    ],
+    "conflicts": [],
+    "description": "Large meta-plugin depending on many systems.",
+    "author": "MegaPack",
+    "website": "https://example.com/extra-large",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

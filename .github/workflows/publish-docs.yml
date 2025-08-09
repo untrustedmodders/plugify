@@ -26,9 +26,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install curl
-        run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
-
       - name: Install doxygen
         run: sudo apt install -y doxygen
 

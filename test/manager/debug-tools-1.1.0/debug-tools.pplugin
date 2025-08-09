@@ -1,0 +1,16 @@
+{
+    "name": "debug-tools",
+    "version": "1.1.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        }
+    ],
+    "conflicts": [],
+    "description": "Debugging and profiling tools.",
+    "author": "DevTools",
+    "website": "https://example.com/debug-tools",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

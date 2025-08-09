@@ -1,10 +1,10 @@
 #include <catch_amalgamated.hpp>
 
-#include <plugify/string.hpp>
-#include <plugify/vector.hpp>
-
 #include <chrono>
-#include <plugify/compat_format.hpp>
+
+#include <plg/string.hpp>
+#include <plg/vector.hpp>
+#include <plg/format.hpp>
 
 using namespace std::literals;
 

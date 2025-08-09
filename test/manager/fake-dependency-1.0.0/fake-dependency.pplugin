@@ -1,0 +1,17 @@
+{
+    "name": "fake-dependency",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "non-real-plugin",
+            "constraints": ">=5.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Depends on something that doesn’t exist.",
+    "author": "Tester",
+    "website": "https://example.com/fake-dependency",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

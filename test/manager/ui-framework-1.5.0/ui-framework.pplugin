@@ -1,0 +1,20 @@
+{
+    "name": "ui-framework",
+    "version": "1.5.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        },
+        {
+            "name": "graphics-engine",
+            "constraints": "<2.0.0"
+        }
+    ],
+    "conflicts": [],
+    "description": "Older version of UI framework.",
+    "author": "UXWorks",
+    "website": "https://example.com/ui-framework",
+    "license": "Apache-2.0",
+    "language": "cpp",
+    "entry": "test"
+}

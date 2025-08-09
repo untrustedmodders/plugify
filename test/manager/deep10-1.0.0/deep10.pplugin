@@ -1,0 +1,12 @@
+{
+    "name": "deep10",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Deep chain end",
+    "author": "xAI",
+    "website": "https://example.com/deep10",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

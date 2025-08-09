@@ -1,0 +1,16 @@
+{
+    "name": "language-pack-fr",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        }
+    ],
+    "conflicts": [],
+    "description": "French localization pack.",
+    "author": "Localization Team",
+    "website": "https://example.com/language-pack-fr",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

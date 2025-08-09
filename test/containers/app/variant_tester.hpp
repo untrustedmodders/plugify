@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <cassert>
 
-#include <plugify/variant.hpp>
+#include <plg/variant.hpp>
 
 #include "app/type_id.hpp"
 

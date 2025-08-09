@@ -5,65 +5,53 @@
   "description": "A plugin for Plugify.",
   "title": "Plugin",
   "required": [
-    "fileVersion",
+    "name",
     "version",
-    "friendlyName",
-    "entryPoint",
-    "languageModule"
+    "description",
+    "author",
+    "website",
+    "license",
+    "entry",
+    "language"
   ],
   "properties": {
-    "fileVersion": {
-      "type": "number",
-      "description": "The version number of the configuration file format.",
-      "minimum": 1
-    },
     "version": {
       "type": "string",
-      "description": "The semantic version of the plugin.",
+      "description": "The semantic version (SemVer) of the plugin following the format MAJOR.MINOR.PATCH. Used for dependency resolution, compatibility checking, and update management.",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "minLength": 1
     },
-    "friendlyName": {
+    "name": {
       "type": "string",
-      "description": "A user-friendly name for the plugin.",
-      "minLength": 1
+      "description": "The unique identifier for the plugin. Should be lowercase, use hyphens for spaces, and be descriptive (e.g., 'audio-manager', 'database-connector', 'logging-framework').",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "minLength": 1,
+      "examples": ["audio-manager", "database-connector", "logging-framework"]
     },
     "description": {
       "type": "string",
-      "description": " A brief description or overview of the plugin."
+      "description": "A comprehensive description of the plugin's functionality, features, and purpose. Should explain what problem it solves and its main capabilities."
     },
-    "createdBy": {
+    "author": {
       "type": "string",
-      "description": "The creator or author of the plugin."
+      "description": "The name or identifier of the plugin creator. Can be an individual name, username, or organization (e.g., 'John Doe', 'johndoe', 'Acme Corp').",
+      "minLength": 1,
+      "examples": ["John Doe", "jane-doe", "Acme Corporation", "Community Contributors"]
     },
-    "createdByURL": {
+    "website": {
       "type": "string",
-      "description": "The URL linking to the creator's profile or information.",
+      "description": "The official website, repository, or documentation URL for this plugin. Typically links to the project's GitHub repository, documentation site, or support page.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
-    "docsURL": {
+    "license": {
       "type": "string",
-      "description": "The URL linking to the documentation for the plugin.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+      "description": "The software license identifier for the plugin (e.g., 'MIT', 'Apache-2.0', 'GPL-3.0'). Should use SPDX license identifiers when possible. See https://spdx.org/licenses/",
+      "minLength": 1,
+      "examples": ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause", "proprietary"]
     },
-    "downloadURL": {
-      "type": "string",
-      "description": "The URL for downloading the plugin, typically a release package or ZIP file.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-    },
-    "updateURL": {
-      "type": "string",
-      "description": "The URL for checking and fetching updates for the plugin.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
-    },
-    "entryPoint": {
-      "type": "string",
-      "description": "The entry point or main executable for the plugin.",
-      "minLength": 1
-    },
-    "supportedPlatforms": {
+    "platforms": {
       "type": "array",
-      "description": "An array listing the platforms supported by the plugin.",
+      "description": "Target platforms and architectures this plugin supports. Each entry should specify the OS and architecture in the format 'os_arch' (e.g., 'windows_x64', 'linux_arm64'). Leave empty to support all platforms.",
       "items": {
         "type": "string",
         "description": "Platform name.",
@@ -75,34 +63,9 @@
         ]
       }
     },
-    "languageModule": {
-      "type": "object",
-      "description": "Information about the programming language module used.",
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Language name.",
-          "pattern": "^(?!plugin$).*",
-          "minLength": 1,
-          "examples": [
-            "cpp",
-            "csharp",
-            "python",
-            "javascript"
-          ]
-        },
-        "version": {
-          "type": "string",
-          "description": "The version of the language module.",
-          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-          "minLength": 1
-        }
-      }
-    },
     "dependencies": {
       "type": "array",
-      "description": "A list of plugin references specifying the dependencies required for the plugin.",
+      "description": "Other plugins required for this plugin to function properly. Dependencies are resolved and loaded before this plugin. Version constraints ensure compatibility between plugins.",
       "items": {
         "type": "object",
         "description": "Describes the properties of a plugin dependency.",
@@ -113,45 +76,90 @@
           "name": {
             "type": "string",
             "description": "The name of the plugin reference.",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
             "minLength": 1
+          },
+          "constraints": {
+            "type": "string",
+            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "examples": [
+              ">=1.0.0 <2.0.0",
+              ">=1.0.0 <2.0.0 || >3.2.1",
+              "==1.2.3 || >=2.0.0 <3.0.0"
+            ]
           },
           "optional": {
             "type": "boolean",
             "description": "Indicates whether the plugin reference is optional."
-          },
-          "supportedPlatforms": {
-            "type": "array",
-            "description": "The platforms supported by the plugin reference.",
-            "items": {
-              "type": "string",
-              "description": "Platform name.",
-              "pattern": "^[a-z0-9]+(_(x64|arm64|x86|arm32|riscv32|riscv64))$",
-              "minLength": 1,
-              "examples": [
-                "windows_x64",
-                "steamrt_x64"
-              ]
-            }
-          },
-          "version": {
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "description": "A list of plugin references specifying plugins that conflict with this plugin.",
+      "items": {
+        "type": "object",
+        "description": "Plugins that are incompatible with this plugin. The plugin manager will prevent loading conflicting plugins simultaneously. Use this to prevent issues with plugins that provide overlapping or incompatible functionality.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
             "type": "string",
-            "description": "The version of the plugin reference.",
+            "description": "The name of the conflicting plugin.",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+            "minLength": 1
+          },
+          "constraints": {
+            "type": "string",
+            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
             "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "examples": [
+              ">=1.0.0 <2.0.0",
+              ">=1.0.0 <2.0.0 || >3.2.1",
+              "==1.2.3 || >=2.0.0 <3.0.0"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "The reason why this plugin conflicts with the specified plugin.",
             "minLength": 1
           }
         }
       }
     },
-    "exportedMethods": {
+    "language": {
+      "type": "string",
+      "description": "Specifies the programming language and language module required to run this plugin. The specified language module must be installed for the plugin to load.",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "minLength": 1,
+      "examples": [
+        "cpp",
+        "csharp",
+        "python3",
+        "javascript",
+        "golang",
+        "lua"
+      ]
+    },
+    "entry": {
+      "type": "string",
+      "description": "The entry point file or main executable for the plugin, relative to the plugin's directory. This is the file that will be loaded when the plugin starts (e.g., 'main.dll', 'plugin.so', 'index.js').",
+      "minLength": 1,
+      "examples": ["main.dll", "plugin.so", "index.js", "Plugin.cs", "plugin.py"]
+    },
+    "methods": {
       "type": "array",
-      "description": "An array describing functions/methods exposed by the plugin.",
+      "description": "Public API methods exposed by this plugin for other plugins to call. These methods form the plugin's inter-plugin communication interface. Each method defines its signature, parameters, and return type for cross-language compatibility.",
       "items": {
-        "$ref": "#/$defs/exportedMethod"
+        "$ref": "#/$defs/methodObject"
       }
     }
   },
   "$defs": {
-    "exportedMethod": {
+    "methodObject": {
       "type": "object",
       "description": "An object describing single function/method exposed by the plugin.",
       "required": [
@@ -163,27 +171,27 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Function name to export to the other plugins.",
+          "description": "The public API name for this method. This is the name other plugins will use to call this function. Should be descriptive and follow consistent naming conventions.",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
           "minLength": 1
         },
         "group": {
           "type": "string",
-          "description": "Function's group for documentation."
+          "description":"Optional categorization for documentation generation. Groups related methods together (e.g., 'File Operations', 'Network', 'Configuration'). Used to organize API documentation."
         },
         "description": {
           "type": "string",
-          "description": "Function's description for documentation."
+          "description": "Detailed explanation of what this method does, including its purpose, behavior, side effects, and any important notes for callers."
         },
         "funcName": {
           "type": "string",
-          "description": "Internal function name in plugin's assembly.",
+          "description": "The actual function name as implemented in the plugin's source code. This maps the public API name to the internal implementation. Must match exactly with the function name in your code.",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
           "minLength": 1
         },
         "paramTypes": {
           "type": "array",
-          "description": "Parameters list.",
+          "description": "Ordered list of parameters this method accepts. Each parameter defines its type, name, and optional metadata. The order must match the function signature exactly.",
           "items": {
             "type": "object",
             "description": "Parameter's information.",
@@ -194,32 +202,32 @@
             "properties": {
               "type": {
                 "type": "string",
-                "description": "Parameter's type.",
+                "description": "The data type of this parameter value.The type system ensures cross-language compatibility.",
                 "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
               },
               "name": {
                 "type": "string",
-                "description": "Parameter's name for generator.",
+                "description": "The parameter value name used in generated bindings and documentation. Should be descriptive and follow the target language's naming conventions.",
                 "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
                 "minLength": 1
               },
               "description": {
                 "type": "string",
-                "description": "Parameter's description for documentation."
+                "description": "Explanation of this parameter's purpose, valid ranges, special values. Include units of measurement where applicable."
               },
               "prototype": {
                 "type": "object",
-                "description": "An object describing function prototype.",
-                "$ref": "#/$defs/exportedMethod"
+                "description": "For 'function' type parameters only. Defines the signature of the callback function or function pointer, including its parameters and return type.",
+                "$ref": "#/$defs/methodObject"
               },
               "enum": {
                 "type": "object",
-                "description": "An object describing enum structure.",
+                "description": "For enum type parameters. Defines the enumeration structure including all possible values and their integer mappings. Used for type-safe enum passing between plugins.",
                 "$ref": "#/$defs/enumObject"
               },
               "default": {
                 "type": ["string", "number", "boolean"],
-                "description": "Default value for the parameter.",
+                "description": "Optional default value for this parameter. If provided, the parameter becomes optional in languages that support default arguments. Must be a valid value for the parameter's type.",
                 "examples": ["defaultValue", 42, true]
               }
             }
@@ -227,34 +235,34 @@
         },
         "retType": {
           "type": "object",
-          "description": "Return's information.",
+          "description": "The return value specification for this method. Defines what type of data the method returns, if any. Use type 'void' for methods that don't return a value.",
           "required": [
             "type"
           ],
           "properties": {
             "type": {
               "type": "string",
-              "description": "Return's type.",
+              "description": "The data type of this return value.The type system ensures cross-language compatibility.",
               "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
             },
             "name": {
               "type": "string",
-              "description": "Return's name for generator.",
+              "description": "The return value name used in generated bindings and documentation. Should be descriptive and follow the target language's naming conventions.",
               "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
               "minLength": 1
             },
             "description": {
               "type": "string",
-              "description": "Return's description for documentation."
+              "description": "Meaning of the return value. Include units of measurement where applicable."
             },
             "prototype": {
               "type": "object",
-              "description": "An object describing function prototype.",
-              "$ref": "#/$defs/exportedMethod"
+              "description": "For 'function' type returns only. Defines the signature of the callback function or function pointer, including its parameters and return type.",
+              "$ref": "#/$defs/methodObject"
             },
             "enum": {
               "type": "object",
-              "description": "An object describing enum structure.",
+              "description": "For enum type returns. Defines the enumeration structure including all possible values and their integer mappings. Used for type-safe enum passing between plugins.",
               "$ref": "#/$defs/enumObject"
             }
           }
@@ -271,20 +279,20 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Enum's name.",
+          "description": "The type name for this enumeration. Will be used to generate enum types in target languages. Should follow PascalCase naming convention.",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
           "minLength": 1
         },
         "description": {
           "type": "string",
-          "description": "Enum's description for documentation."
+          "description": "Explanation of what this enumeration represents and how it should be used. Include any important notes about the values or their relationships."
         },
         "values": {
           "type": "array",
           "description": "Enum's entries.",
           "items": {
             "type": "object",
-            "description": "Value's information.",
+            "description": "The complete list of enumeration values. Each value has a unique name and integer mapping. Values are used for cross-language enum compatibility.",
             "required": [
               "name",
               "value"
@@ -292,17 +300,17 @@
             "properties": {
               "name": {
                 "type": "string",
-                "description": "Enum's value name.",
+                "description": "The identifier for this enum value. Should follow UPPER_SNAKE_CASE or the appropriate convention for the target language. Must be unique within the enum.",
                 "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
                 "minLength": 1
               },
               "description": {
                 "type": "string",
-                "description": "Enum's value description for documentation."
+                "description": "Explanation of what this enum value represents, when it should be used, and any special behavior associated with it."
               },
               "value": {
                 "type": "integer",
-                "description": "An integer representing the value of the enum element."
+                "description": "The integer value mapped to this enum entry. Must be unique within the enum. Used for consistent cross-language enum representation."
               }
             }
           }

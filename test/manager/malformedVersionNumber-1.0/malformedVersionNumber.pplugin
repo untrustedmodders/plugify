@@ -1,0 +1,12 @@
+{
+    "name": "malformedVersionNumber",
+    "version": "1.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Version as number",
+    "author": "xAI",
+    "website": "https://example.com/malformedVersionNumber",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}

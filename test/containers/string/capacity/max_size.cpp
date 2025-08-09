@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-#include <plugify/string.hpp>
+#include <plg/string.hpp>
 
 TEST_CASE("string capacity > max_size", "[string]") {
 

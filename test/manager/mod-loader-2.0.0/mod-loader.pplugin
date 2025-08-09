@@ -1,0 +1,21 @@
+{
+    "name": "mod-loader",
+    "version": "2.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": ">=1.0.0"
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "secure-mode"
+        }
+    ],
+    "description": "Allows loading and managing game modifications.",
+    "author": "ModHub",
+    "website": "https://example.com/mod-loader",
+    "license": "GPL-3.0",
+    "language": "cpp",
+    "entry": "test"
+}

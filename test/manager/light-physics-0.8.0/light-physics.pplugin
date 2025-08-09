@@ -1,0 +1,20 @@
+{
+    "name": "light-physics",
+    "version": "0.8.0",
+    "dependencies": [
+        {
+            "name": "core-utils"
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "physics-engine"
+        }
+    ],
+    "description": "Lightweight physics for small games.",
+    "author": "IndieTools",
+    "website": "https://example.com/light-physics",
+    "license": "MIT",
+    "language": "cpp",
+    "entry": "test"
+}
