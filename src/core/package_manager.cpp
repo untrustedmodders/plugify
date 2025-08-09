@@ -1,4 +1,547 @@
 #include "package_manager.hpp"
+
+using namespace plugify;
+
+void PackageManager::AddRepository(std::unique_ptr<IPackageRepository> repository) {
+    if (!repository) {
+        return;
+    }
+    
+    auto identifier = repository->GetIdentifier();
+
+	auto it = _repositories.find(identifier);
+	if (it != _repositories.end()) {
+		return;
+	}
+
+	_repositories.emplace(identifier, std::move(repository));
+	InvalidateCache();
+}
+
+void PackageManager::RemoveRepository(std::string_view identifier) {
+    if (auto it = _repositories.find(identifier); it != _repositories.end()) {
+        _repositories.erase(it);
+        InvalidateCache();
+    }
+}
+
+std::vector<std::string> PackageManager::ListRepositories() const {
+    std::vector<std::string> result;
+    result.reserve(_repositories.size());
+    
+    for (const auto& [identifier, _] : _repositories) {
+        result.emplace_back(identifier);
+    }
+    
+    return result;
+}
+
+Result<std::vector<LocalPackage>> PackageManager::ListLocalPackages() const {
+    return GetAllLocalPackages();
+}
+
+Result<std::vector<RemotePackage>> PackageManager::ListRemotePackages() const {
+    return GetAllRemotePackages();
+}
+
+Result<std::vector<PackageInfo>> PackageManager::SearchPackages(std::string_view pattern) const {
+    std::vector<PackageInfo> results;
+    
+    // Search local packages
+    if (auto localResult = GetAllLocalPackages()) {
+        for (const auto& pkg : *localResult) {
+            if (pkg.name.find(pattern) != std::string::npos) {
+                PackageInfo info{
+                    .name = pkg.name,
+                    .type = pkg.type,
+                    .version = pkg.version,
+                    .description = pkg.descriptor ? pkg.descriptor->description : std::nullopt,
+                    .author = pkg.descriptor ? pkg.descriptor->createdBy : std::nullopt,
+                    .isLocal = true,
+                    .localPath = pkg.path
+                };
+                results.emplace_back(std::move(info));
+            }
+        }
+    }
+    
+    // Search remote packages
+    if (auto remoteResult = GetAllRemotePackages()) {
+        for (const auto& pkg : *remoteResult) {
+            if (pkg.name.find(pattern) != std::string::npos) {
+                // Use latest version for display
+                if (!pkg.versions.empty()) {
+                    const auto& latestVersion = *std::ranges::max_element(
+                        pkg.versions, {}, &PackageVersion::version);
+
+                    PackageInfo info{
+                        .name = pkg.name,
+                        .type = pkg.type,
+                        .version = latestVersion.version,
+                        .description = pkg.description,
+                        .author = pkg.author,
+                        .isLocal = false,
+                        .localPath = std::nullopt
+                    };
+                    results.emplace_back(std::move(info));
+                }
+            }
+        }
+    }
+
+    // Remove duplicates (prefer local packages)
+    std::ranges::sort(results, {}, &PackageInfo::name);
+    auto [first, last] = std::ranges::unique(results, {}, &PackageInfo::name);
+    results.erase(first, results.end());
+
+    return results;
+}
+
+Result<PackageInfo> PackageManager::GetPackageInfo(std::string_view packageName) const {
+    // Check local packages first
+    if (auto localResult = GetAllLocalPackages()) {
+        if (auto it = std::ranges::find(*localResult, packageName, &LocalPackage::name);
+            it != localResult->end()) {
+            return PackageInfo{
+                .name = it->name,
+                .type = it->type,
+                .version = it->version,
+                .description = it->descriptor ? it->descriptor->description : std::nullopt,
+                .author = it->descriptor ? it->descriptor->createdBy : std::nullopt,
+                .isLocal = true,
+                .localPath = it->path
+            };
+        }
+    }
+
+    // Check remote packages
+    if (auto remoteResult = GetAllRemotePackages()) {
+        if (auto it = std::ranges::find(*remoteResult, packageName, &RemotePackage::name);
+            it != remoteResult->end()) {
+
+            if (!it->versions.empty()) {
+                const auto& latestVersion = *std::ranges::max_element(
+                    it->versions, {}, &PackageVersion::version);
+
+                return PackageInfo{
+                    .name = it->name,
+                    .type = it->type,
+                    .version = latestVersion.version,
+                    .description = it->description,
+                    .author = it->author,
+                    .isLocal = false,
+                    .localPath = std::nullopt
+                };
+            }
+        }
+    }
+
+    return PackageError::NotFound;
+}
+
+Result<InstallResult> PackageManager::InstallPackage(
+    std::string_view packageName,
+    std::optional<plg::version> version) {
+
+    InstallResult result{.success = false};
+
+    // Check if package is already installed locally
+    if (auto localResult = GetAllLocalPackages()) {
+        if (auto it = std::ranges::find(*localResult, packageName, &LocalPackage::name);
+            it != localResult->end()) {
+
+            if (!version || it->version == *version) {
+                result.success = true;
+                result.installedPackages.emplace_back(packageName);
+                return result;
+            }
+        }
+    }
+
+    // Find package in remote repositories
+    auto remoteResult = GetAllRemotePackages();
+    if (!remoteResult) {
+        result.errors.push_back("Failed to fetch remote packages");
+        return result;
+    }
+
+    auto remoteIt = std::ranges::find(*remoteResult, packageName, &RemotePackage::name);
+    if (remoteIt == remoteResult->end()) {
+        result.errors.emplace_back(std::format("Package not found: {}", packageName));
+        return result;
+    }
+
+    // Find requested version or use latest
+    const PackageVersion* targetVersion = nullptr;
+    if (version) {
+        auto versionIt = std::ranges::find(remoteIt->versions, *version, &PackageVersion::version);
+        if (versionIt != remoteIt->versions.end()) {
+            targetVersion = &*versionIt;
+        } else {
+            result.errors.emplace_back(std::format("Version not found: {}", packageName));
+            return result;
+        }
+    } else {
+        // Use latest version
+        if (!remoteIt->versions.empty()) {
+            targetVersion = &*std::ranges::max_element(
+                remoteIt->versions, {}, &PackageVersion::version);
+        }
+    }
+
+    if (!targetVersion) {
+        result.errors.emplace_back(std::format("No valid version found: {}", packageName));
+        return result;
+    }
+
+    // Resolve dependencies
+    auto localPackages = GetAllLocalPackages().value_or(std::vector<LocalPackage>{});
+    auto dependencyResult = _dependencyResolver->ResolveDependencies(
+        packageName, targetVersion->version, localPackages, *remoteResult);
+
+    if (!dependencyResult) {
+        result.errors.emplace_back(std::format("Failed to resolve dependencies: {}", packageName));
+        return result;
+    }
+
+    // Check for conflicts
+    auto conflicts = _dependencyResolver->DetectConflicts(*dependencyResult);
+    if (!conflicts.empty()) {
+        auto resolutionResult = _conflictResolver->ResolveConflicts(conflicts, *dependencyResult);
+        if (!resolutionResult) {
+            result.errors.emplace_back(std::format("Failed to resolve conflicts: {}", packageName));
+            for (const auto& conflict : conflicts) {
+                result.errors.emplace_back(std::format("Conflict: {}", conflict.reason));
+            }
+            return result;
+        }
+    }
+
+    // Install packages in dependency order
+    for (const auto& packageInfo : *dependencyResult) {
+        if (packageInfo.isLocal) {
+            // Already installed locally
+            continue;
+        }
+
+        // Find remote package and download
+        auto pkgIt = std::ranges::find(*remoteResult, packageInfo.name, &RemotePackage::name);
+        if (pkgIt != remoteResult->end()) {
+            auto downloadResult = DownloadAndInstall(*pkgIt, packageInfo.version);
+            if (!downloadResult) {
+                result.errors.emplace_back(std::format("Failed to install package: {}", packageInfo.name));
+                return result;
+            }
+            result.installedPackages.push_back(packageInfo.name);
+        }
+    }
+
+    InvalidateCache();
+    result.success = true;
+    return result;
+}
+
+Result<void> PackageManager::RemovePackage(std::string_view packageName) {
+    auto localResult = GetAllLocalPackages();
+    if (!localResult) {
+        return PackageError::FileSystemError;
+    }
+
+    auto it = std::ranges::find(*localResult, packageName, &LocalPackage::name);
+    if (it == localResult->end()) {
+        return PackageError::NotFound;
+    }
+
+    // Check if other packages depend on this one
+    // Implementation would check dependencies and prevent removal if needed
+
+    // Remove package directory
+    std::error_code ec;
+    std::filesystem::remove_all(it->path.parent_path(), ec);
+    if (ec) {
+        return PackageError::FileSystemError;
+    }
+
+    InvalidateCache();
+    return {};
+}
+
+Result<InstallResult> PackageManager::UpdatePackage(std::string_view packageName) {
+    // Get current local version
+    auto localResult = GetAllLocalPackages();
+    if (!localResult) {
+        return PackageError::FileSystemError;
+    }
+
+    auto localIt = std::ranges::find(*localResult, packageName, &LocalPackage::name);
+    if (localIt == localResult->end()) {
+        return PackageError::NotFound;
+    }
+
+    // Find latest remote version
+    auto remoteResult = GetAllRemotePackages();
+    if (!remoteResult) {
+        return PackageError::NetworkError;
+    }
+
+    auto remoteIt = std::ranges::find(*remoteResult, packageName, &RemotePackage::name);
+    if (remoteIt == remoteResult->end()) {
+        return PackageError::NotFound;
+    }
+
+    if (remoteIt->versions.empty()) {
+        return PackageError::InvalidPackage;
+    }
+
+    const auto& latestVersion = *std::ranges::max_element(
+        remoteIt->versions, {}, &PackageVersion::version);
+
+    // Check if update is needed
+    if (localIt->version >= latestVersion.version) {
+        InstallResult result{.success = true};
+        result.installedPackages.emplace_back(packageName);
+        return result;
+    }
+
+    // Remove old version and install new one
+    auto removeResult = RemovePackage(packageName);
+    if (!removeResult) {
+        return removeResult.error();
+    }
+
+    return InstallPackage(packageName, latestVersion.version);
+}
+
+Result<std::vector<std::string>> PackageManager::UpdateAll() {
+    std::vector<std::string> updatedPackages;
+
+    auto localResult = GetAllLocalPackages();
+    if (!localResult) {
+        return PackageError::FileSystemError;
+    }
+
+    for (const auto& localPkg : *localResult) {
+        auto updateResult = UpdatePackage(localPkg.name);
+        if (updateResult && updateResult->success) {
+            updatedPackages.insert(updatedPackages.end(),
+                                 updateResult->installedPackages.begin(),
+                                 updateResult->installedPackages.end());
+        }
+    }
+
+    return updatedPackages;
+}
+
+Result<void> PackageManager::RefreshRepositories() {
+    InvalidateCache();
+
+    // Trigger cache rebuild by fetching packages
+    auto result = GetAllRemotePackages();
+    if (!result) {
+        return result.error();
+    }
+
+    return {};
+}
+
+Result<std::vector<ConflictInfo>> PackageManager::VerifySystem() {
+    auto localResult = GetAllLocalPackages();
+    if (!localResult) {
+        return PackageError::FileSystemError;
+    }
+
+    // Convert local packages to PackageInfo
+    std::vector<PackageInfo> packageInfos;
+    packageInfos.reserve(localResult->size());
+
+    for (const auto& pkg : *localResult) {
+        packageInfos.emplace_back(PackageInfo{
+            .name = pkg.name,
+            .type = pkg.type,
+            .version = pkg.version,
+            .description = pkg.descriptor ? pkg.descriptor->description : std::nullopt,
+            .author = pkg.descriptor ? pkg.descriptor->createdBy : std::nullopt,
+            .isLocal = true,
+            .localPath = pkg.path
+        });
+    }
+
+    return _dependencyResolver->DetectConflicts(packageInfos);
+}
+
+Result<void> PackageManager::ResolveConflicts() {
+    auto conflictsResult = VerifySystem();
+    if (!conflictsResult) {
+        return conflictsResult.error();
+    }
+
+    if (conflictsResult->empty()) {
+        return {}; // No conflicts to resolve
+    }
+
+    auto localResult = GetAllLocalPackages();
+    if (!localResult) {
+        return PackageError::FileSystemError;
+    }
+
+    // Convert to PackageInfo
+    std::vector<PackageInfo> availablePackages;
+    for (const auto& pkg : *localResult) {
+        availablePackages.emplace_back(PackageInfo{
+            .name = pkg.name,
+            .type = pkg.type,
+            .version = pkg.version,
+            .isLocal = true,
+            .localPath = pkg.path
+        });
+    }
+
+    auto resolutionResult = _conflictResolver->ResolveConflicts(*conflictsResult, availablePackages);
+    if (!resolutionResult) {
+        return resolutionResult.error();
+    }
+
+    // Apply resolution suggestions
+    // Implementation would execute the resolution plan
+
+    return {};
+}
+
+void PackageManager::SetLocalPackagePaths(std::vector<std::filesystem::path> paths) {
+    _localPackagePaths = std::move(paths);
+    InvalidateCache();
+}
+
+std::span<const std::filesystem::path> PackageManager::GetLocalPackagePaths() const {
+    return _localPackagePaths;
+}
+
+// Private helper methods
+
+void PackageManager::InvalidateCache() {
+    _remotePackagesCache.reset();
+    _localPackagesCache.reset();
+}
+
+Result<std::vector<RemotePackage>> PackageManager::GetAllRemotePackages() const {
+    if (_remotePackagesCache) {
+        return *_remotePackagesCache;
+    }
+
+    std::vector<RemotePackage> allPackages;
+
+    for (const auto& [identifier, repository] : _repositories) {
+        auto result = repository->FetchPackages();
+        if (!result) {
+            // Log error but continue with other repositories
+            continue;
+        }
+
+        // Merge packages, handling duplicates by preferring packages from later repositories
+        for (auto& pkg : *result) {
+            auto it = std::ranges::find(allPackages, pkg.name, &RemotePackage::name);
+            if (it != allPackages.end()) {
+                // Merge versions from duplicate packages
+                it->versions.insert(it->versions.end(),
+                                   std::make_move_iterator(pkg.versions.begin()),
+                                   std::make_move_iterator(pkg.versions.end()));
+
+                // Sort and remove duplicate versions
+                std::ranges::sort(it->versions, {}, &PackageVersion::version);
+                auto [first, last] = std::ranges::unique(it->versions, {}, &PackageVersion::version);
+                it->versions.erase(first, it->versions.end());
+            } else {
+                allPackages.emplace_back(std::move(pkg));
+            }
+        }
+    }
+
+    _remotePackagesCache = allPackages;
+    return allPackages;
+}
+
+Result<std::vector<LocalPackage>> PackageManager::GetAllLocalPackages() const {
+    if (_localPackagesCache) {
+        return *_localPackagesCache;
+    }
+
+    auto result = _localProvider->ScanLocalPackages(_localPackagePaths);
+    if (result) {
+        _localPackagesCache = *result;
+    }
+
+    return result;
+}
+
+Result<void> PackageManager::InstallLocalPackage(const std::filesystem::path& packagePath) {
+    // Validate package
+    auto validationResult = _localProvider->ValidatePackage(packagePath);
+    if (!validationResult) {
+        return validationResult.error();
+    }
+
+    // Package is already at the correct location for local installation
+    // In a real implementation, this might involve copying files, updating manifests, etc.
+
+    InvalidateCache();
+    return {};
+}
+
+Result<void> PackageManager::DownloadAndInstall(
+    const RemotePackage& package,
+    const plg::version& version) {
+
+    // Find the specific version
+    auto versionIt = std::ranges::find(package.versions, version, &PackageVersion::version);
+    if (versionIt == package.versions.end()) {
+        return PackageError::NotFound;
+    }
+    
+    // Determine installation path
+    if (_localPackagePaths.empty()) {
+        return PackageError::FileSystemError;
+    }
+    
+    auto installPath = _localPackagePaths[0] / package.name;
+    
+    // Find repository that contains this package
+    for (const auto& [identifier, repository] : _repositories) {
+        auto downloadResult = repository->DownloadPackage(package.name, version, installPath);
+        if (downloadResult) {
+            InvalidateCache();
+            return {};
+        }
+    }
+    
+    return PackageError::NotFound;
+}
+
+// Factory function implementation
+std::unique_ptr<IPackageManager> CreatePackageManager(
+    std::vector<std::filesystem::path> localPackagePaths,
+    std::vector<std::unique_ptr<IPackageRepository>> repositories) {
+    
+    auto localProvider = std::make_unique<FilesystemLocalPackageProvider>();
+    auto dependencyResolver = std::make_unique<DefaultDependencyResolver>();
+    auto conflictResolver = std::make_unique<DefaultConflictResolver>();
+    
+    auto manager = std::make_unique<PackageManager>(
+        std::move(localProvider),
+        std::move(dependencyResolver),
+        std::move(conflictResolver)
+    );
+    
+    manager->SetLocalPackagePaths(std::move(localPackagePaths));
+    
+    for (auto& repo : repositories) {
+        manager->AddRepository(std::move(repo));
+    }
+    
+    return manager;
+}
+
+#if 0
+#include "package_manager.hpp"
 #include "module.hpp"
 #include "package_manifest.hpp"
 #include "plugin.hpp"
@@ -981,3 +1524,4 @@ std::vector<RemotePackagePtr> PackageManager::GetRemotePackages() const {
 	}
 	return remotePackages;
 }
+#endif

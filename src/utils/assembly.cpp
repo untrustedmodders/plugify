@@ -3,7 +3,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
-#include <algorithm>
+#include <ranges>
 
 #if !PLUGIFY_ARCH_ARM
 #if PLUGIFY_COMPILER_GCC && !PLUGIFY_COMPILER_CLANG && !defined(NDEBUG)
@@ -137,9 +137,7 @@ MemAddr Assembly::FindPattern(std::string_view pattern, MemAddr startAddress, Se
 }
 
 Assembly::Section Assembly::GetSectionByName(std::string_view sectionName) const noexcept {
-	auto it = std::find_if(_sections.begin(), _sections.end(), [sectionName](const auto& section) {
-		return section.name == sectionName;
-	});
+	auto it = std::ranges::find(_sections, sectionName, &Section::name);
 	if (it != _sections.end())
 		return *it;
 	return {};

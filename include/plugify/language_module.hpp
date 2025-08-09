@@ -4,10 +4,10 @@
 #include <cstring>
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
 
 #include "method.hpp"
+#include "expected.hpp"
 #include "mem_addr.hpp"
 #include "date_time.hpp"
 
@@ -24,14 +24,18 @@ namespace plugify {
 	 * The ErrorData structure contains a string describing an error.
 	 */
 	struct ErrorData {
-		std::vector<char> error; ///< Description of the error.
-
 		ErrorData(std::string_view str) {
-			error.assign(str.begin(), str.end());
-			if (error.back() != 0) {
-				error.emplace_back('\0');
-			}
+			error = std::make_unique<char[]>(str.size() + 1);
+			std::memcpy(error.get(), str.data(), str.size() * sizeof(char));
+			error[str.size()] = '\0'; // Null-terminate the string
 		}
+
+		std::string_view string() const noexcept {
+			return error.get();
+		}
+
+	private:
+		std::unique_ptr<char[]> error; ///< Description of the error.
 	};
 
 	/**
@@ -52,8 +56,8 @@ namespace plugify {
 	 */
 	struct LoadResultData {
 		std::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
-		MemAddr data; /// User data.
-		MethodTable table;
+		MemAddr data; ///< Data associated with the loaded plugin.
+		MethodTable table; ///< Method table for the loaded plugin.
 	};
 
 	/**
@@ -62,7 +66,7 @@ namespace plugify {
 	 *
 	 * The InitResult is a variant that can hold either InitResultData or ErrorData.
 	 */
-	using InitResult = std::variant<InitResultData, ErrorData>;
+	using InitResult = plg::expected<InitResultData, ErrorData>;
 
 	/**
 	 * @typedef LoadResult
@@ -70,7 +74,7 @@ namespace plugify {
 	 *
 	 * The LoadResult is a variant that can hold either LoadResultData or ErrorData.
 	 */
-	using LoadResult = std::variant<LoadResultData, ErrorData>;
+	using LoadResult = plg::expected<LoadResultData, ErrorData>;
 
 	/**
 	 * @class ILanguageModule

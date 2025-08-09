@@ -1,41 +1,67 @@
 #pragma once
 
-#include <filesystem>
-#include <functional>
-#include <memory>
+#include <optional>
+#include <string_view>
 
-#include <plugify_export.h>
+#include "constrant.hpp"
+#include "repository.hpp"
 
 namespace plugify {
-	struct Package;
-	struct LocalPackage;
-	struct RemotePackage;
-
 	/**
-	 * @typedef PackagePtr
-	 * @brief Shared pointer of a Package.
+	 * @brief Result of dependency resolution: planned actions or errors.
 	 */
-	using PackagePtr = std::shared_ptr<Package>;
+	/*struct DependencyPlan {
+		// packages to install (remote package + chosen version)
+		std::vector<std::pair<RemotePackage, PackageVersion>> installQueue;
+		// packages to remove / upgrade
+		std::vector<LocalPackage> removeQueue;
+		std::vector<std::string> warnings;
+		OperationResult result;
+	};*/
 
 	/**
-	 * @typedef LocalPackagePtr
-	 * @brief Shared pointer of a LocalPackage.
+	 * @brief Result of conflict analysis.
 	 */
-	using LocalPackagePtr = std::shared_ptr<LocalPackage>;
+	/*struct ConflictReport {
+		bool hasConflicts{false};
+		std::vector<std::string> conflictDetails;
+		std::optional<std::string> resolutionSuggestion;
+	};*/
+
+	struct InstallResult {
+		bool success;
+		std::vector<std::string> installedPackages;
+		std::vector<std::string> errors;
+	};
+
+	struct ConflictInfo {
+		std::string package1;
+		std::string package2;
+		std::string reason;
+		std::vector<std::string> suggestedResolutions;
+	};
+
+	struct PackageInfo {
+		std::string name;
+		std::string type;
+		plg::version version;
+		std::optional<std::string> description;
+		std::optional<std::string> author;
+		bool isLocal;
+		std::optional<std::filesystem::path> localPath;
+	};
 
 	/**
-	 * @typedef RemotePackagePtr
-	 * @brief Shared pointer of a RemotePackage.
-	 */
-	using RemotePackagePtr = std::shared_ptr<RemotePackage>;
-
-	/**
-	 * @class IPackageManager
-	 * @brief Interface for the package manager provided to the user, implemented in the core.
+	 * @brief Main package manager interface
+	 *
+	 * @details Pure interface for testability and flexibility.
+	 *          Defines the public API for package management operations.
+	 *
+	 * @note Follows Interface Segregation Principle
 	 */
 	class IPackageManager {
 	public:
-		virtual ~IPackageManager() = default;
+	    virtual ~IPackageManager() = default;
 
 		/**
 		 * @brief Initialize the package manager.
@@ -53,129 +79,50 @@ namespace plugify {
 		 * @return True if the package manager is initialized, false otherwise.
 		 */
 		virtual bool IsInitialized() const = 0;
-		
+
 		/**
 		 * @brief Reloads the package manager.
 		 * @return True if was initialized, false otherwise.
 		 */
 		virtual bool Reload() = 0;
 
-		/**
-		 * @brief Install a package.
-		 * @param packageName Name of the package to install.
-		 * @param requiredVersion Optional required version of the package.
-		 */
-		virtual void InstallPackage(std::string_view packageName, std::optional<plg::version> requiredVersion = {}) = 0;
 
-		/**
-		 * @brief Install multiple packages.
-		 * @param packageNames Span of package names to install.
-		 */
-		virtual void InstallPackages(std::span<const std::string> packageNames) = 0;
 
-		/**
-		 * @brief Install all packages listed in a manifest file.
-		 * @param manifestFilePath Path to the manifest file.
-		 * @param reinstall True to reinstall packages, false otherwise.
-		 */
-		virtual void InstallAllPackages(const std::filesystem::path& manifestFilePath, bool reinstall) = 0;
+		// Repository management
+		virtual void AddRepository(std::unique_ptr<IPackageRepository> repository) = 0;
+		virtual void RemoveRepository(std::string_view identifier) = 0;
+		virtual std::vector<std::string> ListRepositories() const = 0;
 
-		/**
-		 * @brief Install all packages listed in a manifest file from a remote location.
-		 * @param manifestUrl URL of the manifest file.
-		 * @param reinstall True to reinstall packages, false otherwise.
-		 */
-		virtual void InstallAllPackages(const std::string& manifestUrl, bool reinstall) = 0;
+		// Package discovery and information
+		virtual Result<std::vector<LocalPackage>> ListLocalPackages() const = 0;
+		virtual Result<std::vector<RemotePackage>> ListRemotePackages() const = 0;
+		virtual Result<std::vector<PackageInfo>> SearchPackages(std::string_view pattern) const = 0;
+		virtual Result<PackageInfo> GetPackageInfo(std::string_view packageName) const = 0;
 
-		/**
-		 * @brief Update a specific package.
-		 * @param packageName Name of the package to update.
-		 * @param requiredVersion Optional required version of the package.
-		 */
-		virtual void UpdatePackage(std::string_view packageName, std::optional<plg::version> requiredVersion = {}) = 0;
+		// Package operations
+		virtual Result<InstallResult> InstallPackage(std::string_view packageName, std::optional<plg::version> version = std::nullopt) = 0;
+		virtual Result<void> RemovePackage(std::string_view packageName) = 0;
+		virtual Result<InstallResult> UpdatePackage(std::string_view packageName) = 0;
+		virtual Result<std::vector<std::string>> UpdateAll() = 0;
 
-		/**
-		 * @brief Update multiple packages.
-		 * @param packageNames Span of package names to update.
-		 */
-		virtual void UpdatePackages(std::span<const std::string> packageNames) = 0;
+		// System operations
+		virtual Result<void> RefreshRepositories() = 0;
+		virtual Result<std::vector<ConflictInfo>> VerifySystem() = 0;
+		virtual Result<void> ResolveConflicts() = 0;
 
-		/**
-		 * @brief Update all installed packages.
-		 */
-		virtual void UpdateAllPackages() = 0;
+		// Configuration
+		virtual void SetLocalPackagePaths(std::vector<std::filesystem::path> paths) = 0;
+		virtual std::span<const std::filesystem::path> GetLocalPackagePaths() const = 0;
 
-		/**
-		 * @brief Uninstall a specific package.
-		 * @param packageName Name of the package to uninstall.
-		 */
-		virtual void UninstallPackage(std::string_view packageName) = 0;
-
-		/**
-		 * @brief Uninstall multiple packages.
-		 * @param packageNames Span of package names to uninstall.
-		 */
-		virtual void UninstallPackages(std::span<const std::string> packageNames) = 0;
-
-		/**
-		 * @brief Uninstall all installed packages.
-		 */
-		virtual void UninstallAllPackages() = 0;
-
-		/**
-		 * @brief Snapshot the list of installed packages to a manifest file.
-		 * @param manifestFilePath Path to the manifest file.
-		 * @param prettify True to prettify the output, false for compact format.
-		 */
-		virtual void SnapshotPackages(const std::filesystem::path& manifestFilePath, bool prettify) = 0;
-
-		/**
-		 * @brief Check if there are missed packages (not installed but required by other packages).
-		 * @return True if there are missed packages, false otherwise.
-		 */
-		virtual bool HasMissedPackages() const = 0;
-
-		/**
-		 * @brief Check if there are conflicted packages (installed with conflicting versions).
-		 * @return True if there are conflicted packages, false otherwise.
-		 */
-		virtual bool HasConflictedPackages() const = 0;
-
-		/**
-		 * @brief Install missed packages.
-		 */
-		virtual void InstallMissedPackages() = 0;
-
-		/**
-		 * @brief Uninstall conflicted packages.
-		 */
-		virtual void UninstallConflictedPackages() = 0;
-
-		/**
-		 * @brief Find a local package by name.
-		 * @param packageName Name of the package to find.
-		 * @return Shared pointer to the found local package.
-		 */
-		virtual LocalPackagePtr FindLocalPackage(std::string_view packageName) const = 0;
-
-		/**
-		 * @brief Find a remote package by name.
-		 * @param packageName Name of the package to find.
-		 * @return Shared pointer to the found remote package.
-		 */
-		virtual RemotePackagePtr FindRemotePackage(std::string_view packageName) const = 0;
-
-		/**
-		 * @brief Get a vector of all local packages.
-		 * @return Vector of local package shared pointers.
-		 */
-		virtual std::vector<LocalPackagePtr> GetLocalPackages() const = 0;
-
-		/**
-		 * @brief Get a vector of all remote packages.
-		 * @return Vector of remote package shared pointers.
-		 */
-		virtual std::vector<RemotePackagePtr> GetRemotePackages() const = 0;
+		// Basic operations
+		//! virtual OperationResult Install(std::string_view packageName, std::optional<VersionConstraint> constraint = std::nullopt) = 0;
+		//! virtual OperationResult Remove(std::string_view packageName, bool force = false) = 0;
+		//! virtual OperationResult Update(std::optional<std::string> packageName = std::nullopt, std::optional<VersionConstraint> constraint = std::nullopt) = 0; ///< update all or a single package
+		//! virtual std::vector<RemotePackage> Search(std::string_view query) const = 0;
+		//! virtual std::vector<LocalPackage> ListInstalled() const = 0;
+		//! virtual std::optional<RemotePackage> ShowInfo(std::string_view packageName) const = 0;
+		//! virtual DependencyPlan CheckDependencies(std::string_view packageName, std::optional<VersionConstraint> constraint = std::nullopt) = 0;
+		//! virtual ConflictReport CheckConflicts(bool autoResolve = false) = 0;
 	};
 
 } // namespace plugify

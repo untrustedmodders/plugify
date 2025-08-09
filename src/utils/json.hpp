@@ -153,13 +153,24 @@ struct glz::meta<plugify::Config> {
 };
 
 template <>
+struct glz::meta<plugify::PackageConstraint> {
+	using T = plugify::PackageConstraint;
+	static constexpr auto value = object(
+			"name", &T::name,
+			"constraints", &T::constraints,
+			"optional", &T::optional
+	);
+};
+template <>
 struct glz::meta<plugify::PackageVersion> {
 	using T = plugify::PackageVersion;
 	static constexpr auto value = object(
 			"version", &T::version,
 			"checksum", &T::checksum,
 			"download", &T::download,
-			"platforms", &T::platforms
+			"platforms", &T::platforms,
+			"dependencies", &T::dependencies,
+			"conflicts", &T::conflicts
 	);
 };
 
@@ -286,6 +297,98 @@ namespace glz {
 			serialize<JSON>::op<Opts>(value.to_string_noexcept(), args...);
 		}
 	};
+
+	template<>
+	struct from<JSON, plugify::VersionConstraint> {
+	    template <auto Opts>
+	    static void op(plugify::VersionConstraint& value, auto&&... args) {
+	        std::string str;
+	        parse<JSON>::op<Opts>(str, args...);
+
+	        if (str.empty()) {
+	            value.type = plugify::VersionConstraint::Type::Any;
+	            value.version = plg::version{};
+	            return;
+	        }
+
+	        // Parse the constraint operator
+	        std::string_view sv(str);
+	        plugify::VersionConstraint::Type type;
+	        size_t op_len = 0;
+
+	        if (sv.starts_with(">=")) {
+	            type = plugify::VersionConstraint::Type::GreaterEqual;
+	            op_len = 2;
+	        } else if (sv.starts_with("<=")) {
+	            type = plugify::VersionConstraint::Type::LessEqual;
+	            op_len = 2;
+	        } else if (sv.starts_with("~>")) {
+	            type = plugify::VersionConstraint::Type::Compatible;
+	            op_len = 2;
+	        } else if (sv.starts_with("!=")) {
+	            type = plugify::VersionConstraint::Type::NotEqual;
+	            op_len = 2;
+	        } else if (sv.starts_with("==")) {
+	            type = plugify::VersionConstraint::Type::Equal;
+	            op_len = 2;
+	        } else if (sv.starts_with(">")) {
+	            type = plugify::VersionConstraint::Type::Greater;
+	            op_len = 1;
+	        } else if (sv.starts_with("<")) {
+	            type = plugify::VersionConstraint::Type::Less;
+	            op_len = 1;
+	        } else {
+	            // No operator, assume equality
+	            type = plugify::VersionConstraint::Type::Equal;
+	            op_len = 0;
+	        }
+
+	        value.type = type;
+	        value.version = plg::version(sv.substr(op_len));
+	    }
+	};
+
+	template<>
+	struct to<JSON, plugify::VersionConstraint> {
+	    template <auto Opts>
+	    static void op(const plugify::VersionConstraint& value, auto&&... args) noexcept {
+	        std::string result;
+
+	        // Convert constraint type to operator string
+	        switch (value.type) {
+	            case plugify::VersionConstraint::Type::Equal:
+	                result = "==";
+	                break;
+	            case plugify::VersionConstraint::Type::NotEqual:
+	                result = "!=";
+	                break;
+	            case plugify::VersionConstraint::Type::Greater:
+	                result = ">";
+	                break;
+	            case plugify::VersionConstraint::Type::GreaterEqual:
+	                result = ">=";
+	                break;
+	            case plugify::VersionConstraint::Type::Less:
+	                result = "<";
+	                break;
+	            case plugify::VersionConstraint::Type::LessEqual:
+	                result = "<=";
+	                break;
+	            case plugify::VersionConstraint::Type::Compatible:
+	                result = "~>";
+	                break;
+	            case plugify::VersionConstraint::Type::Any:
+	                result = "";
+	                serialize<JSON>::op<Opts>(result, args...);
+	                return;
+	        }
+
+	        // Append version string
+	        result += value.version.to_string_noexcept();
+
+	        serialize<JSON>::op<Opts>(result, args...);
+	    }
+	};
 #else
 	namespace detail {
 		template<>
@@ -323,6 +426,98 @@ namespace glz {
 			static void op(const plg::version& value, auto&&... args) noexcept {
 				write<json>::op<Opts>(value.to_string_noexcept(), args...);
 			}
+		};
+
+		template<>
+		struct from_json<plugify::VersionConstraint> {
+		    template <auto Opts>
+		    static void op(plugify::VersionConstraint& value, auto&&... args) {
+		        std::string str;
+		        parse<JSON>::op<Opts>(str, args...);
+
+		        if (str.empty()) {
+		            value.type = plugify::VersionConstraint::Type::Any;
+		            value.version = plg::version{};
+		            return;
+		        }
+
+		        // Parse the constraint operator
+		        std::string_view sv(str);
+		        plugify::VersionConstraintType type;
+		        size_t op_len = 0;
+
+		        if (sv.starts_with(">=")) {
+		            type = plugify::VersionConstraint::Type::GreaterEqual;
+		            op_len = 2;
+		        } else if (sv.starts_with("<=")) {
+		            type = plugify::VersionConstraint::Type::LessEqual;
+		            op_len = 2;
+		        } else if (sv.starts_with("~>")) {
+		            type = plugify::VersionConstraint::Type::Compatible;
+		            op_len = 2;
+		        } else if (sv.starts_with("!=")) {
+		            type = plugify::VersionConstraint::Type::NotEqual;
+		            op_len = 2;
+		        } else if (sv.starts_with("==")) {
+		            type = plugify::VersionConstraint::Type::Equal;
+		            op_len = 2;
+		        } else if (sv.starts_with(">")) {
+		            type = plugify::VersionConstraint::Type::Greater;
+		            op_len = 1;
+		        } else if (sv.starts_with("<")) {
+		            type = plugify::VersionConstraint::Type::Less;
+		            op_len = 1;
+		        } else {
+		            // No operator, assume equality
+		            type = plugify::VersionConstraint::Type::Equal;
+		            op_len = 0;
+		        }
+
+		        value.type = type;
+		        value.version = plg::version(sv.substr(op_len));
+		    }
+		};
+
+		template<>
+		struct to_json<plugify::VersionConstraint> {
+		    template <auto Opts>
+		    static void op(const plugify::VersionConstraint& value, auto&&... args) noexcept {
+		        std::string result;
+
+		        // Convert constraint type to operator string
+		        switch (value.type) {
+		            case plugify::VersionConstraint::Type::Equal:
+		                result = "==";
+		                break;
+		            case plugify::VersionConstraint::Type::NotEqual:
+		                result = "!=";
+		                break;
+		            case plugify::VersionConstraint::Type::Greater:
+		                result = ">";
+		                break;
+		            case plugify::VersionConstraint::Type::GreaterEqual:
+		                result = ">=";
+		                break;
+		            case plugify::VersionConstraint::Type::Less:
+		                result = "<";
+		                break;
+		            case plugify::VersionConstraint::Type::LessEqual:
+		                result = "<=";
+		                break;
+		            case plugify::VersionConstraint::Type::Compatible:
+		                result = "~>";
+		                break;
+		            case plugify::VersionConstraint::Type::Any:
+		                result = "";
+		                serialize<JSON>::op<Opts>(result, args...);
+		                return;
+		        }
+
+		        // Append version string
+		        result += value.version.to_string_noexcept();
+
+		        serialize<JSON>::op<Opts>(result, args...);
+		    }
 		};
 	}
 #endif

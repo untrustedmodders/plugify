@@ -1,5 +1,73 @@
 #pragma once
 
+#include <plugify/package_manager.hpp>
+#include <utils/hash.hpp>
+
+namespace plugify {
+	/**
+	 * @brief Concrete implementation of the package manager
+	 *
+	 * This class orchestrates all package management operations by coordinating
+	 * between repositories, local package providers, and resolvers.
+	 */
+	class PackageManager final : public IPackageManager, public PlugifyContext {
+	public:
+		explicit PackageManager(std::weak_ptr<IPlugify> plugify);
+		~PackageManager() override;
+
+		// IPackageManager implementation
+		bool Initialize() override;
+		void Terminate() override;
+		bool IsInitialized() const override;
+		bool Reload() override;
+
+		void AddRepository(std::unique_ptr<IPackageRepository> repository) override;
+		void RemoveRepository(std::string_view identifier) override;
+		std::vector<std::string> ListRepositories() const override;
+
+		Result<std::vector<LocalPackage>> ListLocalPackages() const override;
+		Result<std::vector<RemotePackage>> ListRemotePackages() const override;
+		Result<std::vector<PackageInfo>> SearchPackages(std::string_view pattern) const override;
+		Result<PackageInfo> GetPackageInfo(std::string_view packageName) const override;
+
+		Result<InstallResult> InstallPackage(std::string_view packageName,
+											 std::optional<plg::version> version = std::nullopt) override;
+		Result<void> RemovePackage(std::string_view packageName) override;
+		Result<InstallResult> UpdatePackage(std::string_view packageName) override;
+		Result<std::vector<std::string>> UpdateAll() override;
+
+		Result<void> RefreshRepositories() override;
+		Result<std::vector<ConflictInfo>> VerifySystem() override;
+		Result<void> ResolveConflicts() override;
+
+		void SetLocalPackagePaths(std::vector<std::filesystem::path> paths) override;
+		std::span<const std::filesystem::path> GetLocalPackagePaths() const override;
+
+	private:
+
+		// Dependencies (injected)
+		std::unique_ptr<ILocalPackageProvider> _localProvider;
+		std::unique_ptr<IDependencyResolver> _dependencyResolver;
+		std::unique_ptr<IConflictResolver> _conflictResolver;
+
+		// State
+		std::unordered_map<std::string, std::unique_ptr<IPackageRepository>, string_hash, std::equal_to<>> _repositories;
+		std::vector<std::filesystem::path> _localPackagePaths;
+
+		// Cache for performance
+		mutable std::optional<std::vector<RemotePackage>> _remotePackagesCache;
+		mutable std::optional<std::vector<LocalPackage>> _localPackagesCache;
+
+		// Helper methods
+		void InvalidateCache();
+		Result<std::vector<RemotePackage>> GetAllRemotePackages() const;
+		Result<std::vector<LocalPackage>> GetAllLocalPackages() const;
+		Result<void> InstallLocalPackage(const std::filesystem::path& packagePath);
+		Result<void> DownloadAndInstall(const RemotePackage& package, const plg::version& version);
+	};
+} // namespace plugify
+
+#if 0
 #include "package_manifest.hpp"
 #include "plugify_context.hpp"
 #include <plugify/package.hpp>
@@ -81,3 +149,5 @@ namespace plugify {
 		bool _inited{ false };
 	};
 }
+
+#endif

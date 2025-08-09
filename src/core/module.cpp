@@ -91,15 +91,15 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 #endif // PLUGIFY_PLATFORM_WINDOWS
 
 	InitResult result = languageModule->Initialize(provider, *this);
-	if (auto* data = std::get_if<ErrorData>(&result)) {
-		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", _name, data->error.data(), _filePath.string()));
+	if (!result) {
+		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", _name, result.error().string(), _filePath.string()));
 		Terminate();
 		return false;
 	}
 
 	_assembly = std::move(assembly);
 	_languageModule = languageModule;
-	_table = std::get<InitResultData>(result).table;
+	_table = result->table;
 
 	SetLoaded();
 	return true;
@@ -126,23 +126,21 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 		return false;
 
 	auto result = _languageModule->OnPluginLoad(plugin);
-	if (auto* data =  std::get_if<ErrorData>(&result)) {
-		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), data->error.data(), plugin.GetBaseDir().string()));
+	if (!result) {
+		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), result.error().string(), plugin.GetBaseDir().string()));
 		return false;
 	}
 
-	auto& [methods, data, table] = std::get<LoadResultData>(result);
-
 	if (const auto& exportedMethods = plugin.GetDescriptor().exportedMethods) {
-		if (methods.size() != exportedMethods->size()) {
-			plugin.SetError(std::format("Mismatch in methods count, expected: {} but provided: {}", exportedMethods->size(), methods.size()));
+		if (result->methods.size() != exportedMethods->size()) {
+			plugin.SetError(std::format("Mismatch in methods count, expected: {} but provided: {}", exportedMethods->size(), result->methods.size()));
 			return false;
 		}
 
 		std::vector<std::string_view> errors;
 
-		for (size_t i = 0; i < methods.size(); ++i) {
-			const auto& [method, addr] = methods[i];
+		for (size_t i = 0; i < result->methods.size(); ++i) {
+			const auto& [method, addr] = result->methods[i];
 			const auto& exportedMethod = (*exportedMethods)[i];
 
 			if (method != exportedMethod || !addr) {
@@ -155,11 +153,11 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 			return false;
 		}
 
-		plugin.SetMethods(std::move(methods));
+		plugin.SetMethods(std::move(result->methods));
 	}
 
-	plugin.SetTable(table);
-	plugin.SetData(data);
+	plugin.SetTable(result->table);
+	plugin.SetData(result->data);
 
 	plugin.SetLoaded();
 
