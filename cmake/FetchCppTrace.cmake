@@ -16,7 +16,9 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
 )
 
-set(CPPTRACE_LIBDWARF_TAG "252efd134ad37c1f4984ca9644c3b8cc7a7859f9" CACHE INTERNAL "")
+if(LINUX OR MINGW)
+    add_compile_definitions(_GNU_SOURCE)
+endif()
 
 FetchContent_MakeAvailable(cpptrace)
 
