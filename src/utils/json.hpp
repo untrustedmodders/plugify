@@ -299,47 +299,47 @@ namespace glz {
 	};
 
 	template<>
-	struct from<JSON, plugify::VersionConstraint> {
+	struct from<JSON, plugify::Constraint> {
 	    template <auto Opts>
-	    static void op(plugify::VersionConstraint& value, auto&&... args) {
+	    static void op(plugify::Constraint& value, auto&&... args) {
 	        std::string str;
 	        parse<JSON>::op<Opts>(str, args...);
 
 	        if (str.empty()) {
-	            value.type = plugify::VersionConstraint::Type::Any;
+	            value.type = plugify::Constraint::Type::Any;
 	            value.version = plg::version{};
 	            return;
 	        }
 
 	        // Parse the constraint operator
 	        std::string_view sv(str);
-	        plugify::VersionConstraint::Type type;
+	        plugify::Constraint::Type type;
 	        size_t op_len = 0;
 
 	        if (sv.starts_with(">=")) {
-	            type = plugify::VersionConstraint::Type::GreaterEqual;
+	            type = plugify::Constraint::Type::GreaterEqual;
 	            op_len = 2;
 	        } else if (sv.starts_with("<=")) {
-	            type = plugify::VersionConstraint::Type::LessEqual;
+	            type = plugify::Constraint::Type::LessEqual;
 	            op_len = 2;
 	        } else if (sv.starts_with("~>")) {
-	            type = plugify::VersionConstraint::Type::Compatible;
+	            type = plugify::Constraint::Type::Compatible;
 	            op_len = 2;
 	        } else if (sv.starts_with("!=")) {
-	            type = plugify::VersionConstraint::Type::NotEqual;
+	            type = plugify::Constraint::Type::NotEqual;
 	            op_len = 2;
 	        } else if (sv.starts_with("==")) {
-	            type = plugify::VersionConstraint::Type::Equal;
+	            type = plugify::Constraint::Type::Equal;
 	            op_len = 2;
 	        } else if (sv.starts_with(">")) {
-	            type = plugify::VersionConstraint::Type::Greater;
+	            type = plugify::Constraint::Type::Greater;
 	            op_len = 1;
 	        } else if (sv.starts_with("<")) {
-	            type = plugify::VersionConstraint::Type::Less;
+	            type = plugify::Constraint::Type::Less;
 	            op_len = 1;
 	        } else {
 	            // No operator, assume equality
-	            type = plugify::VersionConstraint::Type::Equal;
+	            type = plugify::Constraint::Type::Equal;
 	            op_len = 0;
 	        }
 
@@ -349,35 +349,35 @@ namespace glz {
 	};
 
 	template<>
-	struct to<JSON, plugify::VersionConstraint> {
+	struct to<JSON, plugify::Constraint> {
 	    template <auto Opts>
-	    static void op(const plugify::VersionConstraint& value, auto&&... args) noexcept {
+	    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
 	        std::string result;
 
 	        // Convert constraint type to operator string
 	        switch (value.type) {
-	            case plugify::VersionConstraint::Type::Equal:
+	            case plugify::Constraint::Type::Equal:
 	                result = "==";
 	                break;
-	            case plugify::VersionConstraint::Type::NotEqual:
+	            case plugify::Constraint::Type::NotEqual:
 	                result = "!=";
 	                break;
-	            case plugify::VersionConstraint::Type::Greater:
+	            case plugify::Constraint::Type::Greater:
 	                result = ">";
 	                break;
-	            case plugify::VersionConstraint::Type::GreaterEqual:
+	            case plugify::Constraint::Type::GreaterEqual:
 	                result = ">=";
 	                break;
-	            case plugify::VersionConstraint::Type::Less:
+	            case plugify::Constraint::Type::Less:
 	                result = "<";
 	                break;
-	            case plugify::VersionConstraint::Type::LessEqual:
+	            case plugify::Constraint::Type::LessEqual:
 	                result = "<=";
 	                break;
-	            case plugify::VersionConstraint::Type::Compatible:
+	            case plugify::Constraint::Type::Compatible:
 	                result = "~>";
 	                break;
-	            case plugify::VersionConstraint::Type::Any:
+	            case plugify::Constraint::Type::Any:
 	                result = "";
 	                serialize<JSON>::op<Opts>(result, args...);
 	                return;
@@ -429,14 +429,14 @@ namespace glz {
 		};
 
 		template<>
-		struct from_json<plugify::VersionConstraint> {
+		struct from_json<plugify::Constraint> {
 		    template <auto Opts>
-		    static void op(plugify::VersionConstraint& value, auto&&... args) {
+		    static void op(plugify::Constraint& value, auto&&... args) {
 		        std::string str;
 		        parse<JSON>::op<Opts>(str, args...);
 
 		        if (str.empty()) {
-		            value.type = plugify::VersionConstraint::Type::Any;
+		            value.type = plugify::Constraint::Type::Any;
 		            value.version = plg::version{};
 		            return;
 		        }
@@ -447,29 +447,29 @@ namespace glz {
 		        size_t op_len = 0;
 
 		        if (sv.starts_with(">=")) {
-		            type = plugify::VersionConstraint::Type::GreaterEqual;
+		            type = plugify::Constraint::Type::GreaterEqual;
 		            op_len = 2;
 		        } else if (sv.starts_with("<=")) {
-		            type = plugify::VersionConstraint::Type::LessEqual;
+		            type = plugify::Constraint::Type::LessEqual;
 		            op_len = 2;
 		        } else if (sv.starts_with("~>")) {
-		            type = plugify::VersionConstraint::Type::Compatible;
+		            type = plugify::Constraint::Type::Compatible;
 		            op_len = 2;
 		        } else if (sv.starts_with("!=")) {
-		            type = plugify::VersionConstraint::Type::NotEqual;
+		            type = plugify::Constraint::Type::NotEqual;
 		            op_len = 2;
 		        } else if (sv.starts_with("==")) {
-		            type = plugify::VersionConstraint::Type::Equal;
+		            type = plugify::Constraint::Type::Equal;
 		            op_len = 2;
 		        } else if (sv.starts_with(">")) {
-		            type = plugify::VersionConstraint::Type::Greater;
+		            type = plugify::Constraint::Type::Greater;
 		            op_len = 1;
 		        } else if (sv.starts_with("<")) {
-		            type = plugify::VersionConstraint::Type::Less;
+		            type = plugify::Constraint::Type::Less;
 		            op_len = 1;
 		        } else {
 		            // No operator, assume equality
-		            type = plugify::VersionConstraint::Type::Equal;
+		            type = plugify::Constraint::Type::Equal;
 		            op_len = 0;
 		        }
 
@@ -479,35 +479,35 @@ namespace glz {
 		};
 
 		template<>
-		struct to_json<plugify::VersionConstraint> {
+		struct to_json<plugify::Constraint> {
 		    template <auto Opts>
-		    static void op(const plugify::VersionConstraint& value, auto&&... args) noexcept {
+		    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
 		        std::string result;
 
 		        // Convert constraint type to operator string
 		        switch (value.type) {
-		            case plugify::VersionConstraint::Type::Equal:
+		            case plugify::Constraint::Type::Equal:
 		                result = "==";
 		                break;
-		            case plugify::VersionConstraint::Type::NotEqual:
+		            case plugify::Constraint::Type::NotEqual:
 		                result = "!=";
 		                break;
-		            case plugify::VersionConstraint::Type::Greater:
+		            case plugify::Constraint::Type::Greater:
 		                result = ">";
 		                break;
-		            case plugify::VersionConstraint::Type::GreaterEqual:
+		            case plugify::Constraint::Type::GreaterEqual:
 		                result = ">=";
 		                break;
-		            case plugify::VersionConstraint::Type::Less:
+		            case plugify::Constraint::Type::Less:
 		                result = "<";
 		                break;
-		            case plugify::VersionConstraint::Type::LessEqual:
+		            case plugify::Constraint::Type::LessEqual:
 		                result = "<=";
 		                break;
-		            case plugify::VersionConstraint::Type::Compatible:
+		            case plugify::Constraint::Type::Compatible:
 		                result = "~>";
 		                break;
-		            case plugify::VersionConstraint::Type::Any:
+		            case plugify::Constraint::Type::Any:
 		                result = "";
 		                serialize<JSON>::op<Opts>(result, args...);
 		                return;

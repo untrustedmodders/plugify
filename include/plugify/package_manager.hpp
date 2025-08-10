@@ -1,127 +1,111 @@
 #pragma once
 
 #include <optional>
+#include <functional>
 #include <string_view>
+#include <filesystem>
+#include <unordered_map>
+#include <vector>
 
-#include "constrant.hpp"
 #include "resolver.hpp"
 #include "repository.hpp"
 
 namespace plugify {
-	// Package operation results
-	struct InstallResult {
-		bool success;
-		std::vector<std::string> installedPackages;
-		std::vector<Error> errors;
-	};
-
-	struct RemoveResult {
-		bool success;
-		std::vector<std::string> removedPackages;
-		std::vector<Error> errors;
-	};
-
-	struct UpdateResult {
-		bool success;
-		std::vector<std::pair<std::string, plg::version>> updatedPackages;
-		std::vector<Error> errors;
-	};
+	/**
+	 * @brief Operation progress callback
+	 */
+	using ProgressCallback = std::function<void(std::string_view operation, float progress)>;
 
 	/**
 	 * @brief Main package manager interface
-	 *
-	 * @details Pure interface for testability and flexibility.
-	 *          Defines the public API for package management operations.
-	 *
-	 * @note Follows Interface Segregation Principle
 	 */
 	class IPackageManager {
 	public:
 	    virtual ~IPackageManager() = default;
 
-	    // Repository management
+	    // Repository Management
 	    /**
-	     * Add a repository source
+	     * @brief Add a repository to the package manager
 	     */
-	    virtual void AddRepository(std::unique_ptr<IPackageRepository> repository) = 0;
+	    virtual Result<void> AddRepository(std::shared_ptr<IPackageRepository> repository) = 0;
 
 	    /**
-	     * Remove a repository by identifier
+	     * @brief Remove a repository
 	     */
-	    virtual bool RemoveRepository(std::string_view identifier) = 0;
+	    virtual Result<void> RemoveRepository(std::string_view name) = 0;
 
 	    /**
-	     * Refresh all repository data
+	     * @brief Update repository metadata
 	     */
-	    virtual Result<void> RefreshRepositories() = 0;
+	    virtual Result<void> UpdateRepositories(ProgressCallback progress = {}) = 0;
 
-	    // Package enumeration
+	    // Package Discovery
 	    /**
-	     * Get all locally installed packages
+	     * @brief List all available packages
 	     */
-	    virtual std::vector<LocalPackage> GetInstalledPackages() const = 0;
-
-	    /**
-	     * Get all available remote packages
-	     */
-	    virtual std::vector<RemotePackage> GetAvailablePackages() const = 0;
+	    virtual Result<std::vector<Package>> ListAvailable(std::optional<PackageType> type = {}) = 0;
 
 	    /**
-	     * Get packages by type filter
+	     * @brief List installed packages
 	     */
-	    virtual std::vector<LocalPackage> GetInstalledPackagesByType(std::string_view type) const = 0;
-
-	    // Package operations
-	    /**
-	     * Install package(s) by name
-	     */
-	    virtual InstallResult Install(std::span<const std::string> packageNames) = 0;
+	    virtual Result<std::vector<Package>> ListInstalled(std::optional<PackageType> type = {}) = 0;
 
 	    /**
-	     * Remove package(s) by name
+	     * @brief Search for packages
 	     */
-	    virtual RemoveResult Remove(std::span<const std::string> packageNames) = 0;
+	    virtual Result<std::vector<Package>> Search(std::string_view query) = 0;
 
 	    /**
-	     * Update package(s)
+	     * @brief Get detailed package information
 	     */
-	    virtual UpdateResult Update(std::span<const std::string> packageNames = {}) = 0;
+	    virtual Result<Package> GetPackageInfo(const PackageId& id, const std::optional<plg::version>& version = {}) = 0;
+
+	    // Package Operations
+	    /**
+	     * @brief Install a package
+	     */
+	    virtual Result<void> Install(const PackageId& id, const std::optional<plg::version>& version = {}, ProgressCallback progress = {}) = 0;
 
 	    /**
-	     * Search for packages
+	     * @brief Remove an installed package
 	     */
-	    virtual std::vector<std::variant<LocalPackage, RemotePackage>> Search(std::string_view query) = 0;
+	    virtual Result<void> Remove(const PackageId& id, bool removeDependents = false) = 0;
 
 	    /**
-	     * Get detailed package information
+	     * @brief Update a package to specified or latest version
 	     */
-	    virtual std::optional<std::variant<LocalPackage, RemotePackage>> GetPackageInfo(std::string_view name) = 0;
-
-	    // Dependency and conflict management
-	    /**
-	     * Check dependencies for a package
-	     */
-	    virtual Result<std::vector<PackageConstraint>> CheckDependencies(std::string_view packageName) = 0;
+	    virtual Result<void> Update(const PackageId& id, const std::optional<plg::version>& targetVersion = {}, ProgressCallback progress = {}) = 0;
 
 	    /**
-	     * Verify system integrity (check all conflicts and dependencies)
+	     * @brief Update all installed packages to specified or latest versions
 	     */
-	    virtual Result<void> VerifySystemIntegrity() = 0;
+	    virtual Result<void> UpdateAll(const std::optional<std::unordered_map<PackageId, plg::version>>& targetVersions = {}, ProgressCallback progress = {}) = 0;
+
+	    // Dependency & Conflict Management
+	    /**
+	     * @brief Check dependencies for a package
+	     */
+	    virtual Result<DependencyResolutionResult> CheckDependencies(const PackageId& id) = 0;
 
 	    /**
-	     * Set conflict resolution strategy
+	     * @brief Check for conflicts
 	     */
-	    virtual void SetConflictStrategy(ConflictResolutionStrategy strategy) = 0;
-
-	    // Configuration
-	    /**
-	     * Set the root directory for local packages
-	     */
-	    virtual void SetPackageRoot(const std::filesystem::path& path) = 0;
+	    virtual Result<std::vector<ConflictInfo>> CheckConflicts() = 0;
 
 	    /**
-	     * Get current package root directory
+	     * @brief Resolve conflicts with specified strategy
 	     */
-	    virtual std::filesystem::path GetPackageRoot() const = 0;
+	    virtual Result<void> ResolveConflicts(ConflictResolutionStrategy strategy) = 0;
+
+	    // System Verification
+	    /**
+	     * @brief Verify integrity of all installed packages
+	     */
+	    virtual Result<std::vector<std::pair<PackageId, bool>>> VerifyIntegrity() = 0;
+
+	    /**
+	     * @brief Clean cache and temporary files
+	     */
+	    virtual Result<void> CleanCache() = 0;
 	};
 } // namespace plugify

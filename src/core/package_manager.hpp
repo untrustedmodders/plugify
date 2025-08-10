@@ -4,74 +4,82 @@
 #include <utils/hash.hpp>
 
 namespace plugify {
-	class PackageManager final : public IPackageManager, public PlugifyContext {
+	/**
+	 * @brief Package manager configuration
+	 */
+	struct PackageManagerConfig {
+		std::filesystem::path installDirectory;
+		std::filesystem::path cacheDirectory;
+		ConflictResolutionStrategy defaultConflictStrategy{ConflictResolutionStrategy::Fail};
+		bool autoResolveDependencies{true};
+		bool verifyChecksums{true};
+		//size_t maxConcurrentDownloads{3};
+	};
+
+	class IPackageScanner;
+	class IHTTPDownloader;
+	class PackageManager : public IPackageManager {
 	public:
-	    PackageManager(
-	        std::unique_ptr<IPackageScanner> scanner,
-	        std::unique_ptr<IDependencyResolver> depResolver,
-	        std::unique_ptr<IConflictResolver> conflictResolver,
-	        std::shared_ptr<IHTTPDownloader> downloader = nullptr
-	    );
-
-	    ~PackageManager() override = default;
-
-	    // Repository management
-	    void AddRepository(std::unique_ptr<IPackageRepository> repository) override;
-	    bool RemoveRepository(std::string_view identifier) override;
-	    Result<void> RefreshRepositories() override;
-
-	    // Package enumeration
-	    std::vector<LocalPackage> GetInstalledPackages() const override;
-	    std::vector<RemotePackage> GetAvailablePackages() const override;
-	    std::vector<LocalPackage> GetInstalledPackagesByType(std::string_view type) const override;
-
-	    // Package operations
-	    InstallResult Install(std::span<const std::string> packageNames) override;
-	    RemoveResult Remove(std::span<const std::string> packageNames) override;
-	    UpdateResult Update(std::span<const std::string> packageNames = {}) override;
-	    std::vector<std::variant<LocalPackage, RemotePackage>> Search(std::string_view query) override;
-	    std::optional<std::variant<LocalPackage, RemotePackage>> GetPackageInfo(std::string_view name) override;
-
-	    // Dependency and conflict management
-	    Result<std::vector<PackageConstraint>> CheckDependencies(std::string_view packageName) override;
-	    Result<void> VerifySystemIntegrity() override;
-	    void SetConflictStrategy(ConflictResolutionStrategy strategy) override;
-
-	    // Configuration
-	    void SetPackageRoot(const fs::path& path) override;
-	    fs::path GetPackageRoot() const override;
+	    /**
+	     * @brief Construct package manager with configuration
+	     */
+	    explicit PackageManager(
+	        PackageManagerConfig config,
+	        std::shared_ptr<IHTTPDownloader> downloader = nullptr,
+	        std::shared_ptr<IPackageScanner> scanner = nullptr);
+	    
+	    // Repository Management
+	    Result<void> AddRepository(std::shared_ptr<IPackageRepository> repository) override;
+	    Result<void> RemoveRepository(std::string_view name) override;
+	    Result<void> UpdateRepositories(ProgressCallback progress) override;
+	    
+	    // Package Discovery
+	    Result<std::vector<Package>> ListAvailable(std::optional<PackageType> type = {}) override;
+	    Result<std::vector<Package>> ListInstalled(std::optional<PackageType> type = {}) override;
+	    Result<std::vector<Package>> Search(std::string_view query) override;
+	    Result<Package> GetPackageInfo(const PackageId& id, const std::optional<plg::version>& version = {}) override;
+	    
+	    // Package Operations
+	    Result<void> Install(const PackageId& id, const std::optional<plg::version>& version, ProgressCallback progress) override;
+	    Result<void> Remove(const PackageId& id, bool removeDependents) override;
+	    Result<void> Update(const PackageId& id, const std::optional<plg::version>& targetVersion, ProgressCallback progress) override;
+	    Result<void> UpdateAll(const std::optional<std::unordered_map<PackageId, plg::version>>& targetVersions, ProgressCallback progress) override;
+	    
+	    // Dependency & Conflict Management
+	    Result<DependencyResolutionResult> CheckDependencies(const PackageId& id) override;
+	    Result<std::vector<ConflictInfo>> CheckConflicts() override;
+	    Result<void> ResolveConflicts(ConflictResolutionStrategy strategy) override;
+	    
+	    // System Verification
+	    Result<std::vector<std::pair<PackageId, bool>>> VerifyIntegrity() override;
+	    Result<void> CleanCache() override;
+	    
+	    // Additional configuration methods
+	    void SetConflictResolver(std::unique_ptr<IConflictResolver> resolver);
+	    void SetDependencyResolver(std::unique_ptr<IDependencyResolver> resolver);
+	    
+	    /**
+	     * @brief Trigger a manual scan for installed packages
+	     */
+		Result<void> RescanInstalledPackages();
 
 	private:
-	    // Helper methods
-	    Result<void> ScanLocalPackages();
-	    Result<PackageVersion*> FindBestVersion(RemotePackage& package, const std::optional<VersionConstraint>& constraint);
-	    Result<void> InstallPackageVersion(const RemotePackage& package, const PackageVersion& version);
-	    Result<void> RemoveLocalPackage(const LocalPackage& package);
-	    bool IsPackageInstalled(std::string_view name) const;
+		PackageManagerConfig _config;
+		std::vector<std::shared_ptr<IPackageRepository>> _repositories;
+		std::unique_ptr<IConflictResolver> _conflictResolver;
+		std::unique_ptr<IDependencyResolver> _dependencyResolver;
+		std::shared_ptr<IPackageScanner> _packageScanner;
+		std::shared_ptr<IHTTPDownloader> _downloader;
 
-	    // Member variables
-	    fs::path _packageRoot;
-	    ConflictResolutionStrategy _conflictStrategy{ConflictResolutionStrategy::Fail};
+		// Cache for installed packages
+		mutable std::optional<std::vector<Package>> _installedPackagesCache;
+		mutable std::optional<std::vector<Package>> _availablePackagesCache;
 
-	    // Injected dependencies
-	    std::unique_ptr<IPackageScanner> _scanner;
-	    std::unique_ptr<IDependencyResolver> _dependencyResolver;
-	    std::unique_ptr<IConflictResolver> _conflictResolver;
-	    std::shared_ptr<IHTTPDownloader> _httpDownloader;
-
-	    // Repository management
-	    std::vector<std::unique_ptr<IPackageRepository>> _repositories;
-	    std::unordered_map<std::string, std::unique_ptr<IPackageRepository>> _repositoryMap;
-
-	    // Package caches
-	    mutable std::vector<LocalPackage> _installedPackages;
-	    mutable std::vector<RemotePackage> _availablePackages;
-	    mutable bool _localCacheValid{false};
-	    mutable bool _remoteCacheValid{false};
-
-	    // Thread safety (if needed)
-	    mutable std::shared_mutex _cacheMutex;
-	    mutable std::shared_mutex _repositoryMutex;
-		Result<void> DownloadAndInstall(const RemotePackage& package, const plg::version& version);
+		// Private helper methods
+		Result<Package> FindPackageInRepositories(const PackageId& id, const std::optional<plg::version>& version);
+		Result<void> InstallPackageWithDependencies(const Package& package, ProgressCallback progress);
+		Result<void> ValidatePackageInstallation(const Package& package);
+		Result<void> ScanAndUpdateInstalledPackages();
+		void InvalidateCache();
 	};
 } // namespace plugify

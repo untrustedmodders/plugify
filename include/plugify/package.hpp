@@ -4,80 +4,131 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <variant>
 #include <set>
 #include <tuple>
 #include <vector>
 
+
+
+#include "date_time.hpp"
 #include "descriptor.hpp"
-#include "constrant.hpp"
 #include "version.hpp"
 
 namespace plugify {
 	/**
-	 * @struct PackageVersion
-	 * @brief Represents a version of a software package.
-	 *
-	 * The PackageVersion structure holds information about a package version, including
-	 * the version number, checksum, download URL, supported platforms, and optional
-	 * dependencies and conflicts.
+	 * @brief Package types supported by the system
 	 */
-	struct PackageVersion {
-		plg::version version; ///< The semantic version of the package.
-		std::string checksum; ///< The checksum of the package.
-		std::string download; ///< The download URL for the package.
-		std::optional<std::vector<std::string>> platforms; ///< The platforms supported by the package.
-		std::optional<std::vector<PackageConstraint>> dependencies; ///< The package dependencies.
-		std::optional<std::vector<PackageConstraint>> conflicts; ///< The package conflicts.
+	enum class PackageType {
+		LanguageModule,
+		Plugin
 	};
 
 	/**
-	 * @struct Package
-	 * @brief Represents a generic software package.
-	 *
-	 * The Package structure holds information about a generic software package, including
-	 * the name and type. It also provides an equality operator for comparing instances.
+	 * @brief Unique package identifier
+	 */
+	struct PackageId {
+	    std::string name;
+	    std::string author;
+
+	    auto operator<=>(const PackageId&) const = default;
+	    bool operator==(const PackageId&) const = default;
+	};
+
+	/**
+	 * @brief Version constraint for package requirements
+	 */
+	struct Constraint {
+	    enum class Type {
+	        Equal,        // Exactly this version
+	        NotEqual,     // Any version except this
+	        Greater,      // Strictly greater than
+	        GreaterEqual, // Greater than or equal
+	        Less,         // Strictly less than
+	        LessEqual,    // Less than or equal
+	        Compatible,   // Compatible with (e.g., same major version)
+	        Any          // Any version acceptable
+	    } type{Type::Any};
+	    plg::version version{};
+
+	    /**
+	     * @brief Check if a version satisfies this constraint
+	     */
+	    bool IsSatisfiedBy(const plg::version& v) const;
+	};
+
+	/**
+	 * @brief Package dependency specification with flexible constraints
+	 */
+	struct Dependency {
+		PackageId id;
+		std::vector<Constraint> constraints; // ANDed together
+		bool optional{false};
+
+		/**
+		 * @brief Check if a package version satisfies all constraints
+		 */
+		bool IsSatisfiedBy(const plg::version& v) const;
+	};
+
+	/**
+	 * @brief Package conflict specification with version constraints
+	 */
+	struct Conflict {
+	    PackageId id;
+	    std::vector<Constraint> constraints; // Package versions that conflict
+	    std::optional<std::string> reason;
+
+	    /**
+	     * @brief Check if a package version triggers this conflict
+	     */
+	    bool IsConflictingWith(const plg::version& v) const;
+	};
+
+	/**
+	 * @brief Complete package metadata
+	 */
+	struct PackageInfo {
+	    PackageId id;
+	    plg::version version;
+	    PackageType type;
+	    std::string description;
+	    std::vector<Dependency> dependencies;
+	    std::vector<Conflict> conflicts;
+	    DateTime releaseDate;
+	    size_t size{};
+	    std::string checksum;
+	    std::unordered_map<std::string, std::string> metadata;
+	};
+
+	/**
+	 * @brief Package location abstraction
+	 */
+	struct PackageLocation {
+	    std::variant<std::filesystem::path, std::string> source; // local path or remote URL
+	    
+	    bool IsLocal() const { return std::holds_alternative<std::filesystem::path>(source); }
+	    bool IsRemote() const { return std::holds_alternative<std::string>(source); }
+	};
+
+	/**
+	 * @brief Complete package representation
 	 */
 	struct Package {
-		std::string name; ///< The name of the package.
-		std::string type; ///< The type of the package (e.g., module, plugin).
+	    PackageInfo info;
+	    PackageLocation location;
+	    bool installed{false};
+	    std::optional<fs::path> installPath;
 	};
-
-	/**
-	 * @struct RemotePackage
-	 * @brief Represents a remotely available software package.
-	 *
-	 * The RemotePackage structure extends the Package structure to include additional
-	 * information such as author, description, and available versions. It also provides
-	 * methods to retrieve the latest version or a specific version of the package.
-	 */
-	struct RemotePackage : Package {
-		std::string author; ///< The author of the package.
-		std::string description; ///< The description of the package.
-		std::vector<PackageVersion> versions; ///< The set of available versions for the package.
-	};
-
-	/**
-	 * @struct LocalPackage
-	 * @brief Represents a locally installed software package.
-	 *
-	 * The LocalPackage structure extends the Package structure to include information
-	 * about the local installation, such as the file path, version, and descriptor.
-	 * It also provides a conversion operator to convert to a RemotePackage for compatibility.
-	 */
-	struct LocalPackage : Package {
-		std::filesystem::path path; ///< The file path to the locally installed package.
-		plg::version version; ///< The semantic version of the locally installed package.
-		std::shared_ptr<Descriptor> descriptor; ///< A shared pointer to the package descriptor.
-	};
-
-	/**
-	 * @namespace PackageType
-	 * @brief Contains constants for different package types.
-	 *
-	 * This namespace defines string constants representing different types of packages
-	 * that can be managed by the plugify system, such as plugins.
-	 */
-	namespace PackageType {
-		inline constexpr std::string_view Plugin = "plugin";
-	}
 } // namespace plugify
+
+namespace std {
+	template<>
+	struct hash<plugify::PackageId> {
+		size_t operator()(const plugify::PackageId& id) const noexcept {
+			size_t h1 = std::hash<std::string>{}(id.name);
+			size_t h2 = std::hash<std::string>{}(id.author);
+			return h1 ^ (h2 << 1);
+		}
+	};
+} // namespace std

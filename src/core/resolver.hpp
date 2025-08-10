@@ -3,55 +3,31 @@
 #include <plugify/resolver.hpp>
 
 namespace plugify {
-	// Concrete dependency resolver
+	/**
+	 * @brief Default dependency resolver implementation
+	 */
 	class DependencyResolver : public IDependencyResolver {
 	public:
-	    Result<std::vector<PackageConstraint>> ResolveDependencies(
-	        const Package& package,
-	        std::span<const LocalPackage> installed,
-	        std::span<const RemotePackage> available
-	    ) override;
+		DependencyResolutionResult ResolveDependencies(
+			const Package& package,
+			std::span<const Package> availablePackages) override;
 
-	    bool AreDependenciesSatisfied(
-	        const std::vector<PackageConstraint>& dependencies,
-	        std::span<const LocalPackage> installed
-	    ) override;
+		std::unordered_map<PackageId, std::vector<PackageId>> BuildDependencyGraph(
+			std::span<const Package> packages) override;
 
-	    Result<std::vector<std::string>> CalculateInstallOrder(
-	        std::span<const std::string> packages,
-	        std::span<const LocalPackage> installed,
-	        std::span<const RemotePackage> available
-	    ) override;
-
-	private:
-	    // Topological sort for dependency ordering
-	    Result<std::vector<std::string>> TopologicalSort(
-	        const std::unordered_map<std::string, std::vector<std::string>>& graph
-	    );
-
-	    bool SatisfiesConstraint(const plg::version& version, const VersionConstraint& constraint);
+		bool HasCircularDependencies(std::span<const Package> packages) override;
 	};
 
-	// Concrete conflict resolver
+	/**
+	 * @brief Default conflict resolver implementation
+	 */
 	class ConflictResolver : public IConflictResolver {
 	public:
-	    std::vector<ConflictInfo> DetectConflicts(
-	        std::span<const LocalPackage> packages
-	    ) override;
+		std::vector<ConflictInfo> DetectConflicts(std::span<const Package> packages) override;
 
-	    Result<std::vector<LocalPackage>> ResolveConflicts(
-	        std::span<const ConflictInfo> conflicts,
-	        ConflictResolutionStrategy strategy
-	    ) override;
-
-	    bool WouldConflict(
-	        const Package& package,
-	        const PackageVersion& version,
-	        std::span<const LocalPackage> installed
-	    ) override;
-
-	private:
-	    bool CheckVersionConflict(const LocalPackage& pkg1, const LocalPackage& pkg2);
-	    bool CheckExplicitConflict(const LocalPackage& pkg, std::span<const LocalPackage> others);
+		Result<std::vector<Package>> ResolveConflicts(
+			std::span<const ConflictInfo> conflicts,
+			ConflictResolutionStrategy strategy) override;
 	};
+
 } // namespace plugify

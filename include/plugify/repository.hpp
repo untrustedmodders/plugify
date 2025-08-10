@@ -10,59 +10,46 @@
 #include "package_manager.hpp"
 
 namespace plugify {
-	// Repository interface for dependency inversion
+	/**
+	 * @brief Abstract repository interface for package sources
+	 */
 	class IPackageRepository {
 	public:
 		virtual ~IPackageRepository() = default;
 
 		/**
-		 * Fetch available packages from the repository
+		 * @brief Enumerate all packages available in this repository
 		 */
-		virtual Result<std::vector<RemotePackage>> FetchPackages() = 0;
+		virtual Result<std::vector<Package>> EnumeratePackages() = 0;
 
 		/**
-		 * Search packages by query
+		 * @brief Search for packages matching criteria
 		 */
-		virtual Result<std::vector<RemotePackage>> SearchPackages(std::string_view query) = 0;
+		virtual Result<std::vector<Package>> SearchPackages(std::string_view query) = 0;
 
 		/**
-		 * Download a specific package version
+		 * @brief Get detailed information about a specific package
 		 */
-		virtual Result<fs::path> DownloadPackage(
-			const RemotePackage& package,
-			const PackageVersion& version,
-			std::function<bool(uint32_t, uint32_t)> progressCallback = nullptr
-		) = 0;
+		virtual Result<Package> GetPackage(const PackageId& id, const std::optional<plg::version>& version = {}) = 0;
 
 		/**
-		 * Get repository identifier
+		 * @brief Download package content to specified location
 		 */
-		virtual std::string_view GetIdentifier() const = 0;
+		virtual Result<std::filesystem::path> DownloadPackage(const Package& package, const std::filesystem::path& destination, ProgressCallback progress = {}) = 0;
 
 		/**
-		 * Check if repository is available
+		 * @brief Verify package integrity
 		 */
-		virtual bool IsAvailable() = 0;
-	};
-
-	// Local package scanner interface
-	class IPackageScanner {
-	public:
-		virtual ~IPackageScanner() = default;
+		virtual Result<bool> VerifyPackage(const Package& package, const std::filesystem::path& path) = 0;
 
 		/**
-		 * Scan directory for packages
+		 * @brief Get repository name/identifier
 		 */
-		virtual Result<std::vector<LocalPackage>> ScanDirectory(const fs::path& path) = 0;
+		virtual std::string GetName() const = 0;
 
 		/**
-		 * Verify package integrity
+		 * @brief Check if repository is available/online
 		 */
-		virtual Result<bool> VerifyPackage(const LocalPackage& package) = 0;
-
-		/**
-		 * Load package descriptor from manifest
-		 */
-		virtual Result<std::shared_ptr<Descriptor>> LoadDescriptor(const fs::path& manifestPath) = 0;
+		virtual Result<bool> IsAvailable() = 0;
 	};
 } // namespace plugify

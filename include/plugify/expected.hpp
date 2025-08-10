@@ -1,5 +1,9 @@
 #pragma once
 
+#include <type_traits>
+#include <exception>
+#include <variant>
+
 namespace plg {
 	template <typename E>
 	class bad_expected_access : public std::exception {

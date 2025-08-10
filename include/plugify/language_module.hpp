@@ -1,7 +1,5 @@
 #pragma once
 
-#include <array>
-#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
@@ -25,17 +23,21 @@ namespace plugify {
 	 */
 	struct ErrorData {
 		ErrorData(std::string_view str) {
-			error = std::make_unique<char[]>(str.size() + 1);
-			std::memcpy(error.get(), str.data(), str.size() * sizeof(char));
+			error = new char[str.size() + 1];
+			std::memcpy(error, str.data(), str.size() * sizeof(char));
 			error[str.size()] = '\0'; // Null-terminate the string
 		}
 
+		~ErrorData() {
+			delete[] error; // Free the allocated memory
+		}
+
 		std::string_view string() const noexcept {
-			return error.get();
+			return error;
 		}
 
 	private:
-		std::unique_ptr<char[]> error; ///< Description of the error.
+		char* error; ///< Description of the error.
 	};
 
 	/**
