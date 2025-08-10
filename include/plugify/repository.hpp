@@ -5,11 +5,58 @@
 #include <vector>
 #include <span>
 #include <filesystem>
+#include <unordered_map>
 
 #include "package.hpp"
 #include "package_manager.hpp"
 
 namespace plugify {
+	/**
+	 * @brief Search criteria for querying packages
+	 */
+	struct PackageQuery {
+		std::optional<std::string> namePattern;
+		std::optional<PackageType> type;
+		std::optional<PackageState> state;
+		std::optional<std::string> author;
+		std::optional<std::vector<std::string>> tags;
+
+		// Range-based filtering support
+		//auto Filter(std::span<const Package> packages) const -> std::vector<Package>;
+	};
+
+	/**
+	 * @brief Package constraint for flexible version requirements
+	 */
+	struct PackageRelease {
+		PackageVersion version;
+		std::string checksum;
+		std::string download;
+		std::optional<std::vector<std::string>> platforms;
+		std::optional<std::vector<PackageDependency>> dependencies;
+		std::optional<std::vector<PackageConflict>> conflicts;
+	};
+
+	/**
+	 * @brief Remote package representation
+	 */
+	struct PackageInfo {
+		std::string name;
+		std::string type;
+		std::string author;
+		std::string licence;
+		std::string description;
+		std::vector<PackageRelease> versions;
+		std::optional<std::unordered_map<std::string, std::string>> metadata;
+	};
+
+	/**
+	 * @brief Repository containing remote packages
+	 */
+	struct PackageRepository {
+		std::unordered_map<std::string, PackageInfo> content;
+	};
+
 	/**
 	 * @brief Abstract repository interface for package sources
 	 */
@@ -18,38 +65,38 @@ namespace plugify {
 		virtual ~IPackageRepository() = default;
 
 		/**
-		 * @brief Enumerate all packages available in this repository
+		 * @brief Get repository identifier
 		 */
-		virtual Result<std::vector<Package>> EnumeratePackages() = 0;
+		virtual std::string GetIdentifier() const = 0;
 
 		/**
-		 * @brief Search for packages matching criteria
+		 * @brief Check if repository is available
 		 */
-		virtual Result<std::vector<Package>> SearchPackages(std::string_view query) = 0;
+		virtual bool IsAvailable() const = 0;
 
 		/**
-		 * @brief Get detailed information about a specific package
+		 * @brief Refresh repository metadata
 		 */
-		virtual Result<Package> GetPackage(const PackageId& id, const std::optional<plg::version>& version = {}) = 0;
+		virtual Result<void> Refresh() = 0;
 
 		/**
-		 * @brief Download package content to specified location
+		 * @brief List all packages in repository
 		 */
-		virtual Result<std::filesystem::path> DownloadPackage(const Package& package, const std::filesystem::path& destination, ProgressCallback progress = {}) = 0;
+		virtual Result<std::vector<Package>> GetPackages() const = 0;
 
 		/**
-		 * @brief Verify package integrity
+		 * @brief Find package by ID
 		 */
-		virtual Result<bool> VerifyPackage(const Package& package, const std::filesystem::path& path) = 0;
+		virtual std::optional<Package> FindPackage(std::string_view packageId, const std::optional<plg::version>& version = {}) const = 0;
 
 		/**
-		 * @brief Get repository name/identifier
+		 * @brief Query packages with criteria
 		 */
-		virtual std::string GetName() const = 0;
+		virtual std::vector<Package> QueryPackages(const PackageQuery& query) const = 0;
 
 		/**
-		 * @brief Check if repository is available/online
+		 * @brief Get package manifest
 		 */
-		virtual Result<bool> IsAvailable() = 0;
+		virtual Result<PackageManifest> GetManifest(std::string_view packageId) const = 0;
 	};
 } // namespace plugify

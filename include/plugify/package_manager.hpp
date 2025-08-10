@@ -17,6 +17,15 @@ namespace plugify {
 	using ProgressCallback = std::function<void(std::string_view operation, float progress)>;
 
 	/**
+	 * @brief Operation result with detailed information
+	 */
+	/*struct OperationResult {
+		std::string message;
+		std::vector<std::string> warnings;
+		std::vector<Package> affectedPackages;
+	};*/
+
+	/**
 	 * @brief Main package manager interface
 	 */
 	class IPackageManager {
@@ -25,87 +34,98 @@ namespace plugify {
 
 	    // Repository Management
 	    /**
-	     * @brief Add a repository to the package manager
+	     * @brief Add a repository source
 	     */
-	    virtual Result<void> AddRepository(std::shared_ptr<IPackageRepository> repository) = 0;
+	    virtual Result<void> AddRepository(std::unique_ptr<IPackageRepository> repository) = 0;
 
 	    /**
-	     * @brief Remove a repository
+	     * @brief Remove a repository by identifier
 	     */
-	    virtual Result<void> RemoveRepository(std::string_view name) = 0;
+	    virtual Result<void> RemoveRepository(std::string_view repositoryId) = 0;
 
 	    /**
-	     * @brief Update repository metadata
+	     * @brief Refresh all repositories
 	     */
-	    virtual Result<void> UpdateRepositories(ProgressCallback progress = {}) = 0;
+	    virtual Result<void> RefreshRepositories() = 0;
 
 	    // Package Discovery
 	    /**
-	     * @brief List all available packages
+	     * @brief List all available packages (local + remote)
 	     */
-	    virtual Result<std::vector<Package>> ListAvailable(std::optional<PackageType> type = {}) = 0;
+	    virtual std::vector<Package> ListAvailablePackages(std::optional<PackageType> type = {}) const = 0;
 
 	    /**
 	     * @brief List installed packages
 	     */
-	    virtual Result<std::vector<Package>> ListInstalled(std::optional<PackageType> type = {}) = 0;
+	    virtual std::vector<Package> ListInstalledPackages(std::optional<PackageType> type = {}) const = 0;
 
 	    /**
-	     * @brief Search for packages
+	     * @brief Search packages by query
 	     */
-	    virtual Result<std::vector<Package>> Search(std::string_view query) = 0;
+	    virtual std::vector<Package> SearchPackages(const PackageQuery& query) const = 0;
 
 	    /**
 	     * @brief Get detailed package information
 	     */
-	    virtual Result<Package> GetPackageInfo(const PackageId& id, const std::optional<plg::version>& version = {}) = 0;
+	    virtual std::optional<Package> GetPackageInfo(std::string_view packageId) const = 0;
 
 	    // Package Operations
 	    /**
 	     * @brief Install a package
 	     */
-	    virtual Result<void> Install(const PackageId& id, const std::optional<plg::version>& version = {}, ProgressCallback progress = {}) = 0;
+	    virtual Result<OperationResult> InstallPackage(
+	        std::string_view packageId,
+	        const std::optional<plg::version>& version = {},
+	        ProgressCallback progress = nullptr) = 0;
 
 	    /**
-	     * @brief Remove an installed package
+	     * @brief Remove a package
 	     */
-	    virtual Result<void> Remove(const PackageId& id, bool removeDependents = false) = 0;
+	    virtual Result<OperationResult> RemovePackage(
+	        std::string_view packageId,
+	        bool removeUnusedDependencies = false,
+	        bool removeUserData = false) = 0;
 
 	    /**
-	     * @brief Update a package to specified or latest version
+	     * @brief Update a package
 	     */
-	    virtual Result<void> Update(const PackageId& id, const std::optional<plg::version>& targetVersion = {}, ProgressCallback progress = {}) = 0;
+	    virtual Result<OperationResult> UpdatePackage(
+	        std::string_view packageId,
+	        const std::optional<plg::version>& version = {},
+	        ProgressCallback progress = nullptr) = 0;
 
 	    /**
-	     * @brief Update all installed packages to specified or latest versions
+	     * @brief Update all packages
 	     */
-	    virtual Result<void> UpdateAll(const std::optional<std::unordered_map<PackageId, plg::version>>& targetVersions = {}, ProgressCallback progress = {}) = 0;
+	    virtual Result<OperationResult> UpdateAllPackages(
+	        ProgressCallback progress = nullptr) = 0;
 
-	    // Dependency & Conflict Management
+	    // Dependency and Conflict Management
 	    /**
-	     * @brief Check dependencies for a package
+	     * @brief Check package dependencies
 	     */
-	    virtual Result<DependencyResolutionResult> CheckDependencies(const PackageId& id) = 0;
+	    virtual Result<std::vector<DependencyResolutionResult>> CheckDependencies(
+	        std::string_view packageId) const = 0;
 
-	    /**
-	     * @brief Check for conflicts
-	     */
-	    virtual Result<std::vector<ConflictInfo>> CheckConflicts() = 0;
+		/**
+		 * @brief Check for conflicts
+		 */
+		virtual Result<std::vector<ConflictInfo>> CheckConflicts() = 0;
 
-	    /**
-	     * @brief Resolve conflicts with specified strategy
-	     */
-	    virtual Result<void> ResolveConflicts(ConflictResolutionStrategy strategy) = 0;
-
-	    // System Verification
-	    /**
-	     * @brief Verify integrity of all installed packages
-	     */
-	    virtual Result<std::vector<std::pair<PackageId, bool>>> VerifyIntegrity() = 0;
+		/**
+		 * @brief Resolve conflicts
+		 */
+		virtual Result<OperationResult> ResolveConflicts() = 0;
 
 	    /**
-	     * @brief Clean cache and temporary files
+	     * @brief Verify system integrity
 	     */
-	    virtual Result<void> CleanCache() = 0;
+	    virtual Result<std::vector<std::pair<std::string_view, bool>>> VerifySystemIntegrity() const = 0;
+
+		/**
+		 * @brief Clean cache and temporary files
+		 */
+		virtual Result<void> CleanCache() = 0;
 	};
+
 } // namespace plugify
