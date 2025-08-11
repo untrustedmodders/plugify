@@ -2,8 +2,8 @@
 
 #include <cstddef> // for std::size_t, std::ptrdiff_t
 #include <cstdlib> // for std::malloc, std::free, std::aligned_alloc
-#include <memory>  // for std::allocator and std::allocator_traits
 #include <type_traits>  // for std::is_constant_evaluated
+#include <new>  // for ::operator new, ::operator delete
 
 #include "macro.hpp"
 
@@ -47,7 +47,7 @@ namespace plg {
 		struct rebind { using other = allocator<U>; };
 
 		// Override allocate method to use custom allocation function
-		constexpr pointer allocate(size_type n, [[maybe_unused]] std::allocator_traits<allocator<void>>::const_pointer hint = nullptr) {
+		constexpr pointer allocate(size_type n, [[maybe_unused]] const_pointer hint = nullptr) {
 			static_assert(sizeof(T) != 0, "cannot allocate incomplete types");
 			static_assert((alignof(T) & (alignof(T) - 1)) == 0, "alignof(T) must be a power of 2");
 
@@ -58,11 +58,11 @@ namespace plg {
 				PLUGIFY_ASSERT(false, "plg::allocator::allocate(): too big", std::bad_alloc);
 			}
 
-			pointer ret = nullptr;
+			pointer ret;
+			size_type size = n * sizeof(T);
 			if (std::is_constant_evaluated()) {
-				ret = new T[n];
+				ret = static_cast<T*>(::operator new(size));
 			} else {
-				size_type size = n * sizeof(T);
 				if constexpr (alignof(T) > alignof(std::max_align_t)) {
 					size_type aligned_size = (size + (alignof(T) - 1)) & ~(alignof(T) - 1);
 					ret = static_cast<T*>(aligned_allocate(alignof(T), aligned_size));
@@ -81,9 +81,9 @@ namespace plg {
 		// Override deallocate method to use custom deallocation function
 		constexpr void deallocate(pointer p, [[maybe_unused]] size_type n) {
 			if (std::is_constant_evaluated()) {
-				delete[] p;
+				::operator delete(p);
 			} else {
-				std::free(static_cast<void*>(p));
+				std::free(p);
 			}
 		}
 
@@ -96,7 +96,7 @@ namespace plg {
 #endif // __PTRDIFF_MAX__
 		}
 
-		PLUGIFY_FORCE_INLINE void* aligned_allocate(size_type alignment, size_type size) {
+		void* aligned_allocate(size_type alignment, size_type size) {
 #if _WIN32
 			return _aligned_malloc(size, alignment);
 #else

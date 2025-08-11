@@ -371,7 +371,7 @@ TEST_CASE("vector", "[vector]") {
 
 	SECTION("Access, GetAllocator") {
 		vint vec;
-		std::allocator<int> alloc = vec.get_allocator();
+		plg::allocator<int> alloc = vec.get_allocator();
 		int* p = alloc.allocate(1);  // allocate an int
 		alloc.deallocate(p, 1);  // deallocate it
 	}

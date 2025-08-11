@@ -65,7 +65,7 @@ namespace plg {
 		result.reserve(total_size);
 
 		// Second pass: actual formatting
-		if (it != end) {
+		/*if (it != end)*/ {
 			std::format_to(std::back_inserter(result), "{}", *it++);
 		}
 		while (it != end) {
