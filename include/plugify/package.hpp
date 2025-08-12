@@ -23,6 +23,14 @@ namespace plugify {
 	 */
 	using PackageVersion = plg::version;
 
+	struct PackageId {
+		std::string name;
+		PackageVersion version;
+
+		bool operator==(const PackageId&) const = default;
+		auto operator<=>(const PackageId&) const = default;
+	};
+
 	/**
 	 * @brief Package type enumeration
 	 */
@@ -37,9 +45,9 @@ namespace plugify {
 	enum class PackageState {
 	    NotInstalled,    // Remote package, not installed
 	    Installed,       // Local package, installed
+	    Conflicted,      // Has unresolved conflicts
 	    UpdateAvailable, // Installed but newer version available
 	    Corrupted,       // Installed but manifest/files corrupted
-	    Conflicted       // Has unresolved conflicts
 	};
 
 	/**
@@ -79,7 +87,7 @@ namespace plugify {
 	 *       This allows expressing complex version requirements precisely.
 	 */
 	struct PackageDependency {
-		std::string packageName;
+		std::string name;
 		std::vector<VersionConstraint> constraints;  // ANDed together
 		std::optional<bool> optional;
 
@@ -93,7 +101,7 @@ namespace plugify {
 	 * @brief Conflict information with constraint-based versioning
 	 */
 	struct PackageConflict {
-	    std::string packageName;
+	    std::string name;
 	    std::vector<VersionConstraint> constraints;  // Versions that conflict
 	    std::optional<std::string> reason;
 
@@ -103,16 +111,60 @@ namespace plugify {
 	    bool ConflictsWith(const PackageVersion& version) const;
 	};
 
+	struct Checksum {
+		enum class Type {
+			SHA256
+		};
+		Type algorithm{ Type::SHA256 };
+		std::string value;
+	};
+
+	struct Signature {
+		enum class Type {
+			GPG
+		};
+		Type algorithm{ Type::GPG };
+		std::string value;
+	};
+
+	struct Security {
+		std::optional<Checksum> checksum;
+		std::optional<Signature> signature;
+	};
+
+	struct RepositoryInfo {
+		enum class Type {
+			Zip,
+			//Git, // Git repository
+		};
+		Type type{ Type::Zip };
+		std::string url;
+	};
+
 	/**
 	 * @brief Package manifest containing all metadata
 	 */
 	struct PackageManifest {
 	    std::string name;
 	    PackageVersion version;
-	    PackageType type;
-	    std::vector<PackageDependency> dependencies;
-		std::vector<PackageConflict> conflicts;
-	    std::unordered_map<std::string, std::string> metadata;
+		PackageType type;
+
+		RepositoryInfo repository; // Repository information for remote packages
+		std::string description;
+		std::string license;
+		std::string author;
+		std::string website;
+
+		std::optional<std::vector<std::string>> platforms;
+		std::optional<std::vector<PackageDependency>> dependencies;
+		std::optional<std::vector<PackageConflict>> conflicts;
+
+		std::optional<std::unordered_map<std::string, std::string>> metadata;
+		DateTime releaseDate;
+		size_t installSize{0};
+
+		std::optional<bool> privated;
+		std::optional<Security> security;
 	};
 
 	/**
@@ -129,8 +181,6 @@ namespace plugify {
 	struct PackageRemote {
 		std::string repositoryId;
 		std::string downloadUrl;
-		std::string checksum;  // SHA256 or similar
-		std::string signature; // GPG signature if available
 	};
 
 	/**
@@ -161,10 +211,36 @@ namespace plugify {
 	 * @brief Complete package information
 	 */
 	struct Package {
-	    PackageManifest manifest;
+
+		/*const std::string& GetName() const noexcept {
+			return manifest->name;
+		}
+
+		plg::version GetVersion() const noexcept {
+			return manifest->version;
+		}*/
+
+	    std::shared_ptr<PackageManifest> manifest;
 	    PackageState state{PackageState::NotInstalled};
 	    PackageLocation location;
+		std::string error;
 	    //std::optional<PackageVersion> installedVersion;
-	    //std::optional<PackageInfo> availableVersions;
+	    //std::vector<PackageInfo> availableVersions;
 	};
+
+	/*class IPackage {
+	public:
+		virtual ~IPackage() = default;
+
+		virtual const PackageId& GetId() const = 0;
+		virtual const PackageManifest& GetManifest() const = 0;
+		virtual PackageState GetState() const = 0;
+		virtual std::filesystem::path GetInstallPath() const = 0;
+		virtual bool IsInstalled() const = 0;
+		virtual std::optional<PackageVersion> GetInstalledVersion() const = 0;
+		virtual std::vector<std::filesystem::path> GetFiles() const = 0;
+	};*/
+
+	//using PackagePtr = std::shared_ptr<Package>;
+
 } // namespace plugify

@@ -16,8 +16,8 @@ namespace plugify {
 	protected:
 		Request* InternalCreateRequest() override;
 		void InternalPollRequests() override;
-		bool StartRequest(IHTTPDownloader::Request* request) override;
-		void CloseRequest(IHTTPDownloader::Request* request) override;
+		bool StartRequest(Request* request) override;
+		void CloseRequest(Request* request) override;
 
 	private:
 		struct Request : IHTTPDownloader::Request {

@@ -6,7 +6,7 @@
 
 using namespace plugify;
 
-HTTPDownloaderWinHttp::HTTPDownloaderWinHttp() : IHTTPDownloader() {
+HTTPDownloaderWinHttp::HTTPDownloaderWinHttp() {
 }
 
 HTTPDownloaderWinHttp::~HTTPDownloaderWinHttp() {
@@ -206,6 +206,16 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 			}
 
 			PL_LOG_VERBOSE("Status code {}, content-length is {}", req->statusCode, req->contentLength);
+
+			// For HEAD requests, we're done after receiving headers
+			if (req->type == Request::Type::Head) {
+				PL_LOG_VERBOSE("HEAD request '{}' complete, status: {}, content-length: {}",
+							  req->url, req->statusCode, req->contentLength);
+				req->state.store(Request::State::Complete);
+				return;
+			}
+
+			// For GET and POST requests, prepare to receive data
 			req->data.reserve(req->contentLength);
 			req->state = Request::State::Receiving;
 
@@ -220,6 +230,13 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 		}
 
 		case WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE: {
+			// This should not be called for HEAD requests
+			if (req->type == Request::Type::Head) {
+				PL_LOG_VERBOSE("Data available for HEAD request (unexpected), completing");
+				req->state.store(Request::State::Complete);
+				return;
+			}
+
 			DWORD bytesAvailable;
 			std::memcpy(&bytesAvailable, lpvStatusInformation, sizeof(bytesAvailable));
 			if (bytesAvailable == 0) {
@@ -244,6 +261,13 @@ void CALLBACK HTTPDownloaderWinHttp::HTTPStatusCallback(HINTERNET hRequest, DWOR
 		}
 
 		case WINHTTP_CALLBACK_STATUS_READ_COMPLETE: {
+			// This should not be called for HEAD requests
+			if (req->type == Request::Type::Head) {
+				PL_LOG_VERBOSE("Read complete for HEAD request (unexpected), completing");
+				req->state.store(Request::State::Complete);
+				return;
+			}
+
 			PL_LOG_VERBOSE("Read of {} complete", dwStatusInformationLength);
 
 			const uint32_t newSize = req->ioPosition + dwStatusInformationLength;
@@ -304,8 +328,22 @@ bool HTTPDownloaderWinHttp::StartRequest(IHTTPDownloader::Request* request) {
 		return false;
 	}
 
+	LPCWSTR httpMethod;
+	switch (req->type) {
+		case IHTTPDownloader::Request::Type::Post:
+			httpMethod = L"POST";
+			break;
+		case IHTTPDownloader::Request::Type::Head:
+			httpMethod = L"HEAD";
+			break;
+		case IHTTPDownloader::Request::Type::Get:
+		default:
+			httpMethod = L"GET";
+			break;
+	}
+
 	const DWORD requestFlags = uc.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
-	req->hRequest = WinHttpOpenRequest(req->hConnection, (req->type == IHTTPDownloader::Request::Type::Post) ? L"POST" : L"GET", objectName.c_str(), NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, requestFlags);
+	req->hRequest = WinHttpOpenRequest(req->hConnection, httpMethod, objectName.c_str(), NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, requestFlags);
 	if (!req->hRequest) {
 		PL_LOG_ERROR("WinHttpOpenRequest() failed: {}", GetErrorMessage());
 		WinHttpCloseHandle(req->hConnection);
@@ -326,7 +364,11 @@ bool HTTPDownloaderWinHttp::StartRequest(IHTTPDownloader::Request* request) {
 		req->state.store(Request::State::Complete);
 	}
 
-	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url);
+	PL_LOG_VERBOSE("Started HTTP {} request for '{}'",
+					   req->type == Request::Type::Head ? "HEAD" :
+					   req->type == Request::Type::Post ? "POST" : "GET",
+					   req->url);
+
 	req->state = Request::State::Started;
 	req->startTime = DateTime::Now();
 	return true;
@@ -348,4 +390,30 @@ void HTTPDownloaderWinHttp::CloseRequest(IHTTPDownloader::Request* request) {
 	delete req;
 }
 
+std::string HTTPDownloaderWinHttp::GetAllHeaders(HINTERNET hRequest) {
+	DWORD headerSize = 0;
+
+	// First call to get the required buffer size
+	WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_RAW_HEADERS_CRLF,
+					   WINHTTP_HEADER_NAME_BY_INDEX,
+					   WINHTTP_NO_OUTPUT_BUFFER, &headerSize,
+					   WINHTTP_NO_HEADER_INDEX);
+
+	if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+		return {};
+	}
+
+	// Allocate buffer and get headers
+	std::wstring headers;
+	headers.resize(headerSize / sizeof(wchar_t));
+
+	if (WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_RAW_HEADERS_CRLF,
+						   WINHTTP_HEADER_NAME_BY_INDEX,
+						   headers.data(), &headerSize,
+						   WINHTTP_NO_HEADER_INDEX)) {
+		return String::ConvertWideToUtf8(headers);
+	}
+
+	return {};
+}
 #endif // PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_DOWNLOADER

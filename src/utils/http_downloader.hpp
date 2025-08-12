@@ -1,10 +1,12 @@
 #pragma once
 
-#include <atomic>
 #include <plugify/date_time.hpp>
+#include <plugify/downloader.hpp>
+
+#include <atomic>
 
 namespace plugify {
-	class IHTTPDownloader {
+	class IHTTPDownloader : public IDownloader {
 	public:
 		enum {
 			HTTP_STATUS_CANCELLED = -3,
@@ -13,16 +15,11 @@ namespace plugify {
 			HTTP_STATUS_OK = 200
 		};
 
-		// Progress callback. If you return false, then the operation is cancelled
-		using ProgressCallback = std::function<bool(uint32_t bytesDone, uint32_t bytesTotal)>;
-
 		struct Request {
-			using Data = std::vector<uint8_t>;
-			using Callback = std::function<void(int32_t statusCode, std::string_view contentType, Data data)>;
-
 			enum class Type {
 				Get,
 				Post,
+				Head
 			};
 
 			enum class State {
@@ -33,13 +30,13 @@ namespace plugify {
 				Complete,
 			};
 
-			IHTTPDownloader * parent{};
-			Callback callback;
+			IHTTPDownloader* parent{};
+			RequestCallback callback;
 			ProgressCallback progress;
 			std::string url;
 			std::string postData;
 			std::string contentType;
-			Data data;
+			std::vector<uint8_t> data;
 			DateTime startTime;
 			int32_t statusCode{};
 			uint32_t contentLength{};
@@ -49,26 +46,28 @@ namespace plugify {
 		};
 
 		IHTTPDownloader();
-		virtual ~IHTTPDownloader();
+		~IHTTPDownloader() override;
+
+		static inline const char* const kDefaultUserAgent = "Plugify/1.0";
 
 		static std::unique_ptr<IHTTPDownloader> Create(std::string_view userAgent = kDefaultUserAgent);
 		static std::string_view GetExtensionForContentType(std::string_view contentType);
 
-		void CreateRequest(std::string url, Request::Callback callback, ProgressCallback progress = nullptr);
-		void CreatePostRequest(std::string url, std::string postData, Request::Callback callback, ProgressCallback progress = nullptr);
-		void PollRequests();
-		void WaitForAllRequests();
-		bool HasAnyRequests();
+		void CreateRequest(std::string url, RequestCallback callback, ProgressCallback progress) override;
+		void CreatePostRequest(std::string url, std::string postData, RequestCallback callback, ProgressCallback progress) override;
+		void CreateHeadRequest(std::string url, RequestCallback callback) override;
 
-		void SetTimeout(float timeout) {
+		void PollRequests() override;
+		void WaitForAllRequests() override;
+		bool HasAnyRequests() override;
+
+		void SetTimeout(float timeout) override {
 			_timeout = timeout;
 		}
 
-		void SetMaxActiveRequests(uint32_t maxActiveRequests) {
+		void SetMaxActiveRequests(uint32_t maxActiveRequests) override {
 			_maxActiveRequests = maxActiveRequests;
 		}
-
-		static inline const char* const kDefaultUserAgent = "Plugify/1.0";
 
 	protected:
 		virtual Request* InternalCreateRequest() = 0;

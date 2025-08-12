@@ -15,6 +15,16 @@ namespace plugify {
 
 		static bool IsValidURL(std::string_view url);
 
+		static std::string_view Trim(std::string_view sv) {
+			while (!sv.empty() && (sv.front() == ' ' || sv.front() == '\t' || sv.front() == '\r' || sv.front() == '\n')) {
+				sv.remove_prefix(1);
+			}
+			while (!sv.empty() && (sv.back() == ' ' || sv.back() == '\t' || sv.back() == '\r' || sv.back() == '\n')) {
+				sv.remove_suffix(1);
+			}
+			return sv;
+		}
+
 #if PLUGIFY_PLATFORM_WINDOWS
 		/// Converts the specified UTF-8 string to a wide string.
 		static std::wstring ConvertUtf8ToWide(std::string_view str);

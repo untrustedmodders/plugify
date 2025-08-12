@@ -10,7 +10,7 @@
 #include <charconv>
 #include <compare>
 
-#ifndef PLUGIFY_STRING_NO_STD_FORMAT
+#ifndef PLUGIFY_VECTOR_NO_STD_FORMAT
 #  include "compat_format.hpp"
 #endif
 
@@ -217,6 +217,9 @@ namespace plg {
 			}
 		};
 
+		constexpr void hash_combine(std::size_t& seed, std::size_t value) {
+			seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		}
 	} // namespace plg::detail
 
 	struct version {
@@ -801,7 +804,27 @@ namespace plg {
 	} // namespace plg::range
 } // namespace plg
 
-#ifndef PLUGIFY_STRING_NO_STD_FORMAT
+#ifndef PLUGIFY_VECTOR_NO_STD_HASH
+// hash support
+namespace std {
+	template<>
+	struct hash<plg::version> {
+		constexpr std::size_t operator()(const plg::version& ver) const noexcept {
+			std::size_t seed = 0;
+			plg::detail::hash_combine(seed, ver.major);
+			plg::detail::hash_combine(seed, ver.minor);
+			plg::detail::hash_combine(seed, ver.patch);
+			plg::detail::hash_combine(seed, static_cast<std::size_t>(ver.prerelease_type));
+			if (ver.prerelease_number) {
+				plg::detail::hash_combine(seed, *ver.prerelease_number);
+			}
+			return seed;
+		}
+	};
+}// namespace std
+#endif // PLUGIFY_VECTOR_NO_STD_HASH
+
+#ifndef PLUGIFY_VECTOR_NO_STD_FORMAT
 // format support
 #ifdef FMT_HEADER_ONLY
 namespace fmt {
@@ -820,4 +843,4 @@ namespace std {
 		}
 	};
 }// namespace std
-#endif // PLUGIFY_STRING_NO_STD_FORMAT
+#endif // PLUGIFY_VECTOR_NO_STD_FORMAT

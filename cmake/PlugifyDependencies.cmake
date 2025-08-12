@@ -47,7 +47,8 @@ if(NOT PLUGIFY_INTERFACE)
         include(FetchLibsolv)
         target_link_libraries(${PROJECT_NAME} PRIVATE libsolv)
         set_property(TARGET libsolv PROPERTY POSITION_INDEPENDENT_CODE ON)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${libsolv_SOURCE_DIR}/src)
+        file(COPY ${libsolv_SOURCE_DIR}/src/ DESTINATION ${libsolv_BINARY_DIR}/include/solv)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${libsolv_BINARY_DIR}/include)
     endif()
 
     # ------------------------------------------------------------------------------

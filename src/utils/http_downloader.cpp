@@ -16,8 +16,13 @@ IHTTPDownloader::IHTTPDownloader() : _timeout{DEFAULT_TIMEOUT_IN_SECONDS}, _maxA
 
 IHTTPDownloader::~IHTTPDownloader() = default;
 
-void IHTTPDownloader::CreateRequest(std::string url, Request::Callback callback, ProgressCallback progress) {
+void IHTTPDownloader::CreateRequest(std::string url, RequestCallback callback, ProgressCallback progress) {
 	Request* req = InternalCreateRequest();
+	if (!req) {
+		callback(HTTP_STATUS_ERROR, {}, {});
+		return;
+	}
+
 	req->parent = this;
 	req->type = Request::Type::Get;
 	req->url = std::move(url);
@@ -34,14 +39,40 @@ void IHTTPDownloader::CreateRequest(std::string url, Request::Callback callback,
 	LockedAddRequest(req);
 }
 
-void IHTTPDownloader::CreatePostRequest(std::string url, std::string postData, Request::Callback callback, ProgressCallback progress) {
+void IHTTPDownloader::CreatePostRequest(std::string url, std::string postData, RequestCallback callback, ProgressCallback progress) {
 	Request* req = InternalCreateRequest();
+	if (!req) {
+		callback(HTTP_STATUS_ERROR, {}, {});
+		return;
+	}
 	req->parent = this;
 	req->type = Request::Type::Post;
 	req->url = std::move(url);
 	req->postData = std::move(postData);
 	req->callback = std::move(callback);
 	req->progress = std::move(progress);
+	req->startTime = DateTime::Now();
+
+	std::unique_lock<std::mutex> lock(_pendingRequestLock);
+	if (LockedGetActiveRequestCount() < _maxActiveRequests) {
+		if (!StartRequest(req))
+			return;
+	}
+
+	LockedAddRequest(req);
+}
+
+void IHTTPDownloader::CreateHeadRequest(std::string url, RequestCallback callback) {
+	Request* req = InternalCreateRequest();
+	if (!req) {
+		callback(HTTP_STATUS_ERROR, {}, {});
+		return;
+	}
+
+	req->parent = this;
+	req->type = Request::Type::Head;
+	req->url = std::move(url);
+	req->callback = std::move(callback);
 	req->startTime = DateTime::Now();
 
 	std::unique_lock<std::mutex> lock(_pendingRequestLock);

@@ -18,8 +18,8 @@ namespace plugify {
 	protected:
 		Request* InternalCreateRequest() override;
 		void InternalPollRequests() override;
-		bool StartRequest(IHTTPDownloader::Request* request) override;
-		void CloseRequest(IHTTPDownloader::Request* request) override;
+		bool StartRequest(Request* request) override;
+		void CloseRequest(Request* request) override;
 
 	private:
 		struct Request : IHTTPDownloader::Request {
@@ -27,6 +27,7 @@ namespace plugify {
 		};
 
 		static size_t WriteCallback(char* ptr, size_t size, size_t nmemb, void* userdata);
+		static size_t HeaderCallback(char* buffer, size_t size, size_t nitems, void* userdata);
 
 		CURLM* _multiHandle{ nullptr };
 		std::string _userAgent;

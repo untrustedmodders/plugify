@@ -1,13 +1,14 @@
 #if !PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_DOWNLOADER
 
 #include "http_downloader_curl.hpp"
+#include "strings.hpp"
 
 #include <curl/curl.h>
 #include <csignal>
 
 using namespace plugify;
 
-HTTPDownloaderCurl::HTTPDownloaderCurl() : IHTTPDownloader() {}
+HTTPDownloaderCurl::HTTPDownloaderCurl() {}
 
 HTTPDownloaderCurl::~HTTPDownloaderCurl() {
 	if (_multiHandle)
@@ -138,18 +139,37 @@ bool HTTPDownloaderCurl::StartRequest(IHTTPDownloader::Request* request) {
 	auto req = static_cast<Request*>(request);
 	curl_easy_setopt(req->handle, CURLOPT_URL, request->url.c_str());
 	curl_easy_setopt(req->handle, CURLOPT_USERAGENT, _userAgent.c_str());
-	curl_easy_setopt(req->handle, CURLOPT_WRITEFUNCTION, &WriteCallback);
-	curl_easy_setopt(req->handle, CURLOPT_WRITEDATA, req);
 	curl_easy_setopt(req->handle, CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(req->handle, CURLOPT_PRIVATE, req);
 	curl_easy_setopt(req->handle, CURLOPT_FOLLOWLOCATION, 1L);
 
-	if (request->type == Request::Type::Post) {
-		curl_easy_setopt(req->handle, CURLOPT_POST, 1L);
-		curl_easy_setopt(req->handle, CURLOPT_POSTFIELDS, request->postData.c_str());
+	switch (request->type) {
+		case Request::Type::Head:
+			curl_easy_setopt(req->handle, CURLOPT_NOBODY, 1L);
+			//curl_easy_setopt(req->handle, CURLOPT_HEADERFUNCTION, &HeaderCallback);
+			//curl_easy_setopt(req->handle, CURLOPT_HEADERDATA, req);
+			break;
+
+		case Request::Type::Post:
+			curl_easy_setopt(req->handle, CURLOPT_POST, 1L);
+			curl_easy_setopt(req->handle, CURLOPT_POSTFIELDS, request->postData.c_str());
+			curl_easy_setopt(req->handle, CURLOPT_WRITEFUNCTION, &WriteCallback);
+			curl_easy_setopt(req->handle, CURLOPT_WRITEDATA, req);
+			break;
+
+		case Request::Type::Get:
+		default:
+			curl_easy_setopt(req->handle, CURLOPT_HTTPGET, 1L);
+			curl_easy_setopt(req->handle, CURLOPT_WRITEFUNCTION, &WriteCallback);
+			curl_easy_setopt(req->handle, CURLOPT_WRITEDATA, req);
+			break;
 	}
 
-	PL_LOG_VERBOSE("Started HTTP request for '{}'", req->url);
+	PL_LOG_VERBOSE("Started HTTP {} request for '{}'",
+						   req->type == Request::Type::Head ? "HEAD" :
+						   req->type == Request::Type::Post ? "POST" : "GET",
+						   req->url);
+
 	req->state.store(Request::State::Started, std::memory_order_release);
 	req->startTime = DateTime::Now();
 
