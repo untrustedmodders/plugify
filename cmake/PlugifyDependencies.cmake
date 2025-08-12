@@ -2,7 +2,7 @@
 # Not build deps in interface mode
 if(NOT PLUGIFY_INTERFACE)
     # ------------------------------------------------------------------------------
-    # Glaze
+    # glaze
     if(PLUGIFY_USE_EXTERNAL_GLAZE)
         find_package(glaze REQUIRED)
     else()
@@ -11,7 +11,7 @@ if(NOT PLUGIFY_INTERFACE)
     target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 
     # ------------------------------------------------------------------------------
-    # Http/Curl
+    # winhttp/curl
     if(PLUGIFY_DOWNLOADER)
         if(WIN32)
             target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
@@ -31,10 +31,35 @@ if(NOT PLUGIFY_INTERFACE)
     endif()
 
     # ------------------------------------------------------------------------------
-    # Miniz
-    include(FetchMiniz)
-    target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
-    set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
+    # zlib
+    if(PLUGIFY_USE_EXTERNAL_ZLIB)
+        find_package(zlib REQUIRED)
+    else()
+        include(FetchZlib)
+    endif()
+
+    # ------------------------------------------------------------------------------
+    # libsolv
+    if(PLUGIFY_USE_EXTERNAL_LIBSOLV)
+        target_link_libraries(${PROJECT_NAME} PRIVATE solv::libsolv)
+        find_package(libsolv REQUIRED)
+    else()
+        include(FetchLibsolv)
+        target_link_libraries(${PROJECT_NAME} PRIVATE libsolv)
+        set_property(TARGET libsolv PROPERTY POSITION_INDEPENDENT_CODE ON)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${libsolv_SOURCE_DIR}/src)
+    endif()
+
+    # ------------------------------------------------------------------------------
+    # miniz
+    if(PLUGIFY_USE_EXTERNAL_MINIZ)
+        find_package(miniz REQUIRED)
+        target_link_libraries(${PROJECT_NAME} PRIVATE miniz::miniz)
+    else()
+        include(FetchMiniz)
+        target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
+        set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------

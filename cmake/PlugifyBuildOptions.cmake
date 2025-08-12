@@ -23,6 +23,9 @@ option(PLUGIFY_BUILD_SHARED_CURL "Build curl as shared library." OFF)
 
 option(PLUGIFY_USE_EXTERNAL_ASMJIT "Use external asmjit library." OFF)
 option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library." OFF)
+option(PLUGIFY_USE_EXTERNAL_ZLIB "Use external zlib library." OFF)
+option(PLUGIFY_USE_EXTERNAL_LIBSOLV "Use external libsolv library." OFF)
+option(PLUGIFY_USE_EXTERNAL_MINIZ "Use external miniz library." OFF)
 option(PLUGIFY_USE_EXTERNAL_CURL "Use external curl library." ON)
 option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
 option(PLUGIFY_USE_EXTERNAL_CPPTRACE "Use external cpptrace library." OFF)
@@ -48,6 +51,14 @@ set(PLUGIFY_CRASHPAD_REPO "https://github.com/TheAssemblyArmada/crashpad-cmake.g
 set(PLUGIFY_CRASHPAD_TAG "80573adcc845071401c73c99eaec7fd9847d45fb" CACHE STRING "")
 set(PLUGIFY_BREAKPAD_REPO "https://chromium.googlesource.com/breakpad/breakpad" CACHE STRING "")
 set(PLUGIFY_BREAKPAD_TAG "2625edb085169e92cf036c236ac79ab594a7b1cc" CACHE STRING "")
+set(PLUGIFY_LIBSOLV_REPO "https://github.com/openSUSE/libsolv.git" CACHE STRING "")
+set(PLUGIFY_LIBSOLV_TAG "0.7.35" CACHE STRING "")
+set(PLUGIFY_ZLIB_LINK "
+https://www.zlib.net/zlib-1.3.1.tar.gz
+https://www.zlib.net/fossils/zlib-1.3.1.tar.gz
+https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
+" CACHE STRING "")
+set(PLUGIFY_ZLIB_HASH "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23" CACHE STRING "")
 set(PLUGIFY_GLAZE_REPO "https://github.com/stephenberry/glaze.git" CACHE STRING "")
 if (PLUGIFY_DEFAULT_CXX_STANDARD GREATER 20)
     set(PLUGIFY_GLAZE_TAG "v5.5.4" CACHE STRING "")
