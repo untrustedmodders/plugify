@@ -3,9 +3,9 @@
 #include "language_module_descriptor.hpp"
 #include "method.hpp"
 #include "plugin_reference_descriptor.hpp"
-#include <plugify/descriptor.hpp>
-#include <plugify/package.hpp>
+#include <descriptor.hpp>
 #include <plugify/method.hpp>
+#include <plugify/package.hpp>
 #include <plugify/plugin_reference_descriptor.hpp>
 #include <plugify/value_type.hpp>
 #include <utils/algorithm.hpp>

@@ -24,7 +24,7 @@
 	  "name": "Release",
 	  "displayName": "Release",
 	  "inherits": "default",
-	  "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+	  "cacheVariables": { "CMAKE_TOOLCHAIN_FILE": "C:/Users/qubka/.vcpkg-clion/vcpkg/scripts/buildsystems/vcpkg.cmake" }
 	}
   ],
   "buildPresets": [

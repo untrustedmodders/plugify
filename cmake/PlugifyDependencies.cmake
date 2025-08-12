@@ -13,54 +13,54 @@ if(NOT PLUGIFY_INTERFACE)
     # ------------------------------------------------------------------------------
     # winhttp/curl
     if(PLUGIFY_DOWNLOADER)
-        if(WIN32)
-            target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
-        else()
-            if(PLUGIFY_USE_EXTERNAL_CURL)
-                find_package(CURL REQUIRED)
-                target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
-                message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
-                message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
-                message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
-            else()
-                include(FetchCurl)
-                target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
-                target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
-            endif()
-        endif()
+        #if(WIN32)
+        #    target_link_libraries(${PROJECT_NAME} PRIVATE winhttp.lib)
+        #else()
+        #    if(PLUGIFY_USE_EXTERNAL_CURL)
+        #        find_package(CURL REQUIRED)
+        #        target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
+        #        message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
+        #        message(STATUS "Using CURL include dir(s): ${CURL_INCLUDE_DIRS}")
+        #        message(STATUS "Using CURL lib(s): ${CURL_LIBRARIES}")
+        #    else()
+        #        include(FetchCurl)
+        #        target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
+        #        target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
+        #    endif()
+        #endif()
     endif()
 
     # ------------------------------------------------------------------------------
     # zlib
-    if(PLUGIFY_USE_EXTERNAL_ZLIB)
-        find_package(zlib REQUIRED)
-    else()
-        include(FetchZlib)
-    endif()
-
-    # ------------------------------------------------------------------------------
-    # libsolv
-    if(PLUGIFY_USE_EXTERNAL_LIBSOLV)
-        target_link_libraries(${PROJECT_NAME} PRIVATE solv::libsolv)
-        find_package(libsolv REQUIRED)
-    else()
-        include(FetchLibsolv)
-        target_link_libraries(${PROJECT_NAME} PRIVATE libsolv)
-        set_property(TARGET libsolv PROPERTY POSITION_INDEPENDENT_CODE ON)
-        file(COPY ${libsolv_SOURCE_DIR}/src/ DESTINATION ${libsolv_BINARY_DIR}/include/solv)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${libsolv_BINARY_DIR}/include)
-    endif()
-
-    # ------------------------------------------------------------------------------
-    # miniz
-    if(PLUGIFY_USE_EXTERNAL_MINIZ)
-        find_package(miniz REQUIRED)
-        target_link_libraries(${PROJECT_NAME} PRIVATE miniz::miniz)
-    else()
-        include(FetchMiniz)
-        target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
-        set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
-    endif()
+    #if(PLUGIFY_USE_EXTERNAL_ZLIB)
+    #    find_package(zlib REQUIRED)
+    #else()
+    #    include(FetchZlib)
+    #endif()
+#
+    ## ------------------------------------------------------------------------------
+    ## libsolv
+    #if(PLUGIFY_USE_EXTERNAL_LIBSOLV)
+    #    target_link_libraries(${PROJECT_NAME} PRIVATE solv::libsolv)
+    #    find_package(libsolv REQUIRED)
+    #else()
+    #    include(FetchLibsolv)
+    #    target_link_libraries(${PROJECT_NAME} PRIVATE libsolv)
+    #    set_property(TARGET libsolv PROPERTY POSITION_INDEPENDENT_CODE ON)
+    #    file(COPY ${libsolv_SOURCE_DIR}/src/ DESTINATION ${libsolv_BINARY_DIR}/include/solv)
+    #    target_include_directories(${PROJECT_NAME} PRIVATE ${libsolv_BINARY_DIR}/include)
+    #endif()
+#
+    ## ------------------------------------------------------------------------------
+    ## miniz
+    #if(PLUGIFY_USE_EXTERNAL_MINIZ)
+    #    find_package(miniz REQUIRED)
+    #    target_link_libraries(${PROJECT_NAME} PRIVATE miniz::miniz)
+    #else()
+    #    include(FetchMiniz)
+    #    target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
+    #    set_property(TARGET miniz PROPERTY POSITION_INDEPENDENT_CODE ON)
+    #endif()
 endif()
 
 # ------------------------------------------------------------------------------
@@ -88,6 +88,16 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
     target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
 endif()
 
+if(PLUGIFY_BUILD_CRASHPAD OR PLUGIFY_BUILD_TESTS)
+    include(FetchCrashPad)
+endif()
+
+if(PLUGIFY_BUILD_MAMBA OR PLUGIFY_BUILD_TESTS)
+    #include(FetchReproc)
+    find_package(reproc CONFIG REQUIRED)
+    include(FetchMamba)
+endif()
+
 # ------------------------------------------------------------------------------
 # Stacktrace
 cmake_push_check_state()
@@ -109,10 +119,6 @@ if(NOT COMPILER_SUPPORTS_STACKTRACE)
     else()
         include(FetchCppTrace)
     endif()
-endif()
-
-if(PLUGIFY_BUILD_CRASHPAD OR PLUGIFY_BUILD_TESTS)
-    include(FetchCrashPad)
 endif()
 
 # ------------------------------------------------------------------------------

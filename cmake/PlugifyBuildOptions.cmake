@@ -41,24 +41,28 @@ set(PLUGIFY_ASMJIT_REPO "https://github.com/asmjit/asmjit.git" CACHE STRING "")
 set(PLUGIFY_ASMJIT_TAG "f8e7f67b015cb39859f88020183ffb557edf4b8e" CACHE STRING "")
 set(PLUGIFY_CPPTRACE_REPO "https://github.com/jeremy-rifkin/cpptrace.git" CACHE STRING "")
 set(PLUGIFY_CPPTRACE_TAG "7543677d6f39a38de9e9248e2331015d5235b175" CACHE STRING "")
-set(PLUGIFY_CURL_REPO "https://github.com/curl/curl.git" CACHE STRING "")
-set(PLUGIFY_CURL_TAG "curl-8_6_0" CACHE STRING "")
+#set(PLUGIFY_REPROC_REPO "https://github.com/DaanDeMeyer/reproc.git" CACHE STRING "")
+#set(PLUGIFY_REPROC_TAG "v14.2.5" CACHE STRING "")
+#set(PLUGIFY_CURL_REPO "https://github.com/curl/curl.git" CACHE STRING "")
+#set(PLUGIFY_CURL_TAG "curl-8_6_0" CACHE STRING "")
 set(PLUGIFY_FMT_REPO "https://github.com/fmtlib/fmt.git" CACHE STRING "")
 set(PLUGIFY_FMT_TAG "10.2.1" CACHE STRING "")
-set(PLUGIFY_MINIZ_REPO "https://github.com/richgel999/miniz.git" CACHE STRING "")
-set(PLUGIFY_MINIZ_TAG "3.0.2" CACHE STRING "")
+#set(PLUGIFY_MINIZ_REPO "https://github.com/richgel999/miniz.git" CACHE STRING "")
+#set(PLUGIFY_MINIZ_TAG "3.0.2" CACHE STRING "")
+set(PLUGIYFY_MAMBA_REPO "https://github.com/mamba-org/mamba.git" CACHE STRING "")
+set(PLUGIYFY_MAMBA_TAG "2.3.1" CACHE STRING "")
 set(PLUGIFY_CRASHPAD_REPO "https://github.com/TheAssemblyArmada/crashpad-cmake.git" CACHE STRING "")
 set(PLUGIFY_CRASHPAD_TAG "80573adcc845071401c73c99eaec7fd9847d45fb" CACHE STRING "")
 set(PLUGIFY_BREAKPAD_REPO "https://chromium.googlesource.com/breakpad/breakpad" CACHE STRING "")
 set(PLUGIFY_BREAKPAD_TAG "2625edb085169e92cf036c236ac79ab594a7b1cc" CACHE STRING "")
-set(PLUGIFY_LIBSOLV_REPO "https://github.com/openSUSE/libsolv.git" CACHE STRING "")
-set(PLUGIFY_LIBSOLV_TAG "0.7.35" CACHE STRING "")
-set(PLUGIFY_ZLIB_LINK "
-https://www.zlib.net/zlib-1.3.1.tar.gz
-https://www.zlib.net/fossils/zlib-1.3.1.tar.gz
-https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
-" CACHE STRING "")
-set(PLUGIFY_ZLIB_HASH "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23" CACHE STRING "")
+#set(PLUGIFY_LIBSOLV_REPO "https://github.com/openSUSE/libsolv.git" CACHE STRING "")
+#set(PLUGIFY_LIBSOLV_TAG "0.7.35" CACHE STRING "")
+#set(PLUGIFY_ZLIB_LINK "
+#https://www.zlib.net/zlib-1.3.1.tar.gz
+#https://www.zlib.net/fossils/zlib-1.3.1.tar.gz
+#https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
+#" CACHE STRING "")#
+#set(PLUGIFY_ZLIB_HASH "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23" CACHE STRING "")
 set(PLUGIFY_GLAZE_REPO "https://github.com/stephenberry/glaze.git" CACHE STRING "")
 if (PLUGIFY_DEFAULT_CXX_STANDARD GREATER 20)
     set(PLUGIFY_GLAZE_TAG "v5.5.4" CACHE STRING "")

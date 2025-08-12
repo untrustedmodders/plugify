@@ -2,12 +2,11 @@
 
 #include <glaze/glaze.hpp>
 
+#include <../core/descriptor.hpp>
 #include <core/language_module_descriptor.hpp>
 #include <core/method.hpp>
 #include <core/plugin_descriptor.hpp>
 #include <plugify/config.hpp>
-#include <plugify/descriptor.hpp>
-#include <plugify/package.hpp>
 
 template<>
 struct glz::meta<plugify::ValueType> {
@@ -153,63 +152,6 @@ struct glz::meta<plugify::Config> {
 };
 
 template <>
-struct glz::meta<plugify::PackageConstraint> {
-	using T = plugify::PackageConstraint;
-	static constexpr auto value = object(
-			"name", &T::name,
-			"constraints", &T::constraints,
-			"optional", &T::optional
-	);
-};
-template <>
-struct glz::meta<plugify::PackageVersion> {
-	using T = plugify::PackageVersion;
-	static constexpr auto value = object(
-			"version", &T::version,
-			"checksum", &T::checksum,
-			"download", &T::download,
-			"platforms", &T::platforms,
-			"dependencies", &T::dependencies,
-			"conflicts", &T::conflicts
-	);
-};
-
-template <>
-struct glz::meta<plugify::RemotePackage> {
-	using T = plugify::RemotePackage;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"name", &T::name,
-			"type", &T::type,
-			"author", &T::author,
-			"description", &T::description,
-			"versions", &T::versions
-	);
-};
-
-template <>
-struct glz::meta<plugify::LocalPackage> {
-	using T = plugify::LocalPackage;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"name", &T::name,
-			"type", &T::type,
-			"path", &T::path,
-			"version", &T::version,
-			"descriptor", &T::descriptor
-	);
-};
-
-template <>
-struct glz::meta<plugify::PackageManifest> {
-	using T = plugify::PackageManifest;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"content", &T::content
-	);
-};
-
-template <>
 struct glz::meta<plugify::EnumValue> {
 	using T = plugify::EnumValue;
 	static constexpr auto value = object(
@@ -297,98 +239,6 @@ namespace glz {
 			serialize<JSON>::op<Opts>(value.to_string_noexcept(), args...);
 		}
 	};
-
-	template<>
-	struct from<JSON, plugify::Constraint> {
-	    template <auto Opts>
-	    static void op(plugify::Constraint& value, auto&&... args) {
-	        std::string str;
-	        parse<JSON>::op<Opts>(str, args...);
-
-	        if (str.empty()) {
-	            value.type = plugify::Constraint::Type::Any;
-	            value.version = plg::version{};
-	            return;
-	        }
-
-	        // Parse the constraint operator
-	        std::string_view sv(str);
-	        plugify::Constraint::Type type;
-	        size_t op_len = 0;
-
-	        if (sv.starts_with(">=")) {
-	            type = plugify::Constraint::Type::GreaterEqual;
-	            op_len = 2;
-	        } else if (sv.starts_with("<=")) {
-	            type = plugify::Constraint::Type::LessEqual;
-	            op_len = 2;
-	        } else if (sv.starts_with("~>")) {
-	            type = plugify::Constraint::Type::Compatible;
-	            op_len = 2;
-	        } else if (sv.starts_with("!=")) {
-	            type = plugify::Constraint::Type::NotEqual;
-	            op_len = 2;
-	        } else if (sv.starts_with("==")) {
-	            type = plugify::Constraint::Type::Equal;
-	            op_len = 2;
-	        } else if (sv.starts_with(">")) {
-	            type = plugify::Constraint::Type::Greater;
-	            op_len = 1;
-	        } else if (sv.starts_with("<")) {
-	            type = plugify::Constraint::Type::Less;
-	            op_len = 1;
-	        } else {
-	            // No operator, assume equality
-	            type = plugify::Constraint::Type::Equal;
-	            op_len = 0;
-	        }
-
-	        value.type = type;
-	        value.version = plg::version(sv.substr(op_len));
-	    }
-	};
-
-	template<>
-	struct to<JSON, plugify::Constraint> {
-	    template <auto Opts>
-	    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
-	        std::string result;
-
-	        // Convert constraint type to operator string
-	        switch (value.type) {
-	            case plugify::Constraint::Type::Equal:
-	                result = "==";
-	                break;
-	            case plugify::Constraint::Type::NotEqual:
-	                result = "!=";
-	                break;
-	            case plugify::Constraint::Type::Greater:
-	                result = ">";
-	                break;
-	            case plugify::Constraint::Type::GreaterEqual:
-	                result = ">=";
-	                break;
-	            case plugify::Constraint::Type::Less:
-	                result = "<";
-	                break;
-	            case plugify::Constraint::Type::LessEqual:
-	                result = "<=";
-	                break;
-	            case plugify::Constraint::Type::Compatible:
-	                result = "~>";
-	                break;
-	            case plugify::Constraint::Type::Any:
-	                result = "";
-	                serialize<JSON>::op<Opts>(result, args...);
-	                return;
-	        }
-
-	        // Append version string
-	        result += value.version.to_string_noexcept();
-
-	        serialize<JSON>::op<Opts>(result, args...);
-	    }
-	};
 #else
 	namespace detail {
 		template<>
@@ -427,98 +277,7 @@ namespace glz {
 				write<json>::op<Opts>(value.to_string_noexcept(), args...);
 			}
 		};
-
-		template<>
-		struct from_json<plugify::Constraint> {
-		    template <auto Opts>
-		    static void op(plugify::Constraint& value, auto&&... args) {
-		        std::string str;
-		        parse<JSON>::op<Opts>(str, args...);
-
-		        if (str.empty()) {
-		            value.type = plugify::Constraint::Type::Any;
-		            value.version = plg::version{};
-		            return;
-		        }
-
-		        // Parse the constraint operator
-		        std::string_view sv(str);
-		        plugify::VersionConstraintType type;
-		        size_t op_len = 0;
-
-		        if (sv.starts_with(">=")) {
-		            type = plugify::Constraint::Type::GreaterEqual;
-		            op_len = 2;
-		        } else if (sv.starts_with("<=")) {
-		            type = plugify::Constraint::Type::LessEqual;
-		            op_len = 2;
-		        } else if (sv.starts_with("~>")) {
-		            type = plugify::Constraint::Type::Compatible;
-		            op_len = 2;
-		        } else if (sv.starts_with("!=")) {
-		            type = plugify::Constraint::Type::NotEqual;
-		            op_len = 2;
-		        } else if (sv.starts_with("==")) {
-		            type = plugify::Constraint::Type::Equal;
-		            op_len = 2;
-		        } else if (sv.starts_with(">")) {
-		            type = plugify::Constraint::Type::Greater;
-		            op_len = 1;
-		        } else if (sv.starts_with("<")) {
-		            type = plugify::Constraint::Type::Less;
-		            op_len = 1;
-		        } else {
-		            // No operator, assume equality
-		            type = plugify::Constraint::Type::Equal;
-		            op_len = 0;
-		        }
-
-		        value.type = type;
-		        value.version = plg::version(sv.substr(op_len));
-		    }
-		};
-
-		template<>
-		struct to_json<plugify::Constraint> {
-		    template <auto Opts>
-		    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
-		        std::string result;
-
-		        // Convert constraint type to operator string
-		        switch (value.type) {
-		            case plugify::Constraint::Type::Equal:
-		                result = "==";
-		                break;
-		            case plugify::Constraint::Type::NotEqual:
-		                result = "!=";
-		                break;
-		            case plugify::Constraint::Type::Greater:
-		                result = ">";
-		                break;
-		            case plugify::Constraint::Type::GreaterEqual:
-		                result = ">=";
-		                break;
-		            case plugify::Constraint::Type::Less:
-		                result = "<";
-		                break;
-		            case plugify::Constraint::Type::LessEqual:
-		                result = "<=";
-		                break;
-		            case plugify::Constraint::Type::Compatible:
-		                result = "~>";
-		                break;
-		            case plugify::Constraint::Type::Any:
-		                result = "";
-		                serialize<JSON>::op<Opts>(result, args...);
-		                return;
-		        }
-
-		        // Append version string
-		        result += value.version.to_string_noexcept();
-
-		        serialize<JSON>::op<Opts>(result, args...);
-		    }
-		};
 	}
 #endif
 }
+

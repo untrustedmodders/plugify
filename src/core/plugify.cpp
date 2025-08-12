@@ -1,10 +1,8 @@
-#include "package_manager.hpp"
 #include "plugify_provider.hpp"
 #include "plugin_manager.hpp"
 #include <plugify/plugify.hpp>
 #include <plugify/version.hpp>
 #include <utils/file_system.hpp>
-#include <utils/http_downloader.hpp>
 #include <utils/json.hpp>
 #include <utils/strings.hpp>
 
@@ -75,7 +73,6 @@ namespace plugify {
 				_config.baseDir = rootDir / _config.baseDir;
 
 			_provider = std::make_shared<PlugifyProvider>(weak_from_this());
-			_packageManager = std::make_shared<PackageManager>(weak_from_this());
 			_pluginManager = std::make_shared<PluginManager>(weak_from_this());
 
 			_inited = true;
@@ -91,11 +88,6 @@ namespace plugify {
 		void Terminate() override {
 			if (!IsInitialized())
 				return;
-
-			if (_packageManager.use_count() != 1) {
-				PL_LOG_ERROR("Lack of owning for package manager! Will not released on plugify terminate");
-			}
-			_packageManager.reset();
 
 			if (_pluginManager.use_count() != 1) {
 				PL_LOG_ERROR("Lack of owning for plugin manager! Will not released on plugify terminate");
@@ -121,7 +113,6 @@ namespace plugify {
 			_deltaTime = (currentTime - _lastTime);
 			_lastTime = currentTime;
 
-			//_packageManager->Update(_deltaTime);
 			_pluginManager->Update(_deltaTime);
 		}
 
@@ -172,7 +163,6 @@ namespace plugify {
 
 	private:
 		std::shared_ptr<PluginManager> _pluginManager;
-		std::shared_ptr<PackageManager> _packageManager;
 		std::shared_ptr<PlugifyProvider> _provider;
 		plg::version _version{ PLUGIFY_VERSION };
 		Config _config;
