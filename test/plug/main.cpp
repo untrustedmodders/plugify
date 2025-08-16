@@ -1,14 +1,14 @@
 
 #include "std_logger.hpp"
 #include <plg/format.hpp>
-#include <plugify/api/plugify.hpp>
 #include <plugify/api/date_time.hpp>
+#include <plugify/api/dependency.hpp>
+#include <plugify/api/manager.hpp>
 #include <plugify/api/module.hpp>
 #include <plugify/api/module_manifest.hpp>
+#include <plugify/api/plugify.hpp>
 #include <plugify/api/plugin.hpp>
-#include <plugify/api/plugin_manager.hpp>
 #include <plugify/api/plugin_manifest.hpp>
-#include <plugify/api/dependency.hpp>
 
 #include <chrono>
 #include <fstream>
@@ -108,10 +108,10 @@ void Print(std::string_view name, T t, F&& f) {
 using namespace plugify;
 
 int main() {
-    std::shared_ptr<IPlugify> plug = MakePlugify();
+    PlugifyHandle plug = MakePlugify();
     if (plug) {
         auto logger = std::make_shared<plug::StdLogger>();
-        plug->SetLogger(logger);
+        plug.SetLogger(logger);
 		logger->SetSeverity(Severity::Debug);
         bool running = true;
         while (running) {
@@ -133,25 +133,24 @@ int main() {
                 running = false;
             } else if ((args[0] == "plg" || args[0] == "plugify") && args.size() > 1) {
                 if (args[1] == "init") {
-					if (!plug->Initialize()) {
+					if (!plug.Initialize()) {
 						PLG_ERROR("No feet, no sweets!");
 						return 1;
 					}
-					logger->SetSeverity(plug->GetConfig().logSeverity.value_or(Severity::Debug));
+					logger->SetSeverity(plug.GetConfig().logSeverity.value_or(Severity::Debug));
 
-					if (auto pluginManager = plug->GetPluginManager().lock()) {
-						pluginManager->Initialize();
-					}
+                	plug.GetManager().Initialize();
                 } else if (args[1] == "term") {
-                    plug->Terminate();
+                    plug.Terminate();
                 } else if (args[1] == "exit") {
 					running = false;
                 } else {
-					auto pluginManager = plug->GetPluginManager().lock();
-					if (!pluginManager) {
+					if (!plug.IsInitialized()) {
 						PLG_ERROR("Initialize system before use.");
 						continue;
 					}
+
+                	auto manager = plug.GetManager();
 
 					if (args[1] == "help" || args[1] == "-h") {
 						PLG_LOG("Plugify Menu");
@@ -176,7 +175,7 @@ int main() {
 					else if (args[1] == "version" || args[1] == "-v") {
 						static std::string copyright = std::format("Copyright (C) 2023-{}{}{}{} Untrusted Modders Team", __DATE__[7], __DATE__[8], __DATE__[9], __DATE__[10]);
 						PLG_LOG(R"(      ____)" "");
-						PLG_LOG(R"( ____|    \         Plugify )" << plug->GetVersion());
+						PLG_LOG(R"( ____|    \         Plugify )" << plug.GetVersion());
 						PLG_LOG(R"((____|     `._____  )" << copyright);
 						PLG_LOG(R"( ____|       _|___)" "");
 						PLG_LOG(R"((____|     .'       This program may be freely redistributed under)" "");
@@ -184,39 +183,39 @@ int main() {
 					}
 
 					else if (args[1] == "load") {
-						if (pluginManager->IsInitialized()) {
+						if (manager.IsInitialized()) {
 							PLG_ERROR("Plugin manager already loaded.");
 						} else {
-							pluginManager->Initialize();
+							manager.Initialize();
 							PLG_LOG("Plugin manager was loaded.");
 						}
 					}
 
 					else if (args[1] == "unload") {
-						if (!pluginManager->IsInitialized()) {
+						if (!manager.IsInitialized()) {
 							PLG_ERROR("Plugin manager already unloaded.");
 						} else {
-							pluginManager->Terminate();
+							manager.Terminate();
 							PLG_LOG("Plugin manager was unloaded.");
 						}
 					}
 
 					else if (args[1] == "reload") {
-						if (!pluginManager->IsInitialized()) {
+						if (!manager.IsInitialized()) {
 							PLG_ERROR("Plugin manager not loaded.");
 						} else {
-							pluginManager->Terminate();
-							pluginManager->Initialize();
+							manager.Terminate();
+							manager.Initialize();
 							PLG_LOG("Plugin manager was reloaded.");
 						}
 					}
 
 					else if (args[1] == "plugins") {
-						if (!pluginManager->IsInitialized()) {
+						if (!manager.IsInitialized()) {
 							PLG_ERROR("You must load plugin manager before query any information from it.");
 							continue;
 						}
-						auto plugins = pluginManager->GetPlugins();
+						auto plugins = manager.GetPlugins();
 						auto count = plugins.size();
 						if (!count) {
 							PLG_ERROR("No plugins loaded.");
@@ -229,11 +228,11 @@ int main() {
 					}
 
 					else if (args[1] == "modules") {
-						if (!pluginManager->IsInitialized()) {
+						if (!manager.IsInitialized()) {
 							PLG_ERROR("You must load plugin manager before query any information from it.");
 							continue;
 						}
-						auto modules = pluginManager->GetModules();
+						auto modules = manager.GetModules();
 						auto count = modules.size();
 						if (!count) {
 							PLG_ERROR("No modules loaded.");
@@ -247,18 +246,18 @@ int main() {
 
 					else if (args[1] == "plugins") {
 						if (args.size() > 2) {
-							if (!pluginManager->IsInitialized()) {
+							if (!manager.IsInitialized()) {
 								PLG_ERROR("You must load plugin manager before query any information from it.");
 								continue;
 							}
-							auto plugin = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindPluginFromId(FormatInt(args[2])) : pluginManager->FindPlugin(args[2]);
+							auto plugin = options.contains("--uuid") || options.contains("-u") ? manager.FindPluginFromId(FormatInt(args[2])) : manager.FindPlugin(args[2]);
 							if (plugin) {
 								Print<PluginState>("Plugin", plugin, PluginUtils::ToString);
 								auto manifest = plugin.GetManifest();
 								PLG_LOG_FMT("  Language: {}", manifest.GetLanguage());
 								PLG_LOG("  Dependencies: ");
 								for (const auto& reference : manifest.GetDependencies()) {
-									if (auto dependency = pluginManager->FindPlugin(reference.GetName())) {
+									if (auto dependency = manager.FindPlugin(reference.GetName())) {
 										Print<PluginState>(dependency, PluginUtils::ToString, "    ");
 									} else {
 										auto constraints = reference.GetConstrants();
@@ -278,11 +277,11 @@ int main() {
 
 					else if (args[1] == "module") {
 						if (args.size() > 2) {
-							if (!pluginManager->IsInitialized()) {
+							if (!manager.IsInitialized()) {
 								PLG_ERROR("You must load plugin manager before query any information from it.");
 								continue;
 							}
-							auto module = options.contains("--uuid") || options.contains("-u") ? pluginManager->FindModuleFromId(FormatInt(args[2])) : pluginManager->FindModule(args[2]);
+							auto module = options.contains("--uuid") || options.contains("-u") ? manager.FindModuleFromId(FormatInt(args[2])) : manager.FindModule(args[2]);
 							if (module) {
 								Print<ModuleState>("Module", module, ModuleUtils::ToString);
 								PLG_LOG_FMT("  Language: {}", module.GetLanguage());
@@ -302,7 +301,7 @@ int main() {
 					}
 				}
 
-				plug->Update();
+				plug.Update();
 			} else {
 				PLG_ERROR("usage: plg <command> [options] [arguments]");
 				PLG_ERROR("Try plg help or -h for more information.");

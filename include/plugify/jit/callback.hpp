@@ -1,8 +1,8 @@
 #pragma once
 
 #include <asmjit/core.h>
-#include <plugify/mem_addr.hpp>
-#include <plugify/method.hpp>
+#include <plugify/asm/mem_addr.hpp>
+#include <plugify/api/method.hpp>
 #include <string>
 #include <utility>
 #include <memory>

@@ -4,6 +4,8 @@
 
 #include "os.h"
 
+std::string_view kExecutableCode = "__TEXT";
+
 #if PLUGIFY_ARCH_BITS == 64
 	typedef struct mach_header_64 MachHeader;
 	typedef struct segment_command_64 MachSegment;
@@ -122,7 +124,6 @@ bool Assembly::LoadSections() {
 		cmd = reinterpret_cast<const load_command*>(reinterpret_cast<uintptr_t>(cmd) + cmd->cmdsize);
 	}
 
-	_executableCode = GetSectionByName("__TEXT");
 	return true;
 }
 

@@ -20,7 +20,7 @@
 #include <queue>
 #include <ranges>
 
+#include <core/log.hpp>
 #include <util/assert.h>
-#include <util/log.hpp>
 
 namespace fs = std::filesystem;

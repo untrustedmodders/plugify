@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <memory>
 
+#include <plugify/api/handle.hpp>
 #include <plugify/api/config.hpp>
 #include <plugify/api/version.hpp>
 
@@ -12,96 +13,94 @@
 namespace plugify {
 	class ILogger;
 	class IAssemblyLoader;
-	class IPlugifyProvider;
-	class IPluginManager;
+	class ProviderHandle;
+	class ManagerHandle;
+	class Plugify;
 	enum class Severity;
 
 	/**
-	 * @class IPlugify
-	 * @brief Interface for the Plugify system.
-	 *
-	 * The IPlugify interface provides methods to initialize and terminate the Plugify system,
-	 * set a logger, get various components, and retrieve configuration information.
+	 * @class PlugifyHandle
+	 * @brief Wrapper handle for the Plugify, which is provided to the user and implemented in the core.
 	 */
-	class IPlugify {
+	class PLUGIFY_API PlugifyHandle : public Handle<const Plugify> {
+		using Handle::Handle;
 	public:
-		virtual ~IPlugify() = default;
 
 		/**
 		 * @brief Initialize the Plugify system.
 		 * @param rootDir The root directory for Plugify (optional).
 		 * @return True if initialization is successful, false otherwise.
 		 */
-		virtual bool Initialize(const std::filesystem::path& rootDir = {}) = 0;
+		bool Initialize(const std::filesystem::path& rootDir = {}) const noexcept;
 
 		/**
 		 * @brief Terminate the Plugify system.
 		 */
-		virtual void Terminate() = 0;
+		void Terminate() const noexcept;
 
 		/**
 		 * @brief Check if the Plugify system is initialized.
 		 * @return True if initialized, false otherwise.
 		 */
-		virtual bool IsInitialized() const = 0;
+		bool IsInitialized() const noexcept;
 
 		/**
 		 * @brief Update the Plugify system.
 		 * @noreturn
 		 */
-		virtual void Update() = 0;
+		void Update() const noexcept;
 
 		/**
 		 * @brief Set the logger for the Plugify system.
 		 * @param logger The logger to set.
 		 * @noreturn
 		 */
-		virtual void SetLogger(std::shared_ptr<ILogger> logger) = 0;
-		//virtual std::shared_ptr<IAssemblyLoader> GetLoader() = 0;
+		void SetLogger(std::shared_ptr<ILogger> logger) const noexcept;
+		//std::shared_ptr<IAssemblyLoader> GetLoader() = 0;
 
 		/**
 		 * @brief Set the assembly loader for the Plugify system.
 		 * @param loader The loader to set.
 		 * @noreturn
 		 */
-		virtual void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) = 0;
-		//virtual std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() = 0;
+		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) const noexcept;
+		//std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() = 0;
 
 		/**
 		 * @brief Log a message with the specified severity level.
 		 * @param msg The log message.
 		 * @param severity The severity level of the log message.
 		 */
-		virtual void Log(std::string_view msg, Severity severity) = 0;
+		void Log(std::string_view msg, Severity severity) const noexcept;
 
 		/**
-		 * @brief Get a weak pointer to the Plugify provider.
-		 * @return Weak pointer to the Plugify provider.
+		 * @brief Get a weak pointer to the Provider.
+		 * @return Weak pointer to the Provider.
 		 */
-		virtual std::weak_ptr<IPlugifyProvider> GetProvider() const = 0;
+		ProviderHandle GetProvider() const noexcept;
 
 		/**
-		 * @brief Get a weak pointer to the Plugin Manager.
-		 * @return Weak pointer to the Plugin Manager.
+		 * @brief Get a weak pointer to the Manager.
+		 * @return Weak pointer to the Manager.
 		 */
-		virtual std::weak_ptr<IPluginManager> GetPluginManager() const = 0;
+		ManagerHandle GetManager() const noexcept;
 
 		/**
 		 * @brief Get the configuration of the Plugify system.
 		 * @return Reference to the configuration.
 		 */
-		virtual const Config& GetConfig() const = 0;
+		const Config& GetConfig() const noexcept;
 
 		/**
 		 * @brief Get the version information of the Plugify system.
 		 * @return Version information.
 		 */
-		virtual plg::version GetVersion() const = 0;
+		plg::version GetVersion() const noexcept;
 	};
 
 	/**
 	 * @brief Factory function to create an instance of IPlugify.
 	 * @return Shared pointer to the created IPlugify instance.
 	 */
-	PLUGIFY_API std::shared_ptr<IPlugify> MakePlugify();
+	PLUGIFY_API PlugifyHandle MakePlugify();
 } // namespace plugify

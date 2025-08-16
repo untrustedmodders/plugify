@@ -6,6 +6,8 @@
 #include "os.h"
 #include "defer.hpp"
 
+std::string_view kExecutableCode = ".text";
+
 #if PLUGIFY_ARCH_BITS == 64
 	const unsigned char ELF_CLASS = ELFCLASS64;
 	const uint16_t ELF_MACHINE = EM_X86_64;
@@ -185,7 +187,6 @@ bool Assembly::LoadSections() {
 		}
 	}
 
-	_executableCode = GetSectionByName(".text");
 #endif // !PLUGIFY_PLATFORM_ANDROID
 	return true;
 }

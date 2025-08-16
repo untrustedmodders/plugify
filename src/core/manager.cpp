@@ -1,24 +1,24 @@
-#include "plugin_manager.hpp"
-#include "package_manager.hpp"
+#include "plugify.hpp"
+#include "manager.hpp"
 #include "module.hpp"
 #include "plugin.hpp"
 
 #include <plugify/api/dependency.hpp>
-#include <plugify/api/plugin_manager.hpp>
-#include <plugify/api/plugin_manifest.hpp>
+#include <plugify/api/manager.hpp>
 #include <plugify/api/plugify.hpp>
+#include <plugify/api/plugin_manifest.hpp>
 #include <util/json.hpp>
 
 using namespace plugify;
 
-PluginManager::PluginManager(std::weak_ptr<IPlugify> plugify) : PlugifyContext(std::move(plugify)) {
+Manager::Manager(Plugify& plugify) : Context(plugify) {
 }
 
-PluginManager::~PluginManager() {
+Manager::~Manager() {
 	Terminate();
 }
 
-bool PluginManager::Initialize() {
+bool Manager::Initialize() {
 	if (IsInitialized())
 		return false;
 
@@ -34,7 +34,7 @@ bool PluginManager::Initialize() {
 	return true;
 }
 
-void PluginManager::Terminate() {
+void Manager::Terminate() {
 	if (!IsInitialized())
 		return;
 
@@ -44,11 +44,11 @@ void PluginManager::Terminate() {
 	_inited = false;
 }
 
-bool PluginManager::IsInitialized() const {
+bool Manager::IsInitialized() const {
 	return _inited;
 }
 
-void PluginManager::Update(DateTime dt) {
+void Manager::Update(DateTime dt) {
 	if (!IsInitialized())
 		return;
 
@@ -63,7 +63,7 @@ void PluginManager::Update(DateTime dt) {
 	}
 }
 
-bool PluginManager::TopologicalSortPlugins() {
+bool Manager::TopologicalSortPlugins() {
 	if (_allPlugins.empty())
 		return true; // Nothing to sort
 
@@ -132,7 +132,7 @@ bool PluginManager::TopologicalSortPlugins() {
 	return true;  // No cycles
 }
 
-void PluginManager::DiscoverAllModulesAndPlugins() {
+void Manager::DiscoverAllModulesAndPlugins() {
 	PL_ASSERT(_allModules.empty() && "Modules already initialized");
 	PL_ASSERT(_allPlugins.empty() && "Plugins already initialized");
 
@@ -149,9 +149,10 @@ void PluginManager::DiscoverAllModulesAndPlugins() {
 	}
 }
 
+
 template<typename T>
-static std::unique_ptr<Manifest> GetManifest(const fs::path& path) {
-	auto json = "{}";//FileSystem::ReadText(path);
+static std::unique_ptr<T> ReadManifest(const fs::path& path, Type type) {
+	auto json = std::string("{}");//FileSystem::ReadText(path);
 	auto dest = glz::read_jsonc<std::unique_ptr<T>>(json);
 	if (!dest.has_value()) {
 		PL_LOG_ERROR("Manifest: '{}' has JSON parsing error: {}", path.string(), glz::format_error(dest.error(), json));
@@ -159,7 +160,7 @@ static std::unique_ptr<Manifest> GetManifest(const fs::path& path) {
 	}
 	auto& manifest = *dest;
 
-	if (!IsSupportsPlatform(manifest->platforms))
+	if (!SupportsPlatform(manifest->platforms))
 		return {};
 
 	auto errors = manifest->Validate();
@@ -168,7 +169,10 @@ static std::unique_ptr<Manifest> GetManifest(const fs::path& path) {
 		return {};
 	}
 
-	return manifest;
+	manifest->path = path;
+	manifest->type = type;
+
+	return std::move(manifest);
 }
 
 template<typename F>
@@ -187,23 +191,28 @@ void ScanDirectory(const fs::path& directory, const F& func, int depth) {
 	}
 }
 
-bool PluginManager::PartitionLocalPackages() {
-	auto plugify = _plugify.lock();
-	PL_ASSERT(plugify);
+bool Manager::PartitionLocalPackages() {
+	using ManifestReader = std::unique_ptr<Manifest>(*)(const fs::path&);
 
+	/*static const std::unordered_map<std::string, ManifestReader> manifestLoaders = {
+		{".pmodule", [](const fs::path& p) { return ReadManifest<PluginManifest>(p, Type::LanguageModule); }},
+		{".pplugin", [](const fs::path& p) { return ReadManifest<PluginManifest>(p, Type::Plugin); }}
+		// Easy to add more types here
+	};*/
+
+#if 0
 	std::vector<std::unique_ptr<Manifest>> manifests;
-	ScanDirectory(plugify->GetConfig().baseDir, [&](const fs::path& path, int depth) {
+	ScanDirectory(_plugify.GetConfig().baseDir, [&](const fs::path& path, int depth) {
 		if (depth != 1)
 			return;
 
-		auto extension = path.extension();
-		bool isModule = extension == Module::kFileExtension;
-		if (!isModule && extension != Plugin::kFileExtension)
-			return;
+		//auto extension = path.extension().string();
+		//std::ranges::transform(extension, extension.begin(), ::tolower);
+		//auto itl = manifestLoaders.find(extension);
+		//if (itl == manifestLoaders.end())
+		//	return;
 
-		auto manifest = isModule ?
-				GetManifest<ModuleManifest>(path) :
-				GetManifest<PluginManifest>(path);
+		auto manifest = nullptr;//std::get<ManifestReader>(*itl)(path);
 		if (!manifest)
 			return;
 
@@ -221,11 +230,11 @@ bool PluginManager::PartitionLocalPackages() {
 					existingManifest = std::move(manifest);
 				}
 			} else {
-				PL_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, manifest->name, path.string());
+				PL_LOG_WARNING("The same version (v{}) of package '{}' exists at '{}' - second location will be ignored.", existingVersion, manifest->name, manifest->path.string());
 			}
 		}
 	}, 3);
-
+#endif
 	auto count = manifests.size();
 	if (_allModules.empty()) {
 		PL_LOG_WARNING("Did not find any package.");
@@ -236,18 +245,19 @@ bool PluginManager::PartitionLocalPackages() {
 	_allPlugins.reserve(pluginCount);
 	_allModules.reserve(count - pluginCount);
 
-	const auto& config = plugify->GetConfig();
-	const BasePaths paths {
-			.configs = config.baseDir / config.configsDir,
-			.data = config.baseDir / config.dataDir,
-			.logs = config.baseDir / config.logsDir,
-	};
+	const auto& config = _plugify.GetConfig();
+	for (auto& manifest : manifests) {
+		BasePaths paths {
+				.base = manifest->path.parent_path(),
+				.configs = config.baseDir / config.configsDir,
+				.data = config.baseDir / config.dataDir,
+				.logs = config.baseDir / config.logsDir,
+		};
 
-	for (const auto& manifest : manifests) {
 		if (manifest->type == Type::Plugin) {
-			_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), std::move(manifest), std::move(paths));
+			_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), std::move(paths), std::move(manifest));
 		} else {
-			_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), std::move(manifest), std::move(paths));
+			_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), std::move(paths), std::move(manifest));
 		}
 	}
 
@@ -264,14 +274,9 @@ bool PluginManager::PartitionLocalPackages() {
 	return true;
 }
 
-void PluginManager::LoadRequiredLanguageModules() {
+void Manager::LoadRequiredLanguageModules() {
 	if (_allModules.empty())
 		return;
-	
-	auto plugify = _plugify.lock();
-	PL_ASSERT(plugify);
-	auto provider = plugify->GetProvider().lock();
-	PL_ASSERT(provider);
 
 	std::unordered_set<UniqueId> modules;
 	modules.reserve(_allModules.size());
@@ -284,16 +289,16 @@ void PluginManager::LoadRequiredLanguageModules() {
 			continue;
 		}
 		auto& module = *it;
-		plugin.Initialize(provider);
+		plugin.Initialize(_plugify);
 		plugin.SetModule(module);
 		modules.emplace(module.GetId());
 	}
-	
+
 	bool loadedAny = false;
 
 	for (auto& module : _allModules) {
 		if (module.GetManifest().forceLoad.value_or(false) || modules.contains(module.GetId())) {
-			loadedAny |= module.Initialize(provider);
+			loadedAny |= module.Initialize(_plugify);
 		}
 	}
 	
@@ -303,7 +308,7 @@ void PluginManager::LoadRequiredLanguageModules() {
 	}
 }
 
-void PluginManager::LoadAndStartAvailablePlugins() {
+void Manager::LoadAndStartAvailablePlugins() {
 	if (_allPlugins.empty())
 		return;
 	
@@ -352,7 +357,7 @@ void PluginManager::LoadAndStartAvailablePlugins() {
 	}
 }
 
-void PluginManager::TerminateAllPlugins() {
+void Manager::TerminateAllPlugins() {
 	if (_allPlugins.empty())
 		return;
 	
@@ -369,7 +374,7 @@ void PluginManager::TerminateAllPlugins() {
 	_allPlugins.clear();
 }
 
-void PluginManager::TerminateAllModules() {
+void Manager::TerminateAllModules() {
 	if (_allModules.empty())
 		return;
 
@@ -380,35 +385,21 @@ void PluginManager::TerminateAllModules() {
 	_allModules.clear();
 }
 
-ModuleHandle PluginManager::FindModule(std::string_view moduleName) const {
+ModuleHandle Manager::FindModule(std::string_view moduleName) const {
 	auto it = std::ranges::find(_allModules, moduleName, &Module::GetName);
 	if (it != _allModules.end())
 		return *it;
 	return {};
 }
 
-ModuleHandle PluginManager::FindModuleFromId(UniqueId moduleId) const {
+ModuleHandle Manager::FindModuleFromId(UniqueId moduleId) const {
 	auto it = std::ranges::find(_allModules, moduleId, &Module::GetId);
 	if (it != _allModules.end())
 		return *it;
 	return {};
 }
 
-ModuleHandle PluginManager::FindModuleFromLang(std::string_view moduleLang) const {
-	auto it = std::ranges::find(_allModules, moduleLang, &Module::GetLanguage);
-	if (it != _allModules.end())
-		return *it;
-	return {};
-}
-
-ModuleHandle PluginManager::FindModuleFromPath(const fs::path& moduleFilePath) const {
-	auto it = std::ranges::find(_allModules, moduleFilePath, &Module::GetFilePath);
-	if (it != _allModules.end())
-		return *it;
-	return {};
-}
-
-std::vector<ModuleHandle> PluginManager::GetModules() const {
+std::vector<ModuleHandle> Manager::GetModules() const {
 	std::vector<ModuleHandle> modules;
 	modules.reserve(_allModules.size());
 	for (const auto& module : _allModules)  {
@@ -417,21 +408,21 @@ std::vector<ModuleHandle> PluginManager::GetModules() const {
 	return modules;
 }
 
-PluginHandle PluginManager::FindPlugin(std::string_view pluginName) const {
+PluginHandle Manager::FindPlugin(std::string_view pluginName) const {
 	auto it = std::ranges::find(_allPlugins, pluginName, &Plugin::GetName);
 	if (it != _allPlugins.end())
 		return *it;
 	return {};
 }
 
-PluginHandle PluginManager::FindPluginFromId(UniqueId pluginId) const {
+PluginHandle Manager::FindPluginFromId(UniqueId pluginId) const {
 	auto it = std::ranges::find(_allPlugins, pluginId, &Plugin::GetId);
 	if (it != _allPlugins.end())
 		return *it;
 	return {};
 }
 
-std::vector<PluginHandle> PluginManager::GetPlugins() const {
+std::vector<PluginHandle> Manager::GetPlugins() const {
 	std::vector<PluginHandle> plugins;
 	plugins.reserve(_allPlugins.size());
 	for (const auto& plugin : _allPlugins)  {

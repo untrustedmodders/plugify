@@ -6,12 +6,12 @@
 #include <util/pointer.hpp>
 
 namespace plugify {
+	struct Manifest;
+	class Plugify;
 	class Module;
-	struct ModuleManifest;
-	class IPlugifyProvider;
 	class Plugin {
 	public:
-		Plugin(UniqueId id, std::unique_ptr<Manifest> manifest, const BasePaths& paths);
+		Plugin(UniqueId id, BasePaths paths, std::unique_ptr<Manifest> manifest);
 		Plugin(const Plugin& plugin) = delete;
 		Plugin(Plugin&& plugin) noexcept;
 		~Plugin() = default;
@@ -22,23 +22,23 @@ namespace plugify {
 		}
 
 		const std::string& GetName() const noexcept {
-			return _name;
+			return _manifest->name;
 		}
 
 		const fs::path& GetBaseDir() const noexcept {
-			return _dirs.base;
+			return _paths.base;
 		}
 
 		const fs::path& GetConfigsDir() const noexcept {
-			return _dirs.configs;
+			return _paths.configs;
 		}
 
 		const fs::path& GetDataDir() const noexcept {
-			return _dirs.data;
+			return _paths.data;
 		}
 
 		const fs::path& GetLogsDir() const noexcept {
-			return _dirs.logs;
+			return _paths.logs;
 		}
 
 		const PluginManifest& GetManifest() const noexcept {
@@ -115,7 +115,7 @@ namespace plugify {
 			return _table.hasExport;
 		}
 
-		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
+		bool Initialize(Plugify&);
 		void Terminate();
 
 		Plugin& operator=(const Plugin&) = delete;
@@ -129,8 +129,7 @@ namespace plugify {
 		MethodTable _table;
 		UniqueId _id;
 		MemAddr _data;
-		std::string _name;
-		BasePaths _dirs;
+		BasePaths _paths;
 		std::vector<MethodData> _methods;
 		std::unique_ptr<PluginManifest> _manifest;
 		std::string _error;

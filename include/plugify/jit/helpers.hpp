@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asmjit/core.h>
+#include <plugify/api/value_type.hpp>
 
 /**
  * @brief Namespace containing utility functions of jit related things.

@@ -16,10 +16,6 @@ std::string_view ModuleHandle::GetLanguage() const noexcept {
 	return _impl->GetLanguage();
 }
 
-fs::path_view ModuleHandle::GetFilePath() const noexcept {
-	return _impl->GetFilePath().native();
-}
-
 fs::path_view ModuleHandle::GetBaseDir() const noexcept {
 	return _impl->GetBaseDir().native();
 }

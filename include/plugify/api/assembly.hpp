@@ -29,7 +29,10 @@ namespace plugify {
 	};
 
 	/**
-	 * 
+	 * @typedef AssemblyResult
+	 * @brief Result type for assembly loading operations.
+	 *
+	 * Represents either a successfully loaded assembly or an error.
 	 */
 	using AssemblyResult = plg::expected<std::unique_ptr<IAssembly>, ErrorData>;
 
@@ -56,5 +59,11 @@ namespace plugify {
 		 * @param path The path to add to the search paths.
 		 */
 		virtual bool AddSearchPath(std::filesystem::path_view path) = 0;
+
+		/**
+		 * @brief Checks if the implementation can link search paths for opening new shared libraries.
+		 * @return True if linking search paths is supported, false otherwise.
+		 */
+		 virtual bool CanLinkSearchPaths() const = 0;
 	};
 } // namespace plugify

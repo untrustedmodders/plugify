@@ -78,7 +78,7 @@ struct glz::meta<Type> {
 			"plugin", Type::Plugin
 	);
 };
-
+/*
 template <>
 struct glz::meta<PluginManifest> {
 	using T = PluginManifest;
@@ -100,7 +100,7 @@ struct glz::meta<PluginManifest> {
 			"methods", &T::methods
 	);
 };
-
+*/
 template <>
 struct glz::meta<ModuleManifest> {
 	using T = ModuleManifest;

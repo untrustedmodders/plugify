@@ -29,7 +29,7 @@ option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
 # ------------------------------------------------------------------------------
 # Dependencies
 set(PLUGIFY_ASMJIT_REPO "https://github.com/asmjit/asmjit.git" CACHE STRING "")
-set(PLUGIFY_ASMJIT_TAG "f8e7f67b015cb39859f88020183ffb557edf4b8e" CACHE STRING "")
+set(PLUGIFY_ASMJIT_TAG "a3199e8857792cd10b7589ff5d58343d2c9008ea" CACHE STRING "")
 set(PLUGIFY_FMT_REPO "https://github.com/fmtlib/fmt.git" CACHE STRING "")
 set(PLUGIFY_FMT_TAG "10.2.1" CACHE STRING "")
 set(PLUGIFY_GLAZE_REPO "https://github.com/stephenberry/glaze.git" CACHE STRING "")

@@ -11,6 +11,7 @@
 #include <plugify_export.h>
 
 namespace plugify {
+	class Manager;
 	class ModuleHandle;
 	class PluginHandle;
 	class DependencyHandle;
@@ -21,88 +22,73 @@ namespace plugify {
 	using UniqueId = std::ptrdiff_t;
 
 	/**
-	 * @class IPluginManager
-	 * @brief Interface for the plugin manager provided to the user, implemented in the core.
+	 * @class ManagerHandle
+	 * @brief A handle class for an `Manager` class.
 	 */
-	class IPluginManager {
+	class PLUGIFY_API ManagerHandle : public Handle<const Manager> {
+		using Handle::Handle;
 	public:
-		virtual ~IPluginManager() = default;
-
 		/**
 		 * @brief Initialize the plugin manager.
 		 * @return True if initialization is successful, false otherwise.
 		 */
-		virtual bool Initialize() = 0;
+		bool Initialize() noexcept;
 
 		/**
 		 * @brief Terminate the plugin manager.
 		 */
-		virtual void Terminate() = 0;
+		void Terminate() noexcept;
 
 		/**
 		 * @brief Check if the plugin manager is initialized.
 		 * @return True if the plugin manager is initialized, false otherwise.
 		 */
-		virtual bool IsInitialized() const = 0;
+		bool IsInitialized() const noexcept;
 
 		/**
 		 * @brief Updates the package manager.
 		 * @param dt The time delta since the last update.
 		 */
-		virtual void Update(DateTime dt) = 0;
+		void Update(DateTime dt) noexcept;
 
 		/**
 		 * @brief Find a module by name.
 		 * @param moduleName Name of the module to find.
 		 * @return Handle to the found module.
 		 */
-		virtual ModuleHandle FindModule(std::string_view moduleName) const = 0;
+		ModuleHandle FindModule(std::string_view moduleName) const noexcept;
 
 		/**
 		 * @brief Find a module by unique identifier.
 		 * @param moduleId Unique identifier of the module to find.
 		 * @return Handle to the found module.
 		 */
-		virtual ModuleHandle FindModuleFromId(UniqueId moduleId) const = 0;
-
-		/**
-		 * @brief Find a module by language.
-		 * @param moduleLang Language of the module to find.
-		 * @return Handle to the found module.
-		 */
-		virtual ModuleHandle FindModuleFromLang(std::string_view moduleLang) const = 0;
-
-		/**
-		 * @brief Find a module by file path.
-		 * @param moduleFilePath File path of the module to find.
-		 * @return Handle to the found module.
-		 */
-		virtual ModuleHandle FindModuleFromPath(const std::filesystem::path& moduleFilePath) const = 0;
+		ModuleHandle FindModuleFromId(UniqueId moduleId) const noexcept;
 
 		/**
 		 * @brief Get a vector of handles to all modules.
 		 * @return Vector of module handles.
 		 */
-		virtual std::vector<ModuleHandle> GetModules() const = 0;
+		std::vector<ModuleHandle> GetModules() const noexcept;
 
 		/**
 		 * @brief Find a plugin by name.
 		 * @param pluginName Name of the plugin to find.
 		 * @return Handle to the found plugin.
 		 */
-		virtual PluginHandle FindPlugin(std::string_view pluginName) const = 0;
+		PluginHandle FindPlugin(std::string_view pluginName) const noexcept;
 
 		/**
 		 * @brief Find a plugin by unique identifier.
 		 * @param pluginId Unique identifier of the plugin to find.
 		 * @return Handle to the found plugin.
 		 */
-		virtual PluginHandle FindPluginFromId(UniqueId pluginId) const = 0;
+		PluginHandle FindPluginFromId(UniqueId pluginId) const noexcept;
 
 		/**
 		 * @brief Get a vector of handles to all plugins.
 		 * @return Vector of plugin handles.
 		 */
-		virtual std::vector<PluginHandle> GetPlugins() const = 0;
+		std::vector<PluginHandle> GetPlugins() const noexcept;
 	};
 } // namespace plugify

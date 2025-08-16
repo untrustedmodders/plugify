@@ -5,7 +5,7 @@
 using namespace plugify;
 
 std::string_view ModuleManifestHandle::GetName() const noexcept {
-	return *=_impl->name;
+	return _impl->name;
 }
 
 Version ModuleManifestHandle::GetVersion() const noexcept {

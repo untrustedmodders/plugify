@@ -1,59 +1,63 @@
 #include "module.hpp"
+
+#include "plugify.hpp"
 #include "plugin.hpp"
+#include "provider.hpp"
 #include <plugify/api/module.hpp>
-#include <plugify/api/plugify_provider.hpp>
+#include <plugify/api/provider.hpp>
 #include <plugify/asm/mem_protector.hpp>
 
 using namespace plugify;
 
-Module::Module(UniqueId id, std::unique_ptr<Manifest> manifest, fs::path path)
-	: _id{id}
-	, _manifest{std::unique_ptr<ModuleManifest>(static_cast<ModuleManifest*>(manifest.release()))} {
-	PL_ASSERT(package.type != PackageType::Plugin && "Invalid package type for module ctor");
-	PL_ASSERT(package.path.has_parent_path() && "Package path doesn't contain parent path");
-	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
-	_baseDir = path.parent_path();
-	_filePath = _baseDir / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, _manifest->name);
+Module::Module(UniqueId id, BasePaths paths, std::unique_ptr<Manifest> manifest)
+	: _id{id}, _paths{std::move(paths)}, _manifest{static_unique_cast<ModuleManifest>(std::move(manifest))} {
+	PL_ASSERT(_manifest->type != PackageType::Plugin && "Invalid package type for module ctor");
+	PL_ASSERT(_manifest->path.has_parent_path() && "Package path doesn't contain parent path");
 }
 
 Module::Module(Module&& module) noexcept {
 	*this = std::move(module);
 }
 
-bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
+bool Module::Initialize(Plugify& plugify) {
 	PL_ASSERT(GetState() != ModuleState::Loaded && "Module already was initialized");
 
-	IAssemblyLoader* loader;// = provider->GetAssemblyLoader();
+	std::shared_ptr<IAssemblyLoader> loader = plugify.GetAssemblyLoader();
 	if (!loader) {
 		SetError("Assembly loader is not provided!");
 		return false;
 	}
 
-	std::vector<std::string> errors;
+	if (loader->CanLinkSearchPaths()) {
+		std::vector<std::string> errors;
 
-	if (const auto& libraryDirectoriesSettings = _manifest->directories) {
-		for (const auto& rawPath : *libraryDirectoriesSettings) {
-			fs::path libraryDirectory = _baseDir / rawPath;
-			if (!loader->AddSearchPath(libraryDirectory.native())) {
-				errors.emplace_back(libraryDirectory.string());
-				return false;
+		if (const auto& libraryDirectoriesSettings = _manifest->directories) {
+			for (const auto& rawPath : *libraryDirectoriesSettings) {
+				fs::path libraryDirectory = _paths.base / rawPath;
+				if (!loader->AddSearchPath(libraryDirectory.native())) {
+					errors.emplace_back(libraryDirectory.string());
+					return false;
+				}
 			}
+		}
+
+		if (!errors.empty()) {
+			SetError(std::format("Found invalid {} directory(s)", plg::join(errors, ", ")));
+			return false;
 		}
 	}
 
-	if (!errors.empty()) {
-		SetError(std::format("Found invalid {} directory(s)", plg::join(errors, ", ")));
-		return false;
-	}
-
 	LoadFlag flags = LoadFlag::Lazy | LoadFlag::Global | /**/ LoadFlag::SearchUserDirs | LoadFlag::SearchSystem32 | LoadFlag::SearchDllLoadDir;
-	if (provider->IsPreferOwnSymbols()) {
+	if (plugify.GetConfig().preferOwnSymbols.value_or(false)) {
 		flags |= LoadFlag::Deepbind;
 	}
 
-	AssemblyResult res = loader->Load(_filePath.native(), flags);
+	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
+	auto filePath = _paths.base / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, _manifest->name);
+
+	AssemblyResult res = loader->Load(filePath.native(), flags);
 	if (!res) {
-		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", _name, _filePath.string(), res.error().string()));
+		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", GetName(), filePath.string(), res.error().string()));
 		return false;
 	}
 
@@ -61,14 +65,14 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 
 	auto GetLanguageModuleFunc = assembly->GetSymbol(kGetLanguageModuleFn).RCast<ILanguageModule*(*)()>();
 	if (!GetLanguageModuleFunc) {
-		SetError(std::format("Function '{}' not exist inside '{}' library", kGetLanguageModuleFn, _filePath.string()));
+		SetError(std::format("Function '{}' not exist inside '{}' library", kGetLanguageModuleFn, filePath.string()));
 		Terminate();
 		return false;
 	}
 
 	ILanguageModule* languageModule = GetLanguageModuleFunc();
 	if (!languageModule) {
-		SetError(std::format("Function '{}' inside '{}' library. Returned invalid address of 'ILanguageModule' implementation!", kGetLanguageModuleFn, _filePath.string()));
+		SetError(std::format("Function '{}' inside '{}' library. Returned invalid address of 'ILanguageModule' implementation!", kGetLanguageModuleFn, filePath.string()));
 		Terminate();
 		return false;
 	}
@@ -83,9 +87,9 @@ bool Module::Initialize(const std::shared_ptr<IPlugifyProvider>& provider) {
 	}
 #endif // PLUGIFY_PLATFORM_WINDOWS
 
-	InitResult result = languageModule->Initialize(provider, *this);
+	InitResult result = languageModule->Initialize(plugify.GetProvider(), *this);
 	if (!result) {
-		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", _name, result.error().string(), _filePath.string()));
+		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", GetName(), result.error().string(), filePath.string()));
 		Terminate();
 		return false;
 	}
@@ -105,9 +109,7 @@ void Module::Terminate() {
 	}
 	_assembly.reset();
 
-#if PLUGIFY_IS_DEBUG
 	_loadedPlugins.clear();
-#endif
 
 	SetUnloaded();
 }
@@ -158,9 +160,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 
 	plugin.SetLoaded();
 
-#if PLUGIFY_IS_DEBUG
-	_loadedPlugins.emplace_back(&plugin);
-#endif
+	_loadedPlugins.emplace_back(plugin);
 
 	return true;
 }
@@ -208,5 +208,5 @@ void Module::EndPlugin(Plugin& plugin) const {
 void Module::SetError(std::string error) {
 	_error = std::move(error);
 	_state = ModuleState::Error;
-	PL_LOG_ERROR("Module '{}': {}", _name, _error);
+	PL_LOG_ERROR("Module '{}': {}", GetName(), GetError());
 }

@@ -5,6 +5,8 @@
 #include "defer.hpp"
 #include "os.h"
 
+std::string_view kExecutableCode = ".text";
+
 #if PLUGIFY_ARCH_BITS == 64
 	const WORD PE_FILE_MACHINE = IMAGE_FILE_MACHINE_AMD64;
 	const WORD PE_NT_OPTIONAL_HDR_MAGIC = IMAGE_NT_OPTIONAL_HDR64_MAGIC;
@@ -209,8 +211,6 @@ bool Assembly::LoadSections() {
 			hCurrentSection.SizeOfRawData);// Push back a struct with the section data.
 	}
 
-	_executableCode = GetSectionByName(".text");
-
 	return true;
 }
 
@@ -265,7 +265,7 @@ MemAddr Assembly::GetFunctionByName(std::string_view functionName) const noexcep
 	return pAddress;
 }
 
-MemAddr Assembly::GetBase() const noexcept {
+plugify::MemAddr Assembly::GetBase() const noexcept {
 	return _handle;
 }
 

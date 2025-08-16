@@ -1,17 +1,19 @@
 #pragma once
 
 #include "module_manifest.hpp"
+#include "dependency.hpp"
 #include <plugify/api/date_time.hpp>
 #include <plugify/api/language_module.hpp>
 #include <plugify/api/module.hpp>
 #include <plugify/asm/assembly.hpp>
 
 namespace plugify {
+	struct Manifest;
 	class Plugin;
-	struct ModuleManifest;
+	class Plugify;
 	class Module {
 	public:
-		Module(UniqueId id, std::unique_ptr<ModuleManifest> manifest, fs::path path);
+		Module(UniqueId id, BasePaths paths, std::unique_ptr<Manifest> manifest);
 		Module(const Module& module) = delete;
 		Module(Module&& module) noexcept;
 		~Module() = default;
@@ -22,19 +24,15 @@ namespace plugify {
 		}
 
 		const std::string& GetName() const noexcept {
-			return _name;
+			return _manifest->name;
 		}
 
 		const std::string& GetLanguage() const noexcept {
-			return _lang;
-		}
-
-		const fs::path& GetFilePath() const noexcept {
-			return _filePath;
+			return _manifest->language;
 		}
 
 		const fs::path& GetBaseDir() const noexcept {
-			return _baseDir;
+			return _paths.base;
 		}
 
 		const ModuleManifest& GetManifest() const noexcept {
@@ -49,7 +47,7 @@ namespace plugify {
 			return _error;
 		}
 
-		bool Initialize(const std::shared_ptr<IPlugifyProvider>& provider);
+		bool Initialize(Plugify& plugify);
 		void Terminate();
 		void Update(DateTime dt);
 
@@ -84,15 +82,10 @@ namespace plugify {
 		ModuleState _state{ ModuleState::NotLoaded };
 		MethodTable _table;
 		UniqueId _id;
-		std::string _name;
-		std::string _lang;
-		fs::path _filePath;
-		fs::path _baseDir;
+		BasePaths _paths;
 		std::unique_ptr<ModuleManifest> _manifest;
 		std::unique_ptr<IAssembly> _assembly;
 		std::string _error;
-#if PLUGIFY_IS_DEBUG
-		std::vector<Plugin*> _loadedPlugins;
-#endif
+		mutable std::vector<PluginHandle> _loadedPlugins; // debug only
 	};
 }

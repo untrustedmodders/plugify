@@ -12,16 +12,16 @@
 #include <plugify_export.h>
 
 namespace plugify {
-	class PlugifyProvider;
+	class Provider;
 	class ModuleHandle;
 	class PluginHandle;
 	enum class Severity;
 
 	/**
-	 * @class IPlugifyProvider
-	 * @brief Wrapper handle for the PlugifyProvider, which is provided to the user and implemented in the core.
+	 * @class ProviderHandle
+	 * @brief Wrapper handle for the Provider, which is provided to the user and implemented in the core.
 	 */
-	class PLUGIFY_API IPlugifyProvider : public Handle<PlugifyProvider> {
+	class PLUGIFY_API ProviderHandle : public Handle<const Provider> {
 		using Handle::Handle;
 	public:
 		/**

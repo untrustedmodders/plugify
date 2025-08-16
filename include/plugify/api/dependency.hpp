@@ -9,6 +9,8 @@
 #include <plugify_export.h>
 
 namespace plugify {
+	struct Dependency;
+
 	/**
 	 * @class DependencyHandle
 	 * @brief A handle class for the `DependencyHandle` structure.

@@ -16,6 +16,8 @@ namespace plugify {
 
 		bool AddSearchPath(std::filesystem::path_view path) override;
 
+		bool CanLinkSearchPaths() const override;
+
 	private:
 		std::vector<std::filesystem::path> _searchPaths;
 	};

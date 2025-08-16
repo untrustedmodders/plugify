@@ -13,7 +13,6 @@
 #endif // !PLUGIFY_USE_ARM
 
 using namespace plugify;
-namespace fs = std::filesystem;
 
 Assembly::Assembly(std::string_view name, LoadFlag flags, const SearchDirs& searchDirs, bool sections) : _handle{nullptr} {
 	InitFromName(name, flags, searchDirs, sections);
@@ -59,9 +58,11 @@ std::pair<std::vector<uint8_t>, std::string> Assembly::PatternToMaskedBytes(std:
 	return { std::move(bytes), std::move(mask) };
 }
 
+extern std::string_view kExecutableCode;
+
 MemAddr Assembly::FindPattern(MemAddr pattern, std::string_view mask, MemAddr startAddress, const Section* moduleSection) const {
 	const uint8_t* pPattern = pattern.RCast<const uint8_t*>();
-	const Section& section = moduleSection ? *moduleSection : _executableCode;
+	const Section& section = moduleSection ? *moduleSection : GetSectionByName(kExecutableCode);
 	if (!section)
 		return nullptr;
 
@@ -143,19 +144,19 @@ Assembly::Section Assembly::GetSectionByName(std::string_view sectionName) const
 	return {};
 }
 
-bool Assembly::IsValid() const {
+bool Assembly::IsValid() const noexcept {
 	return _handle != nullptr;
 }
 
-void* Assembly::GetHandle() const {
+void* Assembly::GetHandle() const noexcept {
 	return _handle;
 }
 
-fs::path_view Assembly::GetPath() const {
+fs::path_view Assembly::GetPath() const noexcept {
 	return _path.native();
 }
 
-std::string_view Assembly::GetError() const {
+std::string_view Assembly::GetError() const noexcept {
 	return _error;
 }
 
@@ -209,19 +210,3 @@ bool Assembly::IsExist(const fs::path& path) {
 
 	return true;
 }
-
-#if PLUGIFY_SEPARATE_SOURCE_FILES
-#if PLUGIFY_PLATFORM_WINDOWS
-#include "assembly_windows.cpp"
-#elif PLUGIFY_PLATFORM_LINUX
-#include "assembly_linux.cpp"
-#elif PLUGIFY_PLATFORM_APPLE
-#include "assembly_apple.cpp"
-#elif PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
-#include "assembly_playstation.cpp"
-#elif PLUGIFY_PLATFORM_SWITCH
-#include "assembly_switch.cpp"
-#else
-#error "Unsupported platform"
-#endif
-#endif // PLUGIFY_SEPARATE_SOURCE_FILES

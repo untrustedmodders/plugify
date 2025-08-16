@@ -20,10 +20,9 @@ AssemblyResult AssemblyLoader::Load(fs::path_view path, LoadFlag flags) {
 
 bool AssemblyLoader::AddSearchPath(fs::path_view path) {
 #if PLUGIFY_PLATFORM_WINDOWS
-	fs::path libraryDirectory = path;
-
 	std::error_code ec;
 
+	fs::path libraryDirectory = fs::absolute(path, ec);
 	if (!fs::is_directory(libraryDirectory, ec)) {
 		return false;
 	}
@@ -39,6 +38,14 @@ bool AssemblyLoader::AddSearchPath(fs::path_view path) {
 	libraryDirectory.make_preferred();
 
 	_searchPaths.emplace_back(std::move(libraryDirectory));
-#endif
+
 	return true;
+#else
+	return false;
+#endif
+}
+
+bool AssemblyLoader::CanLinkSearchPaths() const {
+	// Cannot set LD_LIBRARY_PATH at runtime, so use rpath flag
+	return PLUGIFY_PLATFORM_WINDOWS;
 }

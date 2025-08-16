@@ -14,7 +14,7 @@ namespace plugify {
 	class PluginHandle;
 	class ModuleHandle;
 	class MethodHandle;
-	class IPlugifyProvider;
+	class ProviderHandle;
 
 	/**
 	 * @struct InitResultData
@@ -67,11 +67,11 @@ namespace plugify {
 	public:
 		/**
 		 * @brief Initialize the language module.
-		 * @param provider Weak pointer to the Plugify provider.
+		 * @param provider Handle to the Plugify provider.
 		 * @param module Handle to the language module being initialized.
 		 * @return Result of the initialization, either InitResultData or ErrorData.
 		 */
-		virtual InitResult Initialize(std::weak_ptr<IPlugifyProvider> provider, ModuleHandle module) = 0;
+		virtual InitResult Initialize(ProviderHandle provider, ModuleHandle module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.
