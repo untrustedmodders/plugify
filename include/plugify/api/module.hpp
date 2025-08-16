@@ -57,12 +57,6 @@ namespace plugify {
 		std::string_view GetLanguage() const noexcept;
 
 		/**
-		 * @brief Get the file path of the language module.
-		 * @return The file path as a filesystem path.
-		 */
-		std::filesystem::path_view GetFilePath() const noexcept;
-
-		/**
 		 * @brief Get the base directory of the language module.
 		 * @return The base directory as a filesystem path.
 		 */

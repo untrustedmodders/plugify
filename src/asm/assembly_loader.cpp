@@ -13,7 +13,7 @@ AssemblyResult AssemblyLoader::Load(fs::path_view path, LoadFlag flags) {
 	};
 #endif
 	if (!assembly->IsValid()) {
-		return ErrorData(assembly->GetError());
+		return String(assembly->GetError());
 	}
 	return std::unique_ptr<IAssembly>(std::move(assembly));
 }

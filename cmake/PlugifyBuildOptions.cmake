@@ -34,7 +34,7 @@ set(PLUGIFY_FMT_REPO "https://github.com/fmtlib/fmt.git" CACHE STRING "")
 set(PLUGIFY_FMT_TAG "10.2.1" CACHE STRING "")
 set(PLUGIFY_GLAZE_REPO "https://github.com/stephenberry/glaze.git" CACHE STRING "")
 if (PLUGIFY_DEFAULT_CXX_STANDARD GREATER 20)
-    set(PLUGIFY_GLAZE_TAG "v5.5.4" CACHE STRING "")
+    set(PLUGIFY_GLAZE_TAG "v5.5.5" CACHE STRING "")
 else()
     set(PLUGIFY_GLAZE_TAG "v2.9.5" CACHE STRING "") # Use older version for C++20 compatibility
 endif()

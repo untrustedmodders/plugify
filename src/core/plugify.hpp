@@ -18,14 +18,13 @@ namespace plugify {
 		bool IsInitialized() const;
 		void Update();
 
-		void Log(std::string_view msg, Severity severity);
-		void SetLogger(std::shared_ptr<ILogger> logger);
+		void Log(std::string_view msg, Severity severity) const;
+		void SetLogger(std::shared_ptr<ILogger> logger) const;
 
 		ManagerHandle GetManager() const;
 		ProviderHandle GetProvider() const;
 		const Config& GetConfig() const;
 		Version GetVersion() const;
-
 
 		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
 		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const;

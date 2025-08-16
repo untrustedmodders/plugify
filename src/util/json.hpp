@@ -72,53 +72,10 @@ struct glz::meta<Severity> {
 };
 
 template<>
-struct glz::meta<Type> {
+struct glz::meta<ManifestType> {
 	static constexpr auto value = enumerate(
-			"module", Type::LanguageModule,
-			"plugin", Type::Plugin
-	);
-};
-/*
-template <>
-struct glz::meta<PluginManifest> {
-	using T = PluginManifest;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"fileVersion", skip{},
-			"name", &T::name,
-			"path", skip{},
-			"type", skip{},
-			"version", &T::version,
-			"description", &T::description,
-			"author", &T::author,
-			"website", &T::website,
-			"author", &T::author,
-			"platforms", &T::platforms,
-			"entry", &T::entry,
-			"language", &T::language,
-			"dependencies", &T::dependencies,
-			"methods", &T::methods
-	);
-};
-*/
-template <>
-struct glz::meta<ModuleManifest> {
-	using T = ModuleManifest;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"fileVersion", skip{},
-			"name", &T::name,
-			"path", skip{},
-			"type", skip{},
-			"version", &T::version,
-			"description", &T::description,
-			"author", &T::author,
-			"website", &T::website,
-			"license", &T::license,
-			"platforms", &T::platforms,
-			"language", &T::language,
-			"directories", &T::directories,
-			"forceLoad", &T::forceLoad
+			"module", ManifestType::LanguageModule,
+			"plugin", ManifestType::Plugin
 	);
 };
 
@@ -152,7 +109,6 @@ struct glz::meta<Config> {
 			"dataDir", &T::dataDir,
 			"logsDir", &T::logsDir,
 			"logSeverity", &T::logSeverity,
-			"repositories", skip{}, // deprecated
 			"preferOwnSymbols", &T::preferOwnSymbols
 	);
 };
@@ -468,3 +424,43 @@ namespace glz {
 #endif
 }
 
+template <>
+struct glz::meta<ModuleManifest> {
+	using T = ModuleManifest;
+	static constexpr auto value = object(
+			"$schema", skip{},
+			"path", skip{},
+			"type", skip{},
+			"name", &T::name,
+			"version", &T::version,
+			"description", &T::description,
+			"author", &T::author,
+			"website", &T::website,
+			"license", &T::license,
+			"platforms", &T::platforms,
+			"language", &T::language,
+			"directories", &T::directories,
+			"forceLoad", &T::forceLoad
+	);
+};
+
+template <>
+struct glz::meta<PluginManifest> {
+	using T = PluginManifest;
+	static constexpr auto value = object(
+			"$schema", skip{},
+			"path", skip{},
+			"type", skip{},
+			"name", &T::name,
+			"version", &T::version,
+			"description", &T::description,
+			"author", &T::author,
+			"website", &T::website,
+			"license", &T::license,
+			"platforms", &T::platforms,
+			"entry", &T::entry,
+			"language", &T::language,
+			"dependencies", &T::dependencies,
+			"methods", &T::methods
+	);
+};

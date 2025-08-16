@@ -4,11 +4,11 @@
 #include <string>
 #include <vector>
 
-#include <plugify/api/error.hpp>
+#include <plg/expected.hpp>
+#include <plg/string.hpp>
 #include <plugify/api/date_time.hpp>
 #include <plugify/api/method.hpp>
 #include <plugify/asm/mem_addr.hpp>
-#include <plg/expected.hpp>
 
 namespace plugify {
 	class PluginHandle;
@@ -42,17 +42,17 @@ namespace plugify {
 	 * @typedef InitResult
 	 * @brief Represents the result of language module initialization.
 	 *
-	 * The InitResult is a variant that can hold either InitResultData or ErrorData.
+	 * The InitResult is a variant that can hold either InitResultData or an error.
 	 */
-	using InitResult = plg::expected<InitResultData, ErrorData>;
+	using InitResult = plg::expected<InitResultData, plg::string>;
 
 	/**
 	 * @typedef LoadResult
 	 * @brief Represents the result of loading a plugin in a language module.
 	 *
-	 * The LoadResult is a variant that can hold either LoadResultData or ErrorData.
+	 * The LoadResult is a variant that can hold either LoadResultData or an error.
 	 */
-	using LoadResult = plg::expected<LoadResultData, ErrorData>;
+	using LoadResult = plg::expected<LoadResultData, plg::string>;
 
 	/**
 	 * @class ILanguageModule

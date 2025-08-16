@@ -3,11 +3,11 @@
 #include <memory>
 #include <string>
 
-#include <plugify/api/path.hpp>
-#include <plugify/api/error.hpp>
-#include <plugify/asm/mem_addr.hpp>
-#include <plugify/asm/load_flag.hpp>
 #include <plg/expected.hpp>
+#include <plg/string.hpp>
+#include <plugify/api/path.hpp>
+#include <plugify/asm/load_flag.hpp>
+#include <plugify/asm/mem_addr.hpp>
 
 namespace plugify {
 	/**
@@ -34,7 +34,7 @@ namespace plugify {
 	 *
 	 * Represents either a successfully loaded assembly or an error.
 	 */
-	using AssemblyResult = plg::expected<std::unique_ptr<IAssembly>, ErrorData>;
+	using AssemblyResult = plg::expected<std::unique_ptr<IAssembly>, plg::string>;
 
 	/**
 	 * @class IAssemblyLoader

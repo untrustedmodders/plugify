@@ -1,5 +1,6 @@
 #pragma once
 
+#include <plugify/api/hash.hpp>
 #include <plugify/api/method.hpp>
 #include <plugify/api/value_type.hpp>
 

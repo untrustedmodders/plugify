@@ -1,5 +1,6 @@
 #pragma once
 
+#include <plugify/api/hash.hpp>
 #include <plugify/api/version.hpp>
 
 namespace plugify {

@@ -25,18 +25,17 @@ namespace plugify {
 	class PLUGIFY_API PlugifyHandle : public Handle<const Plugify> {
 		using Handle::Handle;
 	public:
-
 		/**
 		 * @brief Initialize the Plugify system.
 		 * @param rootDir The root directory for Plugify (optional).
 		 * @return True if initialization is successful, false otherwise.
 		 */
-		bool Initialize(const std::filesystem::path& rootDir = {}) const noexcept;
+		bool Initialize(const std::filesystem::path& rootDir = {}) noexcept;
 
 		/**
 		 * @brief Terminate the Plugify system.
 		 */
-		void Terminate() const noexcept;
+		void Terminate() noexcept;
 
 		/**
 		 * @brief Check if the Plugify system is initialized.
@@ -48,7 +47,7 @@ namespace plugify {
 		 * @brief Update the Plugify system.
 		 * @noreturn
 		 */
-		void Update() const noexcept;
+		void Update() noexcept;
 
 		/**
 		 * @brief Set the logger for the Plugify system.
@@ -56,15 +55,6 @@ namespace plugify {
 		 * @noreturn
 		 */
 		void SetLogger(std::shared_ptr<ILogger> logger) const noexcept;
-		//std::shared_ptr<IAssemblyLoader> GetLoader() = 0;
-
-		/**
-		 * @brief Set the assembly loader for the Plugify system.
-		 * @param loader The loader to set.
-		 * @noreturn
-		 */
-		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) const noexcept;
-		//std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() = 0;
 
 		/**
 		 * @brief Log a message with the specified severity level.
@@ -96,6 +86,16 @@ namespace plugify {
 		 * @return Version information.
 		 */
 		plg::version GetVersion() const noexcept;
+
+		/**
+		 * @brief Set the assembly loader for the Plugify system.
+		 * @param loader The loader to set.
+		 * @noreturn
+		 */
+		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) noexcept;
+
+
+		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const noexcept;
 	};
 
 	/**

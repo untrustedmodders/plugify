@@ -1,6 +1,6 @@
 #if PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
 
-#include <plugify/assembly.hpp>
+#include <plugify/asm/assembly.hpp>
 
 #include "os.h"
 

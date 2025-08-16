@@ -215,10 +215,6 @@ namespace plg {
 				str.__resize_default_init(size);
 			}
 		};
-
-		constexpr void hash_combine(std::size_t& seed, std::size_t value) {
-			seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-		}
 	} // namespace plg::detail
 
 	struct version {
@@ -808,15 +804,14 @@ namespace plg {
 namespace std {
 	template<>
 	struct hash<plg::version> {
-		constexpr std::size_t operator()(const plg::version& ver) const noexcept {
+		std::size_t operator()(const plg::version& ver) const noexcept {
 			std::size_t seed = 0;
-			plg::detail::hash_combine(seed, ver.major);
-			plg::detail::hash_combine(seed, ver.minor);
-			plg::detail::hash_combine(seed, ver.patch);
-			plg::detail::hash_combine(seed, static_cast<std::size_t>(ver.prerelease_type));
-			if (ver.prerelease_number) {
-				plg::detail::hash_combine(seed, *ver.prerelease_number);
-			}
+			plg::hash_combine_all(seed,
+				ver.major,
+				ver.minor,
+				ver.patch,
+				static_cast<std::size_t>(ver.prerelease_type),
+				ver.prerelease_number);
 			return seed;
 		}
 	};

@@ -1,35 +1,23 @@
 #pragma once
 
+#include "dependency.hpp"
 #include "manifest.hpp"
 #include "method.hpp"
-#include "module_manifest.hpp"
-#include "dependency.hpp"
-#include <plugify/api/dependency.hpp>
-#include <plugify/api/method.hpp>
-#include <plugify/api/value_type.hpp>
+
 #include <util/algorithm.hpp>
 
 namespace plugify {
-	struct PluginManifest /*: Manifest*/ {
-		std::string name;
-		fs::path path;
-		Type type{};
-		Version version{};
-		std::optional<std::string> description;
-		std::optional<std::string> author;
-		std::optional<std::string> website;
-		std::optional<std::string> license;
-		std::optional<std::vector<std::string>> platforms;
+	struct PluginManifest : Manifest {
+		// Module specific
 		std::string entry;
 		Dependency language;
-		std::optional<std::vector<Dependency>> dependencies;
-		std::optional<std::vector<Method>> methods;
+		std::optional<std::vector<std::unique_ptr<Method>>> methods;
+		std::optional<std::vector<std::unique_ptr<Dependency>>> dependencies;
+		std::optional<std::vector<std::unique_ptr<Conflict>>> conflicts;
 
 	private:
 		// temp storage to return spans of handles easily
 		mutable std::shared_ptr<std::vector<std::string_view>> _platforms;
-		mutable std::shared_ptr<std::vector<DependencyHandle>> _dependencies;
-		mutable std::shared_ptr<std::vector<MethodHandle>> _methods;
 
 		friend class PluginManifestHandle;
 
@@ -51,7 +39,7 @@ namespace plugify {
 				}
 				size_t i = 0;
 				for (const auto& dependency : *dependencies) {
-					if (dependency.name.empty()) {
+					if (dependency->name.empty()) {
 						errors.emplace_back(std::format("Missing dependency name at {}", ++i));
 					}
 				}
@@ -63,7 +51,7 @@ namespace plugify {
 				}
 				size_t i = 0;
 				for (const auto& method : *methods) {
-					auto methodErrors = method.Validate(++i);
+					auto methodErrors = method->Validate(++i);
 					errors.insert(errors.end(), methodErrors.begin(), methodErrors.end());
 				}
 			}
@@ -71,4 +59,5 @@ namespace plugify {
 			return errors;
 		}
 	};
+
 }

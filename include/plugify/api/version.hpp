@@ -1,8 +1,10 @@
 #pragma once
 
-#include <vector>
-#include <string>
+#include "hash.hpp"
+
 #include <optional>
+#include <string>
+#include <vector>
 
 #include <plg/version.hpp>
 
@@ -85,3 +87,13 @@ namespace plugify {
 		bool operator==(const Constraint& constraint) const noexcept = default;
 	};
 }
+
+template<>
+struct std::hash<plugify::Constraint> {
+	size_t operator()(const plugify::Constraint& c) const {
+		return plg::hash_combine_all(
+			c.type,
+			c.version
+		);
+	}
+};

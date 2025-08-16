@@ -9,6 +9,7 @@ namespace plugify {
 	class Plugin;
 	class Module;
 	class Plugify;
+	struct Manifest;
 
 	class Manager final : public Context {
 	public:
@@ -32,8 +33,10 @@ namespace plugify {
 	private:
 		using PluginList = std::vector<Plugin>;
 		using ModuleList = std::vector<Module>;
+		using ManifestList = std::vector<std::shared_ptr<Manifest>>;
 
 		void DiscoverAllModulesAndPlugins();
+		ManifestList FindLocalPackages();
 		bool PartitionLocalPackages();
 		bool TopologicalSortPlugins();
 		void LoadRequiredLanguageModules();

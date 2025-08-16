@@ -6,7 +6,6 @@
 using namespace plugify;
 
 Plugify::Plugify() : _provider(*this), _manager(*this) {
-
 };
 
 Plugify::~Plugify() {
@@ -108,11 +107,11 @@ void Plugify::Update() {
 	_manager.Update(_deltaTime);
 }
 
-void Plugify::Log(std::string_view msg, Severity severity) {
+void Plugify::Log(std::string_view msg, Severity severity) const {
 	LogSystem::Log(msg, severity);
 }
 
-void Plugify::SetLogger(std::shared_ptr<ILogger> logger) {
+void Plugify::SetLogger(std::shared_ptr<ILogger> logger) const {
 	LogSystem::SetLogger(std::move(logger));
 }
 

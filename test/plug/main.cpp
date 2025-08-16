@@ -285,7 +285,7 @@ int main() {
 							if (module) {
 								Print<ModuleState>("Module", module, ModuleUtils::ToString);
 								PLG_LOG_FMT("  Language: {}", module.GetLanguage());
-								PLG_LOG_FMT("  File: {}", std::filesystem::path(module.GetFilePath()).string());
+								//PLG_LOG_FMT("  File: {}", std::filesystem::path(module.GetFilePath()).string());
 							} else {
 								PLG_ERROR_FMT("Module {} not found.", args[2]);
 							}

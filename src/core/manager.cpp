@@ -2,11 +2,12 @@
 #include "manager.hpp"
 #include "module.hpp"
 #include "plugin.hpp"
+#include "plugin_manifest.hpp"
+#include "module_manifest.hpp"
 
 #include <plugify/api/dependency.hpp>
 #include <plugify/api/manager.hpp>
 #include <plugify/api/plugify.hpp>
-#include <plugify/api/plugin_manifest.hpp>
 #include <util/json.hpp>
 
 using namespace plugify;
@@ -87,8 +88,8 @@ bool Manager::TopologicalSortPlugins() {
 	for (const auto& [name, plugin] : pluginMap) {
 		if (const auto& deps = plugin.GetManifest().dependencies) {
 			for (const auto& dep : *deps) {
-				if (pluginMap.contains(dep.name)) {
-					adjList[dep.name].emplace_back(name);
+				if (pluginMap.contains(dep->name)) {
+					adjList[dep->name].emplace_back(name);
 					++inDegree[name];
 				}
 			}
@@ -149,30 +150,29 @@ void Manager::DiscoverAllModulesAndPlugins() {
 	}
 }
 
+using ManifestResult = plg::expected<std::shared_ptr<Manifest>, std::string>;
+using ManifestReader = ManifestResult(*)(const fs::path&);
 
 template<typename T>
-static std::unique_ptr<T> ReadManifest(const fs::path& path, Type type) {
+static ManifestResult ReadManifest(const fs::path& path, ManifestType type) {
 	auto json = std::string("{}");//FileSystem::ReadText(path);
-	auto dest = glz::read_jsonc<std::unique_ptr<T>>(json);
+	auto dest = glz::read_jsonc<std::shared_ptr<T>>(json);
 	if (!dest.has_value()) {
-		PL_LOG_ERROR("Manifest: '{}' has JSON parsing error: {}", path.string(), glz::format_error(dest.error(), json));
-		return {};
+		return glz::format_error(dest.error(), json);
 	}
 	auto& manifest = *dest;
-
-	if (!SupportsPlatform(manifest->platforms))
-		return {};
-
-	auto errors = manifest->Validate();
-	if (!errors.empty()) {
-		PL_LOG_ERROR("Manifest: '{}' has error(s): {}", path.string(), plg::join(errors, ", "));
-		return {};
-	}
-
 	manifest->path = path;
 	manifest->type = type;
 
-	return std::move(manifest);
+	if (!SupportsPlatform(manifest->platforms))
+		return std::string();
+
+	auto errors = manifest->Validate();
+	if (!errors.empty()) {
+		return plg::join(errors, ", ");
+	}
+
+	return std::static_pointer_cast<Manifest>(std::move(manifest));
 }
 
 template<typename F>
@@ -191,30 +191,32 @@ void ScanDirectory(const fs::path& directory, const F& func, int depth) {
 	}
 }
 
-bool Manager::PartitionLocalPackages() {
-	using ManifestReader = std::unique_ptr<Manifest>(*)(const fs::path&);
-
-	/*static const std::unordered_map<std::string, ManifestReader> manifestLoaders = {
-		{".pmodule", [](const fs::path& p) { return ReadManifest<PluginManifest>(p, Type::LanguageModule); }},
-		{".pplugin", [](const fs::path& p) { return ReadManifest<PluginManifest>(p, Type::Plugin); }}
+Manager::ManifestList Manager::FindLocalPackages() {
+	static const std::unordered_map<std::string, ManifestReader> manifestLoaders = {
+		{".pmodule", [](const fs::path& p) { return ReadManifest<ModuleManifest>(p, ManifestType::LanguageModule); }},
+		{".pplugin", [](const fs::path& p) { return ReadManifest<PluginManifest>(p, ManifestType::Plugin); }}
 		// Easy to add more types here
-	};*/
+	};
 
-#if 0
-	std::vector<std::unique_ptr<Manifest>> manifests;
+	ManifestList manifests;
 	ScanDirectory(_plugify.GetConfig().baseDir, [&](const fs::path& path, int depth) {
 		if (depth != 1)
 			return;
 
-		//auto extension = path.extension().string();
-		//std::ranges::transform(extension, extension.begin(), ::tolower);
-		//auto itl = manifestLoaders.find(extension);
-		//if (itl == manifestLoaders.end())
-		//	return;
-
-		auto manifest = nullptr;//std::get<ManifestReader>(*itl)(path);
-		if (!manifest)
+		auto extension = path.extension().string();
+		std::ranges::transform(extension, extension.begin(), ::tolower);
+		auto itl = manifestLoaders.find(extension);
+		if (itl == manifestLoaders.end())
 			return;
+
+		auto result = std::get<ManifestReader>(*itl)(path);
+		if (!result) {
+			if (!result.error().empty()) {
+				PL_LOG_ERROR("Package: '{}' has error(s): {}", path.string(), result.error());
+			}
+			return;
+		}
+		auto& manifest = *result;
 
 		auto it = std::ranges::find(manifests, manifest->name, &Manifest::name);
 		if (it == manifests.end()) {
@@ -234,14 +236,19 @@ bool Manager::PartitionLocalPackages() {
 			}
 		}
 	}, 3);
-#endif
-	auto count = manifests.size();
-	if (_allModules.empty()) {
+
+	return manifests;
+}
+
+bool Manager::PartitionLocalPackages() {
+	auto manifests = FindLocalPackages();
+	if (manifests.empty()) {
 		PL_LOG_WARNING("Did not find any package.");
 		return false;
 	}
 
-	auto pluginCount = static_cast<size_t>(std::ranges::count(manifests, Type::Plugin, &Manifest::type));
+	auto count = manifests.size();
+	auto pluginCount = static_cast<size_t>(std::ranges::count(manifests, ManifestType::Plugin, &Manifest::type));
 	_allPlugins.reserve(pluginCount);
 	_allModules.reserve(count - pluginCount);
 
@@ -254,7 +261,7 @@ bool Manager::PartitionLocalPackages() {
 				.logs = config.baseDir / config.logsDir,
 		};
 
-		if (manifest->type == Type::Plugin) {
+		if (manifest->type == ManifestType::Plugin) {
 			_allPlugins.emplace_back(static_cast<UniqueId>(_allPlugins.size()), std::move(paths), std::move(manifest));
 		} else {
 			_allModules.emplace_back(static_cast<UniqueId>(_allModules.size()), std::move(paths), std::move(manifest));
@@ -323,9 +330,9 @@ void Manager::LoadAndStartAvailablePlugins() {
 			std::vector<std::string_view> names;
 			if (const auto& dependencies = plugin.GetManifest().dependencies) {
 				for (const auto& dependency: *dependencies) {
-					auto dependencyPlugin = FindPlugin(dependency.name);
-					if ((!dependencyPlugin || dependencyPlugin.GetState() != PluginState::Loaded) && !dependency.optional.value_or(false)) {
-						names.emplace_back(dependency.name);
+					auto dependencyPlugin = FindPlugin(dependency->name);
+					if ((!dependencyPlugin || dependencyPlugin.GetState() != PluginState::Loaded) && !dependency->optional.value_or(false)) {
+						names.emplace_back(dependency->name);
 					}
 				}
 			}

@@ -13,7 +13,7 @@ namespace plugify {
 	class Plugify;
 	class Module {
 	public:
-		Module(UniqueId id, BasePaths paths, std::unique_ptr<Manifest> manifest);
+		Module(UniqueId id, BasePaths paths, std::shared_ptr<Manifest> manifest);
 		Module(const Module& module) = delete;
 		Module(Module&& module) noexcept;
 		~Module() = default;
@@ -83,7 +83,7 @@ namespace plugify {
 		MethodTable _table;
 		UniqueId _id;
 		BasePaths _paths;
-		std::unique_ptr<ModuleManifest> _manifest;
+		std::shared_ptr<ModuleManifest> _manifest;
 		std::unique_ptr<IAssembly> _assembly;
 		std::string _error;
 		mutable std::vector<PluginHandle> _loadedPlugins; // debug only

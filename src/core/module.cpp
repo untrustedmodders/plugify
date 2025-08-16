@@ -9,8 +9,8 @@
 
 using namespace plugify;
 
-Module::Module(UniqueId id, BasePaths paths, std::unique_ptr<Manifest> manifest)
-	: _id{id}, _paths{std::move(paths)}, _manifest{static_unique_cast<ModuleManifest>(std::move(manifest))} {
+Module::Module(UniqueId id, BasePaths paths, std::shared_ptr<Manifest> manifest)
+	: _id{id}, _paths{std::move(paths)}, _manifest{std::static_pointer_cast<ModuleManifest>(std::move(manifest))} {
 	PL_ASSERT(_manifest->type != PackageType::Plugin && "Invalid package type for module ctor");
 	PL_ASSERT(_manifest->path.has_parent_path() && "Package path doesn't contain parent path");
 }
@@ -89,7 +89,7 @@ bool Module::Initialize(Plugify& plugify) {
 
 	InitResult result = languageModule->Initialize(plugify.GetProvider(), *this);
 	if (!result) {
-		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", GetName(), result.error().string(), filePath.string()));
+		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", GetName(), result.error(), filePath.string()));
 		Terminate();
 		return false;
 	}
@@ -126,7 +126,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 
 	LoadResult result = _languageModule->OnPluginLoad(plugin);
 	if (!result) {
-		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), result.error().string(), plugin.GetBaseDir().string()));
+		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), result.error(), plugin.GetBaseDir().string()));
 		return false;
 	}
 
@@ -142,8 +142,8 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 			const auto& [method, addr] = result->methods[i];
 			const auto& exportedMethod = (*methods)[i];
 
-			if (method != exportedMethod || !addr) {
-				errors.emplace_back(exportedMethod.name);
+			if (method != *exportedMethod || !addr) {
+				errors.emplace_back(exportedMethod->name);
 			}
 		}
 

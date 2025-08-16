@@ -52,24 +52,16 @@ std::string_view PluginManifestHandle::GetLanguage() const noexcept {
 
 std::span<const DependencyHandle> PluginManifestHandle::GetDependencies() const noexcept {
 	if (const auto& dependencies = _impl->dependencies) {
-		if (!_impl->_dependencies) {
-			_impl->_dependencies = make_shared_nothrow<std::vector<DependencyHandle>>(dependencies->begin(), dependencies->end());
-		}
-		if (_impl->_dependencies) {
-			return *_impl->_dependencies;
-		}
+		static_assert(sizeof(std::unique_ptr<Dependency>) == sizeof(DependencyHandle), "Unique ptr and handle must have the same size");
+		return { reinterpret_cast<const DependencyHandle*>(dependencies->data()), dependencies->size() };
 	}
 	return {};
 }
 
 std::span<const MethodHandle> PluginManifestHandle::GetMethods() const noexcept {
 	if (const auto& methods = _impl->methods) {
-		if (!_impl->_methods) {
-			_impl->_methods = make_shared_nothrow<std::vector<MethodHandle>>(methods->begin(), methods->end());
-		}
-		if (_impl->_methods) {
-			return *_impl->_methods;
-		}
+		static_assert(sizeof(std::unique_ptr<Method>) == sizeof(MethodHandle), "Unique ptr and handle must have the same size");
+		return { reinterpret_cast<const MethodHandle*>(methods->data()), methods->size() };
 	}
 	return {};
 }

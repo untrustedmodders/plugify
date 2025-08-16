@@ -6,12 +6,11 @@
 #include <util/pointer.hpp>
 
 namespace plugify {
-	struct Manifest;
 	class Plugify;
 	class Module;
 	class Plugin {
 	public:
-		Plugin(UniqueId id, BasePaths paths, std::unique_ptr<Manifest> manifest);
+		Plugin(UniqueId id, BasePaths paths, std::shared_ptr<Manifest> manifest);
 		Plugin(const Plugin& plugin) = delete;
 		Plugin(Plugin&& plugin) noexcept;
 		~Plugin() = default;
@@ -131,7 +130,7 @@ namespace plugify {
 		MemAddr _data;
 		BasePaths _paths;
 		std::vector<MethodData> _methods;
-		std::unique_ptr<PluginManifest> _manifest;
+		std::shared_ptr<PluginManifest> _manifest;
 		std::string _error;
 	};
 }
