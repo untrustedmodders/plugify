@@ -12,9 +12,9 @@ namespace plugify {
 	 */
 	class AssemblyLoader final : public IAssemblyLoader {
 	public:
-		AssemblyResult Load(std::filesystem::path_view path, LoadFlag flags) override;
+		AssemblyResult Load(const std::filesystem::path& path, LoadFlag flags) override;
 
-		bool AddSearchPath(std::filesystem::path_view path) override;
+		bool AddSearchPath(const std::filesystem::path& path) override;
 
 		bool CanLinkSearchPaths() const override;
 

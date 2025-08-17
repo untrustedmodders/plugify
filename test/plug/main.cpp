@@ -1,5 +1,7 @@
 
-#include "std_logger.hpp"
+#include "plugify/api/file_system.hpp"
+#include "plugify/asm/assembly_loader.hpp"
+
 #include <plg/format.hpp>
 #include <plugify/api/date_time.hpp>
 #include <plugify/api/dependency.hpp>
@@ -12,8 +14,9 @@
 
 #include <chrono>
 #include <fstream>
-#include <iostream>
 #include <unordered_set>
+#include <plugify/api/log.hpp>
+#include <atomic>
 
 std::vector<std::string> Split(const std::string& str, char sep) {
     std::vector<std::string> tokens;
@@ -29,20 +32,6 @@ std::vector<std::string> Split(const std::string& str, char sep) {
 #define PLG_ERROR(x) std::cerr << x << std::endl
 #define PLG_LOG_FMT(...) std::cout << std::format(__VA_ARGS__) << std::endl
 #define PLG_ERROR_FMT(...) std::cerr << std::format(__VA_ARGS__) << std::endl
-
-std::string ReadText(const std::filesystem::path& filepath) {
-	std::ifstream is(filepath, std::ios::binary);
-
-	if (!is.is_open()) {
-		PLG_ERROR_FMT("File: '{}' could not be opened", filepath.string());
-		return {};
-	}
-
-	// Stop eating new lines in binary mode!!!
-	is.unsetf(std::ios::skipws);
-
-	return { std::istreambuf_iterator<char>{is}, std::istreambuf_iterator<char>{} };
-}
 
 int32_t FormatInt(const std::string& str) {
 	int32_t result;
@@ -107,12 +96,29 @@ void Print(std::string_view name, T t, F&& f) {
 
 using namespace plugify;
 
+	class FileSystem : public IFileSystem {
+	public:
+		ReadResult ReadFile(std::filesystem::path_view path) override {
+			std::ifstream is(path.data(), std::ios::binary);
+			if (!is.is_open()) {
+				return plg::unexpected(std::strerror(errno));
+			}
+
+			is.unsetf(std::ios::skipws);
+			plg::string s(std::istreambuf_iterator<char>{is}, std::istreambuf_iterator<char>{})
+			return ;
+		}
+	};
+
 int main() {
     PlugifyHandle plug = MakePlugify();
     if (plug) {
-        auto logger = std::make_shared<plug::StdLogger>();
+        auto logger = std::make_shared<Logger>();
         plug.SetLogger(logger);
 		logger->SetSeverity(Severity::Debug);
+		plug.SetAssemblyLoader(std::make_shared<AssemblyLoader>());
+		plug.SetFileSystem(std::make_shared<FileSystem>());
+
         bool running = true;
         while (running) {
             std::string command;

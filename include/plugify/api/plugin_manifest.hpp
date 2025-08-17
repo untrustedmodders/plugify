@@ -33,7 +33,7 @@ namespace plugify {
 		 *
 		 * @return A struct representing the plugin version.
 		 */
-		plg::version GetVersion() const noexcept;
+		Version GetVersion() const noexcept;
 
 		/**
 		 * @brief Retrieves the description of the plugin.

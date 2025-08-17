@@ -1,6 +1,8 @@
 #pragma once
 
 #include "context.hpp"
+#include <plugify/api/assembly.hpp>
+#include <plugify/api/file_system.hpp>
 #include <plugify/api/provider.hpp>
 
 namespace plugify {
@@ -30,7 +32,8 @@ namespace plugify {
 
 		ModuleHandle FindModule(std::string_view name) const noexcept;
 
-		// private
 		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const noexcept;
+
+		std::shared_ptr<IFileSystem> GetFileSystem() const noexcept;
 	};
 }

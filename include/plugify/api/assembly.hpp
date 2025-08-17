@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <filesystem>
 
 #include <plg/expected.hpp>
 #include <plg/string.hpp>
@@ -28,13 +29,8 @@ namespace plugify {
 		virtual MemAddr GetSymbol(std::string_view name) const = 0;
 	};
 
-	/**
-	 * @typedef AssemblyResult
-	 * @brief Result type for assembly loading operations.
-	 *
-	 * Represents either a successfully loaded assembly or an error.
-	 */
-	using AssemblyResult = plg::expected<std::unique_ptr<IAssembly>, plg::string>;
+	template<typename T>
+	using Result = plg::expected<T, plg::string>;
 
 	/**
 	 * @class IAssemblyLoader
@@ -52,13 +48,13 @@ namespace plugify {
 		 * @param flags Flags for loading the assembly.
 		 * @return A unique pointer to the loaded assembly.
 		 */
-		virtual AssemblyResult Load(std::filesystem::path_view path, LoadFlag flags) = 0;
+		virtual Result<std::unique_ptr<IAssembly>> Load(const std::filesystem::path& path, LoadFlag flags) = 0;
 
 		/**
 		 * @brief Adds a search path for loading assemblies.
 		 * @param path The path to add to the search paths.
 		 */
-		virtual bool AddSearchPath(std::filesystem::path_view path) = 0;
+		virtual bool AddSearchPath(const std::filesystem::path& path) = 0;
 
 		/**
 		 * @brief Checks if the implementation can link search paths for opening new shared libraries.

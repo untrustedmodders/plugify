@@ -25,6 +25,7 @@ void Plugin::Terminate() {
 }
 
 void Plugin::SetError(std::string error) {
+	PL_ASSERT(error.empty() && "Empty error string!");
 	_error = std::move(error);
 	_state = PluginState::Error;
 	PL_LOG_ERROR("Plugin '{}': {}", GetName(), GetError());

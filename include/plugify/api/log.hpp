@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <string>
+#include <iostream>
+#include <atomic>
 
 namespace plugify {
 	/**
@@ -77,5 +79,53 @@ namespace plugify {
 			return Severity::None;
 		}
 	} // namespace SeverityUtils
+
+	// ============================================================================
+	// Standard Logger Implementation
+	// ============================================================================
+
+	/**
+	 * @brief Standard implementation using std::iostream
+	 */
+	class Logger final : public ILogger {
+	public:
+		void Log(std::string_view message, Severity severity) override {
+			if (severity <= _severity) {
+				switch (severity) {
+					case Severity::None:
+						std::cout << message << std::endl;
+						break;
+					case Severity::Fatal:
+						std::cerr << "[@] Fatal: " << message << std::endl;
+						break;
+					case Severity::Error:
+						std::cerr << "[#] Error: " << message << std::endl;
+						break;
+					case Severity::Warning:
+						std::cout << "[!] Warning: " << message << std::endl;
+						break;
+					case Severity::Info:
+						std::cout << "[+] Info: " << message << std::endl;
+						break;
+					case Severity::Debug:
+						std::cout << "[~] Debug: " << message << std::endl;
+						break;
+					case Severity::Verbose:
+						std::cout << "[*] Verbose: " << message << std::endl;
+						break;
+					default:
+						std::cerr << "Unsupported error message logged " << message << std::endl;
+						break;
+				}
+			}
+		}
+
+		void SetSeverity(Severity severity) {
+			_severity = severity;
+		}
+
+	private:
+		std::atomic<Severity> _severity{ Severity::None };
+	};
 
 } // namespace plugify

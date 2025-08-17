@@ -22,11 +22,7 @@ Module::Module(Module&& module) noexcept {
 bool Module::Initialize(Plugify& plugify) {
 	PL_ASSERT(GetState() != ModuleState::Loaded && "Module already was initialized");
 
-	std::shared_ptr<IAssemblyLoader> loader = plugify.GetAssemblyLoader();
-	if (!loader) {
-		SetError("Assembly loader is not provided!");
-		return false;
-	}
+	auto loader = plugify.GetAssemblyLoader();
 
 	if (loader->CanLinkSearchPaths()) {
 		std::vector<std::string> errors;
@@ -34,7 +30,7 @@ bool Module::Initialize(Plugify& plugify) {
 		if (const auto& libraryDirectoriesSettings = _manifest->directories) {
 			for (const auto& rawPath : *libraryDirectoriesSettings) {
 				fs::path libraryDirectory = _paths.base / rawPath;
-				if (!loader->AddSearchPath(libraryDirectory.native())) {
+				if (!loader->AddSearchPath(libraryDirectory)) {
 					errors.emplace_back(libraryDirectory.string());
 					return false;
 				}
@@ -55,9 +51,9 @@ bool Module::Initialize(Plugify& plugify) {
 	// Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
 	auto filePath = _paths.base / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, _manifest->name);
 
-	AssemblyResult res = loader->Load(filePath.native(), flags);
+	auto res = loader->Load(filePath, flags);
 	if (!res) {
-		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", GetName(), filePath.string(), res.error().string()));
+		SetError(std::format("Failed to load library: '{}' at: '{}' - {}", GetName(), filePath.string(), res.error()));
 		return false;
 	}
 
@@ -70,7 +66,7 @@ bool Module::Initialize(Plugify& plugify) {
 		return false;
 	}
 
-	ILanguageModule* languageModule = GetLanguageModuleFunc();
+	auto* languageModule = GetLanguageModuleFunc();
 	if (!languageModule) {
 		SetError(std::format("Function '{}' inside '{}' library. Returned invalid address of 'ILanguageModule' implementation!", kGetLanguageModuleFn, filePath.string()));
 		Terminate();
@@ -87,7 +83,7 @@ bool Module::Initialize(Plugify& plugify) {
 	}
 #endif // PLUGIFY_PLATFORM_WINDOWS
 
-	InitResult result = languageModule->Initialize(plugify.GetProvider(), *this);
+	auto result = languageModule->Initialize(plugify.GetProvider(), *this);
 	if (!result) {
 		SetError(std::format("Failed to initialize module: '{}' error: '{}' at: '{}'", GetName(), result.error(), filePath.string()));
 		Terminate();
@@ -124,7 +120,7 @@ bool Module::LoadPlugin(Plugin& plugin) const {
 	if (_state != ModuleState::Loaded)
 		return false;
 
-	LoadResult result = _languageModule->OnPluginLoad(plugin);
+	auto result = _languageModule->OnPluginLoad(plugin);
 	if (!result) {
 		plugin.SetError(std::format("Failed to load plugin: '{}' error: '{}' at: '{}'", plugin.GetName(), result.error(), plugin.GetBaseDir().string()));
 		return false;
@@ -206,6 +202,7 @@ void Module::EndPlugin(Plugin& plugin) const {
 }
 
 void Module::SetError(std::string error) {
+	PL_ASSERT(error.empty() && "Empty error string!");
 	_error = std::move(error);
 	_state = ModuleState::Error;
 	PL_LOG_ERROR("Module '{}': {}", GetName(), GetError());

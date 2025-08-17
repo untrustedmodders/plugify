@@ -44,3 +44,11 @@ PluginHandle ProviderHandle::FindPlugin(std::string_view name) const noexcept {
 ModuleHandle ProviderHandle::FindModule(std::string_view name) const noexcept {
 	return _impl->FindModule(name);
 }
+
+std::shared_ptr<IAssemblyLoader> ProviderHandle::GetAssemblyLoader() const noexcept {
+	return _impl->GetAssemblyLoader();
+}
+
+std::shared_ptr<IFileSystem> ProviderHandle::GetFileSystem() const noexcept {
+	return _impl->GetFileSystem();
+}

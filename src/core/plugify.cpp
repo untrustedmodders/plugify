@@ -16,12 +16,27 @@ bool Plugify::Initialize(const fs::path& rootDir) {
 	if (IsInitialized())
 		return false;
 
+	if (!_fs) {
+		PL_LOG_ERROR("File reader is not provided!");
+		return false;
+	}
+	if (!_loader) {
+		PL_LOG_ERROR("Assembly loader is not provided!");
+		return false;
+	}
+
+
 	auto configPath = rootDir / "plugify.pconfig";
-	PL_LOG_DEBUG("Config path: '{}'", configPath.string());
-	auto json = "";//FileSystem::ReadText(configPath);
-	auto config = glz::read_jsonc<Config>(json);
+	PL_LOG_DEBUG("Config: '{}'", configPath.string());
+	auto result = _fs->ReadTextFile(configPath);
+	if (!result) {
+		PL_LOG_ERROR("Config: '{}' has reading error: {}", configPath.string(), result.error());
+		return false;
+	}
+
+	auto config = glz::read_jsonc<Config>(*result);
 	if (!config.has_value()) {
-		PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", configPath.string(), glz::format_error(config.error(), json));
+		PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", configPath.string(), glz::format_error(config.error(), *result));
 		return false;
 	}
 
@@ -30,18 +45,25 @@ bool Plugify::Initialize(const fs::path& rootDir) {
 			return !p.empty() && p.lexically_normal() == p;
 		};
 
+		std::vector<std::string> errors;
+
 		if (!checkPath(config->configsDir)) {
-			PL_LOG_ERROR("Config configsDir must be relative directory path");
-			return false;
+			errors.emplace_back(std::format("configsDir: - '{}'", config->configsDir.string()));
 		}
+
 		if (!checkPath(config->dataDir)) {
-			PL_LOG_ERROR("Config dataDir must be relative directory path");
-			return false;
+			errors.emplace_back(std::format("dataDir: - '{}'", config->dataDir.string()));
 		}
+
 		if (!checkPath(config->logsDir)) {
-			PL_LOG_ERROR("Config logsDir must be relative directory path");
+			errors.emplace_back(std::format("logsDir: '{}'", config->logsDir.string()));
+		}
+
+		if (!errors.empty()) {
+			PL_LOG_ERROR("Config: {} must be relative directory path(s)", plg::join(errors, ", "));
 			return false;
 		}
+
 		std::array<fs::path, 5> dirs = {
 			"packages",
 			config->configsDir,
@@ -57,10 +79,14 @@ bool Plugify::Initialize(const fs::path& rootDir) {
 		for (auto first = dirs.begin(); first != dirs.end(); ++first) {
 			for (auto second = first + 1; second != dirs.end(); ++second) {
 				if (isPathCollides(*first, *second)) {
-					PL_LOG_ERROR("Config configsDir, dataDir, logsDir must not share paths with each other or with 'packages'");
-					return false;
+					errors.emplace_back(std::format("'{}' - '{}'", first->string(), second->string()));
 				}
 			}
+		}
+
+		if (!errors.empty()) {
+			PL_LOG_ERROR("Config: {} must be not collide between each other", plg::join(errors, " and "));
+			return false;
 		}
 	}
 
@@ -137,6 +163,14 @@ void Plugify::SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) {
 
 std::shared_ptr<IAssemblyLoader> Plugify::GetAssemblyLoader() const {
 	return _loader;
+}
+
+void Plugify::SetFileSystem(std::shared_ptr<IFileSystem> reader) {
+	_fs = std::move(reader);
+}
+
+std::shared_ptr<IFileSystem> Plugify::GetFileSystem() const {
+	return _fs;
 }
 
 PLUGIFY_API PlugifyHandle plugify::MakePlugify() {

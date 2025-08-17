@@ -7,7 +7,6 @@
 #include <plugify/api/handle.hpp>
 #include <plugify/api/path.hpp>
 #include <plugify/api/version.hpp>
-#include <plugify/asm/assembly.hpp>
 
 #include <plugify_export.h>
 
@@ -110,5 +109,27 @@ namespace plugify {
 		 * @return A handle to the module if found, or an empty handle if not found.
 		 */
 		ModuleHandle FindModule(std::string_view name) const noexcept;
+
+		/**
+		 * @brief Retrieves the assembly loader instance.
+		 *
+		 * Provides access to an implementation of the IAssemblyLoader interface,
+		 * responsible for dynamically loading and managing assemblies.
+		 *
+		 * @return A shared pointer to the IAssemblyLoader instance.
+		 * @note The returned pointer is never null if the system is initialized correctly.
+		 */
+		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const noexcept;
+
+		/**
+		 * @brief Retrieves the file reader instance.
+		 *
+		 * Provides access to an implementation of the IFileSystem interface,
+		 * responsible for reading files from the underlying storage system.
+		 *
+		 * @return A shared pointer to the IFileSystem instance.
+		 * @note The returned pointer is never null if the system is initialized correctly.
+		 */
+		std::shared_ptr<IFileSystem> GetFileSystem() const noexcept;
 	};
 } // namespace plugify

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "plugify.hpp"
 #include "manager.hpp"
 #include "provider.hpp"
 
@@ -29,6 +28,9 @@ namespace plugify {
 		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
 		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const;
 
+		void SetFileSystem(std::shared_ptr<IFileSystem> reader);
+		std::shared_ptr<IFileSystem> GetFileSystem() const;
+
 	private:
 		Provider _provider;
 		Manager _manager;
@@ -39,6 +41,7 @@ namespace plugify {
 		bool _inited{ false };
 
 		std::shared_ptr<IAssemblyLoader> _loader;
+		std::shared_ptr<IFileSystem> _fs;
 	};
 }
 

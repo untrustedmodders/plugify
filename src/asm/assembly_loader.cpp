@@ -5,7 +5,7 @@
 using namespace plugify;
 namespace fs = std::filesystem;
 
-AssemblyResult AssemblyLoader::Load(fs::path_view path, LoadFlag flags) {
+AssemblyResult AssemblyLoader::Load(const std::filesystem::path& path, LoadFlag flags) {
 	auto assembly = std::make_unique<Assembly>(path, flags, _searchPaths, false);
 #if PLUGIFY_PLATFORM_WINDOWS
 	defer {
@@ -13,12 +13,12 @@ AssemblyResult AssemblyLoader::Load(fs::path_view path, LoadFlag flags) {
 	};
 #endif
 	if (!assembly->IsValid()) {
-		return String(assembly->GetError());
+		return plg::string(assembly->GetError());
 	}
 	return std::unique_ptr<IAssembly>(std::move(assembly));
 }
 
-bool AssemblyLoader::AddSearchPath(fs::path_view path) {
+bool AssemblyLoader::AddSearchPath(const std::filesystem::path& path) {
 #if PLUGIFY_PLATFORM_WINDOWS
 	std::error_code ec;
 

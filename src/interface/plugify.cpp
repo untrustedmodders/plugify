@@ -39,15 +39,22 @@ const Config& PlugifyHandle::GetConfig() const noexcept {
 	return _impl->GetConfig();
 }
 
-plg::version PlugifyHandle::GetVersion() const noexcept {
+Version PlugifyHandle::GetVersion() const noexcept {
 	return _impl->GetVersion();
 }
 
-//std::shared_ptr<IAssemblyLoader> PlugifyHandle::GetLoader() = 0;
 void PlugifyHandle::SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) noexcept {
 	const_cast<Plugify*>(_impl)->SetAssemblyLoader(std::move(loader));
 }
 
 std::shared_ptr<IAssemblyLoader> PlugifyHandle::GetAssemblyLoader() const noexcept {
 	return _impl->GetAssemblyLoader();
+}
+
+void PlugifyHandle::SetFileSystem(std::shared_ptr<IFileSystem> reader) noexcept {
+	const_cast<Plugify*>(_impl)->SetFileSystem(std::move(reader));
+}
+
+std::shared_ptr<IFileSystem> PlugifyHandle::GetFileSystem() const noexcept {
+	return _impl->GetFileSystem();
 }

@@ -485,9 +485,20 @@ namespace plg {
 		template<std::input_iterator InputIterator>
 		constexpr basic_string(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
 			: _allocator(allocator) {
-			auto len = size_type(std::distance(first, last));
-			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
-			internal_assign(const_pointer(first), len);
+			if constexpr (std::contiguous_iterator<InputIterator>) {
+				auto len = size_type(std::distance(first, last));
+				PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+				internal_assign(const_pointer(first), len);
+			} else {
+				if constexpr (std::random_access_iterator<InputIterator>) {
+					auto len = size_type(std::distance(first, last));
+					PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::basic_string(): constructed string size would exceed max_size()", std::length_error);
+					reserve(len);
+				}
+				for (auto it = first; it != last; ++it) {
+					push_back(*it);
+				}
+			}
 		}
 
 		constexpr basic_string(const basic_string& str, const Allocator& allocator)
@@ -681,9 +692,20 @@ namespace plg {
 
 		template<std::input_iterator InputIterator>
 		constexpr basic_string& assign(InputIterator first, InputIterator last) {
-			auto len = static_cast<size_type>(std::distance(first, last));
-			PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
-			internal_assign(const_pointer(first), len);
+			if constexpr (std::contiguous_iterator<InputIterator>) {
+				auto len = size_type(std::distance(first, last));
+				PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+				internal_assign(const_pointer(first), len);
+			} else {
+				if constexpr (std::random_access_iterator<InputIterator>) {
+					auto len = size_type(std::distance(first, last));
+					PLUGIFY_ASSERT(len <= max_size(), "plg::basic_string::assign(): resulted string size would exceed max_size()", std::length_error);
+					reserve(len);
+				}
+				for (auto it = first; it != last; ++it) {
+					push_back(*it);
+				}
+			}
 			return *this;
 		}
 

@@ -6,6 +6,7 @@
 
 #include <plg/expected.hpp>
 #include <plg/string.hpp>
+#include <plg/vector.hpp>
 #include <plugify/api/date_time.hpp>
 #include <plugify/api/method.hpp>
 #include <plugify/asm/mem_addr.hpp>
@@ -17,42 +18,29 @@ namespace plugify {
 	class ProviderHandle;
 
 	/**
-	 * @struct InitResultData
+	 * @struct InitResult
 	 * @brief Holds information about the initialization result.
 	 *
-	 * The InitResultData structure is used to represent the result of a language module initialization.
+	 * The InitResult structure is used to represent the result of a language module initialization.
 	 */
-	struct InitResultData {
+	struct InitResult {
 		MethodTable table;
 	};
 
 	/**
-	 * @struct LoadResultData
+	 * @struct LoadResult
 	 * @brief Holds information about the load result.
 	 *
-	 * The LoadResultData structure is used to represent the result of loading a plugin in a language module.
+	 * The LoadResult structure is used to represent the result of loading a plugin in a language module.
 	 */
-	struct LoadResultData {
-		std::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
+	struct LoadResult {
+		plg::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
 		MemAddr data; ///< Data associated with the loaded plugin.
 		MethodTable table; ///< Method table for the loaded plugin.
 	};
 
-	/**
-	 * @typedef InitResult
-	 * @brief Represents the result of language module initialization.
-	 *
-	 * The InitResult is a variant that can hold either InitResultData or an error.
-	 */
-	using InitResult = plg::expected<InitResultData, plg::string>;
-
-	/**
-	 * @typedef LoadResult
-	 * @brief Represents the result of loading a plugin in a language module.
-	 *
-	 * The LoadResult is a variant that can hold either LoadResultData or an error.
-	 */
-	using LoadResult = plg::expected<LoadResultData, plg::string>;
+	template<typename T>
+	using Result = plg::expected<T, plg::string>;
 
 	/**
 	 * @class ILanguageModule
@@ -71,7 +59,7 @@ namespace plugify {
 		 * @param module Handle to the language module being initialized.
 		 * @return Result of the initialization, either InitResultData or ErrorData.
 		 */
-		virtual InitResult Initialize(ProviderHandle provider, ModuleHandle module) = 0;
+		virtual Result<InitResult> Initialize(ProviderHandle provider, ModuleHandle module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.
@@ -89,7 +77,7 @@ namespace plugify {
 		 * @param plugin Handle to the loaded plugin.
 		 * @return Result of the load event, either LoadResultData or ErrorData.
 		 */
-		virtual LoadResult OnPluginLoad(PluginHandle plugin) = 0;
+		virtual Result<LoadResult> OnPluginLoad(PluginHandle plugin) = 0;
 
 		/**
 		 * @brief Handle plugin start event.

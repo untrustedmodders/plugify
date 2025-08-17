@@ -1,6 +1,8 @@
 #pragma once
 
 #include "context.hpp"
+#include "manifest.hpp"
+
 #include <plugify/api/language_module.hpp>
 #include <plugify/api/manager.hpp>
 #include <plugify/api/plugin.hpp>
@@ -9,7 +11,6 @@ namespace plugify {
 	class Plugin;
 	class Module;
 	class Plugify;
-	struct Manifest;
 
 	class Manager final : public Context {
 	public:
@@ -44,9 +45,15 @@ namespace plugify {
 		void TerminateAllPlugins();
 		void TerminateAllModules();
 
+		using ManifestResult = plg::expected<std::shared_ptr<Manifest>, std::string>;
+		using ManifestReader = ManifestResult(*)(const fs::path&);
+
+		template<typename T>
+		static ManifestResult ReadManifest(const fs::path& path, ManifestType type);
+
 	private:
-		PluginList _allPlugins;
-		ModuleList _allModules;
+		PluginList _plugins;
+		ModuleList _modules;
 		bool _inited{ false };
 	};
 }

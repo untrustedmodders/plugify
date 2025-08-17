@@ -62,7 +62,7 @@ namespace plugify {
 
 		void SetError(std::string error);
 
-		void SetMethods(std::vector<MethodData> methods) {
+		void SetMethods(plg::vector<MethodData> methods) {
 			_methods = std::move(methods);
 		}
 
@@ -129,7 +129,7 @@ namespace plugify {
 		UniqueId _id;
 		MemAddr _data;
 		BasePaths _paths;
-		std::vector<MethodData> _methods;
+		plg::vector<MethodData> _methods;
 		std::shared_ptr<PluginManifest> _manifest;
 		std::string _error;
 	};

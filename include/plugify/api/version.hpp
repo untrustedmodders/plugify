@@ -87,13 +87,3 @@ namespace plugify {
 		bool operator==(const Constraint& constraint) const noexcept = default;
 	};
 }
-
-template<>
-struct std::hash<plugify::Constraint> {
-	size_t operator()(const plugify::Constraint& c) const {
-		return plg::hash_combine_all(
-			c.type,
-			c.version
-		);
-	}
-};

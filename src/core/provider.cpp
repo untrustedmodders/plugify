@@ -70,3 +70,7 @@ ModuleHandle Provider::FindModule(std::string_view name) const noexcept {
 std::shared_ptr<IAssemblyLoader> Provider::GetAssemblyLoader() const noexcept {
 	return _plugify.GetAssemblyLoader();
 }
+
+std::shared_ptr<IFileSystem> Provider::GetFileSystem() const noexcept {
+	return _plugify.GetFileSystem();
+}

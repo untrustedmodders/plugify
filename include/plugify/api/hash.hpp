@@ -77,16 +77,3 @@ namespace plg {
 		return seed;
 	}
 }
-
-#if 0
-template <typename T>
-struct std::hash<std::vector<T>> {
-	std::size_t operator()(const std::vector<T> & vec) const noexcept {
-		std::size_t seed = 0;
-		for (auto const& v : vec) {
-			plg::hash_combine(seed, v);
-		}
-		return seed;
-	}
-};
-#endif

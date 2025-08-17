@@ -184,9 +184,9 @@ namespace glz {
 	};
 
 	template<>
-	struct from<JSON, plg::version> {
+	struct from<JSON, Version> {
 		template <auto Opts>
-		static void op(plg::version& value, auto&&... args) {
+		static void op(Version& value, auto&&... args) {
 			std::string str;
 			parse<JSON>::op<Opts>(str, args...);
 			value.from_string_noexcept(str);
@@ -194,9 +194,9 @@ namespace glz {
 	};
 
 	template<>
-	struct to<JSON, plg::version> {
+	struct to<JSON, Version> {
 		template <auto Opts>
-		static void op(const plg::version& value, auto&&... args) noexcept {
+		static void op(const Version& value, auto&&... args) noexcept {
 			serialize<JSON>::op<Opts>(value.to_string_noexcept(), args...);
 		}
 	};
@@ -210,7 +210,7 @@ namespace glz {
 
 	        if (str.empty()) {
 	            value.type = Constraint::Type::Any;
-	            value.version = plg::version{};
+	            value.version = Version{};
 	            return;
 	        }
 
@@ -247,7 +247,7 @@ namespace glz {
 	        }
 
 	        value.type = type;
-	        value.version = plg::version(sv.substr(op_len));
+	        value.version = Version(sv.substr(op_len));
 	    }
 	};
 
@@ -313,9 +313,9 @@ namespace glz {
 		};
 
 		template<>
-		struct from_json<plg::version> {
+		struct from_json<Version> {
 			template<auto Opts>
-			static void op(plg::version& value, auto&&... args) {
+			static void op(Version& value, auto&&... args) {
 				std::string str;
 				read<json>::op<Opts>(str, args...);
 				value.from_string_noexcept(str);
@@ -323,9 +323,9 @@ namespace glz {
 		};
 
 		template<>
-		struct to_json<plg::version> {
+		struct to_json<Version> {
 			template<auto Opts>
-			static void op(const plg::version& value, auto&&... args) noexcept {
+			static void op(const Version& value, auto&&... args) noexcept {
 				write<json>::op<Opts>(value.to_string_noexcept(), args...);
 			}
 		};
@@ -339,7 +339,7 @@ namespace glz {
 
 		        if (str.empty()) {
 		            value.type = Constraint::Type::Any;
-		            value.version = plg::version{};
+		            value.version = Version{};
 		            return;
 		        }
 
@@ -376,7 +376,7 @@ namespace glz {
 		        }
 
 		        value.type = type;
-		        value.version = plg::version(sv.substr(op_len));
+		        value.version = Version(sv.substr(op_len));
 		    }
 		};
 
