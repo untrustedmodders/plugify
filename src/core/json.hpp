@@ -1,12 +1,13 @@
 #pragma once
 
-#include <glaze/glaze.hpp>
+#include "manifest.hpp"
+#include "method.hpp"
+#include "module_manifest.hpp"
+#include "plugin_manifest.hpp"
 
-#include <core/manifest.hpp>
-#include <core/method.hpp>
-#include <core/module_manifest.hpp>
-#include <core/plugin_manifest.hpp>
 #include <plugify/api/config.hpp>
+
+#include <glaze/glaze.hpp>
 
 using namespace plugify;
 
@@ -74,7 +75,7 @@ struct glz::meta<Severity> {
 template<>
 struct glz::meta<ManifestType> {
 	static constexpr auto value = enumerate(
-			"module", ManifestType::LanguageModule,
+			"module", ManifestType::Module,
 			"plugin", ManifestType::Plugin
 	);
 };
@@ -209,44 +210,44 @@ namespace glz {
 	        parse<JSON>::op<Opts>(str, args...);
 
 	        if (str.empty()) {
-	            value.type = Constraint::Type::Any;
+	            value.comparison = Comparison::Any;
 	            value.version = Version{};
 	            return;
 	        }
 
 	        // Parse the constraint operator
 	        std::string_view sv(str);
-	        Constraint::Type type;
+	        Comparison comparison;
 	        size_t op_len = 0;
 
 	        if (sv.starts_with(">=")) {
-	            type = Constraint::Type::GreaterEqual;
+	            comparison = Comparison::GreaterEqual;
 	            op_len = 2;
 	        } else if (sv.starts_with("<=")) {
-	            type = Constraint::Type::LessEqual;
+	            comparison = Comparison::LessEqual;
 	            op_len = 2;
 	        } else if (sv.starts_with("~>")) {
-	            type = Constraint::Type::Compatible;
+	            comparison = Comparison::Compatible;
 	            op_len = 2;
 	        } else if (sv.starts_with("!=")) {
-	            type = Constraint::Type::NotEqual;
+	            comparison = Comparison::NotEqual;
 	            op_len = 2;
 	        } else if (sv.starts_with("==")) {
-	            type = Constraint::Type::Equal;
+	            comparison = Comparison::Equal;
 	            op_len = 2;
 	        } else if (sv.starts_with(">")) {
-	            type = Constraint::Type::Greater;
+	            comparison = Comparison::Greater;
 	            op_len = 1;
 	        } else if (sv.starts_with("<")) {
-	            type = Constraint::Type::Less;
+	            comparison = Comparison::Less;
 	            op_len = 1;
 	        } else {
 	            // No operator, assume equality
-	            type = Constraint::Type::Equal;
+	            comparison = Comparison::Equal;
 	            op_len = 0;
 	        }
 
-	        value.type = type;
+	        value.comparison = comparison;
 	        value.version = Version(sv.substr(op_len));
 	    }
 	};
@@ -258,29 +259,29 @@ namespace glz {
 	        std::string result;
 
 	        // Convert constraint type to operator string
-	        switch (value.type) {
-	            case Constraint::Type::Equal:
+	        switch (value.comparison) {
+	            case Comparison::Equal:
 	                result = "==";
 	                break;
-	            case Constraint::Type::NotEqual:
+	            case Comparison::NotEqual:
 	                result = "!=";
 	                break;
-	            case Constraint::Type::Greater:
+	            case Comparison::Greater:
 	                result = ">";
 	                break;
-	            case Constraint::Type::GreaterEqual:
+	            case Comparison::GreaterEqual:
 	                result = ">=";
 	                break;
-	            case Constraint::Type::Less:
+	            case Comparison::Less:
 	                result = "<";
 	                break;
-	            case Constraint::Type::LessEqual:
+	            case Comparison::LessEqual:
 	                result = "<=";
 	                break;
-	            case Constraint::Type::Compatible:
+	            case Comparison::Compatible:
 	                result = "~>";
 	                break;
-	            case Constraint::Type::Any:
+	            case Comparison::Any:
 	                serialize<JSON>::op<Opts>(result, args...);
 	                return;
 	        }
@@ -338,7 +339,7 @@ namespace glz {
 		        parse<JSON>::op<Opts>(str, args...);
 
 		        if (str.empty()) {
-		            value.type = Constraint::Type::Any;
+		            value.type = Comparison::Any;
 		            value.version = Version{};
 		            return;
 		        }
@@ -349,29 +350,29 @@ namespace glz {
 		        size_t op_len = 0;
 
 		        if (sv.starts_with(">=")) {
-		            type = Constraint::Type::GreaterEqual;
+		            type = Comparison::GreaterEqual;
 		            op_len = 2;
 		        } else if (sv.starts_with("<=")) {
-		            type = Constraint::Type::LessEqual;
+		            type = Comparison::LessEqual;
 		            op_len = 2;
 		        } else if (sv.starts_with("~>")) {
-		            type = Constraint::Type::Compatible;
+		            type = Comparison::Compatible;
 		            op_len = 2;
 		        } else if (sv.starts_with("!=")) {
-		            type = Constraint::Type::NotEqual;
+		            type = Comparison::NotEqual;
 		            op_len = 2;
 		        } else if (sv.starts_with("==")) {
-		            type = Constraint::Type::Equal;
+		            type = Comparison::Equal;
 		            op_len = 2;
 		        } else if (sv.starts_with(">")) {
-		            type = Constraint::Type::Greater;
+		            type = Comparison::Greater;
 		            op_len = 1;
 		        } else if (sv.starts_with("<")) {
-		            type = Constraint::Type::Less;
+		            type = Comparison::Less;
 		            op_len = 1;
 		        } else {
 		            // No operator, assume equality
-		            type = Constraint::Type::Equal;
+		            type = Comparison::Equal;
 		            op_len = 0;
 		        }
 
@@ -388,28 +389,28 @@ namespace glz {
 
 		        // Convert constraint type to operator string
 		        switch (value.type) {
-		            case Constraint::Type::Equal:
+		            case Comparison::Equal:
 		                result = "==";
 		                break;
-		            case Constraint::Type::NotEqual:
+		            case Comparison::NotEqual:
 		                result = "!=";
 		                break;
-		            case Constraint::Type::Greater:
+		            case Comparison::Greater:
 		                result = ">";
 		                break;
-		            case Constraint::Type::GreaterEqual:
+		            case Comparison::GreaterEqual:
 		                result = ">=";
 		                break;
-		            case Constraint::Type::Less:
+		            case Comparison::Less:
 		                result = "<";
 		                break;
-		            case Constraint::Type::LessEqual:
+		            case Comparison::LessEqual:
 		                result = "<=";
 		                break;
-		            case Constraint::Type::Compatible:
+		            case Comparison::Compatible:
 		                result = "~>";
 		                break;
-		            case Constraint::Type::Any:
+		            case Comparison::Any:
 		                serialize<JSON>::op<Opts>(result, args...);
 		                return;
 		        }
@@ -431,6 +432,7 @@ struct glz::meta<ModuleManifest> {
 			"$schema", skip{},
 			"path", skip{},
 			"type", skip{},
+
 			"name", &T::name,
 			"version", &T::version,
 			"description", &T::description,
@@ -438,6 +440,9 @@ struct glz::meta<ModuleManifest> {
 			"website", &T::website,
 			"license", &T::license,
 			"platforms", &T::platforms,
+			"dependencies", &T::dependencies,
+			"conflicts", &T::conflicts,
+
 			"language", &T::language,
 			"directories", &T::directories,
 			"forceLoad", &T::forceLoad
@@ -451,6 +456,7 @@ struct glz::meta<PluginManifest> {
 			"$schema", skip{},
 			"path", skip{},
 			"type", skip{},
+
 			"name", &T::name,
 			"version", &T::version,
 			"description", &T::description,
@@ -458,9 +464,11 @@ struct glz::meta<PluginManifest> {
 			"website", &T::website,
 			"license", &T::license,
 			"platforms", &T::platforms,
+			"dependencies", &T::dependencies,
+			"conflicts", &T::conflicts,
+
 			"entry", &T::entry,
 			"language", &T::language,
-			"dependencies", &T::dependencies,
 			"methods", &T::methods
 	);
 };

@@ -11,6 +11,23 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(FetchContent)
+
+#
+# Catch2
+#
+message(STATUS "Pulling and configuring catch2")
+
+FetchContent_Declare(
+        cli
+        GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+        GIT_TAG v2.5.0
+        GIT_PROGRESS TRUE
+        GIT_SHALLOW TRUE
+        OVERRIDE_FIND_PACKAGE
+)
+FetchContent_MakeAvailable(cli)
+
 #
 # Plug
 #
@@ -18,7 +35,7 @@ file(GLOB_RECURSE PLUG_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 
 add_executable(${PROJECT_NAME} ${PLUG_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify plugify::plugify-jit plugify::plugify-assembly ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify plugify::plugify-jit plugify::plugify-assembly CLI11 ${CMAKE_DL_LIBS})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_DEFINITIONS})
 

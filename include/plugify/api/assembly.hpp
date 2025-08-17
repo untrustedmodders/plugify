@@ -5,8 +5,6 @@
 #include <filesystem>
 
 #include <plg/expected.hpp>
-#include <plg/string.hpp>
-#include <plugify/api/path.hpp>
 #include <plugify/asm/load_flag.hpp>
 #include <plugify/asm/mem_addr.hpp>
 
@@ -30,7 +28,7 @@ namespace plugify {
 	};
 
 	template<typename T>
-	using Result = plg::expected<T, plg::string>;
+	using Result = plg::expected<T, std::string>;
 
 	/**
 	 * @class IAssemblyLoader

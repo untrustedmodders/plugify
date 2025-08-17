@@ -7,6 +7,7 @@ void LogSystem::SetLogger(std::shared_ptr<ILogger> logger) {
 }
 
 void LogSystem::Log(std::string_view msg, Severity severity) {
-	if (_logger)
+	if (_logger) {
 		_logger->Log(msg, severity);
+	}
 }

@@ -27,8 +27,8 @@ bool Module::Initialize(Plugify& plugify) {
 	if (loader->CanLinkSearchPaths()) {
 		std::vector<std::string> errors;
 
-		if (const auto& libraryDirectoriesSettings = _manifest->directories) {
-			for (const auto& rawPath : *libraryDirectoriesSettings) {
+		if (const auto& directories = _manifest->directories) {
+			for (const auto& rawPath : *directories) {
 				fs::path libraryDirectory = _paths.base / rawPath;
 				if (!loader->AddSearchPath(libraryDirectory)) {
 					errors.emplace_back(libraryDirectory.string());

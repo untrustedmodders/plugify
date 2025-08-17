@@ -3,12 +3,12 @@
 #include <plugify/api/version.hpp>
 
 namespace plugify {
-	struct Dependency {
+	struct Conflict {
 		std::string name;
-		std::optional<std::vector<Constraint>> constraints;  // ANDed together
-		std::optional<bool> optional;
+		std::optional<std::vector<Constraint>> constraints;  // Versions that conflict
+		std::string reason;
 
-		std::optional<Constraint>  IsSatisfiedBy(const Version& version) const {
+		std::optional<Constraint> ConflictsWith(const Version& version) const {
 			if (!constraints)
 				return {};
 
@@ -21,6 +21,6 @@ namespace plugify {
 			return {};
 		}
 
-		bool operator==(const Dependency& dependency) const noexcept = default;
+		bool operator==(const Conflict& conflict) const noexcept = default;
 	};
 }

@@ -8,26 +8,26 @@ UniqueId ModuleHandle::GetId() const noexcept {
 	return _impl->GetId();
 }
 
-std::string_view ModuleHandle::GetName() const noexcept {
+const std::string& ModuleHandle::GetName() const noexcept {
 	return _impl->GetName();
 }
 
-std::string_view ModuleHandle::GetLanguage() const noexcept {
+const std::string& ModuleHandle::GetLanguage() const noexcept {
 	return _impl->GetLanguage();
 }
 
-fs::path_view ModuleHandle::GetBaseDir() const noexcept {
-	return _impl->GetBaseDir().native();
+const std::filesystem::path& ModuleHandle::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir();
 }
 
 ModuleManifestHandle ModuleHandle::GetManifest() const noexcept {
-	return { _impl->GetManifest() };
+	return _impl->GetManifest();
 }
 
 ModuleState ModuleHandle::GetState() const noexcept {
 	return _impl->GetState();
 }
 
-std::string_view ModuleHandle::GetError() const noexcept {
+const std::string& ModuleHandle::GetError() const noexcept {
 	return _impl->GetError();
 }

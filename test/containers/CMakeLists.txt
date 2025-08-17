@@ -11,12 +11,20 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-Include(FetchContent)
+include(FetchContent)
+
+#
+# Catch2
+#
+message(STATUS "Pulling and configuring cli")
 
 FetchContent_Declare(
         Catch2
         GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG          v3.4.0 # or a later release
+        GIT_TAG v3.4.0
+        GIT_PROGRESS TRUE
+        GIT_SHALLOW TRUE
+        OVERRIDE_FIND_PACKAGE
 )
 
 FetchContent_MakeAvailable(Catch2)

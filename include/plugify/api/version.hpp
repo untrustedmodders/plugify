@@ -1,7 +1,5 @@
 #pragma once
 
-#include "hash.hpp"
-
 #include <optional>
 #include <string>
 #include <vector>
@@ -19,6 +17,20 @@ namespace plugify {
 	using Version = plg::version;
 
 	/**
+	 *
+	 */
+	enum class Comparison : uint8_t {
+		Equal,        // Exactly this version
+		NotEqual,     // Any version except this
+		Greater,      // Strictly greater than
+		GreaterEqual, // Greater than or equal to
+		Less,         // Strictly less than
+		LessEqual,    // Less than or equal to
+		Compatible,   // Compatible with (e.g., ^2.1.0 = >=2.1.0 <3.0.0)
+		Any           // Any version acceptable
+	};
+
+	/**
 	 * @struct Constraint
 	 * @brief Represents a version constraint for a plugin.
 	 *
@@ -26,18 +38,7 @@ namespace plugify {
 	 * and the specific version it applies to.
 	 */
 	struct Constraint {
-		enum class Type {
-			Equal,        // Exactly this version
-			NotEqual,     // Any version except this
-			Greater,      // Strictly greater than
-			GreaterEqual, // Greater than or equal to
-			Less,         // Strictly less than
-			LessEqual,    // Less than or equal to
-			Compatible,   // Compatible with (e.g., ^2.1.0 = >=2.1.0 <3.0.0)
-			Any           // Any version acceptable
-		};
-
-		Type type{Type::Any};
+		Comparison comparison{Comparison::Any};
 		Version version;
 
 		/**
@@ -49,29 +50,29 @@ namespace plugify {
 		 *       - ^0.0.3 := >=0.0.3 <0.0.4 (0.0.x is special - patch is breaking)
 		 */
 		bool IsSatisfiedBy(const Version& other) const {
-			switch (type) {
-				case Type::Any:
+			switch (comparison) {
+				case Comparison::Any:
 					return true;
 
-				case Type::Equal:
+				case Comparison::Equal:
 					return other == version;
 
-				case Type::NotEqual:
+				case Comparison::NotEqual:
 					return other != version;
 
-				case Type::Greater:
+				case Comparison::Greater:
 					return other > version;
 
-				case Type::GreaterEqual:
+				case Comparison::GreaterEqual:
 					return other >= version;
 
-				case Type::Less:
+				case Comparison::Less:
 					return other < version;
 
-				case Type::LessEqual:
+				case Comparison::LessEqual:
 					return other <= version;
 
-				case Type::Compatible: {
+				case Comparison::Compatible: {
 					return version.major == other.major // different major-versions are always incompatible
 					   && version.minor >= other.minor; // data minor-version is incompatible if greater than code minor-version
 				}
@@ -86,4 +87,54 @@ namespace plugify {
 		 */
 		bool operator==(const Constraint& constraint) const noexcept = default;
 	};
-}
+	
+	/**
+	 * @brief Namespace containing utility functions of Comparison enum.
+	 */
+	struct ComparisonUtils {
+		/**
+		 * @brief Convert a Comparison enum value to its string representation.
+		 * @param comparison The Comparison value to convert.
+		 * @return The string representation of the Comparison.
+		 */
+		static constexpr std::string_view ToString(Comparison comparison) noexcept {
+			switch (comparison) {
+				case Comparison::Equal:        return "==";
+				case Comparison::NotEqual:     return "!=";
+				case Comparison::Greater:      return ">";
+				case Comparison::GreaterEqual: return ">=";
+				case Comparison::Less:         return "<";
+				case Comparison::LessEqual:    return "<=";
+				case Comparison::Compatible:   return "~>";
+				case Comparison::Any:          return "";
+			}
+			return "Unknown";
+		}
+
+		/**
+		 * @brief Convert a string representation to a Comparison enum value.
+		 * @param comparison The string representation of Comparison.
+		 * @return The corresponding Comparison enum value.
+		 */
+		static constexpr Comparison FromString(std::string_view comparison) noexcept {
+			if (comparison == "==") {
+				return Comparison::Equal;
+			} else if (comparison == "!=") {
+				return Comparison::NotEqual;
+			} else if (comparison == ">") {
+				return Comparison::Greater;
+			} else if (comparison == ">=") {
+				return Comparison::GreaterEqual;
+			} else if (comparison == "<") {
+				return Comparison::Less;
+			} else if (comparison == "<=") {
+				return Comparison::LessEqual;
+			} else if (comparison == "~>") {
+				return Comparison::Compatible;
+			} else if (comparison.empty()) {
+				return Comparison::Any;
+			}
+			return Comparison::Equal; // default fallback
+		}
+	};
+} // namespace plugify

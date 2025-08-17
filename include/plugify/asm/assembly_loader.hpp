@@ -12,7 +12,7 @@ namespace plugify {
 	 */
 	class AssemblyLoader final : public IAssemblyLoader {
 	public:
-		AssemblyResult Load(const std::filesystem::path& path, LoadFlag flags) override;
+		Result<std::unique_ptr<IAssembly>> Load(const std::filesystem::path& path, LoadFlag flags) override;
 
 		bool AddSearchPath(const std::filesystem::path& path) override;
 

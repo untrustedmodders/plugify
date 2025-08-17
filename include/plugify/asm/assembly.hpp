@@ -6,8 +6,6 @@
 
 #include <plugify/api/assembly.hpp>
 
-namespace fs = std::filesystem;
-
 namespace plugify {
 	/**
 	 * @class Assembly
@@ -91,7 +89,7 @@ namespace plugify {
 		Assembly& operator=(Assembly&& rhs) noexcept = delete;
 		//Assembly& operator=(Assembly&&) && = delete;
 
-		using SearchDirs = std::vector<fs::path>;
+		using SearchDirs = std::vector<std::filesystem::path>;
 
 		/**
 		 * @brief Constructs an Assembly object with the specified module name, flags, and sections.
@@ -129,7 +127,7 @@ namespace plugify {
 		 * @param searchDirs Optional additional search directories.
 		 * @param sections Optional flag indicating if sections should be initialized.
 		 */
-		explicit Assembly(const fs::path& path, LoadFlag flags = LoadFlag::Default, const SearchDirs& searchDirs = {}, bool sections = false);
+		explicit Assembly(const std::filesystem::path& path, LoadFlag flags = LoadFlag::Default, const SearchDirs& searchDirs = {}, bool sections = false);
 
 		/**
 		 * @brief Constructs an Assembly object with a memory address.
@@ -221,13 +219,13 @@ namespace plugify {
 		 * @brief Returns the module path.
 		 * @return The path of the module.
 		 */
-		fs::path_view GetPath() const noexcept;
+		const std::filesystem::path& GetPath() const noexcept;
 
 		/**
 		 * @brief Returns the module error.
 		 * @return The error string of the module.
 		 */
-		std::string_view GetError() const noexcept;
+		const std::string& GetError() const noexcept;
 
 		/**
 		 * @brief Retrieves a raw symbol pointer by name.
@@ -258,7 +256,7 @@ namespace plugify {
 		 * @param sections Flag indicating if sections should be initialized.
 		 * @return True if initialization was successful, false otherwise.
 		 */
-		bool Init(const fs::path& path, LoadFlag flags, const SearchDirs& searchDirs, bool sections);
+		bool Init(const std::filesystem::path& path, LoadFlag flags, const SearchDirs& searchDirs, bool sections);
 
 		/**
 		 * @brief Initializes the assembly from a module name.
@@ -309,11 +307,11 @@ namespace plugify {
 		 * @param path The path to check for the existence of the module.
 		 * @return True if the module exists, false otherwise.
 		 */
-		bool IsExist(const fs::path& path);
+		bool IsExist(const std::filesystem::path& path);
 
 	private:
 		void* _handle;                          //!< The handle to the module.
-		fs::path _path;            //!< The path of the module.
+		std::filesystem::path _path;            //!< The path of the module.
 		std::string _error;                     //!< The error of the module.
 		//LoadFlag flags{LoadFlag::Default};      //!< Flags for loading the module.
 		//bool sections{false};			          //!< Flag indicating if sections should load.

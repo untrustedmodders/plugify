@@ -1,12 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <span>
 #include <string>
 
 #include <plugify/api/handle.hpp>
 #include <plugify/api/method.hpp>
-#include <plugify/api/path.hpp>
 #include <plugify/asm/mem_addr.hpp>
 
 #include <plugify_export.h>
@@ -55,31 +55,31 @@ namespace plugify {
 		 * @brief Get the name of the plugin.
 		 * @return The name of the plugin.
 		 */
-		std::string_view GetName() const noexcept;
+		const std::string& GetName() const noexcept;
 
 		/**
 		 * @brief Get the base directory of the plugin.
 		 * @return The base directory as a filesystem path.
 		 */
-		std::filesystem::path_view GetBaseDir() const noexcept;
+		const std::filesystem::path& GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Get the configs directory of the plugin.
 		 * @return The configs directory as a filesystem path.
 		 */
-		std::filesystem::path_view GetConfigsDir() const noexcept;
+		const std::filesystem::path& GetConfigsDir() const noexcept;
 
 		/**
 		 * @brief Get the data directory of the plugin.
 		 * @return The data directory as a filesystem path.
 		 */
-		std::filesystem::path_view GetDataDir() const noexcept;
+		const std::filesystem::path& GetDataDir() const noexcept;
 
 		/**
 		 * @brief Get the logs directory of the plugin.
 		 * @return The logs directory as a filesystem path.
 		 */
-		std::filesystem::path_view GetLogsDir() const noexcept;
+		const std::filesystem::path& GetLogsDir() const noexcept;
 
 		/**
 		 * @brief Get the manifest of the plugin.
@@ -97,7 +97,7 @@ namespace plugify {
 		 * @brief Get the error message associated with the plugin.
 		 * @return The error message.
 		 */
-		std::string_view GetError() const noexcept;
+		const std::string& GetError() const noexcept;
 
 		/**
 		 * @brief Get the list of methods supported by the plugin.
@@ -115,13 +115,13 @@ namespace plugify {
 	/**
 	 * @brief Namespace containing utility functions of PluginState enum.
 	 */
-	namespace PluginUtils {
+	struct PluginUtils {
 		/**
 		 * @brief Convert a PluginState enum value to its string representation.
 		 * @param state The PluginState value to convert.
 		 * @return The string representation of the PluginState.
 		 */
-		constexpr std::string_view ToString(PluginState state) {
+		static constexpr std::string_view ToString(PluginState state) {
 			switch (state) {
 				case PluginState::NotLoaded:   return "NotLoaded";
 				case PluginState::Error:       return "Error";
@@ -137,7 +137,7 @@ namespace plugify {
 		 * @param state The string representation of PluginState.
 		 * @return The corresponding PluginState enum value.
 		 */
-		constexpr PluginState FromString(std::string_view state) {
+		static constexpr PluginState FromString(std::string_view state) {
 			if (state == "NotLoaded") {
 				return PluginState::NotLoaded;
 			} else if (state == "Error") {
@@ -151,6 +151,6 @@ namespace plugify {
 			}
 			return PluginState::Unknown;
 		}
-	} // namespace PluginUtils
+	};
 
 } // namespace plugify

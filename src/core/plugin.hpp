@@ -1,15 +1,18 @@
 #pragma once
 
+#include "plugify/api/module.hpp"
 #include "plugin_manifest.hpp"
-#include <plugify/api/date_time.hpp>
+
 #include <plugify/api/plugin.hpp>
-#include <util/pointer.hpp>
 
 namespace plugify {
 	class Plugify;
 	class Module;
 	class Plugin {
 	public:
+		using State = PluginState;
+		using Utils = PluginUtils;
+
 		Plugin(UniqueId id, BasePaths paths, std::shared_ptr<Manifest> manifest);
 		Plugin(const Plugin& plugin) = delete;
 		Plugin(Plugin&& plugin) noexcept;
@@ -62,7 +65,7 @@ namespace plugify {
 
 		void SetError(std::string error);
 
-		void SetMethods(plg::vector<MethodData> methods) {
+		void SetMethods(std::vector<MethodData> methods) {
 			_methods = std::move(methods);
 		}
 
@@ -129,7 +132,7 @@ namespace plugify {
 		UniqueId _id;
 		MemAddr _data;
 		BasePaths _paths;
-		plg::vector<MethodData> _methods;
+		std::vector<MethodData> _methods;
 		std::shared_ptr<PluginManifest> _manifest;
 		std::string _error;
 	};

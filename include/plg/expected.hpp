@@ -1,5 +1,15 @@
 #pragma once
 
+#include "macro.hpp"
+
+#if PLUGIFY_CPP_VERSION > 202002L
+
+#include <expected>
+namespace plg {
+	using std::expected;
+	using std::unexpected;
+}
+#else
 #include <concepts>
 #include <deque>
 #include <exception>
@@ -1418,3 +1428,4 @@ namespace plg {
 	};
 
 }// namespace plg
+#endif

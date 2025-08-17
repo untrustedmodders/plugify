@@ -1,7 +1,7 @@
 #include "plugify.hpp"
+#include "json.hpp"
 
 #include <plugify/api/config.hpp>
-#include <util/json.hpp>
 
 using namespace plugify;
 
@@ -17,14 +17,14 @@ bool Plugify::Initialize(const fs::path& rootDir) {
 		return false;
 
 	if (!_fs) {
-		PL_LOG_ERROR("File reader is not provided!");
-		return false;
-	}
-	if (!_loader) {
-		PL_LOG_ERROR("Assembly loader is not provided!");
+		PL_LOG_ERROR("Plugify: File reader is not provided!");
 		return false;
 	}
 
+	if (!_loader) {
+		PL_LOG_ERROR("Plugify: Assembly loader is not provided!");
+		return false;
+	}
 
 	auto configPath = rootDir / "plugify.pconfig";
 	PL_LOG_DEBUG("Config: '{}'", configPath.string());
@@ -153,7 +153,7 @@ const Config& Plugify::GetConfig() const {
 	return _config;
 }
 
-Version Plugify::GetVersion() const {
+const Version& Plugify::GetVersion() const {
 	return _version;
 }
 

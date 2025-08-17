@@ -8,35 +8,35 @@ UniqueId PluginHandle::GetId() const noexcept {
 	return _impl->GetId();
 }
 
-std::string_view PluginHandle::GetName() const noexcept {
+const std::string& PluginHandle::GetName() const noexcept {
 	return _impl->GetName();
 }
 
-fs::path_view PluginHandle::GetBaseDir() const noexcept {
-	return _impl->GetBaseDir().native();
+const std::filesystem::path& PluginHandle::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir();
 }
 
-fs::path_view PluginHandle::GetConfigsDir() const noexcept {
-	return _impl->GetConfigsDir().native();
+const std::filesystem::path& PluginHandle::GetConfigsDir() const noexcept {
+	return _impl->GetConfigsDir();
 }
 
-fs::path_view PluginHandle::GetDataDir() const noexcept {
-	return _impl->GetDataDir().native();
+const std::filesystem::path& PluginHandle::GetDataDir() const noexcept {
+	return _impl->GetDataDir();
 }
 
-fs::path_view PluginHandle::GetLogsDir() const noexcept {
-	return _impl->GetLogsDir().native();
+const std::filesystem::path& PluginHandle::GetLogsDir() const noexcept {
+	return _impl->GetLogsDir();
 }
 
 PluginManifestHandle PluginHandle::GetManifest() const noexcept {
-	return { _impl->GetManifest() };
+	return _impl->GetManifest();
 }
 
 PluginState PluginHandle::GetState() const noexcept {
 	return _impl->GetState();
 }
 
-std::string_view PluginHandle::GetError() const noexcept {
+const std::string& PluginHandle::GetError() const noexcept {
 	return _impl->GetError();
 }
 

@@ -2,11 +2,12 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
+#include <filesystem>
 
 #include <plugify/api/handle.hpp>
-#include <plugify/api/path.hpp>
 #include <plugify/api/version.hpp>
+#include <plugify/api/assembly.hpp>
+#include <plugify/api/file_system.hpp>
 
 #include <plugify_export.h>
 
@@ -34,25 +35,25 @@ namespace plugify {
 		 * @brief Get the base directory of the Plugify system.
 		 * @return Reference to the base directory path.
 		 */
-		std::filesystem::path_view GetBaseDir() const noexcept;
+		const std::filesystem::path& GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Get the configuration directory of the Plugify system.
 		 * @return Reference to the configuration directory path.
 		 */
-		std::filesystem::path_view GetConfigsDir() const noexcept;
+		const std::filesystem::path& GetConfigsDir() const noexcept;
 
 		/**
 		 * @brief Get the data directory of the Plugify system.
 		 * @return Reference to the data directory path.
 		 */
-		std::filesystem::path_view GetDataDir() const noexcept;
+		const std::filesystem::path& GetDataDir() const noexcept;
 
 		/**
 		 * @brief Get the logs directory of the Plugify system.
 		 * @return Reference to the logs directory path.
 		 */
-		std::filesystem::path_view GetLogsDir() const noexcept;
+		const std::filesystem::path& GetLogsDir() const noexcept;
 
 		/**
 		 * @brief Checks if the preference for using own symbols is enabled.

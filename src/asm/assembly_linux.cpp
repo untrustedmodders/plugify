@@ -49,7 +49,7 @@ bool Assembly::InitFromName(std::string_view name, LoadFlag flags, const SearchD
 	dl_iterate_phdr([](dl_phdr_info* info, size_t /* size */, void* data) {
 		auto* _dldata = static_cast<dl_data*>(data);
 
-		if (info->dlpi_name && info->dlpi_name[0] != '\0' && fs::path(info->dlpi_name).filename() == _dldata->name) {
+		if (info->dlpi_name && info->dlpi_name[0] != '\0' && std::filesystem::path(info->dlpi_name).filename() == _dldata->name) {
 			_dldata->addr = info->dlpi_addr;
 			_dldata->path = info->dlpi_name;
 		}
@@ -100,7 +100,7 @@ bool Assembly::InitFromHandle(Handle handle, LoadFlag flags, const SearchDirs& s
 	return true;
 }
 
-bool Assembly::Init(const fs::path& path, LoadFlag flags, const SearchDirs& /*searchDirs*/, bool sections) {
+bool Assembly::Init(const std::filesystem::path& path, LoadFlag flags, const SearchDirs& /*searchDirs*/, bool sections) {
 	if (!IsExist(path)) {
 		return false;
 	}

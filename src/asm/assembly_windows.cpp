@@ -81,7 +81,7 @@ bool Assembly::InitFromName(std::string_view name, LoadFlag flags, const SearchD
 	if (name.empty())
 		return false;
 
-	fs::path fullName = PLUGIFY_LIBRARY_PREFIX;
+	std::filesystem::path fullName = PLUGIFY_LIBRARY_PREFIX;
 	fullName += name;
 	if (!extension && !fullName.has_extension())
 		fullName += PLUGIFY_LIBRARY_SUFFIX;
@@ -90,7 +90,7 @@ bool Assembly::InitFromName(std::string_view name, LoadFlag flags, const SearchD
 	if (!handle)
 		return false;
 
-	fs::path path = ::GetModulePath(handle);
+	std::wstring path = ::GetModulePath(handle);
 	if (path.empty())
 		return false;
 
@@ -138,7 +138,7 @@ bool Assembly::InitFromHandle(Handle handle, LoadFlag flags, const SearchDirs& s
 	return true;
 }
 
-bool Assembly::Init(const fs::path& path, LoadFlag flags, const SearchDirs& searchDirs, bool sections) {
+bool Assembly::Init(const std::filesystem::path& path, LoadFlag flags, const SearchDirs& searchDirs, bool sections) {
 	if (!IsExist(path)) {
 		return false;
 	}

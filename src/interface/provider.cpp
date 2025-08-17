@@ -9,20 +9,20 @@ void ProviderHandle::Log(std::string_view msg, Severity severity) const {
 	_impl->Log(msg, severity);
 }
 
-fs::path_view ProviderHandle::GetBaseDir() const noexcept {
-	return _impl->GetBaseDir().native();
+const std::filesystem::path& ProviderHandle::GetBaseDir() const noexcept {
+	return _impl->GetBaseDir();
 }
 
-fs::path_view ProviderHandle::GetConfigsDir() const noexcept {
-	return _impl->GetConfigsDir().native();
+const std::filesystem::path& ProviderHandle::GetConfigsDir() const noexcept {
+	return _impl->GetConfigsDir();
 }
 
-fs::path_view ProviderHandle::GetDataDir() const noexcept {
-	return _impl->GetDataDir().native();
+const std::filesystem::path& ProviderHandle::GetDataDir() const noexcept {
+	return _impl->GetDataDir();
 }
 
-fs::path_view ProviderHandle::GetLogsDir() const noexcept {
-	return _impl->GetLogsDir().native();
+const std::filesystem::path& ProviderHandle::GetLogsDir() const noexcept {
+	return _impl->GetLogsDir();
 }
 
 bool ProviderHandle::IsPreferOwnSymbols() const noexcept {

@@ -21,6 +21,6 @@
 #include <ranges>
 
 #include <core/log.hpp>
-#include <util/assert.h>
+#include <core/assert.h>
 
 namespace fs = std::filesystem;

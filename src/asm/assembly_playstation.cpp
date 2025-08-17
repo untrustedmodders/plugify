@@ -43,7 +43,7 @@ bool Assembly::InitFromHandle(Handle /*handle*/, LoadFlag /*flags*/, const Searc
 	return false;
 }
 
-bool Assembly::Init(const fs::path& path, LoadFlag /*flags*/, const SearchDirs& /*searchDirs*/, bool /*sections*/) {
+bool Assembly::Init(const std::filesystem::path& path, LoadFlag /*flags*/, const SearchDirs& /*searchDirs*/, bool /*sections*/) {
 	if (!IsExist(path)) {
 		return false;
 	}

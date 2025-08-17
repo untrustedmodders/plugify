@@ -13,6 +13,7 @@
 #include <plg/format.hpp>
 #endif
 
+#include <plg/hash.hpp>
 #include <plg/macro.hpp>
 
 // from https://github.com/Neargye/semver

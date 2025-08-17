@@ -11,6 +11,8 @@
 
 namespace plugify {
 	struct ModuleManifest;
+	class DependencyHandle;
+	class ConflictHandle;
 
 	/**
 	 * @class ModuleManifestHandle
@@ -24,63 +26,77 @@ namespace plugify {
 		 *
 		 * @return A string view representing the name.
 		 */
-		std::string_view GetName() const noexcept;
+		const std::string& GetName() const noexcept;
 
 		/**
 		 * @brief Retrieves the version of the language module.
 		 *
 		 * @return A struct representing the version.
 		 */
-		plg::version GetVersion() const noexcept;
+		const Version& GetVersion() const noexcept;
 
 		/**
 		 * @brief Retrieves the description of the language module.
 		 *
 		 * @return A string view representing the description.
 		 */
-		std::string_view GetDescription() const noexcept;
+		const std::string& GetDescription() const noexcept;
 
 		/**
 		 * @brief Retrieves the name of the creator of the language module.
 		 *
 		 * @return A string view representing the name of the creator.
 		 */
-		std::string_view GetAuthor() const noexcept;
+		const std::string& GetAuthor() const noexcept;
 
 		/**
 		 * @brief Retrieves the URL of the creator of the language module.
 		 *
 		 * @return A string view representing the creator's URL.
 		 */
-		std::string_view GetWebsite() const noexcept;
+		const std::string& GetWebsite() const noexcept;
 
 		/**
 		 * @brief Retrieves the license for the language module.
 		 *
 		 * @return A string view representing the license.
 		 */
-		std::string_view GetLicense() const noexcept;
+		const std::string& GetLicense() const noexcept;
 
 		/**
 		 * @brief Retrieves the supported platforms for the language module.
 		 *
 		 * @return A span of string views representing the supported platforms.
 		 */
-		std::span<const std::string_view> GetPlatforms() const noexcept;
+		std::span<const std::string> GetPlatforms() const noexcept;
+
+		/**
+		 * @brief Retrieves the dependencies of the language module.
+		 *
+		 * @return A span of `DependencyHandle` objects representing the language module's dependencies.
+		 */
+		std::span<const DependencyHandle> GetDependencies() const noexcept;
+
+		/**
+		 * @brief Retrieves the conflicts of the language module.
+		 *
+		 * @return A span of `ConflictHandle` objects representing the language module's conflicts.
+		 */
+		std::span<const ConflictHandle> GetConflicts() const noexcept;
 
 		/**
 		 * @brief Retrieves the library directories for the language module.
 		 *
 		 * @return A span of string views representing the library directories.
 		 */
-		std::span<const std::string_view> GetDirectories() const noexcept;
+		std::span<const std::string> GetDirectories() const noexcept;
 
 		/**
 		 * @brief Retrieves the programming language of the language module.
 		 *
 		 * @return A string view representing the language used by the module.
 		 */
-		std::string_view GetLanguage() const noexcept;
+		const std::string& GetLanguage() const noexcept;
 
 		/**
 		 * @brief Checks if the language module is forced to load.

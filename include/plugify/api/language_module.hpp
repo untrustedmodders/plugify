@@ -5,8 +5,6 @@
 #include <vector>
 
 #include <plg/expected.hpp>
-#include <plg/string.hpp>
-#include <plg/vector.hpp>
 #include <plugify/api/date_time.hpp>
 #include <plugify/api/method.hpp>
 #include <plugify/asm/mem_addr.hpp>
@@ -18,29 +16,29 @@ namespace plugify {
 	class ProviderHandle;
 
 	/**
-	 * @struct InitResult
+	 * @struct InitData
 	 * @brief Holds information about the initialization result.
 	 *
 	 * The InitResult structure is used to represent the result of a language module initialization.
 	 */
-	struct InitResult {
+	struct InitData {
 		MethodTable table;
 	};
 
 	/**
-	 * @struct LoadResult
+	 * @struct LoadData
 	 * @brief Holds information about the load result.
 	 *
 	 * The LoadResult structure is used to represent the result of loading a plugin in a language module.
 	 */
-	struct LoadResult {
-		plg::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
+	struct LoadData {
+		std::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
 		MemAddr data; ///< Data associated with the loaded plugin.
 		MethodTable table; ///< Method table for the loaded plugin.
 	};
 
 	template<typename T>
-	using Result = plg::expected<T, plg::string>;
+	using Result = plg::expected<T, std::string>;
 
 	/**
 	 * @class ILanguageModule
@@ -59,7 +57,7 @@ namespace plugify {
 		 * @param module Handle to the language module being initialized.
 		 * @return Result of the initialization, either InitResultData or ErrorData.
 		 */
-		virtual Result<InitResult> Initialize(ProviderHandle provider, ModuleHandle module) = 0;
+		virtual Result<InitData> Initialize(ProviderHandle provider, ModuleHandle module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.
@@ -77,7 +75,7 @@ namespace plugify {
 		 * @param plugin Handle to the loaded plugin.
 		 * @return Result of the load event, either LoadResultData or ErrorData.
 		 */
-		virtual Result<LoadResult> OnPluginLoad(PluginHandle plugin) = 0;
+		virtual Result<LoadData> OnPluginLoad(PluginHandle plugin) = 0;
 
 		/**
 		 * @brief Handle plugin start event.

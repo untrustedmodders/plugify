@@ -27,7 +27,7 @@ namespace plugify {
 		 * @return A DateTime object representing the given seconds.
 		 */
 		template<typename T = float>
-		constexpr static DateTime Seconds(const T& seconds) noexcept { return {std::chrono::duration<T>(seconds)}; }
+		constexpr static DateTime Seconds(const T& seconds) noexcept { return { std::chrono::duration<T>(seconds)}; }
 
 		/**
 		 * @brief Creates a DateTime object representing milliseconds.
@@ -36,7 +36,7 @@ namespace plugify {
 		 * @return A DateTime object representing the given milliseconds.
 		 */
 		template<typename T = double>
-		constexpr static DateTime Milliseconds(const T& milliseconds) noexcept { return {std::chrono::duration<T, std::micro>(milliseconds)}; }
+		constexpr static DateTime Milliseconds(const T& milliseconds) noexcept { return { std::chrono::duration<T, std::micro>(milliseconds)}; }
 
 		/**
 		 * @brief Creates a DateTime object representing microseconds.
@@ -45,7 +45,7 @@ namespace plugify {
 		 * @return A DateTime object representing the given microseconds.
 		 */
 		template<typename T = uint64_t>
-		constexpr static DateTime Microseconds(const T& microseconds) noexcept { return {std::chrono::duration<T, std::micro>(microseconds)}; }
+		constexpr static DateTime Microseconds(const T& microseconds) noexcept { return { std::chrono::duration<T, std::micro>(microseconds)}; }
 
 		/**
 		 * @brief Converts the time duration to seconds.

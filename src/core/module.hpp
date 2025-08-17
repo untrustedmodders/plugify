@@ -13,6 +13,9 @@ namespace plugify {
 	class Plugify;
 	class Module {
 	public:
+		using State = ModuleState;
+		using Utils = ModuleUtils;
+
 		Module(UniqueId id, BasePaths paths, std::shared_ptr<Manifest> manifest);
 		Module(const Module& module) = delete;
 		Module(Module&& module) noexcept;
@@ -74,7 +77,7 @@ namespace plugify {
 		Module& operator=(const Module&) = delete;
 		Module& operator=(Module&& other) noexcept = default;
 
-		static inline constexpr std::string_view kFileExtension = ".pmodule";
+		static inline constexpr std::string_view kFileExtension = "*.pmodule";
 		static inline constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
 
 	private:

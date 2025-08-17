@@ -1,11 +1,13 @@
 #pragma once
 
+#include <span>
+#include <vector>
+#include <string>
 #include <fstream>
 #include <filesystem>
+#include <functional>
 
 #include <plg/expected.hpp>
-#include <plg/string.hpp>
-#include <plg/vector.hpp>
 
 namespace plugify {
 	/**
@@ -27,12 +29,12 @@ namespace plugify {
 	    bool recursive{true};
 	    bool followSymlinks{false};
 	    std::optional<size_t> maxDepth;
-	    std::span<const std::string_view> extensions;  // Filter by extensions (e.g., {".json", ".yaml"})
+	    std::vector<std::string> extensions;  // Filter by extensions (e.g., {".json", ".yaml"})
 	    std::function<bool(const FileInfo&)> filter;  // Custom filter predicate
 	};
 
 	template<typename T>
-	using Result = plg::expected<T, plg::string>;
+	using Result = plg::expected<T, std::string>;
 
 	/**
 	 * @brief Simple filesystem interface for reading files and iterating directories
@@ -45,12 +47,12 @@ namespace plugify {
 	    /**
 	     * @brief Read entire file as text
 	     */
-	    virtual Result<plg::string> ReadTextFile(const std::filesystem::path& path) = 0;
+	    virtual Result<std::string> ReadTextFile(const std::filesystem::path& path) = 0;
 
 	    /**
 	     * @brief Read entire file as binary
 	     */
-	    virtual Result<plg::vector<uint8_t>> ReadBinaryFile(const std::filesystem::path& path) = 0;
+	    virtual Result<std::vector<uint8_t>> ReadBinaryFile(const std::filesystem::path& path) = 0;
 
 	    /**
 	     * @brief Write text to file
@@ -86,21 +88,21 @@ namespace plugify {
 	    /**
 	     * @brief List files in directory (non-recursive)
 	     */
-	    virtual Result<plg::vector<FileInfo>> ListDirectory(const std::filesystem::path& directory) = 0;
+	    virtual Result<std::vector<FileInfo>> ListDirectory(const std::filesystem::path& directory) = 0;
 
 	    /**
 	     * @brief Iterate over files in directory with options
 	     */
-	    virtual Result<plg::vector<FileInfo>> IterateDirectory(
+	    virtual Result<std::vector<FileInfo>> IterateDirectory(
 	        const std::filesystem::path& directory,
 	        const DirectoryIterationOptions& options = {}) = 0;
 
 	    /**
 	     * @brief Find files matching pattern
 	     */
-	    virtual Result<plg::vector<std::filesystem::path>> FindFiles(
+	    virtual Result<std::vector<std::filesystem::path>> FindFiles(
 	        const std::filesystem::path& directory,
-	        std::span<const std::string_view> patterns,  // e.g., {"*.json", "manifest.*"}
+	        std::initializer_list<std::string_view> patterns,  // e.g., {"*.json", "manifest.*"}
 	        bool recursive = true) = 0;
 
 	    // Path Operations
@@ -139,302 +141,317 @@ namespace plugify {
 	 */
 	class StandardFileSystem : public IFileSystem {
 	public:
-	    Result<plg::string> ReadTextFile(const std::filesystem::path& path) override {
+	    Result<std::string> ReadTextFile(const std::filesystem::path& path) override {
 	        std::error_code ec;
 	        
-	        if (!fs::exists(path, ec)) {
+	        if (!std::filesystem::exists(path, ec)) {
 	            return plg::unexpected(std::format("file not found: {}", ec.message()));
 	        }
-	        
-	        if (!fs::is_regular_file(path, ec)) {
+
+	        if (!std::filesystem::is_regular_file(path, ec)) {
 	            return plg::unexpected(std::format("not a regular file: {}", ec.message()));
 	        }
-	        
+
 	        std::ifstream file(path, std::ios::in | std::ios::binary);
 	        if (!file) {
-	            return plg::unexpected(std::format("cannot open file: {}", std::strerror(errno)));
+	            return plg::unexpected(std::format("cannot open file: {}", SystemError()));
 	        }
-	        
+
 	        // Read entire file
 	        std::stringstream buffer;
 	        buffer << file.rdbuf();
-	        
+
 	        if (!file && !file.eof()) {
-	            return plg::unexpected(std::format("error reading file: {}", std::strerror(errno)));
+	            return plg::unexpected(std::format("error reading file: {}", SystemError()));
 	        }
-	        
-	        return buffer.view();
+
+	        return buffer.str();
 	    }
-	    
-	    Result<plg::vector<uint8_t>> ReadBinaryFile(const std::filesystem::path& path) override {
+
+	    Result<std::vector<uint8_t>> ReadBinaryFile(const std::filesystem::path& path) override {
 	        std::error_code ec;
-	        
-	        if (!fs::exists(path, ec)) {
+
+	        if (!std::filesystem::exists(path, ec)) {
 	            return plg::unexpected(std::format("file not found: {}", ec.message()));
 	        }
-	        
-	        auto fileSize = fs::file_size(path, ec);
+
+	        auto fileSize = std::filesystem::file_size(path, ec);
 	        if (ec) {
 	            return plg::unexpected(std::format("cannot get file size: {}", ec.message()));
 	        }
-	        
-	        plg::vector<uint8_t> data(fileSize);
+
+	        std::vector<uint8_t> data(fileSize);
 	        std::ifstream file(path, std::ios::binary);
 	        if (!file) {
-	            return plg::unexpected(std::format("cannot open file: {}", std::strerror(errno)));
+	            return plg::unexpected(std::format("cannot open file: {}", SystemError()));
 	        }
 
 	        file.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(fileSize));
 	        if (!file && !file.eof()) {
-	            return plg::unexpected(std::format("error reading file: {}", std::strerror(errno)));
+	            return plg::unexpected(std::format("error reading file: {}", SystemError()));
 	        }
-	        
+
 	        return data;
 	    }
-	    
+
 	    Result<void> WriteTextFile(const std::filesystem::path& path, std::string_view content) override {
 	        std::error_code ec;
-	        
+
 	        // Create parent directories if needed
 	        auto parent = path.parent_path();
-	        if (!parent.empty() && !fs::exists(parent, ec)) {
-	            fs::create_directories(parent, ec);
+	        if (!parent.empty() && !std::filesystem::exists(parent, ec)) {
+	            std::filesystem::create_directories(parent, ec);
 	            if (ec) {
 	                return plg::unexpected(std::format("cannot create parent directory: {}", ec.message()));
 	            }
 	        }
-	        
+
 	        std::ofstream file(path, std::ios::out | std::ios::trunc);
 	        if (!file) {
-	            return plg::unexpected(std::format("cannot open file for writing: {}", std::strerror(errno)));
+	            return plg::unexpected(std::format("cannot open file for writing: {}", SystemError()));
 	        }
-	        
+
 	        file << content;
 	        if (!file) {
-	            return plg::unexpected(std::format("error writing file: {}", std::strerror(errno)));
+	            return plg::unexpected(std::format("error writing file: {}", SystemError()));
 	        }
-	        
+
 	        return {};
 	    }
-	    
+
 	    Result<void> WriteBinaryFile(const std::filesystem::path& path, std::span<const uint8_t> data) override {
 	        std::error_code ec;
-	        
+
 	        // Create parent directories if needed
 	        auto parent = path.parent_path();
-	        if (!parent.empty() && !fs::exists(parent, ec)) {
-	            fs::create_directories(parent, ec);
+	        if (!parent.empty() && !std::filesystem::exists(parent, ec)) {
+	            std::filesystem::create_directories(parent, ec);
 	            if (ec) {
 	                return plg::unexpected(std::format("cannot create parent directory: {}", ec.message()));
 	            }
 	        }
-	        
+
 	        std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
 	        if (!file) {
-	            return plg::unexpected(std::format("cannot open file for writing: {}", std::strerror(errno)));
+	            return plg::unexpected(std::format("cannot open file for writing: {}", SystemError()));
 	        }
-	        
+
 	        file.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
 	        if (!file) {
-	            return plg::unexpected(std::format("error writing file: {}", std::strerror(errno)));
+	            return plg::unexpected(std::format("error writing file: {}", SystemError()));
 	        }
-	        
+
 	        return {};
 	    }
-	    
+
 	    bool IsExists(const std::filesystem::path& path) override {
 	        std::error_code ec;
-	        return fs::exists(path, ec);
+	        return std::filesystem::exists(path, ec);
 	    }
-	    
+
 	    bool IsDirectory(const std::filesystem::path& path) override {
 	        std::error_code ec;
-	        return fs::is_directory(path, ec);
+	        return std::filesystem::is_directory(path, ec);
 	    }
-	    
+
 	    bool IsRegularFile(const std::filesystem::path& path) override {
 	        std::error_code ec;
-	        return fs::is_regular_file(path, ec);
+	        return std::filesystem::is_regular_file(path, ec);
 	    }
-	    
+
 	    Result<FileInfo> GetFileInfo(const std::filesystem::path& path) override {
 	        std::error_code ec;
-	        
-	        if (!fs::exists(path, ec)) {
+
+	        if (!std::filesystem::exists(path, ec)) {
 	            return plg::unexpected(std::format("path not found: {}", ec.message()));
 	        }
-	        
+
 	        FileInfo info {
 	        	.path = path,
-	        	.lastModified = fs::last_write_time(path, ec),
-	        	.size = fs::is_regular_file(path, ec) ? fs::file_size(path, ec) : 0,
-	        	.isDirectory = fs::is_directory(path, ec),
-	        	.isRegularFile = fs::is_regular_file(path, ec),
-	        	.isSymlink = fs::is_symlink(path, ec),
+	        	.lastModified = std::filesystem::last_write_time(path, ec),
+	        	.size = std::filesystem::is_regular_file(path, ec) ? std::filesystem::file_size(path, ec) : 0,
+	        	.isDirectory = std::filesystem::is_directory(path, ec),
+	        	.isRegularFile = std::filesystem::is_regular_file(path, ec),
+	        	.isSymlink = std::filesystem::is_symlink(path, ec),
 	        };
-	        
+
 	        if (ec) {
 	            return plg::unexpected(std::format("error getting file info: {}", ec.message()));
 	        }
-	        
+
 	        return info;
 	    }
-	    
-	    Result<plg::vector<FileInfo>> ListDirectory(const std::filesystem::path& directory) override {
+
+	    Result<std::vector<FileInfo>> ListDirectory(const std::filesystem::path& directory) override {
 	        std::error_code ec;
-	        
-	        if (!fs::is_directory(directory, ec)) {
+
+	        if (!std::filesystem::is_directory(directory, ec)) {
 	            return plg::unexpected(std::format("not a directory: {}", ec.message()));
 	        }
-	        
-	        plg::vector<FileInfo> files;
-	        
-	        for (const auto& entry : fs::directory_iterator(directory, ec)) {
+
+	        std::vector<FileInfo> files;
+
+	        for (const auto& entry : std::filesystem::directory_iterator(directory, ec)) {
 	            if (ec) {
 	                return plg::unexpected(std::format("error iterating directory: {}", ec.message()));
 	            }
 
 				if (auto infoResult = GetFileInfo(entry.path())) {
-	                files.push_back(*infoResult);
+	                files.emplace_back(std::move(*infoResult));
 	            }
 	        }
-	        
+
 	        return files;
 	    }
-	    
-	    Result<plg::vector<FileInfo>> IterateDirectory(
+
+	    Result<std::vector<FileInfo>> IterateDirectory(
 	        const std::filesystem::path& directory,
 	        const DirectoryIterationOptions& options) override {
-	        
+
 	        std::error_code ec;
-	        
-	        if (!fs::is_directory(directory, ec)) {
+
+	        if (!std::filesystem::is_directory(directory, ec)) {
 	            return plg::unexpected(std::format("not a directory: {}", ec.message()));
 	        }
-	        
-	        plg::vector<FileInfo> files;
-	        
+
+	        std::vector<FileInfo> files;
+
 	        if (options.recursive) {
 	            IterateRecursive(directory, files, options, 0, ec);
 	        } else {
-	            for (const auto& entry : fs::directory_iterator(directory, ec)) {
+	            for (const auto& entry : std::filesystem::directory_iterator(directory, ec)) {
 	                if (ec) break;
-	                
+
 	                auto infoResult = GetFileInfo(entry.path());
 	                if (infoResult && ShouldInclude(*infoResult, options)) {
-	                    files.push_back(*infoResult);
+	                    files.emplace_back(std::move(*infoResult));
 	                }
 	            }
 	        }
-	        
+
 	        if (ec) {
 	            return plg::unexpected(std::format("error iterating directory: {}", ec.message()));
 	        }
-	        
+
 	        return files;
 	    }
-	    
-	    Result<plg::vector<std::filesystem::path>> FindFiles(
+
+	    Result<std::vector<std::filesystem::path>> FindFiles(
 	        const std::filesystem::path& directory,
-	        std::span<const std::string_view> patterns,
+	        std::initializer_list<std::string_view> patterns,
 	        bool recursive) override {
-	        
+
 	        std::error_code ec;
-	        
-	        if (!fs::is_directory(directory, ec)) {
+
+	        if (!std::filesystem::is_directory(directory, ec)) {
 	            return plg::unexpected(std::format("not a directory: {}", ec.message()));
 	        }
-	        
-	        plg::vector<std::filesystem::path> matches;
+
+	        std::vector<std::filesystem::path> matches;
 
 	        if (!recursive) {
-	            for (const auto& entry : fs::directory_iterator(directory, ec)) {
+	            for (const auto& entry : std::filesystem::directory_iterator(directory, ec)) {
 	                if (ec) break;
 	                if (MatchesPatterns(entry.path().filename().string(), patterns)) {
 	                    matches.push_back(entry.path());
 	                }
 	            }
 	        } else {
-	            for (const auto& entry : fs::recursive_directory_iterator(directory, ec)) {
+	            for (const auto& entry : std::filesystem::recursive_directory_iterator(directory, ec)) {
 	                if (ec) break;
 	                if (MatchesPatterns(entry.path().filename().string(), patterns)) {
 	                    matches.push_back(entry.path());
 	                }
 	            }
 	        }
-	        
+
 	        if (ec) {
 	            return plg::unexpected(std::format("error finding files: {}", ec.message()));
 	        }
-	        
+
 	        return matches;
 	    }
-	    
+
 	    Result<void> CreateDirectories(const std::filesystem::path& path) override {
 	        std::error_code ec;
-	        fs::create_directories(path, ec);
+	        std::filesystem::create_directories(path, ec);
 	        if (ec) {
 	            return plg::unexpected(std::format("cannot create directories: {}", ec.message()));
 	        }
 	        return {};
 	    }
-	    
+
 	    Result<void> Remove(const std::filesystem::path& path) override {
 	        std::error_code ec;
-	        fs::remove(path, ec);
+	        std::filesystem::remove(path, ec);
 	        if (ec) {
 	            return plg::unexpected(std::format("cannot remove path: {}", ec.message()));
 	        }
 	        return {};
 	    }
-	    
+
 	    Result<void> RemoveAll(const std::filesystem::path& path) override {
 	        std::error_code ec;
-	        fs::remove_all(path, ec);
+	        std::filesystem::remove_all(path, ec);
 	        if (ec) {
 	            return plg::unexpected(std::format("cannot remove directory: {}", ec.message()));
 	        }
 	        return {};
 	    }
-	    
+
 	    Result<void> Copy(const std::filesystem::path& from, const std::filesystem::path& to) override {
 	        std::error_code ec;
-	        fs::copy(from, to, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+	        std::filesystem::copy(from, to, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing, ec);
 	        if (ec) {
 	            return plg::unexpected(std::format("cannot copy: {}", ec.message()));
 	        }
 	        return {};
 	    }
-	    
+
 	    Result<void> Move(const std::filesystem::path& from, const std::filesystem::path& to) override {
 	        std::error_code ec;
-	        fs::rename(from, to, ec);
+	        std::filesystem::rename(from, to, ec);
 	        if (ec) {
 	            return plg::unexpected(std::format("cannot move: {}", ec.message()));
 	        }
 	        return {};
 	    }
-	    
+
 	private:
+		static std::string SystemError() {
+			std::string result(1024, '\0');
+#ifdef PLUGIFY_PLATFORM_WINDOWS
+			strerror_s(result.data(), result.size(), errno);
+#elif PLUGIFY_PLATFORM_APPLE
+			strerror_r(errno, result.data(), result.size());
+#else
+			auto b = result.data();
+			auto r = strerror_r(errno, b, result.size());
+			if (r != b) return r;
+#endif
+			result.resize(strlen(result.data()));
+			return result;
+		}
+
 	    void IterateRecursive(
 	        const std::filesystem::path& directory,
-	        plg::vector<FileInfo>& files,
+	        std::vector<FileInfo>& files,
 	        const DirectoryIterationOptions& options,
 	        size_t currentDepth,
 	        std::error_code& ec) {
-	        
+
 	        if (options.maxDepth && currentDepth >= *options.maxDepth) {
 	            return;
 	        }
-	        
-	        for (const auto& entry : fs::directory_iterator(directory, ec)) {
+
+	        for (const auto& entry : std::filesystem::directory_iterator(directory, ec)) {
 	            if (ec) return;
 	            
 	            auto infoResult = GetFileInfo(entry.path());
 	            if (!infoResult) continue;
 	            
 	            if (ShouldInclude(*infoResult, options)) {
-	                files.push_back(*infoResult);
+	                files.emplace_back(std::move(*infoResult));
 	            }
 	            
 	            if (infoResult->isDirectory && !infoResult->isSymlink) {
@@ -464,8 +481,8 @@ namespace plugify {
 	        return true;
 	    }
 	    
-	    bool MatchesPatterns(std::string_view filename, std::span<const std::string_view> patterns) {
-	        if (patterns.empty()) return true;
+	    bool MatchesPatterns(std::string_view filename, std::initializer_list<std::string_view> patterns) {
+	        if (patterns.size() == 0) return true;
 	        
 	        for (const auto& pattern : patterns) {
 	            if (SimpleMatch(filename, pattern)) {

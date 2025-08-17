@@ -11,13 +11,14 @@ namespace plugify {
 	 * @brief Enumerates severity levels for logging messages.
 	 */
 	enum class Severity {
-		None = 0,
-		Fatal = 1,
-		Error = 2,
-		Warning = 3,
-		Info = 4,
-		Debug = 5,
-		Verbose = 6,
+		None,
+		Fatal,
+		Error,
+		Warning,
+		Info,
+		Debug,
+		Verbose,
+		Unknown
 	};
 
 	/**
@@ -39,13 +40,13 @@ namespace plugify {
 	/**
 	 * @brief Namespace containing utility functions of Severity enum.
 	 */
-	namespace SeverityUtils {
+	struct SeverityUtils {
 		/**
 		 * @brief Convert a Severity enum value to its string representation.
 		 * @param severity The Severity value to convert.
 		 * @return The string representation of the Severity.
 		 */
-		constexpr std::string_view ToString(Severity severity) noexcept {
+		static constexpr std::string_view ToString(Severity severity) noexcept {
 			switch (severity) {
 				case Severity::Fatal:   return "Fatal";
 				case Severity::Error:   return "Error";
@@ -62,7 +63,7 @@ namespace plugify {
 		 * @param severity The string representation of Severity.
 		 * @return The corresponding Severity enum value.
 		 */
-		constexpr Severity FromString(std::string_view severity) noexcept {
+		static constexpr Severity FromString(std::string_view severity) noexcept {
 			if (severity == "Fatal") {
 				return Severity::Fatal;
 			} else if (severity == "Error") {
@@ -78,7 +79,7 @@ namespace plugify {
 			}
 			return Severity::None;
 		}
-	} // namespace SeverityUtils
+	};
 
 	// ============================================================================
 	// Standard Logger Implementation

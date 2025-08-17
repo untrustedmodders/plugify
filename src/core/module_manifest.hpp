@@ -1,31 +1,24 @@
 #pragma once
 
 #include "manifest.hpp"
-#include <util/algorithm.hpp>
 
 namespace plugify {
 	struct ModuleManifest : Manifest {
+		// Module specific
 		std::string language;
 		std::optional<std::vector<std::string>> directories;
 		std::optional<bool> forceLoad;
 
-	private:
-		// temp storage to return spans of handles easily
-		mutable std::shared_ptr<std::vector<std::string_view>> _platforms;
-		mutable std::shared_ptr<std::vector<std::string_view>> _directories;
-		friend class ModuleManifestHandle;
-
-	public:
 		std::vector<std::string> Validate() {
-			std::vector<std::string> errors;
+			std::vector<std::string> errors = Manifest::Validate();
 
 			if (language.empty()) {
 				errors.emplace_back("Missing language name");
 			}
 
-			if (directories) {
+			if (directories && !directories->empty()) {
 				if (RemoveDuplicates(*directories)) {
-					PL_LOG_WARNING("Language Module: '{}' has multiple same directories!", name);
+					PL_LOG_WARNING("Manifest: '{}' has multiple same directories!", name);
 				}
 				size_t i = 0;
 				for (const auto& directory : *directories) {

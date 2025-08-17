@@ -12,6 +12,7 @@
 namespace plugify {
 	struct PluginManifest;
 	class DependencyHandle;
+	class ConflictHandle;
 	class MethodHandle;
 
 	/**
@@ -26,63 +27,63 @@ namespace plugify {
 		 *
 		 * @return A string view representing the name.
 		 */
-		std::string_view GetName() const noexcept;
+		const std::string& GetName() const noexcept;
 
 		/**
 		 * @brief Retrieves the version of the plugin.
 		 *
 		 * @return A struct representing the plugin version.
 		 */
-		Version GetVersion() const noexcept;
+		const Version& GetVersion() const noexcept;
 
 		/**
 		 * @brief Retrieves the description of the plugin.
 		 *
 		 * @return A string view representing the plugin description.
 		 */
-		std::string_view GetDescription() const noexcept;
+		const std::string& GetDescription() const noexcept;
 
 		/**
 		 * @brief Retrieves the name of the creator of the plugin.
 		 *
 		 * @return A string view representing the name of the creator.
 		 */
-		std::string_view GetAuthor() const noexcept;
+		const std::string& GetAuthor() const noexcept;
 
 		/**
 		 * @brief Retrieves the URL of the creator of the plugin.
 		 *
 		 * @return A string view representing the creator's URL.
 		 */
-		std::string_view GetWebsite() const noexcept;
+		const std::string& GetWebsite() const noexcept;
 
 		/**
 		 * @brief Retrieves the license for the plugin.
 		 *
 		 * @return A string view representing the license.
 		 */
-		std::string_view GetLicense() const noexcept;
+		const std::string& GetLicense() const noexcept;
 
 		/**
 		 * @brief Retrieves the supported platforms for the plugin.
 		 *
 		 * @return A span of string views representing the supported platforms.
 		 */
-		std::span<const std::string_view> GetPlatforms() const noexcept;
+		std::span<const std::string> GetPlatforms() const noexcept;
 
 		/**
 		 * @brief Retrieves the entry point of the plugin.
 		 *
 		 * @return A string view representing the plugin's entry point.
 		 */
-		std::string_view GetEntry() const noexcept;
+		const std::string& GetEntry() const noexcept;
 
 		/**
 		 * @brief Retrieves the language used by the plugin.
 		 *
 		 * @return A string view representing the language.
 		 */
-		std::string_view GetLanguage() const noexcept;
+		const std::string& GetLanguage() const noexcept;
 
 		/**
 		 * @brief Retrieves the dependencies of the plugin.
@@ -90,6 +91,13 @@ namespace plugify {
 		 * @return A span of `DependencyHandle` objects representing the plugin's dependencies.
 		 */
 		std::span<const DependencyHandle> GetDependencies() const noexcept;
+
+		/**
+		 * @brief Retrieves the conflicts of the plugin.
+		 *
+		 * @return A span of `ConflictHandle` objects representing the plugin's conflicts.
+		 */
+		std::span<const ConflictHandle> GetConflicts() const noexcept;
 
 		/**
 		 * @brief Retrieves the methods exported by the plugin.

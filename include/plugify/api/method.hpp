@@ -28,7 +28,7 @@ namespace plugify {
 		 *
 		 * @return A string view representing the name of the enum value.
 		 */
-		std::string_view GetName() const noexcept;
+		const std::string& GetName() const noexcept;
 
 		/**
 		 * @brief Retrieves the enum value.
@@ -50,7 +50,7 @@ namespace plugify {
 		 *
 		 * @return A string view representing the name of the enum.
 		 */
-		std::string_view GetName() const noexcept;
+		const std::string& GetName() const noexcept;
 
 		/**
 		 * @brief Retrieves the values contained within the enum.
@@ -110,21 +110,21 @@ namespace plugify {
 		 *
 		 * @return A string view representing the name of the method.
 		 */
-		std::string_view GetName() const noexcept;
+		const std::string& GetName() const noexcept;
 
 		/**
 		 * @brief Retrieves the function name of the method.
 		 *
 		 * @return A string view representing the function name of the method.
 		 */
-		std::string_view GetFunctionName() const noexcept;
+		const std::string& GetFunctionName() const noexcept;
 
 		/**
 		 * @brief Retrieves the calling convention of the method.
 		 *
 		 * @return A string view representing the calling convention.
 		 */
-		std::string_view GetCallingConvention() const noexcept;
+		const std::string& GetCallingConvention() const noexcept;
 
 		/**
 		 * @brief Retrieves the parameter types for the method.

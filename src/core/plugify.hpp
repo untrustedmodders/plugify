@@ -23,7 +23,7 @@ namespace plugify {
 		ManagerHandle GetManager() const;
 		ProviderHandle GetProvider() const;
 		const Config& GetConfig() const;
-		Version GetVersion() const;
+		const Version& GetVersion() const;
 
 		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
 		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const;

@@ -5,47 +5,54 @@
   "description": "A language module for Plugify.",
   "title": "LanguageModule",
   "required": [
-    "version",
     "name",
+    "version",
+    "description",
+    "author",
+    "website",
+    "license",
     "language"
   ],
   "properties": {
     "fileVersion": {
       "type": "number",
-      "description": "The version number of the configuration file format.",
+      "description": "The schema version number. Used to ensure compatibility between the module configuration and the Plugify parser. Increment when breaking changes are made to the schema format.",
       "minimum": 1
     },
     "version": {
       "type": "string",
-      "description": "The semantic version of the language module.",
+      "description": "The semantic version (SemVer) of the language module following the format MAJOR.MINOR.PATCH. Used for dependency resolution and compatibility checking.",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "minLength": 1
     },
     "name": {
       "type": "string",
-      "description": "A user-friendly name for the language module.",
-      "minLength": 1
+      "description": "The unique identifier for the language module. Should be lowercase, use hyphens for spaces, and clearly indicate the language (e.g., 'python3-module', 'cpp-language-support').",
+      "minLength": 1,
+      "examples": ["python3-module", "cpp-language-support"]
     },
     "description": {
       "type": "string",
-      "description": " A brief description or overview of the language module."
+      "description": "A comprehensive description of the language module's functionality, features, and purpose. Should explain what programming language it enables and any special capabilities it provides."
     },
     "author": {
       "type": "string",
-      "description": "The creator or author of the language module."
+      "description": "The name or identifier of the module creator. Can be an individual name, username, or organization (e.g., 'John Doe', 'johndoe', 'Acme Corp').",
+      "examples": ["John Doe", "jane-doe", "Acme Corporation", "Community Contributors"]
     },
     "website": {
       "type": "string",
-      "description": "The URL linking to the creator's profile or information.",
+      "description": "The official website, repository, or documentation URL for this language module. Typically links to the project's GitHub repository or documentation site.",
       "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
     },
     "license": {
       "type": "string",
-      "description": "The license for the language module."
+      "description": "The software license identifier for the module (e.g., 'MIT', 'Apache-2.0', 'GPL-3.0'). Should use SPDX license identifiers when possible. See https://spdx.org/licenses/",
+      "examples": ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause", "proprietary"]
     },
     "platforms": {
       "type": "array",
-      "description": "An array listing the platforms supported by the language module.",
+      "description": "Target platforms and architectures this module supports. Each entry should specify the OS and architecture in the format 'os_arch' (e.g., 'windows_x64', 'linux_arm64'). Leave empty to support all platforms.",
       "items": {
         "type": "string",
         "description": "Platform name.",
@@ -57,9 +64,77 @@
         ]
       }
     },
+    "dependencies": {
+      "type": "array",
+      "description": "Other modules required for this language module to function properly. Dependencies are resolved and loaded before this module. Version constraints ensure compatibility.",
+      "items": {
+        "type": "object",
+        "description": "Describes the properties of a module dependency.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the module reference.",
+            "minLength": 1
+          },
+          "constraints": {
+            "type": "array",
+            "description": "A list of version constraints for the dependency, e.g., '>=1.2.3', '==2.0.0', '~>2.1.0', or '' for any version.",
+            "items": {
+              "type": "string",
+              "description": "A version constraint in the format '[operator]version' (e.g., '>=1.2.3') or empty string for any version. Supported operators: '==', '!=', '>', '>=', '<', '<=', '~>'.",
+              "pattern": "^(==|!=|>|>=|<|<=|~>|)(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$|^$",
+              "minLength": 0
+            },
+            "examples": [">=1.0.0", "~>2.1.0", ">=1.0.0", "!=1.2.3", "<2.0.0"]
+          },
+          "optional": {
+            "type": "boolean",
+            "description": "Indicates whether the module reference is optional."
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "description": "Modules that are incompatible with this language module. The plugin manager will prevent loading conflicting modules simultaneously. Use this to prevent issues with modules that provide overlapping functionality.",
+      "items": {
+        "type": "object",
+        "description": "Describes the properties of a conflicting module.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the conflicting module.",
+            "minLength": 1
+          },
+          "constraints": {
+            "type": "array",
+            "description": "A list of version constraints for the conflicting module, e.g., '>=1.2.3', '==2.0.0', '~>2.1.0', or '' for any version.",
+            "items": {
+              "type": "string",
+              "description": "A version constraint in the format '[operator]version' (e.g., '>=1.2.3') or empty string for any version. Supported operators: '==', '!=', '>', '>=', '<', '<=', '~>'.",
+              "pattern": "^(==|!=|>|>=|<|<=|~>|)(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$|^$",
+              "minLength": 0
+            },
+            "examples": [">=1.0.0", "~>2.1.0", ">=1.0.0,<2.0.0", "!=1.2.3", ""]
+          },
+          "reason": {
+            "type": "string",
+            "description": "The reason why this module conflicts with the specified module.",
+            "minLength": 1
+          }
+        }
+      }
+    },
+
     "language": {
       "type": "string",
-      "description": "The identifier for the programming language supported by the module.",
+      "description": "The programming language identifier that this module provides support for. Should match the language's common abbreviation or file extension (e.g., 'cpp' for C++, 'py' for Python, 'js' for JavaScript).",
       "minLength": 1,
       "examples": [
         "cpp",
@@ -70,9 +145,9 @@
         "lua"
       ]
     },
-    "libraryDirectories": {
+    "directories": {
       "type": "array",
-      "description": "Specifies additional directories where the language module can search for libraries.",
+      "description": "Additional directories relative to the module's location where native libraries, bindings, or runtime files are located. These paths are added to the module's library search path.",
       "items": {
         "type": "string",
         "description": "Relative folder path.",
@@ -81,7 +156,7 @@
     },
     "forceLoad": {
       "type": "boolean",
-      "description": "Indicates whether the language module should be force-loaded by the Plugify core."
+      "description": "When true, ensures this module is loaded even if no plugins explicitly depend on it. Useful for core language modules that provide essential runtime services. Default is false."
     }
   }
 }

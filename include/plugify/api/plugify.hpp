@@ -22,7 +22,7 @@ namespace plugify {
 	 * @class PlugifyHandle
 	 * @brief Wrapper handle for the Plugify, which is provided to the user and implemented in the core.
 	 */
-	class PLUGIFY_API PlugifyHandle : public Handle<Plugify> {
+	class PLUGIFY_API PlugifyHandle : public Handle<const Plugify> {
 		using Handle::Handle;
 	public:
 		/**
@@ -85,7 +85,7 @@ namespace plugify {
 		 * @brief Get the version information of the Plugify system.
 		 * @return Version information.
 		 */
-		Version GetVersion() const noexcept;
+		const Version& GetVersion() const noexcept;
 
 		/**
 		 * @brief Set the assembly loader for the Plugify system.

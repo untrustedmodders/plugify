@@ -1,9 +1,10 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <filesystem>
 
 #include <plugify/api/handle.hpp>
-#include <plugify/api/path.hpp>
 
 #include <plugify_export.h>
 
@@ -48,19 +49,19 @@ namespace plugify {
 		 * @brief Get the name of the language module.
 		 * @return The name of the language module.
 		 */
-		std::string_view GetName() const noexcept;
+		const std::string& GetName() const noexcept;
 
 		/**
 		 * @brief Get the language of the language module.
 		 * @return The language of the language module.
 		 */
-		std::string_view GetLanguage() const noexcept;
+		const std::string& GetLanguage() const noexcept;
 
 		/**
 		 * @brief Get the base directory of the language module.
 		 * @return The base directory as a filesystem path.
 		 */
-		std::filesystem::path_view GetBaseDir() const noexcept;
+		const std::filesystem::path& GetBaseDir() const noexcept;
 
 		/**
 		 * @brief Get the manifest of the language module.
@@ -78,19 +79,19 @@ namespace plugify {
 		 * @brief Get the error message associated with the language module.
 		 * @return The error message.
 		 */
-		std::string_view GetError() const noexcept;
+		const std::string& GetError() const noexcept;
 	};
 
 	/**
 	 * @brief Namespace containing utility functions of ModuleState enum.
 	 */
-	namespace ModuleUtils {
+	struct ModuleUtils {
 		/**
 		 * @brief Convert a ModuleState enum value to its string representation.
 		 * @param state The ModuleState value to convert.
 		 * @return The string representation of the ModuleState.
 		 */
-		constexpr std::string_view ToString(ModuleState state) noexcept {
+		static constexpr std::string_view ToString(ModuleState state) noexcept {
 			switch (state) {
 				case ModuleState::NotLoaded: return "NotLoaded";
 				case ModuleState::Error:     return "Error";
@@ -104,7 +105,7 @@ namespace plugify {
 		 * @param state The string representation of ModuleState.
 		 * @return The corresponding ModuleState enum value.
 		 */
-		constexpr ModuleState FromString(std::string_view state) noexcept {
+		static constexpr ModuleState FromString(std::string_view state) noexcept {
 			if (state == "NotLoaded") {
 				return ModuleState::NotLoaded;
 			} else if (state == "Error") {
@@ -114,6 +115,6 @@ namespace plugify {
 			}
 			return ModuleState::Unknown;
 		}
-	} // namespace ModuleUtils
+	};
 
 } // namespace plugify

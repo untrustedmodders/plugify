@@ -39,7 +39,7 @@ const Config& PlugifyHandle::GetConfig() const noexcept {
 	return _impl->GetConfig();
 }
 
-Version PlugifyHandle::GetVersion() const noexcept {
+const Version& PlugifyHandle::GetVersion() const noexcept {
 	return _impl->GetVersion();
 }
 

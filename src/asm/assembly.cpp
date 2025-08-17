@@ -26,7 +26,7 @@ Assembly::Assembly(Handle handle, LoadFlag flags, const SearchDirs& searchDirs, 
 	InitFromHandle(handle, flags, searchDirs, sections);
 }
 
-Assembly::Assembly(const fs::path& path, LoadFlag flags, const SearchDirs& searchDirs, bool sections) : _handle{nullptr} {
+Assembly::Assembly(const std::filesystem::path& path, LoadFlag flags, const SearchDirs& searchDirs, bool sections) : _handle{nullptr} {
 	Init(path, flags, searchDirs, sections);
 }
 
@@ -152,11 +152,11 @@ void* Assembly::GetHandle() const noexcept {
 	return _handle;
 }
 
-fs::path_view Assembly::GetPath() const noexcept {
-	return _path.native();
+const std::filesystem::path& Assembly::GetPath() const noexcept {
+	return _path;
 }
 
-std::string_view Assembly::GetError() const noexcept {
+const std::string& Assembly::GetError() const noexcept {
 	return _error;
 }
 
@@ -164,10 +164,10 @@ MemAddr Assembly::GetSymbol(std::string_view name) const {
 	return GetFunctionByName(name);
 }
 
-bool Assembly::IsExist(const fs::path& path) {
+bool Assembly::IsExist(const std::filesystem::path& path) {
 	std::error_code ec;
 
-	if (!fs::exists(path, ec)) {
+	if (!std::filesystem::exists(path, ec)) {
 		if (ec) {
 			_error = std::format("Error checking path existence: {}", ec.message());
 		} else {
@@ -176,7 +176,7 @@ bool Assembly::IsExist(const fs::path& path) {
 		return false;
 	}
 
-	if (!fs::is_regular_file(path, ec)) {
+	if (!std::filesystem::is_regular_file(path, ec)) {
 		if (ec) {
 			_error = std::format("Error checking if path is a regular file: {}", ec.message());
 		} else {

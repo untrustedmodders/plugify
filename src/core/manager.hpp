@@ -12,6 +12,10 @@ namespace plugify {
 	class Module;
 	class Plugify;
 
+	using PluginList = std::vector<Plugin>;
+	using ModuleList = std::vector<Module>;
+	using ManifestList = std::vector<std::shared_ptr<Manifest>>;
+
 	class Manager final : public Context {
 	public:
 		explicit Manager(Plugify& plugify);
@@ -32,10 +36,6 @@ namespace plugify {
 		std::vector<PluginHandle> GetPlugins() const;
 
 	private:
-		using PluginList = std::vector<Plugin>;
-		using ModuleList = std::vector<Module>;
-		using ManifestList = std::vector<std::shared_ptr<Manifest>>;
-
 		void DiscoverAllModulesAndPlugins();
 		ManifestList FindLocalPackages();
 		bool PartitionLocalPackages();
@@ -44,12 +44,6 @@ namespace plugify {
 		void LoadAndStartAvailablePlugins();
 		void TerminateAllPlugins();
 		void TerminateAllModules();
-
-		using ManifestResult = plg::expected<std::shared_ptr<Manifest>, std::string>;
-		using ManifestReader = ManifestResult(*)(const fs::path&);
-
-		template<typename T>
-		static ManifestResult ReadManifest(const fs::path& path, ManifestType type);
 
 	private:
 		PluginList _plugins;

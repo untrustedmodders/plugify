@@ -1,6 +1,5 @@
 #pragma once
 
-#include <plugify/api/hash.hpp>
 #include <plugify/api/method.hpp>
 #include <plugify/api/value_type.hpp>
 
@@ -15,11 +14,6 @@ namespace plugify {
 	struct Enum {
 		std::string name;
 		std::vector<EnumValue> values;
-
-	private:
-		// temp storage to return spans of handles easily
-		mutable std::shared_ptr<std::vector<EnumValueHandle>> _values;
-		friend class EnumHandle;
 
 	public:
 		std::vector<std::string> Validate(size_t i) const {
@@ -57,7 +51,6 @@ namespace plugify {
 		std::string funcName;
 		std::string callConv;
 
-	private:
 		std::shared_ptr<Method> FindPrototype(std::string_view _name) const noexcept {
 			for (const auto& param : paramTypes) {
 				if (param.prototype) {
@@ -82,11 +75,6 @@ namespace plugify {
 			return {};
 		}
 
-		// temp storage to return spans of handles easily
-		mutable std::shared_ptr<std::vector<PropertyHandle>> _paramTypes;
-		friend class MethodHandle;
-
-	public:
 		std::vector<std::string> Validate(size_t i, bool f = true) const {
 			std::vector<std::string> errors;
 
