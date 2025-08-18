@@ -430,6 +430,7 @@ struct glz::meta<ModuleManifest> {
 	using T = ModuleManifest;
 	static constexpr auto value = object(
 			"$schema", skip{},
+			"id", skip{},
 			"path", skip{},
 			"type", skip{},
 
@@ -454,6 +455,7 @@ struct glz::meta<PluginManifest> {
 	using T = PluginManifest;
 	static constexpr auto value = object(
 			"$schema", skip{},
+			"id", skip{},
 			"path", skip{},
 			"type", skip{},
 

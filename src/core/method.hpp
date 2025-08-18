@@ -15,15 +15,18 @@ namespace plugify {
 		std::string name;
 		std::vector<EnumValue> values;
 
-		std::generator<std::string> Validate(size_t i) const {
+		void Validate(StackLogger& logger, const std::string& title) const {
+			ScopeLogger{logger};
+
 			if (name.empty()) {
-				co_yield std::format("Missing enum name at: {}", i);
+				logger.Log(std::format("Missing enum name at: {}", title));
 			}
 
 			if (!values.empty()) {
+				ScopeLogger{logger};
 				for (const auto& value : values) {
 					if (value.name.empty()) {
-						co_yield std::format("Missing enum value name at: {}", name.empty() ? std::to_string(i) : name);
+						logger.Log(std::format("Missing enum value name at: {}", name.empty() ? title : name));
 					}
 				}
 			}
@@ -70,13 +73,15 @@ namespace plugify {
 			return {};
 		}
 
-		std::generator<std::string> Validate(size_t i, bool func = true) const {
+		void Validate(StackLogger& logger, const std::string& title, bool func = true) const {
+			ScopeLogger{logger};
+
 			if (name.empty()) {
-				co_yield std::format("Missing method name at: {}", i);
+				logger.Log(std::format("Missing method name at: {}", title));
 			}
 
 			if (func && funcName.empty()) {
-				co_yield std::format("Missing function name at: {}", name.empty() ? std::to_string(i) : name);
+				logger.Log(std::format("Missing function name at: {}", name.empty() ? title : name));
 			}
 
 			if (!callConv.empty()) {
@@ -94,48 +99,43 @@ namespace plugify {
 #endif // PLUGIFY_ARCH_BITS
 #endif // PLUGIFY_ARCH_ARM
 				{
-					co_yield std::format("Invalid calling convention: '{}' at: {}", callConv, name.empty() ? std::to_string(i) : name);
+					logger.Log(std::format("Invalid calling convention: '{}' at: {}", callConv, name.empty() ? title : name));
 				}
 			}
 
-			for (const auto& property : paramTypes) {
-				if (property.type == ValueType::Void) {
-					co_yield std::format("Parameter cannot be void type at: {}", name.empty() ? std::to_string(i) : name);
-				} else if (property.type == ValueType::Function && property.ref.value_or(false)) {
-					co_yield std::format("Parameter with function type cannot be reference at: {}", name.empty() ? std::to_string(i) : name);
-				}
-
-				if (property.prototype) {
-					for (auto&& error : property.prototype->Validate(i)) {
-						co_yield std::move(error);
+			{
+				ScopeLogger{logger};
+				for (const auto& property : paramTypes) {
+					if (property.type == ValueType::Void) {
+						logger.Log(std::format("Parameter cannot be void type at: {}", name.empty() ? title : name));
+					} else if (property.type == ValueType::Function && property.ref.value_or(false)) {
+						logger.Log(std::format("Parameter with function type cannot be reference at: {}", name.empty() ? title : name));
 					}
-				}
 
-				if (property.enumerate) {
-					for (auto&& error : property.enumerate->Validate(i)) {
-						co_yield std::move(error);
+					if (property.prototype) {
+						property.prototype->Validate(logger, name.empty() ? title : name);
+					}
+
+					if (property.enumerate) {
+						property.enumerate->Validate(logger, name.empty() ? title : name);
 					}
 				}
 			}
 
 			if (retType.ref.value_or(false)) {
-				co_yield "Return cannot be reference";
+				logger.Log("Return cannot be reference");
 			}
 
 			if (retType.prototype) {
-				for (auto&& error : retType.prototype->Validate(i, false)) {
-					co_yield std::move(error);
-				}
+				retType.prototype->Validate(logger, name.empty() ? title : name, false);
 			}
 
 			if (retType.enumerate) {
-				for (auto&& error : retType.enumerate->Validate(i)) {
-					co_yield std::move(error);
-				}
+				retType.enumerate->Validate(logger, name.empty() ? title : name);
 			}
 
 			if (varIndex != kNoVarArgs && varIndex >= paramTypes.size()) {
-				co_yield "Invalid variable argument index";
+				logger.Log("Invalid variable argument index");
 			}
 		}
 

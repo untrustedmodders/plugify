@@ -2,6 +2,7 @@
 
 #include "context.hpp"
 #include <plugify/api/assembly.hpp>
+#include <plugify/api/constraint.hpp>
 #include <plugify/api/file_system.hpp>
 #include <plugify/api/provider.hpp>
 

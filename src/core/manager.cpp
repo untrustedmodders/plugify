@@ -424,11 +424,11 @@ namespace {
     	if (!SupportsPlatform(manifest->platforms))
     		return false;
 
-		ScopeLog scope{std::format("Failed to validate manifest from '{}':", dirPath.string())};
-    	manifest->Validate(scope);
+		StackLogger logger{std::format("Failed to validate manifest from '{}':", dirPath.string())};
+    	manifest->Validate(logger);
 
-		if (scope) {
-			PL_LOG_VERBOSE("Detect {} fails", scope.count);
+		if (logger) {
+			PL_LOG_VERBOSE("Detect {} fails", logger.total);
 			return false;
 		}
 

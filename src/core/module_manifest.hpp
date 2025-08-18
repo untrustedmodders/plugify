@@ -9,20 +9,20 @@ namespace plugify {
 		std::optional<std::vector<std::string>> directories;
 		std::optional<bool> forceLoad;
 
-		bool Validate() const {
-			for (auto&& error : Manifest::Validate()) {
-				co_yield std::move(error);
-			}
+		bool Validate(StackLogger& logger) const {
+			Manifest::Validate(logger);
+			ScopeLogger{logger};
 
 			if (language.empty()) {
-				co_yield "Missing language name";
+				logger.Log("Missing language name");
 			}
 
 			if (directories && !directories->empty()) {
 				size_t i = 0;
+				ScopeLogger{logger};
 				for (const auto& directory : *directories) {
 					if (directory.empty()) {
-						co_yield std::format("Missing directory at {}", ++i);
+						logger.Log(std::format("Missing directory at {}", ++i));
 					}
 				}
 			}

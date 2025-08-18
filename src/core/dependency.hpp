@@ -1,6 +1,6 @@
 #pragma once
 
-#include <plugify/api/version.hpp>
+#include <plugify/api/constraint.hpp>
 
 namespace plugify {
 	struct Dependency {

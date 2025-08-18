@@ -10,25 +10,23 @@ namespace plugify {
 		Dependency language;
 		std::optional<std::vector<std::unique_ptr<Method>>> methods;
 
-		std::generator<std::string> Validate() {
-			for (auto&& error : Manifest::Validate()) {
-				co_yield std::move(error);
-			}
+		void Validate(StackLogger& logger) {
+			Manifest::Validate(logger);
+			ScopeLogger{logger};
 
 			if (entry.empty()) {
-				co_yield "Missing entry point";
+				logger.Log("Missing entry point");
 			}
 
 			if (language.name.empty()) {
-				co_yield "Missing language name";
+				logger.Log("Missing language name");
 			}
 
 			if (methods && !methods->empty()) {
 				size_t i = 0;
+				ScopeLogger{logger};
 				for (const auto& method : *methods) {
-					for (auto&& error : method->Validate(++i)) {
-						co_yield std::move(error);
-					}
+					method->Validate(logger, std::to_string(++i));
 				}
 			}
 		}

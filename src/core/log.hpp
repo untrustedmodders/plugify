@@ -14,25 +14,40 @@ namespace plugify {
 		static inline std::shared_ptr<ILogger> _logger = nullptr;
 	};
 
-	struct ScopeLog {
+	struct StackLogger {
 		std::string entry;
-		size_t count{};
-		int level{2};
 		Severity severity{Severity::Error};
 
-		operator bool() const { return count != 0; }
+		size_t total{};
+		size_t count{};
+		size_t level{};
 
-		template <typename... Args>
-		void Log(std::string_view format, Args&&... args) {
-			if (0 == count++) {
+		operator bool() const { return total != 0; }
+
+		void Log(std::string_view message) {
+			if (++total == 1) {
 				LogSystem::Log(entry, severity);
 			}
-			auto fmt = std::format("{{}} └─ {}", format);
-			auto sps = std::format("{:{}}", "", level);
-			auto msg = std::format(fmt, std::make_format_args(sps, std::forward<Args>(args)...));
+
+			auto msg = std::format("{:{}} {}. └─ {}", "", level, ++count, message);
 			LogSystem::Log(msg, severity);
 		}
+	};
 
+	struct ScopeLogger {
+		StackLogger& logger;
+		size_t step;
+
+		ScopeLogger(StackLogger& logger, size_t step = 2)
+			: logger{logger}, step{step}
+		{
+			logger.level += step;
+		}
+
+		~ScopeLogger() {
+			logger.level -= step;
+			logger.count = 0;
+		}
 	};
 }
 
