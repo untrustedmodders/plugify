@@ -1,9 +1,9 @@
 #pragma once
 
-#include "plugify/api/module.hpp"
-#include "plugin_manifest.hpp"
+#include "../../../src/core/plugin_manifest.hpp"
+#include "plugify/api/module_handle.hpp"
 
-#include <plugify/api/plugin.hpp>
+#include <plugify/api/plugin_handle.hpp>
 
 namespace plugify {
 	class Plugify;
@@ -43,19 +43,19 @@ namespace plugify {
 			return _manifest->conflicts ? *_manifest->conflicts : std::span<const std::unique_ptr<Conflict>>{};
 		}
 
-		const fs::path& GetBaseDir() const noexcept {
+		const std::filesystem::path& GetBaseDir() const noexcept {
 			return _paths.base;
 		}
 
-		const fs::path& GetConfigsDir() const noexcept {
+		const std::filesystem::path& GetConfigsDir() const noexcept {
 			return _paths.configs;
 		}
 
-		const fs::path& GetDataDir() const noexcept {
+		const std::filesystem::path& GetDataDir() const noexcept {
 			return _paths.data;
 		}
 
-		const fs::path& GetLogsDir() const noexcept {
+		const std::filesystem::path& GetLogsDir() const noexcept {
 			return _paths.logs;
 		}
 

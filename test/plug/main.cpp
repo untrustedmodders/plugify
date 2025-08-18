@@ -1,24 +1,24 @@
 #include "plugify/api/file_system.hpp"
 #include "plugify/asm/assembly_loader.hpp"
 
+#include <../../include/plugify/core/plugify.hpp>
 #include <CLI/CLI.hpp>
 #include <plg/format.hpp>
 #include <plugify/api/date_time.hpp>
-#include <plugify/api/dependency.hpp>
+#include <plugify/api/dependency_handle.hpp>
 #include <plugify/api/manager.hpp>
-#include <plugify/api/module.hpp>
-#include <plugify/api/module_manifest.hpp>
-#include <plugify/api/plugify.hpp>
-#include <plugify/api/plugin.hpp>
-#include <plugify/api/plugin_manifest.hpp>
+#include <plugify/api/module_handle.hpp>
+#include <plugify/api/module_manifest_handle.hpp>
+#include <plugify/api/plugin_handle.hpp>
+#include <plugify/api/plugin_manifest_handle.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <fstream>
-#include <unordered_set>
-#include <plugify/api/log.hpp>
-#include <atomic>
 #include <iostream>
+#include <plugify/api/log.hpp>
 #include <sstream>
+#include <unordered_set>
 
 #define PLG_LOG(x) std::cout << x << std::endl
 #define PLG_ERROR(x) std::cerr << x << std::endl

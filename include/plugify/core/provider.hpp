@@ -1,10 +1,10 @@
 #pragma once
 
-#include "context.hpp"
+#include <plugify/core/context.hpp>
 #include <plugify/api/assembly.hpp>
 #include <plugify/api/constraint.hpp>
 #include <plugify/api/file_system.hpp>
-#include <plugify/api/provider.hpp>
+#include <plugify/api/provider_handle.hpp>
 
 namespace plugify {
 	class Plugify;
@@ -15,13 +15,13 @@ namespace plugify {
 
 		void Log(std::string_view msg, Severity severity) const;
 
-		const fs::path& GetBaseDir() const noexcept;
+		const std::filesystem::path& GetBaseDir() const noexcept;
 
-		const fs::path& GetConfigsDir() const noexcept;
+		const std::filesystem::path& GetConfigsDir() const noexcept;
 
-		const fs::path& GetDataDir() const noexcept;
+		const std::filesystem::path& GetDataDir() const noexcept;
 
-		const fs::path& GetLogsDir() const noexcept;
+		const std::filesystem::path& GetLogsDir() const noexcept;
 
 		bool IsPreferOwnSymbols() const noexcept;
 		

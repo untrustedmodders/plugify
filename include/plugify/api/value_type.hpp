@@ -529,7 +529,6 @@ namespace plugify {
 		}
 	};
 
-	using plugify::ValueType;
 	// Test if ValueType enum values match the indices in plg::any
 	static_assert(ValueType::Void == static_cast<ValueType>(plg::any::index_of<plg::none>));
 	static_assert(ValueType::Bool == static_cast<ValueType>(plg::any::index_of<bool>));

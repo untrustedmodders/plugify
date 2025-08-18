@@ -1,6 +1,6 @@
 #pragma once
 
-#include <plugify/api/method.hpp>
+#include <plugify/api/method_handle.hpp>
 #include <plugify/api/value_type.hpp>
 
 namespace plugify {

@@ -1,11 +1,11 @@
-#include "module.hpp"
+#include <plugify/core/module.hpp"
 
-#include "plugify.hpp"
-#include "plugin.hpp"
-#include "provider.hpp"
-#include <plugify/api/module.hpp>
-#include <plugify/api/provider.hpp>
+#include "../../include/plugify/core/plugify.hpp"
+#include <plugify/api/module_handle.hpp>
+#include <plugify/api/provider_handle.hpp>
 #include <plugify/asm/mem_protector.hpp>
+#include <plugify/core/plugin.hpp"
+#include <plugify/core/provider.hpp"
 
 using namespace plugify;
 
@@ -29,7 +29,7 @@ bool Module::Initialize(Plugify& plugify) {
 
 		if (const auto& directories = _manifest->directories) {
 			for (const auto& rawPath : *directories) {
-				fs::path libraryDirectory = _paths.base / rawPath;
+				std::filesystem::path libraryDirectory = _paths.base / rawPath;
 				if (!loader->AddSearchPath(libraryDirectory)) {
 					errors.emplace_back(libraryDirectory.string());
 					return false;

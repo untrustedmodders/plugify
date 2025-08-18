@@ -1,5 +1,5 @@
-#include <plugify/api/method.hpp>
-#include <core/method.hpp>
+#include <plugify/api/method_handle.hpp>
+#include <plugify/core/method.hpp>
 
 using namespace plugify;
 

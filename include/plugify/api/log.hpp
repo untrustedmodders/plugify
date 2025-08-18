@@ -147,18 +147,31 @@ namespace plugify {
 	 * @return The corresponding Color enum value.
 	 */
 		static constexpr Color FromString(std::string_view color) noexcept {
-			if (color == "Red")        return Color::Red;
-			else if (color == "Green") return Color::Green;
-			else if (color == "Yellow")return Color::Yellow;
-			else if (color == "Blue")  return Color::Blue;
-			else if (color == "Cyan")  return Color::Cyan;
-			else if (color == "Gray")  return Color::Gray;
-			else if (color == "Bold")  return Color::Bold;
-			else if (color == "BoldRed")    return Color::BoldRed;
-			else if (color == "BoldGreen")  return Color::BoldGreen;
-			else if (color == "BoldYellow") return Color::BoldYellow;
-			else if (color == "BoldBlue")   return Color::BoldBlue;
-			else if (color == "BoldCyan")   return Color::BoldCyan;
+			if (color == "Red") {
+				return Color::Red;
+			} else if (color == "Green") {
+				return Color::Green;
+			} else if (color == "Yellow") {
+				return Color::Yellow;
+			} else if (color == "Blue") {
+				return Color::Blue;
+			} else if (color == "Cyan") {
+				return Color::Cyan;
+			} else if (color == "Gray") {
+				return Color::Gray;
+			} else if (color == "Bold") {
+				return Color::Bold;
+			} else if (color == "BoldRed") {
+				return Color::BoldRed;
+			} else if (color == "BoldGreen") {
+				return Color::BoldGreen;
+			} else if (color == "BoldYellow") {
+				return Color::BoldYellow;
+			} else if (color == "BoldBlue") {
+				return Color::BoldBlue;
+			} else if (color == "BoldCyan") {
+				return Color::BoldCyan;
+			}
 			return Color::None;
 		}
 	};
@@ -170,7 +183,7 @@ namespace plugify {
 	/**
 	 * @brief Standard implementation using std::iostream
 	 */
-	class Logger final : public ILogger {
+	class StandartLogger final : public ILogger {
 	public:
 		void Log(std::string_view message, Severity severity) override {
 			if (severity <= _severity) {

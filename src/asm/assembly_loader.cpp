@@ -22,7 +22,7 @@ bool AssemblyLoader::AddSearchPath(const std::filesystem::path& path) {
 #if PLUGIFY_PLATFORM_WINDOWS
 	std::error_code ec;
 
-	fs::path libraryDirectory = fs::absolute(path, ec);
+	std::filesystem::path libraryDirectory = fs::absolute(path, ec);
 	if (!fs::is_directory(libraryDirectory, ec)) {
 		return false;
 	}

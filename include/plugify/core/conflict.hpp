@@ -6,7 +6,7 @@ namespace plugify {
 	struct Conflict {
 		PackageId name;
 		std::optional<std::vector<Constraint>> constraints;  // Versions that conflict
-		std::optional<std::string> reason;
+		std::string reason;
 
 		std::vector<Constraint> GetSatisfiedConstraints(const Version& version) const {
 			if (!constraints) return {};

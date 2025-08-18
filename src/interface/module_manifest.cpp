@@ -1,7 +1,7 @@
-#include <core/module_manifest.hpp>
-#include <plugify/api/dependency.hpp>
-#include <plugify/api/conflict.hpp>
-#include <plugify/api/module_manifest.hpp>
+#include <plugify/api/conflict_handle.hpp>
+#include <plugify/api/dependency_handle.hpp>
+#include <plugify/api/module_manifest_handle.hpp>
+#include <plugify/core/manifest.hpp>
 
 using namespace plugify;
 

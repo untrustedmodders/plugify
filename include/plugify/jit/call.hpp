@@ -1,11 +1,11 @@
 #pragma once
 
 #include <asmjit/core.h>
+#include <memory>
+#include <plugify/api/method_handle.hpp>
 #include <plugify/asm/mem_addr.hpp>
-#include <plugify/api/method.hpp>
 #include <string>
 #include <utility>
-#include <memory>
 #include <vector>
 
 namespace plugify {

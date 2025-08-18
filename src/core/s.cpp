@@ -88,33 +88,7 @@ namespace PluginSystem {
 		bool operator==(const Conflict& conflict) const noexcept = default;
 	};
 
-	struct PackageManifest {
-		PackageId id;
-		std::string name;
-		Version version;
-		std::string description;
-		std::vector<std::string> authors;
-		std::filesystem::path location;
 
-		// Dependencies and conflicts
-		std::vector<Dependency> dependencies;
-		std::unordered_set<PackageId> conflicts;
-
-		// Metadata
-		std::unordered_map<std::string, std::string> metadata;
-	};
-
-	struct PluginManifest : PackageManifest {
-		LanguageType language;
-		std::string entryPoint;
-		std::vector<std::string> capabilities;
-	};
-
-	struct ModuleManifest : PackageManifest {
-		LanguageType languageType;
-		std::filesystem::path runtimePath;
-		std::vector<std::string> supportedVersions;
-	};
 
 	// ============================================================================
 	// Package State Management
@@ -219,34 +193,11 @@ namespace PluginSystem {
 	// Event System for Monitoring
 	// ============================================================================
 
-	enum class EventType {
-		ModuleDiscovered,
-		PluginDiscovered,
 
-		ModuleLoading,
-		ModuleLoaded,
-		ModuleFailed,
 
-		PluginLoading,
-		PluginLoaded,
-		PluginFailed,
 
-		PluginStarted,
-		PluginStopped,
 
-		ConflictDetected,
-		DependencyResolved
-	};
 
-	struct Event {
-		EventType type;
-		std::chrono::system_clock::time_point timestamp;
-		PackageId packageId;
-		std::optional<Error> error;
-		std::unordered_map<std::string, std::string> data;
-	};
-
-	using EventHandler = std::function<void(const Event&)>;
 
 	// ============================================================================
 	// Main PluginManager Interface

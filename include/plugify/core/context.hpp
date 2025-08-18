@@ -2,10 +2,9 @@
 
 namespace plugify {
 	class Plugify;
-
 	class Context {
 	public:
-		explicit Context(Plugify& plugify);
+		explicit Context(Plugify& plugify) : _plugify{plugify} {}
 		~Context();
 
 	protected:

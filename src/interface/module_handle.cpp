@@ -1,6 +1,6 @@
-#include <core/module.hpp>
-#include <plugify/api/module.hpp>
-#include <plugify/api/module_manifest.hpp>
+#include <plugify/api/module_handle.hpp>
+#include <plugify/api/module_manifest_handle.hpp>
+#include <plugify/core/module.hpp>
 
 using namespace plugify;
 

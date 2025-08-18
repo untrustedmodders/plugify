@@ -6,7 +6,7 @@
 
 #include <plg/expected.hpp>
 #include <plugify/api/date_time.hpp>
-#include <plugify/api/method.hpp>
+#include <plugify/api/method_handle.hpp>
 #include <plugify/asm/mem_addr.hpp>
 
 namespace plugify {

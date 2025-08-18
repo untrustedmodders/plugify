@@ -1,7 +1,7 @@
-#include <core/provider.hpp>
-#include <plugify/api/module.hpp>
-#include <plugify/api/plugin.hpp>
-#include <plugify/api/provider.hpp>
+#include <../../include/plugify/core/provider.hpp>
+#include <plugify/api/module_handle.hpp>
+#include <plugify/api/plugin_handle.hpp>
+#include <plugify/api/provider_handle.hpp>
 
 using namespace plugify;
 

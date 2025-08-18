@@ -1,6 +1,6 @@
 #pragma once
 
-#include "macro.hpp"
+#include <plg/macro.hpp>
 
 #if PLUGIFY_CPP_VERSION > 202002L
 

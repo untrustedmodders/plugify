@@ -1,34 +1,49 @@
-#include "plugify.hpp"
 #include "json.hpp"
 
-#include <plugify/api/config.hpp>
+#include <plugify/api/date_time.hpp>
+#include <plugify/core/plugify.hpp>
 
 using namespace plugify;
 
-Plugify::Plugify() : _provider(*this), _manager(*this) {
+class Plugify::Impl {
+public:
+	explicit Impl(Plugify& self)
+		: provider(self)
+		, manager(self) {}
+
+	Provider provider;
+	Manager manager;
+	Config config;
+	DateTime deltaTime;
+	DateTime lastTime;
+	Version version{PLUGIFY_VERSION};
+	bool inited{false};
+
+	std::shared_ptr<IAssemblyLoader> loader{};
+	std::shared_ptr<IFileSystem> fs{};
 };
 
-Plugify::~Plugify() {
-	Terminate();
-};
+// -------------------- Plugify API --------------------
 
-bool Plugify::Initialize(const fs::path& rootDir) {
+Plugify::Plugify() : _impl(std::make_unique<Impl>(*this)) {}
+Plugify::~Plugify() { Terminate(); }
+
+bool Plugify::Initialize(const std::filesystem::path& rootDir) const {
 	if (IsInitialized())
 		return false;
 
-	if (!_fs) {
+	if (!_impl->fs) {
 		PL_LOG_ERROR("Plugify: File reader is not provided!");
 		return false;
 	}
-
-	if (!_loader) {
+	if (!_impl->loader) {
 		PL_LOG_ERROR("Plugify: Assembly loader is not provided!");
 		return false;
 	}
 
 	auto configPath = rootDir / "plugify.pconfig";
 	PL_LOG_DEBUG("Config: '{}'", configPath.string());
-	auto result = _fs->ReadTextFile(configPath);
+	auto result = _impl->fs->ReadTextFile(configPath);
 	if (!result) {
 		PL_LOG_ERROR("Config: '{}' has reading error: {}", configPath.string(), result.error());
 		return false;
@@ -40,8 +55,9 @@ bool Plugify::Initialize(const fs::path& rootDir) {
 		return false;
 	}
 
+	// ---- path validation block unchanged ----
 	{
-		const auto checkPath = [](const fs::path& p) {
+		const auto checkPath = [](const std::filesystem::path& p) {
 			return !p.empty() && p.lexically_normal() == p;
 		};
 
@@ -50,11 +66,9 @@ bool Plugify::Initialize(const fs::path& rootDir) {
 		if (!checkPath(config->configsDir)) {
 			errors.emplace_back(std::format("configsDir: - '{}'", config->configsDir.string()));
 		}
-
 		if (!checkPath(config->dataDir)) {
 			errors.emplace_back(std::format("dataDir: - '{}'", config->dataDir.string()));
 		}
-
 		if (!checkPath(config->logsDir)) {
 			errors.emplace_back(std::format("logsDir: '{}'", config->logsDir.string()));
 		}
@@ -64,14 +78,14 @@ bool Plugify::Initialize(const fs::path& rootDir) {
 			return false;
 		}
 
-		std::array<fs::path, 5> dirs = {
-			"packages",
-			config->configsDir,
-			config->dataDir,
-			config->logsDir,
+		std::array<std::filesystem::path, 5> dirs = {
+				"packages",
+				config->configsDir,
+				config->dataDir,
+				config->logsDir,
 		};
 
-		const auto isPathCollides = [](const fs::path& first, const fs::path& second) {
+		const auto isPathCollides = [](const std::filesystem::path& first, const std::filesystem::path& second) {
 			auto [itFirst, itSecond] = std::ranges::mismatch(first, second);
 			return itFirst == first.end() || itSecond == second.end();
 		};
@@ -90,47 +104,45 @@ bool Plugify::Initialize(const fs::path& rootDir) {
 		}
 	}
 
-	_config = std::move(*config);
+	_impl->config = std::move(*config);
 
 	if (!rootDir.empty())
-		_config.baseDir = rootDir / _config.baseDir;
+		_impl->config.baseDir = rootDir / _impl->config.baseDir;
 
-	_inited = true;
+	_impl->inited = true;
 
 	PL_LOG_INFO("Plugify Init!");
-	PL_LOG_INFO("Version: {}", _version);
-	PL_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", PLUGIFY_GIT_COMMIT_HASH, PLUGIFY_GIT_TAG, PLUGIFY_GIT_COMMIT_SUBJECT, PLUGIFY_GIT_BRANCH, PLUGIFY_GIT_COMMIT_DATE); //-V001
+	PL_LOG_INFO("Version: {}", _impl->version);
+	PL_LOG_INFO("Git: [{}]:({}) - {} on {} at '{}'", PLUGIFY_GIT_COMMIT_HASH, PLUGIFY_GIT_TAG, PLUGIFY_GIT_COMMIT_SUBJECT, PLUGIFY_GIT_BRANCH, PLUGIFY_GIT_COMMIT_DATE);//-V001
 	PL_LOG_INFO("Compiled on: {} from: {} with: '{}'", PLUGIFY_COMPILED_SYSTEM, PLUGIFY_COMPILED_GENERATOR, PLUGIFY_COMPILED_COMPILER);
 
 	return true;
 }
 
-void Plugify::Terminate() {
+void Plugify::Terminate() const {
 	if (!IsInitialized())
 		return;
 
-	_lastTime = DateTime::Now();
-
-	_manager.Terminate();
-
-	_inited = false;
+	_impl->lastTime = DateTime::Now();
+	_impl->manager.Terminate();
+	_impl->inited = false;
 
 	PL_LOG_INFO("Plugify Terminated!");
 }
 
 bool Plugify::IsInitialized() const {
-	return _inited;
+	return _impl->inited;
 }
 
-void Plugify::Update() {
+void Plugify::Update() const {
 	if (!IsInitialized())
 		return;
 
 	auto currentTime = DateTime::Now();
-	_deltaTime = (currentTime - _lastTime);
-	_lastTime = currentTime;
+	_impl->deltaTime = (currentTime - _impl->lastTime);
+	_impl->lastTime = currentTime;
 
-	_manager.Update(_deltaTime);
+	_impl->manager.Update(_impl->deltaTime);
 }
 
 void Plugify::Log(std::string_view msg, Severity severity) const {
@@ -141,39 +153,38 @@ void Plugify::SetLogger(std::shared_ptr<ILogger> logger) const {
 	LogSystem::SetLogger(std::move(logger));
 }
 
-ManagerHandle Plugify::GetManager() const {
-	return _manager;
+const Manager& Plugify::GetManager() const {
+	return _impl->manager;
 }
 
-ProviderHandle Plugify::GetProvider() const {
-	return _provider;
+const Provider& Plugify::GetProvider() const {
+	return _impl->provider;
 }
 
 const Config& Plugify::GetConfig() const {
-	return _config;
+	return _impl->config;
 }
 
 const Version& Plugify::GetVersion() const {
-	return _version;
+	return _impl->version;
 }
 
-void Plugify::SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) {
-	_loader = std::move(loader);
+void Plugify::SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) const {
+	_impl->loader = std::move(loader);
 }
 
 std::shared_ptr<IAssemblyLoader> Plugify::GetAssemblyLoader() const {
-	return _loader;
+	return _impl->loader;
 }
 
-void Plugify::SetFileSystem(std::shared_ptr<IFileSystem> reader) {
-	_fs = std::move(reader);
+void Plugify::SetFileSystem(std::shared_ptr<IFileSystem> reader) const {
+	_impl->fs = std::move(reader);
 }
 
 std::shared_ptr<IFileSystem> Plugify::GetFileSystem() const {
-	return _fs;
+	return _impl->fs;
 }
 
-PLUGIFY_API PlugifyHandle plugify::MakePlugify() {
-	static Plugify plugify;
-	return plugify;
+PLUGIFY_API std::shared_ptr<Plugify> plugify::MakePlugify() {
+	return std::make_shared<Plugify>();
 }

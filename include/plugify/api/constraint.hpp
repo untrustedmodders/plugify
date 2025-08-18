@@ -4,21 +4,9 @@
 #include <vector>
 #include <optional>
 
-#include <plg/version.hpp>
+#include <plugify/core/types.hpp>
 
 namespace plugify {
-
-	using PackageId = std::string;
-
-	/**
-	 * @typedef Version
-	 * @brief Represents a version of a package.
-	 *
-	 * This type is an alias for plg::version, which encapsulates the versioning
-	 * information for packages in the Plugify ecosystem.
-	 */
-	using Version = plg::version;
-
 	/**
 	 *
 	 */
@@ -85,6 +73,8 @@ namespace plugify {
 					if (other < version) {
 						return false;
 					}
+
+					// TODO: fix
 
 					// Determine upper bound based on version numbers
 					if (version.major > 0) {
@@ -160,41 +150,6 @@ namespace plugify {
 				return Comparison::Any;
 			}
 			return Comparison::Equal; // default fallback
-		}
-	};
-
-	struct ConstraintUtils {
-		std::string Format(const Constraint& constraint) {
-			if (constraint.comparison == Comparison::Any) {
-				return "any version";
-			}
-
-			const auto& op = ComparisonUtils::ToString(constraint.comparison);
-			const auto& ver = constraint.version;
-
-			if (constraint.comparison == Comparison::Compatible) {
-				// Show the expanded compatible range for clarity
-				Version maxVer = constraint.version;
-				std::string range;
-
-				if (constraint.version.major > 0) {
-					maxVer.major += 1;
-					maxVer.minor = 0;
-					maxVer.patch = 0;
-					range = std::format(">={} and <{}", ver, maxVer);
-				} else if (constraint.version.minor > 0) {
-					maxVer.minor += 1;
-					maxVer.patch = 0;
-					range = std::format(">={} and <{}", ver, maxVer);
-				} else {
-					maxVer.patch += 1;
-					range = std::format(">={} and <{}", ver, maxVer);
-				}
-
-				return std::format("^{} ({})", ver, range);
-			}
-
-			return std::format("{}{}", op, ver);
 		}
 	};
 } // namespace plugify

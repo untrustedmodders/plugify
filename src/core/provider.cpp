@@ -1,11 +1,11 @@
-#include "plugify.hpp"
-#include "provider.hpp"
+#include "../../include/plugify/core/plugify.hpp"
 #include "plugin_manifest.hpp"
 #include <plugify/api/manager.hpp>
-#include <plugify/api/module.hpp>
-#include <plugify/api/module_manifest.hpp>
-#include <plugify/api/plugin.hpp>
-#include <plugify/api/plugin_manifest.hpp>
+#include <plugify/api/module_handle.hpp>
+#include <plugify/api/module_manifest_handle.hpp>
+#include <plugify/api/plugin_handle.hpp>
+#include <plugify/api/plugin_manifest_handle.hpp>
+#include <plugify/core/provider.hpp"
 
 using namespace plugify;
 
@@ -17,19 +17,19 @@ void Provider::Log(std::string_view msg, Severity severity) const {
 	_plugify.Log(msg, severity);
 }
 
-const fs::path& Provider::GetBaseDir() const noexcept {
+const std::filesystem::path& Provider::GetBaseDir() const noexcept {
 	return _plugify.GetConfig().baseDir;
 }
 
-const fs::path& Provider::GetConfigsDir() const noexcept {
+const std::filesystem::path& Provider::GetConfigsDir() const noexcept {
 	return _plugify.GetConfig().configsDir;
 }
 
-const fs::path& Provider::GetDataDir() const noexcept {
+const std::filesystem::path& Provider::GetDataDir() const noexcept {
 	return _plugify.GetConfig().dataDir;
 }
 
-const fs::path& Provider::GetLogsDir() const noexcept {
+const std::filesystem::path& Provider::GetLogsDir() const noexcept {
 	return _plugify.GetConfig().logsDir;
 }
 

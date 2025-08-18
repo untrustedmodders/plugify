@@ -1,10 +1,10 @@
 #pragma once
 
-#include "module_manifest.hpp"
-#include "dependency.hpp"
+#include "../../../src/core/module_manifest.hpp"
+#include "plugify/core/dependency.hpp"
 #include <plugify/api/date_time.hpp>
 #include <plugify/api/language_module.hpp>
-#include <plugify/api/module.hpp>
+#include <plugify/api/module_handle.hpp>
 #include <plugify/asm/assembly.hpp>
 
 namespace plugify {
@@ -50,7 +50,7 @@ namespace plugify {
 			return _manifest->language;
 		}
 
-		const fs::path& GetBaseDir() const noexcept {
+		const std::filesystem::path& GetBaseDir() const noexcept {
 			return _paths.base;
 		}
 

@@ -3,19 +3,19 @@
 #include <span>
 #include <string>
 
+#include <plugify/api/constraint.hpp>
 #include <plugify/api/handle.hpp>
-#include <plugify/api/version.hpp>
 
 #include <plugify_export.h>
 
 namespace plugify {
-	struct Dependency;
+	struct Conflict;
 
 	/**
-	 * @class DependencyHandle
-	 * @brief A handle class for the `DependencyHandle` structure.
+	 * @class ConflictHandle
+	 * @brief A handle class for the `ConflictHandle` structure.
 	 */
-	class PLUGIFY_API DependencyHandle : public Handle<const Dependency> {
+	class PLUGIFY_API ConflictHandle : public Handle<const Conflict> {
 		using Handle::Handle;
 	public:
 		/**
@@ -32,11 +32,11 @@ namespace plugify {
 		std::span<const Constraint> GetConstrants() const noexcept;
 
 		/**
-		 * @brief Checks if the referenced plugin is optional.
 		 *
-		 * @return `true` if the plugin is optional, otherwise `false`.
+		 *
+		 * @return
 		 */
-		bool IsOptional() const noexcept;
+		const std::string& GetReason() const noexcept;
 
 	};
 } // namespace plugify

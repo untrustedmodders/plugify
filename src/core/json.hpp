@@ -1,11 +1,11 @@
 #pragma once
 
+#include "method_handle.hpp"
 #include "manifest.hpp"
-#include "method.hpp"
 #include "module_manifest.hpp"
 #include "plugin_manifest.hpp"
 
-#include <plugify/api/config.hpp>
+#include <plugify/core/config.hpp>
 
 #include <glaze/glaze.hpp>
 
@@ -166,9 +166,9 @@ struct glz::meta<Method> {
 namespace glz {
 #if PLUGIFY_CPP_VERSION > 202002L
 	template<>
-	struct from<JSON, fs::path> {
+	struct from<JSON, std::filesystem::path> {
 		template <auto Opts>
-		static void op(fs::path& value, auto&&... args) {
+		static void op(std::filesystem::path& value, auto&&... args) {
 			std::string str;
 			parse<JSON>::op<Opts>(str, args...);
 			value = str;
@@ -177,9 +177,9 @@ namespace glz {
 	};
 
 	template<>
-	struct to<JSON, fs::path> {
+	struct to<JSON, std::filesystem::path> {
 		template <auto Opts>
-		static void op(const fs::path& value, auto&&... args) noexcept {
+		static void op(const std::filesystem::path& value, auto&&... args) noexcept {
 			serialize<JSON>::op<Opts>(value.generic_string(), args...);
 		}
 	};
@@ -295,9 +295,9 @@ namespace glz {
 #else
 	namespace detail {
 		template<>
-		struct from_json<fs::path> {
+		struct from_json<std::filesystem::path> {
 			template<auto Opts>
-			static void op(fs::path& value, auto&&... args) {
+			static void op(std::filesystem::path& value, auto&&... args) {
 				std::string str;
 				read<json>::op<Opts>(str, args...);
 				value = str;
@@ -306,9 +306,9 @@ namespace glz {
 		};
 
 		template<>
-		struct to_json<fs::path> {
+		struct to_json<std::filesystem::path> {
 			template<auto Opts>
-			static void op(const fs::path& value, auto&&... args) noexcept {
+			static void op(const std::filesystem::path& value, auto&&... args) noexcept {
 				write<json>::op<Opts>(value.generic_string(), args...);
 			}
 		};
