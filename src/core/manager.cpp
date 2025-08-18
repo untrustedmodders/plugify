@@ -191,9 +191,9 @@ namespace {
 	}
 
 	struct ValidationResult {
-		std::vector<std::pair<std::string_view, std::vector<Constraint>>> failedDependencies;
-		std::vector<std::pair<std::string_view, std::vector<Constraint>>> detectedConflicts;
-		std::vector<std::string_view> conflictReasons;
+		std::vector<std::pair<std::string, std::vector<Constraint>>> failedDependencies;
+		std::vector<std::pair<std::string, std::vector<Constraint>>> detectedConflicts;
+		std::vector<std::string> conflictReasons;
 
 		operator bool() const {
 			return failedDependencies.empty() && detectedConflicts.empty() && conflictReasons.empty();
@@ -415,6 +415,14 @@ namespace {
     	if (!SupportsPlatform(manifest->platforms))
     		return true;
 
+		// Apply whitelist/blacklist filtering
+		if (config.whitelistedPackages && !std::ranges::contains(*config.whitelistedPackages, manifest->name))
+			return true;
+
+		// Apply whitelist/blacklist filtering
+		if (config.blacklistedPackages && std::ranges::contains(*config.blacklistedPackages, manifest->name))
+			return true;
+
 		StackLogger logger{std::format("Failed to validate manifest from '{}':", dirPath.string())};
     	manifest->Validate(logger);
 		if (logger) {
@@ -506,81 +514,12 @@ bool Manager::PartitionLocalPackages() {
 
 	return true;
 }
-/*
-struct ScopedResult {
-	std::string_view type;
-	size_t succeeded = 0;
-	size_t failed = 0;
 
-	~ScopedResult() {
-		if (HasAny()) {
-			PL_LOG_INFO("{} initialization complete: {} succeeded, {} failed",
-					   type, succeeded, failed);
-		} else {
-			PL_LOG_WARNING("Did not initialize any {}", type);
-		}
-	}
-
-	bool HasAny() const { return succeeded > 0 || failed > 0; }
-};
-
-// Process single plugin - returns module ID if successful
-std::optional<UniqueId> Manager::ProcessPluginInitialization(
-	Plugin& plugin,
-	ScopedResult& result) {
-
-	// Early return for missing module
-	const auto& [name, constraints, _] = plugin.GetManifest().language;
-	auto module = std::ranges::find(_modules, name, &Module::GetLanguage);
-	if (module != _modules.end()) {
-		plugin.SetError(FormatMissingModuleError(plugin));
-		++result.failed;
-		return std::nullopt;
-	}
-
-	// Early return for constraint violations
-	if (constraints) {
-
-	}
-	auto errors = ValidateConstraints(*module, *constraints);
-	if (!errors.empty()) {
-		plugin.SetError(*error);
-		++result.failed;
-		return std::nullopt;
-	}
-
-	// Early return for initialization failure
-	if (!plugin.Initialize(_plugify)) {
-		++result.failed;
-		return std::nullopt;
-	}
-
-	// Success path
-	plugin.SetModule(*module);
-	++result.succeeded;
-	return module->GetId();
-}
-
-std::unordered_set<UniqueId> Manager::InitializePlugins() {
-	std::unordered_set<UniqueId> requiredModuleIds;
-	requiredModuleIds.reserve(_modules.size());
-
-	ScopedResult result{"plugin"};
-
-	for (auto& plugin : _plugins) {
-		if (auto moduleId = ProcessPluginInitialization(plugin, result)) {
-			requiredModuleIds.insert(*moduleId);
-		}
-	}
-
-	return requiredModuleIds;
-}
-*/
 void Manager::LoadRequiredLanguageModules() {
 	if (_modules.empty())
 		return;
 
-	/*std::unordered_set<UniqueId> modules;
+	std::unordered_set<UniqueId> modules;
 	modules.reserve(_modules.size());
 
 	size_t successCount = 0;
@@ -634,8 +573,7 @@ void Manager::LoadRequiredLanguageModules() {
 		if (module.GetManifest().forceLoad.value_or(false) || modules.contains(module.GetId())) {
 			// Perform conflict and dependency checks for modules
 			if (module.GetState() == ModuleState::NotLoaded) {
-				auto errors = Validate(module, _modules, "Module");
-				if (!errors.empty()) {
+				if (!Validate(module, _modules)) {
 					module.SetError(FormatValidationErrors(module.GetName(), errors));
 				} else {
 					if (module.Initialize(_plugify)) {
@@ -651,9 +589,7 @@ void Manager::LoadRequiredLanguageModules() {
 						successCount, failedCount);
 	} else {
 		PL_LOG_WARNING("Did not initialize any module");
-	}*/
-	auto requiredModuleIds = InitializePluginsWithModules();
-	LoadModules(requiredModuleIds);
+	}
 }
 
 void Manager::LoadAndStartAvailablePlugins() {

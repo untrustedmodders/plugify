@@ -18,5 +18,8 @@ namespace plugify {
 		std::filesystem::path logsDir; ///< Relative path from base directory to logs directory.
 		std::optional<Severity> logSeverity; ///< The severity level for logging.
 		std::optional<bool> preferOwnSymbols; ///< Flag indicating if the modules should prefer its own symbols over shared symbols.
+
+		std::optional<std::vector<PackageId>> whitelistedPackages;
+		std::optional<std::vector<PackageId>> blacklistedPackages;
 	};
 } // namespace plugify

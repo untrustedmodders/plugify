@@ -233,7 +233,6 @@ namespace PluginSystem {
 
 		PluginStarted,
 		PluginStopped,
-		PluginCrashed,
 
 		ConflictDetected,
 		DependencyResolved
@@ -297,8 +296,7 @@ namespace PluginSystem {
 		std::chrono::milliseconds initializationTimeout{30000};
 
 		// Filtering
-		std::optional<std::vector<PackageId>> whitelistedPackages;
-		std::optional<std::vector<PackageId>> blacklistedPackages;
+
 	};
 
 	// ============================================================================

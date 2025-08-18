@@ -1,12 +1,15 @@
 #pragma once
 
-#include <optional>
 #include <string>
 #include <vector>
+#include <optional>
 
 #include <plg/version.hpp>
 
 namespace plugify {
+
+	using PackageId = std::string;
+
 	/**
 	 * @typedef Version
 	 * @brief Represents a version of a package.
