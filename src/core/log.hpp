@@ -41,6 +41,7 @@ namespace plugify {
 		ScopeLogger(StackLogger& logger, size_t step = 2)
 			: logger{logger}, step{step}
 		{
+			logger.count = 0;
 			logger.level += step;
 		}
 

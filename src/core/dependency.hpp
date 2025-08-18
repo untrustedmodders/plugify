@@ -4,7 +4,7 @@
 
 namespace plugify {
 	struct Dependency {
-		std::string name;
+		PackageId name;
 		std::optional<std::vector<Constraint>> constraints;  // ANDed together
 		std::optional<bool> optional;
 

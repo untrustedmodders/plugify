@@ -195,16 +195,8 @@ namespace {
 		std::vector<std::pair<std::string_view, std::vector<Constraint>>> detectedConflicts;
 		std::vector<std::string_view> conflictReasons;
 
-		size_t TotalIssues() const {
-			return  failedDependencies.size() +
-					detectedConflicts.size() +
-					conflictReasons.size();
-		}
-
 		operator bool() const {
-			return failedDependencies.empty() &&
-				   detectedConflicts.empty() &&
-				   conflictReasons.empty();
+			return failedDependencies.empty() && detectedConflicts.empty() && conflictReasons.empty();
 		}
 	};
 
@@ -312,7 +304,6 @@ namespace {
 		bool verbose = false
 	) {
 		auto result = ValidateAgainst(item, container);
-    
 		if (result) {
 			if (verbose) {
 				LOG("[✓] {} '{}' v{} - All checks passed", Color::Green,
@@ -422,11 +413,10 @@ namespace {
 
 		// Skip manifest which not valid arch
     	if (!SupportsPlatform(manifest->platforms))
-    		return false;
+    		return true;
 
 		StackLogger logger{std::format("Failed to validate manifest from '{}':", dirPath.string())};
     	manifest->Validate(logger);
-
 		if (logger) {
 			PL_LOG_VERBOSE("Detect {} fails", logger.total);
 			return false;

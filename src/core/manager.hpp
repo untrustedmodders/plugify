@@ -3,6 +3,7 @@
 #include "context.hpp"
 #include "manifest.hpp"
 
+#include <plugify/api/event.hpp>
 #include <plugify/api/language_module.hpp>
 #include <plugify/api/manager.hpp>
 #include <plugify/api/plugin.hpp>
@@ -34,6 +35,9 @@ namespace plugify {
 		PluginHandle FindPlugin(std::string_view pluginName) const;
 		PluginHandle FindPluginFromId(UniqueId pluginId) const;
 		std::vector<PluginHandle> GetPlugins() const;
+
+		SubscriptionToken Subscribe(EventHandler);
+		void Unsubscribe(SubscriptionToken);
 
 	private:
 		void DiscoverAllModulesAndPlugins();

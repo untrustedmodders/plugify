@@ -4,7 +4,7 @@
 
 namespace plugify {
 	struct Conflict {
-		std::string name;
+		PackageId name;
 		std::optional<std::vector<Constraint>> constraints;  // Versions that conflict
 		std::optional<std::string> reason;
 
