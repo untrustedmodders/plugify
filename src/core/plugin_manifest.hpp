@@ -10,29 +10,27 @@ namespace plugify {
 		Dependency language;
 		std::optional<std::vector<std::unique_ptr<Method>>> methods;
 
-		std::vector<std::string> Validate() {
-			std::vector<std::string> errors = Manifest::Validate();
+		std::generator<std::string> Validate() {
+			for (auto&& error : Manifest::Validate()) {
+				co_yield std::move(error);
+			}
 
 			if (entry.empty()) {
-				errors.emplace_back("Missing entry point");
+				co_yield "Missing entry point";
 			}
 
 			if (language.name.empty()) {
-				errors.emplace_back("Missing language name");
+				co_yield "Missing language name";
 			}
 
 			if (methods && !methods->empty()) {
-				if (RemoveDuplicates(*methods)) {
-					PL_LOG_WARNING("Manifest: '{}' has multiple same methods!", name);
-				}
 				size_t i = 0;
 				for (const auto& method : *methods) {
-					auto methodErrors = method->Validate(++i);
-					errors.insert(errors.end(), methodErrors.begin(), methodErrors.end());
+					for (auto&& error : method->Validate(++i)) {
+						co_yield std::move(error);
+					}
 				}
 			}
-
-			return errors;
 		}
 	};
 

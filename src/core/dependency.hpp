@@ -8,17 +8,13 @@ namespace plugify {
 		std::optional<std::vector<Constraint>> constraints;  // ANDed together
 		std::optional<bool> optional;
 
-		std::optional<Constraint>  IsSatisfiedBy(const Version& version) const {
-			if (!constraints)
-				return {};
-
-			for (const auto& constraint : *constraints) {
-				if (!constraint.IsSatisfiedBy(version)) {
-					return constraint;
-				}
-			}
-
-			return {};
+		std::vector<Constraint> GetFailedConstraints(const Version& version) const {
+			if (!constraints) return {};
+			std::vector<Constraint> failed;
+			std::ranges::copy_if(*constraints, std::back_inserter(failed), [&](const Constraint& c) {
+				return !c.IsSatisfiedBy(version);
+			});
+			return failed;
 		}
 
 		bool operator==(const Dependency& dependency) const noexcept = default;

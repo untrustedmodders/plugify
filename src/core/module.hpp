@@ -26,8 +26,24 @@ namespace plugify {
 			return _id;
 		}
 
+		static std::string_view GetType() noexcept {
+			return "Module";
+		}
+
 		const std::string& GetName() const noexcept {
 			return _manifest->name;
+		}
+
+		const Version& GetVersion() const noexcept {
+			return _manifest->version;
+		}
+
+		std::span<const std::unique_ptr<Dependency>> GetDependencies() const noexcept {
+			return _manifest->dependencies ? *_manifest->dependencies : std::span<const std::unique_ptr<Dependency>>{};
+		}
+
+		std::span<const std::unique_ptr<Conflict>> GetConflicts() const noexcept {
+			return _manifest->conflicts ? *_manifest->conflicts : std::span<const std::unique_ptr<Conflict>>{};
 		}
 
 		const std::string& GetLanguage() const noexcept {

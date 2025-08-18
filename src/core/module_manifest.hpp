@@ -9,26 +9,23 @@ namespace plugify {
 		std::optional<std::vector<std::string>> directories;
 		std::optional<bool> forceLoad;
 
-		std::vector<std::string> Validate() {
-			std::vector<std::string> errors = Manifest::Validate();
+		bool Validate() const {
+			for (auto&& error : Manifest::Validate()) {
+				co_yield std::move(error);
+			}
 
 			if (language.empty()) {
-				errors.emplace_back("Missing language name");
+				co_yield "Missing language name";
 			}
 
 			if (directories && !directories->empty()) {
-				if (RemoveDuplicates(*directories)) {
-					PL_LOG_WARNING("Manifest: '{}' has multiple same directories!", name);
-				}
 				size_t i = 0;
 				for (const auto& directory : *directories) {
 					if (directory.empty()) {
-						errors.emplace_back(std::format("Missing directory at {}", ++i));
+						co_yield std::format("Missing directory at {}", ++i);
 					}
 				}
 			}
-
-			return errors;
 		}
 	};
 }

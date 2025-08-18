@@ -386,7 +386,7 @@ namespace plg {
 	constexpr bool operator==(const version& lhs, const version& rhs) noexcept {
 		return lhs.compare(rhs) == 0;
 	}
-	
+
 	constexpr bool operator!=(const version& lhs, const version& rhs) noexcept {
 		return lhs.compare(rhs) != 0;
 	}
@@ -539,7 +539,7 @@ namespace plg {
 						}
 
 					} while (is_logical_or_token());
-    
+
 					return false;
 				}
 

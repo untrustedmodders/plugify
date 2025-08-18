@@ -15,23 +15,18 @@ namespace plugify {
 		std::string name;
 		std::vector<EnumValue> values;
 
-	public:
-		std::vector<std::string> Validate(size_t i) const {
-			std::vector<std::string> errors;
-
+		std::generator<std::string> Validate(size_t i) const {
 			if (name.empty()) {
-				errors.emplace_back(std::format("Missing enum name at: {}", i));
+				co_yield std::format("Missing enum name at: {}", i);
 			}
 
 			if (!values.empty()) {
 				for (const auto& value : values) {
 					if (value.name.empty()) {
-						errors.emplace_back(std::format("Missing enum value name at: {}", name.empty() ? std::to_string(i) : name));
+						co_yield std::format("Missing enum value name at: {}", name.empty() ? std::to_string(i) : name);
 					}
 				}
 			}
-
-			return errors;
 		}
 	};
 
@@ -75,15 +70,13 @@ namespace plugify {
 			return {};
 		}
 
-		std::vector<std::string> Validate(size_t i, bool f = true) const {
-			std::vector<std::string> errors;
-
+		std::generator<std::string> Validate(size_t i, bool func = true) const {
 			if (name.empty()) {
-				errors.emplace_back(std::format("Missing method name at: {}", i));
+				co_yield std::format("Missing method name at: {}", i);
 			}
 
-			if (f && funcName.empty()) {
-				errors.emplace_back(std::format("Missing function name at: {}", name.empty() ? std::to_string(i) : name));
+			if (func && funcName.empty()) {
+				co_yield std::format("Missing function name at: {}", name.empty() ? std::to_string(i) : name);
 			}
 
 			if (!callConv.empty()) {
@@ -101,47 +94,49 @@ namespace plugify {
 #endif // PLUGIFY_ARCH_BITS
 #endif // PLUGIFY_ARCH_ARM
 				{
-					errors.emplace_back(std::format("Invalid calling convention: '{}' at: {}", callConv, name.empty() ? std::to_string(i) : name));
+					co_yield std::format("Invalid calling convention: '{}' at: {}", callConv, name.empty() ? std::to_string(i) : name);
 				}
 			}
 
 			for (const auto& property : paramTypes) {
 				if (property.type == ValueType::Void) {
-					errors.emplace_back(std::format("Parameter cannot be void type at: {}", name.empty() ? std::to_string(i) : name));
+					co_yield std::format("Parameter cannot be void type at: {}", name.empty() ? std::to_string(i) : name);
 				} else if (property.type == ValueType::Function && property.ref.value_or(false)) {
-					errors.emplace_back(std::format("Parameter with function type cannot be reference at: {}", name.empty() ? std::to_string(i) : name));
+					co_yield std::format("Parameter with function type cannot be reference at: {}", name.empty() ? std::to_string(i) : name);
 				}
 
 				if (property.prototype) {
-					auto paramErrors = property.prototype->Validate(i, false);
-					errors.insert(errors.end(), paramErrors.begin(), paramErrors.end());
+					for (auto&& error : property.prototype->Validate(i)) {
+						co_yield std::move(error);
+					}
 				}
 
 				if (property.enumerate) {
-					auto enumErrors = property.enumerate->Validate(i);
-					errors.insert(errors.end(), enumErrors.begin(), enumErrors.end());
+					for (auto&& error : property.enumerate->Validate(i)) {
+						co_yield std::move(error);
+					}
 				}
 			}
 
 			if (retType.ref.value_or(false)) {
-				errors.emplace_back("Return cannot be reference");
+				co_yield "Return cannot be reference";
 			}
 
 			if (retType.prototype) {
-				auto paramErrors = retType.prototype->Validate(i, false);
-				errors.insert(errors.end(), paramErrors.begin(), paramErrors.end());
+				for (auto&& error : retType.prototype->Validate(i, false)) {
+					co_yield std::move(error);
+				}
 			}
 
 			if (retType.enumerate) {
-				auto enumErrors = retType.enumerate->Validate(i);
-				errors.insert(errors.end(), enumErrors.begin(), enumErrors.end());
+				for (auto&& error : retType.enumerate->Validate(i)) {
+					co_yield std::move(error);
+				}
 			}
 
 			if (varIndex != kNoVarArgs && varIndex >= paramTypes.size()) {
-				errors.emplace_back("Invalid variable argument index");
+				co_yield "Invalid variable argument index";
 			}
-
-			return errors;
 		}
 
 		static inline const uint8_t kNoVarArgs = 0xFFU;

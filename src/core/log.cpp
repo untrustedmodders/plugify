@@ -11,3 +11,9 @@ void LogSystem::Log(std::string_view msg, Severity severity) {
 		_logger->Log(msg, severity);
 	}
 }
+
+void LogSystem::Log(std::string_view msg, Color color) {
+	if (_logger) {
+		_logger->Log(msg, color);
+	}
+}

@@ -19,7 +19,7 @@ namespace plugify {
 	/**
 	 *
 	 */
-	enum class Comparison : uint8_t {
+	enum class Comparison {
 		Equal,        // Exactly this version
 		NotEqual,     // Any version except this
 		Greater,      // Strictly greater than
@@ -73,8 +73,30 @@ namespace plugify {
 					return other <= version;
 
 				case Comparison::Compatible: {
-					return version.major == other.major // different major-versions are always incompatible
-					   && version.minor >= other.minor; // data minor-version is incompatible if greater than code minor-version
+					// Semver caret (^) compatibility rules:
+					// ^1.2.3 := >=1.2.3 <2.0.0 (compatible with 1.x.x)
+					// ^0.2.3 := >=0.2.3 <0.3.0 (0.x.x is special - minor is breaking)
+					// ^0.0.3 := >=0.0.3 <0.0.4 (0.0.x is special - patch is breaking)
+
+					// Must be at least the specified version
+					if (other < version) {
+						return false;
+					}
+
+					// Determine upper bound based on version numbers
+					if (version.major > 0) {
+						// Normal semver: compatible within same major version
+						// ^2.1.0 means >=2.1.0 && <3.0.0
+						return other.major == version.major;
+					} else if (version.minor > 0) {
+						// 0.x.y: minor version is breaking
+						// ^0.2.3 means >=0.2.3 && <0.3.0
+						return other.major == 0 && other.minor == version.minor;
+					} else {
+						// 0.0.x: patch version is breaking
+						// ^0.0.3 means >=0.0.3 && <0.0.4
+						return other.major == 0 && other.minor == 0 && other.patch == version.patch;
+					}
 				}
 			}
 			return false;
@@ -135,6 +157,41 @@ namespace plugify {
 				return Comparison::Any;
 			}
 			return Comparison::Equal; // default fallback
+		}
+	};
+
+	struct ConstraintUtils {
+		std::string Format(const Constraint& constraint) {
+			if (constraint.comparison == Comparison::Any) {
+				return "any version";
+			}
+
+			const auto& op = ComparisonUtils::ToString(constraint.comparison);
+			const auto& ver = constraint.version;
+
+			if (constraint.comparison == Comparison::Compatible) {
+				// Show the expanded compatible range for clarity
+				Version maxVer = constraint.version;
+				std::string range;
+
+				if (constraint.version.major > 0) {
+					maxVer.major += 1;
+					maxVer.minor = 0;
+					maxVer.patch = 0;
+					range = std::format(">={} and <{}", ver, maxVer);
+				} else if (constraint.version.minor > 0) {
+					maxVer.minor += 1;
+					maxVer.patch = 0;
+					range = std::format(">={} and <{}", ver, maxVer);
+				} else {
+					maxVer.patch += 1;
+					range = std::format(">={} and <{}", ver, maxVer);
+				}
+
+				return std::format("^{} ({})", ver, range);
+			}
+
+			return std::format("{}{}", op, ver);
 		}
 	};
 } // namespace plugify

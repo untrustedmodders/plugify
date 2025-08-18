@@ -140,8 +140,8 @@ bool Manager::TopologicalSortPlugins() {
 }
 
 void Manager::DiscoverAllModulesAndPlugins() {
-	PL_ASSERT(_allModules.empty() && "Modules already initialized");
-	PL_ASSERT(_allPlugins.empty() && "Plugins already initialized");
+	PL_ASSERT(_modules.empty() && "Modules already initialized");
+	PL_ASSERT(_plugins.empty() && "Plugins already initialized");
 
 	if (!PartitionLocalPackages())
 		return;
@@ -152,149 +152,180 @@ void Manager::DiscoverAllModulesAndPlugins() {
 
 	PL_LOG_VERBOSE("Plugins order after topological sorting by dependency: ");
 	for (const auto& plugin : _plugins) {
-		PL_LOG_VERBOSE("--> {}", plugin.GetName());
+		PL_LOG_VERBOSE("  └─ {}", plugin.GetName());
 	}
 }
 
 namespace {
-    // Check conflicts for any item with a manifest
-    template<typename Container, typename Item>
-    std::vector<std::string> CheckConflicts(const Item& item, const Container& items) {
-        std::vector<std::string> errors;
+	bool SupportsPlatform(const std::optional<std::vector<std::string>>& supportedPlatforms) {
+		if (!supportedPlatforms || supportedPlatforms->empty())
+			return true;
 
-        if (const auto& conflicts = item.GetManifest().conflicts) {
-            for (const auto& conflict : *conflicts) {
-                auto it = std::ranges::find(items, conflict->name, &Item::GetName);
+		constexpr std::string_view platform = PLUGIFY_PLATFORM; // e.g., "linux_x64"
 
-                if (it != items.end()) {
-                    auto& version = it->GetManifest().version;
+		constexpr auto separator_pos = platform.find('_');
+		static_assert(separator_pos != std::string_view::npos,
+					  "PLUGIFY_PLATFORM must be in the format 'os_arch'");
 
-                    // Note: ConflictsWith returns a constraint when there IS a conflict
-                    if (auto violatedConstraint = conflict->ConflictsWith(version)) {
-                        std::string msg = std::format(
-                            "Conflict: Incompatible with '{}' v{} (violates constraint: {}v{})",
-                            conflict->name,
-                            version,
-							ComparisonUtils::ToString(violatedConstraint->comparison),
-							violatedConstraint->version
-                        );
+		constexpr std::string_view os = platform.substr(0, separator_pos);
+		constexpr std::string_view arch = platform.substr(separator_pos + 1);
 
-                        if (!conflict->reason.empty()) {
-                            std::format_to(std::back_inserter(msg), " - Reason: {}", conflict->reason);
-                        }
+		return std::ranges::any_of(*supportedPlatforms, [&](const std::string& supported) {
+			// Exact match
+			if (supported == platform)
+				return true;
 
-                        errors.emplace_back(std::move(msg));
-                    }
-                }
-            }
-        }
+			// Wildcard support: "linux_*" matches any Linux, "*_x64" matches any x64
+			if (supported.ends_with("_*")) {
+				return supported.substr(0, supported.size() - 2) == os;
+			}
+			if (supported.starts_with("*_")) {
+				return supported.substr(2) == arch;
+			}
+			if (supported == "*" || supported == "*_*") {
+				return true; // Matches all platforms
+			}
 
-        return errors;
+			return false;
+		});
+	}
+
+	struct ValidationResult {
+		std::vector<std::pair<std::string_view, std::vector<Constraint>>> failedDependencies;
+		std::vector<std::pair<std::string_view, std::vector<Constraint>>> detectedConflicts;
+		std::vector<std::string_view> conflictReasons;
+
+		size_t TotalIssues() const {
+			return  failedDependencies.size() +
+					detectedConflicts.size() +
+					conflictReasons.size();
+		}
+
+		operator bool() const {
+			return failedDependencies.empty() &&
+				   detectedConflicts.empty() &&
+				   conflictReasons.empty();
+		}
+	};
+
+	template<typename Item, typename Container>
+	ValidationResult ValidateAgainst(
+		const Item& item,
+		const Container& container
+	) {
+		ValidationResult result;
+
+		// Dependencies
+		for (const auto& dep : item.GetDependencies()) {
+			auto it = std::ranges::find_if(container, [&](const Item& i) {
+				return i.GetName() == dep->name && i.GetName() != item.GetName();
+			});
+			if (it == container.end()) {
+				if (!dep->optional || !*dep->optional) {
+					result.failedDependencies.emplace_back(dep->name, dep->constraints.value_or(std::vector<Constraint>{}));
+				}
+			} else {
+				auto failed = dep->GetFailedConstraints(it->GetVersion());
+				if (!failed.empty() && (!dep->optional || !*dep->optional)) {
+					result.failedDependencies.emplace_back(dep->name, failed);
+				}
+			}
+		}
+
+		// Conflicts
+		for (const auto& conflict : item.GetConflicts()) {
+			auto it = std::ranges::find_if(container, [&](const Item& i) {
+				return i.GetName() == conflict->name && i.GetName() != item.GetName();
+			});
+			if (it != container.end()) {
+				auto satisfied = conflict->GetSatisfiedConstraints(it->GetVersion());
+				result.detectedConflicts.emplace_back(conflict->name, satisfied);
+				if (conflict->reason) result.conflictReasons.emplace_back(*conflict->reason);
+			}
+		}
+
+		return result;
     }
 
-    // Check dependencies for any item with a manifest
-    template<typename Container, typename Item>
-    std::vector<std::string> CheckDependencies(
-        const Item& item,
-        const Container& items,
-        std::string_view type)
-    {
-        std::vector<std::string> errors;
+	template<typename Item, typename Container>
+	void ShowValidationReport(
+		const Item& item,
+		const Container& container,
+		const ValidationResult& result
+	) {
+		LOG("", Color::None);
+		LOG("Validation Report for {} '{}' v{}:", Color::Bold,
+			item.GetType(), item.GetName(), item.GetVersion());
 
-        if (const auto& dependencies = item.GetManifest().dependencies) {
-            for (const auto& dependency : *dependencies) {
-                auto it = std::ranges::find(items, dependency->name, &Item::GetName);
+		if (result) {
+			LOG("  [✓] All checks passed", Color::Green);
+			return;
+		}
 
-                if (it != items.end()) {
-                    // Dependency exists but might not be loaded
-                    if (it->GetState() != Item::State::Loaded) {
-                        errors.emplace_back(std::format(
-                            "Dependency: {} '{}' exists but is not loaded (state: {})",
-                            type,
-                            dependency->name,
-                            Item::Utils::ToString(it->GetState())
-                        ));
+		if (!result.failedDependencies.empty()) {
+			LOG("  Failed Dependencies:", Color::Red);
+			for (const auto& [name, failed] : result.failedDependencies) {
+				auto it = std::ranges::find(container, name, &Item::GetName);
+				if (it == container.end()) {
+					LOG("    - '{}' [missing]", Color::Red, name);
+				} else {
+					LOG("    - '{}' v{} did not satisfy constraints:", Color::Red,
+						name, it->GetVersion());
+					for (const auto& c : failed) {
+						LOG("       ✗ {}", Color::Red, c);
+					}
+				}
+			}
+		}
 
-                        // Include the dependency's error if it has one
-                        if (it->GetState() == Item::State::Error) {
-                            errors.emplace_back(std::format(
-                                "  └─ {}: {}",
-                                dependency->name,
-                                it->GetError()
-                            ));
-                        }
-                    } else {
-                        // Dependency is loaded, check version constraints
-                        auto& foundVersion = it->GetManifest().version;
+		if (!result.detectedConflicts.empty()) {
+			LOG("  Detected Conflicts:", Color::Red);
+			for (const auto& [name, satisfied] : result.detectedConflicts) {
+				auto it = std::ranges::find(container, name, &Item::GetName);
+				if (it != container.end()) {
+					LOG("    - '{}' v{} conflicts:", Color::Red,
+						name, it->GetVersion());
+				} else {
+					LOG("    - '{}' [present?] conflicts:", Color::Red, name);
+				}
 
-                        // Note: IsSatisfiedBy returns a constraint when NOT satisfied
-                        if (auto unmetConstraint = dependency->IsSatisfiedBy(foundVersion)) {
-                            errors.emplace_back(std::format(
-                                "Dependency: {} '{}' version mismatch - found v{}, requires {}v{}",
-                                type,
-                                dependency->name,
-                                foundVersion,
-                                ComparisonUtils::ToString(unmetConstraint->comparison),
-                                unmetConstraint->version
-                            ));
-                        }
-                    }
-                } else {
-                    // Dependency doesn't exist
-                    if (!dependency->optional.value_or(false)) {
-                        errors.emplace_back(std::format(
-                            "Dependency: Required {} '{}' is missing",
-                            type,
-                            dependency->name
-                        ));
-                    } else {
-                        // Log optional dependency as info/debug rather than error
-                        PL_LOG_DEBUG("Optional dependency '{}' for {} '{}' is not available",
-                            dependency->name, type, item.GetName());
-                    }
-                }
-            }
-        }
+				for (const auto& c : satisfied) {
+					LOG("       ⚠ {}", Color::Yellow, c);
+				}
+			}
+		}
 
-        return errors;
-    }
+		if (!result.conflictReasons.empty()) {
+			LOG("  Conflict Reasons:", Color::Yellow);
+			for (const auto& reason : result.conflictReasons) {
+				LOG("    - {}", Color::Yellow, reason);
+			}
+		}
 
-    // Combine all validation errors into a formatted message
-    std::string FormatValidationErrors(const std::string& itemName,
-                                       const std::vector<std::string>& errors) {
-        if (errors.empty()) {
-            return {};
-        }
-
-        std::string msg = std::format(
-            "Failed to load '{}' due to {} issue(s):\n",
-            itemName,
-            errors.size()
-        );
-
-        for (size_t i = 0; i < errors.size(); ++i) {
-            std::format_to(std::back_inserter(msg), "  {}. {}\n", i + 1, errors[i]);
-        }
-
-        return msg;
-    }
-
-	template<typename ItemType>
-	std::vector<std::string> Validate(const ItemType& item,
-					const auto& container,
-					std::string_view type) {
-    	std::vector<std::string> errors;
-
-    	// Check conflicts
-    	auto conflictErrors = CheckConflicts(item, container);
-    	errors.insert(errors.end(), conflictErrors.begin(), conflictErrors.end());
-
-    	// Check dependencies
-    	auto dependencyErrors = CheckDependencies(item, container, type);
-    	errors.insert(errors.end(), dependencyErrors.begin(), dependencyErrors.end());
-
-    	return errors;
-    }
+		LOG("", Color::None);
+	}
+	
+	template<typename Item, typename Container>
+	bool Validate(
+		const Item& item,
+		const Container& container,
+		bool verbose = false
+	) {
+		auto result = ValidateAgainst(item, container);
+    
+		if (result) {
+			if (verbose) {
+				LOG("[✓] {} '{}' v{} - All checks passed", Color::Green,
+					item.GetType(), item.GetName(), item.GetVersion());
+				LOG("    {} dependencies satisfied, {} conflicts checked", Color::Gray,
+					item.GetDependencies().size(), item.GetConflicts().size());
+			}
+			return true;
+		} else {
+			ShowValidationReport(item, container, result);
+			return false;
+		}
+	}
 
 	template <typename T>
 	Result<std::shared_ptr<Manifest>> ReadManifest(
@@ -304,30 +335,23 @@ namespace {
 	) {
 		auto json = fs->ReadTextFile(path);
 		if (!json)
-			return plg::unexpected(json.error());
+			return std::unexpected(json.error());
 
 		auto parsed = glz::read_jsonc<std::shared_ptr<T>>(*json);
 		if (!parsed)
-			return plg::unexpected(glz::format_error(parsed.error(), *json));
+			return std::unexpected(glz::format_error(parsed.error(), *json));
 
 		auto& manifest = *parsed;
 		manifest->path = path;
 		manifest->type = type;
-
-		if (!SupportsPlatform(manifest->platforms))
-			return plg::unexpected(std::string()); // supress
-
-		auto errors = manifest->Validate();
-		if (!errors.empty())
-			return plg::unexpected(plg::join(errors, ", "));
 
 		return std::static_pointer_cast<Manifest>(std::move(manifest));
 	}
 
 	void HandleDuplicateManifest(
 		ManifestList& manifests,
-		std::shared_ptr<Manifest> manifest)
-	{
+		std::shared_ptr<Manifest> manifest
+	) {
 		auto it = std::ranges::find(manifests, manifest->name, &Manifest::name);
 
 		if (it == manifests.end()) {
@@ -368,47 +392,59 @@ namespace {
 		const std::shared_ptr<IFileSystem>& fs,
 		const fs::path& dirPath,
 		std::string_view pattern,
-		ManifestType type)
-	{
+		ManifestType type
+	) {
 		// Find manifest files
-		auto found = fs->FindFiles(dirPath, {pattern}, false);
-		if (!found) {
+		auto paths = fs->FindFiles(dirPath, {pattern}, false);
+		if (!paths) {
 			PL_LOG_ERROR("Failed to read directory '{}': {}",
-						 dirPath.string(), found.error());
+						 dirPath.string(), paths.error());
 			return false;
 		}
 
-		if (found->empty())
+		if (paths->empty())
 			return false;
 
-		if (found->size() > 1) {
+		if (paths->size() > 1) {
 			PL_LOG_WARNING("Directory '{}' contains {} manifest files - using first",
-						   dirPath.string(), found->size());
+						   dirPath.string(), paths->size());
 		}
 
 		// Read and process manifest
-		auto result = ReadManifest<T>(fs, found->front(), type);
+		auto result = ReadManifest<T>(fs, paths->front(), type);
 		if (!result) {
-			if (!result.error().empty()) {
-				PL_LOG_ERROR("Failed to load manifest from '{}': {}",
+			PL_LOG_ERROR("Failed to load manifest from '{}': {}",
 							dirPath.string(), result.error());
-			}
 			return false;
 		}
 
-		HandleDuplicateManifest(manifests, std::move(*result));
+    	auto& manifest = *result;
+
+		// Skip manifest which not valid arch
+    	if (!SupportsPlatform(manifest->platforms))
+    		return false;
+
+		ScopeLog scope{std::format("Failed to validate manifest from '{}':", dirPath.string())};
+    	manifest->Validate(scope);
+
+		if (scope) {
+			PL_LOG_VERBOSE("Detect {} fails", scope.count);
+			return false;
+		}
+
+		HandleDuplicateManifest(manifests, std::move(manifest));
 		return true;
 	}
 }
 
 ManifestList Manager::FindLocalPackages() {
 	auto fs = _plugify.GetFileSystem();
-	auto& config = _plugify.GetConfig().baseDir;
+	auto& baseDir = _plugify.GetConfig().baseDir;
 
-	auto entries = fs->IterateDirectory(config, {false});
+	auto entries = fs->IterateDirectory(baseDir, {false});
 	if (!entries) {
 		PL_LOG_ERROR("Failed to read base directory '{}': {}",
-					config.string(), entries.error());
+					baseDir.string(), entries.error());
 		return {};
 	}
 
@@ -480,47 +516,129 @@ bool Manager::PartitionLocalPackages() {
 
 	return true;
 }
+/*
+struct ScopedResult {
+	std::string_view type;
+	size_t succeeded = 0;
+	size_t failed = 0;
 
+	~ScopedResult() {
+		if (HasAny()) {
+			PL_LOG_INFO("{} initialization complete: {} succeeded, {} failed",
+					   type, succeeded, failed);
+		} else {
+			PL_LOG_WARNING("Did not initialize any {}", type);
+		}
+	}
+
+	bool HasAny() const { return succeeded > 0 || failed > 0; }
+};
+
+// Process single plugin - returns module ID if successful
+std::optional<UniqueId> Manager::ProcessPluginInitialization(
+	Plugin& plugin,
+	ScopedResult& result) {
+
+	// Early return for missing module
+	const auto& [name, constraints, _] = plugin.GetManifest().language;
+	auto module = std::ranges::find(_modules, name, &Module::GetLanguage);
+	if (module != _modules.end()) {
+		plugin.SetError(FormatMissingModuleError(plugin));
+		++result.failed;
+		return std::nullopt;
+	}
+
+	// Early return for constraint violations
+	if (constraints) {
+
+	}
+	auto errors = ValidateConstraints(*module, *constraints);
+	if (!errors.empty()) {
+		plugin.SetError(*error);
+		++result.failed;
+		return std::nullopt;
+	}
+
+	// Early return for initialization failure
+	if (!plugin.Initialize(_plugify)) {
+		++result.failed;
+		return std::nullopt;
+	}
+
+	// Success path
+	plugin.SetModule(*module);
+	++result.succeeded;
+	return module->GetId();
+}
+
+std::unordered_set<UniqueId> Manager::InitializePlugins() {
+	std::unordered_set<UniqueId> requiredModuleIds;
+	requiredModuleIds.reserve(_modules.size());
+
+	ScopedResult result{"plugin"};
+
+	for (auto& plugin : _plugins) {
+		if (auto moduleId = ProcessPluginInitialization(plugin, result)) {
+			requiredModuleIds.insert(*moduleId);
+		}
+	}
+
+	return requiredModuleIds;
+}
+*/
 void Manager::LoadRequiredLanguageModules() {
 	if (_modules.empty())
 		return;
 
-	std::unordered_set<UniqueId> modules;
+	/*std::unordered_set<UniqueId> modules;
 	modules.reserve(_modules.size());
+
+	size_t successCount = 0;
+	size_t failedCount = 0;
 
 	for (auto& plugin : _plugins) {
 		const auto& [name, constraits, _] = plugin.GetManifest().language;
 		auto it = std::ranges::find(_modules, name, &Module::GetLanguage);
 		if (it == _modules.end()) {
 			plugin.SetError(std::format("Language module: '{}' missing for plugin: '{}'", name, plugin.GetName()));
+			++failedCount;
 			continue;
-		} else {
-			if (constraits) {
-				auto& version = it->GetManifest().version;
-				for (const auto& constraint : *constraits) {
-					if (!constraint.IsSatisfiedBy(version)) {
-						std::string errorMsg = std::format(
-							"Plugin '{}' requrement version mismatch - found v{}, requires {}v{}",
-							plugin.GetName(), dependency.name
-						);
+		}
 
-						for (const auto& failure : validation.failedConstraints) {
-							errorMsg += std::format("  - {}\n", failure);
-						}
-
-						plugin.SetError(errorMsg);
-					}
+		if (constraits) {
+			auto errors = ValidateConstraints(*it, *constraits);
+			if (!errors.empty()) {
+				std::string msg = std::format(
+					"Plugin '{}' requires module '{}' with unsatisfied constraints:\n",
+					plugin.GetName(), name
+				);
+				for (const auto& failure : errors) {
+					std::format_to(std::back_inserter(msg), "  - {}\n", failure);
 				}
+				plugin.SetError(std::move(msg));
+				++failedCount;
+				continue;
 			}
 		}
 
-		auto& module = *it;
-		plugin.Initialize(_plugify);
-		plugin.SetModule(module);
-		modules.emplace(module.GetId());
+		if (plugin.Initialize(_plugify)) {
+			++successCount;
+
+			auto& module = *it;
+			plugin.SetModule(module);
+			modules.emplace(module.GetId());
+		}
 	}
 
-	bool loadedAny = false;
+	if (successCount || failedCount) {
+		PL_LOG_INFO("Plugin initialization complete: {} succeeded, {} failed",
+						successCount, failedCount);
+	} else {
+		PL_LOG_WARNING("Did not initialize any plugin");
+	}
+
+	successCount = 0;
+	failedCount = 0;
 
 	for (auto& module : _modules) {
 		if (module.GetManifest().forceLoad.value_or(false) || modules.contains(module.GetId())) {
@@ -530,23 +648,30 @@ void Manager::LoadRequiredLanguageModules() {
 				if (!errors.empty()) {
 					module.SetError(FormatValidationErrors(module.GetName(), errors));
 				} else {
-					loadedAny |= module.Initialize(_plugify);
+					if (module.Initialize(_plugify)) {
+						++successCount;
+					}
 				}
 			}
 		}
 	}
-	
-	if (!loadedAny) {
-		PL_LOG_WARNING("Did not load any module");
-		return;
-	}
+
+	if (successCount || failedCount) {
+		PL_LOG_INFO("Module initialization complete: {} succeeded, {} failed",
+						successCount, failedCount);
+	} else {
+		PL_LOG_WARNING("Did not initialize any module");
+	}*/
+	auto requiredModuleIds = InitializePluginsWithModules();
+	LoadModules(requiredModuleIds);
 }
 
 void Manager::LoadAndStartAvailablePlugins() {
 	if (_plugins.empty())
 		return;
-	
-	bool loadedAny = false;
+
+	size_t successCount = 0;
+	size_t failedCount = 0;
 
 	for (auto& plugin : _plugins) {
 		if (plugin.GetState() == PluginState::NotLoaded) {
@@ -555,18 +680,23 @@ void Manager::LoadAndStartAvailablePlugins() {
 				continue;
 			}
 
-			auto errors = Validate(plugin, _plugins, "Plugin");
-			if (!errors.empty()) {
+			if (!Validate(plugin, _plugins, true)) {
 				plugin.SetError(FormatValidationErrors(plugin.GetName(), errors));
+				continue;
+			}
+
+			if (plugin.GetModule()->LoadPlugin(plugin)) {
+				++successCount;
 			} else {
-				loadedAny |= plugin.GetModule()->LoadPlugin(plugin);
+				++failedCount;
 			}
 		}
 	}
-	
-	if (!loadedAny) {
+
+	if (successCount || failedCount) {
+		PL_LOG_INFO("Plugins loading complete: {} succeeded, {} failed", successCount, failedCount);
+	} else {
 		PL_LOG_WARNING("Did not load any plugin");
-		return;
 	}
 
 	for (auto& plugin : _plugins) {
@@ -588,13 +718,13 @@ void Manager::TerminateAllPlugins() {
 	if (_plugins.empty())
 		return;
 	
-	for (auto& plugin : std::ranges::reverse_view(_plugins)) {
+	for (auto& plugin : _plugins | std::views::reverse) {
 		if (plugin.GetState() == PluginState::Running) {
 			plugin.GetModule()->EndPlugin(plugin);
 		}
 	}
 
-	for (auto& plugin : std::ranges::reverse_view(_plugins)) {
+	for (auto& plugin : _plugins | std::views::reverse) {
 		plugin.Terminate();
 	}
 
@@ -605,7 +735,7 @@ void Manager::TerminateAllModules() {
 	if (_modules.empty())
 		return;
 
-	for (auto& module : std::ranges::reverse_view(_modules)) {
+	for (auto& module : _modules | std::views::reverse) {
 		module.Terminate();
 	}
 

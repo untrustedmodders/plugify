@@ -2,7 +2,6 @@
 
 #include "conflict.hpp"
 #include "dependency.hpp"
-#include "algorithm.hpp"
 #include <plugify/api/version.hpp>
 
 namespace plugify {
@@ -23,39 +22,30 @@ namespace plugify {
 		std::optional<std::vector<std::string>> platforms;
 		std::optional<std::vector<std::unique_ptr<Dependency>>> dependencies;
 		std::optional<std::vector<std::unique_ptr<Conflict>>> conflicts;
+		//std::optional<std::unordered_map<std::string, std::string>> metadata;
 
-		std::vector<std::string> Validate() {
-			std::vector<std::string> errors;
-
+		void Validate(ScopeLog& scope) const {
 			if (name.empty()) {
-				errors.emplace_back("Missing name");
+				scope.Log("Missing name");
 			}
 
 			if (conflicts && !conflicts->empty()) {
-				if (RemoveDuplicates(*conflicts)) {
-					PL_LOG_WARNING("Manifest: '{}' has multiple same conflicts!", name);
-				}
 				size_t i = 0;
 				for (const auto& dependency : *conflicts) {
 					if (dependency->name.empty()) {
-						errors.emplace_back(std::format("Missing conflict name at {}", ++i));
+						scope.Log(std::format("  └─ Missing conflict name at {}", ++i));
 					}
 				}
 			}
 
 			if (dependencies && !dependencies->empty()) {
-				if (RemoveDuplicates(*dependencies)) {
-					PL_LOG_WARNING("Manifest: '{}' has multiple same dependencies!", name);
-				}
 				size_t i = 0;
 				for (const auto& dependency : *dependencies) {
 					if (dependency->name.empty()) {
-						errors.emplace_back(std::format("Missing dependency name at {}", ++i));
+						scope.Log(std::format("  └─ Missing dependency name at {}", ++i));
 					}
 				}
 			}
-
-			return errors;
 		}
 	};
 
