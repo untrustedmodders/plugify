@@ -1,6 +1,6 @@
 #pragma once
 
-#include <plg/macro.hpp>
+#include "plg/macro.hpp"
 
 #if PLUGIFY_DEBUGGING_SUPPORT
 

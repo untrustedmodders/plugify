@@ -10,11 +10,11 @@
 #include <compare>
 
 #ifndef PLUGIFY_VECTOR_NO_STD_FORMAT
-#include <plg/format.hpp>
+#include "plg/format.hpp"
 #endif
 
-#include <plg/hash.hpp>
-#include <plg/macro.hpp>
+#include "plg/hash.hpp"
+#include "plg/macro.hpp"
 
 // from https://github.com/Neargye/semver
 namespace plg {

@@ -1,4 +1,4 @@
-#include <plugify/core/log.hpp>
+#include "plugify/core/log_system.hpp"
 
 using namespace plugify;
 

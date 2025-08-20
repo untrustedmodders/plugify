@@ -37,10 +37,10 @@
 #endif
 
 #ifndef PLUGIFY_STRING_NO_STD_FORMAT
-#include <plg/format.hpp>
+#include "plg/format.hpp"
 #endif
 
-#include <plg/allocator.hpp>
+#include "plg/allocator.hpp"
 
 namespace plg {
 	namespace detail {

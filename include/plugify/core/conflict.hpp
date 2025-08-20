@@ -1,22 +1,41 @@
 #pragma once
 
-#include <plugify/api/constraint.hpp>
+#include "plugify/core/types.hpp"
+
+#include "plugify_export.h"
+
+namespace glz {
+	template<typename T>
+	struct meta;
+}
 
 namespace plugify {
-	struct Conflict {
-		PackageId name;
-		std::optional<std::vector<Constraint>> constraints;  // Versions that conflict
-		std::string reason;
+	struct Constraint;
+	// Conflict Class
+	class PLUGIFY_API Conflict {
+		struct Impl;
+	public:
+		Conflict();
+		~Conflict();
+		Conflict(const Conflict& other);
+		Conflict(Conflict&& other) noexcept;
+		Conflict& operator=(const Conflict& other);
+		Conflict& operator=(Conflict&& other) noexcept;
 
-		std::vector<Constraint> GetSatisfiedConstraints(const Version& version) const {
-			if (!constraints) return {};
-			std::vector<Constraint> satisfied;
-			std::ranges::copy_if(*constraints, std::back_inserter(satisfied), [&](const Constraint& c) {
-				return c.IsSatisfiedBy(version);
-			});
-			return satisfied;
-		}
+		// Getters
+		[[nodiscard]] const PackageId& GetName() const noexcept;
+		[[nodiscard]] std::optional<std::vector<Constraint>> GetConstraints() const noexcept;
+		[[nodiscard]] std::optional<std::string> GetReason() const noexcept;
 
-		bool operator==(const Conflict& conflict) const noexcept = default;
+		// Setters (pass by value and move)
+		void SetName(PackageId name) noexcept;
+		void SetConstraints(std::optional<std::vector<Constraint>> constraints) noexcept;
+		void SetReason(std::optional<std::string> reason) noexcept;
+
+		[[nodiscard]] bool operator==(const Conflict& lhs, const Conflict& rhs) noexcept;
+
+	private:
+		friend struct glz::meta<Conflict>;
+		std::unique_ptr<Impl> _impl;
 	};
 }

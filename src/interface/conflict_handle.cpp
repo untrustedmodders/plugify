@@ -1,5 +1,5 @@
-#include <plugify/core/conflict.hpp>
-#include <plugify/api/conflict_handle.hpp>
+#include "plugify/_/conflict_handle.hpp"
+#include "plugify/core/conflict.hpp"
 
 using namespace plugify;
 

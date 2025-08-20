@@ -3,11 +3,11 @@
 #include <span>
 #include <string>
 
-#include <plugify/api/handle.hpp>
-#include <plugify/api/value_type.hpp>
-#include <plugify/asm/mem_addr.hpp>
+#include "../core/value_type.hpp"
+#include "handle.hpp"
+#include "plugify/asm/mem_addr.hpp"
 
-#include <plugify_export.h>
+#include "plugify_export.h"
 
 namespace plugify {
 	struct EnumValue;

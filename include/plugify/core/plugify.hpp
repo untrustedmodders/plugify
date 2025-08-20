@@ -1,10 +1,10 @@
 #pragma once
 
-#include <plugify/core/provider.hpp>
-#include <plugify/core/manager.hpp>
-#include <plugify/core/config.hpp>
+#include "plugify/core/provider.hpp"
+#include "plugify/core/manager.hpp"
+#include "plugify/core/config.hpp"
 
-#include <plugify_export.h>
+#include "plugify_export.h"
 
 namespace plugify {
 	class PLUGIFY_API Plugify {
@@ -15,7 +15,6 @@ namespace plugify {
 		bool Initialize(const std::filesystem::path& rootDir);
 		void Terminate() const;
 		bool IsInitialized() const;
-
 		void Update() const;
 
 		const Manager& GetManager() const;
@@ -23,17 +22,17 @@ namespace plugify {
 		const Config& GetConfig() const;
 		const Version& GetVersion() const;
 
-		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) const;
+		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
 		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const;
 
-		void SetFileSystem(std::shared_ptr<IFileSystem> reader) const;
+		void SetFileSystem(std::shared_ptr<IFileSystem> reader);
 		std::shared_ptr<IFileSystem> GetFileSystem() const;
 
 		void Log(std::string_view msg, Severity severity) const;
-		void SetLogger(std::shared_ptr<ILogger> logger) const;
+		void SetLogger(std::shared_ptr<ILogger> logger);
 
 	private:
-		class Impl;
+		struct Impl;
 		std::unique_ptr<Impl> _impl;
 	};
 

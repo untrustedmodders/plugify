@@ -1,44 +1,50 @@
-#include "../../include/plugify/core/plugify.hpp"
+#include "plugify/core/plugify.hpp"
 #include "plugin_manifest.hpp"
-#include <plugify/api/manager.hpp>
-#include <plugify/api/module_handle.hpp>
-#include <plugify/api/module_manifest_handle.hpp>
-#include <plugify/api/plugin_handle.hpp>
-#include <plugify/api/plugin_manifest_handle.hpp>
-#include <plugify/core/provider.hpp"
+
+#include "plugify/_/module_handle.hpp"
+#include "plugify/_/plugin_manifest_handle.hpp"
+#include "plugify/core/manager.hpp"
+#include "plugify/core/module_manifest_handle.hpp"
+#include "plugify/core/plugin_handle.hpp"
+#include "plugify/core/provider.hpp"
 
 using namespace plugify;
 
-Provider::Provider(Plugify& plugify) : Context(plugify) {}
+class Provider::Impl {
+	explicit Impl(Plugify& self) : plugify(self) {}
+	Plugify& plugify;
+};
+
+Provider::Provider(Plugify& plugify) : _impl(std::make_unique<Impl>(plugify)) {}
 
 Provider::~Provider() = default;
 
 void Provider::Log(std::string_view msg, Severity severity) const {
-	_plugify.Log(msg, severity);
+	_impl->plugify.Log(msg, severity);
 }
 
 const std::filesystem::path& Provider::GetBaseDir() const noexcept {
-	return _plugify.GetConfig().baseDir;
+	return _impl->plugify.GetConfig().baseDir;
 }
 
 const std::filesystem::path& Provider::GetConfigsDir() const noexcept {
-	return _plugify.GetConfig().configsDir;
+	return _impl->plugify.GetConfig().configsDir;
 }
 
 const std::filesystem::path& Provider::GetDataDir() const noexcept {
-	return _plugify.GetConfig().dataDir;
+	return _impl->plugify.GetConfig().dataDir;
 }
 
 const std::filesystem::path& Provider::GetLogsDir() const noexcept {
-	return _plugify.GetConfig().logsDir;
+	return _impl->plugify.GetConfig().logsDir;
 }
 
 bool Provider::IsPreferOwnSymbols() const noexcept {
-	return _plugify.GetConfig().preferOwnSymbols.value_or(false);
+	return _impl->plugify.GetConfig().preferOwnSymbols.value_or(false);
 }
 
 bool Provider::IsPluginLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
-	auto plugin = _plugify.GetManager().FindPlugin(name);
+	auto plugin = _impl->plugify.GetManager().FindPlugin(name);
 	if (!plugin)
 		return false;
 	if (plugin.GetState() != PluginState::Loaded && plugin.GetState() != PluginState::Running)
@@ -49,7 +55,7 @@ bool Provider::IsPluginLoaded(std::string_view name, std::optional<Constraint> c
 }
 
 bool Provider::IsModuleLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
-	auto module = _plugify.GetManager().FindModule(name);
+	auto module = _impl->plugify.GetManager().FindModule(name);
 	if (!module)
 		return false;
 	if (module.GetState() != ModuleState::Loaded)
@@ -60,17 +66,18 @@ bool Provider::IsModuleLoaded(std::string_view name, std::optional<Constraint> c
 }
 
 PluginHandle Provider::FindPlugin(std::string_view name) const noexcept {
-	return _plugify.GetManager().FindPlugin(name);
+	return _impl->plugify.GetManager().FindPlugin(name);
 }
 
 ModuleHandle Provider::FindModule(std::string_view name) const noexcept {
-	return _plugify.GetManager().FindModule(name);
+	return _impl->plugify.GetManager().FindModule(name);
 }
 
 std::shared_ptr<IAssemblyLoader> Provider::GetAssemblyLoader() const noexcept {
-	return _plugify.GetAssemblyLoader();
+	return _impl->plugify.GetAssemblyLoader();
 }
 
 std::shared_ptr<IFileSystem> Provider::GetFileSystem() const noexcept {
-	return _plugify.GetFileSystem();
+	return _impl->plugify.GetFileSystem();
 }
+

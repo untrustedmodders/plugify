@@ -1,22 +1,45 @@
 #pragma once
 
-#include <plugify/api/constraint.hpp>
+#include <vector>
+#include <string>
+#include <optional>
+
+#include "plugify/core/types.hpp"
+
+#include "plugify_export.h"
+
+namespace glz {
+	template<typename T>
+	struct meta;
+}
 
 namespace plugify {
-	struct Dependency {
-		PackageId name;
-		std::optional<std::vector<Constraint>> constraints;  // ANDed together
-		std::optional<bool> optional;
+	struct Constraint;
+	// Dependency Class
+	class PLUGIFY_API Dependency {
+		struct Impl;
+	public:
+		Dependency();
+		~Dependency();
+		Dependency(const Dependency& other);
+		Dependency(Dependency&& other) noexcept;
+		Dependency& operator=(const Dependency& other);
+		Dependency& operator=(Dependency&& other) noexcept;
 
-		std::vector<Constraint> GetFailedConstraints(const Version& version) const {
-			if (!constraints) return {};
-			std::vector<Constraint> failed;
-			std::ranges::copy_if(*constraints, std::back_inserter(failed), [&](const Constraint& c) {
-				return !c.IsSatisfiedBy(version);
-			});
-			return failed;
-		}
+		// Getters
+		[[nodiscard]] const PackageId& GetName() const noexcept;
+		[[nodiscard]] std::optional<std::vector<Constraint>> GetConstraints() const noexcept;
+		[[nodiscard]] std::optional<bool> GetOptional() const noexcept;
 
-		bool operator==(const Dependency& dependency) const noexcept = default;
+		// Setters (pass by value and move)
+		void SetName(PackageId name) noexcept;
+		void SetConstraints(std::optional<std::vector<Constraint>> constraints) noexcept;
+		void SetOptional(std::optional<bool> optional) noexcept;
+
+		[[nodiscard]] bool operator==(const Dependency& lhs, const Dependency& rhs) noexcept;
+
+	private:
+		friend struct glz::meta<Dependency>;
+		std::unique_ptr<Impl> _impl;
 	};
 }

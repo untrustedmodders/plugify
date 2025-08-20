@@ -94,27 +94,7 @@ namespace PluginSystem {
 	// Package State Management
 	// ============================================================================
 
-	enum class PackageState {
-		Discovered,
-		Validated,
-		Initializing,
-		Ready,
-		Started,
-		Ended,
-		Error,
-		Disabled
-	};
 
-	template<typename ManifestType>
-	struct PackageInfo {
-		ManifestType manifest;
-		PackageState state = PackageState::Discovered;
-		std::optional<Error> lastError;
-		std::chrono::system_clock::time_point discoveredAt;
-	};
-
-	using PluginInfo = PackageInfo<PluginManifest>;
-	using ModuleInfo = PackageInfo<ModuleManifest>;
 
 	// ============================================================================
 	// Interfaces
@@ -189,15 +169,6 @@ namespace PluginSystem {
 		virtual void unloadPlugin(std::unique_ptr<Plugin> plugin) = 0;
 	};
 
-	// ============================================================================
-	// Event System for Monitoring
-	// ============================================================================
-
-
-
-
-
-
 
 	// ============================================================================
 	// Main PluginManager Interface
@@ -239,9 +210,7 @@ namespace PluginSystem {
 	// ============================================================================
 
 	struct PluginManagerConfig {
-		std::vector<std::filesystem::path> searchPaths;
 		bool autoResolveConflicts = false;
-		bool strictVersionChecking = true;
 		bool loadDisabledPackages = false;
 		std::size_t maxInitializationRetries = 3;
 		std::chrono::milliseconds initializationTimeout{30000};
@@ -249,63 +218,6 @@ namespace PluginSystem {
 		// Filtering
 
 	};
-
-	// ============================================================================
-	// Concrete Implementation
-	// ============================================================================
-
-	class PluginManager : public IPluginManager {
-	public:
-		explicit PluginManager(PluginManagerConfig config);
-		~PluginManager() override;
-
-		// Dependency injection for customization
-		void setPackageDiscovery(std::unique_ptr<IPackageDiscovery> discovery);
-		void setPackageValidator(std::unique_ptr<IPackageValidator> validator);
-		void setDependencyResolver(std::unique_ptr<IDependencyResolver> resolver);
-		void setModuleLoader(std::unique_ptr<IModuleLoader> loader);
-		void setPluginLoader(std::unique_ptr<IPluginLoader> loader);
-
-		// IPluginManager implementation
-		Result<void> discoverPackages(
-				std::span<const std::filesystem::path> searchPaths) override;
-		Result<void> initialize() override;
-
-		std::optional<std::reference_wrapper<const ModuleInfo>>
-		getModule(std::string_view moduleId) const override;
-		std::optional<std::reference_wrapper<const PluginInfo>>
-		getPlugin(std::string_view pluginId) const override;
-
-		std::vector<std::reference_wrapper<const ModuleInfo>>
-		getModules() const override;
-		std::vector<std::reference_wrapper<const PluginInfo>>
-		getPlugins() const override;
-
-		bool isModuleLoaded(std::string_view moduleId) const override;
-		bool isPluginLoaded(std::string_view pluginId) const override;
-
-		void subscribe(EventHandler handler) override;
-		void unsubscribe(EventHandler handler) override;
-
-	private:
-		struct Impl;
-		std::unique_ptr<Impl> pImpl;
-
-		// Internal initialization steps
-		Result<void> validateAllManifests();
-		Result<void> resolveDependencies();
-		Result<void> initializeModules();
-		Result<void> initializePlugins();
-
-		// Helper methods
-		void emitEvent(Event event);
-		Result<void> handleInitializationError(const PackageId& id, const Error& error);
-
-		// State management
-		void updatePackageState(const PackageId& id, PackageState newState);
-		std::vector<PackageId> getPluginsForModule(std::string_view moduleId) const;
-	};
-
 	// ============================================================================
 	// Factory for Creating Default Components
 	// ============================================================================

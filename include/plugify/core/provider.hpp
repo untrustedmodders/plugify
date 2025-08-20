@@ -1,14 +1,13 @@
 #pragma once
 
-#include <plugify/core/context.hpp>
-#include <plugify/api/assembly.hpp>
-#include <plugify/api/constraint.hpp>
-#include <plugify/api/file_system.hpp>
-#include <plugify/api/provider_handle.hpp>
+#include "../_/provider_handle.hpp"
+#include "assembly.hpp"
+#include "file_system.hpp"
+#include "plugify/core/constraint.hpp"
 
 namespace plugify {
 	class Plugify;
-	class Provider : public Context {
+	class Provider {
 	public:
 		explicit Provider(Plugify& plugify);
 		~Provider();
@@ -36,5 +35,9 @@ namespace plugify {
 		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const noexcept;
 
 		std::shared_ptr<IFileSystem> GetFileSystem() const noexcept;
+
+	private:
+		struct Impl;
+		std::unique_ptr<Impl> _impl;
 	};
 }

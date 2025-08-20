@@ -1,108 +1,16 @@
 #pragma once
 
-#include "method_handle.hpp"
-#include "manifest.hpp"
-#include "module_manifest.hpp"
-#include "plugin_manifest.hpp"
-
-#include <plugify/core/config.hpp>
+#include "plugify/core/config.hpp"
+#include "plugify/core/constraint.hpp"
+#include "plugify/core/enum.hpp"
+#include "plugify/core/manifest.hpp"
+#include "plugify/core/method.hpp"
 
 #include <glaze/glaze.hpp>
 
-using namespace plugify;
-
-template<>
-struct glz::meta<ValueType> {
-	static constexpr auto value = enumerate(
-			ValueName::Void, ValueType::Void,
-			ValueName::Bool, ValueType::Bool,
-			ValueName::Char8, ValueType::Char8,
-			ValueName::Char16, ValueType::Char16,
-			ValueName::Int8, ValueType::Int8,
-			ValueName::Int16, ValueType::Int16,
-			ValueName::Int32, ValueType::Int32,
-			ValueName::Int64, ValueType::Int64,
-			ValueName::UInt8, ValueType::UInt8,
-			ValueName::UInt16, ValueType::UInt16,
-			ValueName::UInt32, ValueType::UInt32,
-			ValueName::UInt64, ValueType::UInt64,
-			ValueName::Pointer, ValueType::Pointer,
-			ValueName::Float, ValueType::Float,
-			ValueName::Double, ValueType::Double,
-			ValueName::Function, ValueType::Function,
-			ValueName::String, ValueType::String,
-			ValueName::Any, ValueType::Any,
-			ValueName::ArrayBool, ValueType::ArrayBool,
-			ValueName::ArrayChar8, ValueType::ArrayChar8,
-			ValueName::ArrayChar16, ValueType::ArrayChar16,
-			ValueName::ArrayInt8, ValueType::ArrayInt8,
-			ValueName::ArrayInt16, ValueType::ArrayInt16,
-			ValueName::ArrayInt32, ValueType::ArrayInt32,
-			ValueName::ArrayInt64, ValueType::ArrayInt64,
-			ValueName::ArrayUInt8, ValueType::ArrayUInt8,
-			ValueName::ArrayUInt16, ValueType::ArrayUInt16,
-			ValueName::ArrayUInt32, ValueType::ArrayUInt32,
-			ValueName::ArrayUInt64, ValueType::ArrayUInt64,
-			ValueName::ArrayPointer, ValueType::ArrayPointer,
-			ValueName::ArrayFloat, ValueType::ArrayFloat,
-			ValueName::ArrayDouble, ValueType::ArrayDouble,
-			ValueName::ArrayString, ValueType::ArrayString,
-			ValueName::ArrayAny, ValueType::ArrayAny,
-			ValueName::ArrayVector2, ValueType::ArrayVector2,
-			ValueName::ArrayVector3, ValueType::ArrayVector3,
-			ValueName::ArrayVector4, ValueType::ArrayVector4,
-			ValueName::ArrayMatrix4x4, ValueType::ArrayMatrix4x4,
-			ValueName::Vector2, ValueType::Vector2,
-			ValueName::Vector3, ValueType::Vector3,
-			ValueName::Vector4, ValueType::Vector4,
-			ValueName::Matrix4x4, ValueType::Matrix4x4
-	);
-};
-
-template<>
-struct glz::meta<Severity> {
-	static constexpr auto value = enumerate(
-			"none", Severity::None,
-			"fatal", Severity::Fatal,
-			"error", Severity::Error,
-			"warn", Severity::Warning,
-			"info", Severity::Info,
-			"debug", Severity::Debug,
-			"verbose", Severity::Verbose
-	);
-};
-
-template<>
-struct glz::meta<ManifestType> {
-	static constexpr auto value = enumerate(
-			"module", ManifestType::Module,
-			"plugin", ManifestType::Plugin
-	);
-};
-
 template <>
-struct glz::meta<Dependency> {
-	using T = Dependency;
-	static constexpr auto value = object(
-			"name", &T::name,
-			"constraints", &T::constraints,
-			"optional", &T::optional
-	);
-};
-
-template <>
-struct glz::meta<Conflict> {
-	using T = Conflict;
-	static constexpr auto value = object(
-			"name", &T::name,
-			"constraints", &T::constraints,
-			"reason", &T::reason
-	);
-};
-
-template <>
-struct glz::meta<Config> {
-	using T = Config;
+struct glz::meta<plugify::Config> {
+	using T = plugify::Config;
 	static constexpr auto value = object(
 			"$schema", skip{},
 			"baseDir", &T::baseDir,
@@ -115,51 +23,181 @@ struct glz::meta<Config> {
 };
 
 template <>
-struct glz::meta<EnumValue> {
-	using T = EnumValue;
+struct glz::meta<plugify::Conflict> {
 	static constexpr auto value = object(
-			"name", &T::name,
-			"description", skip{},
-			"value", &T::value
+		"name", [](auto&& self) -> auto& { return self._impl->name; },
+		"constraints", [](auto&& self) -> auto& { return self._impl->constraints; },
+		"reason", [](auto&& self) -> auto& { return self._impl->reason; }
+	);
+};
+
+template<>
+struct glz::meta<plugify::Severity> {
+	using T = plugify::Severity;
+	static constexpr auto value = enumerate(
+			"none", T::None,
+			"fatal", T::Fatal,
+			"error", T::Error,
+			"warn", T::Warning,
+			"info", T::Info,
+			"debug", T::Debug,
+			"verbose", T::Verbose
 	);
 };
 
 template <>
-struct glz::meta<Enum> {
-	using T = Enum;
+struct glz::meta<plugify::Method> {
 	static constexpr auto value = object(
-			"name", &T::name,
-			"description", skip{},
-			"values", &T::values
+		"group", skip{},
+		"description", skip{},
+		"paramTypes", [](auto&& self) -> auto& { return self._impl->paramTypes; },
+		"retType", [](auto&& self) -> auto& { return self._impl->retType; },
+		"varIndex", [](auto&& self) -> auto& { return self._impl->varIndex; },
+		"name", [](auto&& self) -> auto& { return self._impl->name; },
+		"funcName", [](auto&& self) -> auto& { return self._impl->funcName; },
+		"callConv", [](auto&& self) -> auto& { return self._impl->callConv; }
 	);
 };
 
 template <>
-struct glz::meta<Property> {
-	using T = Property;
+struct glz::meta<plugify::ModuleManifest> {
+	using T = plugify::ModuleManifest;
 	static constexpr auto value = object(
-			"type", &T::type,
-			"name", skip{},
-			"description", skip{},
-			"ref", &T::ref,
-			"prototype", &T::prototype,
-			"enum", &T::enumerate,
-			"default", skip{}
+			"$schema", skip{},
+			"id", skip{},
+			"location", skip{},
+			"type", skip{},
+
+			"name", &T::name,
+			"version", &T::version,
+			"description", &T::description,
+			"author", &T::author,
+			"website", &T::website,
+			"license", &T::license,
+
+			"platforms", &T::platforms,
+			"dependencies", &T::dependencies,
+			"conflicts", &T::conflicts,
+
+			"language", &T::language,
+			"runtime", &T::runtime,
+			"directories", &T::directories,
+			"forceLoad", &T::forceLoad
 	);
 };
 
 template <>
-struct glz::meta<Method> {
-	using T = Method;
+struct glz::meta<plugify::PluginManifest> {
+	using T = plugify::PluginManifest;
 	static constexpr auto value = object(
+			"$schema", skip{},
+			"id", skip{},
+			"path", skip{},
+			"type", skip{},
+
 			"name", &T::name,
-			"group", skip{},
-			"description", skip{},
-			"funcName", &T::funcName,
-			"callConv", &T::callConv,
-			"paramTypes", &T::paramTypes,
-			"retType", &T::retType,
-			"varIndex", &T::varIndex
+			"version", &T::version,
+			"description", &T::description,
+			"author", &T::author,
+			"website", &T::website,
+			"license", &T::license,
+			"platforms", &T::platforms,
+			"dependencies", &T::dependencies,
+			"conflicts", &T::conflicts,
+
+			"language", &T::language,
+			"entry", &T::entry,
+			"capabilities", &T::capabilities,
+			"methods", &T::methods
+	);
+};
+
+template <>
+struct glz::meta<plugify::Property> {
+	static constexpr auto value = object(
+		"name", skip{},
+		"description", skip{},
+		"type", [](auto&& self) -> auto& { return self._impl->type; },
+		"ref", [](auto&& self) -> auto& { return self._impl->ref; },
+		"prototype", [](auto&& self) -> auto& { return self._impl->prototype; },
+		"enumerate", [](auto&& self) -> auto& { return self._impl->enumerate; },
+		"default", skip{}
+	);
+};
+
+template<>
+struct glz::meta<plugify::Dependency> {
+	static constexpr auto value = object(
+		"name", [](auto&& self) -> auto& { return self._impl->name; },
+		"constraints", [](auto&& self) -> auto& { return self._impl->constraints; },
+		"optional", [](auto&& self) -> auto& { return self._impl->optional; }
+	);
+};
+
+template <>
+struct glz::meta<plugify::Enum> {
+	static constexpr auto value = object(
+		"name", [](auto&& self) -> auto& { return self._impl->name; },
+		"description", skip{},
+		"values", [](auto&& self) -> auto& { return self._impl->values; }
+	);
+};
+
+template <>
+struct glz::meta<plugify::EnumValue> {
+	static constexpr auto value = object(
+		"name", [](auto&& self) -> auto& { return self._impl->name; },
+		"description", skip{},
+		"value", [](auto&& self) -> auto& { return self._impl->value; }
+	);
+};
+
+template<>
+struct glz::meta<plugify::ValueType> {
+	using T = plugify::ValueType;
+	static constexpr auto value = enumerate(
+			T::Void, T::Void,
+			T::Bool, T::Bool,
+			T::Char8, T::Char8,
+			T::Char16, T::Char16,
+			T::Int8, T::Int8,
+			T::Int16, T::Int16,
+			T::Int32, T::Int32,
+			T::Int64, T::Int64,
+			T::UInt8, T::UInt8,
+			T::UInt16, T::UInt16,
+			T::UInt32, T::UInt32,
+			T::UInt64, T::UInt64,
+			T::Pointer, T::Pointer,
+			T::Float, T::Float,
+			T::Double, T::Double,
+			T::Function, T::Function,
+			T::String, T::String,
+			T::Any, T::Any,
+			T::ArrayBool, T::ArrayBool,
+			T::ArrayChar8, T::ArrayChar8,
+			T::ArrayChar16, T::ArrayChar16,
+			T::ArrayInt8, T::ArrayInt8,
+			T::ArrayInt16, T::ArrayInt16,
+			T::ArrayInt32, T::ArrayInt32,
+			T::ArrayInt64, T::ArrayInt64,
+			T::ArrayUInt8, T::ArrayUInt8,
+			T::ArrayUInt16, T::ArrayUInt16,
+			T::ArrayUInt32, T::ArrayUInt32,
+			T::ArrayUInt64, T::ArrayUInt64,
+			T::ArrayPointer, T::ArrayPointer,
+			T::ArrayFloat, T::ArrayFloat,
+			T::ArrayDouble, T::ArrayDouble,
+			T::ArrayString, T::ArrayString,
+			T::ArrayAny, T::ArrayAny,
+			T::ArrayVector2, T::ArrayVector2,
+			T::ArrayVector3, T::ArrayVector3,
+			T::ArrayVector4, T::ArrayVector4,
+			T::ArrayMatrix4x4, T::ArrayMatrix4x4,
+			T::Vector2, T::Vector2,
+			T::Vector3, T::Vector3,
+			T::Vector4, T::Vector4,
+			T::Matrix4x4, T::Matrix4x4
 	);
 };
 
@@ -185,9 +223,9 @@ namespace glz {
 	};
 
 	template<>
-	struct from<JSON, Version> {
+	struct from<JSON, plugify::Version> {
 		template <auto Opts>
-		static void op(Version& value, auto&&... args) {
+		static void op(plugify::Version& value, auto&&... args) {
 			std::string str;
 			parse<JSON>::op<Opts>(str, args...);
 			value.from_string_noexcept(str);
@@ -195,17 +233,18 @@ namespace glz {
 	};
 
 	template<>
-	struct to<JSON, Version> {
+	struct to<JSON, plugify::Version> {
 		template <auto Opts>
-		static void op(const Version& value, auto&&... args) noexcept {
+		static void op(const plugify::Version& value, auto&&... args) noexcept {
 			serialize<JSON>::op<Opts>(value.to_string_noexcept(), args...);
 		}
 	};
 
 	template<>
-	struct from<JSON, Constraint> {
+	struct from<JSON, plugify::Constraint> {
 	    template <auto Opts>
-	    static void op(Constraint& value, auto&&... args) {
+	    static void op(plugify::Constraint& value, auto&&... args) {
+		    using namespace plugify;
 	        std::string str;
 	        parse<JSON>::op<Opts>(str, args...);
 
@@ -253,9 +292,10 @@ namespace glz {
 	};
 
 	template<>
-	struct to<JSON, Constraint> {
+	struct to<JSON, plugify::Constraint> {
 	    template <auto Opts>
-	    static void op(const Constraint& value, auto&&... args) noexcept {
+	    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
+		    using namespace plugify;
 	        std::string result;
 
 	        // Convert constraint type to operator string
@@ -314,9 +354,9 @@ namespace glz {
 		};
 
 		template<>
-		struct from_json<Version> {
+		struct from_json<plugify::Version> {
 			template<auto Opts>
-			static void op(Version& value, auto&&... args) {
+			static void op(plugify::Version& value, auto&&... args) {
 				std::string str;
 				read<json>::op<Opts>(str, args...);
 				value.from_string_noexcept(str);
@@ -324,17 +364,18 @@ namespace glz {
 		};
 
 		template<>
-		struct to_json<Version> {
+		struct to_json<plugify::Version> {
 			template<auto Opts>
-			static void op(const Version& value, auto&&... args) noexcept {
+			static void op(const plugify::Version& value, auto&&... args) noexcept {
 				write<json>::op<Opts>(value.to_string_noexcept(), args...);
 			}
 		};
 
 		template<>
-		struct from_json<Constraint> {
+		struct from_json<plugify::Constraint> {
 		    template <auto Opts>
-		    static void op(Constraint& value, auto&&... args) {
+		    static void op(plugify::Constraint& value, auto&&... args) {
+		    	using namespace plugify;
 		        std::string str;
 		        parse<JSON>::op<Opts>(str, args...);
 
@@ -382,9 +423,10 @@ namespace glz {
 		};
 
 		template<>
-		struct to_json<Constraint> {
+		struct to_json<plugify::Constraint> {
 		    template <auto Opts>
-		    static void op(const Constraint& value, auto&&... args) noexcept {
+		    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
+		    	using namespace plugify;
 		        std::string result;
 
 		        // Convert constraint type to operator string
@@ -424,53 +466,3 @@ namespace glz {
 	}
 #endif
 }
-
-template <>
-struct glz::meta<ModuleManifest> {
-	using T = ModuleManifest;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"id", skip{},
-			"path", skip{},
-			"type", skip{},
-
-			"name", &T::name,
-			"version", &T::version,
-			"description", &T::description,
-			"author", &T::author,
-			"website", &T::website,
-			"license", &T::license,
-			"platforms", &T::platforms,
-			"dependencies", &T::dependencies,
-			"conflicts", &T::conflicts,
-
-			"language", &T::language,
-			"directories", &T::directories,
-			"forceLoad", &T::forceLoad
-	);
-};
-
-template <>
-struct glz::meta<PluginManifest> {
-	using T = PluginManifest;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"id", skip{},
-			"path", skip{},
-			"type", skip{},
-
-			"name", &T::name,
-			"version", &T::version,
-			"description", &T::description,
-			"author", &T::author,
-			"website", &T::website,
-			"license", &T::license,
-			"platforms", &T::platforms,
-			"dependencies", &T::dependencies,
-			"conflicts", &T::conflicts,
-
-			"entry", &T::entry,
-			"language", &T::language,
-			"methods", &T::methods
-	);
-};

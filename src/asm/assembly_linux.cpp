@@ -1,5 +1,5 @@
 #if PLUGIFY_PLATFORM_LINUX
-#include <plugify/asm/assembly.hpp>
+#include "plugify/asm/assembly.hpp"
 
 #include "os.h"
 #include "defer.hpp"

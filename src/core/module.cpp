@@ -1,11 +1,11 @@
-#include <plugify/core/module.hpp"
+#include "plugify/core/module.hpp"
 
-#include "../../include/plugify/core/plugify.hpp"
-#include <plugify/api/module_handle.hpp>
-#include <plugify/api/provider_handle.hpp>
-#include <plugify/asm/mem_protector.hpp>
-#include <plugify/core/plugin.hpp"
-#include <plugify/core/provider.hpp"
+#include "plugify/_/module_handle.hpp"
+#include "plugify/_/provider_handle.hpp"
+#include "plugify/core/plugify.hpp"
+#include "plugify/asm/mem_protector.hpp"
+#include "plugify/core/plugin.hpp"
+#include "plugify/core/provider.hpp"
 
 using namespace plugify;
 

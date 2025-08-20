@@ -5,11 +5,11 @@
 #include <span>
 #include <string>
 
-#include <plugify/api/handle.hpp>
-#include <plugify/api/method_handle.hpp>
-#include <plugify/asm/mem_addr.hpp>
+#include "handle.hpp"
+#include "method_handle.hpp"
+#include "plugify/asm/mem_addr.hpp"
 
-#include <plugify_export.h>
+#include "plugify_export.h"
 
 namespace plugify {
 	class Plugin;

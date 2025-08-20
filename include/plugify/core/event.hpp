@@ -7,13 +7,17 @@
 #include <string>
 #include <unordered_map>
 
-#include <plugify/api/date_time.hpp>
-#include <plugify/core/error.hpp>
+#include "date_time.hpp"
+#include "plugify/core/error.hpp"
+#include "plugify/core/manifest.hpp"
 
 namespace plugify {
 	enum class EventType {
 		ModuleDiscovered,
 		PluginDiscovered,
+
+		ModuleValidated,
+		PluginValidated,
 
 		ModuleLoading,
 		ModuleLoaded,
@@ -24,8 +28,10 @@ namespace plugify {
 		PluginFailed,
 
 		PluginStarted,
-		PluginStopped,
+		//PluginUpdate,
+		PluginEnded,
 
+		//ModuleUpdate,
 		ConflictDetected,
 		DependencyResolved
 	};
@@ -34,10 +40,10 @@ namespace plugify {
 		EventType type;
 		DateTime timestamp;
 		PackageId packageId;
+		PackageType packageType;
 		std::optional<Error> error;
 		std::unordered_map<std::string, std::string> data;
 	};
 
 	using EventHandler = std::function<void(const Event&)>;
-	using SubscriptionToken = std::uint64_t;
 }

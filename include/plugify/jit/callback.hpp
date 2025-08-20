@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../_/method_handle.hpp"
+#include "plugify/asm/mem_addr.hpp"
 #include <asmjit/core.h>
 #include <memory>
-#include <plugify/api/method_handle.hpp>
-#include <plugify/asm/mem_addr.hpp>
 #include <string>
 #include <utility>
 

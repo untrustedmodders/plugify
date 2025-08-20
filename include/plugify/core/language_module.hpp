@@ -4,10 +4,10 @@
 #include <string>
 #include <vector>
 
-#include <plg/expected.hpp>
-#include <plugify/api/date_time.hpp>
-#include <plugify/api/method_handle.hpp>
-#include <plugify/asm/mem_addr.hpp>
+#include "../_/method_handle.hpp"
+#include "date_time.hpp"
+#include "plg/expected.hpp"
+#include "plugify/asm/mem_addr.hpp"
 
 namespace plugify {
 	class PluginHandle;

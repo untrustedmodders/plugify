@@ -20,7 +20,7 @@
 #include <queue>
 #include <ranges>
 
-#include <plugify/core/assert.h>
-#include <plugify/core/log.hpp>
+#include "plugify/core/assert.h"
+#include "plugify/core/log_system.hpp"
 
 namespace fs = std::filesystem;

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../../../src/core/plugin_manifest.hpp"
-#include "plugify/api/module_handle.hpp"
+#include "../_/module_handle.hpp"
 
-#include <plugify/api/plugin_handle.hpp>
+#include "../_/plugin_handle.hpp"
 
 namespace plugify {
 	class Plugify;

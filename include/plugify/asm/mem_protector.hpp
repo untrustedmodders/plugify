@@ -1,7 +1,7 @@
 #pragma once
 
-#include <plugify/asm/mem_addr.hpp>
-#include <plugify/asm/prot_flag.hpp>
+#include "plugify/asm/mem_addr.hpp"
+#include "plugify/asm/prot_flag.hpp"
 
 namespace plugify {
 	class MemAccessor;

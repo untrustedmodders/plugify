@@ -1,6 +1,6 @@
 #if PLUGIFY_PLATFORM_WINDOWS
 
-#include <plugify/asm/assembly.hpp>
+#include "plugify/asm/assembly.hpp"
 
 #include "defer.hpp"
 #include "os.h"

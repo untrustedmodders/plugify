@@ -1,7 +1,10 @@
 #pragma once
 
-#include <plugify/api/log.hpp>
-#include <plg/format.hpp>
+#include <atomic>
+
+#include "plg/format.hpp"
+#include "plugify/core/logger.hpp"
+#include "plugify/core/log_system.hpp"
 
 namespace plugify {
 	class LogSystem {
@@ -14,7 +17,22 @@ namespace plugify {
 		static inline std::shared_ptr<ILogger> _logger = nullptr;
 	};
 
-	struct StackLogger {
+	/**
+	 * @brief Standard implementation using std::iostream
+	 */
+	class StandardLogger final : public ILogger {
+	public:
+		void Log(std::string_view message, Severity severity) override;
+		void Log(std::string_view msg, Color color) override;
+
+		void SetSeverity(Severity severity);
+
+	private:
+		static std::string_view GetAnsiCode(Color color);
+		std::atomic<Severity> _severity{ Severity::None };
+	};
+
+	/*struct StackLogger {
 		std::string entry;
 		Severity severity{Severity::Error};
 
@@ -49,7 +67,7 @@ namespace plugify {
 			logger.level -= step;
 			logger.count = 0;
 		}
-	};
+	};*/
 }
 
 #if PLUGIFY_LOGGING

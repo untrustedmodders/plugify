@@ -4,9 +4,9 @@
 #include <string>
 #include <filesystem>
 
-#include <plugify/api/handle.hpp>
+#include "handle.hpp"
 
-#include <plugify_export.h>
+#include "plugify_export.h"
 
 namespace plugify {
 	class Module;
@@ -26,11 +26,6 @@ namespace plugify {
 		Unknown,
 	};
 
-	/**
-	 * @typedef UniqueId
-	 * @brief Represents a unique identifier for modules.
-	 */
-	using UniqueId = std::ptrdiff_t;
 
 	/**
 	 * @class ModuleHandle

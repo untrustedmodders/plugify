@@ -1,12 +1,11 @@
-#include "json.hpp"
+#include "json.cpp"
 
-#include <plugify/api/date_time.hpp>
-#include <plugify/core/plugify.hpp>
+#include "plugify/core/context.hpp"
+#include "plugify/core/plugify.hpp"
 
 using namespace plugify;
 
-class Plugify::Impl {
-public:
+struct Plugify::Impl {
 	explicit Impl(Plugify& self)
 		: provider(self)
 		, manager(self) {}
@@ -19,14 +18,19 @@ public:
 	Version version{PLUGIFY_VERSION};
 	bool inited{false};
 
-	std::shared_ptr<IAssemblyLoader> loader{};
-	std::shared_ptr<IFileSystem> fs{};
+	std::shared_ptr<IAssemblyLoader> loader;
+	std::shared_ptr<IFileSystem> fs;
 };
 
 // -------------------- Plugify API --------------------
 
-Plugify::Plugify() : _impl(std::make_unique<Impl>(*this)) {}
-Plugify::~Plugify() { Terminate(); }
+Plugify::Plugify()
+	: _impl(std::make_unique<Impl>(*this)) {
+}
+
+Plugify::~Plugify() {
+	Terminate();
+}
 
 bool Plugify::Initialize(const std::filesystem::path& rootDir) const {
 	if (IsInitialized())

@@ -1,22 +1,22 @@
-#include "plugify/api/file_system.hpp"
+#include "../../include/plugify/core/file_system.hpp"
 #include "plugify/asm/assembly_loader.hpp"
 
 #include <../../include/plugify/core/plugify.hpp>
 #include <CLI/CLI.hpp>
 #include <plg/format.hpp>
-#include <plugify/api/date_time.hpp>
-#include <plugify/api/dependency_handle.hpp>
-#include <plugify/api/manager.hpp>
-#include <plugify/api/module_handle.hpp>
-#include <plugify/api/module_manifest_handle.hpp>
-#include <plugify/api/plugin_handle.hpp>
-#include <plugify/api/plugin_manifest_handle.hpp>
+#include "plugify/core/date_time.hpp>
+#include "plugify/core/dependency_handle.hpp>
+#include "plugify/core/manager.hpp>
+#include "plugify/core/module_handle.hpp>
+#include "plugify/core/module_manifest_handle.hpp>
+#include "plugify/core/plugin_handle.hpp>
+#include "plugify/core/plugin_manifest_handle.hpp>
 
 #include <atomic>
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#include <plugify/api/log.hpp>
+#include "plugify/core/log.hpp>
 #include <sstream>
 #include <unordered_set>
 

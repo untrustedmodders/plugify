@@ -1,5 +1,5 @@
-#include <plugify/core/dependency.hpp>
-#include <plugify/api/dependency_handle.hpp>
+#include "plugify/_/dependency_handle.hpp"
+#include "plugify/core/dependency.hpp"
 
 using namespace plugify;
 

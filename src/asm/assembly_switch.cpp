@@ -1,6 +1,6 @@
 #if PLUGIFY_PLATFORM_SWITCH
 
-#include <plugify/asm/assembly.hpp>
+#include "plugify/asm/assembly.hpp"
 
 #include "os.h"
 

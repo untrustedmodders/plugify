@@ -4,42 +4,43 @@
 #include <filesystem>
 #include <unordered_map>
 
-#include <plugify/api/constraint.hpp>
-#include <plugify/core/dependency.hpp>
-#include <plugify/core/conflict.hpp>
-#include <plugify/core/method.hpp>
+#include "conflict.hpp"
+#include "constraint.hpp"
+#include "plugify/core/dependency.hpp"
+#include "plugify/core/method.hpp"
 
 namespace plugify {
 	struct PackageManifest {
-		PackageId id;
+		PackageId id; // name@semver
 		std::string name;
-		ManifestType type{};
+		PackageType type{}; // LanguageModule or Plugin
 		Version version;
 		std::string description;
 		std::string author;
 		std::string website;
 		std::string license;
-		std::filesystem::path location;
+		std::filesystem::path location; //
 
 		// Dependencies and conflicts
 		std::optional<std::vector<std::string>> platforms;
-		std::optional<std::vector<std::unique_ptr<Dependency>>> dependencies;
-		std::optional<std::vector<std::unique_ptr<Conflict>>> conflicts;
+		std::optional<std::vector<Dependency>> dependencies;
+		std::optional<std::vector<Conflict>> conflicts;
 
 		// Metadata
-		std::unordered_map<std::string, std::string> metadata;
+		//std::optional<std::unordered_map<std::string, std::string>> metadata;
 	};
 
 	struct PluginManifest : PackageManifest {
 		Dependency language;
-		std::string entryPoint;
-		std::vector<std::string> capabilities;
-		std::optional<std::vector<std::unique_ptr<Method>>> methods;
+		std::string entry;
+		std::optional<std::vector<std::string>> capabilities;
+		std::optional<std::vector<Method>> methods;
 	};
 
 	struct ModuleManifest : PackageManifest {
 		std::string language;
-		std::filesystem::path runtimePath;
-		std::vector<std::string> supportedVersions;
+		std::optional<std::filesystem::path> runtime;
+		std::optional<std::vector<std::string>> directories;
+		std::optional<bool> forceLoad;
 	};
 }

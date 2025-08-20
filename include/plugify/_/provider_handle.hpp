@@ -4,12 +4,12 @@
 #include <string>
 #include <filesystem>
 
-#include <plugify/api/handle.hpp>
-#include <plugify/api/constraint.hpp>
-#include <plugify/api/assembly.hpp>
-#include <plugify/api/file_system.hpp>
+#include "../core/assembly.hpp"
+#include "../core/file_system.hpp"
+#include "handle.hpp"
+#include "plugify/core/constraint.hpp"
 
-#include <plugify_export.h>
+#include "plugify_export.h"
 
 namespace plugify {
 	class Provider;

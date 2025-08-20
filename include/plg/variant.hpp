@@ -20,7 +20,7 @@
 #define PLG_FWD(x) static_cast<decltype(x)&&>(x)
 #define PLG_MOV(x) static_cast< std::remove_reference_t<decltype(x)>&& >(x)
 
-#include <plg/macro.hpp>
+#include "plg/macro.hpp"
 
 // from https://github.com/groundswellaudio/swl-variant
 namespace plg {

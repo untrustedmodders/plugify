@@ -4,11 +4,11 @@
 #include <vector>
 #include <optional>
 
-#include <plugify/core/types.hpp>
+#include "plugify/core/types.hpp"
 
 namespace plugify {
 	/**
-	 *
+	 * TODO
 	 */
 	enum class Comparison {
 		Equal,        // Exactly this version

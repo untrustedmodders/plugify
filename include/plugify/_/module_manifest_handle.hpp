@@ -4,10 +4,10 @@
 #include <span>
 #include <string>
 
-#include <plugify/api/handle.hpp>
-#include <plugify/api/constraint.hpp>
+#include "../core/constraint.hpp"
+#include "handle.hpp"
 
-#include <plugify_export.h>
+#include "plugify_export.h"
 
 namespace plugify {
 	struct ModuleManifest;

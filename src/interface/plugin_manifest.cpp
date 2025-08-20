@@ -1,8 +1,8 @@
-#include <plugify/api/conflict_handle.hpp>
-#include <plugify/api/dependency_handle.hpp>
-#include <plugify/api/method_handle.hpp>
-#include <plugify/api/plugin_manifest_handle.hpp>
-#include <plugify/core/manifest.hpp>
+#include "plugify/_/conflict_handle.hpp"
+#include "plugify/_/method_handle.hpp"
+#include "plugify/_/plugin_manifest_handle.hpp"
+#include "plugify/core/dependency_handle.hpp"
+#include "plugify/core/manifest.hpp"
 
 using namespace plugify;
 

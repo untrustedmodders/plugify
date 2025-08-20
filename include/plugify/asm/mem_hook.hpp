@@ -3,8 +3,8 @@
 #include <memory>
 #include <type_traits>
 
-#include <plugify/asm/mem_protector.hpp>
-#include <plugify/asm/prot_flag.hpp>
+#include "plugify/asm/mem_protector.hpp"
+#include "plugify/asm/prot_flag.hpp"
 
 namespace plugify {
 	/**

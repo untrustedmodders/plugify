@@ -1,11 +1,11 @@
 #pragma once
 
 #include "../../../src/core/module_manifest.hpp"
+#include "../_/module_handle.hpp"
+#include "date_time.hpp"
+#include "language_module.hpp"
+#include "plugify/asm/assembly.hpp"
 #include "plugify/core/dependency.hpp"
-#include <plugify/api/date_time.hpp>
-#include <plugify/api/language_module.hpp>
-#include <plugify/api/module_handle.hpp>
-#include <plugify/asm/assembly.hpp>
 
 namespace plugify {
 	struct Manifest;

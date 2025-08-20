@@ -4,14 +4,10 @@
 #include <vector>
 #include <optional>
 
-#include <plg/version.hpp>
+#include "plg/version.hpp"
+#include "plg/expected.hpp"
 
 namespace plugify {
-	/**
-	 *
-	 */
-	using PackageId = std::string;
-
 	/**
 	 * @typedef Version
 	 * @brief Represents a version of a package.
@@ -20,4 +16,27 @@ namespace plugify {
 	 * information for packages in the Plugify ecosystem.
 	 */
 	using Version = plg::version;
+
+	/**
+	 * @typedef UniqueId
+	 * @brief Represents a unique identifier for modules.
+	 */
+	using UniqueId = std::ptrdiff_t;
+
+	/**
+	 * TODO:
+	 */
+	using PackageId = std::string;
+
+	enum class PackageType {
+		LanguageModule,
+		Plugin
+	};
+
+	/**
+	 * TODO:
+	 */
+	template<typename T>
+	using Result = plg::expected<T, std::string>;
+
 }

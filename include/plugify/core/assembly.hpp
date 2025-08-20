@@ -4,9 +4,9 @@
 #include <string>
 #include <filesystem>
 
-#include <plg/expected.hpp>
-#include <plugify/asm/load_flag.hpp>
-#include <plugify/asm/mem_addr.hpp>
+#include "plg/expected.hpp"
+#include "plugify/asm/load_flag.hpp"
+#include "plugify/asm/mem_addr.hpp"
 
 namespace plugify {
 	/**
