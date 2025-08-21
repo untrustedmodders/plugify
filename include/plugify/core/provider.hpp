@@ -8,6 +8,7 @@
 namespace plugify {
 	class Plugify;
 	class Provider {
+		struct Impl;
 	public:
 		explicit Provider(Plugify& plugify);
 		~Provider();
@@ -37,7 +38,6 @@ namespace plugify {
 		std::shared_ptr<IFileSystem> GetFileSystem() const noexcept;
 
 	private:
-		struct Impl;
 		std::unique_ptr<Impl> _impl;
 	};
 }

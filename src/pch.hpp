@@ -21,7 +21,7 @@
 #include <ranges>
 #include <numeric>
 
-#include "plugify/core/assert.h"
+#include "plugify/core/global.h"
 #include "plugify/core/log_system.hpp"
 
 namespace fs = std::filesystem;

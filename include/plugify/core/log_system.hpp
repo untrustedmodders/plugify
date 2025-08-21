@@ -22,12 +22,15 @@ namespace plugify {
 	 */
 	class StandardLogger final : public ILogger {
 	public:
+		~StandardLogger() override = default;
+
 		void Log(std::string_view message, Severity severity) override;
-		void Log(std::string_view msg, Color color) override;
+		void Log(std::string_view message, Color color) override;
 
 		void SetSeverity(Severity severity);
 
 	private:
+		static Color GetColor(Severity severity);
 		static std::string_view GetAnsiCode(Color color);
 		std::atomic<Severity> _severity{ Severity::None };
 	};

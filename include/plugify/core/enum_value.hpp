@@ -4,12 +4,9 @@
 #include <string>
 #include <memory>
 
-#include "plugify_export.h"
+#include "plugify/core/global.h"
 
-namespace glz {
-	template<typename T>
-	struct meta;
-}
+#include "plugify_export.h"
 
 namespace plugify {
 	class Method;
@@ -37,9 +34,7 @@ namespace plugify {
 		[[nodiscard]] bool operator==(const EnumValue& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const EnumValue& other) const noexcept;
 
-	private:
-	    friend struct glz::meta<EnumValue>;
-		//friend struct std::hash<EnumValue>;
+	PLUGIFY_ACCESS:
 	    std::unique_ptr<Impl> _impl;
 	};
 }

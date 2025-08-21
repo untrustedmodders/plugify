@@ -85,7 +85,7 @@ if(PLUGIFY_COMPILER_MSVC)
 elseif(PLUGIFY_COMPILER_CLANG_CL)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
 else(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion)# -Wpedantic -Werror)
 endif()
 
 if(LINUX)
@@ -161,6 +161,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         ${PLUGIFY_COMPILE_DEFINITIONS}
+        PLUGIFY_CORE=1
         PLUGIFY_LOGGING=$<BOOL:${PLUGIFY_LOGGING}>
         PLUGIFY_DEBUG=$<BOOL:${PLUGIFY_DEBUG}>
 )

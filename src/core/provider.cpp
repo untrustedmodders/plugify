@@ -5,7 +5,6 @@
 using namespace plugify;
 
 struct Provider::Impl {
-	explicit Impl(Plugify& self) : plugify(self) {}
 	Plugify& plugify;
 };
 
@@ -22,15 +21,15 @@ const std::filesystem::path& Provider::GetBaseDir() const noexcept {
 }
 
 const std::filesystem::path& Provider::GetConfigsDir() const noexcept {
-	return _impl->plugify.GetConfig().configsDir;
+	return _impl->plugify.GetConfig()->configsDir;
 }
 
 const std::filesystem::path& Provider::GetDataDir() const noexcept {
-	return _impl->plugify.GetConfig().dataDir;
+	return _impl->plugify.GetConfig()->dataDir;
 }
 
 const std::filesystem::path& Provider::GetLogsDir() const noexcept {
-	return _impl->plugify.GetConfig().logsDir;
+	return _impl->plugify.GetConfig()->logsDir;
 }
 
 bool Provider::IsPreferOwnSymbols() const noexcept {

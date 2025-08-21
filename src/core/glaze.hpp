@@ -2,9 +2,15 @@
 
 #include "plugify/core/config.hpp"
 #include "plugify/core/constraint.hpp"
-#include "plugify/core/enum.hpp"
 #include "plugify/core/manifest.hpp"
-#include "plugify/core/method.hpp"
+#include "plugify/core/report.hpp"
+
+#include "core/dependency_impl.hpp"
+#include "core/conflict_impl.hpp"
+#include "core/enum_impl.hpp"
+#include "core/enum_value_impl.hpp"
+#include "core/property_impl.hpp"
+#include "core/method_impl.hpp"
 
 #include <glaze/glaze.hpp>
 /*
@@ -151,58 +157,90 @@ struct glz::meta<plugify::EnumValue> {
 		"value", [](auto&& self) -> auto& { return self._impl->value; }
 	);
 };
+template <>
+struct glz::meta<plugify::DependencyReport::IssueType> {
+	using T = plugify::DependencyReport::IssueType;
+	static constexpr auto value = glz::enumerate(
+		"none", T::None,
+		"missing_dependency", T::MissingDependency,
+		"version_conflict", T::VersionConflict,
+		"circular_dependency", T::CircularDependency,
+		"optional_missing", T::OptionalMissing,
+		"transitive_missing", T::TransitiveMissing,
+		"conflicting_providers", T::ConflictingProviders
+	);
+};
 
 template<>
 struct glz::meta<plugify::ValueType> {
+	using N = plugify::ValueName;
 	using T = plugify::ValueType;
 	static constexpr auto value = enumerate(
-			T::Void, T::Void,
-			T::Bool, T::Bool,
-			T::Char8, T::Char8,
-			T::Char16, T::Char16,
-			T::Int8, T::Int8,
-			T::Int16, T::Int16,
-			T::Int32, T::Int32,
-			T::Int64, T::Int64,
-			T::UInt8, T::UInt8,
-			T::UInt16, T::UInt16,
-			T::UInt32, T::UInt32,
-			T::UInt64, T::UInt64,
-			T::Pointer, T::Pointer,
-			T::Float, T::Float,
-			T::Double, T::Double,
-			T::Function, T::Function,
-			T::String, T::String,
-			T::Any, T::Any,
-			T::ArrayBool, T::ArrayBool,
-			T::ArrayChar8, T::ArrayChar8,
-			T::ArrayChar16, T::ArrayChar16,
-			T::ArrayInt8, T::ArrayInt8,
-			T::ArrayInt16, T::ArrayInt16,
-			T::ArrayInt32, T::ArrayInt32,
-			T::ArrayInt64, T::ArrayInt64,
-			T::ArrayUInt8, T::ArrayUInt8,
-			T::ArrayUInt16, T::ArrayUInt16,
-			T::ArrayUInt32, T::ArrayUInt32,
-			T::ArrayUInt64, T::ArrayUInt64,
-			T::ArrayPointer, T::ArrayPointer,
-			T::ArrayFloat, T::ArrayFloat,
-			T::ArrayDouble, T::ArrayDouble,
-			T::ArrayString, T::ArrayString,
-			T::ArrayAny, T::ArrayAny,
-			T::ArrayVector2, T::ArrayVector2,
-			T::ArrayVector3, T::ArrayVector3,
-			T::ArrayVector4, T::ArrayVector4,
-			T::ArrayMatrix4x4, T::ArrayMatrix4x4,
-			T::Vector2, T::Vector2,
-			T::Vector3, T::Vector3,
-			T::Vector4, T::Vector4,
-			T::Matrix4x4, T::Matrix4x4
+			N::Void, T::Void,
+			N::Bool, T::Bool,
+			N::Char8, T::Char8,
+			N::Char16, T::Char16,
+			N::Int8, T::Int8,
+			N::Int16, T::Int16,
+			N::Int32, T::Int32,
+			N::Int64, T::Int64,
+			N::UInt8, T::UInt8,
+			N::UInt16, T::UInt16,
+			N::UInt32, T::UInt32,
+			N::UInt64, T::UInt64,
+			N::Pointer, T::Pointer,
+			N::Float, T::Float,
+			N::Double, T::Double,
+			N::Function, T::Function,
+			N::String, T::String,
+			N::Any, T::Any,
+			N::ArrayBool, T::ArrayBool,
+			N::ArrayChar8, T::ArrayChar8,
+			N::ArrayChar16, T::ArrayChar16,
+			N::ArrayInt8, T::ArrayInt8,
+			N::ArrayInt16, T::ArrayInt16,
+			N::ArrayInt32, T::ArrayInt32,
+			N::ArrayInt64, T::ArrayInt64,
+			N::ArrayUInt8, T::ArrayUInt8,
+			N::ArrayUInt16, T::ArrayUInt16,
+			N::ArrayUInt32, T::ArrayUInt32,
+			N::ArrayUInt64, T::ArrayUInt64,
+			N::ArrayPointer, T::ArrayPointer,
+			N::ArrayFloat, T::ArrayFloat,
+			N::ArrayDouble, T::ArrayDouble,
+			N::ArrayString, T::ArrayString,
+			N::ArrayAny, T::ArrayAny,
+			N::ArrayVector2, T::ArrayVector2,
+			N::ArrayVector3, T::ArrayVector3,
+			N::ArrayVector4, T::ArrayVector4,
+			N::ArrayMatrix4x4, T::ArrayMatrix4x4,
+			N::Vector2, T::Vector2,
+			N::Vector3, T::Vector3,
+			N::Vector4, T::Vector4,
+			N::Matrix4x4, T::Matrix4x4
 	);
 };
 
 namespace glz {
 #if PLUGIFY_CPP_VERSION > 202002L
+	template<>
+	struct from<JSON, std::chrono::milliseconds> {
+		template <auto Opts>
+		static void op(std::chrono::milliseconds& value, auto&&... args) {
+			int64_t val;
+			parse<JSON>::op<Opts>(val, args...);
+			value = std::chrono::milliseconds(val);
+		}
+	};
+
+	template<>
+	struct to<JSON, std::chrono::milliseconds> {
+		template <auto Opts>
+		static void op(const std::chrono::milliseconds& value, auto&&... args) noexcept {
+			serialize<JSON>::op<Opts>(value.count(), args...);
+		}
+	};
+
 	template<>
 	struct from<JSON, std::filesystem::path> {
 		template <auto Opts>
@@ -255,29 +293,29 @@ namespace glz {
 	        }
 
 	        // Parse the constraint operator
-	        std::string_view sv(str);
+	        std::string_view string(str);
 	        Comparison comparison;
 	        size_t op_len = 0;
 
-	        if (sv.starts_with(">=")) {
+	        if (string.starts_with(">=")) {
 	            comparison = Comparison::GreaterEqual;
 	            op_len = 2;
-	        } else if (sv.starts_with("<=")) {
+	        } else if (string.starts_with("<=")) {
 	            comparison = Comparison::LessEqual;
 	            op_len = 2;
-	        } else if (sv.starts_with("~>")) {
+	        } else if (string.starts_with("~")) {
 	            comparison = Comparison::Compatible;
-	            op_len = 2;
-	        } else if (sv.starts_with("!=")) {
+	            op_len = 1;
+	        } else if (string.starts_with("!=")) {
 	            comparison = Comparison::NotEqual;
 	            op_len = 2;
-	        } else if (sv.starts_with("==")) {
+	        } else if (string.starts_with("==")) {
 	            comparison = Comparison::Equal;
 	            op_len = 2;
-	        } else if (sv.starts_with(">")) {
+	        } else if (string.starts_with(">")) {
 	            comparison = Comparison::Greater;
 	            op_len = 1;
-	        } else if (sv.starts_with("<")) {
+	        } else if (string.starts_with("<")) {
 	            comparison = Comparison::Less;
 	            op_len = 1;
 	        } else {
@@ -287,7 +325,7 @@ namespace glz {
 	        }
 
 	        value.comparison = comparison;
-	        value.version = Version(sv.substr(op_len));
+	        value.version = Version(string.substr(op_len));
 	    }
 	};
 
@@ -319,7 +357,7 @@ namespace glz {
 	                result = "<=";
 	                break;
 	            case Comparison::Compatible:
-	                result = "~>";
+	                result = "~";
 	                break;
 	            case Comparison::Any:
 	                serialize<JSON>::op<Opts>(result, args...);
@@ -334,6 +372,24 @@ namespace glz {
 	};
 #else
 	namespace detail {
+		template<>
+		struct from_json<std::chrono::milliseconds> {
+			template<auto Opts>
+			static void op(std::chrono::milliseconds& value, auto&&... args) {
+				int64_t val;
+				read<json>::op<Opts>(val, args...);
+				value = std::chrono::milliseconds(val);
+			}
+		};
+
+		template<>
+		struct to_json<std::chrono::milliseconds> {
+			template<auto Opts>
+			static void op(const std::chrono::milliseconds& value, auto&&... args) noexcept {
+				write<json>::op<Opts>(value.count(), args...);
+			}
+		};
+
 		template<>
 		struct from_json<std::filesystem::path> {
 			template<auto Opts>
@@ -396,9 +452,9 @@ namespace glz {
 		        } else if (sv.starts_with("<=")) {
 		            type = Comparison::LessEqual;
 		            op_len = 2;
-		        } else if (sv.starts_with("~>")) {
+		        } else if (sv.starts_with("~")) {
 		            type = Comparison::Compatible;
-		            op_len = 2;
+		            op_len = 1;
 		        } else if (sv.starts_with("!=")) {
 		            type = Comparison::NotEqual;
 		            op_len = 2;
@@ -450,7 +506,7 @@ namespace glz {
 		                result = "<=";
 		                break;
 		            case Comparison::Compatible:
-		                result = "~>";
+		                result = "~";
 		                break;
 		            case Comparison::Any:
 		                serialize<JSON>::op<Opts>(result, args...);

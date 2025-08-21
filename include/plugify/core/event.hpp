@@ -46,4 +46,20 @@ namespace plugify {
 	};
 
 	using EventHandler = std::function<void(const Event&)>;
+    using HandlerId = std::size_t;
+
+    class EventDispatcher {
+        using Pair = std::pair<HandlerId, EventHandler>;
+    public:
+
+        HandlerId Subscribe(EventHandler handler);
+        void Unsubscribe(HandlerId id);
+
+        void Emit(const Event& event);
+
+    private:
+        std::vector<Pair> _handlers;
+        std::mutex _mutex;
+        HandlerId _nextId{0};
+    };
 }

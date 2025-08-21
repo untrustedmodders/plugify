@@ -1,4 +1,5 @@
 #include "plugify/core/plugify.hpp"
+#include "plugify/core/manager.hpp"
 #if 0
 #include "../../include/plugify/core/file_system.hpp"
 #include "plugify/asm/assembly_loader.hpp"
@@ -6,19 +7,19 @@
 #include <../../include/plugify/core/plugify.hpp>
 #include <CLI/CLI.hpp>
 #include <plg/format.hpp>
-#include "plugify/core/date_time.hpp>
-#include "plugify/core/dependency_handle.hpp>
-#include "plugify/core/manager.hpp>
-#include "plugify/core/module_handle.hpp>
-#include "plugify/core/module_manifest_handle.hpp>
-#include "plugify/core/plugin_handle.hpp>
-#include "plugify/core/plugin_manifest_handle.hpp>
+#include "plugify/core/date_time.hpp"
+#include "plugify/core/dependency_handle.hpp"
+#include "plugify/core/manager.hpp"
+#include "plugify/core/module_handle.hpp"
+#include "plugify/core/module_manifest_handle.hpp"
+#include "plugify/core/plugin_handle.hpp"
+#include "plugify/core/plugin_manifest_handle.hpp"
+#include "plugify/core/log.hpp"
 
 #include <atomic>
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#include "plugify/core/log.hpp>
 #include <sstream>
 #include <unordered_set>
 
@@ -491,5 +492,6 @@ int main() {
 	auto plug = plugify::MakePlugify();
 	if (plug) {
 		plug->Initialize("");
+		auto _ = plug->GetManager()->Initialize();
 	}
 }

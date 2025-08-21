@@ -5,14 +5,10 @@
 #include <memory>
 #include <optional>
 
-#include "value_type.hpp"
+#include "plugify/core/global.h"
+#include "plugify/core/value_type.hpp"
 
 #include "plugify_export.h"
-
-namespace glz {
-	template<typename T>
-	struct meta;
-}
 
 namespace plugify {
 	class Enum;
@@ -44,9 +40,7 @@ namespace plugify {
 		[[nodiscard]] bool operator==(const Property& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Property& other) const noexcept;
 
-	private:
-	    friend struct glz::meta<Property>;
-		//friend struct std::hash<Property>;
+	PLUGIFY_ACCESS:
 	    std::unique_ptr<Impl> _impl;
 	};
 }

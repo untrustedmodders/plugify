@@ -1,0 +1,148 @@
+:\Users\n.ushakov\Documents\msdf\1\cmake-build-debug\test\plug\plug.exe
+Plugify Test Application
+Starting plugin system initialization...
+
+=== Dependency Resolution Report ===
+
+Statistics:
+  Total packages: 42
+  Packages with issues: 10
+  Missing dependencies: 2
+  Version conflicts: 1
+  Circular dependencies: 3
+
+Version Conflicts:
+Version conflict for 'multi-version-lib':
+  - 'multi-version-consumer' requires: >=1.0.0 AND <2.0.0
+  Available version: 2.0.0
+
+Circular Dependencies:
+  plugin-Z → plugin-X → plugin-Y → plugin-Z
+  plugin-B → plugin-C → plugin-A → plugin-B
+  circular-1 → circular-2 → circular-3 → circular-1
+
+Package Issues:
+  plugin-Z:
+    - [BLOCKER] Package 'plugin-Z' is part of circular dependency: plugin-Z → plugin-X → plugin-Y → plugin-Z
+  Suggestions:
+    - Refactor to break the circular dependency
+    - Extract common functionality to a separate package
+    - Consider using dependency injection or interfaces
+  plugin-Y:
+    - [BLOCKER] Package 'plugin-Y' is part of circular dependency: plugin-Z → plugin-X → plugin-Y → plugin-Z
+  Suggestions:
+    - Refactor to break the circular dependency
+    - Extract common functionality to a separate package
+    - Consider using dependency injection or interfaces
+  invalid-deps-plugin:
+    - [BLOCKER] Package 'invalid-deps-plugin' requires 'not-a-list' (any version) which is not available
+  Suggestions:
+    - Install package 'not-a-list' with version any version
+    - Add 'not-a-list' to search paths
+  heavy-plugin:
+    - [BLOCKER] Package 'heavy-plugin' conflicts with 'legacy-network'
+  Suggestions:
+    - Remove either 'heavy-plugin' or 'legacy-network'
+    - Use alternative to 'heavy-plugin' or 'legacy-network'
+    - [BLOCKER] Package 'heavy-plugin' conflicts with 'old-math-lib'
+  Suggestions:
+    - Remove either 'heavy-plugin' or 'old-math-lib'
+    - Use alternative to 'heavy-plugin' or 'old-math-lib'
+  multi-version-consumer:
+    - [BLOCKER] Version conflict: 'multi-version-consumer' requires 'multi-version-lib' with version >=1.0.0 AND <2.0.0, but 2.0.0 is available
+  Constraint details:
+    Required: <2.0.0 | Available: 2.0.0 | ✗
+  Suggestions:
+    - Update 'multi-version-lib' to a version that satisfies: >=1.0.0 AND <2.0.0
+    - Relax version constraints in 'multi-version-consumer' manifest
+    - Check if there's a compatible version available in other sources
+  plugin-X:
+    - [BLOCKER] Package 'plugin-X' is part of circular dependency: plugin-Z → plugin-X → plugin-Y → plugin-Z
+  Suggestions:
+    - Refactor to break the circular dependency
+    - Extract common functionality to a separate package
+    - Consider using dependency injection or interfaces
+  network-lib:
+    - [BLOCKER] Package 'network-lib' conflicts with 'legacy-network'
+  Suggestions:
+    - Remove either 'network-lib' or 'legacy-network'
+    - Use alternative to 'network-lib' or 'legacy-network'
+  conflict-A:
+    - [BLOCKER] Package 'conflict-A' conflicts with 'conflict-B'
+  Suggestions:
+    - Remove either 'conflict-A' or 'conflict-B'
+    - Use alternative to 'conflict-A' or 'conflict-B'
+  plugin-B:
+    - [BLOCKER] Package 'plugin-B' is part of circular dependency: plugin-B → plugin-C → plugin-A → plugin-B
+  Suggestions:
+    - Refactor to break the circular dependency
+    - Extract common functionality to a separate package
+    - Consider using dependency injection or interfaces
+  legacy-network:
+    - [BLOCKER] Package 'legacy-network' conflicts with 'network-lib'
+  Suggestions:
+    - Remove either 'legacy-network' or 'network-lib'
+    - Use alternative to 'legacy-network' or 'network-lib'
+  plugin-C:
+    - [BLOCKER] Package 'plugin-C' is part of circular dependency: plugin-B → plugin-C → plugin-A → plugin-B
+  Suggestions:
+    - Refactor to break the circular dependency
+    - Extract common functionality to a separate package
+    - Consider using dependency injection or interfaces
+  circular-1:
+    - [BLOCKER] Package 'circular-1' is part of circular dependency: circular-1 → circular-2 → circular-3 → circular-1
+  Suggestions:
+    - Refactor to break the circular dependency
+    - Extract common functionality
+
+
+
+
+
+
+
+
+
+
+
+[0] = {std::string} "core-utils"
+[1] = {std::string} "old-math-lib"
+[2] = {std::string} "graphics-engine"
+[3] = {std::string} "multi-version-lib"
+[4] = {std::string} "math-lib"
+[5] = {std::string} "missing-license-plugin"
+[6] = {std::string} "network-lib"
+[7] = {std::string} "legacy-network"
+[8] = {std::string} "broken-plugin"
+[9] = {std::string} "missing-dependency-plugin"
+[10] = {std::string} "conflict-A"
+[11] = {std::string} "conflict-B"
+[12] = {std::string} "malformed-plugin"
+[13] = {std::string} "deep-E"
+[14] = {std::string} "simple-plugin"
+[15] = {std::string} "incompatible-engine"
+[16] = {std::string} "invalid-deps-plugin"
+[17] = {std::string} "standalone-plugin"
+[18] = {std::string} "broken-json-plugin"
+[19] = {std::string} "cpp-lang"
+[20] = {std::string} "physics-engine"
+[21] = {std::string} "sound-engine"
+[22] = {std::string} "redundant-dependency-plugin"
+[23] = {std::string} "multi-version-consumer"
+[24] = {std::string} "ai-module"
+[25] = {std::string} "ui-framework"
+[26] = {std::string} "deep-D"
+[27] = {std::string} "heavy-plugin"
+[28] = {std::string} "optional-dep-plugin"
+[29] = {std::string} "game-framework"
+[30] = {std::string} "deep-C"
+[31] = {std::string} "deep-B"
+[32] = {std::string} "deep-A"
+
+
+
+
+
+
+
+

@@ -1,10 +1,13 @@
 #pragma once
 
-#include "plugify/core/types.hpp"
 #include "plugify/core/event.hpp"
 #include "plugify/core/report.hpp"
+#include "plugify/core/types.hpp"
+
+#include "dependency_resolver.hpp"
 
 namespace plugify {
+    class IDependencyResolver;
 	/*class Module;
 	class Plugin;
 	class IPackageDiscovery;
@@ -63,11 +66,11 @@ namespace plugify {
 		// Dependency injection for customization
 		//void setPackageDiscovery(std::unique_ptr<IPackageValidator> discovery);
 		//void setPackageValidator(std::unique_ptr<IPackageValidator> validator);
-		//void setDependencyResolver(std::unique_ptr<?> resolver);
+		void SetDependencyResolver(std::unique_ptr<IDependencyResolver> resolver);
 		//void setModuleLoader(std::unique_ptr<IModuleLoader> loader);
 		//void setPluginLoader(std::unique_ptr<IPluginLoader> loader);
 
-		Result<void> DiscoverPackages(std::span<const std::filesystem::path> searchPaths);
+		Result<void> DiscoverPackages(std::span<const std::filesystem::path> searchPaths = {});
 
 		Result<InitializationState> Initialize();
 		Result<void> Terminate();
@@ -86,7 +89,7 @@ namespace plugify {
 		bool IsPluginLoaded(std::string_view pluginId) const;
 
 		UniqueId Subscribe(EventHandler handler);
-		void Unsubscribe(UniqueId token);
+		void Unsubscribe(UniqueId id);
 
 	private:
 		struct Impl;
@@ -99,11 +102,20 @@ namespace plugify {
 		InitializationReport InitializePlugins();
 
 		// Helper methods
-		void EmitEvent(Event event);
+		void EmitEvent(const Event& event);
 		//Result<void> HandleInitializationError(const PackageId& id, const Error& error);
 
 		// State management
 		void UpdatePackageState(const PackageId& id, PackageState newState);
 		std::vector<PackageId> GetPluginsForModule(std::string_view moduleId) const;
 	};
+
+    class ManagerFactory {
+    public:
+        //static std::unique_ptr<IPackageDiscovery> createDefaultDiscovery();
+        //static std::unique_ptr<IPackageValidator> createDefaultValidator();
+        static std::unique_ptr<IDependencyResolver> CreateDefaultResolver();
+        //static std::unique_ptr<IModuleLoader> createDefaultModuleLoader();
+        //static std::unique_ptr<IPluginLoader> createDefaultPluginLoader();
+    };
 }

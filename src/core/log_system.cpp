@@ -4,43 +4,30 @@ using namespace plugify;
 
 void StandardLogger::Log(std::string_view message, Severity severity) {
 	if (severity <= _severity) {
-		switch (severity) {
-			case Severity::None:
-				std::cout << message << std::endl;
-				break;
-			case Severity::Fatal:
-				std::cerr << "[@] Fatal: " << message << std::endl;
-				break;
-			case Severity::Error:
-				std::cerr << "[#] Error: " << message << std::endl;
-				break;
-			case Severity::Warning:
-				std::cout << "[!] Warning: " << message << std::endl;
-				break;
-			case Severity::Info:
-				std::cout << "[+] Info: " << message << std::endl;
-				break;
-			case Severity::Debug:
-				std::cout << "[~] Debug: " << message << std::endl;
-				break;
-			case Severity::Verbose:
-				std::cout << "[*] Verbose: " << message << std::endl;
-				break;
-			default:
-				std::cerr << "Unsupported error message logged " << message << std::endl;
-				break;
-		}
+		auto color = GetColor(severity);
+		std::cout << GetAnsiCode(color) << message << GetAnsiCode(Color::None) << std::endl;
 	}
 }
 
-void StandardLogger::Log(std::string_view msg, Color color) {
-	std::cout << GetAnsiCode(color) << msg << GetAnsiCode(Color::None) << std::endl;
+void StandardLogger::Log(std::string_view message, Color color) {
+	std::cout << GetAnsiCode(color) << message << GetAnsiCode(Color::None) << std::endl;
 }
 
 void StandardLogger::SetSeverity(Severity severity) {
 	_severity = severity;
 }
 
+Color StandardLogger::GetColor(Severity severity) {
+	switch (severity) {
+		case Severity::Fatal:   return Color::BoldRed;
+		case Severity::Error:   return Color::Red;
+		case Severity::Warning: return Color::BoldYellow;
+		case Severity::Info:    return Color::Green;
+		case Severity::Debug:   return Color::Cyan;
+		case Severity::Verbose: return Color::Gray;
+		default:                return Color::None;
+	}
+}
 std::string_view StandardLogger::GetAnsiCode(Color color) {
 	switch (color) {
 		case Color::None:
@@ -70,6 +57,6 @@ std::string_view StandardLogger::GetAnsiCode(Color color) {
 		case Color::BoldCyan:
 			return "\033[1;36m";
 		default:
-			return "";
+			return "\033[0m"; // Fallback to reset
 	}
 }

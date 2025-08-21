@@ -103,7 +103,7 @@ namespace plugify {
 	/**
 	 * @brief Namespace containing string representations of ValueType enum values.
 	 */
-	namespace ValueName {
+	struct ValueName {
 		static constexpr std::string_view Void = "void";
 		static constexpr std::string_view Bool = "bool";
 		static constexpr std::string_view Char8 = "char8";
@@ -154,7 +154,7 @@ namespace plugify {
 #else
 		#error "Environment not 32 or 64-bit."
 #endif
-	}
+	};
 
 	/**
 	 * @brief Namespace containing utility functions of ValueType enum.

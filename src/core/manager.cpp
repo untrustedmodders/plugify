@@ -3,19 +3,18 @@
 #include "plugify/core/package.hpp"
 #include "plugify/core/plugify.hpp"
 
-#include "core/conflict_impl.hpp"
-#include "core/dependency_impl.hpp"
+#include "core/glaze.hpp"
+#include <glaze/glaze.hpp>
+#include <utility>
 
 using namespace plugify;
 
 struct Manager::Impl {
-	Impl(Plugify& p) : plugify(p), config(p.GetConfig()) {}
-	
 	// Plugify
 	Plugify& plugify;
 
 	// Configuration
-	const Config& config;
+	std::shared_ptr<Config> config;
 
 	// Discovered packages - now stored in sorted order
 	std::vector<ModuleInfo> sortedModules;  // Topologically sorted
@@ -34,13 +33,12 @@ struct Manager::Impl {
 	// Dependency injection components
 	//std::unique_ptr<IPackageDiscovery> packageDiscovery;
 	//std::unique_ptr<IPackageValidator> packageValidator;
+	std::unique_ptr<IDependencyResolver> dependencyResolver;
 	//std::unique_ptr<IModuleLoader> moduleLoader;
 	//std::unique_ptr<IPluginLoader> pluginLoader;
 
 	// Event handling
-	std::unordered_map<UniqueId, EventHandler> eventHandlers;
-	UniqueId nextSubscriptionId{0};
-	mutable std::mutex eventMutex;
+	EventDispatcher eventDistpatcher;
 
 	// Dependency tracking (maintained for quick lookup)
 	std::unordered_map<PackageId, std::vector<PackageId>, plg::string_hash, std::equal_to<>> pluginToModuleMap;
@@ -61,26 +59,26 @@ struct Manager::Impl {
 
         double AverageUpdateTime() const {
             return totalUpdates > 0 ?
-                static_cast<double>(totalUpdateTime.count()) / totalUpdates : 0.0;
+                static_cast<double>(totalUpdateTime.count()) /  static_cast<double>(totalUpdates) : 0.0;
         }
     } updateStats;
 
     // Helper methods
     bool ShouldRetry(const EnhancedError& error, std::size_t attemptCount) const {
         if (!error.isRetryable) return false;
-        if (config.retryPolicy.retryOnlyTransient && error.category != ErrorCategory::Transient) {
+        if (config->retryPolicy.retryOnlyTransient && error.category != ErrorCategory::Transient) {
             return false;
         }
-        return attemptCount < config.retryPolicy.maxAttempts;
+        return attemptCount < config->retryPolicy.maxAttempts;
     }
 
     std::chrono::milliseconds GetRetryDelay(std::size_t attemptCount) const {
-        if (!config.retryPolicy.exponentialBackoff) {
-            return config.retryPolicy.baseDelay;
+        if (!config->retryPolicy.exponentialBackoff) {
+            return config->retryPolicy.baseDelay;
         }
-
-        auto delay = config.retryPolicy.baseDelay * (1 << attemptCount);
-        return std::min(delay, config.retryPolicy.maxDelay);
+		// TODO: clamp
+        auto delay = config->retryPolicy.baseDelay * (1 << attemptCount);
+        return std::min(delay, config->retryPolicy.maxDelay);
     }
 
     // Sort packages based on dependency order
@@ -89,7 +87,7 @@ struct Manager::Impl {
     	sortedModules.clear();
     	sortedPlugins.clear();
 
-        if (!config.respectDependencyOrder || !depReport.isLoadOrderValid) {
+        if (!config->respectDependencyOrder || !depReport.isLoadOrderValid) {
             // Can't sort due to circular dependencies or config
             // Just copy as-is
             for (const auto& [id, info] : modules) {
@@ -129,11 +127,11 @@ struct Manager::Impl {
 
 Manager::Manager(Plugify& plugify) : _impl(std::make_unique<Impl>(plugify)) {
     // Initialize with default components if not set
-    //_impl->packageDiscovery = ManagerFactory::createDefaultDiscovery();
-    //_impl->packageValidator = ManagerFactory::createDefaultValidator();
-    //_impl->dependencyResolver = ManagerFactory::createDefaultResolver();
-    //_impl->moduleLoader = ManagerFactory::createDefaultModuleLoader();
-    //_impl->pluginLoader = ManagerFactory::createDefaultPluginLoader();
+    //_impl->packageDiscovery = ManagerFactory::CreateDefaultDiscovery();
+    //_impl->packageValidator = ManagerFactory::CreateDefaultValidator();
+    _impl->dependencyResolver = ManagerFactory::CreateDefaultResolver();
+    //_impl->moduleLoader = ManagerFactory::CreateDefaultModuleLoader();
+    //_impl->pluginLoader = ManagerFactory::CreateDefaultPluginLoader();
 }
 
 Manager::~Manager() {
@@ -160,13 +158,13 @@ Manager::~Manager() {
 
 void Manager::setPackageValidator(std::unique_ptr<IPackageValidator> validator) {
     _impl->packageValidator = std::move(validator);
-}
+}*/
 
-void Manager::setDependencyResolver(std::unique_ptr<IModuleLoader> resolver) {
+void Manager::SetDependencyResolver(std::unique_ptr<IDependencyResolver> resolver) {
     _impl->dependencyResolver = std::move(resolver);
 }
 
-void Manager::setModuleLoader(std::unique_ptr<IModuleLoader> loader) {
+/*void Manager::setModuleLoader(std::unique_ptr<IModuleLoader> loader) {
     _impl->moduleLoader = std::move(loader);
 }
 
@@ -178,22 +176,66 @@ void Manager::setPluginLoader(std::unique_ptr<IPluginLoader> loader) {
 // Discovery Phase
 // ============================================================================
 
+/*template <typename T>
+Result<std::shared_ptr<T>> ReadManifest(
+		const std::shared_ptr<IFileSystem>& fs,
+		const fs::path& path,
+		PackageType type
+) {
+	auto json = fs->ReadTextFile(path);
+	if (!json)
+		return std::unexpected(json.error());
+
+	auto parsed = glz::read_jsonc<std::shared_ptr<T>>(*json);
+	if (!parsed)
+		return std::unexpected(glz::format_error(parsed.error(), *json));
+
+	auto& manifest = *parsed;
+	manifest->location = path;
+	manifest->type = type;
+	manifest->id = manifest->name;
+	return manifest;
+}*/
+
 Result<void> Manager::DiscoverPackages(
-    std::span<const std::filesystem::path> searchPaths
+    [[maybe_unused]] std::span<const std::filesystem::path> searchPaths
 ) {
     // Combine provided paths with plugify.configured paths
     std::vector<std::filesystem::path> allPaths;
-    allPaths.reserve(searchPaths.size() + _impl->config.searchPaths.size());
+    allPaths.reserve(searchPaths.size() + _impl->config->searchPaths.size());
     allPaths.insert(allPaths.end(), searchPaths.begin(), searchPaths.end());
-    allPaths.insert(allPaths.end(), 
-                    _impl->config.searchPaths.begin(), 
-                    _impl->config.searchPaths.end());
+    allPaths.insert(allPaths.end(),
+                    _impl->config->searchPaths.begin(),
+                    _impl->config->searchPaths.end());
 
     // Discover modules first
 	{
+		std::string buffer = R"(
+[
+  {
+    "name": "cpp-lang",
+    "version": "1.0.0",
+    "description": "Core utility functions for other plugins.",
+    "author": "qubka",
+    "website": "",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": "cpp"
+  }
+]
+)";
+		auto s = glz::read_json<std::vector<std::shared_ptr<ModuleManifest>>>(buffer);
+		std::vector<ModuleInfo> result;
+		for (auto& v : *s) {
+			auto info = std::make_shared<Package<ModuleManifest>>();
+			info->manifest = v;
+			info->manifest->id = info->manifest->name;
+			result.push_back(info);
+		}
 
 		//auto moduleResult = _impl->packageDiscovery->discoverModules(allPaths);
-    	plg::expected<std::vector<ModuleInfo>, std::string> moduleResult = {};
+    	plg::expected<std::vector<ModuleInfo>, std::string> moduleResult = result;
     	if (!moduleResult) {
     		return plg::unexpected(moduleResult.error());
     	}
@@ -203,13 +245,13 @@ Result<void> Manager::DiscoverPackages(
     		const auto& id = moduleInfo->manifest->id;
 
     		// Apply whitelist/blacklist filtering
-    		if (_impl->config.whitelistedPackages &&
-				!std::ranges::contains(*_impl->config.whitelistedPackages, id)) {
+    		if (_impl->config->whitelistedPackages &&
+				!std::ranges::contains(*_impl->config->whitelistedPackages, id)) {
     			continue;
 			}
 
-    		if (_impl->config.blacklistedPackages &&
-				std::ranges::contains(*_impl->config.blacklistedPackages, id)) {
+    		if (_impl->config->blacklistedPackages &&
+				std::ranges::contains(*_impl->config->blacklistedPackages, id)) {
     			UpdatePackageState(id, PackageState::Disabled);
     			continue;
 			}
@@ -226,9 +268,605 @@ Result<void> Manager::DiscoverPackages(
     
     // Discover plugins
 	{
+		std::string buffer = R"(
+[
+  {
+    "name": "core-utils",
+    "version": "1.0.0",
+    "description": "Core utility functions for other plugins.",
+    "author": "Alice",
+    "website": "https://example.com/core-utils",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "graphics-engine",
+    "version": "2.1.0",
+    "description": "Provides rendering and graphics APIs.",
+    "author": "Bob",
+    "website": "https://example.com/graphics-engine",
+    "license": "Apache-2.0",
+    "dependencies": [
+      { "name": "core-utils", "constraints": [">=1.0.0"] }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "physics-engine",
+    "version": "3.0.0",
+    "description": "Physics simulation engine.",
+    "author": "Charlie",
+    "website": "https://example.com/physics-engine",
+    "license": "GPL-3.0",
+    "dependencies": [
+      { "name": "core-utils" },
+      { "name": "math-lib", "constraints": [">=2.0.0","<3.0.0"] }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "math-lib",
+    "version": "2.5.1",
+    "description": "Advanced math functions for simulations.",
+    "author": "Diana",
+    "website": "https://example.com/math-lib",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [
+      { "name": "old-math-lib" }
+    ],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "old-math-lib",
+    "version": "1.0.0",
+    "description": "Deprecated math library.",
+    "author": "Eve",
+    "website": "https://example.com/old-math-lib",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [
+      { "name": "math-lib" }
+    ],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "sound-engine",
+    "version": "1.2.0",
+    "description": "Provides sound APIs.",
+    "author": "Frank",
+    "website": "https://example.com/sound-engine",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "core-utils" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "ai-module",
+    "version": "0.9.0",
+    "description": "Artificial intelligence module.",
+    "author": "Grace",
+    "website": "https://example.com/ai-module",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "math-lib" },
+      { "name": "physics-engine", "constraints": ["~3.0.0"] }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "network-lib",
+    "version": "1.0.0",
+    "description": "Networking library.",
+    "author": "Henry",
+    "website": "https://example.com/network-lib",
+    "license": "BSD",
+    "dependencies": [],
+    "conflicts": [
+      { "name": "legacy-network" }
+    ],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "legacy-network",
+    "version": "0.8.0",
+    "description": "Old networking library.",
+    "author": "Ian",
+    "website": "https://example.com/legacy-network",
+    "license": "BSD",
+    "dependencies": [],
+    "conflicts": [
+      { "name": "network-lib" }
+    ],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "ui-framework",
+    "version": "1.3.2",
+    "description": "User interface framework.",
+    "author": "Jack",
+    "website": "https://example.com/ui-framework",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "graphics-engine" },
+      { "name": "network-lib" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "plugin-A",
+    "version": "1.0.0",
+    "description": "Cyclic test plugin A.",
+    "author": "Test",
+    "website": "https://example.com/plugin-A",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "plugin-B" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "plugin-B",
+    "version": "1.0.0",
+    "description": "Cyclic test plugin B.",
+    "author": "Test",
+    "website": "https://example.com/plugin-B",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "plugin-C" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "plugin-C",
+    "version": "1.0.0",
+    "description": "Cyclic test plugin C.",
+    "author": "Test",
+    "website": "https://example.com/plugin-C",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "plugin-A" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "broken-plugin",
+    "version": "abc",
+    "description": "Plugin with malformed version.",
+    "author": "Error",
+    "website": "https://example.com/broken-plugin",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "missing-dependency-plugin",
+    "version": "1.0.0",
+    "description": "Depends on a nonexistent plugin.",
+    "author": "Error",
+    "website": "https://example.com/missing-dep",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "ghost-plugin" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "deep-A",
+    "version": "1.0.0",
+    "description": "Deep chain A.",
+    "author": "ChainDev",
+    "website": "https://example.com/deep-A",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "deep-B" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "deep-B",
+    "version": "1.0.0",
+    "description": "Deep chain B.",
+    "author": "ChainDev",
+    "website": "https://example.com/deep-B",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "deep-C" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "deep-C",
+    "version": "1.0.0",
+    "description": "Deep chain C.",
+    "author": "ChainDev",
+    "website": "https://example.com/deep-C",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "deep-D" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "deep-D",
+    "version": "1.0.0",
+    "description": "Deep chain D.",
+    "author": "ChainDev",
+    "website": "https://example.com/deep-D",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "deep-E" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "deep-E",
+    "version": "1.0.0",
+    "description": "Deep chain E.",
+    "author": "ChainDev",
+    "website": "https://example.com/deep-E",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "conflict-A",
+    "version": "1.0.0",
+    "description": "Conflicts with B.",
+    "author": "Tester",
+    "website": "https://example.com/conflict-A",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [
+      { "name": "conflict-B" }
+    ],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "conflict-B",
+    "version": "1.0.0",
+    "description": "Conflicts with A.",
+    "author": "Tester",
+    "website": "https://example.com/conflict-B",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [
+      { "name": "conflict-A" }
+    ],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "multi-version-lib",
+    "version": "1.0.0",
+    "description": "Library version 1.0.0.",
+    "author": "MultiDev",
+    "website": "https://example.com/multi-version-lib",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "multi-version-lib",
+    "version": "2.0.0",
+    "description": "Library version 2.0.0.",
+    "author": "MultiDev",
+    "website": "https://example.com/multi-version-lib",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "multi-version-consumer",
+    "version": "1.0.0",
+    "description": "Depends on multi-version-lib >=1.0.0,<2.0.0.",
+    "author": "MultiDev",
+    "website": "https://example.com/multi-version-consumer",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "multi-version-lib", "constraints": [">=1.0.0","<2.0.0"] }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "malformed-plugin",
+    "version": "1.0.0",
+    "author": "MissingFields",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "plugin-X",
+    "version": "1.0.0",
+    "description": "Part of long cycle.",
+    "author": "CycleTester",
+    "website": "https://example.com/plugin-X",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "plugin-Y" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "plugin-Y",
+    "version": "1.0.0",
+    "description": "Part of long cycle.",
+    "author": "CycleTester",
+    "website": "https://example.com/plugin-Y",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "plugin-Z" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "plugin-Z",
+    "version": "1.0.0",
+    "description": "Part of long cycle.",
+    "author": "CycleTester",
+    "website": "https://example.com/plugin-Z",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "plugin-X" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "simple-plugin",
+    "version": "0.1.0",
+    "description": "Minimal working plugin.",
+    "author": "Minimalist",
+    "website": "https://example.com/simple-plugin",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "optional-dep-plugin",
+    "version": "1.0.0",
+    "description": "Has optional dependency.",
+    "author": "Tester",
+    "website": "https://example.com/optional-dep-plugin",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "math-lib" },
+      { "name": "ui-framework", "optional": true }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "redundant-dependency-plugin",
+    "version": "1.0.0",
+    "description": "Declares dependency twice.",
+    "author": "Tester",
+    "website": "https://example.com/redundant",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "core-utils" },
+      { "name": "core-utils" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "incompatible-engine",
+    "version": "1.0.0",
+    "description": "Conflicts with graphics-engine <2.0.0.",
+    "author": "Tester",
+    "website": "https://example.com/incompatible-engine",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [
+      { "name": "graphics-engine", "constraints": ["<2.0.0"] }
+    ],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "game-framework",
+    "version": "2.0.0",
+    "description": "Framework combining many modules.",
+    "author": "DevTeam",
+    "website": "https://example.com/game-framework",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "graphics-engine" },
+      { "name": "physics-engine" },
+      { "name": "sound-engine" },
+      { "name": "network-lib" },
+      { "name": "ui-framework" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "missing-license-plugin",
+    "version": "1.0.0",
+    "description": "Plugin missing license field.",
+    "author": "Oops",
+    "website": "https://example.com/missing-license",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "invalid-deps-plugin",
+    "version": "1.0.0",
+    "description": "Has malformed dependencies field.",
+    "author": "Oops",
+    "website": "https://example.com/invalid-deps",
+    "license": "MIT",
+    "dependencies": [{ "name": "not-a-list" }],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "circular-1",
+    "version": "1.0.0",
+    "description": "Circular dep test 1.",
+    "author": "Test",
+    "website": "https://example.com/circular-1",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "circular-2" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "circular-2",
+    "version": "1.0.0",
+    "description": "Circular dep test 2.",
+    "author": "Test",
+    "website": "https://example.com/circular-2",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "circular-3" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "circular-3",
+    "version": "1.0.0",
+    "description": "Circular dep test 3.",
+    "author": "Test",
+    "website": "https://example.com/circular-3",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "circular-1" }
+    ],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "standalone-plugin",
+    "version": "1.0.0",
+    "description": "No dependencies.",
+    "author": "SoloDev",
+    "website": "https://example.com/standalone",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": [],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  },
+  {
+    "name": "broken-json-plugin",
+    "version": "1.0.0",
+    "description": "Plugin with malformed json",
+    "author": "Oops",
+    "website": "https://example.com/broken-json",
+    "license": "MIT",
+    "dependencies": [],
+    "conflicts": []
+  },
+  {
+    "name": "heavy-plugin",
+    "version": "3.2.1",
+    "description": "Complex plugin depending on many others.",
+    "author": "BigTeam",
+    "website": "https://example.com/heavy",
+    "license": "MIT",
+    "dependencies": [
+      { "name": "graphics-engine" },
+      { "name": "physics-engine" },
+      { "name": "math-lib" },
+      { "name": "ai-module" },
+      { "name": "network-lib" },
+      { "name": "sound-engine" },
+      { "name": "ui-framework" }
+    ],
+    "conflicts": [
+      { "name": "legacy-network" },
+      { "name": "old-math-lib" }
+    ],
+    "language": { "name": "cpp" },
+    "entry": "test"
+  }
+]
+)";
+		auto s = glz::read_json<std::vector<std::shared_ptr<PluginManifest>>>(buffer);
+		std::vector<PluginInfo> result;
+		if (!s) {
+			std::cerr << glz::format_error(s.error(), buffer) << std::endl;
+			return std::unexpected(glz::format_error(s.error(), buffer));
+		}
+
+		for (auto& v : *s) {
+			auto info = std::make_shared<Package<PluginManifest>>();
+			info->manifest = v;
+			info->manifest->id = info->manifest->name;
+			result.push_back(info);
+		}
 
 		//auto pluginResult = _impl->packageDiscovery->discoverPlugins(allPaths);
-    	plg::expected<std::vector<PluginInfo>, std::string> pluginResult = {};
+    	plg::expected<std::vector<PluginInfo>, std::string> pluginResult = result;
     	if (!pluginResult) {
     		return plg::unexpected(pluginResult.error());
     	}
@@ -236,15 +874,16 @@ Result<void> Manager::DiscoverPackages(
     	// Store discovered plugins and map to required language modules
     	for (auto& pluginInfo : pluginResult.value()) {
     		const auto& id = pluginInfo->manifest->id;
+            auto language = pluginInfo->manifest->language.GetName();
 
     		// Apply filtering
-    		if (_impl->config.whitelistedPackages &&
-				!std::ranges::contains(*_impl->config.whitelistedPackages, id)) {
+    		if (_impl->config->whitelistedPackages &&
+				!std::ranges::contains(*_impl->config->whitelistedPackages, id)) {
     			continue;
 			}
 
-    		if (_impl->config.blacklistedPackages &&
-				std::ranges::contains(*_impl->config.blacklistedPackages, id)) {
+    		if (_impl->config->blacklistedPackages &&
+				std::ranges::contains(*_impl->config->blacklistedPackages, id)) {
     			UpdatePackageState(id, PackageState::Disabled);
     			continue;
 			}
@@ -254,6 +893,24 @@ Result<void> Manager::DiscoverPackages(
 				.timestamp = std::chrono::system_clock::now(),
 				.packageId = id
 			});
+
+    	    // Map plugin to its required language module
+    	    bool moduleFound = false;
+    	    for (const auto& [moduleId, moduleInfo] : _impl->modules) {
+    	        if (moduleInfo->manifest->language == language) {
+    	            _impl->pluginToModuleMap[id].push_back(moduleId);
+    	            _impl->moduleToPluginsMap[moduleId].push_back(id);
+    	            moduleFound = true;
+    	        }
+    	    }
+        
+    	    if (!moduleFound && !_impl->config->loadDisabledPackages) {
+    	        pluginInfo->state = PackageState::Error;
+    	        pluginInfo->lastError = Error{
+    	            .code = ErrorCode::LanguageModuleNotLoaded,
+                    .message = std::format("No language module found for language '{}'", language)
+                };
+    	    }
 
     		_impl->plugins[id] = std::move(pluginInfo);
     	}
@@ -267,7 +924,19 @@ Result<void> Manager::DiscoverPackages(
 // ============================================================================
 
 Result<InitializationState> Manager::Initialize() {
-   _impl->initState = {};
+    _impl->config = _impl->plugify.GetConfig();
+    if (!_impl->config) {
+        auto error = EnhancedError::NonRetryable(
+            ErrorCode::ConfigurationMissing,
+            "Plugify configuration is not set",
+            ErrorCategory::Configuration
+        );
+        return {};//plg::unexpected(error);
+    }
+
+	auto _ = DiscoverPackages();
+
+    _impl->initState = {};
     _impl->initState.startTime = std::chrono::system_clock::now();
     auto overallStart = std::chrono::steady_clock::now();
     
@@ -276,7 +945,7 @@ Result<InitializationState> Manager::Initialize() {
     // Step 1: Validate all manifests
     _impl->initState.validationReport = ValidateAllManifests();
     if (!_impl->initState.validationReport.AllPassed() &&
-    	!_impl->config.partialStartupMode) {
+    	!_impl->config->partialStartupMode) {
         auto error = EnhancedError::NonRetryable(
             ErrorCode::ValidationFailed,
             std::format("{} packages failed validation", 
@@ -289,7 +958,7 @@ Result<InitializationState> Manager::Initialize() {
     // Step 2: Resolve dependencies and determine load order
     _impl->initState.dependencyReport = ResolveDependencies();
     if (_impl->initState.dependencyReport.HasBlockingIssues() && 
-        !_impl->config.partialStartupMode) {
+        !_impl->config->partialStartupMode) {
         auto error = EnhancedError::NonRetryable(
             ErrorCode::MissingDependency,
             std::format("Dependency resolution failed: {} blocking issues found",
@@ -318,18 +987,18 @@ Result<InitializationState> Manager::Initialize() {
     _impl->initState.endTime = std::chrono::system_clock::now();
     
     // Print comprehensive summary (can be disabled via config if needed)
-    if (_impl->config.printSummary) {  // Assuming we add this config option
-        std::cout << "\n" << _impl->initState.GenerateFullReport() << "\n";
+    if (_impl->config->printSummary) {  // Assuming we add this config option
+        std::cout << "\n" << _impl->initState.GenerateTextReport() << "\n";
     }
     
     // Determine overall success
-    if (_impl->config.partialStartupMode) {
+    if (_impl->config->partialStartupMode) {
         if (_impl->initState.initializationReport.SuccessCount() > 0) {
             return _impl->initState;  // Partial success
         }
     }
     
-    if (_impl->initState.initializationReport.FailureCount() > 0 && !_impl->config.partialStartupMode) {
+    if (_impl->initState.initializationReport.FailureCount() > 0 && !_impl->config->partialStartupMode) {
         auto error = EnhancedError::NonRetryable(
             ErrorCode::InitializationFailed,
             std::format("{} packages failed to initialize", 
@@ -425,8 +1094,25 @@ ValidationReport Manager::ValidateAllManifests() {
 }
 
 DependencyReport Manager::ResolveDependencies() {
-DependencyReport report;
-    
+    // Collect all validated packages
+    PackageCollection allPackages;
+
+    for (auto& [id, info] : _impl->plugins) {
+        if (info->state == PackageState::Validated) {
+            allPackages[id] = info->manifest;
+        }
+    }
+
+    for (auto& [id, info] : _impl->modules) {
+        if (info->state == PackageState::Validated) {
+            allPackages[id] = info->manifest;
+        }
+    }
+
+    DependencyReport report = _impl->dependencyResolver->ResolveDependencies(allPackages);
+
+#if 0
+    DependencyReport report;
     // Initialize statistics
     report.stats = {};
     
@@ -452,7 +1138,7 @@ DependencyReport report;
     report.stats.totalPackages = allPackages.size();
     
     // Helper to format constraints
-    auto formatConstraints = [](std::span<const Constraint> constraints) -> std::string {
+    auto formatConstraints = [](const std::vector<Constraint>& constraints) -> std::string {
         if (constraints.empty()) return "any version";
         
         std::string result;
@@ -498,7 +1184,7 @@ DependencyReport report;
     			if (depIt == allPackages.end()) {
     				// Missing dependency with detailed constraint info
     				DependencyReport::PackageResolution::MissingDependency missing{
-    					.name = std::string(name),
+    					.name = name,
 						//.requiredVersion = std::nullopt,  // Could extract from constraints
 						//.requiredConstraints = constraints ? *constraints : std::vector<Constraint>{},
 						.formattedConstraints = constraints ? formatConstraints(*constraints) : "any version",
@@ -546,7 +1232,7 @@ DependencyReport report;
     						bool satisfied = constraint.IsSatisfiedBy(depManifest->version);
 
     						DependencyReport::DependencyIssue::ConstraintDetail detail{
-    							.constraintDescription = formatConstraints({&constraint, 1}),
+    							.constraintDescription = formatConstraints({constraint}),
 								.actualVersion = depManifest->version,
 								.isSatisfied = satisfied
 							};
@@ -570,7 +1256,7 @@ DependencyReport report;
 									.availableVersion = depManifest->version
 								};
 
-    							conflict.requirements.push_back(DependencyReport::VersionConflict::Requirement{
+    							conflict.requirements.push_back({
 									.requester = id,
 									//.requiredVersion = formattedConstraints,
 									//.constraints = *constraints,
@@ -599,7 +1285,7 @@ DependencyReport report;
 									"Version conflict: '{}' requires '{}' with version {}, but {} is available",
 									id, name, formattedConstraints, depManifest->version),
 								.involvedPackages = { name },
-								.failedConstraints = constraintDetails,
+								.failedConstraints = std::move(constraintDetails),
 								.suggestedFixes = std::vector<std::string>{
 									std::format("Update '{}' to a version that satisfies: {}",
 											   name, formattedConstraints),
@@ -632,7 +1318,7 @@ DependencyReport report;
     		 	const auto& [name, constraints, reason] = *conflict._impl;
 
 				if (allPackages.contains(name)) {
-	                const auto& conflictingManifest = allPackages[std::string(name)];
+	                const auto& conflictingManifest = allPackages[name];
 
 	                // Check if conflict constraints are satisfied
 	                bool hasConflict = true;
@@ -646,7 +1332,7 @@ DependencyReport report;
 	                        bool satisfied = constraint.IsSatisfiedBy(conflictingManifest->version);
 	                        if (satisfied) {
 	                            conflictDetails.push_back({
-	                                .constraintDescription = formatConstraints({&constraint, 1}),
+	                                .constraintDescription = formatConstraints({constraint}),
 	                                .actualVersion = conflictingManifest->version,
 	                                .isSatisfied = satisfied
 	                            });
@@ -671,8 +1357,8 @@ DependencyReport report;
 	                        .type = DependencyReport::IssueType::ConflictingProviders,
 	                        .affectedPackage = id,
 	                        .description = conflictDescription,
-	                        .involvedPackages = {std::string(name)},
-	                        .failedConstraints = conflictDetails,
+	                        .involvedPackages = { name },
+	                        .failedConstraints = std::move(conflictDetails),
 	                        .suggestedFixes = std::vector<std::string>{
 	                            std::format("Remove either '{}' or '{}'", id, name),
 	                            std::format("Use alternative to '{}' or '{}'", id, name)
@@ -828,7 +1514,7 @@ DependencyReport report;
         // Calculate in-degrees
         for (const auto& [_, deps] : report.dependencyGraph) {
             for (const auto& dep : deps) {
-                inDegree[dep]++;
+                ++inDegree[dep]; //?
             }
         }
 
@@ -841,7 +1527,7 @@ DependencyReport report;
         }
 
         while (!queue.empty()) {
-            auto current = std::move(queue.front());
+            auto current = queue.front();
             queue.pop();
             //report.loadOrder.push_back(current);
 
@@ -916,6 +1602,7 @@ DependencyReport report;
         std::cout << std::format("Dependencies resolved successfully. Load order determined for {} packages.\n",
                                  report.loadOrder.size());
     }
+#endif
 
     return report;
 }
@@ -929,7 +1616,7 @@ InitializationReport Manager::InitializeModules() {
     std::unordered_set<PackageId> successfullyLoaded;
 
     // Use sorted order if available
-    //const auto& modulesToInit = _impl->config.respectDependencyOrder && !_impl->sortedModules.empty()
+    //const auto& modulesToInit = _impl->config->respectDependencyOrder && !_impl->sortedModules.empty()
     //                           ? _impl->sortedModules : GetModules(PackageState::Validated);
 
     for (const auto& moduleInfo : _impl->sortedModules) {
@@ -942,12 +1629,12 @@ InitializationReport Manager::InitializeModules() {
         bool allDependenciesLoaded = true;
         std::vector<PackageId> failedDependencies;
 
-        if (_impl->config.skipDependentsOnFailure && moduleInfo->manifest->dependencies) {
+        if (_impl->config->skipDependentsOnFailure && moduleInfo->manifest->dependencies) {
             for (const auto& dependency : *moduleInfo->manifest->dependencies) {
             	const auto& [name, constraints, optional] = *dependency._impl;
 
                 // Skip optional dependencies if configured
-                if (optional.value_or(false) && !_impl->config.failOnMissingDependencies) {
+                if (optional.value_or(false) && !_impl->config->failOnMissingDependencies) {
                     continue;
                 }
 
@@ -988,7 +1675,7 @@ InitializationReport Manager::InitializeModules() {
                                      id, plg::join(failedDependencies, ", "));
 
             // Continue to next module unless strict mode
-            if (!_impl->config.partialStartupMode) {
+            if (!_impl->config->partialStartupMode) {
                 break;
             }
             continue;
@@ -1015,7 +1702,7 @@ InitializationReport Manager::InitializeModules() {
                 auto delay = _impl->GetRetryDelay(attemptCount - 2);
                 std::cout << std::format("  Retry {}/{} for module '{}' (waiting {}ms)\n",
                                         attemptCount - 1,
-                                        _impl->config.retryPolicy.maxAttempts,
+                                        _impl->config->retryPolicy.maxAttempts,
                                         id, delay.count());
                 std::this_thread::sleep_for(delay);
             }
@@ -1158,7 +1845,7 @@ InitializationReport Manager::InitializePlugins() {
     }
 
     // Use sorted order if available
-    //const auto& pluginsToInit = _impl->config.respectDependencyOrder && !_impl->sortedPlugins.empty()
+    //const auto& pluginsToInit = _impl->config->respectDependencyOrder && !_impl->sortedPlugins.empty()
     //                           ? _impl->sortedPlugins
     //                           : GetPlugins(PackageState::Validated);
 
@@ -1172,12 +1859,12 @@ InitializationReport Manager::InitializePlugins() {
         bool allDependenciesLoaded = true;
         std::vector<PackageId> failedDependencies;
 
-        if (pluginInfo->manifest->dependencies && _impl->config.skipDependentsOnFailure) {
+        if (pluginInfo->manifest->dependencies && _impl->config->skipDependentsOnFailure) {
             for (const auto& dependency : *pluginInfo->manifest->dependencies) {
             	const auto& [name, constraints, optional] = *dependency._impl;
 
                 // Skip optional dependencies if configured
-                if (optional.value_or(false) && !_impl->config.failOnMissingDependencies) {
+                if (optional.value_or(false) && !_impl->config->failOnMissingDependencies) {
                     continue;
                 }
 
@@ -1218,7 +1905,7 @@ InitializationReport Manager::InitializePlugins() {
                                      id, plg::join(failedDependencies, ", "));
 
             // Continue to next plugin unless strict mode
-            if (!_impl->config.partialStartupMode) {
+            if (!_impl->config->partialStartupMode) {
                 break;
             }
             continue;
@@ -1303,7 +1990,7 @@ InitializationReport Manager::InitializePlugins() {
                 auto delay = _impl->GetRetryDelay(attemptCount - 2);
                 std::cout << std::format("  Retry {}/{} for plugin '{}' (waiting {}ms)\n",
                                         attemptCount - 1,
-                                        _impl->config.retryPolicy.maxAttempts,
+                                        _impl->config->retryPolicy.maxAttempts,
                                         id, delay.count());
                 std::this_thread::sleep_for(delay);
             }
@@ -1588,30 +2275,15 @@ bool Manager::IsPluginLoaded(std::string_view pluginId) const {
 // ============================================================================
 
 UniqueId Manager::Subscribe(EventHandler handler) {
-    std::lock_guard lock(_impl->eventMutex);
-    auto id = _impl->nextSubscriptionId++;
-    _impl->eventHandlers.emplace(id, std::move(handler));
-	return id;
+	return _impl->eventDistpatcher.Subscribe(std::move(handler));
 }
 
-void Manager::Unsubscribe(UniqueId token) {
-    std::lock_guard lock(_impl->eventMutex);
-	_impl->eventHandlers.erase(token);
+void Manager::Unsubscribe(UniqueId id) {
+    _impl->eventDistpatcher.Unsubscribe(id);
 }
 
-void Manager::EmitEvent(Event event) {
-	std::vector<EventHandler> handlersCopy;
-	{
-		std::lock_guard lock(_impl->eventMutex);
-		handlersCopy.reserve(_impl->eventHandlers.size());
-		for (const auto& [_, handler] : _impl->eventHandlers) {
-			handlersCopy.push_back(handler);
-		}
-	}
-	// Call outside lock (avoids blocking all subscribers)
-	for (auto& handler : handlersCopy) {
-		handler(event);
-	}
+void Manager::EmitEvent(const Event& event) {
+    _impl->eventDistpatcher.Emit(event);
 }
 
 // ============================================================================
@@ -1632,4 +2304,8 @@ std::vector<PackageId> Manager::GetPluginsForModule(std::string_view moduleId) c
         return it->second;
     }
     return {};
+}
+
+std::unique_ptr<IDependencyResolver> ManagerFactory::CreateDefaultResolver() {
+    return std::make_unique<DependencyResolver>();
 }

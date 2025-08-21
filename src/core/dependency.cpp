@@ -22,7 +22,7 @@ Dependency& Dependency::operator=(Dependency&& other) noexcept = default;
 
 std::string_view Dependency::GetName() const noexcept { return _impl->name; }
 std::span<const Constraint> Dependency::GetConstraints() const noexcept {
-	return _impl->constraints.value_or({});
+	return _impl->constraints.value_or(std::vector<Constraint>{});
 }
 bool Dependency::IsOptional() const noexcept { return _impl->optional.value_or(false); }
 
@@ -37,7 +37,7 @@ void Dependency::SetOptional(bool optional) noexcept {
 bool Dependency::operator==(const Dependency& other) const noexcept = default;
 auto Dependency::operator<=>(const Dependency& other) const noexcept = default;
 
-std::vector<Constraint> Dependency::GetFailedConstraints(const Version& version) const {
+std::vector<Constraint> Dependency::GetFailedConstraints(Version version) const {
 	if (!_impl->constraints) return {};
 	std::vector<Constraint> satisfied;
 	std::ranges::copy_if(*_impl->constraints, std::back_inserter(satisfied), [&](const Constraint& c) {

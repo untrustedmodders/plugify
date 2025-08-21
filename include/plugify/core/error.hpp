@@ -9,6 +9,7 @@ namespace plugify {
 
 	enum class ErrorCode {
 		None,
+	    ConfigurationMissing,
 		FileNotFound,
 		InvalidManifest,
 		MissingDependency,
@@ -17,7 +18,7 @@ namespace plugify {
 		LanguageModuleNotLoaded,
 		CircularDependency,
 		ValidationFailed,
-		DisabledByPolicy
+		DisabledByPolicy,
 	};
 
 	struct Error {

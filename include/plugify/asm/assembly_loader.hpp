@@ -12,6 +12,8 @@ namespace plugify {
 	 */
 	class AssemblyLoader final : public IAssemblyLoader {
 	public:
+		~AssemblyLoader() override = default;
+
 		Result<std::unique_ptr<IAssembly>> Load(const std::filesystem::path& path, LoadFlag flags) override;
 
 		bool AddSearchPath(const std::filesystem::path& path) override;

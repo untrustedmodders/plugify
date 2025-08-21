@@ -4,13 +4,15 @@
 using namespace plugify;
 
 struct Plugify::Impl {
-	explicit Impl(Plugify& self)
-		: provider(self)
-		, manager(self) {}
+	explicit Impl(Plugify& self) {
+	    provider = std::make_shared<Provider>(self);
+	    manager = std::make_shared<Manager>(self);
+	}
 
-	Provider provider;
-	Manager manager;
-	Config config;
+	std::shared_ptr<Provider> provider;
+	std::shared_ptr<Manager> manager;
+    std::shared_ptr<Config> config;
+
 	DateTime deltaTime;
 	DateTime lastTime;
 	Version version{PLUGIFY_VERSION};
@@ -30,8 +32,8 @@ Plugify::~Plugify() {
 	Terminate();
 }
 
-bool Plugify::Initialize(const std::filesystem::path& rootDir) {
-	if (IsInitialized())
+bool Plugify::Initialize(const std::filesystem::path&) {
+	/*if (IsInitialized())
 		return false;
 
 	if (!_impl->fs) {
@@ -51,7 +53,7 @@ bool Plugify::Initialize(const std::filesystem::path& rootDir) {
 		return false;
 	}
 
-	/*auto config = glz::read_jsonc<Config>(*result);
+	auto config = glz::read_jsonc<Config>(*result);
 	if (!config.has_value()) {
 		PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", configPath.string(), glz::format_error(config.error(), *result));
 		return false;
@@ -111,7 +113,8 @@ bool Plugify::Initialize(const std::filesystem::path& rootDir) {
 
 	if (!rootDir.empty())
 		_impl->config.baseDir = rootDir / _impl->config.baseDir;*/
-
+	_impl->config = std::make_shared<Config>();
+    _impl->config->logSeverity = Severity::Verbose;
 	_impl->inited = true;
 
 	PL_LOG_INFO("Plugify Init!");
@@ -127,7 +130,7 @@ void Plugify::Terminate() const {
 		return;
 
 	_impl->lastTime = DateTime::Now();
-	auto _ = _impl->manager.Terminate();
+	auto _ = _impl->manager->Terminate();
 	_impl->inited = false;
 
 	PL_LOG_INFO("Plugify Terminated!");
@@ -145,7 +148,7 @@ void Plugify::Update() const {
 	_impl->deltaTime = (currentTime - _impl->lastTime);
 	_impl->lastTime = currentTime;
 
-	auto it = _impl->manager.Update(/*_impl->deltaTime*/);
+	auto it = _impl->manager->Update(/*_impl->deltaTime*/);
 }
 
 void Plugify::Log(std::string_view msg, Severity severity) const {
@@ -156,19 +159,19 @@ void Plugify::SetLogger(std::shared_ptr<ILogger> logger) {
 	LogSystem::SetLogger(std::move(logger));
 }
 
-const Manager& Plugify::GetManager() const {
+std::shared_ptr<Manager> Plugify::GetManager() const {
 	return _impl->manager;
 }
 
-const Provider& Plugify::GetProvider() const {
+std::shared_ptr<Provider> Plugify::GetProvider() const {
 	return _impl->provider;
 }
 
-const Config& Plugify::GetConfig() const {
+std::shared_ptr<Config> Plugify::GetConfig() const {
 	return _impl->config;
 }
 
-const Version& Plugify::GetVersion() const {
+Version Plugify::GetVersion() const {
 	return _impl->version;
 }
 

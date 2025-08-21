@@ -10,7 +10,7 @@ namespace plugify {
 	enum class PackageState {
 		Discovered,      // Found on disk
 		Validated,       // Manifest validated successfully
-		Skipped,         // Skipped due to dependency failures or policy  ← NEW
+		Skipped,         // Skipped due to dependency failures or policy
 		Initializing,    // Currently being initialized
 		Ready,           // Successfully initialized (modules)
 		Started,         // Successfully initialized and running (plugins)

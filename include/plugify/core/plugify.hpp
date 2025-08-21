@@ -8,6 +8,7 @@
 
 namespace plugify {
 	class PLUGIFY_API Plugify {
+		struct Impl;
 	public:
 		Plugify();
 		~Plugify();
@@ -17,10 +18,10 @@ namespace plugify {
 		bool IsInitialized() const;
 		void Update() const;
 
-		const Manager& GetManager() const;
-		const Provider& GetProvider() const;
-		const Config& GetConfig() const;
-		const Version& GetVersion() const;
+		std::shared_ptr<Manager> GetManager() const;
+		std::shared_ptr<Provider> GetProvider() const;
+		std::shared_ptr<Config> GetConfig() const;
+		Version GetVersion() const;
 
 		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
 		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const;
@@ -32,7 +33,6 @@ namespace plugify {
 		void SetLogger(std::shared_ptr<ILogger> logger);
 
 	private:
-		struct Impl;
 		std::unique_ptr<Impl> _impl;
 	};
 

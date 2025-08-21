@@ -28,8 +28,11 @@ namespace plugify {
 	 */
 	using PackageId = std::string;
 
-	enum class PackageType {
-		LanguageModule,
+    /**
+     * TODO:
+     */
+    enum class PackageType {
+		Module,
 		Plugin
 	};
 

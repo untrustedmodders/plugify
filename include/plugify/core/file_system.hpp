@@ -177,8 +177,8 @@ namespace plugify {
 	        size_t currentDepth,
 	        std::error_code& ec);
 
-	    bool ShouldInclude(const FileInfo& info, const DirectoryIterationOptions& options);
-	    bool MatchesPatterns(std::string_view filename, std::initializer_list<std::string_view> patterns);
-	    bool SimpleMatch(std::string_view text, std::string_view pattern);
+	    static bool ShouldInclude(const FileInfo& info, const DirectoryIterationOptions& options);
+	    static bool MatchesPatterns(std::string_view filename, std::initializer_list<std::string_view> patterns);
+	    static bool SimpleMatch(std::string_view text, std::string_view pattern);
 	};
 } // namespace plugify

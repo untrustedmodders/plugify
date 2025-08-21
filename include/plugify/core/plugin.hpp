@@ -209,8 +209,6 @@ namespace plugify {
 		static inline constexpr std::string_view kFileExtension = ".pplugin";
 
 	protected:
-	    //friend struct glz::meta<Plugin>;
-	    //friend struct std::hash<Plugin>;
 	    std::unique_ptr<Impl> _impl;
 	};
 }

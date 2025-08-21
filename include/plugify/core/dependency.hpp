@@ -5,14 +5,10 @@
 #include <string>
 #include <optional>
 
+#include "plugify/core/global.h"
 #include "plugify/core/types.hpp"
 
 #include "plugify_export.h"
-
-namespace glz {
-	template<typename T>
-	struct meta;
-}
 
 namespace plugify {
 	class Manager;
@@ -42,12 +38,9 @@ namespace plugify {
 		[[nodiscard]] bool operator==(const Dependency& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Dependency& other) const noexcept;
 
-		std::vector<Constraint> GetFailedConstraints(const Version& version) const;
+		std::vector<Constraint> GetFailedConstraints(Version version) const;
 
-	private:
-		friend class Manager;
-		friend struct glz::meta<Dependency>;
-		//friend struct std::hash<Dependency>;
+	PLUGIFY_ACCESS:
 		std::unique_ptr<Impl> _impl;
 	};
 }

@@ -5,14 +5,10 @@
 #include <vector>
 #include <memory>
 
-#include "value_type.hpp"
+#include "plugify/core/global.h"
+#include "plugify/core/value_type.hpp"
 
 #include "plugify_export.h"
-
-namespace glz {
-	template<typename T>
-	struct meta;
-}
 
 namespace plugify {
 	class Property;
@@ -51,9 +47,7 @@ namespace plugify {
 
 		[[nodiscard]] std::shared_ptr<Method> FindPrototype(std::string_view name) const noexcept;
 
-	private:
-	    friend struct glz::meta<Method>;
-		//friend struct std::hash<Method>;
+	PLUGIFY_ACCESS:
 	    std::unique_ptr<Impl> _impl;
 	};
 }
