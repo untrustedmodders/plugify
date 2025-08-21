@@ -1,0 +1,26 @@
+{
+    "name": "physics-engine",
+    "version": "1.2.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": [
+                ">=1.0.0"
+            ]
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "light-physics",
+            "constraints": []
+        }
+    ],
+    "description": "Physics simulation engine for rigid bodies.",
+    "author": "PhysLab",
+    "website": "https://example.com/physics-engine",
+    "license": "GPL-3.0",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

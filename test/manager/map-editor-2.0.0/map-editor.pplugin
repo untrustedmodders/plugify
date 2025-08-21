@@ -1,0 +1,27 @@
+{
+    "name": "map-editor",
+    "version": "2.0.0",
+    "dependencies": [
+        {
+            "name": "ui-framework",
+            "constraints": [
+                ">=2.0.0"
+            ]
+        },
+        {
+            "name": "graphics-engine",
+            "constraints": [
+                ">=2.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Full-featured map and level editor.",
+    "author": "DevTools",
+    "website": "https://example.com/map-editor",
+    "license": "GPL-3.0",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

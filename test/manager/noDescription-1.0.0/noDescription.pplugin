@@ -1,0 +1,13 @@
+{
+    "name": "noDescription",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "author": "xAI",
+    "website": "https://example.com/noDescription",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

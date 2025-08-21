@@ -1,0 +1,19 @@
+{
+    "name": "multi-conflict-c",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "multi-conflict-a",
+            "constraints": []
+        }
+    ],
+    "description": "Conflicts with A.",
+    "author": "ConflictTest",
+    "website": "https://example.com/multi-conflict-c",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

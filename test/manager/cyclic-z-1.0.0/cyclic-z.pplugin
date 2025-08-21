@@ -1,0 +1,19 @@
+{
+    "name": "cyclic-z",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "cyclic-x",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Completes cycle back to X.",
+    "author": "CycleTest",
+    "website": "https://example.com/cyclic-z",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

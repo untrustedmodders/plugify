@@ -1,0 +1,14 @@
+{
+    "name": "simplePlugin",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Simple no deps",
+    "author": "xAI",
+    "website": "https://example.com/simplePlugin",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

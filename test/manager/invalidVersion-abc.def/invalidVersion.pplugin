@@ -1,0 +1,14 @@
+{
+    "name": "invalidVersion",
+    "version": "abc.def",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Invalid version string",
+    "author": "xAI",
+    "website": "https://example.com/invalidVersion",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

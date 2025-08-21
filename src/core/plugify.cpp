@@ -1,7 +1,5 @@
-#include "json.cpp"
-
-#include "plugify/core/context.hpp"
 #include "plugify/core/plugify.hpp"
+#include "core/glaze.hpp"
 
 using namespace plugify;
 
@@ -32,7 +30,7 @@ Plugify::~Plugify() {
 	Terminate();
 }
 
-bool Plugify::Initialize(const std::filesystem::path& rootDir) const {
+bool Plugify::Initialize(const std::filesystem::path& rootDir) {
 	if (IsInitialized())
 		return false;
 
@@ -53,11 +51,12 @@ bool Plugify::Initialize(const std::filesystem::path& rootDir) const {
 		return false;
 	}
 
-	auto config = glz::read_jsonc<Config>(*result);
+	/*auto config = glz::read_jsonc<Config>(*result);
 	if (!config.has_value()) {
 		PL_LOG_ERROR("Config: '{}' has JSON parsing error: {}", configPath.string(), glz::format_error(config.error(), *result));
 		return false;
 	}
+
 
 	// ---- path validation block unchanged ----
 	{
@@ -108,10 +107,10 @@ bool Plugify::Initialize(const std::filesystem::path& rootDir) const {
 		}
 	}
 
-	_impl->config = std::move(*config);
+	_impl->config = {};//std::move(*config);
 
 	if (!rootDir.empty())
-		_impl->config.baseDir = rootDir / _impl->config.baseDir;
+		_impl->config.baseDir = rootDir / _impl->config.baseDir;*/
 
 	_impl->inited = true;
 
@@ -128,7 +127,7 @@ void Plugify::Terminate() const {
 		return;
 
 	_impl->lastTime = DateTime::Now();
-	_impl->manager.Terminate();
+	auto _ = _impl->manager.Terminate();
 	_impl->inited = false;
 
 	PL_LOG_INFO("Plugify Terminated!");
@@ -146,14 +145,14 @@ void Plugify::Update() const {
 	_impl->deltaTime = (currentTime - _impl->lastTime);
 	_impl->lastTime = currentTime;
 
-	_impl->manager.Update(_impl->deltaTime);
+	auto it = _impl->manager.Update(/*_impl->deltaTime*/);
 }
 
 void Plugify::Log(std::string_view msg, Severity severity) const {
 	LogSystem::Log(msg, severity);
 }
 
-void Plugify::SetLogger(std::shared_ptr<ILogger> logger) const {
+void Plugify::SetLogger(std::shared_ptr<ILogger> logger) {
 	LogSystem::SetLogger(std::move(logger));
 }
 
@@ -173,7 +172,7 @@ const Version& Plugify::GetVersion() const {
 	return _impl->version;
 }
 
-void Plugify::SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) const {
+void Plugify::SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) {
 	_impl->loader = std::move(loader);
 }
 
@@ -181,7 +180,7 @@ std::shared_ptr<IAssemblyLoader> Plugify::GetAssemblyLoader() const {
 	return _impl->loader;
 }
 
-void Plugify::SetFileSystem(std::shared_ptr<IFileSystem> reader) const {
+void Plugify::SetFileSystem(std::shared_ptr<IFileSystem> reader) {
 	_impl->fs = std::move(reader);
 }
 

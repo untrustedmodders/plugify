@@ -1,0 +1,14 @@
+{
+    "name": "broken-version",
+    "version": "one.two.three",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Plugin with invalid version string.",
+    "author": "BuggySoft",
+    "website": "https://example.com/broken-version",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

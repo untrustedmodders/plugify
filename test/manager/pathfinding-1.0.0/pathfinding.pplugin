@@ -1,0 +1,19 @@
+{
+    "name": "pathfinding",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Pathfinding algorithms such as A* and Dijkstra.",
+    "author": "AI Labs",
+    "website": "https://example.com/pathfinding",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

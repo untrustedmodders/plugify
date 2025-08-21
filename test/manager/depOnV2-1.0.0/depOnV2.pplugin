@@ -1,0 +1,21 @@
+{
+    "name": "depOnV2",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "multiVersionBase",
+            "constraints": [
+                ">=2.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Depends on v2",
+    "author": "xAI",
+    "website": "https://example.com/depOnV2",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

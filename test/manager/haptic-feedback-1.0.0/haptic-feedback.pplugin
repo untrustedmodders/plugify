@@ -1,0 +1,19 @@
+{
+    "name": "haptic-feedback",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "controller-support",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Adds vibration and haptic feedback support.",
+    "author": "InputWorks",
+    "website": "https://example.com/haptic-feedback",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

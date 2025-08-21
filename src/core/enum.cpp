@@ -1,5 +1,4 @@
-#include "plugify/core/enum.hpp"
-#include "plugify/core/enum_value.hpp"
+#include "core/enum_impl.hpp"
 
 using namespace plugify;
 

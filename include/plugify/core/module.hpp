@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include "plugify/../../src/core/module_manifest.hpp"
 #include "plugify/_/module_handle.hpp"
 #include "date_time.hpp"
@@ -173,3 +173,4 @@ namespace plugify {
 	    std::unique_ptr<Impl> impl;
 	};
 }
+#endif

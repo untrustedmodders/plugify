@@ -1,0 +1,24 @@
+{
+    "name": "secure-mode",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": []
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "mod-loader",
+            "constraints": []
+        }
+    ],
+    "description": "Locks down modifications for secure gameplay.",
+    "author": "SafePlay",
+    "website": "https://example.com/secure-mode",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

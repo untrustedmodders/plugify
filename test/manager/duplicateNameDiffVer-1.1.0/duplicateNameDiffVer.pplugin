@@ -1,0 +1,14 @@
+{
+    "name": "duplicateNameDiffVer",
+    "version": "1.1.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Duplicate name v1.1",
+    "author": "xAI",
+    "website": "https://example.com/duplicateNameDiffVer",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

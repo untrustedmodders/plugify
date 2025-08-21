@@ -1,0 +1,26 @@
+{
+    "name": "conflictChain",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "conflictX",
+            "constraints": [
+                ">=1.0.0"
+            ]
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "conflictY",
+            "constraints": []
+        }
+    ],
+    "description": "Depends on X, conflicts with Y",
+    "author": "xAI",
+    "website": "https://example.com/conflictChain",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

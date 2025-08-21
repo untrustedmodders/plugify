@@ -1,0 +1,14 @@
+{
+    "name": "multiVersionBase",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "description": "Base version 1",
+    "author": "xAI",
+    "website": "https://example.com/multiVersionBase",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

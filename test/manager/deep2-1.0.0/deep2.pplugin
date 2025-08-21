@@ -1,0 +1,21 @@
+{
+    "name": "deep2",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "deep3",
+            "constraints": [
+                ">=1.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Deep chain 2",
+    "author": "xAI",
+    "website": "https://example.com/deep2",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

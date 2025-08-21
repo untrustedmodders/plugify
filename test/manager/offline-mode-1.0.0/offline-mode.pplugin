@@ -1,0 +1,19 @@
+{
+    "name": "offline-mode",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "networking",
+            "constraints": []
+        }
+    ],
+    "description": "Disables online features for offline play.",
+    "author": "SoloPlay",
+    "website": "https://example.com/offline-mode",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

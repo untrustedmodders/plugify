@@ -1,0 +1,23 @@
+{
+    "name": "streaming-tools",
+    "version": "1.1.0",
+    "dependencies": [
+        {
+            "name": "sound-engine",
+            "constraints": []
+        },
+        {
+            "name": "graphics-engine",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Integration tools for streaming platforms.",
+    "author": "StreamTech",
+    "website": "https://example.com/streaming-tools",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

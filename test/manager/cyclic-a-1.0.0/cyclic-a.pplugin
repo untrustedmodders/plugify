@@ -1,0 +1,19 @@
+{
+    "name": "cyclic-a",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "cyclic-b",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Part of a cyclic dependency example.",
+    "author": "TestGen",
+    "website": "https://example.com/cyclic-a",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

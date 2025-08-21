@@ -1,0 +1,21 @@
+{
+    "name": "cycleWithVersions",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "cycleWithVersionsB",
+            "constraints": [
+                "==1.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Cycle with versions A",
+    "author": "xAI",
+    "website": "https://example.com/cycleWithVersions",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

@@ -1,0 +1,22 @@
+{
+    "name": "versionConstraintComplex",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "multiVersionBase",
+            "constraints": [
+                ">1.0.0",
+                "<3.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Complex version constraint",
+    "author": "xAI",
+    "website": "https://example.com/versionConstraintComplex",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

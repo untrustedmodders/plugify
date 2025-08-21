@@ -1,0 +1,21 @@
+{
+    "name": "extraCycle",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "extraCycle",
+            "constraints": [
+                ">=1.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Self cycle",
+    "author": "xAI",
+    "website": "https://example.com/extraCycle",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

@@ -1,0 +1,24 @@
+{
+    "name": "conflict-cycle-a",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "conflict-cycle-b",
+            "constraints": []
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "conflict-cycle-b",
+            "constraints": []
+        }
+    ],
+    "description": "Has conflict with its own dependency.",
+    "author": "CycleConflict",
+    "website": "https://example.com/conflict-cycle-a",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

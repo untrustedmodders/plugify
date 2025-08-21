@@ -26,14 +26,16 @@ struct Manager::Impl {
 	std::unordered_map<PackageId, PluginInfo, plg::string_hash, std::equal_to<>> plugins;
 
 	// Loaded instances
-	std::unordered_map<PackageId, std::shared_ptr<Module>> loadedModules;
-	std::unordered_map<PackageId, std::shared_ptr<Plugin>> loadedPlugins;
+	//std::unordered_map<PackageId, std::shared_ptr<Module>, plg::string_hash, std::equal_to<> loadedModules;
+	//std::unordered_map<PackageId, std::shared_ptr<Plugin>, plg::string_hash, std::equal_to<> loadedPlugins;
+	std::unordered_map<PackageId, bool, plg::string_hash, std::equal_to<>> loadedModules;
+	std::unordered_map<PackageId, bool, plg::string_hash, std::equal_to<>> loadedPlugins;
 
 	// Dependency injection components
 	//std::unique_ptr<IPackageDiscovery> packageDiscovery;
 	//std::unique_ptr<IPackageValidator> packageValidator;
-	std::unique_ptr<IModuleLoader> moduleLoader;
-	std::unique_ptr<IPluginLoader> pluginLoader;
+	//std::unique_ptr<IModuleLoader> moduleLoader;
+	//std::unique_ptr<IPluginLoader> pluginLoader;
 
 	// Event handling
 	std::unordered_map<UniqueId, EventHandler> eventHandlers;
@@ -41,14 +43,14 @@ struct Manager::Impl {
 	mutable std::mutex eventMutex;
 
 	// Dependency tracking (maintained for quick lookup)
-	std::unordered_map<PackageId, std::vector<PackageId>> pluginToModuleMap;
-	std::unordered_map<PackageId, std::vector<PackageId>> moduleToPluginsMap;
+	std::unordered_map<PackageId, std::vector<PackageId>, plg::string_hash, std::equal_to<>> pluginToModuleMap;
+	std::unordered_map<PackageId, std::vector<PackageId>, plg::string_hash, std::equal_to<>> moduleToPluginsMap;
 
 	// Comprehensive initialization tracking
 	InitializationState initState;
 
 	// Retry tracking
-	std::unordered_map<PackageId, std::size_t> retryCounters;
+	std::unordered_map<PackageId, std::size_t, plg::string_hash, std::equal_to<>> retryCounters;
 
 	// Update performance tracking
     struct UpdateStatistics {
@@ -107,15 +109,15 @@ struct Manager::Impl {
         // Use the load order from dependency resolution
         for (const auto& packageId : depReport.loadOrder) {
             // Check if it's a module
-            if (auto it = modules.find(packageId); it != modules.end()) {
-                if (it->second->state == PackageState::Validated) {
-                    sortedModules.push_back(it->second);
+            if (auto itModule = modules.find(packageId); itModule != modules.end()) {
+                if (itModule->second->state == PackageState::Validated) {
+                    sortedModules.push_back(itModule->second);
                 }
             }
             // Check if it's a plugin
-            else if (auto it = plugins.find(packageId); it != plugins.end()) {
-                if (it->second->state == PackageState::Validated) {
-                    sortedPlugins.push_back(it->second);
+            else if (auto itPlugin = plugins.find(packageId); itPlugin != plugins.end()) {
+                if (itPlugin->second->state == PackageState::Validated) {
+                    sortedPlugins.push_back(itPlugin->second);
                 }
             }
         }
@@ -126,14 +128,12 @@ struct Manager::Impl {
 };
 
 Manager::Manager(Plugify& plugify) : _impl(std::make_unique<Impl>(plugify)) {
-    _impl->config = plugify.GetConfig();
-    
     // Initialize with default components if not set
-    _impl->packageDiscovery = ManagerFactory::createDefaultDiscovery();
-    _impl->packageValidator = ManagerFactory::createDefaultValidator();
-    _impl->dependencyResolver = ManagerFactory::createDefaultResolver();
-    _impl->moduleLoader = ManagerFactory::createDefaultModuleLoader();
-    _impl->pluginLoader = ManagerFactory::createDefaultPluginLoader();
+    //_impl->packageDiscovery = ManagerFactory::createDefaultDiscovery();
+    //_impl->packageValidator = ManagerFactory::createDefaultValidator();
+    //_impl->dependencyResolver = ManagerFactory::createDefaultResolver();
+    //_impl->moduleLoader = ManagerFactory::createDefaultModuleLoader();
+    //_impl->pluginLoader = ManagerFactory::createDefaultPluginLoader();
 }
 
 Manager::~Manager() {
@@ -154,7 +154,7 @@ Manager::~Manager() {
 // Dependency Injection
 // ============================================================================
 
-void Manager::setPackageDiscovery(std::unique_ptr<IPackageValidator> discovery) {
+/*void Manager::setPackageDiscovery(std::unique_ptr<IPackageValidator> discovery) {
     _impl->packageDiscovery = std::move(discovery);
 }
 
@@ -172,7 +172,7 @@ void Manager::setModuleLoader(std::unique_ptr<IModuleLoader> loader) {
 
 void Manager::setPluginLoader(std::unique_ptr<IPluginLoader> loader) {
     _impl->pluginLoader = std::move(loader);
-}
+}*/
 
 // ============================================================================
 // Discovery Phase
@@ -191,14 +191,16 @@ Result<void> Manager::DiscoverPackages(
 
     // Discover modules first
 	{
-		auto moduleResult = _impl->packageDiscovery->discoverModules(allPaths);
+
+		//auto moduleResult = _impl->packageDiscovery->discoverModules(allPaths);
+    	plg::expected<std::vector<ModuleInfo>, std::string> moduleResult = {};
     	if (!moduleResult) {
     		return plg::unexpected(moduleResult.error());
     	}
 
     	// Store discovered modules
     	for (auto& moduleInfo : moduleResult.value()) {
-    		const auto& id = moduleInfo.manifest->id;
+    		const auto& id = moduleInfo->manifest->id;
 
     		// Apply whitelist/blacklist filtering
     		if (_impl->config.whitelistedPackages &&
@@ -214,7 +216,7 @@ Result<void> Manager::DiscoverPackages(
 
     		EmitEvent({
 				.type = EventType::ModuleDiscovered,
-				.timestamp = DateTime::Now(),
+				.timestamp = std::chrono::system_clock::now(),
 				.packageId = id
 			});
 
@@ -224,14 +226,16 @@ Result<void> Manager::DiscoverPackages(
     
     // Discover plugins
 	{
-		auto pluginResult = _impl->packageDiscovery->discoverPlugins(allPaths);
+
+		//auto pluginResult = _impl->packageDiscovery->discoverPlugins(allPaths);
+    	plg::expected<std::vector<PluginInfo>, std::string> pluginResult = {};
     	if (!pluginResult) {
     		return plg::unexpected(pluginResult.error());
     	}
 
     	// Store discovered plugins and map to required language modules
     	for (auto& pluginInfo : pluginResult.value()) {
-    		const auto& id = pluginInfo.manifest->id;
+    		const auto& id = pluginInfo->manifest->id;
 
     		// Apply filtering
     		if (_impl->config.whitelistedPackages &&
@@ -247,13 +251,15 @@ Result<void> Manager::DiscoverPackages(
 
     		EmitEvent({
 				.type = EventType::PluginDiscovered,
-				.timestamp = DateTime::Now(),
+				.timestamp = std::chrono::system_clock::now(),
 				.packageId = id
 			});
 
     		_impl->plugins[id] = std::move(pluginInfo);
     	}
 	}
+
+	return {};
 }
 
 // ============================================================================
@@ -277,7 +283,7 @@ Result<InitializationState> Manager::Initialize() {
                        _impl->initState.validationReport.FailureCount()),
             ErrorCategory::Validation
         );
-        return plg::unexpected(error);
+        return {};//plg::unexpected(error);
     }
     
     // Step 2: Resolve dependencies and determine load order
@@ -287,10 +293,10 @@ Result<InitializationState> Manager::Initialize() {
         auto error = EnhancedError::NonRetryable(
             ErrorCode::MissingDependency,
             std::format("Dependency resolution failed: {} blocking issues found",
-                       _impl->initState.dependencyReport.BlockerCount(),
+                       _impl->initState.dependencyReport.BlockerCount()),
             ErrorCategory::Dependency
         );
-        return plg::unexpected(error);
+        return {};//plg::unexpected(error);
     }
     
     // Step 3: Sort packages by dependency order
@@ -330,7 +336,7 @@ Result<InitializationState> Manager::Initialize() {
                        _impl->initState.initializationReport.FailureCount()),
             ErrorCategory::Runtime
         );
-        return plg::unexpected(error);
+        return {};//plg::unexpected(error);
     }
     
     return _impl->initState;
@@ -348,8 +354,8 @@ ValidationReport Manager::ValidateAllManifests() {
 
 			ValidationReport::PackageValidation validation{.id = id};
 
-			auto result = _impl->packageValidator->validateManifest(moduleInfo.manifest);
-			if (!result) {
+			//auto result = true;//_impl->packageValidator->validateManifest(moduleInfo.manifest);
+			/*if (!result) {
 				validation.passed = false;
 				validation.error = EnhancedError::NonRetryable(
 					result.error().code,
@@ -362,13 +368,13 @@ ValidationReport Manager::ValidateAllManifests() {
 
 				std::cerr << std::format("Module '{}' validation failed: {}\n",
 										 id, result.error().message);
-			} else {
+			} else*/ {
 				validation.passed = true;
 				moduleInfo->state = PackageState::Validated;
 				
 				EmitEvent({
 					.type = EventType::ModuleValidated,
-					.timestamp = DateTime::Now(),
+					.timestamp = std::chrono::system_clock::now(),
 					.packageId = id
 				});
 			}
@@ -386,8 +392,8 @@ ValidationReport Manager::ValidateAllManifests() {
 
 			ValidationReport::PackageValidation validation{.id = id};
 
-			auto result = _impl->packageValidator->validateManifest(pluginInfo.manifest);
-			if (!result) {
+			//auto result = true;//_impl->packageValidator->validateManifest(pluginInfo.manifest);
+			/*if (!result) {
 				validation.passed = false;
 				validation.error = EnhancedError::NonRetryable(
 					result.error().code,
@@ -400,13 +406,13 @@ ValidationReport Manager::ValidateAllManifests() {
 
 				std::cerr << std::format("Plugin '{}' validation failed: {}\n",
 										 id, result.error().message);
-			} else {
+			} else*/ {
 				validation.passed = true;
 				pluginInfo->state = PackageState::Validated;
 				
 				EmitEvent({
 					.type = EventType::PluginValidated,
-					.timestamp = DateTime::Now(),
+					.timestamp = std::chrono::system_clock::now(),
 					.packageId = id
 				});
 			}
@@ -894,8 +900,8 @@ DependencyReport report;
                     return 1 + maxChildDepth;
                 };
 
-            std::unordered_set<PackageId> visited;
-            int depth = getDepth(resolution.id, visited);
+            std::unordered_set<PackageId> visites;
+            int depth = getDepth(resolution.id, visites);
             maxDepth = std::max(maxDepth, depth);
         }
 
@@ -938,13 +944,10 @@ InitializationReport Manager::InitializeModules() {
 
         if (_impl->config.skipDependentsOnFailure && moduleInfo->manifest->dependencies) {
             for (const auto& dependency : *moduleInfo->manifest->dependencies) {
-            	//const auto& [name, constraints, optional] = *dependency._impl;
-            	auto name = dependency.GetName();
-            	auto constraints = dependency.GetConstraints();
-            	auto optional = dependency.IsOptional();
+            	const auto& [name, constraints, optional] = *dependency._impl;
 
                 // Skip optional dependencies if configured
-                if (optional && !_impl->config.failOnMissingDependencies) {
+                if (optional.value_or(false) && !_impl->config.failOnMissingDependencies) {
                     continue;
                 }
 
@@ -1018,8 +1021,8 @@ InitializationReport Manager::InitializeModules() {
             }
 
             // Load the module
-            auto moduleResult = _impl->moduleLoader->loadModule(moduleInfo->manifest);
-            if (!moduleResult) {
+            //auto moduleResult = true;//_impl->moduleLoader->loadModule(moduleInfo->manifest);
+            /*if (!moduleResult) {
                 lastError = EnhancedError::Transient(
                     moduleResult.error().code,
                     moduleResult.error().message
@@ -1029,13 +1032,13 @@ InitializationReport Manager::InitializeModules() {
                     break;
                 }
                 continue;
-            }
+            }*/
 
             // Initialize the module
-            auto initResult = _impl->moduleLoader->initializeModule(
-                *moduleResult.value(), moduleInfo->manifest);
+            //auto initResult = true;/*_impl->moduleLoader->initializeModule(
+               // *moduleResult.value(), moduleInfo->manifest);*/
 
-            if (!initResult) {
+            /*if (!initResult) {
                 if (initResult.error().code == ErrorCode::InitializationFailed) {
                     lastError = EnhancedError::Transient(
                         initResult.error().code,
@@ -1053,10 +1056,10 @@ InitializationReport Manager::InitializeModules() {
                     break;
                 }
                 continue;
-            }
+            }*/
 
             // Success!
-            _impl->loadedModules[id] = std::move(moduleResult.value());
+            _impl->loadedModules[id] = true;//std::move(moduleResult.value());
             moduleInfo->state = PackageState::Ready;
             loadSuccess = true;
             init.finalState = PackageState::Ready;
@@ -1074,8 +1077,8 @@ InitializationReport Manager::InitializeModules() {
             }
 
             if (moduleInfo->manifest->dependencies && !moduleInfo->manifest->dependencies->empty()) {
-                std::cout << std::format(" [deps: {}]",
-            		plg::join(*moduleInfo->manifest->dependencies, &Dependency::GetName, ", "));
+                /*std::cout << std::format(" [deps: {}]",
+            		plg::join(*moduleInfo->manifest->dependencies, &Dependency::GetName, ", "));*/
             }
             std::cout << "\n";
         }
@@ -1242,13 +1245,14 @@ InitializationReport Manager::InitializePlugins() {
         }
 
         // Find the loaded module for this plugin's language
-        Module* languageModule = nullptr;
+       // Module* languageModule = nullptr;
+		bool languageModule = false;
         std::string usedModuleId;
 
         for (const auto& moduleId : moduleIds->second) {
             auto it = _impl->loadedModules.find(moduleId);
             if (it != _impl->loadedModules.end()) {
-                languageModule = it->second.get();
+                languageModule = it->second;//.get();
                 usedModuleId = moduleId;
                 break;
             }
@@ -1305,10 +1309,10 @@ InitializationReport Manager::InitializePlugins() {
             }
 
             // Load the plugin through its language module
-            auto pluginResult = _impl->pluginLoader->loadPlugin(
-                pluginInfo->manifest, *languageModule);
+            //auto pluginResult = true;/*_impl->pluginLoader->loadPlugin(
+                //pluginInfo->manifest, *languageModule);*/
 
-            if (!pluginResult) {
+            /*if (!pluginResult) {
                 lastError = EnhancedError::Transient(
                     pluginResult.error().code,
                     pluginResult.error().message
@@ -1318,13 +1322,13 @@ InitializationReport Manager::InitializePlugins() {
                     break;
                 }
                 continue;
-            }
+            }*/
 
             // Initialize the plugin
-            auto initResult = _impl->pluginLoader->initializePlugin(
-                *pluginResult.value(), pluginInfo->manifest);
+           // auto initResult = true;/*_impl->pluginLoader->initializePlugin(
+                //*pluginResult.value(), pluginInfo->manifest);*/
 
-            if (!initResult) {
+            /*if (!initResult) {
                 if (initResult.error().code == ErrorCode::InitializationFailed) {
                     lastError = EnhancedError::Transient(
                         initResult.error().code,
@@ -1342,10 +1346,10 @@ InitializationReport Manager::InitializePlugins() {
                     break;
                 }
                 continue;
-            }
+            }*/
 
             // Success!
-            _impl->loadedPlugins[id] = std::move(pluginResult.value());
+            _impl->loadedPlugins[id] = true;//std::move(pluginResult.value());
             pluginInfo->state = PackageState::Started;
             loadSuccess = true;
             init.finalState = PackageState::Started;
@@ -1371,8 +1375,8 @@ InitializationReport Manager::InitializePlugins() {
                 std::cout << std::format(" [{}  retries]", attemptCount - 1);
             }
             if (pluginInfo->manifest->dependencies && !pluginInfo->manifest->dependencies->empty()) {
-                std::cout << std::format(" [deps: {}]",
-                    plg::join(*pluginInfo->manifest->dependencies, &Dependency::GetName, ", "));
+                /*std::cout << std::format(" [deps: {}]",
+                    plg::join(*pluginInfo->manifest->dependencies, &Dependency::GetName, ", "));*/
             }
             std::cout << "\n";
         }
@@ -1448,6 +1452,61 @@ InitializationReport Manager::InitializePlugins() {
     }
     
     return report;
+}
+
+// ============================================================================
+// Termination Sequence
+// ============================================================================
+Result<void> Manager::Terminate() {
+	// Unload in reverse dependency order for clean shutdown
+	// Plugins depend on modules, so unload plugins first
+    
+	// If we have a valid load order, unload in reverse
+	if (_impl->initState.dependencyReport.isLoadOrderValid) {
+		const auto& loadOrder = _impl->initState.dependencyReport.loadOrder;
+        
+		// Reverse order for unloading
+		for (auto it = loadOrder.rbegin(); it != loadOrder.rend(); ++it) {
+			const auto& id = *it;
+            
+			// Unload plugin if loaded
+			if (auto pluginIt = _impl->loadedPlugins.find(id); 
+				pluginIt != _impl->loadedPlugins.end()) {
+				EmitEvent({
+					.type = EventType::PluginEnded,
+					.timestamp = std::chrono::system_clock::now(),
+					.packageId = id
+				});
+				//_impl->pluginLoader->unloadPlugin(std::move(pluginIt->second));
+				_impl->loadedPlugins.erase(pluginIt);
+			}
+            
+			// Unload module if loaded
+			if (auto moduleIt = _impl->loadedModules.find(id); 
+				moduleIt != _impl->loadedModules.end()) {
+				//_impl->moduleLoader->unloadModule(std::move(moduleIt->second));
+				_impl->loadedModules.erase(moduleIt);
+			}
+		}
+	} else {
+		// Fallback: unload all plugins first, then modules
+		for (auto& [id, plugin] : _impl->loadedPlugins) {
+			EmitEvent({
+				.type = EventType::PluginEnded,
+				.timestamp = std::chrono::system_clock::now(),
+				.packageId = id
+			});
+			//_impl->pluginLoader->unloadPlugin(std::move(plugin));
+		}
+		_impl->loadedPlugins.clear();
+        
+		for (auto& [id, module] : _impl->loadedModules) {
+			//_impl->moduleLoader->unloadModule(std::move(module));
+		}
+		_impl->loadedModules.clear();
+	}
+
+	return {};
 }
 
 // ============================================================================
@@ -1532,6 +1591,7 @@ UniqueId Manager::Subscribe(EventHandler handler) {
     std::lock_guard lock(_impl->eventMutex);
     auto id = _impl->nextSubscriptionId++;
     _impl->eventHandlers.emplace(id, std::move(handler));
+	return id;
 }
 
 void Manager::Unsubscribe(UniqueId token) {

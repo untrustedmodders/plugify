@@ -5,7 +5,7 @@
 #include "plugify/core/report.hpp"
 
 namespace plugify {
-	class Module;
+	/*class Module;
 	class Plugin;
 	class IPackageDiscovery;
 	class IPackageValidator;
@@ -52,7 +52,7 @@ namespace plugify {
 			const PluginManifest& manifest) = 0;
 		virtual void unloadPlugin(
 			std::unique_ptr<Plugin> plugin) = 0;
-	};
+	};*/
 
 	class Plugify;
 	class Manager {
@@ -61,17 +61,17 @@ namespace plugify {
 		~Manager();
 
 		// Dependency injection for customization
-		void setPackageDiscovery(std::unique_ptr<IPackageValidator> discovery);
-		void setPackageValidator(std::unique_ptr<IPackageValidator> validator);
-		void setDependencyResolver(std::unique_ptr<?> resolver);
-		void setModuleLoader(std::unique_ptr<IModuleLoader> loader);
-		void setPluginLoader(std::unique_ptr<IPluginLoader> loader);
+		//void setPackageDiscovery(std::unique_ptr<IPackageValidator> discovery);
+		//void setPackageValidator(std::unique_ptr<IPackageValidator> validator);
+		//void setDependencyResolver(std::unique_ptr<?> resolver);
+		//void setModuleLoader(std::unique_ptr<IModuleLoader> loader);
+		//void setPluginLoader(std::unique_ptr<IPluginLoader> loader);
 
 		Result<void> DiscoverPackages(std::span<const std::filesystem::path> searchPaths);
 
 		Result<InitializationState> Initialize();
 		Result<void> Terminate();
-		Result<void> Update();
+		Result<void> Update() { return {}; }
 
 		ModuleInfo GetModule(std::string_view moduleId) const;
 		PluginInfo GetPlugin(std::string_view pluginId) const;

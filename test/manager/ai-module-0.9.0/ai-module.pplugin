@@ -1,0 +1,25 @@
+{
+    "name": "ai-module",
+    "version": "0.9.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": [
+                ">=1.0.0"
+            ]
+        },
+        {
+            "name": "pathfinding",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Artificial intelligence module with pathfinding and decision trees.",
+    "author": "AI Labs",
+    "website": "https://example.com/ai-module",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

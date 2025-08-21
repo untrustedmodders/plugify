@@ -1,0 +1,15 @@
+{
+    "name": "missing-field",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

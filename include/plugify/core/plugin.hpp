@@ -1,10 +1,10 @@
 #pragma once
 
+#if 0
 #include "plugify/core/conflict.hpp"
 #include "plugify/core/dependency.hpp"
 
 namespace plugify {
-#if 0
 	class Plugify;
 	class Module;
 	class Plugin {
@@ -149,7 +149,7 @@ namespace plugify {
 		std::shared_ptr<PluginManifest> _manifest;
 		std::string _error;
 	};
-#endif
+
 	// Plugin Class
 	class PLUGIFY_API Plugin {
 	protected:
@@ -214,3 +214,4 @@ namespace plugify {
 	    std::unique_ptr<Impl> _impl;
 	};
 }
+#endif

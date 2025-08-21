@@ -250,7 +250,7 @@ namespace plugify {
 
 		std::size_t BlockerCount() const {
 	    	return std::ranges::count_if(resolutions,
-					[](const auto& r) { return r.BlockerCount() > 0; }));
+					[](const auto& r) { return r.BlockerCount() > 0; });
 		}
 
 
@@ -499,10 +499,10 @@ namespace plugify {
 	                             successfulPlugins, skippedPlugins, failedPlugins, pluginInits.size());
 
 	        // Retry statistics
-	        auto totalRetries = std::accumulate(moduleInits.begin(), moduleInits.end(), 0,
-	            [](int sum, const auto& init) { return sum + init.retryAttempts; }) +
+	        auto totalRetries = 0;/*std::accumulate(moduleInits.begin(), moduleInits.end(), 0,
+	            [](int sum, const auto& init) { return sum + static_cast<int>(init.retryAttempts); }) +
 	            std::accumulate(pluginInits.begin(), pluginInits.end(), 0,
-	            [](int sum, const auto& init) { return sum + init.retryAttempts; });
+	            [](int sum, const auto& init) { return sum + static_cast<int>(init.retryAttempts); });*/
 
 	        if (totalRetries > 0) {
 	            report << std::format("  Total retry attempts: {}\n", totalRetries);
@@ -557,11 +557,11 @@ namespace plugify {
 			report << "=== COMPLETE INITIALIZATION REPORT ===\n\n";
 
 			// Format timestamps (simplified - C++20 chrono formatting may need adaptation)
-			auto startTimeT = std::chrono::system_clock::to_time_t(startTime);
-			auto endTimeT = std::chrono::system_clock::to_time_t(endTime);
+			//auto startTimeT = std::chrono::system_clock::to_time_t(startTime);
+			//auto endTimeT = std::chrono::system_clock::to_time_t(endTime);
 
-			report << std::format("Start time: {}\n", std::ctime(&startTimeT));
-			report << std::format("End time: {}\n", std::ctime(&endTimeT));
+			//report << std::format("Start time: {}\n", std::ctime(&startTimeT));
+			//report << std::format("End time: {}\n", std::ctime(&endTimeT));
 			report << std::format("Total duration: {}ms\n\n", totalTime.count());
 
 			report << validationReport.GenerateTextReport();

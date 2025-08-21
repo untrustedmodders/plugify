@@ -1,0 +1,19 @@
+{
+    "name": "cycle-long-b",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "cycle-long-c",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Middle of a longer cycle.",
+    "author": "CycleTest",
+    "website": "https://example.com/cycle-long-b",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

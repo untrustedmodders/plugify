@@ -7,7 +7,7 @@
 #include "plugify/core/method.hpp"
 
 #include <glaze/glaze.hpp>
-
+/*
 template <>
 struct glz::meta<plugify::Config> {
 	using T = plugify::Config;
@@ -20,7 +20,7 @@ struct glz::meta<plugify::Config> {
 			"logSeverity", &T::logSeverity,
 			"preferOwnSymbols", &T::preferOwnSymbols
 	);
-};
+};*/
 
 template <>
 struct glz::meta<plugify::Conflict> {

@@ -1,0 +1,21 @@
+{
+    "name": "missingDep",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "ghost-plugin",
+            "constraints": [
+                ">=1.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Depends on nonexistent",
+    "author": "xAI",
+    "website": "https://example.com/missingDep",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

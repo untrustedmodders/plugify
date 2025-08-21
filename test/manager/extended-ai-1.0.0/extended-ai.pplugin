@@ -1,0 +1,21 @@
+{
+    "name": "extended-ai",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "ai-module",
+            "constraints": [
+                ">=0.9.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Adds advanced AI behavior trees.",
+    "author": "AI Labs",
+    "website": "https://example.com/extended-ai",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

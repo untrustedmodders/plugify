@@ -1,3 +1,5 @@
+#include "plugify/core/plugify.hpp"
+#if 0
 #include "../../include/plugify/core/file_system.hpp"
 #include "plugify/asm/assembly_loader.hpp"
 
@@ -329,8 +331,8 @@ void RunInteractiveMode(PlugifyApp& app) {
         reload_cmd->callback([&app]() { app.ReloadManager(); });
         plugins_cmd->callback([&app]() { app.ListPlugins(); });
         modules_cmd->callback([&app]() { app.ListModules(); });
-        plugin_cmd->callback([&app, &plugin_name, &plugin_use_id]() { 
-            app.ShowPlugin(plugin_name, plugin_use_id); 
+        plugin_cmd->callback([&app, &plugin_name, &plugin_use_id]() {
+            app.ShowPlugin(plugin_name, plugin_use_id);
         });
         module_cmd->callback([&app, &module_name, &module_use_id]() { 
             app.ShowModule(module_name, module_use_id); 
@@ -481,4 +483,13 @@ int main(int argc, char** argv) {
     }
     
     return EXIT_SUCCESS;
+}
+#endif
+
+int main() {
+	std::cout << "Plugify Test Application\n";
+	auto plug = plugify::MakePlugify();
+	if (plug) {
+		plug->Initialize("");
+	}
 }

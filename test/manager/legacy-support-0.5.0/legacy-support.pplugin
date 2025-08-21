@@ -1,0 +1,21 @@
+{
+    "name": "legacy-support",
+    "version": "0.5.0",
+    "dependencies": [
+        {
+            "name": "graphics-engine",
+            "constraints": [
+                "<2.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Plugin for supporting old graphics engine versions.",
+    "author": "Legacy Inc.",
+    "website": "https://example.com/legacy-support",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

@@ -1,0 +1,23 @@
+{
+    "name": "cloud-ai",
+    "version": "0.5.0",
+    "dependencies": [
+        {
+            "name": "ai-module",
+            "constraints": []
+        },
+        {
+            "name": "cloud-save",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Runs AI logic partially in the cloud.",
+    "author": "AI Labs",
+    "website": "https://example.com/cloud-ai",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

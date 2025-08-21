@@ -1,12 +1,12 @@
 #include "plugify/core/module.hpp"
 
+#if 0
 #include "plugify/_/module_handle.hpp"
 #include "plugify/_/provider_handle.hpp"
 #include "plugify/core/plugify.hpp"
 #include "plugify/asm/mem_protector.hpp"
 #include "plugify/core/plugin.hpp"
 #include "plugify/core/provider.hpp"
-
 using namespace plugify;
 
 Module::Module(UniqueId id, BasePaths paths, std::shared_ptr<Manifest> manifest)
@@ -207,3 +207,4 @@ void Module::SetError(std::string error) {
 	_state = ModuleState::Error;
 	PL_LOG_ERROR("Module '{}': {}", GetName(), GetError());
 }
+#endif

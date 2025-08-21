@@ -1,0 +1,19 @@
+{
+    "name": "cyclic-y",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "cyclic-z",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Middle of new cycle test.",
+    "author": "CycleTest",
+    "website": "https://example.com/cyclic-y",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

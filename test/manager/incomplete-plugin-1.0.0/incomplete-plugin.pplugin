@@ -1,0 +1,10 @@
+{
+    "name": "incomplete-plugin",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [],
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

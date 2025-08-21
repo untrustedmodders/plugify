@@ -1,0 +1,19 @@
+{
+    "name": "dlc-expansion-pack",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "extra-large",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Expansion pack with additional content.",
+    "author": "MegaPack",
+    "website": "https://example.com/dlc-expansion-pack",
+    "license": "Proprietary",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

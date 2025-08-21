@@ -1,0 +1,24 @@
+{
+    "name": "plugin51",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "nonexistent51",
+            "constraints": []
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "plugin52",
+            "constraints": []
+        }
+    ],
+    "description": "Extra for count",
+    "author": "xAI",
+    "website": "https://example.com/plugin51",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

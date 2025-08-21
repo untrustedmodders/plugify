@@ -1,6 +1,6 @@
 #include "plugify/core/plugin.hpp"
 #include "plugify/core/manifest.hpp"
-
+#if 0
 using namespace plugify;
 
 // Plugin Implementation
@@ -104,3 +104,5 @@ void Plugin::SetError(std::string_view error) {
 	_state = PluginState::Error;
 	PL_LOG_ERROR("Plugin '{}': {}", GetName(), GetError());
 }
+
+#endif

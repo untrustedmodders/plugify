@@ -1,0 +1,21 @@
+{
+    "name": "auth-module",
+    "version": "1.5.0",
+    "dependencies": [
+        {
+            "name": "database",
+            "constraints": [
+                ">=2.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Authentication module",
+    "author": "xAI",
+    "website": "https://example.com/auth-module",
+    "license": "BSD-3-Clause",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

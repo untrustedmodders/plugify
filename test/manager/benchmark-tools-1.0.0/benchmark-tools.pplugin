@@ -1,0 +1,19 @@
+{
+    "name": "benchmark-tools",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "debug-tools",
+            "constraints": []
+        }
+    ],
+    "conflicts": [],
+    "description": "Performance benchmarking suite.",
+    "author": "DevTools",
+    "website": "https://example.com/benchmark-tools",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

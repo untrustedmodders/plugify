@@ -35,7 +35,7 @@ file(GLOB_RECURSE PLUG_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 
 add_executable(${PROJECT_NAME} ${PLUG_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify plugify::plugify-jit plugify::plugify-assembly CLI11 ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify plugify::plugify-assembly CLI11 ${CMAKE_DL_LIBS}) # plugify::plugify-jit
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_DEFINITIONS})
 

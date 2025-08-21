@@ -1,0 +1,21 @@
+{
+    "name": "async-networking",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "networking",
+            "constraints": [
+                ">=3.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Adds async/await features to networking.",
+    "author": "NetSys",
+    "website": "https://example.com/async-networking",
+    "license": "BSD-2-Clause",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

@@ -1,0 +1,26 @@
+{
+    "name": "cloud-save",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "networking",
+            "constraints": [
+                ">=3.0.0"
+            ]
+        }
+    ],
+    "conflicts": [
+        {
+            "name": "offline-mode",
+            "constraints": []
+        }
+    ],
+    "description": "Enables cloud save functionality.",
+    "author": "SaveSync",
+    "website": "https://example.com/cloud-save",
+    "license": "Apache-2.0",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

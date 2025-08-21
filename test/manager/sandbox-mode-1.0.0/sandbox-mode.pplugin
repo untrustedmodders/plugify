@@ -1,0 +1,23 @@
+{
+    "name": "sandbox-mode",
+    "version": "1.0.0",
+    "dependencies": [],
+    "conflicts": [
+        {
+            "name": "ai-module",
+            "constraints": []
+        },
+        {
+            "name": "extended-ai",
+            "constraints": []
+        }
+    ],
+    "description": "Enables sandbox gameplay without AI.",
+    "author": "PlayLab",
+    "website": "https://example.com/sandbox-mode",
+    "license": "MIT",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

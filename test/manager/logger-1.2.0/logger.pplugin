@@ -1,0 +1,21 @@
+{
+    "name": "logger",
+    "version": "1.2.0",
+    "dependencies": [
+        {
+            "name": "core-utils",
+            "constraints": [
+                ">=1.0.0"
+            ]
+        }
+    ],
+    "conflicts": [],
+    "description": "Logging library",
+    "author": "xAI",
+    "website": "https://example.com/logger",
+    "license": "Apache-2.0",
+    "language": {
+        "name": "cpp"
+    },
+    "entry": "test"
+}

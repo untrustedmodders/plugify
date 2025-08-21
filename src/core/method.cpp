@@ -60,7 +60,5 @@ std::shared_ptr<Method> Method::FindPrototype(std::string_view name) const noexc
 		}
 	}
 
-	std::unique_ptr<>
-
 	return {};
 }
