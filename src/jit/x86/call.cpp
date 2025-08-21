@@ -118,7 +118,7 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 			return nullptr;
 		}
 
-		argRegSlots.emplace_back(std::move(argSlot));
+		argRegSlots.push_back(std::move(argSlot));
 
 		// next structure slot (+= sizeof(uint64_t))
 		cc.add(i, offsetNextSlot);

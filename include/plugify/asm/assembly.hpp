@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "../core/assembly.hpp"
+#include "plugify/core/assembly.hpp"
 
 namespace plugify {
 	/**

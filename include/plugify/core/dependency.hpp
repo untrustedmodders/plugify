@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vector>
 #include <string>
 #include <optional>
@@ -14,7 +15,9 @@ namespace glz {
 }
 
 namespace plugify {
+	class Manager;
 	struct Constraint;
+
 	// Dependency Class
 	class PLUGIFY_API Dependency {
 		struct Impl;
@@ -27,19 +30,24 @@ namespace plugify {
 		Dependency& operator=(Dependency&& other) noexcept;
 
 		// Getters
-		[[nodiscard]] const PackageId& GetName() const noexcept;
-		[[nodiscard]] std::optional<std::vector<Constraint>> GetConstraints() const noexcept;
-		[[nodiscard]] std::optional<bool> GetOptional() const noexcept;
+		[[nodiscard]] std::string_view GetName() const noexcept;
+		[[nodiscard]] std::span<const Constraint> GetConstraints() const noexcept;
+		[[nodiscard]] bool IsOptional() const noexcept;
 
 		// Setters (pass by value and move)
-		void SetName(PackageId name) noexcept;
-		void SetConstraints(std::optional<std::vector<Constraint>> constraints) noexcept;
-		void SetOptional(std::optional<bool> optional) noexcept;
+		void SetName(std::string_view name) noexcept;
+		void SetConstraints(std::span<const Constraint> constraints) noexcept;
+		void SetOptional(bool optional) noexcept;
 
-		[[nodiscard]] bool operator==(const Dependency& lhs, const Dependency& rhs) noexcept;
+		[[nodiscard]] bool operator==(const Dependency& other) const noexcept;
+		[[nodiscard]] auto operator<=>(const Dependency& other) const noexcept;
+
+		std::vector<Constraint> GetFailedConstraints(const Version& version) const;
 
 	private:
+		friend class Manager;
 		friend struct glz::meta<Dependency>;
+		//friend struct std::hash<Dependency>;
 		std::unique_ptr<Impl> _impl;
 	};
 }

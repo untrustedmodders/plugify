@@ -120,7 +120,7 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 			func->setArg(argSlot.argIdx, 1, argSlot.high);
 		}
 
-		argRegSlots.emplace_back(std::move(argSlot));
+		argRegSlots.push_back(std::move(argSlot));
 	}
 
 	const uint32_t alignment = 16;

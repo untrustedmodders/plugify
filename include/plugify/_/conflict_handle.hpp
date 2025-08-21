@@ -3,7 +3,7 @@
 #include <span>
 #include <string>
 
-#include "../core/constraint.hpp"
+#include "plugify/core/constraint.hpp"
 #include "handle.hpp"
 
 #include "plugify_export.h"

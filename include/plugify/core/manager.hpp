@@ -2,10 +2,12 @@
 
 #include "plugify/core/types.hpp"
 #include "plugify/core/event.hpp"
-#include "plugify/core/context.hpp"
 #include "plugify/core/report.hpp"
 
 namespace plugify {
+	class Module;
+	class Plugin;
+	class IPackageDiscovery;
 	class IPackageValidator;
 	class IModuleLoader;
 	class IPluginLoader;
@@ -56,7 +58,7 @@ namespace plugify {
 	class Manager {
 	public:
 		explicit Manager(Plugify& plugify);
-		~Manager() override;
+		~Manager();
 
 		// Dependency injection for customization
 		void setPackageDiscovery(std::unique_ptr<IPackageValidator> discovery);
@@ -65,25 +67,26 @@ namespace plugify {
 		void setModuleLoader(std::unique_ptr<IModuleLoader> loader);
 		void setPluginLoader(std::unique_ptr<IPluginLoader> loader);
 
-		// IPluginManager implementation
-		Result<void> DiscoverPackages(std::span<const std::filesystem::path> searchPaths) override;
-		Result<void> initialize() override;
+		Result<void> DiscoverPackages(std::span<const std::filesystem::path> searchPaths);
 
-		std::optional<std::reference_wrapper<const ModuleInfo>>
-		GetModule(std::string_view moduleId) const override;
-		std::optional<std::reference_wrapper<const PluginInfo>>
-		GetPlugin(std::string_view pluginId) const override;
+		Result<InitializationState> Initialize();
+		Result<void> Terminate();
+		Result<void> Update();
 
-		std::vector<std::reference_wrapper<const ModuleInfo>>
-		GetModules() const override;
-		std::vector<std::reference_wrapper<const PluginInfo>>
-		GetPlugins() const override;
+		ModuleInfo GetModule(std::string_view moduleId) const;
+		PluginInfo GetPlugin(std::string_view pluginId) const;
 
-		bool IsModuleLoaded(std::string_view moduleId) const override;
-		bool IsPluginLoaded(std::string_view pluginId) const override;
+		std::vector<ModuleInfo> GetModules() const;
+		std::vector<PluginInfo> GetPlugins() const;
 
-		UniqueId Subscribe(EventHandler handler) override;
-		void Unsubscribe(UniqueId token) override;
+		std::vector<ModuleInfo> GetModules(PackageState state) const;
+		std::vector<PluginInfo> GetPlugins(PackageState state) const;
+
+		bool IsModuleLoaded(std::string_view moduleId) const;
+		bool IsPluginLoaded(std::string_view pluginId) const;
+
+		UniqueId Subscribe(EventHandler handler);
+		void Unsubscribe(UniqueId token);
 
 	private:
 		struct Impl;
@@ -97,7 +100,7 @@ namespace plugify {
 
 		// Helper methods
 		void EmitEvent(Event event);
-		Result<void> HandleInitializationError(const PackageId& id, const Error& error);
+		//Result<void> HandleInitializationError(const PackageId& id, const Error& error);
 
 		// State management
 		void UpdatePackageState(const PackageId& id, PackageState newState);

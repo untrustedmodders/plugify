@@ -19,6 +19,7 @@
 #include <thread>
 #include <queue>
 #include <ranges>
+#include <numeric>
 
 #include "plugify/core/assert.h"
 #include "plugify/core/log_system.hpp"

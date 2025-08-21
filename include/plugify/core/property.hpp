@@ -31,20 +31,22 @@ namespace plugify {
 
 	    // Getters
 	    [[nodiscard]] const ValueType& GetType() const noexcept;
-	    [[nodiscard]] std::optional<bool> GetRef() const noexcept;
+	    [[nodiscard]] bool GetRef() const noexcept;
 	    [[nodiscard]] std::shared_ptr<Method> GetPrototype() const noexcept;
 	    [[nodiscard]] std::shared_ptr<Enum> GetEnumerate() const noexcept;
 
 	    // Setters (pass by value and move)
 	    void SetType(ValueType type) noexcept;
-	    void SetRef(std::optional<bool> ref) noexcept;
+	    void SetRef(bool ref) noexcept;
 	    void SetPrototype(std::shared_ptr<Method> prototype) noexcept;
 	    void SetEnumerate(std::shared_ptr<Enum> enumerate) noexcept;
 
-		[[nodiscard]] bool operator==(const Property& lhs, const Property& rhs) noexcept;
+		[[nodiscard]] bool operator==(const Property& other) const noexcept;
+		[[nodiscard]] auto operator<=>(const Property& other) const noexcept;
 
 	private:
 	    friend struct glz::meta<Property>;
+		//friend struct std::hash<Property>;
 	    std::unique_ptr<Impl> _impl;
 	};
 }

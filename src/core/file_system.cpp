@@ -158,7 +158,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::ListDirectory(const std::files
         }
 
 		if (auto infoResult = GetFileInfo(entry.path())) {
-            files.emplace_back(std::move(*infoResult));
+            files.push_back(std::move(*infoResult));
         }
     }
 
@@ -185,7 +185,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 
             auto infoResult = GetFileInfo(entry.path());
             if (infoResult && ShouldInclude(*infoResult, options)) {
-                files.emplace_back(std::move(*infoResult));
+                files.push_back(std::move(*infoResult));
             }
         }
     }
@@ -312,7 +312,7 @@ void StandardFileSystem::IterateRecursive(
         if (!infoResult) continue;
         
         if (ShouldInclude(*infoResult, options)) {
-            files.emplace_back(std::move(*infoResult));
+            files.push_back(std::move(*infoResult));
         }
         
         if (infoResult->isDirectory && !infoResult->isSymlink) {
@@ -383,4 +383,3 @@ bool StandardFileSystem::SimpleMatch(std::string_view text, std::string_view pat
     
     return patternPos == pattern.length();
 }
-};

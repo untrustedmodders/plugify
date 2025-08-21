@@ -37,7 +37,7 @@ bool AssemblyLoader::AddSearchPath(const std::filesystem::path& path) {
 
 	libraryDirectory.make_preferred();
 
-	_searchPaths.emplace_back(std::move(libraryDirectory));
+	_searchPaths.push_back(std::move(libraryDirectory));
 
 	return true;
 #else

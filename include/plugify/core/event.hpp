@@ -38,7 +38,7 @@ namespace plugify {
 
 	struct Event {
 		EventType type;
-		DateTime timestamp;
+		std::chrono::system_clock::time_point timestamp;
 		PackageId packageId;
 		PackageType packageType;
 		std::optional<Error> error;

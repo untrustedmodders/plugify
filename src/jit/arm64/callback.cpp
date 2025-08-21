@@ -97,7 +97,7 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 		}
 
 		func->setArg(argIdx, arg);
-		argRegisters.emplace_back(std::move(arg));
+		argRegisters.push_back(std::move(arg));
 	}
 
 	a64::Gp retStruct = cc.newGpx("retStruct");

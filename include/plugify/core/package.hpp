@@ -8,14 +8,15 @@
 
 namespace plugify {
 	enum class PackageState {
-		Discovered,
-		Validated,
-		Initializing,
-		Ready,
-		Started,
-		Ended,
-		Error,
-		Disabled
+		Discovered,      // Found on disk
+		Validated,       // Manifest validated successfully
+		Skipped,         // Skipped due to dependency failures or policy  ← NEW
+		Initializing,    // Currently being initialized
+		Ready,           // Successfully initialized (modules)
+		Started,         // Successfully initialized and running (plugins)
+		Ended,           // Terminated/unloaded
+		Error,           // Failed to initialize
+		Disabled         // Disabled by configuration
 	};
 
 	template<typename Type>
@@ -28,5 +29,5 @@ namespace plugify {
 
 	using PackageInfo = std::shared_ptr<Package<PackageManifest>>;
 	using PluginInfo = std::shared_ptr<Package<PluginManifest>>;
-	//using ModuleInfo = std::shared_ptr<Package<ModuleManifest>>;
+	using ModuleInfo = std::shared_ptr<Package<ModuleManifest>>;
 }

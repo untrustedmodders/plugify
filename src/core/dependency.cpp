@@ -1,15 +1,8 @@
-#include "plugify/core/dependency.hpp"
-#include "plugify/core/constraint.hpp"
+#include "core/dependency_impl.hpp"
 
 using namespace plugify;
 
 // Dependency Implementation
-struct Dependency::Impl {
-	PackageId name;
-	std::optional<std::vector<Constraint>> constraints;
-	std::optional<bool> optional;
-};
-
 Dependency::Dependency() : _impl(std::make_unique<Impl>()) {}
 Dependency::~Dependency() = default;
 
@@ -27,16 +20,28 @@ Dependency& Dependency::operator=(const Dependency& other) {
 
 Dependency& Dependency::operator=(Dependency&& other) noexcept = default;
 
-const PackageId& Dependency::GetName() const noexcept { return _impl->name; }
-std::optional<std::vector<Constraint>> Dependency::GetConstraints() const noexcept {
-	return _impl->constraints;
+std::string_view Dependency::GetName() const noexcept { return _impl->name; }
+std::span<const Constraint> Dependency::GetConstraints() const noexcept {
+	return _impl->constraints.value_or({});
 }
-std::optional<bool> Dependency::GetOptional() const noexcept { return _impl->optional; }
+bool Dependency::IsOptional() const noexcept { return _impl->optional.value_or(false); }
 
-void Dependency::SetName(PackageId name) noexcept { _impl->name = std::move(name); }
-void Dependency::SetConstraints(std::optional<std::vector<Constraint>> constraints) noexcept {
-	_impl->constraints = std::move(constraints);
+void Dependency::SetName(std::string_view name) noexcept { _impl->name = name; }
+void Dependency::SetConstraints(std::span<const Constraint> constraints) noexcept {
+	_impl->constraints = { constraints.begin(), constraints.end() };
 }
-void Dependency::SetOptional(std::optional<bool> optional) noexcept {
+void Dependency::SetOptional(bool optional) noexcept {
 	_impl->optional = optional;
+}
+
+bool Dependency::operator==(const Dependency& other) const noexcept = default;
+auto Dependency::operator<=>(const Dependency& other) const noexcept = default;
+
+std::vector<Constraint> Dependency::GetFailedConstraints(const Version& version) const {
+	if (!_impl->constraints) return {};
+	std::vector<Constraint> satisfied;
+	std::ranges::copy_if(*_impl->constraints, std::back_inserter(satisfied), [&](const Constraint& c) {
+		return !c.IsSatisfiedBy(version);
+	});
+	return satisfied;
 }

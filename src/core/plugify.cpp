@@ -68,13 +68,13 @@ bool Plugify::Initialize(const std::filesystem::path& rootDir) const {
 		std::vector<std::string> errors;
 
 		if (!checkPath(config->configsDir)) {
-			errors.emplace_back(std::format("configsDir: - '{}'", config->configsDir.string()));
+			errors.push_back(std::format("configsDir: - '{}'", config->configsDir.string()));
 		}
 		if (!checkPath(config->dataDir)) {
-			errors.emplace_back(std::format("dataDir: - '{}'", config->dataDir.string()));
+			errors.push_back(std::format("dataDir: - '{}'", config->dataDir.string()));
 		}
 		if (!checkPath(config->logsDir)) {
-			errors.emplace_back(std::format("logsDir: '{}'", config->logsDir.string()));
+			errors.push_back(std::format("logsDir: '{}'", config->logsDir.string()));
 		}
 
 		if (!errors.empty()) {
@@ -97,7 +97,7 @@ bool Plugify::Initialize(const std::filesystem::path& rootDir) const {
 		for (auto first = dirs.begin(); first != dirs.end(); ++first) {
 			for (auto second = first + 1; second != dirs.end(); ++second) {
 				if (isPathCollides(*first, *second)) {
-					errors.emplace_back(std::format("'{}' - '{}'", first->string(), second->string()));
+					errors.push_back(std::format("'{}' - '{}'", first->string(), second->string()));
 				}
 			}
 		}

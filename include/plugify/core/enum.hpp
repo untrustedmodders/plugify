@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <string>
 #include <vector>
 #include <memory>
@@ -26,17 +27,19 @@ namespace plugify {
 	    Enum& operator=(Enum&& other) noexcept;
 
 	    // Getters
-	    [[nodiscard]] const std::string& GetName() const noexcept;
-	    [[nodiscard]] const std::vector<EnumValue>& GetValues() const noexcept;
+	    [[nodiscard]] std::string_view GetName() const noexcept;
+	    [[nodiscard]] std::span<const EnumValue> GetValues() const noexcept;
 
 	    // Setters (pass by value and move)
-	    void SetName(std::string name) noexcept;
-	    void SetValues(std::vector<EnumValue> values) noexcept;
+	    void SetName(std::string_view name) noexcept;
+	    void SetValues(std::span<const EnumValue> values) noexcept;
 
-		[[nodiscard]] bool operator==(const Enum& lhs, const Enum& rhs) noexcept;
+		[[nodiscard]] bool operator==(const Enum& other) const noexcept;
+		[[nodiscard]] auto operator<=>(const Enum& other) const noexcept;
 
 	private:
 	    friend struct glz::meta<Enum>;
+		//friend struct std::hash<Enum>;
 	    std::unique_ptr<Impl> _impl;
 	};
 }

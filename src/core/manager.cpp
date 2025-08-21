@@ -1,59 +1,128 @@
 #include "plugify/core/manager.hpp"
+#include "plugify/core/config.hpp"
 #include "plugify/core/package.hpp"
-
-
-#include "json.cpp"
-#include "module_manifest->hpp"
-#include "plugify/_/plugin_manifest_handle.hpp"
 #include "plugify/core/plugify.hpp"
-#include "plugin_manifest->hpp"
 
-#include "plugify/core/module.hpp"
-#include "plugify/core/plugin.hpp"
-
-#include "plugify/_/dependency_handle.hpp"
-#include "plugify/core/manager.hpp"
-#include <../../include/plugify/core/plugify.hpp"
+#include "core/conflict_impl.hpp"
+#include "core/dependency_impl.hpp"
 
 using namespace plugify;
 
 struct Manager::Impl {
+	Impl(Plugify& p) : plugify(p), config(p.GetConfig()) {}
+	
+	// Plugify
 	Plugify& plugify;
-	// Configuration
-	Config& config;
 
-	// Discovered packages
+	// Configuration
+	const Config& config;
+
+	// Discovered packages - now stored in sorted order
+	std::vector<ModuleInfo> sortedModules;  // Topologically sorted
+	std::vector<PluginInfo> sortedPlugins;  // Topologically sorted
+
+	// Original maps for quick lookup
 	std::unordered_map<PackageId, ModuleInfo, plg::string_hash, std::equal_to<>> modules;
 	std::unordered_map<PackageId, PluginInfo, plg::string_hash, std::equal_to<>> plugins;
 
 	// Loaded instances
-	std::unordered_map<PackageId, std::unique_ptr<Module>, plg::string_hash, std::equal_to<>> loadedModules;
-	std::unordered_map<PackageId, std::unique_ptr<Plugin>, plg::string_hash, std::equal_to<>> loadedPlugins;
+	std::unordered_map<PackageId, std::shared_ptr<Module>> loadedModules;
+	std::unordered_map<PackageId, std::shared_ptr<Plugin>> loadedPlugins;
 
 	// Dependency injection components
-	std::unique_ptr<IPackageValidator> packageDiscovery;
-	std::unique_ptr<IPackageValidator> packageValidator;
-	std::unique_ptr<IModuleLoader> dependencyResolver;
+	//std::unique_ptr<IPackageDiscovery> packageDiscovery;
+	//std::unique_ptr<IPackageValidator> packageValidator;
 	std::unique_ptr<IModuleLoader> moduleLoader;
 	std::unique_ptr<IPluginLoader> pluginLoader;
 
-	// Comprehensive initialization tracking
-	struct InitializationState {
-		ValidationReport validationReport;
-		DependencyReport dependencyReport;
-		InitializationReport initReport;
-		DateTime startTime;
-		DateTime endTime;
-	} initState;
-
 	// Event handling
 	std::unordered_map<UniqueId, EventHandler> eventHandlers;
-	UniqueId nextSubscriptionId = 1;
+	UniqueId nextSubscriptionId{0};
 	mutable std::mutex eventMutex;
 
-	// Dependency tracking
+	// Dependency tracking (maintained for quick lookup)
 	std::unordered_map<PackageId, std::vector<PackageId>> pluginToModuleMap;
 	std::unordered_map<PackageId, std::vector<PackageId>> moduleToPluginsMap;
+
+	// Comprehensive initialization tracking
+	InitializationState initState;
+
+	// Retry tracking
+	std::unordered_map<PackageId, std::size_t> retryCounters;
+
+	// Update performance tracking
+    struct UpdateStatistics {
+        std::chrono::microseconds lastUpdateTime{0};
+        std::chrono::microseconds maxUpdateTime{0};
+        std::chrono::microseconds totalUpdateTime{0};
+        std::size_t totalUpdates{0};
+
+        double AverageUpdateTime() const {
+            return totalUpdates > 0 ?
+                static_cast<double>(totalUpdateTime.count()) / totalUpdates : 0.0;
+        }
+    } updateStats;
+
+    // Helper methods
+    bool ShouldRetry(const EnhancedError& error, std::size_t attemptCount) const {
+        if (!error.isRetryable) return false;
+        if (config.retryPolicy.retryOnlyTransient && error.category != ErrorCategory::Transient) {
+            return false;
+        }
+        return attemptCount < config.retryPolicy.maxAttempts;
+    }
+
+    std::chrono::milliseconds GetRetryDelay(std::size_t attemptCount) const {
+        if (!config.retryPolicy.exponentialBackoff) {
+            return config.retryPolicy.baseDelay;
+        }
+
+        auto delay = config.retryPolicy.baseDelay * (1 << attemptCount);
+        return std::min(delay, config.retryPolicy.maxDelay);
+    }
+
+    // Sort packages based on dependency order
+    void SortPackagesByDependencies(const DependencyReport& depReport) {
+    	// Create ordered lists based on dependency resolution
+    	sortedModules.clear();
+    	sortedPlugins.clear();
+
+        if (!config.respectDependencyOrder || !depReport.isLoadOrderValid) {
+            // Can't sort due to circular dependencies or config
+            // Just copy as-is
+            for (const auto& [id, info] : modules) {
+                if (info->state == PackageState::Validated) {
+                    sortedModules.push_back(info);
+                }
+            }
+
+            for (const auto& [id, info] : plugins) {
+                if (info->state == PackageState::Validated) {
+                    sortedPlugins.push_back(info);
+                }
+            }
+            return;
+        }
+
+        // Use the load order from dependency resolution
+        for (const auto& packageId : depReport.loadOrder) {
+            // Check if it's a module
+            if (auto it = modules.find(packageId); it != modules.end()) {
+                if (it->second->state == PackageState::Validated) {
+                    sortedModules.push_back(it->second);
+                }
+            }
+            // Check if it's a plugin
+            else if (auto it = plugins.find(packageId); it != plugins.end()) {
+                if (it->second->state == PackageState::Validated) {
+                    sortedPlugins.push_back(it->second);
+                }
+            }
+        }
+
+        std::cout << std::format("Sorted {} modules and {} plugins by dependency order\n",
+                                 sortedModules.size(), sortedPlugins.size());
+    }
 };
 
 Manager::Manager(Plugify& plugify) : _impl(std::make_unique<Impl>(plugify)) {
@@ -68,23 +137,17 @@ Manager::Manager(Plugify& plugify) : _impl(std::make_unique<Impl>(plugify)) {
 }
 
 Manager::~Manager() {
-    // Unload plugins before modules to maintain proper shutdown order
-    for (auto& [id, plugin] : _impl->loadedPlugins | std::views::reverse) {
-        EmitEvent({
-            .type = EventType::PluginEnded,
-            .timestamp = DateTime::Now(),
-            .packageId = id
-        });
-        _impl->pluginLoader->unloadPlugin(std::move(plugin));
-    }
-    _impl->loadedPlugins.clear();
-    
-    // Then unload modules
-    for (auto& [id, module] : _impl->loadedModules | std::views::reverse) {
+	// Destructor no longer performs unloading
+	// Users must call terminate() explicitly before destruction
+	if (!_impl->loadedModules.empty() || !_impl->loadedPlugins.empty()) {
+		std::cerr << "WARNING: PluginManager destroyed without calling terminate()!\\n";
+		std::cerr << "         Call terminate() explicitly for proper shutdown.\\n";
+		std::cerr << std::format("         {} modules and {} plugins still loaded!\\n",
+								 _impl->loadedModules.size(),
+								 _impl->loadedPlugins.size());
+	}
 
-        _impl->moduleLoader->unloadModule(std::move(module));
-    }
-    _impl->loadedModules.clear();
+	auto _ = Terminate();
 }
 
 // ============================================================================
@@ -141,13 +204,13 @@ Result<void> Manager::DiscoverPackages(
     		if (_impl->config.whitelistedPackages &&
 				!std::ranges::contains(*_impl->config.whitelistedPackages, id)) {
     			continue;
-				}
+			}
 
     		if (_impl->config.blacklistedPackages &&
 				std::ranges::contains(*_impl->config.blacklistedPackages, id)) {
     			UpdatePackageState(id, PackageState::Disabled);
     			continue;
-				}
+			}
 
     		EmitEvent({
 				.type = EventType::ModuleDiscovered,
@@ -174,13 +237,13 @@ Result<void> Manager::DiscoverPackages(
     		if (_impl->config.whitelistedPackages &&
 				!std::ranges::contains(*_impl->config.whitelistedPackages, id)) {
     			continue;
-				}
+			}
 
     		if (_impl->config.blacklistedPackages &&
 				std::ranges::contains(*_impl->config.blacklistedPackages, id)) {
     			UpdatePackageState(id, PackageState::Disabled);
     			continue;
-				}
+			}
 
     		EmitEvent({
 				.type = EventType::PluginDiscovered,
@@ -197,73 +260,80 @@ Result<void> Manager::DiscoverPackages(
 // Initialization Sequence
 // ============================================================================
 
-Result<InitializationReport> Manager::Initialize() {
-    _impl->initState = {};
-    _impl->initState.startTime = DateTime::Now();
+Result<InitializationState> Manager::Initialize() {
+   _impl->initState = {};
+    _impl->initState.startTime = std::chrono::system_clock::now();
+    auto overallStart = std::chrono::steady_clock::now();
     
     std::cout << "Starting plugin system initialization...\n";
     
     // Step 1: Validate all manifests
     _impl->initState.validationReport = ValidateAllManifests();
-    if (!_impl->initState.validationReport.allPassed() && !_impl->config.partialStartupMode) {
+    if (!_impl->initState.validationReport.AllPassed() &&
+    	!_impl->config.partialStartupMode) {
         auto error = EnhancedError::NonRetryable(
             ErrorCode::ValidationFailed,
             std::format("{} packages failed validation", 
-                       _impl->initState.validationReport.failureCount()),
+                       _impl->initState.validationReport.FailureCount()),
             ErrorCategory::Validation
         );
-        return plg::unexpected(std::move(error));
+        return plg::unexpected(error);
     }
     
     // Step 2: Resolve dependencies and determine load order
     _impl->initState.dependencyReport = ResolveDependencies();
-    if (_impl->initState.dependencyReport.hasBlockingIssues() && !_impl->config.partialStartupMode) {
+    if (_impl->initState.dependencyReport.HasBlockingIssues() && 
+        !_impl->config.partialStartupMode) {
         auto error = EnhancedError::NonRetryable(
             ErrorCode::MissingDependency,
             std::format("Dependency resolution failed: {} blocking issues found",
-                       std::ranges::count_if(_impl->initState.dependencyReport.resolutions,
-                           [](const auto& r) { return r.blockerCount() > 0; })),
+                       _impl->initState.dependencyReport.BlockerCount(),
             ErrorCategory::Dependency
         );
-        return plg::unexpected(std::move(error));
+        return plg::unexpected(error);
     }
     
     // Step 3: Sort packages by dependency order
-    _impl->sortPackagesByDependencies(_impl->initState.dependencyReport);
+    _impl->SortPackagesByDependencies(_impl->initState.dependencyReport);
     
     // Step 4: Initialize language modules in dependency order
     auto moduleReport = InitializeModules();
-    _impl->initState.initReport.moduleInits = moduleReport.moduleInits;
+    _impl->initState.initializationReport.moduleInits = moduleReport.moduleInits;
     
     // Step 5: Initialize plugins in dependency order
     auto pluginReport = InitializePlugins();
-    _impl->initState.initReport.pluginInits = pluginReport.pluginInits;
+    _impl->initState.initializationReport.pluginInits = pluginReport.pluginInits;
     
     // Calculate total time
-    _impl->initState.endTime = DateTime::Now();
-    _impl->initState.initReport.totalTime = _impl->initState.endTime - _impl->initState.startTime;
+    auto overallEnd = std::chrono::steady_clock::now();
+    _impl->initState.initializationReport.totalTime = 
+        std::chrono::duration_cast<std::chrono::milliseconds>(overallEnd - overallStart);
+    _impl->initState.totalTime = _impl->initState.initializationReport.totalTime;
+    _impl->initState.endTime = std::chrono::system_clock::now();
     
-    // Print comprehensive summary
-    printInitializationSummary(_impl->initState.initReport);
+    // Print comprehensive summary (can be disabled via config if needed)
+    if (_impl->config.printSummary) {  // Assuming we add this config option
+        std::cout << "\n" << _impl->initState.GenerateFullReport() << "\n";
+    }
     
     // Determine overall success
     if (_impl->config.partialStartupMode) {
-        if (_impl->initState.initReport.successCount() > 0) {
-            return _impl->initState.initReport;  // Partial success
+        if (_impl->initState.initializationReport.SuccessCount() > 0) {
+            return _impl->initState;  // Partial success
         }
     }
     
-    if (_impl->initState.initReport.failureCount() > 0 && !_impl->config.partialStartupMode) {
+    if (_impl->initState.initializationReport.FailureCount() > 0 && !_impl->config.partialStartupMode) {
         auto error = EnhancedError::NonRetryable(
             ErrorCode::InitializationFailed,
             std::format("{} packages failed to initialize", 
-                       _impl->initState.initReport.failureCount()),
+                       _impl->initState.initializationReport.FailureCount()),
             ErrorCategory::Runtime
         );
         return plg::unexpected(error);
     }
     
-    return _impl->initState.initReport;
+    return _impl->initState;
 }
 
 ValidationReport Manager::ValidateAllManifests() {
@@ -274,7 +344,7 @@ ValidationReport Manager::ValidateAllManifests() {
 		report.moduleResults.reserve(_impl->modules.size());
 
 		for (auto& [id, moduleInfo] : _impl->modules) {
-			if (moduleInfo.state == PackageState::Disabled) continue;
+			if (moduleInfo->state == PackageState::Disabled) continue;
 
 			ValidationReport::PackageValidation validation{.id = id};
 
@@ -287,14 +357,14 @@ ValidationReport Manager::ValidateAllManifests() {
 					ErrorCategory::Validation
 				);
 
-				moduleInfo.state = PackageState::Error;
-				moduleInfo.lastError = result.error();
+				moduleInfo->state = PackageState::Error;
+				moduleInfo->lastError = result.error();
 
 				std::cerr << std::format("Module '{}' validation failed: {}\n",
 										 id, result.error().message);
 			} else {
 				validation.passed = true;
-				moduleInfo.state = PackageState::Validated;
+				moduleInfo->state = PackageState::Validated;
 				
 				EmitEvent({
 					.type = EventType::ModuleValidated,
@@ -303,7 +373,7 @@ ValidationReport Manager::ValidateAllManifests() {
 				});
 			}
 
-			report.moduleResults.emplace_back(std::move(validation));
+			report.moduleResults.push_back(std::move(validation));
 		}
 	}
 
@@ -312,7 +382,7 @@ ValidationReport Manager::ValidateAllManifests() {
 		report.pluginResults.reserve(_impl->modules.size());
 
 		for (auto& [id, pluginInfo] : _impl->plugins) {
-			if (pluginInfo.state == PackageState::Disabled) continue;
+			if (pluginInfo->state == PackageState::Disabled) continue;
 
 			ValidationReport::PackageValidation validation{.id = id};
 
@@ -325,14 +395,14 @@ ValidationReport Manager::ValidateAllManifests() {
 					ErrorCategory::Validation
 				);
 
-				pluginInfo.state = PackageState::Error;
-				pluginInfo.lastError = result.error();
+				pluginInfo->state = PackageState::Error;
+				pluginInfo->lastError = result.error();
 
 				std::cerr << std::format("Plugin '{}' validation failed: {}\n",
 										 id, result.error().message);
 			} else {
 				validation.passed = true;
-				pluginInfo.state = PackageState::Validated;
+				pluginInfo->state = PackageState::Validated;
 				
 				EmitEvent({
 					.type = EventType::PluginValidated,
@@ -341,7 +411,7 @@ ValidationReport Manager::ValidateAllManifests() {
 				});
 			}
 
-			report.pluginResults.emplace_back(std::move(validation));
+			report.pluginResults.push_back(std::move(validation));
 		}
 	}
 
@@ -349,183 +419,622 @@ ValidationReport Manager::ValidateAllManifests() {
 }
 
 DependencyReport Manager::ResolveDependencies() {
-#if 0
-	// Collect all validated packages
-	std::vector<PluginInfo> validPlugins;
-	std::vector<ModuleInfo> validModules;
+DependencyReport report;
     
-	for (const auto& [id, info] : _impl->plugins) {
-		if (info.state == PackageState::Validated) {
-			validPlugins.push_back(info);
-		}
-	}
+    // Initialize statistics
+    report.stats = {};
     
-	for (const auto& [id, info] : _impl->modules) {
-		if (info.state == PackageState::Validated) {
-			validModules.push_back(info);
-		}
-	}
-#endif
+    // Collect all validated packages
+    std::vector<PluginInfo> validPlugins;
+    std::vector<ModuleInfo> validModules;
+    std::unordered_map<PackageId, Manifest> allPackages;
+    
+    for (auto& [id, info] : _impl->plugins) {
+        if (info->state == PackageState::Validated) {
+            validPlugins.push_back(info);
+            allPackages[id] = info->manifest;
+        }
+    }
+    
+    for (auto& [id, info] : _impl->modules) {
+        if (info->state == PackageState::Validated) {
+            validModules.push_back(info);
+            allPackages[id] = info->manifest;
+        }
+    }
+    
+    report.stats.totalPackages = allPackages.size();
+    
+    // Helper to format constraints
+    auto formatConstraints = [](std::span<const Constraint> constraints) -> std::string {
+        if (constraints.empty()) return "any version";
+        
+        std::string result;
+        for (size_t i = 0; i < constraints.size(); ++i) {
+            if (i > 0) result += " AND ";
+            
+            // Format each constraint
+            const auto& [comparison, version] = constraints[i];
+            if (comparison == Comparison::Any) {
+                result += "any version";
+            } else if (comparison == Comparison::Compatible) {
+                // Show the expanded compatible range for clarity
+                if (version.major > 0) {
+                    result += std::format("^{} (>={} and <{}.0.0)", 
+                                        version, version, version.major + 1);
+                } else if (version.minor > 0) {
+                    result += std::format("^{} (>={} and <0.{}.0)", 
+                                        version, version, version.minor + 1);
+                } else {
+                    result += std::format("^{} (>={} and <0.0.{})", 
+                                        version, version, version.patch + 1);
+                }
+            } else {
+                result += std::format("{}{}", 
+                                     ComparisonUtils::ToString(comparison), 
+                                     version);
+            }
+        }
+        return result;
+    };
+    
+    // Build dependency graph
+    for (const auto& [id, manifest] : allPackages) {
+        DependencyReport::PackageResolution resolution{.id = id};
+        
+        // Process each dependency
+    	if (const auto& dependencies = manifest->dependencies) {
+    		for (const auto& dependency : *dependencies) {
+    			const auto& [name, constraints, optional] = *dependency._impl;
 
-	// Delegate all complex dependency resolution to the resolver
-	auto resolution = _impl->dependencyResolver->resolve(validPlugins, validModules);
-    
-	if (!resolution) {
-		// Create a minimal report for the error case
-		DependencyReport errorReport;
-		// The resolver should provide detailed error information
-		std::cerr << "Dependency resolution failed: " << resolution.error().message << "\n";
-		return errorReport;
-	}
-    
-	// Log summary if there are issues
-	if (resolution->hasBlockingIssues() || !resolution->circularDependencies.empty()) {
-		std::cout << "\n" << resolution->generateTextReport() << "\n";
-	} else {
-		std::cout << std::format("Dependencies resolved successfully. Load order determined for {} packages.\n",
-								 resolution->loadOrder.size());
-	}
-    
-	return resolution.value();
+    			auto depIt = allPackages.find(name);
+
+    			if (depIt == allPackages.end()) {
+    				// Missing dependency with detailed constraint info
+    				DependencyReport::PackageResolution::MissingDependency missing{
+    					.name = std::string(name),
+						//.requiredVersion = std::nullopt,  // Could extract from constraints
+						//.requiredConstraints = constraints ? *constraints : std::vector<Constraint>{},
+						.formattedConstraints = constraints ? formatConstraints(*constraints) : "any version",
+						.isOptional = optional.value_or(false)
+					};
+
+    				DependencyReport::DependencyIssue issue{
+    					.type = optional.value_or(false) ?
+								DependencyReport::IssueType::OptionalMissing :
+								DependencyReport::IssueType::MissingDependency,
+						.affectedPackage = id,
+						.description = std::format("Package '{}' requires '{}' ({}) which is not available",
+												  id, name, missing.formattedConstraints),
+						.involvedPackages = { name },
+						.failedConstraints = {},  // No version to check against
+						.suggestedFixes = std::vector<std::string>{
+							std::format("Install package '{}' with version {}", name, missing.formattedConstraints),
+							std::format("Add '{}' to search paths", name),
+							optional.value_or(false) ?
+								"This is an optional dependency and can be skipped" : ""
+						},
+						.isBlocker = !optional.value_or(false)
+					};
+
+    				// Remove empty suggestions
+    				if (issue.suggestedFixes) {
+    					std::erase(*issue.suggestedFixes, "");
+    				}
+
+    				resolution.issues.push_back(std::move(issue));
+    				resolution.missingDependencies.push_back(std::move(missing));
+    				report.stats.missingDependencyCount++;
+
+    			} else {
+    				// Dependency exists - check version constraints with detailed reporting
+    				const auto& depManifest = depIt->second;
+    				bool versionOk = true;
+    				std::vector<DependencyReport::DependencyIssue::ConstraintDetail> constraintDetails;
+
+    				if (constraints) {
+    					auto failedConstraints = dependency.GetFailedConstraints(depManifest->version);
+
+    					// Build detailed constraint information
+    					for (const auto& constraint : *constraints) {
+    						bool satisfied = constraint.IsSatisfiedBy(depManifest->version);
+
+    						DependencyReport::DependencyIssue::ConstraintDetail detail{
+    							.constraintDescription = formatConstraints({&constraint, 1}),
+								.actualVersion = depManifest->version,
+								.isSatisfied = satisfied
+							};
+
+    						if (!satisfied) {
+    							constraintDetails.push_back(std::move(detail));
+    							versionOk = false;
+    						}
+    					}
+
+    					std::string formattedConstraints = formatConstraints(*constraints);
+
+    					if (!failedConstraints.empty()) {
+    						// Check if this is a new version conflict or add to existing
+    						auto conflictIt = std::ranges::find_if(report.versionConflicts,
+								[&name](const auto& c) { return c.dependency == name; });
+
+    						if (conflictIt == report.versionConflicts.end()) {
+    							DependencyReport::VersionConflict conflict{
+    								.dependency = name,
+									.availableVersion = depManifest->version
+								};
+
+    							conflict.requirements.push_back(DependencyReport::VersionConflict::Requirement{
+									.requester = id,
+									//.requiredVersion = formattedConstraints,
+									//.constraints = *constraints,
+									.formattedConstraints = formattedConstraints
+								});
+
+    							conflict.conflictReason = std::format(
+									"Version {} does not satisfy constraints: {}",
+									depManifest->version,
+									formatConstraints(failedConstraints));
+
+    							report.versionConflicts.push_back(std::move(conflict));
+    						} else {
+    							conflictIt->requirements.push_back({
+									.requester = id,
+									//.requiredVersion = formattedConstraints,
+									//.constraints = *constraints,
+									.formattedConstraints = formattedConstraints
+								});
+    						}
+
+    						DependencyReport::DependencyIssue issue{
+    							.type = DependencyReport::IssueType::VersionConflict,
+								.affectedPackage = id,
+								.description = std::format(
+									"Version conflict: '{}' requires '{}' with version {}, but {} is available",
+									id, name, formattedConstraints, depManifest->version),
+								.involvedPackages = { name },
+								.failedConstraints = constraintDetails,
+								.suggestedFixes = std::vector<std::string>{
+									std::format("Update '{}' to a version that satisfies: {}",
+											   name, formattedConstraints),
+									std::format("Relax version constraints in '{}' manifest", id),
+									"Check if there's a compatible version available in other sources"
+								},
+								.isBlocker = true
+							};
+
+    						resolution.issues.push_back(std::move(issue));
+    						report.stats.versionConflictCount++;
+    					}
+    				}
+
+    				if (versionOk) {
+    					resolution.resolvedDependencies.push_back(name);
+    					report.dependencyGraph[id].push_back(name);
+    					report.reverseDependencyGraph[name].push_back(id);
+    				} else if (optional.value_or(false)) {
+    					// Optional dependency with version conflict
+    					resolution.optionalDependencies.push_back(name);
+    				}
+    			}
+    		}
+    	}
+
+        // Check for conflicts with other packages (using Conflict struct)
+    	if (const auto& conflicts = manifest->conflicts) {
+    		 for (const auto& conflict : *conflicts) {
+    		 	const auto& [name, constraints, reason] = *conflict._impl;
+
+				if (allPackages.contains(name)) {
+	                const auto& conflictingManifest = allPackages[std::string(name)];
+
+	                // Check if conflict constraints are satisfied
+	                bool hasConflict = true;
+	                std::vector<DependencyReport::DependencyIssue::ConstraintDetail> conflictDetails;
+
+	                if (constraints) {
+	                    auto satisfiedConstraints = conflict.GetSatisfiedConstraints(conflictingManifest->version);
+	                    hasConflict = !satisfiedConstraints.empty();
+
+	                    for (const auto& constraint : *constraints) {
+	                        bool satisfied = constraint.IsSatisfiedBy(conflictingManifest->version);
+	                        if (satisfied) {
+	                            conflictDetails.push_back({
+	                                .constraintDescription = formatConstraints({&constraint, 1}),
+	                                .actualVersion = conflictingManifest->version,
+	                                .isSatisfied = satisfied
+	                            });
+	                        }
+	                    }
+	                }
+
+	                if (hasConflict) {
+	                    std::string conflictDescription = std::format(
+	                        "Package '{}' conflicts with '{}'", id, name);
+
+	                    if (reason) {
+	                        conflictDescription += std::format(" ({})", *reason);
+	                    }
+
+	                    if (!conflictDetails.empty()) {
+	                        conflictDescription += std::format(" - version {} matches conflict constraints",
+	                                                          conflictingManifest->version);
+	                    }
+
+	                    DependencyReport::DependencyIssue issue{
+	                        .type = DependencyReport::IssueType::ConflictingProviders,
+	                        .affectedPackage = id,
+	                        .description = conflictDescription,
+	                        .involvedPackages = {std::string(name)},
+	                        .failedConstraints = conflictDetails,
+	                        .suggestedFixes = std::vector<std::string>{
+	                            std::format("Remove either '{}' or '{}'", id, name),
+	                            std::format("Use alternative to '{}' or '{}'", id, name)
+	                        },
+	                        .isBlocker = true
+	                    };
+
+	                    if (reason) {
+	                        issue.suggestedFixes->push_back(
+	                            std::format("Conflict reason: {}", *reason));
+	                    }
+
+	                    resolution.issues.push_back(std::move(issue));
+	                }
+	            }
+	        }
+    	}
+
+        if (!resolution.issues.empty()) {
+            report.stats.packagesWithIssues++;
+        }
+
+        report.resolutions.push_back(std::move(resolution));
+    }
+
+    // Detect circular dependencies using DFS (same as before)
+    std::unordered_set<PackageId> visited;
+    std::unordered_set<PackageId> recursionStack;
+    std::vector<PackageId> currentPath;
+
+    std::function<bool(const PackageId&)> detectCycle = [&](const PackageId& node) -> bool {
+        visited.insert(node);
+        recursionStack.insert(node);
+        currentPath.push_back(node);
+
+        auto it = report.dependencyGraph.find(node);
+        if (it != report.dependencyGraph.end()) {
+            for (const auto& neighbor : it->second) {
+                if (!visited.contains(neighbor)) {
+                    if (detectCycle(neighbor)) {
+                        return true;
+                    }
+                } else if (recursionStack.contains(neighbor)) {
+                    // Found a cycle - extract it
+                    auto cycleStart = std::ranges::find(currentPath, neighbor);
+                    if (cycleStart != currentPath.end()) {
+                        DependencyReport::CircularDependency cycle;
+                        cycle.cycle.assign(cycleStart, currentPath.end());
+
+                        // Check if we already have this cycle (in different order)
+                        bool alreadyRecorded = false;
+                        for (const auto& existing : report.circularDependencies) {
+                            if (existing.cycle.size() == cycle.cycle.size()) {
+                                // Check if it's the same cycle
+                                std::unordered_set<PackageId> existingSet(
+                                    existing.cycle.begin(), existing.cycle.end());
+                                bool same = std::ranges::all_of(cycle.cycle,
+                                    [&existingSet](const auto& pkg) {
+                                        return existingSet.contains(pkg);
+                                    });
+                                if (same) {
+                                    alreadyRecorded = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!alreadyRecorded) {
+                            report.circularDependencies.push_back(cycle);
+                            report.stats.circularDependencyCount++;
+
+                            // Add issues to affected packages
+                            for (const auto& pkgId : cycle.cycle) {
+                                auto resIt = std::ranges::find_if(report.resolutions,
+                                    [&pkgId](const auto& r) { return r.id == pkgId; });
+
+                                if (resIt != report.resolutions.end()) {
+                                    DependencyReport::DependencyIssue issue{
+                                        .type = DependencyReport::IssueType::CircularDependency,
+                                        .affectedPackage = pkgId,
+                                        .description = std::format(
+                                            "Package '{}' is part of circular dependency: {}",
+                                            pkgId, cycle.GetCycleDescription()),
+                                        .involvedPackages = cycle.cycle,
+                                        .failedConstraints = {},
+                                        .suggestedFixes = std::vector<std::string>{
+                                            "Refactor to break the circular dependency",
+                                            "Extract common functionality to a separate package",
+                                            "Consider using dependency injection or interfaces"
+                                        },
+                                        .isBlocker = true
+                                    };
+
+                                    resIt->issues.push_back(std::move(issue));
+                                }
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+        }
+
+        currentPath.pop_back();
+        recursionStack.erase(node);
+        return false;
+    };
+
+    // Run cycle detection for all unvisited nodes
+    for (const auto& [id, _] : allPackages) {
+        if (!visited.contains(id)) {
+            detectCycle(id);
+        }
+    }
+
+    // Calculate transitive dependencies (same as before)
+    for (auto& resolution : report.resolutions) {
+        std::unordered_set<PackageId> transitive;
+        std::queue<PackageId> toProcess;
+
+        for (const auto& directDep : resolution.resolvedDependencies) {
+            toProcess.push(directDep);
+        }
+
+        while (!toProcess.empty()) {
+            auto current = toProcess.front();
+            toProcess.pop();
+
+            if (transitive.contains(current)) continue;
+            transitive.insert(current);
+
+            auto it = report.dependencyGraph.find(current);
+            if (it != report.dependencyGraph.end()) {
+                for (const auto& dep : it->second) {
+                    if (!transitive.contains(dep)) {
+                        toProcess.push(dep);
+                        resolution.transitiveDeps[current].push_back(dep);
+                    }
+                }
+            }
+        }
+    }
+
+    // Compute topological order if no circular dependencies (same as before)
+    if (report.circularDependencies.empty()) {
+        std::unordered_map<PackageId, int> inDegree;
+
+        // Initialize in-degrees
+        for (const auto& [id, _] : allPackages) {
+            inDegree[id] = 0;
+        }
+
+        // Calculate in-degrees
+        for (const auto& [_, deps] : report.dependencyGraph) {
+            for (const auto& dep : deps) {
+                inDegree[dep]++;
+            }
+        }
+
+        // Kahn's algorithm for topological sort
+        std::queue<PackageId> queue;
+        for (const auto& [id, degree] : inDegree) {
+            if (degree == 0) {
+                queue.push(id);
+            }
+        }
+
+        while (!queue.empty()) {
+            auto current = std::move(queue.front());
+            queue.pop();
+            //report.loadOrder.push_back(current);
+
+            auto it = report.reverseDependencyGraph.find(current);
+            if (it != report.reverseDependencyGraph.end()) {
+                for (const auto& dependent : it->second) {
+                    inDegree[dependent]--;
+                    if (inDegree[dependent] == 0) {
+                        queue.push(dependent);
+                    }
+                }
+            }
+            report.loadOrder.push_back(std::move(current));
+        }
+
+        report.isLoadOrderValid = (report.loadOrder.size() == allPackages.size());
+    } else {
+        report.isLoadOrderValid = false;
+
+        // Still provide a partial order for packages not in cycles
+        std::unordered_set<PackageId> inCycle;
+        for (const auto& cycle : report.circularDependencies) {
+            inCycle.insert(cycle.cycle.begin(), cycle.cycle.end());
+        }
+
+        for (const auto& [id, _] : allPackages) {
+            if (!inCycle.contains(id)) {
+                report.loadOrder.push_back(id);
+            }
+        }
+    }
+
+    // Calculate additional statistics (same as before)
+    if (!allPackages.empty()) {
+        double totalDeps = 0;
+        int maxDepth = 0;
+
+        for (const auto& resolution : report.resolutions) {
+            totalDeps += resolution.resolvedDependencies.size();
+
+            // Calculate dependency depth for this package
+            std::function<int(const PackageId&, std::unordered_set<PackageId>&)> getDepth =
+                [&](const PackageId& pkg, std::unordered_set<PackageId>& visited) -> int {
+                    if (visited.contains(pkg)) return 0;
+                    visited.insert(pkg);
+
+                    auto it = report.dependencyGraph.find(pkg);
+                    if (it == report.dependencyGraph.end() || it->second.empty()) {
+                        return 0;
+                    }
+
+                    int maxChildDepth = 0;
+                    for (const auto& dep : it->second) {
+                        maxChildDepth = std::max(maxChildDepth, getDepth(dep, visited));
+                    }
+                    return 1 + maxChildDepth;
+                };
+
+            std::unordered_set<PackageId> visited;
+            int depth = getDepth(resolution.id, visited);
+            maxDepth = std::max(maxDepth, depth);
+        }
+
+        report.stats.averageDependencyCount = totalDeps / allPackages.size();
+        report.stats.maxDependencyDepth = maxDepth;
+    }
+
+    // Log the report if issues exist
+    if (report.HasBlockingIssues() || !report.circularDependencies.empty()) {
+        std::cout << "\n" << report.GenerateTextReport() << "\n";
+    } else {
+        std::cout << std::format("Dependencies resolved successfully. Load order determined for {} packages.\n",
+                                 report.loadOrder.size());
+    }
+
+    return report;
 }
 
 InitializationReport Manager::InitializeModules() {
 	InitializationReport report;
-    
+
     std::cout << "\n=== Initializing Language Modules ===\n";
-    
+
     // Track successfully loaded modules for dependency checking
     std::unordered_set<PackageId> successfullyLoaded;
-    
+
     // Use sorted order if available
-    const auto& modulesToInit = _impl->config.respectDependencyOrder && !_impl->sortedModules.empty()
-                               ? _impl->sortedModules
-                               : [this]() {
-                                     std::vector<ModuleInfo> unsorted;
-                                     for (const auto& [id, info] : _impl->modules) {
-                                         if (info.state == PackageState::Validated) {
-                                             unsorted.push_back(info);
-                                         }
-                                     }
-                                     return unsorted;
-                                 }();
-    
-    for (const auto& moduleInfo : modulesToInit) {
-        const auto& id = moduleInfo.manifest->id;
-        
-        // Update the actual module info in the map
-        auto& actualModuleInfo = _impl->modules[id];
-        
-        auto initStart = DateTime::Now();
+    //const auto& modulesToInit = _impl->config.respectDependencyOrder && !_impl->sortedModules.empty()
+    //                           ? _impl->sortedModules : GetModules(PackageState::Validated);
+
+    for (const auto& moduleInfo : _impl->sortedModules) {
+        const auto& id = moduleInfo->manifest->id;
+
+        auto initStart = std::chrono::steady_clock::now();
         InitializationReport::PackageInit init{.id = id};
-        
+
         // Check if all dependencies are loaded (if configured to do so)
         bool allDependenciesLoaded = true;
         std::vector<PackageId> failedDependencies;
-        
-        if (_impl->config.skipDependentsOnFailure) {
-            for (const auto& dep : actualModuleInfo.manifest->dependencies) {
+
+        if (_impl->config.skipDependentsOnFailure && moduleInfo->manifest->dependencies) {
+            for (const auto& dependency : *moduleInfo->manifest->dependencies) {
+            	//const auto& [name, constraints, optional] = *dependency._impl;
+            	auto name = dependency.GetName();
+            	auto constraints = dependency.GetConstraints();
+            	auto optional = dependency.IsOptional();
+
                 // Skip optional dependencies if configured
-                if (dep.optional.value_or(false) && !_impl->config.failOnMissingDependencies) {
+                if (optional && !_impl->config.failOnMissingDependencies) {
                     continue;
                 }
-                
+
                 // Check if dependency is loaded
-                if (!successfullyLoaded.contains(dep.name) && 
-                    !_impl->loadedModules.contains(dep.name) &&
-                    !_impl->loadedPlugins.contains(dep.name)) {
-                    
+                if (!successfullyLoaded.contains(name) &&
+                    !_impl->loadedPlugins.contains(name)) {
+
                     allDependenciesLoaded = false;
-                    failedDependencies.push_back(dep.name);
+                    failedDependencies.push_back(name);
                 }
             }
         }
-        
+
         if (!allDependenciesLoaded) {
-            // Skip this module due to failed dependencies
-            actualModuleInfo.state = PackageState::Error;
+            // Mark as skipped due to failed dependencies
+            moduleInfo->state = PackageState::Skipped;
             auto error = EnhancedError::NonRetryable(
                 ErrorCode::MissingDependency,
                 std::format("Cannot load module '{}' because dependencies failed to load: [{}]",
-                           id, 
-                           std::ranges::fold_left(failedDependencies, std::string{},
-                               [](std::string acc, const std::string& dep) {
-                                   return acc.empty() ? dep : acc + ", " + dep;
-                               })),
+                           id, plg::join(failedDependencies, ", ")),
                 ErrorCategory::Dependency
             );
-            actualModuleInfo.lastError = error;
-            
-            init.finalState = PackageState::Error;
+            moduleInfo->lastError = error;
+
+            init.finalState = PackageState::Skipped;
             init.error = error;
-            init.loadTime = DateTime::Now();
-            report.moduleInits.emplace_back(std::move(init));
-            
+            init.loadTime = std::chrono::milliseconds{0};
+            report.moduleInits.push_back(std::move(init));
+
             EmitEvent({
                 .type = EventType::ModuleFailed,
-                .timestamp = DateTime::Now(),
+                .timestamp = std::chrono::system_clock::now(),
                 .packageId = id,
                 .error = error
             });
-            
-            std::cerr << std::format("  ⚠️  Module '{}' skipped: dependencies not available [{}]\n", 
-                                     id,
-                                     std::ranges::fold_left(failedDependencies, std::string{},
-                                         [](std::string acc, const std::string& dep) {
-                                             return acc.empty() ? dep : acc + ", " + dep;
-                                         }));
-            
+
+            std::cerr << std::format("  ⚠️  Module '{}' skipped: dependencies not available [{}]\n",
+                                     id, plg::join(failedDependencies, ", "));
+
             // Continue to next module unless strict mode
             if (!_impl->config.partialStartupMode) {
                 break;
             }
             continue;
         }
-        
-        actualModuleInfo.state = PackageState::Initializing;
-        
+
+        moduleInfo->state = PackageState::Initializing;
+
         EmitEvent({
             .type = EventType::ModuleLoading,
-            .timestamp = DateTime::Now(),
+            .timestamp = std::chrono::system_clock::now(),
             .packageId = id
         });
-        
+
         // Attempt to load with intelligent retry
         bool loadSuccess = false;
         std::size_t attemptCount = 0;
         EnhancedError lastError;
-        
+
         while (!loadSuccess) {
             attemptCount++;
             init.retryAttempts = attemptCount - 1;
-            
+
             if (attemptCount > 1) {
-                auto delay = _impl->getRetryDelay(attemptCount - 2);
-                std::cout << std::format("  Retry {}/{} for module '{}' (waiting {}ms)\n", 
-                                        attemptCount - 1, 
+                auto delay = _impl->GetRetryDelay(attemptCount - 2);
+                std::cout << std::format("  Retry {}/{} for module '{}' (waiting {}ms)\n",
+                                        attemptCount - 1,
                                         _impl->config.retryPolicy.maxAttempts,
                                         id, delay.count());
                 std::this_thread::sleep_for(delay);
             }
-            
+
             // Load the module
-            auto moduleResult = _impl->moduleLoader->loadModule(actualModuleInfo.manifest);
+            auto moduleResult = _impl->moduleLoader->loadModule(moduleInfo->manifest);
             if (!moduleResult) {
                 lastError = EnhancedError::Transient(
                     moduleResult.error().code,
                     moduleResult.error().message
                 );
-                
-                if (!_impl->shouldRetry(lastError, attemptCount)) {
+
+                if (!_impl->ShouldRetry(lastError, attemptCount)) {
                     break;
                 }
                 continue;
             }
-            
+
             // Initialize the module
             auto initResult = _impl->moduleLoader->initializeModule(
-                *moduleResult.value(), actualModuleInfo.manifest);
-            
+                *moduleResult.value(), moduleInfo->manifest);
+
             if (!initResult) {
                 if (initResult.error().code == ErrorCode::InitializationFailed) {
                     lastError = EnhancedError::Transient(
@@ -539,201 +1048,203 @@ InitializationReport Manager::InitializeModules() {
                         ErrorCategory::Configuration
                     );
                 }
-                
-                if (!_impl->shouldRetry(lastError, attemptCount)) {
+
+                if (!_impl->ShouldRetry(lastError, attemptCount)) {
                     break;
                 }
                 continue;
             }
-            
+
             // Success!
             _impl->loadedModules[id] = std::move(moduleResult.value());
-            actualModuleInfo.state = PackageState::Ready;
+            moduleInfo->state = PackageState::Ready;
             loadSuccess = true;
             init.finalState = PackageState::Ready;
             successfullyLoaded.insert(id);  // Mark as successfully loaded
-            
+
             EmitEvent({
                 .type = EventType::ModuleLoaded,
-                .timestamp = DateTime::Now(),
+                .timestamp = std::chrono::system_clock::now(),
                 .packageId = id
             });
-            
+
             std::cout << std::format("  ✓ Module '{}' loaded successfully", id);
             if (attemptCount > 1) {
                 std::cout << std::format(" (after {} retries)", attemptCount - 1);
             }
-            if (!actualModuleInfo.manifest->dependencies.empty()) {
+
+            if (moduleInfo->manifest->dependencies && !moduleInfo->manifest->dependencies->empty()) {
                 std::cout << std::format(" [deps: {}]",
-                    std::ranges::fold_left(
-                        actualModuleInfo.manifest->dependencies | std::views::transform([](const auto& d) { return d.name; }),
-                        std::string{},
-                        [](const std::string& acc, const std::string& dep) {
-                            return acc.empty() ? dep : acc + ", " + dep;
-                        }));
+            		plg::join(*moduleInfo->manifest->dependencies, &Dependency::GetName, ", "));
             }
             std::cout << "\n";
         }
-        
+
         if (!loadSuccess) {
-            actualModuleInfo.state = PackageState::Error;
-            actualModuleInfo.lastError = lastError;
+            moduleInfo->state = PackageState::Error;
+            moduleInfo->lastError = lastError;
             init.finalState = PackageState::Error;
             init.error = lastError;
-            
+
             EmitEvent({
                 .type = EventType::ModuleFailed,
-                .timestamp = DateTime::Now(),
+                .timestamp = std::chrono::system_clock::now(),
                 .packageId = id,
                 .error = lastError
             });
-            
+
             std::cerr << std::format("  ✗ Failed to load module '{}': {} ({})\n",
                                      id, lastError.message,
                                      lastError.isRetryable ? "gave up after retries" : "non-retryable");
-            
+
             // Check if any packages depend on this failed module
             if (_impl->initState.dependencyReport.reverseDependencyGraph.contains(id)) {
                 const auto& dependents = _impl->initState.dependencyReport.reverseDependencyGraph.at(id);
                 if (!dependents.empty()) {
                     std::cerr << std::format("     ⚠️  This will prevent loading: [{}]\n",
-                        std::ranges::fold_left(dependents, std::string{},
-                            [](const std::string& acc, const std::string& dep) {
-                                return acc.empty() ? dep : acc + ", " + dep;
-                            }));
+                        plg::join(dependents, ", "));
                 }
             }
         }
-        
-        auto initEnd = DateTime::Now();
-        init.loadTime = initEnd - initStart;
-        report.moduleInits.emplace_back(std::move(init));
+
+        auto initEnd = std::chrono::steady_clock::now();
+        init.loadTime = std::chrono::duration_cast<std::chrono::milliseconds>(initEnd - initStart);
+        report.moduleInits.push_back(std::move(init));
     }
-    
+
+    // Final pass: Mark any modules that were never attempted as skipped
+    for (auto& [id, moduleInfo] : _impl->modules) {
+        if (moduleInfo->state == PackageState::Validated) {
+            // This module was never attempted
+            moduleInfo->state = PackageState::Skipped;
+            moduleInfo->lastError = Error{
+                .code = ErrorCode::MissingDependency,
+                .message = "Skipped due to initialization order or dependency cascade"
+            };
+
+            // Add to report
+            InitializationReport::PackageInit init{
+                .id = id,
+                .finalState = PackageState::Skipped,
+                .retryAttempts = 0,
+                .error = EnhancedError::NonRetryable(
+                    ErrorCode::MissingDependency,
+                    "Never attempted due to dependency cascade",
+                    ErrorCategory::Dependency
+                ),
+                .loadTime = std::chrono::milliseconds{0}
+            };
+            report.moduleInits.push_back(std::move(init));
+        }
+    }
+
     return report;
 }
 
 InitializationReport Manager::InitializePlugins() {
 	InitializationReport report;
-    
+
     std::cout << "\n=== Initializing Plugins ===\n";
-    
+
     // Track successfully loaded plugins for dependency checking
     std::unordered_set<PackageId> successfullyLoaded;
-    
+
     // Add all successfully loaded modules to the set
     for (const auto& [id, _] : _impl->loadedModules) {
         successfullyLoaded.insert(id);
     }
-    
+
     // Use sorted order if available
-    const auto& pluginsToInit = _impl->config.respectDependencyOrder && !_impl->sortedPlugins.empty()
-                               ? _impl->sortedPlugins
-                               : [this]() {
-                                     std::vector<PluginInfo> unsorted;
-                                     for (const auto& [id, info] : _impl->plugins) {
-                                         if (info.state == PackageState::Validated) {
-                                             unsorted.push_back(info);
-                                         }
-                                     }
-                                     return unsorted;
-                                 }();
-    
-    for (const auto& pluginInfo : pluginsToInit) {
-        const auto& id = pluginInfo.manifest->id;
-        
-        // Update the actual plugin info in the map
-        auto& actualPluginInfo = _impl->plugins[id];
-        
-        auto initStart = DateTime::Now();
+    //const auto& pluginsToInit = _impl->config.respectDependencyOrder && !_impl->sortedPlugins.empty()
+    //                           ? _impl->sortedPlugins
+    //                           : GetPlugins(PackageState::Validated);
+
+    for (const auto& pluginInfo : _impl->sortedPlugins) {
+        const auto& id = pluginInfo->manifest->id;
+
+        auto initStart = std::chrono::steady_clock::now();
         InitializationReport::PackageInit init{.id = id};
-        
+
         // First check if all dependencies are loaded (if configured to do so)
         bool allDependenciesLoaded = true;
         std::vector<PackageId> failedDependencies;
-        
-        if (_impl->config.skipDependentsOnFailure) {
-            for (const auto& dep : actualPluginInfo.manifest->dependencies) {
+
+        if (pluginInfo->manifest->dependencies && _impl->config.skipDependentsOnFailure) {
+            for (const auto& dependency : *pluginInfo->manifest->dependencies) {
+            	const auto& [name, constraints, optional] = *dependency._impl;
+
                 // Skip optional dependencies if configured
-                if (dep.optional.value_or(false) && !_impl->config.failOnMissingDependencies) {
+                if (optional.value_or(false) && !_impl->config.failOnMissingDependencies) {
                     continue;
                 }
-                
+
                 // Check if dependency is loaded
-                if (!successfullyLoaded.contains(dep.name) && 
-                    !_impl->loadedPlugins.contains(dep.name)) {
-                    
+                if (!successfullyLoaded.contains(name) &&
+                    !_impl->loadedPlugins.contains(name)) {
+
                     allDependenciesLoaded = false;
-                    failedDependencies.push_back(dep.name);
+                    failedDependencies.push_back(name);
                 }
             }
         }
-        
+
         if (!allDependenciesLoaded) {
-            // Skip this plugin due to failed dependencies
-            actualPluginInfo.state = PackageState::Error;
+            // Mark as skipped due to failed dependencies
+            pluginInfo->state = PackageState::Skipped;
             auto error = EnhancedError::NonRetryable(
                 ErrorCode::MissingDependency,
                 std::format("Cannot load plugin '{}' because dependencies failed to load: [{}]",
-                           id,
-                           std::ranges::fold_left(failedDependencies, std::string{},
-                               [](std::string acc, const std::string& dep) {
-                                   return acc.empty() ? dep : acc + ", " + dep;
-                               })),
+                           id, plg::join(failedDependencies, ", ")),
                 ErrorCategory::Dependency
             );
-            actualPluginInfo.lastError = error;
-            
-            init.finalState = PackageState::Error;
+            pluginInfo->lastError = error;
+
+            init.finalState = PackageState::Skipped;
             init.error = error;
-            init.loadTime = DateTime::Now();
-            report.pluginInits.emplace_back(std::move(init));
-            
+            init.loadTime = std::chrono::milliseconds{0};
+            report.pluginInits.push_back(std::move(init));
+
             EmitEvent({
                 .type = EventType::PluginFailed,
-                .timestamp = DateTime::Now(),
+                .timestamp = std::chrono::system_clock::now(),
                 .packageId = id,
                 .error = error
             });
-            
+
             std::cerr << std::format("  ⚠️  Plugin '{}' skipped: dependencies not available [{}]\n",
-                                     id,
-                                     std::ranges::fold_left(failedDependencies, std::string{},
-                                         [](std::string acc, const std::string& dep) {
-                                             return acc.empty() ? dep : acc + ", " + dep;
-                                         }));
-            
+                                     id, plg::join(failedDependencies, ", "));
+
             // Continue to next plugin unless strict mode
             if (!_impl->config.partialStartupMode) {
                 break;
             }
             continue;
         }
-        
+
         // Check if required language module is loaded
         auto moduleIds = _impl->pluginToModuleMap.find(id);
         if (moduleIds == _impl->pluginToModuleMap.end() || moduleIds->second.empty()) {
-            actualPluginInfo.state = PackageState::Error;
+            pluginInfo->state = PackageState::Skipped;
             auto error = EnhancedError::NonRetryable(
                 ErrorCode::LanguageModuleNotLoaded,
                 std::format("No language module available for plugin '{}'", id),
                 ErrorCategory::Dependency
             );
-            actualPluginInfo.lastError = error;
-            
-            init.finalState = PackageState::Error;
+            pluginInfo->lastError = error;
+
+            init.finalState = PackageState::Skipped;
             init.error = error;
-            init.loadTime = DateTime::Now();
-            report.pluginInits.emplace_back(std::move(init));
-            
+            init.loadTime = std::chrono::milliseconds{0};
+            report.pluginInits.push_back(std::move(init));
+
             std::cerr << std::format("  ✗ Plugin '{}' skipped: no language module\n", id);
             continue;
         }
-        
+
         // Find the loaded module for this plugin's language
         Module* languageModule = nullptr;
         std::string usedModuleId;
-        
+
         for (const auto& moduleId : moduleIds->second) {
             auto it = _impl->loadedModules.find(moduleId);
             if (it != _impl->loadedModules.end()) {
@@ -742,77 +1253,77 @@ InitializationReport Manager::InitializePlugins() {
                 break;
             }
         }
-        
+
         if (!languageModule) {
-            actualPluginInfo.state = PackageState::Error;
+            pluginInfo->state = PackageState::Skipped;
             auto error = EnhancedError::NonRetryable(
                 ErrorCode::LanguageModuleNotLoaded,
                 std::format("Language module not loaded for plugin '{}' (required module failed to initialize)", id),
                 ErrorCategory::Dependency
             );
-            actualPluginInfo.lastError = error;
-            
-            init.finalState = PackageState::Error;
+            pluginInfo->lastError = error;
+
+            init.finalState = PackageState::Skipped;
             init.error = error;
-            init.loadTime = DateTime::Now();
-            report.pluginInits.emplace_back(std::move(init));
-            
+            init.loadTime = std::chrono::milliseconds{0};
+            report.pluginInits.push_back(std::move(init));
+
             std::cerr << std::format("  ⚠️  Plugin '{}' skipped: language module failed to load\n", id);
-            
+
             // Show which language module was needed
             if (!moduleIds->second.empty()) {
                 std::cerr << std::format("     Required module: '{}'\n", moduleIds->second[0]);
             }
-            
+
             continue;
         }
-        
-        actualPluginInfo.state = PackageState::Initializing;
-        
+
+        pluginInfo->state = PackageState::Initializing;
+
         EmitEvent({
             .type = EventType::PluginLoading,
-            .timestamp = DateTime::Now(),
+            .timestamp = std::chrono::system_clock::now(),
             .packageId = id
         });
-        
+
         // Attempt to load with intelligent retry
         bool loadSuccess = false;
         std::size_t attemptCount = 0;
         EnhancedError lastError;
-        
+
         while (!loadSuccess) {
             attemptCount++;
             init.retryAttempts = attemptCount - 1;
-            
+
             if (attemptCount > 1) {
-                auto delay = _impl->getRetryDelay(attemptCount - 2);
+                auto delay = _impl->GetRetryDelay(attemptCount - 2);
                 std::cout << std::format("  Retry {}/{} for plugin '{}' (waiting {}ms)\n",
                                         attemptCount - 1,
                                         _impl->config.retryPolicy.maxAttempts,
                                         id, delay.count());
                 std::this_thread::sleep_for(delay);
             }
-            
+
             // Load the plugin through its language module
             auto pluginResult = _impl->pluginLoader->loadPlugin(
-                actualPluginInfo.manifest, *languageModule);
-            
+                pluginInfo->manifest, *languageModule);
+
             if (!pluginResult) {
                 lastError = EnhancedError::Transient(
                     pluginResult.error().code,
                     pluginResult.error().message
                 );
-                
-                if (!_impl->shouldRetry(lastError, attemptCount)) {
+
+                if (!_impl->ShouldRetry(lastError, attemptCount)) {
                     break;
                 }
                 continue;
             }
-            
+
             // Initialize the plugin
             auto initResult = _impl->pluginLoader->initializePlugin(
-                *pluginResult.value(), actualPluginInfo.manifest);
-            
+                *pluginResult.value(), pluginInfo->manifest);
+
             if (!initResult) {
                 if (initResult.error().code == ErrorCode::InitializationFailed) {
                     lastError = EnhancedError::Transient(
@@ -826,23 +1337,23 @@ InitializationReport Manager::InitializePlugins() {
                         ErrorCategory::Configuration
                     );
                 }
-                
-                if (!_impl->shouldRetry(lastError, attemptCount)) {
+
+                if (!_impl->ShouldRetry(lastError, attemptCount)) {
                     break;
                 }
                 continue;
             }
-            
+
             // Success!
             _impl->loadedPlugins[id] = std::move(pluginResult.value());
-            actualPluginInfo.state = PackageState::Started;
+            pluginInfo->state = PackageState::Started;
             loadSuccess = true;
             init.finalState = PackageState::Started;
             successfullyLoaded.insert(id);  // Mark as successfully loaded
-            
+
             EmitEvent({
                 .type = EventType::PluginLoaded,
-                .timestamp = DateTime::Now(),
+                .timestamp = std::chrono::system_clock::now(),
                 .packageId = id
             });
 
@@ -850,73 +1361,89 @@ InitializationReport Manager::InitializePlugins() {
 
             EmitEvent({
                 .type = EventType::PluginStarted,
-                .timestamp = DateTime::Now(),
+                .timestamp = std::chrono::system_clock::now(),
                 .packageId = id
             });
-            
-            std::cout << std::format("  ✓ Plugin '{}' loaded successfully (module: '{}')", 
+
+            std::cout << std::format("  ✓ Plugin '{}' loaded successfully (module: '{}')",
                                      id, usedModuleId);
             if (attemptCount > 1) {
                 std::cout << std::format(" [{}  retries]", attemptCount - 1);
             }
-            if (!actualPluginInfo.manifest->dependencies.empty()) {
+            if (pluginInfo->manifest->dependencies && !pluginInfo->manifest->dependencies->empty()) {
                 std::cout << std::format(" [deps: {}]",
-                    std::ranges::fold_left(
-                        actualPluginInfo.manifest->dependencies | std::views::transform([](const auto& d) { return d.name; }),
-                        std::string{},
-                        [](std::string acc, const std::string& dep) {
-                            return acc.empty() ? dep : acc + ", " + dep;
-                        }));
+                    plg::join(*pluginInfo->manifest->dependencies, &Dependency::GetName, ", "));
             }
             std::cout << "\n";
         }
-        
+
         if (!loadSuccess) {
-            actualPluginInfo.state = PackageState::Error;
-            actualPluginInfo.lastError = lastError;
+            pluginInfo->state = PackageState::Error;
+            pluginInfo->lastError = lastError;
             init.finalState = PackageState::Error;
             init.error = lastError;
-            
+
             EmitEvent({
                 .type = EventType::PluginFailed,
-                .timestamp = DateTime::Now(),
+                .timestamp = std::chrono::system_clock::now(),
                 .packageId = id,
                 .error = lastError
             });
-            
+
             std::cerr << std::format("  ✗ Failed to load plugin '{}': {} ({})\n",
                                      id, lastError.message,
                                      lastError.isRetryable ? "gave up after retries" : "non-retryable");
-            
+
             // Check if any packages depend on this failed plugin
             if (_impl->initState.dependencyReport.reverseDependencyGraph.contains(id)) {
                 const auto& dependents = _impl->initState.dependencyReport.reverseDependencyGraph.at(id);
                 if (!dependents.empty()) {
                     std::cerr << std::format("     ⚠️  This will prevent loading: [{}]\n",
-                        std::ranges::fold_left(dependents, std::string{},
-                            [](const std::string& acc, const std::string& dep) {
-                                return acc.empty() ? dep : acc + ", " + dep;
-                            }));
+                        plg::join(dependents, ", "));
                 }
             }
         }
-        
-        auto initEnd = DateTime::Now();
-        init.loadTime = initEnd - initStart;
-        report.pluginInits.emplace_back(std::move(init));
+
+        auto initEnd = std::chrono::steady_clock::now();
+        init.loadTime = std::chrono::duration_cast<std::chrono::milliseconds>(initEnd - initStart);
+        report.pluginInits.push_back(std::move(init));
     }
-    
-    // Final cascade check - mark any packages as skipped if their dependencies failed
+
+    // Final pass: Mark any packages that were never attempted as skipped
     std::size_t cascadeSkipped = 0;
-    for (const auto& [id, info] : _impl->plugins) {
-        if (info->state == PackageState::Validated && !successfullyLoaded.contains(id)) {
+    for (auto& [id, pluginInfo] : _impl->plugins) {
+        if (pluginInfo->state == PackageState::Validated) {
             // This plugin was never attempted due to cascade failure
-            cascadeSkipped++;
+            pluginInfo->state = PackageState::Skipped;
+            pluginInfo->lastError = Error{
+                .code = ErrorCode::MissingDependency,
+                .message = "Skipped due to initialization order or dependency cascade"
+            };
+
+            // Add to report if not already there
+            bool alreadyInReport = std::ranges::any_of(report.pluginInits,
+                [&id](const auto& init) { return init.id == id; });
+
+            if (!alreadyInReport) {
+                InitializationReport::PackageInit init{
+                    .id = id,
+                    .finalState = PackageState::Skipped,
+                    .retryAttempts = 0,
+                    .error = EnhancedError::NonRetryable(
+                        ErrorCode::MissingDependency,
+                        "Never attempted due to dependency cascade",
+                        ErrorCategory::Dependency
+                    ),
+                    .loadTime = std::chrono::milliseconds{0}
+                };
+                report.pluginInits.push_back(std::move(init));
+                cascadeSkipped++;
+            }
         }
     }
-    
+
     if (cascadeSkipped > 0) {
-        std::cout << std::format("\n  ℹ️  {} additional plugins were not loaded due to dependency cascade failures\n",
+        std::cout << std::format("\n  ℹ️  {} additional plugins were skipped due to dependency cascade failures\n",
                                  cascadeSkipped);
     }
     
@@ -948,7 +1475,7 @@ std::vector<ModuleInfo> Manager::GetModules() const {
     result.reserve(_impl->modules.size());
     
     for (const auto& [id, info] : _impl->modules) {
-        result.push_back(info);
+    	result.push_back(info);
     }
     
     return result;
@@ -959,7 +1486,31 @@ std::vector<PluginInfo> Manager::GetPlugins() const {
     result.reserve(_impl->plugins.size());
     
     for (const auto& [id, info] : _impl->plugins) {
-        result.push_back(info);
+    	result.push_back(info);
+    }
+    
+    return result;
+}
+
+std::vector<ModuleInfo> Manager::GetModules(PackageState state) const {
+    std::vector<ModuleInfo> result;
+    
+    for (const auto& [id, info] : _impl->modules) {
+    	if (info->state == state) {
+    		result.push_back(info);
+    	}
+    }
+    
+    return result;
+}
+
+std::vector<PluginInfo> Manager::GetPlugins(PackageState state) const {
+    std::vector<PluginInfo> result;
+    
+    for (const auto& [id, info] : _impl->plugins) {
+    	if (info->state == state) {
+    		result.push_back(info);
+    	}
     }
     
     return result;
@@ -993,7 +1544,7 @@ void Manager::EmitEvent(Event event) {
 	{
 		std::lock_guard lock(_impl->eventMutex);
 		handlersCopy.reserve(_impl->eventHandlers.size());
-		for (auto& [_, handler] : _impl->eventHandlers) {
+		for (const auto& [_, handler] : _impl->eventHandlers) {
 			handlersCopy.push_back(handler);
 		}
 	}
@@ -1016,27 +1567,9 @@ void Manager::UpdatePackageState(const PackageId& id, PackageState newState) {
 }
 
 std::vector<PackageId> Manager::GetPluginsForModule(std::string_view moduleId) const {
-    auto it = _impl->moduleToPluginsMap.find(std::string(moduleId));
+    auto it = _impl->moduleToPluginsMap.find(moduleId);
     if (it != _impl->moduleToPluginsMap.end()) {
         return it->second;
     }
     return {};
-}
-
-Result<void> Manager::HandleInitializationError(const PackageId& id, const Error& error) {
-    UpdatePackageState(id, PackageState::Error);
-    
-    // Retry logic if plugify.configured
-    if (_impl->config.maxInitializationRetries > 0) {
-        // Implementation would track retry counts and attempt re-initialization
-        // For brevity, returning the error here
-    }
-    
-    return plg::unexpected(error);
-}
-
-bool Manager::IsAllowed(const std::string& id, bool isModule) const {
-	const auto& whitelist = isModule ? _impl->config.moduleWhitelist : _impl->config.pluginWhitelist;
-	const auto& blacklist = isModule ? _impl->config.moduleBlacklist : _impl->config.pluginBlacklist;
-	return (whitelist.empty() || whitelist.contains(id)) && !blacklist.contains(id);
 }

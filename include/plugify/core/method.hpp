@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <string>
 #include <vector>
 #include <memory>
@@ -28,22 +29,23 @@ namespace plugify {
 	    Method& operator=(Method&& other) noexcept;
 
 	    // Getters
-	    [[nodiscard]] const std::vector<Property>& GetParamTypes() const noexcept;
+	    [[nodiscard]] std::span<const Property> GetParamTypes() const noexcept;
 	    [[nodiscard]] const Property& GetRetType() const noexcept;
 	    [[nodiscard]] uint8_t GetVarIndex() const noexcept;
-	    [[nodiscard]] const std::string& GetName() const noexcept;
-	    [[nodiscard]] const std::string& GetFuncName() const noexcept;
-	    [[nodiscard]] const std::string& GetCallConv() const noexcept;
+	    [[nodiscard]] std::string_view GetName() const noexcept;
+	    [[nodiscard]] std::string_view GetFuncName() const noexcept;
+	    [[nodiscard]] std::string_view GetCallConv() const noexcept;
 
 	    // Setters (pass by value and move)
-	    void SetParamTypes(std::vector<Property> paramTypes) noexcept;
-	    void SetRetType(Property retType) noexcept;
+	    void SetParamTypes(std::span<const Property> paramTypes) noexcept;
+	    void SetRetType(const Property& retType) noexcept;
 	    void SetVarIndex(uint8_t varIndex) noexcept;
-	    void SetName(std::string name) noexcept;
-	    void SetFuncName(std::string funcName) noexcept;
-	    void SetCallConv(std::string callConv) noexcept;
+	    void SetName(std::string_view name) noexcept;
+	    void SetFuncName(std::string_view funcName) noexcept;
+	    void SetCallConv(std::string_view callConv) noexcept;
 
-		[[nodiscard]] bool operator==(const Method& lhs, const Method& rhs) noexcept;
+		[[nodiscard]] bool operator==(const Method& other) const noexcept;
+		[[nodiscard]] auto operator<=>(const Method& other) const noexcept;
 
 		static inline const uint8_t kNoVarArgs = 0xFFU;
 
@@ -51,6 +53,7 @@ namespace plugify {
 
 	private:
 	    friend struct glz::meta<Method>;
+		//friend struct std::hash<Method>;
 	    std::unique_ptr<Impl> _impl;
 	};
 }

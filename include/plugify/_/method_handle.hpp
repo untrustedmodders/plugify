@@ -3,7 +3,7 @@
 #include <span>
 #include <string>
 
-#include "../core/value_type.hpp"
+#include "plugify/core/value_type.hpp"
 #include "handle.hpp"
 #include "plugify/asm/mem_addr.hpp"
 

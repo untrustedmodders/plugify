@@ -1,13 +1,8 @@
-#include "plugify/core/enum_value.hpp"
+#include "core/enum_value_impl.hpp"
 
 using namespace plugify;
 
 // EnumValue Implementation
-struct EnumValue::Impl {
-	std::string name;
-	int64_t value{0};
-};
-
 EnumValue::EnumValue() : _impl(std::make_unique<Impl>()) {}
 EnumValue::~EnumValue() = default;
 
@@ -25,7 +20,10 @@ EnumValue& EnumValue::operator=(const EnumValue& other) {
 
 EnumValue& EnumValue::operator=(EnumValue&& other) noexcept = default;
 
-const std::string& EnumValue::GetName() const noexcept { return _impl->name; }
+std::string_view EnumValue::GetName() const noexcept { return _impl->name; }
 int64_t EnumValue::GetValue() const noexcept { return _impl->value; }
-void EnumValue::SetName(std::string name) noexcept { _impl->name = std::move(name); }
+void EnumValue::SetName(std::string_view name) noexcept { _impl->name = name; }
 void EnumValue::SetValue(int64_t value) noexcept { _impl->value = value; }
+
+bool EnumValue::operator==(const EnumValue& other) const noexcept = default;
+auto EnumValue::operator<=>(const EnumValue& other) const noexcept = default;

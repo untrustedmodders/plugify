@@ -1,18 +1,8 @@
-#include "plugify/core/method.hpp"
-#include "plugify/core/property.hpp"
+#include "core/method_impl.hpp"
 
 using namespace plugify;
 
 // Method Implementation
-struct Method::Impl {
-	std::vector<Property> paramTypes;
-	Property retType;
-	uint8_t varIndex{kNoVarArgs};
-	std::string name;
-	std::string funcName;
-	std::string callConv;
-};
-
 Method::Method() : _impl(std::make_unique<Impl>()) {}
 Method::~Method() = default;
 
@@ -30,21 +20,24 @@ Method& Method::operator=(const Method& other) {
 
 Method& Method::operator=(Method&& other) noexcept = default;
 
-const std::vector<Property>& Method::GetParamTypes() const noexcept { return _impl->paramTypes; }
+std::span<const Property> Method::GetParamTypes() const noexcept { return _impl->paramTypes; }
 const Property& Method::GetRetType() const noexcept { return _impl->retType; }
 uint8_t Method::GetVarIndex() const noexcept { return _impl->varIndex; }
-const std::string& Method::GetName() const noexcept { return _impl->name; }
-const std::string& Method::GetFuncName() const noexcept { return _impl->funcName; }
-const std::string& Method::GetCallConv() const noexcept { return _impl->callConv; }
+std::string_view Method::GetName() const noexcept { return _impl->name; }
+std::string_view Method::GetFuncName() const noexcept { return _impl->funcName; }
+std::string_view Method::GetCallConv() const noexcept { return _impl->callConv; }
 
-void Method::SetParamTypes(std::vector<Property> paramTypes) noexcept {
-    _impl->paramTypes = std::move(paramTypes);
+void Method::SetParamTypes(std::span<const Property> paramTypes) noexcept {
+    _impl->paramTypes = { paramTypes.begin(), paramTypes.end() };
 }
-void Method::SetRetType(Property retType) noexcept { _impl->retType = std::move(retType); }
+void Method::SetRetType(const Property& retType) noexcept { _impl->retType = retType; }
 void Method::SetVarIndex(uint8_t varIndex) noexcept { _impl->varIndex = varIndex; }
-void Method::SetName(std::string name) noexcept { _impl->name = std::move(name); }
-void Method::SetFuncName(std::string funcName) noexcept { _impl->funcName = std::move(funcName); }
-void Method::SetCallConv(std::string callConv) noexcept { _impl->callConv = std::move(callConv); }
+void Method::SetName(std::string_view name) noexcept { _impl->name = name; }
+void Method::SetFuncName(std::string_view funcName) noexcept { _impl->funcName = funcName; }
+void Method::SetCallConv(std::string_view callConv) noexcept { _impl->callConv = callConv; }
+
+bool Method::operator==(const Method& other) const noexcept = default;
+auto Method::operator<=>(const Method& other) const noexcept = default;
 
 std::shared_ptr<Method> Method::FindPrototype(std::string_view name) const noexcept {
 	for (const auto& param : GetParamTypes()) {
@@ -66,6 +59,8 @@ std::shared_ptr<Method> Method::FindPrototype(std::string_view name) const noexc
 			return prototype;
 		}
 	}
+
+	std::unique_ptr<>
 
 	return {};
 }

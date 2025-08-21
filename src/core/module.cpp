@@ -31,7 +31,7 @@ bool Module::Initialize(Plugify& plugify) {
 			for (const auto& rawPath : *directories) {
 				std::filesystem::path libraryDirectory = _paths.base / rawPath;
 				if (!loader->AddSearchPath(libraryDirectory)) {
-					errors.emplace_back(libraryDirectory.string());
+					errors.push_back(libraryDirectory.string());
 					return false;
 				}
 			}

@@ -1,5 +1,10 @@
 #pragma once
 
+#include <span>
+#include <vector>
+#include <optional>
+#include <string>
+
 #include "plugify/core/types.hpp"
 
 #include "plugify_export.h"
@@ -10,7 +15,9 @@ namespace glz {
 }
 
 namespace plugify {
+	class Manager;
 	struct Constraint;
+
 	// Conflict Class
 	class PLUGIFY_API Conflict {
 		struct Impl;
@@ -23,19 +30,24 @@ namespace plugify {
 		Conflict& operator=(Conflict&& other) noexcept;
 
 		// Getters
-		[[nodiscard]] const PackageId& GetName() const noexcept;
-		[[nodiscard]] std::optional<std::vector<Constraint>> GetConstraints() const noexcept;
-		[[nodiscard]] std::optional<std::string> GetReason() const noexcept;
+		[[nodiscard]] std::string_view GetName() const noexcept;
+		[[nodiscard]] std::span<const Constraint> GetConstraints() const noexcept;
+		[[nodiscard]] std::string_view GetReason() const noexcept;
 
 		// Setters (pass by value and move)
-		void SetName(PackageId name) noexcept;
-		void SetConstraints(std::optional<std::vector<Constraint>> constraints) noexcept;
-		void SetReason(std::optional<std::string> reason) noexcept;
+		void SetName(std::string_view name) noexcept;
+		void SetConstraints(std::span<const Constraint> constraints) noexcept;
+		void SetReason(std::string_view reason) noexcept;
 
-		[[nodiscard]] bool operator==(const Conflict& lhs, const Conflict& rhs) noexcept;
+		[[nodiscard]] bool operator==(const Conflict& other) const noexcept;
+		[[nodiscard]] auto operator<=>(const Conflict& other) const noexcept;
+
+		std::vector<Constraint> GetSatisfiedConstraints(const Version& version) const;
 
 	private:
+		friend class Manager;
 		friend struct glz::meta<Conflict>;
+		//friend struct std::hash<Conflict>;
 		std::unique_ptr<Impl> _impl;
 	};
 }

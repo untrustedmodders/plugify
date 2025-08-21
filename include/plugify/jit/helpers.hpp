@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/value_type.hpp"
+#include "plugify/core/value_type.hpp"
 #include <asmjit/core.h>
 
 /**

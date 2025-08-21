@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../_/provider_handle.hpp"
+#include "plugify/_/provider_handle.hpp"
 #include "assembly.hpp"
 #include "file_system.hpp"
 #include "plugify/core/constraint.hpp"

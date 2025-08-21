@@ -13,13 +13,13 @@ namespace plugify {
 	struct PackageManifest {
 		PackageId id; // name@semver
 		std::string name;
-		PackageType type{}; // LanguageModule or Plugin
+		PackageType type{};
 		Version version;
-		std::string description;
-		std::string author;
-		std::string website;
-		std::string license;
-		std::filesystem::path location; //
+		std::optional<std::string> description;
+		std::optional<std::string> author;
+		std::optional<std::string> website;
+		std::optional<std::string> license;
+		std::filesystem::path location;
 
 		// Dependencies and conflicts
 		std::optional<std::vector<std::string>> platforms;
@@ -43,4 +43,6 @@ namespace plugify {
 		std::optional<std::vector<std::string>> directories;
 		std::optional<bool> forceLoad;
 	};
+
+	using Manifest = std::shared_ptr<PackageManifest>;
 }

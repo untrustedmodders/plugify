@@ -4,8 +4,8 @@
 #include <string>
 #include <filesystem>
 
-#include "../core/assembly.hpp"
-#include "../core/file_system.hpp"
+#include "plugify/core/assembly.hpp"
+#include "plugify/core/file_system.hpp"
 #include "handle.hpp"
 #include "plugify/core/constraint.hpp"
 
