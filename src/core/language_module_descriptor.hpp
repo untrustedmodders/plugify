@@ -1,7 +1,6 @@
 #pragma once
 
-#include <plugify/descriptor.hpp>
-#include <plugify/package.hpp>
+#include <descriptor.hpp>
 #include <utils/algorithm.hpp>
 
 namespace plugify {
@@ -37,7 +36,7 @@ namespace plugify {
 
 			if (auto& directories = libraryDirectories) {
 				if (RemoveDuplicates(*directories)) {
-					PL_LOG_WARNING("Package: '{}' has multiple library directories with same name!", name);
+					PL_LOG_WARNING("Language Module: '{}' has multiple library directories with same name!", name);
 				}
 				size_t i = 0;
 				for (const auto& directory : *directories) {
@@ -57,6 +56,6 @@ namespace plugify {
 
 	struct LanguageModuleInfo {
 		std::string name;
-		std::optional<plg::version> version;
+		std::optional<Constraint> version;
 	};
 }

@@ -99,13 +99,6 @@ namespace plugify {
 		virtual PluginHandle FindPluginFromId(UniqueId pluginId) const = 0;
 
 		/**
-		 * @brief Find a plugin by its descriptor.
-		 * @param pluginDescriptor Descriptor of the plugin to find.
-		 * @return Handle to the found plugin.
-		 */
-		virtual PluginHandle FindPluginFromDescriptor(const PluginReferenceDescriptorHandle & pluginDescriptor) const = 0;
-
-		/**
 		 * @brief Get a vector of handles to all plugins.
 		 * @return Vector of plugin handles.
 		 */

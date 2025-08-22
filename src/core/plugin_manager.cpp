@@ -286,15 +286,13 @@ void PluginManager::TerminateAllPlugins() {
 	if (_allPlugins.empty())
 		return;
 	
-	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
-		auto& plugin = *it;
+	for (auto& plugin : std::ranges::reverse_view(_allPlugins)) {
 		if (plugin.GetState() == PluginState::Running) {
 			plugin.GetModule()->EndPlugin(plugin);
 		}
 	}
 
-	for (auto it = _allPlugins.rbegin(); it != _allPlugins.rend(); ++it) {
-		auto& plugin = *it;
+	for (auto& plugin : std::ranges::reverse_view(_allPlugins)) {
 		plugin.Terminate();
 	}
 
@@ -305,8 +303,7 @@ void PluginManager::TerminateAllModules() {
 	if (_allModules.empty())
 		return;
 
-	for (auto it = _allModules.rbegin(); it != _allModules.rend(); ++it) {
-		auto& module = *it;
+	for (auto& module : std::ranges::reverse_view(_allModules)) {
 		module.Terminate();
 	}
 
@@ -314,36 +311,28 @@ void PluginManager::TerminateAllModules() {
 }
 
 ModuleHandle PluginManager::FindModule(std::string_view moduleName) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleName](const auto& module) {
-		return module.GetName() == moduleName;
-	});
+	auto it = std::ranges::find(_allModules, moduleName, &Module::GetName);
 	if (it != _allModules.end())
 		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromId(UniqueId moduleId) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleId](const auto& module) {
-		return module.GetId() == moduleId;
-	});
+	auto it = std::ranges::find(_allModules, moduleId, &Module::GetId);
 	if (it != _allModules.end())
 		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromLang(std::string_view moduleLang) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleLang](const auto& module) {
-		return module.GetLanguage() == moduleLang;
-	});
+	auto it = std::ranges::find(_allModules, moduleLang, &Module::GetLanguage);
 	if (it != _allModules.end())
 		return *it;
 	return {};
 }
 
 ModuleHandle PluginManager::FindModuleFromPath(const fs::path& moduleFilePath) const {
-	auto it = std::find_if(_allModules.begin(), _allModules.end(), [&moduleFilePath](const auto& module) {
-		return module.GetFilePath() == moduleFilePath;
-	});
+	auto it = std::ranges::find(_allModules, moduleFilePath, &Module::GetFilePath);
 	if (it != _allModules.end())
 		return *it;
 	return {};
@@ -359,29 +348,14 @@ std::vector<ModuleHandle> PluginManager::GetModules() const {
 }
 
 PluginHandle PluginManager::FindPlugin(std::string_view pluginName) const {
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginName](const auto& plugin) {
-		return plugin.GetName() == pluginName;
-	});
+	auto it = std::ranges::find(_allPlugins, pluginName, &Plugin::GetName);
 	if (it != _allPlugins.end())
 		return *it;
 	return {};
 }
 
 PluginHandle PluginManager::FindPluginFromId(UniqueId pluginId) const {
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&pluginId](const auto& plugin) {
-		return plugin.GetId() == pluginId;
-	});
-	if (it != _allPlugins.end())
-		return *it;
-	return {};
-}
-
-PluginHandle PluginManager::FindPluginFromDescriptor(const PluginReferenceDescriptorHandle& pluginDescriptor) const {
-	auto name = pluginDescriptor.GetName();
-	auto version = pluginDescriptor.GetVersion();
-	auto it = std::find_if(_allPlugins.begin(), _allPlugins.end(), [&name, &version](const auto& plugin) {
-		return plugin.GetName() == name && (!version || plugin.GetDescriptor().version >= version);
-	});
+	auto it = std::ranges::find(_allPlugins, pluginId, &Plugin::GetId);
 	if (it != _allPlugins.end())
 		return *it;
 	return {};

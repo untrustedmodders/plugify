@@ -1,6 +1,5 @@
 #include "plugin.hpp"
 #include "module.hpp"
-#include <plugify/package.hpp>
 #include <plugify/plugify_provider.hpp>
 #include <plugify/plugin.hpp>
 

@@ -30,7 +30,6 @@ namespace plugify {
 
 		PluginHandle FindPlugin(std::string_view pluginName) const override;
 		PluginHandle FindPluginFromId(UniqueId pluginId) const override;
-		PluginHandle FindPluginFromDescriptor(const PluginReferenceDescriptorHandle & pluginDescriptor) const override;
 		std::vector<PluginHandle> GetPlugins() const override;
 
 	private:

@@ -2,12 +2,11 @@
 
 #include <glaze/glaze.hpp>
 
+#include <../core/descriptor.hpp>
 #include <core/language_module_descriptor.hpp>
 #include <core/method.hpp>
 #include <core/plugin_descriptor.hpp>
 #include <plugify/config.hpp>
-#include <plugify/descriptor.hpp>
-#include <plugify/package.hpp>
 
 template<>
 struct glz::meta<plugify::ValueType> {
@@ -153,52 +152,6 @@ struct glz::meta<plugify::Config> {
 };
 
 template <>
-struct glz::meta<plugify::PackageVersion> {
-	using T = plugify::PackageVersion;
-	static constexpr auto value = object(
-			"version", &T::version,
-			"checksum", &T::checksum,
-			"download", &T::download,
-			"platforms", &T::platforms
-	);
-};
-
-template <>
-struct glz::meta<plugify::RemotePackage> {
-	using T = plugify::RemotePackage;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"name", &T::name,
-			"type", &T::type,
-			"author", &T::author,
-			"description", &T::description,
-			"versions", &T::versions
-	);
-};
-
-template <>
-struct glz::meta<plugify::LocalPackage> {
-	using T = plugify::LocalPackage;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"name", &T::name,
-			"type", &T::type,
-			"path", &T::path,
-			"version", &T::version,
-			"descriptor", &T::descriptor
-	);
-};
-
-template <>
-struct glz::meta<plugify::PackageManifest> {
-	using T = plugify::PackageManifest;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"content", &T::content
-	);
-};
-
-template <>
 struct glz::meta<plugify::EnumValue> {
 	using T = plugify::EnumValue;
 	static constexpr auto value = object(
@@ -327,3 +280,4 @@ namespace glz {
 	}
 #endif
 }
+

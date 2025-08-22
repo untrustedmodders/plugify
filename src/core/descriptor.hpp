@@ -5,7 +5,7 @@
 #include <vector>
 #include <optional>
 
-#include "version.hpp"
+#include "../../include/plugify/version.hpp"
 
 namespace plugify {
 	/**

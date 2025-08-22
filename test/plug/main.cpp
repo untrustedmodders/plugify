@@ -22,6 +22,8 @@
 #include <iostream>
 #include <unordered_set>
 
+#if 0
+
 std::vector<std::string> Split(const std::string& str, char sep) {
     std::vector<std::string> tokens;
     std::string token;
@@ -675,3 +677,12 @@ int main() {
 
     return EXIT_SUCCESS;
 }
+
+#else
+
+int main() {
+	std::cout << "Plugify is not built, please build it first." << std::endl;
+	return EXIT_FAILURE;
+}
+
+#endif
