@@ -12,7 +12,6 @@
 
 namespace plugify {
 	class Manager;
-	struct Constraint;
 
 	// Conflict Class
 	class PLUGIFY_API Conflict {
@@ -27,20 +26,20 @@ namespace plugify {
 
 		// Getters
 		[[nodiscard]] std::string_view GetName() const noexcept;
-		[[nodiscard]] std::span<const Constraint> GetConstraints() const noexcept;
+		[[nodiscard]] Constraint GetConstraints() const noexcept;
 		[[nodiscard]] std::string_view GetReason() const noexcept;
 
 		// Setters (pass by value and move)
 		void SetName(std::string_view name) noexcept;
-		void SetConstraints(std::span<const Constraint> constraints) noexcept;
+		void SetConstraints(Constraint constraints) noexcept;
 		void SetReason(std::string_view reason) noexcept;
 
 		[[nodiscard]] bool operator==(const Conflict& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Conflict& other) const noexcept;
 
-		std::vector<Constraint> GetSatisfiedConstraints(Version version) const;
-
 	PLUGIFY_ACCESS:
 		std::unique_ptr<Impl> _impl;
 	};
+
+    using Obsolete = Conflict;
 }

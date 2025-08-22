@@ -4,8 +4,7 @@
 #include <filesystem>
 #include <unordered_map>
 
-#include "conflict.hpp"
-#include "constraint.hpp"
+#include "plugify/core/conflict.hpp"
 #include "plugify/core/dependency.hpp"
 #include "plugify/core/method.hpp"
 
@@ -25,6 +24,7 @@ namespace plugify {
 		std::optional<std::vector<std::string>> platforms;
 		std::optional<std::vector<Dependency>> dependencies;
 		std::optional<std::vector<Conflict>> conflicts;
+		std::optional<std::vector<Obsolete>> obsoletes;
 
 		// Metadata
 		//std::optional<std::unordered_map<std::string, std::string>> metadata;

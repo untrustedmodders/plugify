@@ -1,7 +1,6 @@
 #pragma once
 
 #include "plugify/core/config.hpp"
-#include "plugify/core/constraint.hpp"
 #include "plugify/core/manifest.hpp"
 #include "plugify/core/report.hpp"
 
@@ -84,6 +83,7 @@ struct glz::meta<plugify::ModuleManifest> {
 			"platforms", &T::platforms,
 			"dependencies", &T::dependencies,
 			"conflicts", &T::conflicts,
+            "obsoletes", &T::obsoletes,
 
 			"language", &T::language,
 			"runtime", &T::runtime,
@@ -107,9 +107,11 @@ struct glz::meta<plugify::PluginManifest> {
 			"author", &T::author,
 			"website", &T::website,
 			"license", &T::license,
+
 			"platforms", &T::platforms,
 			"dependencies", &T::dependencies,
 			"conflicts", &T::conflicts,
+			"obsoletes", &T::obsoletes,
 
 			"language", &T::language,
 			"entry", &T::entry,
@@ -157,6 +159,7 @@ struct glz::meta<plugify::EnumValue> {
 		"value", [](auto&& self) -> auto& { return self._impl->value; }
 	);
 };
+/*
 template <>
 struct glz::meta<plugify::DependencyReport::IssueType> {
 	using T = plugify::DependencyReport::IssueType;
@@ -169,7 +172,7 @@ struct glz::meta<plugify::DependencyReport::IssueType> {
 		"transitive_missing", T::TransitiveMissing,
 		"conflicting_providers", T::ConflictingProviders
 	);
-};
+};*/
 
 template<>
 struct glz::meta<plugify::ValueType> {
@@ -266,15 +269,15 @@ namespace glz {
 		static void op(plugify::Version& value, auto&&... args) {
 			std::string str;
 			parse<JSON>::op<Opts>(str, args...);
-			value.from_string_noexcept(str);
-		}
+            plg::parse(str, value);
+        }
 	};
 
 	template<>
 	struct to<JSON, plugify::Version> {
 		template <auto Opts>
 		static void op(const plugify::Version& value, auto&&... args) noexcept {
-			serialize<JSON>::op<Opts>(value.to_string_noexcept(), args...);
+			serialize<JSON>::op<Opts>(value.to_string(), args...);
 		}
 	};
 
@@ -282,94 +285,19 @@ namespace glz {
 	struct from<JSON, plugify::Constraint> {
 	    template <auto Opts>
 	    static void op(plugify::Constraint& value, auto&&... args) {
-		    using namespace plugify;
-	        std::string str;
-	        parse<JSON>::op<Opts>(str, args...);
-
-	        if (str.empty()) {
-	            value.comparison = Comparison::Any;
-	            value.version = Version{};
-	            return;
-	        }
-
-	        // Parse the constraint operator
-	        std::string_view string(str);
-	        Comparison comparison;
-	        size_t op_len = 0;
-
-	        if (string.starts_with(">=")) {
-	            comparison = Comparison::GreaterEqual;
-	            op_len = 2;
-	        } else if (string.starts_with("<=")) {
-	            comparison = Comparison::LessEqual;
-	            op_len = 2;
-	        } else if (string.starts_with("~")) {
-	            comparison = Comparison::Compatible;
-	            op_len = 1;
-	        } else if (string.starts_with("!=")) {
-	            comparison = Comparison::NotEqual;
-	            op_len = 2;
-	        } else if (string.starts_with("==")) {
-	            comparison = Comparison::Equal;
-	            op_len = 2;
-	        } else if (string.starts_with(">")) {
-	            comparison = Comparison::Greater;
-	            op_len = 1;
-	        } else if (string.starts_with("<")) {
-	            comparison = Comparison::Less;
-	            op_len = 1;
-	        } else {
-	            // No operator, assume equality
-	            comparison = Comparison::Equal;
-	            op_len = 0;
-	        }
-
-	        value.comparison = comparison;
-	        value.version = Version(string.substr(op_len));
+            std::string str;
+            parse<JSON>::op<Opts>(str, args...);
+            plg::parse(str, value);
 	    }
 	};
 
-	template<>
+	/*template<>
 	struct to<JSON, plugify::Constraint> {
 	    template <auto Opts>
 	    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
-		    using namespace plugify;
-	        std::string result;
 
-	        // Convert constraint type to operator string
-	        switch (value.comparison) {
-	            case Comparison::Equal:
-	                result = "==";
-	                break;
-	            case Comparison::NotEqual:
-	                result = "!=";
-	                break;
-	            case Comparison::Greater:
-	                result = ">";
-	                break;
-	            case Comparison::GreaterEqual:
-	                result = ">=";
-	                break;
-	            case Comparison::Less:
-	                result = "<";
-	                break;
-	            case Comparison::LessEqual:
-	                result = "<=";
-	                break;
-	            case Comparison::Compatible:
-	                result = "~";
-	                break;
-	            case Comparison::Any:
-	                serialize<JSON>::op<Opts>(result, args...);
-	                return;
-	        }
-
-	        // Append version string
-	        result += value.version.to_string_noexcept();
-
-	        serialize<JSON>::op<Opts>(result, args...);
 	    }
-	};
+	};*/
 #else
 	namespace detail {
 		template<>
@@ -431,94 +359,19 @@ namespace glz {
 		struct from_json<plugify::Constraint> {
 		    template <auto Opts>
 		    static void op(plugify::Constraint& value, auto&&... args) {
-		    	using namespace plugify;
 		        std::string str;
 		        parse<JSON>::op<Opts>(str, args...);
-
-		        if (str.empty()) {
-		            value.type = Comparison::Any;
-		            value.version = Version{};
-		            return;
-		        }
-
-		        // Parse the constraint operator
-		        std::string_view sv(str);
-		        VersionConstraintType type;
-		        size_t op_len = 0;
-
-		        if (sv.starts_with(">=")) {
-		            type = Comparison::GreaterEqual;
-		            op_len = 2;
-		        } else if (sv.starts_with("<=")) {
-		            type = Comparison::LessEqual;
-		            op_len = 2;
-		        } else if (sv.starts_with("~")) {
-		            type = Comparison::Compatible;
-		            op_len = 1;
-		        } else if (sv.starts_with("!=")) {
-		            type = Comparison::NotEqual;
-		            op_len = 2;
-		        } else if (sv.starts_with("==")) {
-		            type = Comparison::Equal;
-		            op_len = 2;
-		        } else if (sv.starts_with(">")) {
-		            type = Comparison::Greater;
-		            op_len = 1;
-		        } else if (sv.starts_with("<")) {
-		            type = Comparison::Less;
-		            op_len = 1;
-		        } else {
-		            // No operator, assume equality
-		            type = Comparison::Equal;
-		            op_len = 0;
-		        }
-
-		        value.type = type;
-		        value.version = Version(sv.substr(op_len));
+                plg::parse(str, value);
 		    }
 		};
 
-		template<>
+		/*template<>
 		struct to_json<plugify::Constraint> {
 		    template <auto Opts>
 		    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
-		    	using namespace plugify;
-		        std::string result;
 
-		        // Convert constraint type to operator string
-		        switch (value.type) {
-		            case Comparison::Equal:
-		                result = "==";
-		                break;
-		            case Comparison::NotEqual:
-		                result = "!=";
-		                break;
-		            case Comparison::Greater:
-		                result = ">";
-		                break;
-		            case Comparison::GreaterEqual:
-		                result = ">=";
-		                break;
-		            case Comparison::Less:
-		                result = "<";
-		                break;
-		            case Comparison::LessEqual:
-		                result = "<=";
-		                break;
-		            case Comparison::Compatible:
-		                result = "~";
-		                break;
-		            case Comparison::Any:
-		                serialize<JSON>::op<Opts>(result, args...);
-		                return;
-		        }
-
-		        // Append version string
-		        result += value.version.to_string_noexcept();
-
-		        serialize<JSON>::op<Opts>(result, args...);
 		    }
-		};
+		};*/
 	}
 #endif
 }

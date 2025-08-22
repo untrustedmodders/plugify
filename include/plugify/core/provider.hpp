@@ -2,7 +2,6 @@
 
 #include "assembly.hpp"
 #include "file_system.hpp"
-#include "plugify/core/constraint.hpp"
 #include "plugify/core/logger.hpp"
 
 namespace plugify {

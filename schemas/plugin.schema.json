@@ -81,15 +81,14 @@
             "minLength": 1
           },
           "constraints": {
-            "type": "array",
-            "description": "Version constraints using operators: '==' (exact match), '!=' (exclude version), '>' (newer than), '>=' (at least), '<' (older than), '<=' (at most), '~>' (compatible with - allows patch updates). Empty string accepts any version. Multiple constraints are AND-ed together.",
-            "items": {
-              "type": "string",
-              "description": "A version constraint in the format '[operator]version' (e.g., '>=1.2.3') or empty string for any version. Supported operators: '==', '!=', '>', '>=', '<', '<=', '~>'.",
-              "pattern": "^(==|!=|>|>=|<|<=|~>|)(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$|^$",
-              "minLength": 0
-            },
-            "examples": [">=1.0.0", "~>2.1.0", ">=1.0.0,<2.0.0", "!=1.2.3", ""]
+            "type": "string",
+            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "examples": [
+              ">=1.0.0 <2.0.0",
+              ">=1.0.0 <2.0.0 || >3.2.1",
+              "==1.2.3 || >=2.0.0 <3.0.0"
+            ]
           },
           "optional": {
             "type": "boolean",
@@ -114,15 +113,14 @@
             "minLength": 1
           },
           "constraints": {
-            "type": "array",
-            "description": "A list of version constraints for the conflicting plugin, e.g., '>=1.2.3', '==2.0.0', '~>2.1.0', or '' for any version.",
-            "items": {
-              "type": "string",
-              "description": "A version constraint in the format '[operator]version' (e.g., '>=1.2.3') or empty string for any version. Supported operators: '==', '!=', '>', '>=', '<', '<=', '~>'.",
-              "pattern": "^(==|!=|>|>=|<|<=|~>|)(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$|^$",
-              "minLength": 0
-            },
-            "examples": [">=1.0.0", "~>2.1.0", ">=1.0.0,<2.0.0", "!=1.2.3", ""]
+            "type": "string",
+            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "examples": [
+              ">=1.0.0 <2.0.0",
+              ">=1.0.0 <2.0.0 || >3.2.1",
+              "==1.2.3 || >=2.0.0 <3.0.0"
+            ]
           },
           "reason": {
             "type": "string",

@@ -15,7 +15,12 @@ namespace plugify {
 	 * This type is an alias for plg::version, which encapsulates the versioning
 	 * information for packages in the Plugify ecosystem.
 	 */
-	using Version = plg::version;
+	using Version = plg::version<int, int, int>;
+
+    /**
+     * @typedef Constraint
+     */
+    using Constraint = plg::range_set<int, int, int>;
 
 	/**
 	 * @typedef UniqueId

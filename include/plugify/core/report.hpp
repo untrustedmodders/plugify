@@ -20,6 +20,7 @@ namespace plugify {
 
 	    std::vector<PackageValidation> moduleResults;
 	    std::vector<PackageValidation> pluginResults;
+	    std::chrono::milliseconds totalTime;
 
 	    bool AllPassed() const {
 	        return std::ranges::all_of(moduleResults, [](const auto& r) { return r.passed; }) &&
@@ -46,217 +47,105 @@ namespace plugify {
 		PLUGIFY_API std::string GenerateJsonReport() const;
 	};
 
-	// Enhanced DependencyReport with detailed constraint information
-	struct DependencyReport {
-	    // Types of dependency issues
-	    enum class IssueType {
-	        None,
-	        MissingDependency,      // Dependency doesn't exist
-	        VersionConflict,        // Incompatible version requirements
-	        CircularDependency,     // A -> B -> A cycle detected
-	        OptionalMissing,        // Optional dependency not available
-	        TransitiveMissing,      // Indirect dependency missing
-	        ConflictingProviders,   // Multiple packages provide same capability
-	        Other
-	    };
+    struct DependencyReport {
+        struct DependencyIssue {
+            PackageId affectedPackage;
+            std::string description;
+            std::optional<PackageId> involvedPackage;
+            std::optional<std::vector<std::string>> suggestedFixes;
+            bool isBlocker;  // Whether this prevents package loading
 
-	    struct DependencyIssue {
-	        IssueType type;
-	        PackageId affectedPackage;
-	        std::string description;
-	        std::vector<PackageId> involvedPackages;
+            // Generate detailed description with constraint info
+            std::string GetDetailedDescription() const {
+                std::stringstream ss;
+                ss << description;
 
-	        // Enhanced constraint details
-	        struct ConstraintDetail {
-	            std::string constraintDescription;  // e.g., ">=2.0.0 and <3.0.0"
-	            Version actualVersion;               // What version is actually available
-	            bool isSatisfied;
-	        };
-	        std::vector<ConstraintDetail> failedConstraints;
-			std::optional<std::string> formattedConstraints;
+                if (suggestedFixes && !suggestedFixes->empty()) {
+                    ss << "\n  Suggestions:";
+                    for (const auto& fix : *suggestedFixes) {
+                        ss << "\n    - " << fix;
+                    }
+                }
 
-	        std::optional<std::vector<std::string>> suggestedFixes;
-	        bool isBlocker;  // Whether this prevents package loading
+                return ss.str();
+            }
+        };
 
-	        // Generate detailed description with constraint info
-	        std::string GetDetailedDescription() const {
-	            std::stringstream ss;
-	            ss << description;
+        struct PackageResolution {
+            PackageId id;
+            std::vector<DependencyIssue> issues;
 
-	            if (!failedConstraints.empty()) {
-	                ss << "\n  Constraint details:";
-	                for (const auto& constraint : failedConstraints) {
-	                    ss << std::format("\n    Required: {} | Available: {} | {}",
-	                                     constraint.constraintDescription,
-	                                     constraint.actualVersion,
-	                                     constraint.isSatisfied ? "✓" : "✗");
-	                }
-	            }
+            bool CanLoad() const {
+                return std::ranges::none_of(issues,
+                                            [](const auto& issue) { return issue.isBlocker; });
+            }
 
-	            if (suggestedFixes && !suggestedFixes->empty()) {
-	                ss << "\n  Suggestions:";
-	                for (const auto& fix : *suggestedFixes) {
-	                    ss << "\n    - " << fix;
-	                }
-	            }
+            std::size_t BlockerCount() const {
+                return std::ranges::count_if(issues,
+                                             [](const auto& issue) { return issue.isBlocker; });
+            }
+        };
 
-	            return ss.str();
-	        }
-	    };
+        // Main report data
+        std::vector<PackageResolution> resolutions;
+	    std::chrono::milliseconds totalTime;
 
-	    struct VersionConflict {
-	        PackageId dependency;
-	        struct Requirement {
-	            PackageId requester;
-	            //std::string requiredVersion;
-	            //std::vector<Constraint> constraints;
-	            std::string formattedConstraints;  // Human-readable constraint description
-	        };
-	        std::vector<Requirement> requirements;
-	        std::optional<Version> availableVersion;
-	        std::string conflictReason;
+        // Dependency graph
+        std::unordered_map<PackageId, std::vector<PackageId>> dependencyGraph;
+        std::unordered_map<PackageId, std::vector<PackageId>> reverseDependencyGraph;
 
-	        std::string GetDetailedDescription() const {
-	            std::string desc = std::format("Version conflict for '{}':\n", dependency);
-	            for (const auto& req : requirements) {
-	                desc += std::format("  - '{}' requires: {}\n",
-	                                   req.requester, req.formattedConstraints);
-	            }
-	            if (availableVersion) {
-	                desc += std::format("  Available version: {}\n", *availableVersion);
-	            }
-	            return desc;
-	        }
-	    };
-
-	    struct CircularDependency {
-	        std::vector<PackageId> cycle;  // Ordered list forming the cycle
-	        std::string GetCycleDescription() const {
-	            if (cycle.empty()) return "";
-	            std::string desc = cycle[0];
-	            for (size_t i = 1; i < cycle.size(); ++i) {
-	                desc += " → " + cycle[i];
-	            }
-	            desc += " → " + cycle[0];  // Complete the cycle
-	            return desc;
-	        }
-	    };
-
-	    struct PackageResolution {
-	        PackageId id;
-
-	        // Successfully resolved
-	        std::vector<PackageId> resolvedDependencies;
-	        std::vector<PackageId> optionalDependencies;  // Available optional deps
-
-	        // Issues
-	        std::vector<DependencyIssue> issues;
-
-	        // Detailed breakdown
-	        struct MissingDependency {
-	            PackageId name;
-	            //std::optional<Version> requiredVersion;
-	            //std::vector<Constraint> requiredConstraints;
-	            std::string formattedConstraints;
-	            bool isOptional;
-	            //std::vector<PackageId> searchPaths;  // Where we looked
-	        };
-	        std::vector<MissingDependency> missingDependencies;
-
-	        // Transitive dependencies
-	        std::unordered_map<PackageId, std::vector<PackageId>> transitiveDeps;
-	        std::vector<PackageId> allTransitiveDependencies;
-
-	        bool CanLoad() const {
-	            return std::ranges::none_of(issues,
-	                [](const auto& issue) { return issue.isBlocker; });
-	        }
-
-	        std::size_t BlockerCount() const {
-	            return std::ranges::count_if(issues,
-	                [](const auto& issue) { return issue.isBlocker; });
-	        }
-	    };
-
-	    // Main report data
-	    std::vector<PackageResolution> resolutions;
-	    std::vector<VersionConflict> versionConflicts;
-	    std::vector<CircularDependency> circularDependencies;
-
-	    // Dependency graph
-	    std::unordered_map<PackageId, std::vector<PackageId>> dependencyGraph;
-	    std::unordered_map<PackageId, std::vector<PackageId>> reverseDependencyGraph;
-
-	    // Load order (topologically sorted if possible)
-	    std::vector<PackageId> loadOrder;
-	    bool isLoadOrderValid{false}; // False if circular deps prevent valid ordering
-
-	    // Statistics
-	    struct Statistics {
-	        std::size_t totalPackages{};
-	        std::size_t packagesWithIssues{};
-	        std::size_t missingDependencyCount{};
-	        std::size_t optionalDependencyCount{};
-	        std::size_t conflictCount{};
-	        std::size_t versionConflictCount{};
-	        std::size_t circularDependencyCount{};
-	        std::size_t maxDependencyDepth{};
-	        double averageDependencyCount{};
-	    } stats;
-
-	    // Analysis methods
-	    bool HasBlockingIssues() const {
-	        return std::ranges::any_of(resolutions,
-	            [](const auto& r) { return !r.CanLoad(); });
-	    }
+        // Load order (topologically sorted if possible)
+        std::vector<PackageId> loadOrder;
+        bool isLoadOrderValid{false}; // False if circular deps prevent valid ordering
 
 
-		std::size_t BlockerCount() const {
-	    	return std::ranges::count_if(resolutions,
-					[](const auto& r) { return r.BlockerCount() > 0; });
-		}
+        bool hasUnresolvedDependencies;
+        bool hasConflicts;
+
+        // Analysis methods
+        bool HasBlockingIssues() const {
+            return std::ranges::any_of(resolutions,
+                                       [](const auto& r) { return !r.CanLoad(); });
+        }
 
 
-	    std::vector<PackageId> GetPackagesWithIssues() const {
-	        std::vector<PackageId> issues;
-	        for (const auto& r : resolutions) {
-	            if (!r.issues.empty()) {
-	                issues.push_back(r.id);
-	            }
-	        }
-	        return issues;
-	    }
+        std::size_t BlockerCount() const {
+            return std::ranges::count_if(resolutions,
+                                         [](const auto& r) { return r.BlockerCount() > 0; });
+        }
 
-	    std::vector<PackageId> GetLoadablePackages() const {
-	        std::vector<PackageId> loadable;
-	        for (const auto& r : resolutions) {
-	            if (r.CanLoad()) {
-	                loadable.push_back(r.id);
-	            }
-	        }
-	        return loadable;
-	    }
 
-	    std::optional<CircularDependency> FindCycleInvolving(const PackageId& package) const {
-	        for (const auto& cycle : circularDependencies) {
-	            if (std::ranges::find(cycle.cycle, package) != cycle.cycle.end()) {
-	                return cycle;
-	            }
-	        }
-	        return std::nullopt;
-	    }
+        std::vector<PackageId> GetPackagesWithIssues() const {
+            std::vector<PackageId> issues;
+            for (const auto& r : resolutions) {
+                if (!r.issues.empty()) {
+                    issues.push_back(r.id);
+                }
+            }
+            return issues;
+        }
 
-	    std::vector<PackageId> GetDirectDependents(const PackageId& package) const {
-	        auto it = reverseDependencyGraph.find(package);
-	        if (it != reverseDependencyGraph.end()) {
-	            return it->second;
-	        }
-	        return {};
-	    }
+        std::vector<PackageId> GetLoadablePackages() const {
+            std::vector<PackageId> loadable;
+            for (const auto& r : resolutions) {
+                if (r.CanLoad()) {
+                    loadable.push_back(r.id);
+                }
+            }
+            return loadable;
+        }
 
-		PLUGIFY_API std::string GenerateTextReport() const;
-		PLUGIFY_API std::string GenerateJsonReport() const;
-	};
+        std::vector<PackageId> GetDirectDependents(const PackageId& package) const {
+            auto it = reverseDependencyGraph.find(package);
+            if (it != reverseDependencyGraph.end()) {
+                return it->second;
+            }
+            return {};
+        }
+
+        PLUGIFY_API std::string GenerateTextReport() const;
+        PLUGIFY_API std::string GenerateJsonReport() const;
+    };
 
 	struct InitializationReport {
 	    struct PackageInit {

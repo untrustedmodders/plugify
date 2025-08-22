@@ -138,7 +138,7 @@ Manager::~Manager() {
 	// Destructor no longer performs unloading
 	// Users must call terminate() explicitly before destruction
 	if (!_impl->loadedModules.empty() || !_impl->loadedPlugins.empty()) {
-		std::cerr << "WARNING: PluginManager destroyed without calling terminate()!\\n";
+		std::cerr << "WARNING: Manager destroyed without calling terminate()!\\n";
 		std::cerr << "         Call terminate() explicitly for proper shutdown.\\n";
 		std::cerr << std::format("         {} modules and {} plugins still loaded!\\n",
 								 _impl->loadedModules.size(),
@@ -290,7 +290,7 @@ Result<void> Manager::DiscoverPackages(
     "website": "https://example.com/graphics-engine",
     "license": "Apache-2.0",
     "dependencies": [
-      { "name": "core-utils", "constraints": [">=1.0.0"] }
+      { "name": "core-utils", "constraints": ">=1.0.0" }
     ],
     "conflicts": [],
     "language": { "name": "cpp" },
@@ -305,7 +305,7 @@ Result<void> Manager::DiscoverPackages(
     "license": "GPL-3.0",
     "dependencies": [
       { "name": "core-utils" },
-      { "name": "math-lib", "constraints": [">=2.0.0","<3.0.0"] }
+      { "name": "math-lib", "constraints": ">=2.0.0 <3.0.0" }
     ],
     "conflicts": [],
     "language": { "name": "cpp" },
@@ -362,7 +362,7 @@ Result<void> Manager::DiscoverPackages(
     "license": "MIT",
     "dependencies": [
       { "name": "math-lib" },
-      { "name": "physics-engine", "constraints": ["~3.0.0"] }
+      { "name": "physics-engine", "constraints": ">3.0.0 || <4.0.0" }
     ],
     "conflicts": [],
     "language": { "name": "cpp" },
@@ -607,7 +607,7 @@ Result<void> Manager::DiscoverPackages(
     "website": "https://example.com/multi-version-consumer",
     "license": "MIT",
     "dependencies": [
-      { "name": "multi-version-lib", "constraints": [">=1.0.0","<2.0.0"] }
+      { "name": "multi-version-lib", "constraints": ">=1.0.0 <2.0.0" }
     ],
     "conflicts": [],
     "language": { "name": "cpp" },
@@ -716,7 +716,7 @@ Result<void> Manager::DiscoverPackages(
     "license": "MIT",
     "dependencies": [],
     "conflicts": [
-      { "name": "graphics-engine", "constraints": ["<2.0.0"] }
+      { "name": "graphics-engine", "constraints": "<2.0.0" }
     ],
     "language": { "name": "cpp" },
     "entry": "test"
@@ -974,16 +974,16 @@ Result<InitializationState> Manager::Initialize() {
     // Step 4: Initialize language modules in dependency order
     auto moduleReport = InitializeModules();
     _impl->initState.initializationReport.moduleInits = moduleReport.moduleInits;
+    _impl->initState.initializationReport.totalTime = moduleInitEnd - moduleInitStart;
     
     // Step 5: Initialize plugins in dependency order
     auto pluginReport = InitializePlugins();
     _impl->initState.initializationReport.pluginInits = pluginReport.pluginInits;
-    
+    _impl->initState.initializationReport.totalTime = pluginInitEnd - pluginInitStart;
+
     // Calculate total time
     auto overallEnd = std::chrono::steady_clock::now();
-    _impl->initState.initializationReport.totalTime = 
-        std::chrono::duration_cast<std::chrono::milliseconds>(overallEnd - overallStart);
-    _impl->initState.totalTime = _impl->initState.initializationReport.totalTime;
+    _impl->initState.totalTime = std::chrono::duration_cast<std::chrono::milliseconds>(overallEnd - overallStart);
     _impl->initState.endTime = std::chrono::system_clock::now();
     
     // Print comprehensive summary (can be disabled via config if needed)
@@ -1096,6 +1096,9 @@ ValidationReport Manager::ValidateAllManifests() {
 DependencyReport Manager::ResolveDependencies() {
     // Collect all validated packages
     PackageCollection allPackages;
+    allPackages.reserve(_impl->plugins.size() + _impl->modules.size());
+
+    std::cout << "\n=== Resolve Dependencies ===\n";
 
     for (auto& [id, info] : _impl->plugins) {
         if (info->state == PackageState::Validated) {
@@ -1109,502 +1112,7 @@ DependencyReport Manager::ResolveDependencies() {
         }
     }
 
-    DependencyReport report = _impl->dependencyResolver->ResolveDependencies(allPackages);
-
-#if 0
-    DependencyReport report;
-    // Initialize statistics
-    report.stats = {};
-    
-    // Collect all validated packages
-    std::vector<PluginInfo> validPlugins;
-    std::vector<ModuleInfo> validModules;
-    std::unordered_map<PackageId, Manifest> allPackages;
-    
-    for (auto& [id, info] : _impl->plugins) {
-        if (info->state == PackageState::Validated) {
-            validPlugins.push_back(info);
-            allPackages[id] = info->manifest;
-        }
-    }
-    
-    for (auto& [id, info] : _impl->modules) {
-        if (info->state == PackageState::Validated) {
-            validModules.push_back(info);
-            allPackages[id] = info->manifest;
-        }
-    }
-    
-    report.stats.totalPackages = allPackages.size();
-    
-    // Helper to format constraints
-    auto formatConstraints = [](const std::vector<Constraint>& constraints) -> std::string {
-        if (constraints.empty()) return "any version";
-        
-        std::string result;
-        for (size_t i = 0; i < constraints.size(); ++i) {
-            if (i > 0) result += " AND ";
-            
-            // Format each constraint
-            const auto& [comparison, version] = constraints[i];
-            if (comparison == Comparison::Any) {
-                result += "any version";
-            } else if (comparison == Comparison::Compatible) {
-                // Show the expanded compatible range for clarity
-                if (version.major > 0) {
-                    result += std::format("^{} (>={} and <{}.0.0)", 
-                                        version, version, version.major + 1);
-                } else if (version.minor > 0) {
-                    result += std::format("^{} (>={} and <0.{}.0)", 
-                                        version, version, version.minor + 1);
-                } else {
-                    result += std::format("^{} (>={} and <0.0.{})", 
-                                        version, version, version.patch + 1);
-                }
-            } else {
-                result += std::format("{}{}", 
-                                     ComparisonUtils::ToString(comparison), 
-                                     version);
-            }
-        }
-        return result;
-    };
-    
-    // Build dependency graph
-    for (const auto& [id, manifest] : allPackages) {
-        DependencyReport::PackageResolution resolution{.id = id};
-        
-        // Process each dependency
-    	if (const auto& dependencies = manifest->dependencies) {
-    		for (const auto& dependency : *dependencies) {
-    			const auto& [name, constraints, optional] = *dependency._impl;
-
-    			auto depIt = allPackages.find(name);
-
-    			if (depIt == allPackages.end()) {
-    				// Missing dependency with detailed constraint info
-    				DependencyReport::PackageResolution::MissingDependency missing{
-    					.name = name,
-						//.requiredVersion = std::nullopt,  // Could extract from constraints
-						//.requiredConstraints = constraints ? *constraints : std::vector<Constraint>{},
-						.formattedConstraints = constraints ? formatConstraints(*constraints) : "any version",
-						.isOptional = optional.value_or(false)
-					};
-
-    				DependencyReport::DependencyIssue issue{
-    					.type = optional.value_or(false) ?
-								DependencyReport::IssueType::OptionalMissing :
-								DependencyReport::IssueType::MissingDependency,
-						.affectedPackage = id,
-						.description = std::format("Package '{}' requires '{}' ({}) which is not available",
-												  id, name, missing.formattedConstraints),
-						.involvedPackages = { name },
-						.failedConstraints = {},  // No version to check against
-						.suggestedFixes = std::vector<std::string>{
-							std::format("Install package '{}' with version {}", name, missing.formattedConstraints),
-							std::format("Add '{}' to search paths", name),
-							optional.value_or(false) ?
-								"This is an optional dependency and can be skipped" : ""
-						},
-						.isBlocker = !optional.value_or(false)
-					};
-
-    				// Remove empty suggestions
-    				if (issue.suggestedFixes) {
-    					std::erase(*issue.suggestedFixes, "");
-    				}
-
-    				resolution.issues.push_back(std::move(issue));
-    				resolution.missingDependencies.push_back(std::move(missing));
-    				report.stats.missingDependencyCount++;
-
-    			} else {
-    				// Dependency exists - check version constraints with detailed reporting
-    				const auto& depManifest = depIt->second;
-    				bool versionOk = true;
-    				std::vector<DependencyReport::DependencyIssue::ConstraintDetail> constraintDetails;
-
-    				if (constraints) {
-    					auto failedConstraints = dependency.GetFailedConstraints(depManifest->version);
-
-    					// Build detailed constraint information
-    					for (const auto& constraint : *constraints) {
-    						bool satisfied = constraint.IsSatisfiedBy(depManifest->version);
-
-    						DependencyReport::DependencyIssue::ConstraintDetail detail{
-    							.constraintDescription = formatConstraints({constraint}),
-								.actualVersion = depManifest->version,
-								.isSatisfied = satisfied
-							};
-
-    						if (!satisfied) {
-    							constraintDetails.push_back(std::move(detail));
-    							versionOk = false;
-    						}
-    					}
-
-    					std::string formattedConstraints = formatConstraints(*constraints);
-
-    					if (!failedConstraints.empty()) {
-    						// Check if this is a new version conflict or add to existing
-    						auto conflictIt = std::ranges::find_if(report.versionConflicts,
-								[&name](const auto& c) { return c.dependency == name; });
-
-    						if (conflictIt == report.versionConflicts.end()) {
-    							DependencyReport::VersionConflict conflict{
-    								.dependency = name,
-									.availableVersion = depManifest->version
-								};
-
-    							conflict.requirements.push_back({
-									.requester = id,
-									//.requiredVersion = formattedConstraints,
-									//.constraints = *constraints,
-									.formattedConstraints = formattedConstraints
-								});
-
-    							conflict.conflictReason = std::format(
-									"Version {} does not satisfy constraints: {}",
-									depManifest->version,
-									formatConstraints(failedConstraints));
-
-    							report.versionConflicts.push_back(std::move(conflict));
-    						} else {
-    							conflictIt->requirements.push_back({
-									.requester = id,
-									//.requiredVersion = formattedConstraints,
-									//.constraints = *constraints,
-									.formattedConstraints = formattedConstraints
-								});
-    						}
-
-    						DependencyReport::DependencyIssue issue{
-    							.type = DependencyReport::IssueType::VersionConflict,
-								.affectedPackage = id,
-								.description = std::format(
-									"Version conflict: '{}' requires '{}' with version {}, but {} is available",
-									id, name, formattedConstraints, depManifest->version),
-								.involvedPackages = { name },
-								.failedConstraints = std::move(constraintDetails),
-								.suggestedFixes = std::vector<std::string>{
-									std::format("Update '{}' to a version that satisfies: {}",
-											   name, formattedConstraints),
-									std::format("Relax version constraints in '{}' manifest", id),
-									"Check if there's a compatible version available in other sources"
-								},
-								.isBlocker = true
-							};
-
-    						resolution.issues.push_back(std::move(issue));
-    						report.stats.versionConflictCount++;
-    					}
-    				}
-
-    				if (versionOk) {
-    					resolution.resolvedDependencies.push_back(name);
-    					report.dependencyGraph[id].push_back(name);
-    					report.reverseDependencyGraph[name].push_back(id);
-    				} else if (optional.value_or(false)) {
-    					// Optional dependency with version conflict
-    					resolution.optionalDependencies.push_back(name);
-    				}
-    			}
-    		}
-    	}
-
-        // Check for conflicts with other packages (using Conflict struct)
-    	if (const auto& conflicts = manifest->conflicts) {
-    		 for (const auto& conflict : *conflicts) {
-    		 	const auto& [name, constraints, reason] = *conflict._impl;
-
-				if (allPackages.contains(name)) {
-	                const auto& conflictingManifest = allPackages[name];
-
-	                // Check if conflict constraints are satisfied
-	                bool hasConflict = true;
-	                std::vector<DependencyReport::DependencyIssue::ConstraintDetail> conflictDetails;
-
-	                if (constraints) {
-	                    auto satisfiedConstraints = conflict.GetSatisfiedConstraints(conflictingManifest->version);
-	                    hasConflict = !satisfiedConstraints.empty();
-
-	                    for (const auto& constraint : *constraints) {
-	                        bool satisfied = constraint.IsSatisfiedBy(conflictingManifest->version);
-	                        if (satisfied) {
-	                            conflictDetails.push_back({
-	                                .constraintDescription = formatConstraints({constraint}),
-	                                .actualVersion = conflictingManifest->version,
-	                                .isSatisfied = satisfied
-	                            });
-	                        }
-	                    }
-	                }
-
-	                if (hasConflict) {
-	                    std::string conflictDescription = std::format(
-	                        "Package '{}' conflicts with '{}'", id, name);
-
-	                    if (reason) {
-	                        conflictDescription += std::format(" ({})", *reason);
-	                    }
-
-	                    if (!conflictDetails.empty()) {
-	                        conflictDescription += std::format(" - version {} matches conflict constraints",
-	                                                          conflictingManifest->version);
-	                    }
-
-	                    DependencyReport::DependencyIssue issue{
-	                        .type = DependencyReport::IssueType::ConflictingProviders,
-	                        .affectedPackage = id,
-	                        .description = conflictDescription,
-	                        .involvedPackages = { name },
-	                        .failedConstraints = std::move(conflictDetails),
-	                        .suggestedFixes = std::vector<std::string>{
-	                            std::format("Remove either '{}' or '{}'", id, name),
-	                            std::format("Use alternative to '{}' or '{}'", id, name)
-	                        },
-	                        .isBlocker = true
-	                    };
-
-	                    if (reason) {
-	                        issue.suggestedFixes->push_back(
-	                            std::format("Conflict reason: {}", *reason));
-	                    }
-
-	                    resolution.issues.push_back(std::move(issue));
-	                }
-	            }
-	        }
-    	}
-
-        if (!resolution.issues.empty()) {
-            report.stats.packagesWithIssues++;
-        }
-
-        report.resolutions.push_back(std::move(resolution));
-    }
-
-    // Detect circular dependencies using DFS (same as before)
-    std::unordered_set<PackageId> visited;
-    std::unordered_set<PackageId> recursionStack;
-    std::vector<PackageId> currentPath;
-
-    std::function<bool(const PackageId&)> detectCycle = [&](const PackageId& node) -> bool {
-        visited.insert(node);
-        recursionStack.insert(node);
-        currentPath.push_back(node);
-
-        auto it = report.dependencyGraph.find(node);
-        if (it != report.dependencyGraph.end()) {
-            for (const auto& neighbor : it->second) {
-                if (!visited.contains(neighbor)) {
-                    if (detectCycle(neighbor)) {
-                        return true;
-                    }
-                } else if (recursionStack.contains(neighbor)) {
-                    // Found a cycle - extract it
-                    auto cycleStart = std::ranges::find(currentPath, neighbor);
-                    if (cycleStart != currentPath.end()) {
-                        DependencyReport::CircularDependency cycle;
-                        cycle.cycle.assign(cycleStart, currentPath.end());
-
-                        // Check if we already have this cycle (in different order)
-                        bool alreadyRecorded = false;
-                        for (const auto& existing : report.circularDependencies) {
-                            if (existing.cycle.size() == cycle.cycle.size()) {
-                                // Check if it's the same cycle
-                                std::unordered_set<PackageId> existingSet(
-                                    existing.cycle.begin(), existing.cycle.end());
-                                bool same = std::ranges::all_of(cycle.cycle,
-                                    [&existingSet](const auto& pkg) {
-                                        return existingSet.contains(pkg);
-                                    });
-                                if (same) {
-                                    alreadyRecorded = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!alreadyRecorded) {
-                            report.circularDependencies.push_back(cycle);
-                            report.stats.circularDependencyCount++;
-
-                            // Add issues to affected packages
-                            for (const auto& pkgId : cycle.cycle) {
-                                auto resIt = std::ranges::find_if(report.resolutions,
-                                    [&pkgId](const auto& r) { return r.id == pkgId; });
-
-                                if (resIt != report.resolutions.end()) {
-                                    DependencyReport::DependencyIssue issue{
-                                        .type = DependencyReport::IssueType::CircularDependency,
-                                        .affectedPackage = pkgId,
-                                        .description = std::format(
-                                            "Package '{}' is part of circular dependency: {}",
-                                            pkgId, cycle.GetCycleDescription()),
-                                        .involvedPackages = cycle.cycle,
-                                        .failedConstraints = {},
-                                        .suggestedFixes = std::vector<std::string>{
-                                            "Refactor to break the circular dependency",
-                                            "Extract common functionality to a separate package",
-                                            "Consider using dependency injection or interfaces"
-                                        },
-                                        .isBlocker = true
-                                    };
-
-                                    resIt->issues.push_back(std::move(issue));
-                                }
-                            }
-                        }
-                    }
-                    return true;
-                }
-            }
-        }
-
-        currentPath.pop_back();
-        recursionStack.erase(node);
-        return false;
-    };
-
-    // Run cycle detection for all unvisited nodes
-    for (const auto& [id, _] : allPackages) {
-        if (!visited.contains(id)) {
-            detectCycle(id);
-        }
-    }
-
-    // Calculate transitive dependencies (same as before)
-    for (auto& resolution : report.resolutions) {
-        std::unordered_set<PackageId> transitive;
-        std::queue<PackageId> toProcess;
-
-        for (const auto& directDep : resolution.resolvedDependencies) {
-            toProcess.push(directDep);
-        }
-
-        while (!toProcess.empty()) {
-            auto current = toProcess.front();
-            toProcess.pop();
-
-            if (transitive.contains(current)) continue;
-            transitive.insert(current);
-
-            auto it = report.dependencyGraph.find(current);
-            if (it != report.dependencyGraph.end()) {
-                for (const auto& dep : it->second) {
-                    if (!transitive.contains(dep)) {
-                        toProcess.push(dep);
-                        resolution.transitiveDeps[current].push_back(dep);
-                    }
-                }
-            }
-        }
-    }
-
-    // Compute topological order if no circular dependencies (same as before)
-    if (report.circularDependencies.empty()) {
-        std::unordered_map<PackageId, int> inDegree;
-
-        // Initialize in-degrees
-        for (const auto& [id, _] : allPackages) {
-            inDegree[id] = 0;
-        }
-
-        // Calculate in-degrees
-        for (const auto& [_, deps] : report.dependencyGraph) {
-            for (const auto& dep : deps) {
-                ++inDegree[dep]; //?
-            }
-        }
-
-        // Kahn's algorithm for topological sort
-        std::queue<PackageId> queue;
-        for (const auto& [id, degree] : inDegree) {
-            if (degree == 0) {
-                queue.push(id);
-            }
-        }
-
-        while (!queue.empty()) {
-            auto current = queue.front();
-            queue.pop();
-            //report.loadOrder.push_back(current);
-
-            auto it = report.reverseDependencyGraph.find(current);
-            if (it != report.reverseDependencyGraph.end()) {
-                for (const auto& dependent : it->second) {
-                    inDegree[dependent]--;
-                    if (inDegree[dependent] == 0) {
-                        queue.push(dependent);
-                    }
-                }
-            }
-            report.loadOrder.push_back(std::move(current));
-        }
-
-        report.isLoadOrderValid = (report.loadOrder.size() == allPackages.size());
-    } else {
-        report.isLoadOrderValid = false;
-
-        // Still provide a partial order for packages not in cycles
-        std::unordered_set<PackageId> inCycle;
-        for (const auto& cycle : report.circularDependencies) {
-            inCycle.insert(cycle.cycle.begin(), cycle.cycle.end());
-        }
-
-        for (const auto& [id, _] : allPackages) {
-            if (!inCycle.contains(id)) {
-                report.loadOrder.push_back(id);
-            }
-        }
-    }
-
-    // Calculate additional statistics (same as before)
-    if (!allPackages.empty()) {
-        double totalDeps = 0;
-        int maxDepth = 0;
-
-        for (const auto& resolution : report.resolutions) {
-            totalDeps += resolution.resolvedDependencies.size();
-
-            // Calculate dependency depth for this package
-            std::function<int(const PackageId&, std::unordered_set<PackageId>&)> getDepth =
-                [&](const PackageId& pkg, std::unordered_set<PackageId>& visited) -> int {
-                    if (visited.contains(pkg)) return 0;
-                    visited.insert(pkg);
-
-                    auto it = report.dependencyGraph.find(pkg);
-                    if (it == report.dependencyGraph.end() || it->second.empty()) {
-                        return 0;
-                    }
-
-                    int maxChildDepth = 0;
-                    for (const auto& dep : it->second) {
-                        maxChildDepth = std::max(maxChildDepth, getDepth(dep, visited));
-                    }
-                    return 1 + maxChildDepth;
-                };
-
-            std::unordered_set<PackageId> visites;
-            int depth = getDepth(resolution.id, visites);
-            maxDepth = std::max(maxDepth, depth);
-        }
-
-        report.stats.averageDependencyCount = totalDeps / allPackages.size();
-        report.stats.maxDependencyDepth = maxDepth;
-    }
-
-    // Log the report if issues exist
-    if (report.HasBlockingIssues() || !report.circularDependencies.empty()) {
-        std::cout << "\n" << report.GenerateTextReport() << "\n";
-    } else {
-        std::cout << std::format("Dependencies resolved successfully. Load order determined for {} packages.\n",
-                                 report.loadOrder.size());
-    }
-#endif
-
-    return report;
+    return _impl->dependencyResolver->ResolveDependencies(allPackages);
 }
 
 InitializationReport Manager::InitializeModules() {
@@ -2240,6 +1748,7 @@ std::vector<PluginInfo> Manager::GetPlugins() const {
 
 std::vector<ModuleInfo> Manager::GetModules(PackageState state) const {
     std::vector<ModuleInfo> result;
+    result.reserve(_impl->modules.size());
     
     for (const auto& [id, info] : _impl->modules) {
     	if (info->state == state) {
@@ -2252,6 +1761,7 @@ std::vector<ModuleInfo> Manager::GetModules(PackageState state) const {
 
 std::vector<PluginInfo> Manager::GetPlugins(PackageState state) const {
     std::vector<PluginInfo> result;
+    result.reserve(_impl->plugins.size());
     
     for (const auto& [id, info] : _impl->plugins) {
     	if (info->state == state) {
@@ -2307,5 +1817,5 @@ std::vector<PackageId> Manager::GetPluginsForModule(std::string_view moduleId) c
 }
 
 std::unique_ptr<IDependencyResolver> ManagerFactory::CreateDefaultResolver() {
-    return std::make_unique<DependencyResolver>();
+    return std::make_unique<LibsolvDependencyResolver>();
 }

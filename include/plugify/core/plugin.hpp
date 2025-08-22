@@ -176,6 +176,7 @@ namespace plugify {
 		[[nodiscard]] std::span<const std::string> GetPlatforms() const noexcept;
 		[[nodiscard]] std::span<const Dependency> GetDependencies() const;
 		[[nodiscard]] std::span<const Conflict> GetConflicts() const;
+		[[nodiscard]] std::span<const Obsolete> GetObsoletes() const;
 
 		// Getters
 		[[nodiscard]] const Dependency& GetLanguage() const noexcept;
@@ -196,6 +197,7 @@ namespace plugify {
 		void SetPlatforms(std::span<const std::string> platforms) noexcept;
 		void SetDependencies(std::span<const Dependency> dependencies) noexcept;
 		void SetConflicts(std::span<const Conflict> conflicts) noexcept;
+        void SetObsoletes(std::span<const Obsolete> obsoletes) noexcept;
 
 		// Setters
 		void SetLanguage(const Dependency& language) noexcept;

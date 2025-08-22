@@ -15,7 +15,7 @@ struct Plugify::Impl {
 
 	DateTime deltaTime;
 	DateTime lastTime;
-	Version version{PLUGIFY_VERSION};
+	Version version;
 	bool inited{false};
 
 	std::shared_ptr<IAssemblyLoader> loader;
@@ -26,6 +26,7 @@ struct Plugify::Impl {
 
 Plugify::Plugify()
 	: _impl(std::make_unique<Impl>(*this)) {
+    plg::parse(PLUGIFY_VERSION, _impl->version);
 }
 
 Plugify::~Plugify() {

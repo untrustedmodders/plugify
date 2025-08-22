@@ -1,8 +1,16 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 5ba5ed51..1df74935 100644
+index 5ba5ed5..e574e8d 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -60,13 +60,13 @@ ENDIF (NOT PKGCONFIG_INSTALL_DIR)
+@@ -35,6 +35,7 @@ OPTION (ENABLE_APPDATA "Build with AppStream appdata support?" OFF)
+ 
+ OPTION (MULTI_SEMANTICS "Build with support for multiple distribution types?" OFF)
+ 
++OPTION (ENABLE_ZLIB_COMPRESSION "Build with zlib compression support?" OFF)
+ OPTION (ENABLE_LZMA_COMPRESSION "Build with lzma/xz compression support?" OFF)
+ OPTION (ENABLE_BZIP2_COMPRESSION "Build with bzip2 compression support?" OFF)
+ OPTION (ENABLE_ZSTD_COMPRESSION "Build with zstd compression support?" OFF)
+@@ -60,13 +61,13 @@ ENDIF (NOT PKGCONFIG_INSTALL_DIR)
  ####################################################################
  
  # where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
@@ -18,7 +26,18 @@ index 5ba5ed51..1df74935 100644
  
  SET (have_system x)
  
-@@ -282,13 +282,13 @@ TEST_BIG_ENDIAN (WORDS_BIGENDIAN)
+@@ -144,7 +145,10 @@ IF (${have_system} STRGREATER xx)
+     MESSAGE (FATAL_ERROR "Can only compile for one system type.")
+ ENDIF (${have_system} STRGREATER xx)
+ 
++IF (ENABLE_ZLIB_COMPRESSION)
+ SET (ENABLE_ZLIB_COMPRESSION ON)
++ENDIF (ENABLE_ZLIB_COMPRESSION)
++
+ IF (ENABLE_ARCHREPO OR ENABLE_DEBIAN)
+ SET (ENABLE_LZMA_COMPRESSION ON)
+ ENDIF (ENABLE_ARCHREPO OR ENABLE_DEBIAN)
+@@ -282,13 +286,13 @@ TEST_BIG_ENDIAN (WORDS_BIGENDIAN)
  INCLUDE (CMakePushCheckState)
  INCLUDE (CheckCCompilerFlag)
  MACRO (check_linker_flag FLAG VAR)
@@ -37,7 +56,7 @@ index 5ba5ed51..1df74935 100644
  
  # should create config.h with #cmakedefine instead...
  FOREACH (VAR HAVE_STRCHRNUL HAVE_FOPENCOOKIE HAVE_FUNOPEN WORDS_BIGENDIAN
-@@ -391,7 +391,7 @@ INCLUDE(CPack)
+@@ -391,7 +395,7 @@ INCLUDE(CPack)
  ####################################################################
  
  #SET (CMAKE_INCLUDE_DIRECTORIES_BEFORE ON)
@@ -46,7 +65,7 @@ index 5ba5ed51..1df74935 100644
  
  ####################################################################
  
-@@ -459,27 +459,27 @@ MESSAGE (STATUS "Version: ${VERSION}")
+@@ -459,27 +463,27 @@ MESSAGE (STATUS "Version: ${VERSION}")
  
  MACRO (SPECFILE)
    MESSAGE (STATUS "Writing spec file...")
@@ -83,7 +102,7 @@ index 5ba5ed51..1df74935 100644
  
  ADD_CUSTOM_TARGET (srcpackage
 diff --git a/bindings/lua/CMakeLists.txt b/bindings/lua/CMakeLists.txt
-index 8d5bbe3e..bfcf0b8d 100644
+index 8d5bbe3..bfcf0b8 100644
 --- a/bindings/lua/CMakeLists.txt
 +++ b/bindings/lua/CMakeLists.txt
 @@ -2,9 +2,9 @@ FIND_PACKAGE (Lua)
@@ -99,7 +118,7 @@ index 8d5bbe3e..bfcf0b8d 100644
  
  INCLUDE_DIRECTORIES (${LUA_INCLUDE_DIR})
 diff --git a/bindings/perl/CMakeLists.txt b/bindings/perl/CMakeLists.txt
-index b57fd9cc..c31415f1 100644
+index b57fd9c..c31415f 100644
 --- a/bindings/perl/CMakeLists.txt
 +++ b/bindings/perl/CMakeLists.txt
 @@ -17,10 +17,10 @@ MESSAGE (STATUS "Perl installation dir: ${PERL_INSTALL_DIR}")
@@ -116,7 +135,7 @@ index b57fd9cc..c31415f1 100644
  )
  
 diff --git a/bindings/python/CMakeLists.txt b/bindings/python/CMakeLists.txt
-index 4bd0fae8..0179d5a1 100644
+index 4bd0fae..0179d5a 100644
 --- a/bindings/python/CMakeLists.txt
 +++ b/bindings/python/CMakeLists.txt
 @@ -29,9 +29,9 @@ MESSAGE (STATUS "Python include path: ${PYTHON_INCLUDE_PATH}")
@@ -132,7 +151,7 @@ index 4bd0fae8..0179d5a1 100644
  
  ADD_DEFINITIONS(-Wno-unused)
 diff --git a/bindings/python3/CMakeLists.txt b/bindings/python3/CMakeLists.txt
-index e2da6845..3869e8f0 100644
+index e2da684..3869e8f 100644
 --- a/bindings/python3/CMakeLists.txt
 +++ b/bindings/python3/CMakeLists.txt
 @@ -22,9 +22,9 @@ MESSAGE (STATUS "Python3 include path: ${PYTHON3_INCLUDE_DIR}")
@@ -148,7 +167,7 @@ index e2da6845..3869e8f0 100644
  
  ADD_DEFINITIONS(-Wno-unused)
 diff --git a/bindings/ruby/CMakeLists.txt b/bindings/ruby/CMakeLists.txt
-index b065fd4a..e6c131f6 100644
+index b065fd4..e6c131f 100644
 --- a/bindings/ruby/CMakeLists.txt
 +++ b/bindings/ruby/CMakeLists.txt
 @@ -11,9 +11,9 @@ MESSAGE (STATUS "Ruby installation dir: ${RUBY_INSTALL_DIR}")
@@ -164,7 +183,7 @@ index b065fd4a..e6c131f6 100644
  
  ADD_DEFINITIONS(-Wno-unused)
 diff --git a/bindings/tcl/CMakeLists.txt b/bindings/tcl/CMakeLists.txt
-index de4cb5a0..cc52eb97 100644
+index de4cb5a..cc52eb9 100644
 --- a/bindings/tcl/CMakeLists.txt
 +++ b/bindings/tcl/CMakeLists.txt
 @@ -13,9 +13,9 @@ MESSAGE (STATUS "Tcl installation dir: ${TCL_INSTALL_DIR}")
@@ -191,7 +210,7 @@ index de4cb5a0..cc52eb97 100644
  )
  ADD_CUSTOM_TARGET (solv_tm ALL DEPENDS solv.tm)
 diff --git a/ext/CMakeLists.txt b/ext/CMakeLists.txt
-index 637d67fe..8c4b5c21 100644
+index 637d67f..8c4b5c2 100644
 --- a/ext/CMakeLists.txt
 +++ b/ext/CMakeLists.txt
 @@ -160,11 +160,12 @@ IF (NOT MSVC)
@@ -217,7 +236,7 @@ index 637d67fe..8c4b5c21 100644
  SET_TARGET_PROPERTIES(libsolvext_static PROPERTIES SOVERSION ${LIBSOLVEXT_SOVERSION})
  INSTALL (TARGETS libsolvext_static LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 812abe6e..a9fa3a65 100644
+index 812abe6..a9fa3a6 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -28,7 +28,7 @@ SET (libsolv_HEADERS
@@ -239,7 +258,7 @@ index 812abe6e..a9fa3a65 100644
  
  IF (DISABLE_SHARED)
 diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
-index 8a5cd8a5..0e7b3059 100644
+index 8a5cd8a..0e7b305 100644
 --- a/test/CMakeLists.txt
 +++ b/test/CMakeLists.txt
 @@ -10,7 +10,7 @@ FOREACH(tcdir testcases libsolv-zypptestcases)

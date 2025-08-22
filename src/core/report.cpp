@@ -8,6 +8,7 @@ std::string ValidationReport::GenerateTextReport() const {
 	std::stringstream report;
 
 	report << "=== Validation Report ===\n";
+	report << std::format("Total initialization time: {}ms\n\n", totalTime.count());
 	report << std::format("Total packages validated: {}\n",
 						  moduleResults.size() + pluginResults.size());
 	report << std::format("Validation failures: {}\n\n", FailureCount());
@@ -57,9 +58,11 @@ std::string DependencyReport::GenerateTextReport() const {
 	std::stringstream report;
 
 	report << "=== Dependency Resolution Report ===\n\n";
+	report << std::format("Total initialization time: {}ms\n\n", totalTime.count());
 
 	// Statistics
 	report << "Statistics:\n";
+#if  0
 	report << std::format("  Total packages: {}\n", stats.totalPackages);
 	report << std::format("  Packages with issues: {}\n", stats.packagesWithIssues);
 	report << std::format("  Missing dependencies: {}\n", stats.missingDependencyCount);
@@ -85,7 +88,7 @@ std::string DependencyReport::GenerateTextReport() const {
 		}
 		report << "\n";
 	}
-
+#endif
 	// Package-specific issues with constraint details
 	report << "Package Issues:\n";
 	for (const auto& resolution : resolutions) {
@@ -97,7 +100,8 @@ std::string DependencyReport::GenerateTextReport() const {
 									  issue.GetDetailedDescription());
 			}
 		}
-	}
+        report << std::string(50, '-') << "\n";
+    }
 
 	// Load order
 	if (isLoadOrderValid) {
