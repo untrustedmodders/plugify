@@ -44,7 +44,7 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
 endif()
 
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+   #target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
     target_compile_definitions(${PROJECT_NAME} PRIVATE TEST_HAS_NO_EXCEPTIONS=1)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Werror)

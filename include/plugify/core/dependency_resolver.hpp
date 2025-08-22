@@ -3,6 +3,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
+extern "C" {
+#include <solv/pooltypes.h>
+#include <solv/rules.h>
+#include <solv/solver.h>
+}
 #include "plugify/core/report.hpp"
 
 namespace plugify {
@@ -36,9 +41,78 @@ namespace plugify {
         virtual DependencyReport ResolveDependencies(const PackageCollection& packages) = 0;
     };
 
+    class DependencyResolver : public IDependencyResolver {
+    public:
+        ~DependencyResolver() override = default;
+
+        /**
+         * Resolves dependencies for all packages, producing a report with resolutions,
+         * conflicts, and load order.
+         * @return DependencyReport containing the resolution results
+         */
+        DependencyReport ResolveDependencies(const PackageCollection& packages) override;
+
+    private:
+        struct PoolDeleter {
+            void operator()(Pool* p) const {
+                if (p) pool_free(p);
+            }
+        };
+
+        struct SolverDeleter {
+            void operator()(Solver* s) const {
+                if (s) solver_free(s);
+            }
+        };
+
+        struct TransactionDeleter {
+            void operator()(Transaction* t) const {
+                if (t) transaction_free(t);
+            }
+        };
+
+        std::unique_ptr<Pool, PoolDeleter> pool;
+        Repo* repo = nullptr;
+        std::unordered_map<PackageId, Id> packageToSolvableId;
+        std::unordered_map<Id, PackageId> solvableIdToPackage;
+
+    private:
+        // Setup functions
+        void InitializePool();
+        void AddPackagesToPool(const PackageCollection& packages);
+        Id AddSolvable(const PackageId& id, const Manifest& manifest);
+        void SetupDependencies(Id solvableId, const Manifest& manifest);
+        void SetupConflicts(Id solvableId, const Manifest& manifest);
+
+        // Constraint conversion
+        Id MakeDepConstraint(const std::string& name,
+                             const std::optional<std::vector<Constraint>>& constraints);
+        int ConvertComparison(Comparison comp);
+
+        // Resolution
+        void RunSolver(DependencyReport& report);
+        void ProcessSolverProblems(Solver* solver, DependencyReport& report);
+        void ExtractSolutions(Solver* solver, Id problemId,
+                             DependencyReport& report);
+        void ComputeInstallationOrder(Solver* solver, Transaction* trans,
+                                      DependencyReport& report);
+
+        // Problem analysis
+        void AnalyzeProblemRule(Solver* solver, Id rule,
+                               DependencyReport::DependencyIssue& issue);
+        DependencyReport::IssueType MapProblemType(SolverRuleinfo type);
+
+        // Utilities
+        std::string GetSolvableName(Id solvableId);
+        Version GetSolvableVersion(Id solvableId);
+        void CollectStatistics(const PackageCollection& packages,
+                              DependencyReport& report);
+    };
+
     /**
      * @brief Simple resolver interface for reoslv files and iterating directories
      */
+#if 0
     class DependencyResolver final : public IDependencyResolver {
     public:
 
@@ -132,4 +206,5 @@ namespace plugify {
         // Logging
         static void LogResults(const DependencyReport& report);
     };
+#endif
 }  // namespace plugify

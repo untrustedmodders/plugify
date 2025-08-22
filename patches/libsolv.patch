@@ -1,0 +1,253 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5ba5ed51..1df74935 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -60,13 +60,13 @@ ENDIF (NOT PKGCONFIG_INSTALL_DIR)
+ ####################################################################
+ 
+ # where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
+-SET (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
++SET (CMAKE_MODULE_PATH ${libsolv_SOURCE_DIR}/cmake/modules)
+ INSTALL( FILES ${CMAKE_MODULE_PATH}/FindLibSolv.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/Modules )
+ 
+ # for shared libraries on windows (DLLs), we just export all symbols for now
+ SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+ 
+-INCLUDE (${CMAKE_SOURCE_DIR}/VERSION.cmake)
++INCLUDE (${libsolv_SOURCE_DIR}/VERSION.cmake)
+ 
+ SET (have_system x)
+ 
+@@ -282,13 +282,13 @@ TEST_BIG_ENDIAN (WORDS_BIGENDIAN)
+ INCLUDE (CMakePushCheckState)
+ INCLUDE (CheckCCompilerFlag)
+ MACRO (check_linker_flag FLAG VAR)
+-	CMAKE_PUSH_CHECK_STATE (RESET)
+-	SET (CMAKE_REQUIRED_FLAGS "${FLAG}")
+-	CHECK_C_COMPILER_FLAG ("" "${VAR}")
+-	CMAKE_POP_CHECK_STATE ()
++        CMAKE_PUSH_CHECK_STATE (RESET)
++        SET (CMAKE_REQUIRED_FLAGS "${FLAG}")
++        CHECK_C_COMPILER_FLAG ("" "${VAR}")
++        CMAKE_POP_CHECK_STATE ()
+ ENDMACRO (check_linker_flag)
+ check_linker_flag("-Wl,--as-needed" HAVE_LINKER_AS_NEEDED)
+-check_linker_flag("-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/libsolv.ver" HAVE_LINKER_VERSION_SCRIPT)
++check_linker_flag("-Wl,--version-script=${libsolv_SOURCE_DIR}/src/libsolv.ver" HAVE_LINKER_VERSION_SCRIPT)
+ 
+ # should create config.h with #cmakedefine instead...
+ FOREACH (VAR HAVE_STRCHRNUL HAVE_FOPENCOOKIE HAVE_FUNOPEN WORDS_BIGENDIAN
+@@ -391,7 +391,7 @@ INCLUDE(CPack)
+ ####################################################################
+ 
+ #SET (CMAKE_INCLUDE_DIRECTORIES_BEFORE ON)
+-INCLUDE_DIRECTORIES (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/ext ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/src SYSTEM )
++INCLUDE_DIRECTORIES (${CMAKE_CURRENT_SOURCE_DIR} ${libsolv_SOURCE_DIR} ${libsolv_SOURCE_DIR}/src ${libsolv_SOURCE_DIR}/ext ${CMAKE_CURRENT_BINARY_DIR} ${libsolv_BINARY_DIR}/src SYSTEM )
+ 
+ ####################################################################
+ 
+@@ -459,27 +459,27 @@ MESSAGE (STATUS "Version: ${VERSION}")
+ 
+ MACRO (SPECFILE)
+   MESSAGE (STATUS "Writing spec file...")
+-  CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/package/libsolv.spec.in ${CMAKE_BINARY_DIR}/package/libsolv.spec @ONLY)
++  CONFIGURE_FILE (${libsolv_SOURCE_DIR}/package/libsolv.spec.in ${libsolv_BINARY_DIR}/package/libsolv.spec @ONLY)
+ ENDMACRO (SPECFILE)
+ 
+ MACRO (PCFILE)
+   MESSAGE (STATUS "Writing pkg-config files...")
+-  CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/libsolv.pc.in ${CMAKE_BINARY_DIR}/libsolv.pc @ONLY)
+-  INSTALL( FILES ${CMAKE_BINARY_DIR}/libsolv.pc DESTINATION ${PKGCONFIG_INSTALL_DIR} )
+-  CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/libsolvext.pc.in ${CMAKE_BINARY_DIR}/libsolvext.pc @ONLY)
+-  INSTALL( FILES ${CMAKE_BINARY_DIR}/libsolvext.pc DESTINATION ${PKGCONFIG_INSTALL_DIR} )
++  CONFIGURE_FILE (${libsolv_SOURCE_DIR}/libsolv.pc.in ${libsolv_BINARY_DIR}/libsolv.pc @ONLY)
++  INSTALL( FILES ${libsolv_BINARY_DIR}/libsolv.pc DESTINATION ${PKGCONFIG_INSTALL_DIR} )
++  CONFIGURE_FILE (${libsolv_SOURCE_DIR}/libsolvext.pc.in ${libsolv_BINARY_DIR}/libsolvext.pc @ONLY)
++  INSTALL( FILES ${libsolv_BINARY_DIR}/libsolvext.pc DESTINATION ${PKGCONFIG_INSTALL_DIR} )
+ ENDMACRO (PCFILE)
+ 
+ SPECFILE ()
+ PCFILE ()
+ 
+ SET (AUTOBUILD_COMMAND
+-  COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/package/*.tar.bz2
++  COMMAND ${CMAKE_COMMAND} -E remove ${libsolv_BINARY_DIR}/package/*.tar.bz2
+   COMMAND mkdir -p _CPack_Packages/${CPACK_TOPLEVEL_TAG}
+   COMMAND ${CMAKE_MAKE_PROGRAM} package_source
+-  COMMAND ${CMAKE_COMMAND} -E copy ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.bz2 ${CMAKE_BINARY_DIR}/package
++  COMMAND ${CMAKE_COMMAND} -E copy ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.bz2 ${libsolv_BINARY_DIR}/package
+   COMMAND ${CMAKE_COMMAND} -E remove ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.bz2
+-  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/package/libsolv.changes" "${CMAKE_BINARY_DIR}/package/libsolv.changes"
++  COMMAND ${CMAKE_COMMAND} -E copy "${libsolv_SOURCE_DIR}/package/libsolv.changes" "${libsolv_BINARY_DIR}/package/libsolv.changes"
+ )
+ 
+ ADD_CUSTOM_TARGET (srcpackage
+diff --git a/bindings/lua/CMakeLists.txt b/bindings/lua/CMakeLists.txt
+index 8d5bbe3e..bfcf0b8d 100644
+--- a/bindings/lua/CMakeLists.txt
++++ b/bindings/lua/CMakeLists.txt
+@@ -2,9 +2,9 @@ FIND_PACKAGE (Lua)
+ 
+ ADD_CUSTOM_COMMAND (
+     OUTPUT solv_lua.c
+-    COMMAND ${SWIG_EXECUTABLE} ${SWIG_FLAGS} -lua -I${CMAKE_SOURCE_DIR}/src -o solv_lua.c ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    COMMAND ${SWIG_EXECUTABLE} ${SWIG_FLAGS} -lua -I${libsolv_SOURCE_DIR}/src -o solv_lua.c ${libsolv_SOURCE_DIR}/bindings/solv.i
+     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+-    DEPENDS ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    DEPENDS ${libsolv_SOURCE_DIR}/bindings/solv.i
+ )
+ 
+ INCLUDE_DIRECTORIES (${LUA_INCLUDE_DIR})
+diff --git a/bindings/perl/CMakeLists.txt b/bindings/perl/CMakeLists.txt
+index b57fd9cc..c31415f1 100644
+--- a/bindings/perl/CMakeLists.txt
++++ b/bindings/perl/CMakeLists.txt
+@@ -17,10 +17,10 @@ MESSAGE (STATUS "Perl installation dir: ${PERL_INSTALL_DIR}")
+ 
+ ADD_CUSTOM_COMMAND (
+     OUTPUT solv_perl.c
+-    COMMAND ${SWIG_EXECUTABLE} -perl ${SWIG_FLAGS} -I${CMAKE_SOURCE_DIR}/src -o solv_perl.c ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    COMMAND ${SWIG_EXECUTABLE} -perl ${SWIG_FLAGS} -I${libsolv_SOURCE_DIR}/src -o solv_perl.c ${libsolv_SOURCE_DIR}/bindings/solv.i
+     COMMAND sed -i -e "s/SvTYPE(tsv) == SVt_PVHV/SvTYPE(tsv) == SVt_PVHV || SvTYPE(tsv) == SVt_PVAV/" solv_perl.c
+     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+-    DEPENDS ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    DEPENDS ${libsolv_SOURCE_DIR}/bindings/solv.i
+     VERBATIM
+ )
+ 
+diff --git a/bindings/python/CMakeLists.txt b/bindings/python/CMakeLists.txt
+index 4bd0fae8..0179d5a1 100644
+--- a/bindings/python/CMakeLists.txt
++++ b/bindings/python/CMakeLists.txt
+@@ -29,9 +29,9 @@ MESSAGE (STATUS "Python include path: ${PYTHON_INCLUDE_PATH}")
+ 
+ ADD_CUSTOM_COMMAND (
+     OUTPUT solv_python.c
+-    COMMAND ${SWIG_EXECUTABLE} ${SWIG_FLAGS} -python ${SWIG_PY_FLAGS} -I${CMAKE_SOURCE_DIR}/src -o solv_python.c ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    COMMAND ${SWIG_EXECUTABLE} ${SWIG_FLAGS} -python ${SWIG_PY_FLAGS} -I${libsolv_SOURCE_DIR}/src -o solv_python.c ${libsolv_SOURCE_DIR}/bindings/solv.i
+     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+-    DEPENDS ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    DEPENDS ${libsolv_SOURCE_DIR}/bindings/solv.i
+ )
+ 
+ ADD_DEFINITIONS(-Wno-unused)
+diff --git a/bindings/python3/CMakeLists.txt b/bindings/python3/CMakeLists.txt
+index e2da6845..3869e8f0 100644
+--- a/bindings/python3/CMakeLists.txt
++++ b/bindings/python3/CMakeLists.txt
+@@ -22,9 +22,9 @@ MESSAGE (STATUS "Python3 include path: ${PYTHON3_INCLUDE_DIR}")
+ 
+ ADD_CUSTOM_COMMAND (
+     OUTPUT solv_python.c
+-    COMMAND ${SWIG_EXECUTABLE} ${SWIG_FLAGS} -python ${SWIG_PY3_FLAGS} -I${CMAKE_SOURCE_DIR}/src -o solv_python.c ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    COMMAND ${SWIG_EXECUTABLE} ${SWIG_FLAGS} -python ${SWIG_PY3_FLAGS} -I${libsolv_SOURCE_DIR}/src -o solv_python.c ${libsolv_SOURCE_DIR}/bindings/solv.i
+     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+-    DEPENDS ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    DEPENDS ${libsolv_SOURCE_DIR}/bindings/solv.i
+ )
+ 
+ ADD_DEFINITIONS(-Wno-unused)
+diff --git a/bindings/ruby/CMakeLists.txt b/bindings/ruby/CMakeLists.txt
+index b065fd4a..e6c131f6 100644
+--- a/bindings/ruby/CMakeLists.txt
++++ b/bindings/ruby/CMakeLists.txt
+@@ -11,9 +11,9 @@ MESSAGE (STATUS "Ruby installation dir: ${RUBY_INSTALL_DIR}")
+ 
+ ADD_CUSTOM_COMMAND (
+     OUTPUT solv_ruby.c
+-    COMMAND ${SWIG_EXECUTABLE} -ruby ${SWIG_FLAGS} -I${CMAKE_SOURCE_DIR}/src -o solv_ruby.c ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    COMMAND ${SWIG_EXECUTABLE} -ruby ${SWIG_FLAGS} -I${libsolv_SOURCE_DIR}/src -o solv_ruby.c ${libsolv_SOURCE_DIR}/bindings/solv.i
+     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+-    DEPENDS ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    DEPENDS ${libsolv_SOURCE_DIR}/bindings/solv.i
+ )
+ 
+ ADD_DEFINITIONS(-Wno-unused)
+diff --git a/bindings/tcl/CMakeLists.txt b/bindings/tcl/CMakeLists.txt
+index de4cb5a0..cc52eb97 100644
+--- a/bindings/tcl/CMakeLists.txt
++++ b/bindings/tcl/CMakeLists.txt
+@@ -13,9 +13,9 @@ MESSAGE (STATUS "Tcl installation dir: ${TCL_INSTALL_DIR}")
+ 
+ ADD_CUSTOM_COMMAND (
+     OUTPUT solv_tcl.c
+-    COMMAND ${SWIG_EXECUTABLE} ${SWIG_FLAGS} -tcl ${SWIG_TCL_FLAGS} -I${CMAKE_SOURCE_DIR}/src -o solv_tcl.c ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    COMMAND ${SWIG_EXECUTABLE} ${SWIG_FLAGS} -tcl ${SWIG_TCL_FLAGS} -I${libsolv_SOURCE_DIR}/src -o solv_tcl.c ${libsolv_SOURCE_DIR}/bindings/solv.i
+     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+-    DEPENDS ${CMAKE_SOURCE_DIR}/bindings/solv.i
++    DEPENDS ${libsolv_SOURCE_DIR}/bindings/solv.i
+ )
+ 
+ ADD_DEFINITIONS(-Wno-unused -Wno-missing-braces)
+@@ -28,8 +28,8 @@ INSTALL (TARGETS bindings_tcl LIBRARY DESTINATION ${TCL_INSTALL_DIR})
+ 
+ ADD_CUSTOM_COMMAND (
+     OUTPUT solv.tm
+-	COMMAND sed -e "s/__VERSION__/${VERSION}/" ${CMAKE_SOURCE_DIR}/bindings/tcl/solv.tm.in >${CMAKE_CURRENT_BINARY_DIR}/solv.tm
+-    DEPENDS ${CMAKE_SOURCE_DIR}/bindings/tcl/solv.tm.in
++	COMMAND sed -e "s/__VERSION__/${VERSION}/" ${libsolv_SOURCE_DIR}/bindings/tcl/solv.tm.in >${CMAKE_CURRENT_BINARY_DIR}/solv.tm
++    DEPENDS ${libsolv_SOURCE_DIR}/bindings/tcl/solv.tm.in
+     COMMENT "Creating Tcl module to load libsolv"
+ )
+ ADD_CUSTOM_TARGET (solv_tm ALL DEPENDS solv.tm)
+diff --git a/ext/CMakeLists.txt b/ext/CMakeLists.txt
+index 637d67fe..8c4b5c21 100644
+--- a/ext/CMakeLists.txt
++++ b/ext/CMakeLists.txt
+@@ -160,11 +160,12 @@ IF (NOT MSVC)
+ SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+ ENDIF (NOT MSVC)
+ IF (HAVE_LINKER_VERSION_SCRIPT)
+-SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINK_FLAGS} -Wl,--version-script=${CMAKE_SOURCE_DIR}/ext/libsolvext.ver")
++SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINK_FLAGS} -Wl,--version-script=${libsolv_SOURCE_DIR}/ext/libsolvext.ver")
+ ENDIF (HAVE_LINKER_VERSION_SCRIPT)
+ 
+ IF (DISABLE_SHARED)
+ ADD_LIBRARY (libsolvext STATIC ${libsolvext_SRCS})
++TARGET_LINK_LIBRARIES(libsolvext INTERFACE libsolv ${SYSTEM_LIBRARIES})
+ ELSE (DISABLE_SHARED)
+ ADD_LIBRARY (libsolvext SHARED ${libsolvext_SRCS})
+ TARGET_LINK_LIBRARIES(libsolvext libsolv ${SYSTEM_LIBRARIES})
+@@ -182,6 +183,7 @@ INSTALL (TARGETS libsolvext LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ARCHIVE
+ 
+ IF (ENABLE_STATIC AND NOT DISABLE_SHARED)
+ ADD_LIBRARY (libsolvext_static STATIC ${libsolvext_SRCS})
++TARGET_LINK_LIBRARIES(libsolvext_static INTERFACE libsolv_static ${SYSTEM_LIBRARIES})
+ SET_TARGET_PROPERTIES(libsolvext_static PROPERTIES OUTPUT_NAME "solvext")
+ SET_TARGET_PROPERTIES(libsolvext_static PROPERTIES SOVERSION ${LIBSOLVEXT_SOVERSION})
+ INSTALL (TARGETS libsolvext_static LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 812abe6e..a9fa3a65 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -28,7 +28,7 @@ SET (libsolv_HEADERS
+     poolid.h pooltypes.h queue.h solvable.h solver.h solverdebug.h
+     repo.h repodata.h repo_solv.h repo_write.h util.h selection.h
+     strpool.h dirpool.h knownid.h transaction.h rules.h problems.h
+-    chksum.h dataiterator.h ${CMAKE_BINARY_DIR}/src/solvversion.h)
++    chksum.h dataiterator.h ${libsolv_BINARY_DIR}/src/solvversion.h)
+ 
+ IF (ENABLE_CONDA)
+     SET (libsolv_SRCS ${libsolv_SRCS} conda.c)
+@@ -49,7 +49,7 @@ IF (WIN32)
+ ENDIF (WIN32)
+ 
+ IF (HAVE_LINKER_VERSION_SCRIPT)
+-SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINK_FLAGS} -Wl,--version-script=${CMAKE_SOURCE_DIR}/src/libsolv.ver")
++SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINK_FLAGS} -Wl,--version-script=${libsolv_SOURCE_DIR}/src/libsolv.ver")
+ ENDIF (HAVE_LINKER_VERSION_SCRIPT)
+ 
+ IF (DISABLE_SHARED)
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index 8a5cd8a5..0e7b3059 100644
+--- a/test/CMakeLists.txt
++++ b/test/CMakeLists.txt
+@@ -10,7 +10,7 @@ FOREACH(tcdir testcases libsolv-zypptestcases)
+         FOREACH(dir ${dirs})
+             IF(IS_DIRECTORY ${dir})
+                 FILE(RELATIVE_PATH myname "${CMAKE_CURRENT_SOURCE_DIR}/${tcdir}" ${dir})
+-                FILE(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/tools/testsolv" TESTSOLV_BINARY)
++                FILE(TO_NATIVE_PATH "${libsolv_BINARY_DIR}/tools/testsolv" TESTSOLV_BINARY)
+                 FILE(TO_NATIVE_PATH "${dir}" dir)
+                 STRING(REPLACE \\ \\\\ dir ${dir})
+                 STRING(REPLACE \\ \\\\ TESTSOLV_BINARY ${TESTSOLV_BINARY})

@@ -56,7 +56,8 @@ namespace plugify {
 	        CircularDependency,     // A -> B -> A cycle detected
 	        OptionalMissing,        // Optional dependency not available
 	        TransitiveMissing,      // Indirect dependency missing
-	        ConflictingProviders    // Multiple packages provide same capability
+	        ConflictingProviders,   // Multiple packages provide same capability
+	        Other
 	    };
 
 	    struct DependencyIssue {

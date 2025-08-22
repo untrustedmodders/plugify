@@ -7,6 +7,10 @@ else()
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 
+include(FetchZlib)
+include(FetchLibsolv)
+target_link_libraries(${PROJECT_NAME} PUBLIC solv::libsolvext ZLIB::ZLIB)
+
 # ------------------------------------------------------------------------------
 # Format
 cmake_push_check_state()
