@@ -9,7 +9,50 @@ namespace plugify {
     /**
      * @brief Represents a collection of packages with their manifests
      */
-    using PackageCollection = std::unordered_map<PackageId, Manifest>;
+    using PackageCollection = std::unordered_map<PackageId, ManifestPtr>;
+
+    /**
+     * @brief Represents the result of a dependency resolution process
+     */
+    struct DependencyResolution {
+        /**
+         * @brief Represents a specific issue found during dependency resolution
+         */
+        struct Issue {
+            PackageId affectedPackage;
+            std::string problem;
+            std::string description;
+            std::optional<PackageId> involvedPackage;
+            std::optional<std::vector<std::string>> suggestedFixes;
+            bool isBlocking{true}; // True if this issue prevents loading the package
+
+            // Generate detailed description with constraint info
+            std::string GetDetailedDescription() const {
+                std::stringstream ss;
+                ss << problem << ": " << description;
+
+                if (suggestedFixes && !suggestedFixes->empty()) {
+                    ss << "\n  Suggestions:";
+                    for (const auto& fix : *suggestedFixes) {
+                        ss << "\n    - " << fix;
+                    }
+                }
+
+                return ss.str();
+            }
+        };
+
+        // Main report data
+        std::unordered_map<PackageId, std::vector<Issue>> issues;
+
+        // Dependency graph
+        std::unordered_map<PackageId, std::vector<PackageId>> dependencyGraph;  // For quick dep checks
+        std::unordered_map<PackageId, std::vector<PackageId>> reverseDependencyGraph;  // For skipping dependents
+
+        // Load order
+        std::vector<PackageId> loadOrder;
+        bool isLoadOrderValid{false}; // False if circular deps prevent valid ordering
+    };
 
     /**
      * @brief Interface for resolving dependencies in a Plugify environment
@@ -30,9 +73,9 @@ namespace plugify {
          * - Detecting conflicts
          * - Generating a load order
          *
-         * @return DependencyReport containing the results of the resolution process
+         * @return DependencyResolution containing the results of the resolution process
          */
-        virtual DependencyReport ResolveDependencies(const PackageCollection& packages) = 0;
+        virtual DependencyResolution Resolve(const PackageCollection& packages) = 0;
     };
 
     /**
@@ -52,7 +95,7 @@ namespace plugify {
          * conflicts, and load order.
          * @return DependencyReport containing the resolution results
          */
-        DependencyReport ResolveDependencies(const PackageCollection& packages) override;
+        DependencyResolution Resolve(const PackageCollection& packages) override;
 
     private:
         struct Impl;

@@ -37,6 +37,7 @@ namespace plugify {
      * TODO:
      */
     enum class PackageType {
+		Unknown,
 		Module,
 		Plugin
 	};

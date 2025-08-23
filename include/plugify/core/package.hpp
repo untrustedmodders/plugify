@@ -2,43 +2,55 @@
 
 #include <optional>
 
-#include "date_time.hpp"
 #include "plugify/core/error.hpp"
 #include "plugify/core/manifest.hpp"
 
+#include "date_time.hpp"
+
 namespace plugify {
-	enum class PackageState {
-		Uninitialized,   // Not yet processed
-		Discovered,      // Found on disk
-		Validated,       // Manifest validated successfully
-		Skipped,         // Skipped due to dependency failures or policy
-		Initializing,    // Currently being initialized
-		Ready,           // Successfully initialized
-		Started,         // Successfully running
-		Ended,           // Terminated/unloaded
-		Error,           // Failed to initialize
-		Disabled         // Disabled by configuration
-	};
+    // Package State Enum
+    enum class PackageState {
+        Initialized,
+        ValidationFailed,
+        ValidationPassed,
+        DependencyResolved,
+        Skipped,
+        Loading,
+        Loaded,
+        Starting,
+        Started,
+        Failed,
+        Terminated
+    };
 
-	template<typename Type>
-	struct Package {
-	    PackageId id;
-		std::shared_ptr<Type> manifest;
-		PackageState state{PackageState::Uninitialized};
-		std::optional<Error> lastError;
-		std::chrono::milliseconds discoveredAt;
+    // Package Information with State
+    struct PackageInfo {
+        std::shared_ptr<PackageManifest> manifest;
+        //PackageId id;
+        //Version version;
+        //std::filesystem::path path;
+        PackageState state{PackageState::Initialized};
+        PackageType type{PackageType::Unknown};
+        //std::vector<PackageId> dependencies;
+        //std::vector<PackageId> dependents;
+        //bool isLanguageModule = false;
+        //int priority = 0;
 
-	    // Helper methods
-	    bool IsModule() const { return manifest->type == PackageType::Module; }
-	    bool IsPlugin() const { return manifest->type == PackageType::Plugin; }
-	    std::string_view GetTypeName() const { return IsModule() ? "module" : "plugin"; }
-	    const std::string& GetLanguageName() const { return IsModule() ? AsModuleManifest()->language : AsPluginManifest()->language; }
-	    std::shared_ptr<ModuleManifest> AsModuleManifest() const { return std::static_pointer_cast<ModuleManifest>(manifest); }
-	    std::shared_ptr<PluginManifest> AsPluginManifest() const { return std::static_pointer_cast<PluginManifest>(manifest); }
-	};
+        // Error tracking
+        std::vector<std::string> errors;
+        std::vector<std::string> warnings;
 
-    using PackageInfo = std::shared_ptr<Package<PackageManifest>>;
-    using PluginInfo = std::shared_ptr<Package<PluginManifest>>;
-    using ModuleInfo = std::shared_ptr<Package<ModuleManifest>>;
+        // Timing information
+        std::chrono::steady_clock::time_point initializedTime;
+        std::chrono::steady_clock::time_point validationTime;
+        std::chrono::steady_clock::time_point loadStartTime;
+        std::chrono::steady_clock::time_point loadEndTime;
+        std::chrono::steady_clock::time_point startStartTime;
+        std::chrono::steady_clock::time_point startEndTime;
 
+        // Package instance (once loaded)
+        std::shared_ptr<void> instance;
+    };
+
+    //using Package = std::shared_ptr<PackageInfo>;
 }

@@ -4,26 +4,35 @@
 #include <vector>
 #include <future>
 #include <queue>
+#include <functional>
+#include <type_traits>
 
 namespace plugify {
     class ThreadPool {
     public:
-        explicit ThreadPool(size_t numThreads = std::thread::hardware_concurrency()) : m_stop(false) {
+        explicit ThreadPool(size_t numThreads = std::thread::hardware_concurrency()) {
+            if (numThreads == 0) {
+                numThreads = 1; // safe default
+            }
+
             for (size_t i = 0; i < numThreads; ++i) {
-                m_workers.emplace_back([this] {
+                _workers.emplace_back([this](std::stop_token stoken) {
                     while (true) {
                         std::function<void()> task;
                         {
-                            std::unique_lock<std::mutex> lock(m_queueMutex);
-                            m_condition.wait(lock, [this] { return m_stop || !m_tasks.empty(); });
+                            std::unique_lock lock(_queueMutex);
+                            _condition.wait(lock, stoken, [this] {
+                                return _stop || !_tasks.empty();
+                            });
 
-                            if (m_stop && m_tasks.empty()) {
+                            if ((_stop && _tasks.empty()) || stoken.stop_requested()) {
                                 return;
                             }
 
-                            task = std::move(m_tasks.front());
-                            m_tasks.pop();
+                            task = std::move(_tasks.front());
+                            _tasks.pop();
                         }
+
                         task();
                     }
                 });
@@ -32,19 +41,16 @@ namespace plugify {
 
         ~ThreadPool() {
             {
-                std::unique_lock<std::mutex> lock(m_queueMutex);
-                m_stop = true;
+                std::unique_lock lock(_queueMutex);
+                _stop = true;
             }
-            m_condition.notify_all();
-
-            for (std::thread& worker : m_workers) {
-                worker.join();
-            }
+            _condition.notify_all();
         }
 
         template<typename F, typename... Args>
-        auto enqueue(F&& f, Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type> {
-            using return_type = typename std::result_of<F(Args...)>::type;
+        auto Enqueue(F&& f, Args&&... args)
+            -> std::future<std::invoke_result_t<F, Args...>> {
+            using return_type = std::invoke_result_t<F, Args...>;
 
             auto task = std::make_shared<std::packaged_task<return_type()>>(
                 std::bind(std::forward<F>(f), std::forward<Args>(args)...)
@@ -52,29 +58,28 @@ namespace plugify {
 
             std::future<return_type> res = task->get_future();
             {
-                std::unique_lock<std::mutex> lock(m_queueMutex);
-
-                if (m_stop) {
+                std::unique_lock lock(_queueMutex);
+                if (_stop) {
                     throw std::runtime_error("enqueue on stopped ThreadPool");
                 }
-
-                m_tasks.emplace([task]() { (*task)(); });
+                _tasks.emplace([task]() { (*task)(); });
             }
-            m_condition.notify_one();
+            _condition.notify_one();
             return res;
         }
 
-        size_t getThreadCount() const { return m_workers.size(); }
-        size_t getQueueSize() const {
-            std::unique_lock<std::mutex> lock(m_queueMutex);
-            return m_tasks.size();
+        size_t GetThreadCount() const { return _workers.size(); }
+
+        size_t GetQueueSize() const {
+            std::scoped_lock lock(_queueMutex);
+            return _tasks.size();
         }
 
     private:
-        std::vector<std::thread> m_workers;
-        std::queue<std::function<void()>> m_tasks;
-        mutable std::mutex m_queueMutex;
-        std::condition_variable m_condition;
-        bool m_stop;
+        std::vector<std::jthread> _workers;
+        std::queue<std::function<void()>> _tasks;
+        mutable std::mutex _queueMutex;
+        std::condition_variable_any _condition; // works with stop_token
+        bool _stop{false};
     };
 }

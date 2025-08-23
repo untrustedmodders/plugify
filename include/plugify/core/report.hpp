@@ -1,11 +1,12 @@
 #pragma once
 
-#include "error.hpp"
-#include "package.hpp"
-#include "types.hpp"
-#include "date_time.hpp"
+#include "plugify/core/error.hpp"
+#include "plugify/core/package.hpp"
+#include "plugify/core/types.hpp"
+#include "plugify/core/date_time.hpp"
 
 namespace plugify {
+#if 0
 	// ============================================================================
 	// Rich Result Types for Better Error Reporting
 	// ============================================================================
@@ -215,4 +216,5 @@ namespace plugify {
             report.totalTime = std::chrono::duration_cast<std::chrono::milliseconds>(report.startTime - report.stopTime);
         }
     };
+#endif
 }

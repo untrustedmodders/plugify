@@ -55,7 +55,7 @@ namespace plugify {
 			const PluginManifest& manifest) = 0;
 		virtual void unloadPlugin(
 			std::unique_ptr<Plugin> plugin) = 0;
-	};*/
+	};
 
 	class Plugify;
 	class Manager {
@@ -117,5 +117,5 @@ namespace plugify {
         static std::unique_ptr<IDependencyResolver> CreateDefaultResolver();
         //static std::unique_ptr<IModuleLoader> createDefaultModuleLoader();
         //static std::unique_ptr<IPluginLoader> createDefaultPluginLoader();
-    };
+    };*/
 }

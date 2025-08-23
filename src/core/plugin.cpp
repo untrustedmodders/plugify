@@ -79,7 +79,7 @@ void Plugin::SetConflicts(std::span<const Conflict> conflicts) noexcept {
 
 
 
-Plugin::Plugin(UniqueId id, BasePaths paths, std::shared_ptr<Manifest> manifest)
+Plugin::Plugin(UniqueId id, BasePaths paths, std::shared_ptr<ManifestPtr> manifest)
 	: _id{id}, _paths{std::move(paths)}, _manifest{std::static_pointer_cast<PluginManifest>(std::move(manifest))} {
 	PL_ASSERT(_manifest->type == PackageType::Plugin && "Invalid package type for plugin ctor");
 	PL_ASSERT(_manifest->path.has_parent_path() && "Package path doesn't contain parent path");

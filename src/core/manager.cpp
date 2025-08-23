@@ -1,3 +1,4 @@
+#if 0
 #include "plugify/core/manager.hpp"
 #include "plugify/core/config.hpp"
 #include "plugify/core/package.hpp"
@@ -847,3 +848,4 @@ std::vector<PackageId> Manager::GetPluginsForModule(std::string_view moduleId) c
 std::unique_ptr<IDependencyResolver> ManagerFactory::CreateDefaultResolver() {
     return std::make_unique<LibsolvDependencyResolver>();
 }
+#endif

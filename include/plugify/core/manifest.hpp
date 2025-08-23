@@ -17,7 +17,7 @@ namespace plugify {
 		std::optional<std::string> author;
 		std::optional<std::string> website;
 		std::optional<std::string> license;
-		std::filesystem::path location;
+		std::filesystem::path path;
 
 		// Dependencies and conflicts
 		std::optional<std::vector<std::string>> platforms;
@@ -32,16 +32,16 @@ namespace plugify {
 	struct PluginManifest : PackageManifest {
 		std::string language;
 		std::string entry;
-		std::optional<std::vector<std::string>> capabilities;
-		std::optional<std::vector<Method>> methods;
+		//std::optional<std::vector<std::string>> capabilities;
+		//std::optional<std::vector<Method>> methods;
 	};
 
 	struct ModuleManifest : PackageManifest {
 		std::string language;
-		std::optional<std::filesystem::path> runtime;
-		std::optional<std::vector<std::string>> directories;
-		std::optional<bool> forceLoad;
+		//std::optional<std::filesystem::path> runtime;
+		//std::optional<std::vector<std::string>> directories;
+		//std::optional<bool> forceLoad;
 	};
 
-	using Manifest = std::shared_ptr<PackageManifest>;
+	using ManifestPtr = std::shared_ptr<PackageManifest>;
 }
