@@ -14,30 +14,31 @@ namespace plugify {
 	    struct PackageValidation {
 	        PackageId id;
 	        bool passed;
-	        std::optional<EnhancedError> error;
+	        std::optional<Error> error;
 	        std::vector<std::string> warnings;
 	    };
 
-	    std::vector<PackageValidation> moduleResults;
-	    std::vector<PackageValidation> pluginResults;
+	    std::vector<PackageValidation> results;
+
+	    std::chrono::system_clock::time_point startTime;
+	    std::chrono::system_clock::time_point endTime;
 	    std::chrono::milliseconds totalTime;
 
 	    bool AllPassed() const {
-	        return std::ranges::all_of(moduleResults, [](const auto& r) { return r.passed; }) &&
-	               std::ranges::all_of(pluginResults, [](const auto& r) { return r.passed; });
+	        return std::ranges::all_of(results, [](const auto& r) { return r.passed; });
 	    }
 
 	    std::size_t FailureCount() const {
-	        return std::ranges::count_if(moduleResults, [](const auto& r) { return !r.passed; }) +
-	               std::ranges::count_if(pluginResults, [](const auto& r) { return !r.passed; });
+	        return std::ranges::count_if(results, [](const auto& r) { return !r.passed; });
+	    }
+
+	    std::size_t PassedCount() const {
+	        return std::ranges::count_if(results, [](const auto& r) { return r.passed; });
 	    }
 
 	    std::vector<PackageId> GetFailedPackages() const {
 	        std::vector<PackageId> failed;
-	        for (const auto& r : moduleResults) {
-	            if (!r.passed) failed.push_back(r.id);
-	        }
-	        for (const auto& r : pluginResults) {
+	        for (const auto& r : results) {
 	            if (!r.passed) failed.push_back(r.id);
 	        }
 	        return failed;
@@ -88,32 +89,27 @@ namespace plugify {
 
         // Main report data
         std::vector<PackageResolution> resolutions;
+
+        std::chrono::system_clock::time_point startTime;
+        std::chrono::system_clock::time_point endTime;
 	    std::chrono::milliseconds totalTime;
 
         // Dependency graph
         std::unordered_map<PackageId, std::vector<PackageId>> dependencyGraph;
         std::unordered_map<PackageId, std::vector<PackageId>> reverseDependencyGraph;
 
-        // Load order (topologically sorted if possible)
+        // Load order
         std::vector<PackageId> loadOrder;
         bool isLoadOrderValid{false}; // False if circular deps prevent valid ordering
 
-
-        bool hasUnresolvedDependencies;
-        bool hasConflicts;
-
         // Analysis methods
         bool HasBlockingIssues() const {
-            return std::ranges::any_of(resolutions,
-                                       [](const auto& r) { return !r.CanLoad(); });
+            return std::ranges::any_of(resolutions, [](const auto& r) { return !r.CanLoad(); });
         }
-
 
         std::size_t BlockerCount() const {
-            return std::ranges::count_if(resolutions,
-                                         [](const auto& r) { return r.BlockerCount() > 0; });
+            return std::ranges::count_if(resolutions, [](const auto& r) { return r.BlockerCount() > 0; });
         }
-
 
         std::vector<PackageId> GetPackagesWithIssues() const {
             std::vector<PackageId> issues;
@@ -152,32 +148,27 @@ namespace plugify {
 	        PackageId id;
 	        PackageState finalState;
 	        std::size_t retryAttempts;
-	        std::optional<EnhancedError> error;
+	        std::optional<Error> error;
 	        std::chrono::milliseconds loadTime;
 	    };
+	    std::vector<PackageInit> inits;
 
-	    std::vector<PackageInit> moduleInits;
-	    std::vector<PackageInit> pluginInits;
+	    std::chrono::system_clock::time_point startTime;
+	    std::chrono::system_clock::time_point endTime;
 	    std::chrono::milliseconds totalTime;
 
 	    std::size_t SuccessCount() const {
-	        return std::ranges::count_if(moduleInits,
-	            [](const auto& i) { return i.finalState == PackageState::Ready; }) +
-	               std::ranges::count_if(pluginInits,
-	            [](const auto& i) { return i.finalState == PackageState::Started; });
+	        return std::ranges::count_if(inits,
+	            [](const auto& i) { return i.finalState == PackageState::Ready; });
 	    }
 
 	    std::size_t FailureCount() const {
-	        return std::ranges::count_if(moduleInits,
-	            [](const auto& i) { return i.finalState == PackageState::Error; }) +
-	               std::ranges::count_if(pluginInits,
+	        return std::ranges::count_if(inits,
 	            [](const auto& i) { return i.finalState == PackageState::Error; });
 	    }
 
 	    std::size_t SkippedCount() const {
-	        return std::ranges::count_if(moduleInits,
-	            [](const auto& i) { return i.finalState == PackageState::Skipped; }) +
-	               std::ranges::count_if(pluginInits,
+	        return std::ranges::count_if(inits,
 	            [](const auto& i) { return i.finalState == PackageState::Skipped; });
 	    }
 
@@ -190,9 +181,9 @@ namespace plugify {
 	// ============================================================================
 
 	struct InitializationState {
+		InitializationReport initializationReport;
 		ValidationReport validationReport;
 		DependencyReport dependencyReport;
-		InitializationReport initializationReport;
 
 		std::chrono::system_clock::time_point startTime;
 		std::chrono::system_clock::time_point endTime;
@@ -210,4 +201,18 @@ namespace plugify {
 		PLUGIFY_API std::string GenerateTextReport() const;
 		PLUGIFY_API std::string GenerateJsonReport() const;
 	};
+
+    template<typename T>
+    struct ReportTimer {
+        T& report;
+
+        ReportTimer(T& t) : report{t} {
+            report.startTime = std::chrono::steady_clock::now();
+        }
+
+        ~ReportTimer() {
+            report.stopTime = std::chrono::steady_clock::now();
+            report.totalTime = std::chrono::duration_cast<std::chrono::milliseconds>(report.startTime - report.stopTime);
+        }
+    };
 }

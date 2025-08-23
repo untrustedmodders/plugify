@@ -10,7 +10,6 @@
 
 namespace plugify {
 	struct PackageManifest {
-		PackageId id; // name@semver
 		std::string name;
 		PackageType type{};
 		Version version;
@@ -31,7 +30,7 @@ namespace plugify {
 	};
 
 	struct PluginManifest : PackageManifest {
-		Dependency language;
+		std::string language;
 		std::string entry;
 		std::optional<std::vector<std::string>> capabilities;
 		std::optional<std::vector<Method>> methods;

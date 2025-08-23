@@ -30,21 +30,21 @@ namespace plugify {
 		// Initialization behavior
 		bool partialStartupMode = true;
 		bool failOnMissingDependencies = false;
-		bool failOnModuleError = false;
-		bool continueOnValidationWarnings = true;
+		//bool failOnModuleError = false;
+		//bool continueOnValidationWarnings = true;
 		bool respectDependencyOrder = true;  // Initialize in dependency order
 		bool skipDependentsOnFailure = true; // Skip packages if their dependencies fail
 		bool printSummary = true;  // Print initialization summary to console
 
 		// Update behavior
-		bool failOnUpdateError = false;      // Whether to fail if any package update fails
-		bool verboseUpdates = false;         // Log update errors to console
-		bool trackUpdatePerformance = true;  // Track update timing statistics
-		std::chrono::microseconds slowUpdateThreshold{16667}; // ~60 FPS threshold
+		//bool failOnUpdateError = false;      // Whether to fail if any package update fails
+		//bool verboseUpdates = false;         // Log update errors to console
+		//bool trackUpdatePerformance = true;  // Track update timing statistics
+		//std::chrono::microseconds slowUpdateThreshold{16667}; // ~60 FPS threshold
 
 		// Timeouts
-		std::chrono::milliseconds initializationTimeout{30000};
-		std::chrono::milliseconds perPackageTimeout{5000};
+		//std::chrono::milliseconds initializationTimeout{30000};
+		//std::chrono::milliseconds perPackageTimeout{5000};
 
 		// Filtering
 		std::optional<std::vector<PackageId>> whitelistedPackages;

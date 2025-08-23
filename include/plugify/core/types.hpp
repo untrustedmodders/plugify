@@ -15,12 +15,12 @@ namespace plugify {
 	 * This type is an alias for plg::version, which encapsulates the versioning
 	 * information for packages in the Plugify ecosystem.
 	 */
-	using Version = plg::version<int, int, int>;
+	using Version = plg::version<>;
 
     /**
      * @typedef Constraint
      */
-    using Constraint = plg::range_set<int, int, int>;
+    using Constraint = plg::range_set<>;
 
 	/**
 	 * @typedef UniqueId
@@ -46,5 +46,11 @@ namespace plugify {
 	 */
 	template<typename T>
 	using Result = plg::expected<T, std::string>;
+
+	/**
+	 * TODO:
+	 */
+	template<typename T>
+	using State = plg::expected<T, Error>;
 
 }

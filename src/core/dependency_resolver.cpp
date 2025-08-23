@@ -105,7 +105,7 @@ LibsolvDependencyResolver::Impl::ResolveDependencies(const PackageCollection& pa
 // ============================================================================
 
 static void debug_callback([[maybe_unused]] Pool* pool, [[maybe_unused]] void* data, int type, const char* str) {
-    if (type & (SOLV_FATAL|SOLV_ERROR))
+    if (type & (SOLV_FATAL | SOLV_ERROR))
         PL_LOG_ERROR("libsolv: {}", str);
     else if (type & SOLV_WARN)
         PL_LOG_WARNING("libsolv: {}", str);
@@ -123,7 +123,7 @@ LibsolvDependencyResolver::Impl::InitializePool() {
     pool_setdebuglevel(pool.get(), level);
 
     // Create a repository for our packages
-    repo = repo_create(pool.get(), "packages");
+    repo = repo_create(pool.get(), "installed");
 }
 
 void
@@ -299,6 +299,7 @@ LibsolvDependencyResolver::Impl::ConvertComparison(plg::detail::range_operator o
 DependencyReport
 LibsolvDependencyResolver::Impl::RunSolver() {
     DependencyReport report;
+    ReportTimer timer(report);
 
     // Create solver
     std::unique_ptr<Solver, SolverDeleter> solver(solver_create(pool.get()));
@@ -496,6 +497,7 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
 
 LibsolvDependencyResolver::LibsolvDependencyResolver()
     : _impl(std::make_unique<Impl>()) {
+
 }
 
 LibsolvDependencyResolver::~LibsolvDependencyResolver() = default;

@@ -70,11 +70,11 @@ namespace plugify {
 		//void setModuleLoader(std::unique_ptr<IModuleLoader> loader);
 		//void setPluginLoader(std::unique_ptr<IPluginLoader> loader);
 
-		Result<void> DiscoverPackages(std::span<const std::filesystem::path> searchPaths = {});
+		State<void> DiscoverPackages(std::span<const std::filesystem::path> searchPaths = {});
 
-		Result<InitializationState> Initialize();
-		Result<void> Terminate();
-		Result<void> Update() { return {}; }
+		State<InitializationState> Initialize();
+		State<void> Terminate();
+		State<void> Update() { return {}; }
 
 		ModuleInfo GetModule(std::string_view moduleId) const;
 		PluginInfo GetPlugin(std::string_view pluginId) const;

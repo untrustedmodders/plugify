@@ -13,7 +13,16 @@
 
 namespace plugify {
 	enum class EventType {
-		ModuleDiscovered,
+	    Discovered,
+	    Validated,
+	    Loading,
+	    Loaded,
+	    Failed,
+	    Skipped,
+
+	    Disabled
+
+		/*ModuleDiscovered,
 		PluginDiscovered,
 
 		ModuleValidated,
@@ -29,11 +38,11 @@ namespace plugify {
 
 		PluginStarted,
 		//PluginUpdate,
-		PluginEnded,
+		PluginEnded,*/
 
 		//ModuleUpdate,
-		ConflictDetected,
-		DependencyResolved
+		//ConflictDetected,
+		//DependencyResolved
 	};
 
 	struct Event {

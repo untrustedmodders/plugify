@@ -69,9 +69,9 @@ struct glz::meta<plugify::ModuleManifest> {
 	using T = plugify::ModuleManifest;
 	static constexpr auto value = object(
 			"$schema", skip{},
-			"id", skip{},
-			"type", skip{},
+			"metadata", skip{},
 			"location", skip{},
+			"type", skip{},
 
 			"name", &T::name,
 			"version", &T::version,
@@ -97,9 +97,9 @@ struct glz::meta<plugify::PluginManifest> {
 	using T = plugify::PluginManifest;
 	static constexpr auto value = object(
 			"$schema", skip{},
-			"id", skip{},
-			"type", skip{},
+			"metadata", skip{},
 			"location", skip{},
+			"type", skip{},
 
 			"name", &T::name,
 			"version", &T::version,
