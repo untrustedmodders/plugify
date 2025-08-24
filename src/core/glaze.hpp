@@ -70,8 +70,8 @@ struct glz::meta<plugify::ModuleManifest> {
 	static constexpr auto value = object(
 			"$schema", skip{},
 			"metadata", skip{},
-			"location", skip{},
 			"type", skip{},
+			"path", skip{},
 
 			"name", &T::name,
 			"version", &T::version,
@@ -84,8 +84,8 @@ struct glz::meta<plugify::ModuleManifest> {
 			"dependencies", &T::dependencies,
 			"conflicts", &T::conflicts,
             "obsoletes", &T::obsoletes,
-
 			"language", &T::language,
+
 			"runtime", &T::runtime,
 			"directories", &T::directories,
 			"forceLoad", &T::forceLoad
@@ -98,8 +98,8 @@ struct glz::meta<plugify::PluginManifest> {
 	static constexpr auto value = object(
 			"$schema", skip{},
 			"metadata", skip{},
-			"location", skip{},
 			"type", skip{},
+			"path", skip{},
 
 			"name", &T::name,
 			"version", &T::version,
@@ -112,8 +112,8 @@ struct glz::meta<plugify::PluginManifest> {
 			"dependencies", &T::dependencies,
 			"conflicts", &T::conflicts,
 			"obsoletes", &T::obsoletes,
-
 			"language", &T::language,
+
 			"entry", &T::entry,
 			"capabilities", &T::capabilities,
 			"methods", &T::methods

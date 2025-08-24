@@ -28,6 +28,8 @@ option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
 
 # ------------------------------------------------------------------------------
 # Dependencies
+set(PLUGIFY_LIBSOLV_REPO "https://github.com/openSUSE/libsolv.git" CACHE STRING "")
+set(PLUGIFY_LIBSOLV_TAG "0.7.35" CACHE STRING "")
 set(PLUGIFY_ASMJIT_REPO "https://github.com/asmjit/asmjit.git" CACHE STRING "")
 set(PLUGIFY_ASMJIT_TAG "a3199e8857792cd10b7589ff5d58343d2c9008ea" CACHE STRING "")
 set(PLUGIFY_FMT_REPO "https://github.com/fmtlib/fmt.git" CACHE STRING "")

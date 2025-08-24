@@ -59,8 +59,8 @@ struct LibsolvDependencyResolver::Impl {
 
     std::unique_ptr<Pool, PoolDeleter> pool;
     Repo* repo = nullptr;
-    std::unordered_map<PackageId, Id> packageToSolvableId;
-    std::unordered_map<Id, PackageId> solvableIdToPackage;
+    std::unordered_map<UniqueId, Id> packageToSolvableId;
+    std::unordered_map<Id, UniqueId> solvableIdToPackage;
 
     // Setup functions
     void InitializePool();
@@ -184,7 +184,7 @@ LibsolvDependencyResolver::Impl::SetupDependencies(Id solvableId, const Manifest
 
         Id depId = MakeDepConstraint(depName, constraints);
 
-        if (optional && optional.value()) {
+        if (optional.value_or(false)) {
             // Optional dependencies go to RECOMMENDS
             solvable_add_deparray(s, SOLVABLE_RECOMMENDS, depId, 0);
         } else {
@@ -379,7 +379,7 @@ LibsolvDependencyResolver::Impl::ProcessSolverProblems(Solver* solver, Dependenc
         issue.suggestedFixes = ExtractSolutions(solver, problemId);
 
         // Add issue to report
-        if (!issue.affectedPackage.empty()) {
+        if (!issue.affectedPackage) {
             auto it = resolution.issues.find(issue.affectedPackage);
             if (it != resolution.issues.end()) {
                 it->second.push_back(std::move(issue));
@@ -455,7 +455,7 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
         {
             auto pkgIt = solvableIdToPackage.find(p);
             if (pkgIt != solvableIdToPackage.end()) {
-                const PackageId& pkgId = pkgIt->second;
+                const UniqueId& pkgId = pkgIt->second;
                 resolution.loadOrder.push_back(pkgId);
 
                 // Build dependency graph
@@ -474,7 +474,7 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
                                 Id providerId = *pp;
                                 auto depIt = solvableIdToPackage.find(providerId);
                                 if (depIt != solvableIdToPackage.end() && providerId != p) {
-                                    const PackageId& depId = depIt->second;
+                                    const UniqueId& depId = depIt->second;
                                     resolution.dependencyGraph[pkgId].push_back(depId);
                                     resolution.reverseDependencyGraph[depId].push_back(pkgId);
                                 }
@@ -491,7 +491,6 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
 
 LibsolvDependencyResolver::LibsolvDependencyResolver()
     : _impl(std::make_unique<Impl>()) {
-
 }
 
 LibsolvDependencyResolver::~LibsolvDependencyResolver() = default;

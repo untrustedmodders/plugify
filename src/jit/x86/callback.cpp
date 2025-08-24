@@ -27,7 +27,7 @@ JitCallback& JitCallback::operator=(JitCallback&& other) noexcept {
 	return *this;
 }
 
-MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, CallbackHandler callback, MemAddr data, bool hidden) {
+MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, const Method& method, CallbackHandler callback, MemAddr data, bool hidden) {
 	if (_function) 
 		return _function;
 
@@ -174,7 +174,7 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 
 	// fill reg to pass method ptr to callback
 	x86::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
-	cc.mov(methodPtrParam, static_cast<uintptr_t>(method));
+	cc.mov(methodPtrParam, &method);
 
 	// fill reg to pass data ptr to callback
 	x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
@@ -320,15 +320,15 @@ MemAddr JitCallback::GetJitFunc(const FuncSignature& sig, MethodHandle method, C
 	return _function;
 }
 
-MemAddr JitCallback::GetJitFunc(MethodHandle method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
-	ValueType retType = method.GetReturnType().GetType();
+MemAddr JitCallback::GetJitFunc(const Method& method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
+	ValueType retType = method.GetRetType().GetType();
 	bool retHidden = hidden(retType);
-	FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Pointer : retType));
+	FuncSignature sig(JitUtils::GetCallConv(method.GetCallConv()), method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Pointer : retType));
 	if (retHidden) {
 		sig.addArg(JitUtils::GetValueTypeId(retType));
 	}
 	for (const auto& type : method.GetParamTypes()) {
-		sig.addArg(JitUtils::GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
+		sig.addArg(JitUtils::GetValueTypeId(type.IsRef() ? ValueType::Pointer : type.GetType()));
 	}
 	return GetJitFunc(sig, method, callback, data, retHidden);
 }

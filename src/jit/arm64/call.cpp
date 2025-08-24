@@ -190,12 +190,12 @@ MemAddr JitCall::GetJitFunc(const FuncSignature& sig, MemAddr target, WaitType w
 	return _function;
 }
 
-MemAddr JitCall::GetJitFunc(MethodHandle method, MemAddr target, WaitType waitType, HiddenParam hidden) {
-	ValueType retType = method.GetReturnType().GetType();
+MemAddr JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitType, HiddenParam hidden) {
+	ValueType retType = method.GetRetType().GetType();
 	bool retHidden = hidden(retType);
-	FuncSignature sig(JitUtils::GetCallConv(method.GetCallingConvention()), method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Void : retType));
+	FuncSignature sig(JitUtils::GetCallConv(method.GetCallConv()), method.GetVarIndex(), JitUtils::GetRetTypeId(retHidden ? ValueType::Void : retType));
 	for (const auto& type : method.GetParamTypes()) {
-		sig.addArg(JitUtils::GetValueTypeId(type.IsReference() ? ValueType::Pointer : type.GetType()));
+		sig.addArg(JitUtils::GetValueTypeId(type.IsRef() ? ValueType::Pointer : type.GetType()));
 	}
 	return GetJitFunc(sig, target, waitType, retHidden);
 }

@@ -27,7 +27,7 @@ namespace plugify {
 
 	    // Getters
 	    [[nodiscard]] const ValueType& GetType() const noexcept;
-	    [[nodiscard]] bool GetRef() const noexcept;
+	    [[nodiscard]] bool IsRef() const noexcept;
 	    [[nodiscard]] std::shared_ptr<Method> GetPrototype() const noexcept;
 	    [[nodiscard]] std::shared_ptr<Enum> GetEnumerate() const noexcept;
 

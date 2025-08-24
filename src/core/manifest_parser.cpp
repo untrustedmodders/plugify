@@ -1,6 +1,5 @@
 #include "plugify/core/manifest_parser.hpp"
-
-#include <glaze/glaze.hpp>
+#include "core/glaze.hpp"
 
 using namespace plugify;
 
@@ -9,27 +8,42 @@ static std::unordered_map<std::string, PackageType, plg::case_insensitive_hash, 
     {Module::kFileExtension, PackageType::Module}
 };
 
-Result<ManifestPtr>
-GlazeManifestParser::Parse(const std::string& content, const std::filesystem::path& path) {
-    auto parsed = glz::read_jsonc<ManifestPtr>(content);
+Result<ManifestPtr> ParsePlugin(const std::string& content, const std::filesystem::path& path) {
+    auto parsed = glz::read_jsonc<std::shared_ptr<PluginManifest>>(content);
     if (!parsed) {
         return plg::unexpected(glz::format_error(parsed.error(), content));
     }
+    auto& manifest = parsed.value();
+    manifest->type = PackageType::Plugin;
+    manifest->path = path;
+    return std::static_pointer_cast<PackageManifest>(std::move(manifest));
+}
 
-    auto& manifest = *parsed;
-
-    if (!manifest->location) {
-        manifest->location = path.parent_path();
+Result<ManifestPtr> ParseModule(const std::string& content, const std::filesystem::path& path) {
+    auto parsed = glz::read_jsonc<std::shared_ptr<ModuleManifest>>(content);
+    if (!parsed) {
+        return plg::unexpected(glz::format_error(parsed.error(), content));
     }
+    auto& manifest = parsed.value();
+    manifest->type = PackageType::Module;
+    manifest->path = path;
+    return std::static_pointer_cast<PackageManifest>(std::move(manifest));
+}
 
-    if (!manifest->type || manifest->type == PackageType::Auto) {
-        auto ext = path.extension().string();
-        auto it = manifests.find(ext);
-        if (it == manifests.end()) {
-            return plg::unexpected(std::format("Unknown manifest file extension: \"{}\"", ext));
-        }
-        manifest->type = it->second;
+Result<ManifestPtr>
+GlazeManifestParser::Parse(const std::string& content, const std::filesystem::path& path) {
+    auto ext = path.extension().string();
+    auto it = manifests.find(ext);
+    if (it == manifests.end()) {
+        return plg::unexpected(std::format("Unknown manifest file extension: \"{}\"", ext));
     }
-
-    return manifest;
+    switch (it->second) {
+        case PackageType::Plugin:
+            return ParsePlugin(content, path);
+        case PackageType::Module:
+            return ParseModule(content, path);
+        default:
+            PL_ASSERT(false && "Unsupported package type");
+            return plg::unexpected("Unsupported package type");
+    }
 }

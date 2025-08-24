@@ -1,11 +1,13 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
 
+#include "plg/uuid.hpp"
 #include "plg/version.hpp"
 #include "plg/expected.hpp"
+#include "plg/enum.hpp"
 
 namespace plugify {
 	/**
@@ -24,14 +26,9 @@ namespace plugify {
 
 	/**
 	 * @typedef UniqueId
-	 * @brief Represents a unique identifier for modules.
+	 * @brief Represents a unique identifier for everything.
 	 */
 	using UniqueId = std::ptrdiff_t;
-
-	/**
-	 * TODO:
-	 */
-	using PackageId = std::string;
 
     /**
      * TODO:

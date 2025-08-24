@@ -46,9 +46,21 @@ namespace plugify {
 		//std::chrono::milliseconds initializationTimeout{30000};
 		//std::chrono::milliseconds perPackageTimeout{5000};
 
+
+
+
+
+
+
+
+
+
+
+
+
 		// Filtering
-		std::optional<std::vector<PackageId>> whitelistedPackages;
-		std::optional<std::vector<PackageId>> blacklistedPackages;
+		std::optional<std::unordered_set<std::string>> whitelistedPackages;
+		std::optional<std::unordered_set<std::string>> blacklistedPackages;
 
 
 

@@ -1,12 +1,15 @@
 #pragma once
 
-#include "plugify/_/method_handle.hpp"
-#include "plugify/asm/mem_addr.hpp"
-#include <asmjit/core.h>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <asmjit/core.h>
+
+#include "plugify/asm/mem_addr.hpp"
+#include "plugify/core/method.hpp"
+#include "plugify/core/property.hpp"
 
 namespace plugify {
 	/**
@@ -152,7 +155,7 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(MethodHandle method, MemAddr target, WaitType waitType = WaitType::None, HiddenParam hidden = &ValueUtils::IsHiddenParam);
+		MemAddr GetJitFunc(const Method& method, MemAddr target, WaitType waitType = WaitType::None, HiddenParam hidden = &ValueUtils::IsHiddenParam);
 
 		/**
 		 * @brief Get a dynamically created function.

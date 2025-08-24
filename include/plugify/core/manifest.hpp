@@ -27,20 +27,19 @@ namespace plugify {
 
 		// Metadata
 		//std::optional<std::unordered_map<std::string, std::string>> metadata;
+		std::string language;
 	};
 
-	struct PluginManifest : PackageManifest {
-		std::string language;
+	struct PluginManifest final : PackageManifest {
 		std::string entry;
-		//std::optional<std::vector<std::string>> capabilities;
-		//std::optional<std::vector<Method>> methods;
+		std::optional<std::vector<std::string>> capabilities;
+		std::optional<std::vector<Method>> methods;
 	};
 
-	struct ModuleManifest : PackageManifest {
-		std::string language;
-		//std::optional<std::filesystem::path> runtime;
-		//std::optional<std::vector<std::string>> directories;
-		//std::optional<bool> forceLoad;
+    struct ModuleManifest final : PackageManifest {
+		std::optional<std::filesystem::path> runtime;
+		std::optional<std::vector<std::string>> directories;
+		std::optional<bool> forceLoad;
 	};
 
 	using ManifestPtr = std::shared_ptr<PackageManifest>;

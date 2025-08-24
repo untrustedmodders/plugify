@@ -8,7 +8,7 @@
 
 namespace plugify {
     class IDependencyResolver;
-	/*class Module;
+	class Module;
 	class Plugin;
 	class IPackageDiscovery;
 	class IPackageValidator;
@@ -103,11 +103,11 @@ namespace plugify {
 
 		// Helper methods
 		void EmitEvent(const Event& event);
-		//Result<void> HandleInitializationError(const PackageId& id, const Error& error);
+		//Result<void> HandleInitializationError(const UniqueId& id, const Error& error);
 
 		// State management
-		void UpdatePackageState(const PackageId& id, PackageState newState);
-		std::vector<PackageId> GetPluginsForModule(std::string_view moduleId) const;
+		void UpdatePackageState(const UniqueId& id, PackageState newState);
+		std::vector<UniqueId> GetPluginsForModule(std::string_view moduleId) const;
 	};
 
     class ManagerFactory {
@@ -117,5 +117,5 @@ namespace plugify {
         static std::unique_ptr<IDependencyResolver> CreateDefaultResolver();
         //static std::unique_ptr<IModuleLoader> createDefaultModuleLoader();
         //static std::unique_ptr<IPluginLoader> createDefaultPluginLoader();
-    };*/
+    };
 }

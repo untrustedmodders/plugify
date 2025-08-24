@@ -122,7 +122,7 @@ namespace plugify {
 	    Module& operator=(Module&& other) noexcept;
 
 	    // Getters
-	    [[nodiscard]] const PackageId& GetId() const noexcept;
+	    [[nodiscard]] const UniqueId& GetId() const noexcept;
 	    [[nodiscard]] std::string_view GetName() const noexcept;
 	    [[nodiscard]] PackageType GetType() const noexcept;
 	    [[nodiscard]] Version GetVersion() const noexcept;
@@ -143,7 +143,7 @@ namespace plugify {
 		[[nodiscard]] bool GetForceLoad() const noexcept;
 
 	    // Setters
-	    void SetId(PackageId id) noexcept;
+	    void SetId(UniqueId id) noexcept;
 	    void SetName(std::string_view name) noexcept;
 	    void SetType(PackageType type) noexcept;
 	    void SetVersion(Version version) noexcept;

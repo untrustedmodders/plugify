@@ -6,8 +6,8 @@ set(ENABLE_ZLIB_COMPRESSION OFF CACHE INTERNAL "Build with zlib compression supp
 
 FetchContent_Declare(
         libsolv
-        GIT_REPOSITORY https://github.com/openSUSE/libsolv.git
-        GIT_TAG 0.7.35
+        GIT_REPOSITORY ${PLUGIFY_LIBSOLV_REPO}
+        GIT_TAG ${PLUGIFY_LIBSOLV_TAG}
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
         PATCH_COMMAND git reset --hard && git apply --ignore-whitespace --whitespace=nowarn --reject ${CMAKE_CURRENT_SOURCE_DIR}/patches/libsolv.patch

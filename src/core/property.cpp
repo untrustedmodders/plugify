@@ -21,7 +21,7 @@ Property& Property::operator=(const Property& other) {
 Property& Property::operator=(Property&& other) noexcept = default;
 
 const ValueType& Property::GetType() const noexcept { return _impl->type; }
-bool Property::GetRef() const noexcept { return _impl->ref.value_or(false); }
+bool Property::IsRef() const noexcept { return _impl->ref.value_or(false); }
 std::shared_ptr<Method> Property::GetPrototype() const noexcept { return _impl->prototype; }
 std::shared_ptr<Enum> Property::GetEnumerate() const noexcept { return _impl->enumerate; }
 

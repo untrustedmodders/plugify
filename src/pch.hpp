@@ -21,7 +21,6 @@
 #include <ranges>
 #include <numeric>
 #include <stack>
-#include <latch>
 
 #include "plugify/core/global.h"
 #include "plugify/core/log_system.hpp"

@@ -4,16 +4,15 @@
 #include <string>
 #include <vector>
 
-#include "plugify/_/method_handle.hpp"
 #include "date_time.hpp"
 #include "plg/expected.hpp"
 #include "plugify/asm/mem_addr.hpp"
 
 namespace plugify {
-	class PluginHandle;
-	class ModuleHandle;
-	class MethodHandle;
-	class ProviderHandle;
+	class Plugin;
+	class Module;
+	class Method;
+	class Provider;
 
 	/**
 	 * @struct InitData
@@ -53,11 +52,11 @@ namespace plugify {
 	public:
 		/**
 		 * @brief Initialize the language module.
-		 * @param provider Handle to the Plugify provider.
-		 * @param module Handle to the language module being initialized.
+		 * @param provider Weak pointer to the Plugify provider.
+		 * @param module Weak pointer to the language module being initialized.
 		 * @return Result of the initialization, either InitResultData or ErrorData.
 		 */
-		virtual Result<InitData> Initialize(ProviderHandle provider, ModuleHandle module) = 0;
+		virtual Result<InitData> Initialize(std::weak_ptr<Provider> provider, std::weak_ptr<Module> module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.
@@ -72,35 +71,35 @@ namespace plugify {
 
 		/**
 		 * @brief Handle plugin load event.
-		 * @param plugin Handle to the loaded plugin.
+		 * @param plugin Weak pointer to the loaded plugin.
 		 * @return Result of the load event, either LoadResultData or ErrorData.
 		 */
-		virtual Result<LoadData> OnPluginLoad(PluginHandle plugin) = 0;
+		virtual Result<LoadData> OnPluginLoad(std::weak_ptr<Plugin> plugin) = 0;
 
 		/**
 		 * @brief Handle plugin start event.
-		 * @param plugin Handle to the started plugin.
+		 * @param plugin Weak pointer to the started plugin.
 		 */
-		virtual void OnPluginStart(PluginHandle plugin) = 0;
+		virtual void OnPluginStart(std::weak_ptr<Plugin> plugin) = 0;
 
 		/**
 		 * @brief Handle plugin update event.
-		 * @param plugin Handle to the started plugin.
+		 * @param plugin Weak pointer to the started plugin.
 		 * @param dt The time delta since the last update.
 		 */
-		virtual void OnPluginUpdate(PluginHandle plugin, DateTime dt) = 0;
+		virtual void OnPluginUpdate(std::weak_ptr<Plugin> plugin, DateTime dt) = 0;
 
 		/**
 		 * @brief Handle plugin end event.
-		 * @param plugin Handle to the ended plugin.
+		 * @param plugin Weak pointer to the ended plugin.
 		 */
-		virtual void OnPluginEnd(PluginHandle plugin) = 0;
+		virtual void OnPluginEnd(std::weak_ptr<Plugin> plugin) = 0;
 
 		/**
 		 * @brief Handle method export event.
-		 * @param plugin Handle to the plugin exporting a method.
+		 * @param plugin Weak pointer to the plugin exporting a method.
 		 */
-		virtual void OnMethodExport(PluginHandle plugin) = 0;
+		virtual void OnMethodExport(std::weak_ptr<Plugin> plugin) = 0;
 
 		/**
 		* @brief Determine if language module is build with debugging mode.
