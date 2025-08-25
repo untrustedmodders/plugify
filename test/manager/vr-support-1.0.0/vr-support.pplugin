@@ -4,15 +4,11 @@
     "dependencies": [
         {
             "name": "graphics-engine",
-            "constraints": [
-                ">=2.0.0"
-            ]
+            "constraints": ">=2.0.0"
         },
         {
             "name": "sound-engine",
-            "constraints": [
-                ">=2.0.0"
-            ]
+            "constraints": ">=2.0.0"
         }
     ],
     "conflicts": [],
@@ -20,8 +16,6 @@
     "author": "ImmersionWorks",
     "website": "https://example.com/vr-support",
     "license": "Apache-2.0",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

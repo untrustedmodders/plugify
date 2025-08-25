@@ -3,9 +3,9 @@
 
 using namespace plugify;
 
-static std::unordered_map<std::string, PackageType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
-    {Plugin::kFileExtension, PackageType::Plugin},
-    {Module::kFileExtension, PackageType::Module}
+static plg::flat_map<std::string, PackageType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
+    {".pplugin", PackageType::Plugin},
+    {".pmodule", PackageType::Module}
 };
 
 Result<ManifestPtr> ParsePlugin(const std::string& content, const std::filesystem::path& path) {

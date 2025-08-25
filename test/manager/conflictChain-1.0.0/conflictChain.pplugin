@@ -4,23 +4,18 @@
     "dependencies": [
         {
             "name": "conflictX",
-            "constraints": [
-                ">=1.0.0"
-            ]
+            "constraints": ">=1.0.0"
         }
     ],
     "conflicts": [
         {
-            "name": "conflictY",
-            "constraints": []
+            "name": "conflictY"
         }
     ],
     "description": "Depends on X, conflicts with Y",
     "author": "xAI",
     "website": "https://example.com/conflictChain",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

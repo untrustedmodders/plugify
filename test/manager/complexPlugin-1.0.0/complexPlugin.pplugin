@@ -4,51 +4,37 @@
     "dependencies": [
         {
             "name": "core-utils",
-            "constraints": [
-                ">=1.0.0"
-            ]
+            "constraints": ">=1.0.0"
         },
         {
             "name": "logger",
-            "constraints": [
-                ">=1.2.0"
-            ]
+            "constraints": ">=1.2.0"
         },
         {
             "name": "database",
-            "constraints": [
-                ">=2.0.1"
-            ]
+            "constraints": ">=2.0.1"
         },
         {
             "name": "ui-framework",
-            "constraints": [
-                ">=3.0.0"
-            ]
+            "constraints": ">=3.0.0"
         },
         {
             "name": "auth-module",
-            "constraints": [
-                ">=1.0.0"
-            ]
+            "constraints": ">=1.0.0"
         }
     ],
     "conflicts": [
         {
-            "name": "conflictX",
-            "constraints": []
+            "name": "conflictX"
         },
         {
-            "name": "conflictY",
-            "constraints": []
+            "name": "conflictY"
         }
     ],
     "description": "Complex with many deps and conflicts",
     "author": "xAI",
     "website": "https://example.com/complexPlugin",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

@@ -199,7 +199,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 
 Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
     const std::filesystem::path& directory,
-    std::initializer_list<std::string_view> patterns,
+    std::span<const std::string_view> patterns,
     bool recursive) {
 
     std::error_code ec;
@@ -342,7 +342,7 @@ bool StandardFileSystem::ShouldInclude(const FileInfo& info, const DirectoryIter
     return true;
 }
 
-bool StandardFileSystem::MatchesPatterns(std::string_view filename, std::initializer_list<std::string_view> patterns) {
+bool StandardFileSystem::MatchesPatterns(std::string_view filename, std::span<const std::string_view> patterns) {
     if (patterns.size() == 0) return true;
     
     for (const auto& pattern : patterns) {

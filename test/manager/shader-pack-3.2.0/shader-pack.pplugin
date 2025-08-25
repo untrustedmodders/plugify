@@ -4,9 +4,7 @@
     "dependencies": [
         {
             "name": "graphics-engine",
-            "constraints": [
-                ">=2.0.0"
-            ]
+            "constraints": ">=2.0.0"
         }
     ],
     "conflicts": [],
@@ -14,8 +12,6 @@
     "author": "RenderX",
     "website": "https://example.com/shader-pack",
     "license": "GPL-3.0",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

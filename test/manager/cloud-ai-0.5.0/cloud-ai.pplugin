@@ -3,12 +3,10 @@
     "version": "0.5.0",
     "dependencies": [
         {
-            "name": "ai-module",
-            "constraints": []
+            "name": "ai-module"
         },
         {
-            "name": "cloud-save",
-            "constraints": []
+            "name": "cloud-save"
         }
     ],
     "conflicts": [],
@@ -16,8 +14,6 @@
     "author": "AI Labs",
     "website": "https://example.com/cloud-ai",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

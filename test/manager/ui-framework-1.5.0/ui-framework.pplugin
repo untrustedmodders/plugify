@@ -3,14 +3,11 @@
     "version": "1.5.0",
     "dependencies": [
         {
-            "name": "core-utils",
-            "constraints": []
+            "name": "core-utils"
         },
         {
             "name": "graphics-engine",
-            "constraints": [
-                "<2.0.0"
-            ]
+            "constraints": "<2.0.0"
         }
     ],
     "conflicts": [],
@@ -18,8 +15,6 @@
     "author": "UXWorks",
     "website": "https://example.com/ui-framework",
     "license": "Apache-2.0",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

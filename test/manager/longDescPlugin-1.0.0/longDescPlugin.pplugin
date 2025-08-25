@@ -7,8 +7,6 @@
     "author": "xAI with a long name Inc.",
     "website": "https://example.com/longDescPlugin/with/a/long/path",
     "license": "A very long license name like GNU Affero General Public License v3.0 or later",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

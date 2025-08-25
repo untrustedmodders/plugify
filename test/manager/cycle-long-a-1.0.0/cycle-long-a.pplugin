@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "cycle-long-b",
-            "constraints": []
+            "name": "cycle-long-b"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "CycleTest",
     "website": "https://example.com/cycle-long-a",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

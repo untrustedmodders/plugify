@@ -6,8 +6,6 @@
     "description": "No license field present.",
     "author": "Unknown",
     "website": "https://example.com/missing-license",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

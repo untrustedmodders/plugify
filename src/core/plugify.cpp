@@ -13,8 +13,8 @@ struct Plugify::Impl {
 	std::shared_ptr<Manager> manager;
     std::shared_ptr<Config> config;
 
-	DateTime deltaTime;
-	DateTime lastTime;
+	//DateTime deltaTime;
+	//DateTime lastTime;
 	Version version;
 	bool inited{false};
 
@@ -33,7 +33,7 @@ Plugify::~Plugify() {
 	Terminate();
 }
 
-bool Plugify::Initialize(const std::filesystem::path&) {
+bool Plugify::Initialize(const std::filesystem::path& ) {
 	/*if (IsInitialized())
 		return false;
 
@@ -115,8 +115,11 @@ bool Plugify::Initialize(const std::filesystem::path&) {
 	if (!rootDir.empty())
 		_impl->config.baseDir = rootDir / _impl->config.baseDir;*/
 	_impl->config = std::make_shared<Config>();
+    _impl->config->searchPaths = { R"(D:\plugify\test\manager)" };
     _impl->config->logSeverity = Severity::Verbose;
 	_impl->inited = true;
+
+    SetLogger(std::make_shared<StandardLogger>());
 
 	PL_LOG_INFO("Plugify Init!");
 	PL_LOG_INFO("Version: {}", _impl->version);
@@ -130,9 +133,9 @@ void Plugify::Terminate() const {
 	if (!IsInitialized())
 		return;
 
-	_impl->lastTime = DateTime::Now();
-	auto _ = _impl->manager->Terminate();
-	_impl->inited = false;
+	//_impl->lastTime = DateTime::Now();
+	//auto _ = _impl->manager->Terminate();
+	//_impl->inited = false;
 
 	PL_LOG_INFO("Plugify Terminated!");
 }
@@ -145,11 +148,11 @@ void Plugify::Update() const {
 	if (!IsInitialized())
 		return;
 
-	auto currentTime = DateTime::Now();
-	_impl->deltaTime = (currentTime - _impl->lastTime);
-	_impl->lastTime = currentTime;
+	//auto currentTime = DateTime::Now();
+	//_impl->deltaTime = (currentTime - _impl->lastTime);
+	//_impl->lastTime = currentTime;
 
-	auto it = _impl->manager->Update(/*_impl->deltaTime*/);
+	//auto it = _impl->manager->Update(/*_impl->deltaTime*/);
 }
 
 void Plugify::Log(std::string_view msg, Severity severity) const {

@@ -1,61 +1,103 @@
 #pragma once
 
-#include "plugify/core/event.hpp"
-#include "plugify/core/report.hpp"
 #include "plugify/core/types.hpp"
+#include "plugify/core/dependency_resolver.hpp"
+#include "plugify/core/progress_reporter.hpp"
+#include "plugify/core/file_system.hpp"
+#include "plugify/core/manifest_parser.hpp"
 
-#include "dependency_resolver.hpp"
+#include <deque>
+#include <ranges>
 
 namespace plugify {
-    class IDependencyResolver;
-	class Module;
-	class Plugin;
-	class IPackageDiscovery;
-	class IPackageValidator;
-	class IModuleLoader;
-	class IPluginLoader;
+    // Phase Statistics
+    struct PhaseStatistics {
+        std::atomic<size_t> success;
+        std::atomic<size_t> failed;
+        Duration time;
 
-	// Package validation interface
-	class IPackageValidator {
-	public:
-		virtual ~IPackageValidator() = default;
+        void AddSuccess(size_t op = 1) noexcept {
+            success.fetch_add(op, std::memory_order_relaxed);
+        }
 
-		virtual Result<void> validateManifest(const PackageManifest& manifest) = 0;
-		virtual Result<void> validateDependencies(
-				const PackageManifest& package,
-				std::span<const PackageManifest> availablePackages) = 0;
-		virtual Result<void> checkConflicts(
-				const PackageManifest& package,
-				std::span<const PackageManifest> loadedPackages) = 0;
-	};
+        void AddFailed(size_t op = 1) noexcept {
+            failed.fetch_add(op, std::memory_order_relaxed);
+        }
 
-	// Module loader interface
-	class IModuleLoader {
-	public:
-		virtual ~IModuleLoader() = default;
+        void SetTime(Duration t) noexcept {
+            time = t;
+        }
 
-		virtual Result<std::unique_ptr<Module>> loadModule(const ModuleManifest& manifest) = 0;
-		virtual Result<void> initializeModule(
-			Module& module,
-			const ModuleManifest& manifest) = 0;
-		virtual void unloadModule(
-			std::unique_ptr<Module> module) = 0;
-	};
+        size_t Total() const noexcept {
+            return success.load(std::memory_order_relaxed) + failed.load(std::memory_order_relaxed);
+        }
 
-	// Plugin loader interface
-	class IPluginLoader {
-	public:
-		virtual ~IPluginLoader() = default;
+        float SuccessRate() const noexcept {
+            auto total = Total();
+            return total > 0 ? (100.0f * success.load()) / total : 0.0f;
+        }
 
-		virtual Result<std::unique_ptr<Plugin>> loadPlugin(
-			const PluginManifest& manifest,
-			Module& languageModule) = 0;
-		virtual Result<void> initializePlugin(
-			Plugin& plugin,
-			const PluginManifest& manifest) = 0;
-		virtual void unloadPlugin(
-			std::unique_ptr<Plugin> plugin) = 0;
-	};
+        std::string GetText(std::string_view name) const {
+            return std::format("{:<12} ✓{:<6} ✗{:<6} {}ms ({:.1f}% success)",
+                name, success.load(),failed.load(), time.count(), SuccessRate());
+        }
+    };
+
+    // Initialization Statistics
+    struct InitializationState {
+        PhaseStatistics discovery{};
+        PhaseStatistics parsing{};
+        PhaseStatistics resolution{};
+        PhaseStatistics load{};
+        PhaseStatistics start{};
+        PhaseStatistics update{};
+
+        std::deque<std::pair<std::string, std::string>> errorLog;
+        std::deque<std::pair<std::string, std::string>> warningLog;
+        std::mutex logMutex;
+
+        void AddError(std::string context, std::string message) {
+            std::scoped_lock<std::mutex> lock(logMutex);
+            errorLog.emplace_back(std::move(context), std::move(message));
+        }
+        void AddWarning(std::string context, std::string message) {
+            std::scoped_lock<std::mutex> lock(logMutex);
+            warningLog.emplace_back(std::move(context), std::move(message));
+        }
+
+        Duration TotalTime() const noexcept {
+            return discovery.time + parsing.time + resolution.time + load.time + start.time;
+        }
+
+        std::string GetTextSummary() const {
+            std::string buffer;
+            auto it = std::back_inserter(buffer);
+
+            std::format_to(it, "=== Initialization Summary ===\n");
+            std::format_to(it, "{}\n", discovery.GetText("Discovery"));
+            std::format_to(it, "{}\n", parsing.GetText("Parsing"));
+            std::format_to(it, "{}\n", resolution.GetText("Resolution"));
+            std::format_to(it, "{}\n", load.GetText("Loading"));
+            std::format_to(it, "{}\n", start.GetText("Starting"));
+            std::format_to(it, "Total Time: {}ms\n", TotalTime().count());
+
+            if (!errorLog.empty()) {
+                std::format_to(it, "\n=== Errors ({}) ===\n", errorLog.size());
+                for (const auto& [ctx, msg] : errorLog | std::views::take(10)) {
+                    std::format_to(it, "  [{}] {}\n", ctx, msg);
+                }
+            }
+
+            if (!warningLog.empty()) {
+                std::format_to(it, "\n=== Warnings ({}) ===\n", warningLog.size());
+                for (const auto& [ctx, msg] : warningLog | std::views::take(10)) {
+                    std::format_to(it, "  [{}] {}\n", ctx, msg);
+                }
+            }
+
+            return buffer;
+        }
+    };
 
 	class Plugify;
 	class Manager {
@@ -66,55 +108,22 @@ namespace plugify {
 		// Dependency injection for customization
 		//void setPackageDiscovery(std::unique_ptr<IPackageValidator> discovery);
 		//void setPackageValidator(std::unique_ptr<IPackageValidator> validator);
-		void SetDependencyResolver(std::unique_ptr<IDependencyResolver> resolver);
+		//void SetDependencyResolver(std::unique_ptr<IDependencyResolver> resolver);
 		//void setModuleLoader(std::unique_ptr<IModuleLoader> loader);
 		//void setPluginLoader(std::unique_ptr<IPluginLoader> loader);
 
-		State<void> DiscoverPackages(std::span<const std::filesystem::path> searchPaths = {});
-
-		State<InitializationState> Initialize();
-		State<void> Terminate();
-		State<void> Update() { return {}; }
-
-		ModuleInfo GetModule(std::string_view moduleId) const;
-		PluginInfo GetPlugin(std::string_view pluginId) const;
-
-		std::vector<ModuleInfo> GetModules() const;
-		std::vector<PluginInfo> GetPlugins() const;
-
-		std::vector<ModuleInfo> GetModules(PackageState state) const;
-		std::vector<PluginInfo> GetPlugins(PackageState state) const;
-
-		bool IsModuleLoaded(std::string_view moduleId) const;
-		bool IsPluginLoaded(std::string_view pluginId) const;
-
-		UniqueId Subscribe(EventHandler handler);
-		void Unsubscribe(UniqueId id);
+		std::shared_ptr<InitializationState> Initialize();
 
 	private:
 		struct Impl;
 		std::unique_ptr<Impl> _impl;
-
-		// Internal initialization steps
-		ValidationReport ValidateAllManifests();
-		DependencyReport ResolveDependencies();
-		InitializationReport InitializeModules();
-		InitializationReport InitializePlugins();
-
-		// Helper methods
-		void EmitEvent(const Event& event);
-		//Result<void> HandleInitializationError(const UniqueId& id, const Error& error);
-
-		// State management
-		void UpdatePackageState(const UniqueId& id, PackageState newState);
-		std::vector<UniqueId> GetPluginsForModule(std::string_view moduleId) const;
 	};
 
     class ManagerFactory {
     public:
         //static std::unique_ptr<IPackageDiscovery> createDefaultDiscovery();
         //static std::unique_ptr<IPackageValidator> createDefaultValidator();
-        static std::unique_ptr<IDependencyResolver> CreateDefaultResolver();
+        //static std::unique_ptr<IDependencyResolver> CreateDefaultResolver();
         //static std::unique_ptr<IModuleLoader> createDefaultModuleLoader();
         //static std::unique_ptr<IPluginLoader> createDefaultPluginLoader();
     };

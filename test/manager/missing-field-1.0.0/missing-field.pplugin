@@ -3,13 +3,10 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "core-utils",
-            "constraints": []
+            "name": "core-utils"
         }
     ],
     "conflicts": [],
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

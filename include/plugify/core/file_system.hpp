@@ -102,7 +102,7 @@ namespace plugify {
 	     */
 	    virtual Result<std::vector<std::filesystem::path>> FindFiles(
 	        const std::filesystem::path& directory,
-	        std::initializer_list<std::string_view> patterns,  // e.g., {"*.json", "manifest.*"}
+	        std::span<const std::string_view> patterns,  // e.g., {"*.json", "manifest.*"}
 	        bool recursive = true) = 0;
 
 	    // Path Operations
@@ -158,7 +158,7 @@ namespace plugify {
 
 	    Result<std::vector<std::filesystem::path>> FindFiles(
 	        const std::filesystem::path& directory,
-	        std::initializer_list<std::string_view> patterns,
+	        std::span<const std::string_view> patterns,
 	        bool recursive) override;
 
 	    Result<void> CreateDirectories(const std::filesystem::path& path) override;
@@ -178,7 +178,7 @@ namespace plugify {
 	        std::error_code& ec);
 
 	    static bool ShouldInclude(const FileInfo& info, const DirectoryIterationOptions& options);
-	    static bool MatchesPatterns(std::string_view filename, std::initializer_list<std::string_view> patterns);
+	    static bool MatchesPatterns(std::string_view filename, std::span<const std::string_view> patterns);
 	    static bool SimpleMatch(std::string_view text, std::string_view pattern);
 	};
 } // namespace plugify

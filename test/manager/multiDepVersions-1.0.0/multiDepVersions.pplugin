@@ -4,15 +4,11 @@
     "dependencies": [
         {
             "name": "logger",
-            "constraints": [
-                "==1.2.0"
-            ]
+            "constraints": "==1.2.0"
         },
         {
             "name": "database",
-            "constraints": [
-                "<3.0.0"
-            ]
+            "constraints": "<3.0.0"
         }
     ],
     "conflicts": [],
@@ -20,8 +16,6 @@
     "author": "xAI",
     "website": "https://example.com/multiDepVersions",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

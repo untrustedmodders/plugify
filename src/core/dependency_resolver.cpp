@@ -16,8 +16,6 @@ extern "C" {
 #include <solv/solver.h>
 #include <solv/solverdebug.h>
 #include <solv/transaction.h>
-
-#include <memory>
 }
 
 using namespace plugify;
@@ -59,8 +57,8 @@ struct LibsolvDependencyResolver::Impl {
 
     std::unique_ptr<Pool, PoolDeleter> pool;
     Repo* repo = nullptr;
-    std::unordered_map<UniqueId, Id> packageToSolvableId;
-    std::unordered_map<Id, UniqueId> solvableIdToPackage;
+    plg::flat_map<UniqueId, Id> packageToSolvableId;
+    plg::flat_map<Id, UniqueId> solvableIdToPackage;
 
     // Setup functions
     void InitializePool();
@@ -128,6 +126,9 @@ LibsolvDependencyResolver::Impl::InitializePool() {
 
 void
 LibsolvDependencyResolver::Impl::AddPackagesToPool(const PackageCollection& packages) {
+    packageToSolvableId.reserve(packages.size());
+    solvableIdToPackage.reserve(packages.size());
+
     for (const auto& [id, manifest] : packages) {
         Id solvableId = AddSolvable(manifest);
         packageToSolvableId[id] = solvableId;
@@ -349,12 +350,9 @@ LibsolvDependencyResolver::Impl::ProcessSolverProblems(Solver* solver, Dependenc
         Id source, target, dep;
         SolverRuleinfo type = solver_ruleinfo(solver, probr, &source, &target, &dep);
 
-        // Get problem description
-        const char* problemStr = solver_problemruleinfo2str(solver, type, probr, 0, 0);
-
         // Create issue for this problem
         DependencyResolution::Issue issue;
-        issue.problem = problemStr ? problemStr : "Unknown dependency problem";
+        issue.problem = std::format("Problem {}/{}", problemId, problemCount);
         issue.isBlocking = true; // All problems from solver are blocking
 
         // Determine affected packages
@@ -379,7 +377,7 @@ LibsolvDependencyResolver::Impl::ProcessSolverProblems(Solver* solver, Dependenc
         issue.suggestedFixes = ExtractSolutions(solver, problemId);
 
         // Add issue to report
-        if (!issue.affectedPackage) {
+        if (issue.affectedPackage != -1) {
             auto it = resolution.issues.find(issue.affectedPackage);
             if (it != resolution.issues.end()) {
                 it->second.push_back(std::move(issue));
@@ -392,10 +390,11 @@ LibsolvDependencyResolver::Impl::ProcessSolverProblems(Solver* solver, Dependenc
 
 std::vector<std::string>
 LibsolvDependencyResolver::Impl::ExtractSolutions(Solver* solver, Id problemId) {
-    std::vector<std::string> fixes;
-
     // Get solution count for this problem
     Id solutionCount = static_cast<Id>(solver_solution_count(solver, problemId));
+
+    std::vector<std::string> fixes;
+    fixes.reserve(static_cast<size_t>(solutionCount));
 
     for (Id solutionId = 1; solutionId <= solutionCount; solutionId++) {
         std::vector<std::string> solutionSteps;
@@ -439,19 +438,21 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
     // Get installation order from transaction
     transaction_order(trans, 0);
 
-    resolution.loadOrder.reserve(static_cast<size_t>(trans->steps.count));
+    size_t count = static_cast<size_t>(trans->steps.count);
+    resolution.dependencyGraph.reserve(count);
+    resolution.reverseDependencyGraph.reserve(count);
 
     // Get installed packages from transaction
-    for (int i = 0; i < trans->steps.count; i++) {
+    for (size_t i = 0; i < count; i++) {
         Id p = trans->steps.elements[i];
 
         // Check if this is an installation step
-        Id type = transaction_type(trans, p, SOLVER_TRANSACTION_SHOW_ALL);
-
+        /*Id type = transaction_type(trans, p, SOLVER_TRANSACTION_SHOW_ALL);
+        std::cout << "Transaction step: " << i << " - Solvable ID: " << p << " - Type: " << type << std::endl;
         if (type == SOLVER_TRANSACTION_INSTALL ||
             type == SOLVER_TRANSACTION_REINSTALL ||
             type == SOLVER_TRANSACTION_DOWNGRADE ||
-            type == SOLVER_TRANSACTION_UPGRADE)
+            type == SOLVER_TRANSACTION_UPGRADE)*/
         {
             auto pkgIt = solvableIdToPackage.find(p);
             if (pkgIt != solvableIdToPackage.end()) {

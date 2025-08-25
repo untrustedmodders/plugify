@@ -4,9 +4,7 @@
     "dependencies": [
         {
             "name": "extraCycle",
-            "constraints": [
-                ">=1.0.0"
-            ]
+            "constraints": ">=1.0.0"
         }
     ],
     "conflicts": [],
@@ -14,8 +12,6 @@
     "author": "xAI",
     "website": "https://example.com/extraCycle",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

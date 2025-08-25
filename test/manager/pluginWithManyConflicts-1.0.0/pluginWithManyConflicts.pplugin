@@ -4,28 +4,22 @@
     "dependencies": [],
     "conflicts": [
         {
-            "name": "conflictX",
-            "constraints": []
+            "name": "conflictX"
         },
         {
-            "name": "conflictY",
-            "constraints": []
+            "name": "conflictY"
         },
         {
-            "name": "cycleA",
-            "constraints": []
+            "name": "cycleA"
         },
         {
-            "name": "deep1",
-            "constraints": []
+            "name": "deep1"
         }
     ],
     "description": "Many conflicts",
     "author": "xAI",
     "website": "https://example.com/pluginWithManyConflicts",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

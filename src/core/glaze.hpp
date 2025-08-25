@@ -2,7 +2,6 @@
 
 #include "plugify/core/config.hpp"
 #include "plugify/core/manifest.hpp"
-#include "plugify/core/report.hpp"
 
 #include "core/dependency_impl.hpp"
 #include "core/conflict_impl.hpp"

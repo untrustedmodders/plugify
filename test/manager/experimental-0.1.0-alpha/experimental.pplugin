@@ -3,8 +3,7 @@
     "version": "0.1.0-alpha",
     "dependencies": [
         {
-            "name": "core-utils",
-            "constraints": []
+            "name": "core-utils"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "Labs",
     "website": "https://example.com/experimental",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

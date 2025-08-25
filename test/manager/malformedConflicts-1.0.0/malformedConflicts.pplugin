@@ -4,16 +4,13 @@
     "dependencies": [],
     "conflicts": [
         {
-            "name": "not a list",
-            "constraints": []
+            "name": "not a list"
         }
     ],
     "description": "Conflicts not list",
     "author": "xAI",
     "website": "https://example.com/malformedConflicts",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

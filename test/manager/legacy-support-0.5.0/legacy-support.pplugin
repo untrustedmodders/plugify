@@ -4,9 +4,7 @@
     "dependencies": [
         {
             "name": "graphics-engine",
-            "constraints": [
-                "<2.0.0"
-            ]
+            "constraints": "<2.0.0"
         }
     ],
     "conflicts": [],
@@ -14,8 +12,6 @@
     "author": "Legacy Inc.",
     "website": "https://example.com/legacy-support",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "not a list",
-            "constraints": []
+            "name": "not a list"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "xAI",
     "website": "https://example.com/malformedDeps",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

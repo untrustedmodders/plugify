@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "map-editor",
-            "constraints": []
+            "name": "map-editor"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "UI Addons",
     "website": "https://example.com/mini-map",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

@@ -5,6 +5,7 @@
 using namespace plugify;
 
 struct Provider::Impl {
+    Impl(Plugify& p) : plugify(p) {}
 	Plugify& plugify;
 };
 

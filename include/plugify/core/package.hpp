@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include "plugify/core/error.hpp"
 #include "plugify/core/manifest.hpp"
 
 #include "date_time.hpp"
@@ -34,28 +33,25 @@ namespace plugify {
 
         Updating,
         Updated,
-        /**/,
+        /**/
 
         Ending,
         Ended,
 
-        Terminated
+        Terminated,
+        Max
     };
 
     class Package;
 
     // Package Information with State
     struct alignas(std::hardware_destructive_interference_size) PackageInfo {
-        using Clock = std::chrono::steady_clock;
-        using TimePoint = Clock::time_point;
-        using Duration = std::chrono::milliseconds;
-
         struct Timings {
-            std::array<Duration, static_cast<size_t>(PackageState::Terminated) + 1> _timepoints;
+            std::flat_map<PackageState, Duration> _timepoints;
 
             Duration GetTotalTime() const {
-                Duration total{0};
-                for (const auto& t : _timepoints) {
+                Duration total{};
+                for (const auto& [_, t] : _timepoints) {
                     total += t;
                 }
                 return total;
@@ -64,21 +60,25 @@ namespace plugify {
             std::string ToString() const {
                 std::string merged;
                 merged.reserve(256);
-                for (size_t i = 0; i < _timepoints.size(); ++i) {
-                    auto& timing = _timepoints[i];
-                    if (timing == Duration(0))
-                        continue;
-                    std::format_to(std::back_inserter(merged), "{} {}ms, ",
-                        plg::enum_to_string(static_cast<PackageState>(i)), timing);
+                for (const auto& [state, timepoint] : _timepoints) {
+                    std::format_to(std::back_inserter(merged), "{} {}ms, ", plg::enum_to_string(state), timepoint.count());
                 }
                 std::format_to(std::back_inserter(merged), "Total {}ms", GetTotalTime());
                 return merged;
             }
         };
 
-        UniqueId _id{};
+        UniqueId _id{-1};
         PackageType _type{PackageType::Unknown};
         PackageState _state{PackageState::Initialized};
+
+        // Error tracking
+        std::deque<std::string> _errors;
+        std::deque<std::string> _warnings;
+
+        // Timing information
+        Timings _timings;
+        TimePoint _lastOperationStart;
 
         // Actual loaded instance (if any)
         std::shared_ptr<Package> _instance;
@@ -89,24 +89,14 @@ namespace plugify {
         //std::string _language;
         std::filesystem::path _path;
 
-        // Error tracking
-        std::deque<std::string> _errors;
-        std::deque<std::string> _warnings;
-
-        // Timing information
-        Timings _timings;
-        TimePoint _lastOperationStart;
-
         void StartOperation(PackageState newState) {
             _lastOperationStart = Clock::now();
             SetState(newState);
         }
 
         void EndOperation(PackageState newState) {
-            auto duration = std::chrono::duration_cast<Duration>(
-                Clock::now() - _lastOperationStart
-            );
-            _timings._timepoints[static_cast<size_t>(newState)] = duration;
+            auto duration = std::chrono::duration_cast<Duration>(Clock::now() - _lastOperationStart);
+            _timings._timepoints[newState] = duration;
             SetState(newState);
         }
 
@@ -172,8 +162,8 @@ namespace plugify {
         const std::string& GetName() const { return _manifest ? _manifest->name : invalid; }
         const std::string& GetLanguage() const { return _manifest ? _manifest->language : invalid; }
 
-        bool IsSlowOperation(Duration threshold = Duration(1000)) const {
-            return _timings.GetTotalTime() > threshold;
+        Duration GetOperationTime(PackageState state) const {
+            return _timings._timepoints.at(state);
         }
 
         std::string GetPerformanceReport() const {

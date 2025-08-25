@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "deep-c",
-            "constraints": []
+            "name": "deep-c"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "ChainTest",
     "website": "https://example.com/deep-b",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

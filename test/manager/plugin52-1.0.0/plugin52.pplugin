@@ -4,16 +4,13 @@
     "dependencies": [],
     "conflicts": [
         {
-            "name": "plugin51",
-            "constraints": []
+            "name": "plugin51"
         }
     ],
     "description": "Extra conflict",
     "author": "xAI",
     "website": "https://example.com/plugin52",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

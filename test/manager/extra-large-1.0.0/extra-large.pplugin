@@ -3,32 +3,25 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "core-utils",
-            "constraints": []
+            "name": "core-utils"
         },
         {
-            "name": "graphics-engine",
-            "constraints": []
+            "name": "graphics-engine"
         },
         {
-            "name": "physics-engine",
-            "constraints": []
+            "name": "physics-engine"
         },
         {
-            "name": "sound-engine",
-            "constraints": []
+            "name": "sound-engine"
         },
         {
-            "name": "networking",
-            "constraints": []
+            "name": "networking"
         },
         {
-            "name": "ai-module",
-            "constraints": []
+            "name": "ai-module"
         },
         {
-            "name": "shader-pack",
-            "constraints": []
+            "name": "shader-pack"
         }
     ],
     "conflicts": [],
@@ -36,8 +29,6 @@
     "author": "MegaPack",
     "website": "https://example.com/extra-large",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

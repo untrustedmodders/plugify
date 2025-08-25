@@ -4,16 +4,13 @@
     "dependencies": [],
     "conflicts": [
         {
-            "name": "should-be-array",
-            "constraints": []
+            "name": "should-be-array"
         }
     ],
     "description": "Malformed conflicts field.",
     "author": "BuggySoft",
     "website": "https://example.com/broken-conflicts",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

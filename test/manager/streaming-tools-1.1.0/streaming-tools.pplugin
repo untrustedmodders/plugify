@@ -3,12 +3,10 @@
     "version": "1.1.0",
     "dependencies": [
         {
-            "name": "sound-engine",
-            "constraints": []
+            "name": "sound-engine"
         },
         {
-            "name": "graphics-engine",
-            "constraints": []
+            "name": "graphics-engine"
         }
     ],
     "conflicts": [],
@@ -16,8 +14,6 @@
     "author": "StreamTech",
     "website": "https://example.com/streaming-tools",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

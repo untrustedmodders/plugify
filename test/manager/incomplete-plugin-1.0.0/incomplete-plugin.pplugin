@@ -3,8 +3,6 @@
     "version": "1.0.0",
     "dependencies": [],
     "conflicts": [],
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

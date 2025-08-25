@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "should-be-array",
-            "constraints": []
+            "name": "should-be-array"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "BuggySoft",
     "website": "https://example.com/invalid-deps",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

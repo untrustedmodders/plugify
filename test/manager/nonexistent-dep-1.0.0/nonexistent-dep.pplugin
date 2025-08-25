@@ -4,9 +4,7 @@
     "dependencies": [
         {
             "name": "imaginary-plugin",
-            "constraints": [
-                ">=1.0.0"
-            ]
+            "constraints": ">=1.0.0"
         }
     ],
     "conflicts": [],
@@ -14,8 +12,6 @@
     "author": "TestGen",
     "website": "https://example.com/nonexistent-dep",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

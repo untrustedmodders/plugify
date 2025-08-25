@@ -4,15 +4,11 @@
     "dependencies": [
         {
             "name": "ui-framework",
-            "constraints": [
-                ">=2.0.0"
-            ]
+            "constraints": ">=2.0.0"
         },
         {
             "name": "graphics-engine",
-            "constraints": [
-                ">=2.0.0"
-            ]
+            "constraints": ">=2.0.0"
         }
     ],
     "conflicts": [],
@@ -20,8 +16,6 @@
     "author": "DevTools",
     "website": "https://example.com/map-editor",
     "license": "GPL-3.0",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

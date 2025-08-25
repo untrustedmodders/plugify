@@ -4,9 +4,7 @@
     "dependencies": [
         {
             "name": "database",
-            "constraints": [
-                ">=2.0.0"
-            ]
+            "constraints": ">=2.0.0"
         }
     ],
     "conflicts": [],
@@ -14,8 +12,6 @@
     "author": "xAI",
     "website": "https://example.com/auth-module",
     "license": "BSD-3-Clause",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

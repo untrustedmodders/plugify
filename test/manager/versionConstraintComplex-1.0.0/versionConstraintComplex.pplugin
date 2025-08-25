@@ -4,10 +4,7 @@
     "dependencies": [
         {
             "name": "multiVersionBase",
-            "constraints": [
-                ">1.0.0",
-                "<3.0.0"
-            ]
+            "constraints": ">1.0.0 AND <3.0.0"
         }
     ],
     "conflicts": [],
@@ -15,8 +12,6 @@
     "author": "xAI",
     "website": "https://example.com/versionConstraintComplex",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

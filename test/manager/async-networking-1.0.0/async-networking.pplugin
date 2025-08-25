@@ -4,9 +4,7 @@
     "dependencies": [
         {
             "name": "networking",
-            "constraints": [
-                ">=3.0.0"
-            ]
+            "constraints": ">=3.0.0"
         }
     ],
     "conflicts": [],
@@ -14,8 +12,6 @@
     "author": "NetSys",
     "website": "https://example.com/async-networking",
     "license": "BSD-2-Clause",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

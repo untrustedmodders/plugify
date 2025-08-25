@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "cyclic-a",
-            "constraints": []
+            "name": "cyclic-a"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "TestGen",
     "website": "https://example.com/cyclic-b",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

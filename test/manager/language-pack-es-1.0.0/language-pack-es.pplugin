@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "core-utils",
-            "constraints": []
+            "name": "core-utils"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "Localization Team",
     "website": "https://example.com/language-pack-es",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

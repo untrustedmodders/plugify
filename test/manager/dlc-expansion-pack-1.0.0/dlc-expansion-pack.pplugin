@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "dependencies": [
         {
-            "name": "extra-large",
-            "constraints": []
+            "name": "extra-large"
         }
     ],
     "conflicts": [],
@@ -12,8 +11,6 @@
     "author": "MegaPack",
     "website": "https://example.com/dlc-expansion-pack",
     "license": "Proprietary",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

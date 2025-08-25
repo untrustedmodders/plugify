@@ -6,8 +6,6 @@
     "description": "Missing license",
     "author": "xAI",
     "website": "https://example.com/noLicense",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

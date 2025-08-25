@@ -7,8 +7,6 @@
     "author": "xAI",
     "website": "https://example.com/malformedVersionNumber",
     "license": "MIT",
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

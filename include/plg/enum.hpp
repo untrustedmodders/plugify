@@ -49,7 +49,7 @@ namespace plg {
 
     template<typename E, E V>
     constexpr auto is_valid() {
-        constexpr E v = static_cast<E>(V);
+        [[maybe_unused]] constexpr E v = static_cast<E>(V);
         return !n<E, V>().empty();
     }
 

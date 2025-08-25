@@ -4,8 +4,6 @@
     "dependencies": [],
     "description": "Plugin with missing comma after version field",
     "conflicts": [],
-    "language": {
-        "name": "cpp"
-    },
+    "language": "cpp",
     "entry": "test"
 }

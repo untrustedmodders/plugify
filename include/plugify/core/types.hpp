@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "plg/uuid.hpp"
+//#include "plg/uuid.hpp"
 #include "plg/version.hpp"
 #include "plg/expected.hpp"
 #include "plg/enum.hpp"
@@ -45,10 +45,7 @@ namespace plugify {
 	template<typename T>
 	using Result = plg::expected<T, std::string>;
 
-	/**
-	 * TODO:
-	 */
-	template<typename T>
-	using State = plg::expected<T, Error>;
-
+    using Clock = std::chrono::steady_clock;
+    using TimePoint = Clock::time_point;
+    using Duration = std::chrono::milliseconds;
 }
