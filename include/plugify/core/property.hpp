@@ -26,7 +26,7 @@ namespace plugify {
 	    Property& operator=(Property&& other) noexcept;
 
 	    // Getters
-	    [[nodiscard]] const ValueType& GetType() const noexcept;
+	    [[nodiscard]] ValueType GetType() const noexcept;
 	    [[nodiscard]] bool IsRef() const noexcept;
 	    [[nodiscard]] std::shared_ptr<Method> GetPrototype() const noexcept;
 	    [[nodiscard]] std::shared_ptr<Enum> GetEnumerate() const noexcept;

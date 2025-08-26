@@ -20,21 +20,21 @@ Method& Method::operator=(const Method& other) {
 
 Method& Method::operator=(Method&& other) noexcept = default;
 
-std::span<const Property> Method::GetParamTypes() const noexcept { return _impl->paramTypes; }
+const std::vector<Property>& Method::GetParamTypes() const noexcept { return _impl->paramTypes; }
 const Property& Method::GetRetType() const noexcept { return _impl->retType; }
 uint8_t Method::GetVarIndex() const noexcept { return _impl->varIndex; }
-std::string_view Method::GetName() const noexcept { return _impl->name; }
-std::string_view Method::GetFuncName() const noexcept { return _impl->funcName; }
-std::string_view Method::GetCallConv() const noexcept { return _impl->callConv; }
+const std::string& Method::GetName() const noexcept { return _impl->name; }
+const std::string& Method::GetFuncName() const noexcept { return _impl->funcName; }
+const std::string& Method::GetCallConv() const noexcept { return _impl->callConv; }
 
-void Method::SetParamTypes(std::span<const Property> paramTypes) noexcept {
-    _impl->paramTypes = { paramTypes.begin(), paramTypes.end() };
+void Method::SetParamTypes(std::vector<Property> paramTypes) noexcept {
+    _impl->paramTypes = std::move(paramTypes);
 }
-void Method::SetRetType(const Property& retType) noexcept { _impl->retType = retType; }
+void Method::SetRetType(Property retType) noexcept { _impl->retType = std::move(retType); }
 void Method::SetVarIndex(uint8_t varIndex) noexcept { _impl->varIndex = varIndex; }
-void Method::SetName(std::string_view name) noexcept { _impl->name = name; }
-void Method::SetFuncName(std::string_view funcName) noexcept { _impl->funcName = funcName; }
-void Method::SetCallConv(std::string_view callConv) noexcept { _impl->callConv = callConv; }
+void Method::SetName(std::string name) noexcept { _impl->name = std::move(name); }
+void Method::SetFuncName(std::string funcName) noexcept { _impl->funcName = std::move(funcName); }
+void Method::SetCallConv(std::string callConv) noexcept { _impl->callConv = std::move(callConv); }
 
 bool Method::operator==(const Method& other) const noexcept = default;
 auto Method::operator<=>(const Method& other) const noexcept = default;

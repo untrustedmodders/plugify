@@ -10,8 +10,8 @@
 #include <ranges>
 
 namespace plugify {
-    // Phase Statistics
-    struct PhaseStatistics {
+    // Stage Statistics
+    /*struct StageStatistics {
         std::atomic<size_t> success;
         std::atomic<size_t> failed;
         Duration time;
@@ -41,16 +41,18 @@ namespace plugify {
             return std::format("{:<12} ✓{:<6} ✗{:<6} {}ms ({:.1f}% success)",
                 name, success.load(),failed.load(), time.count(), SuccessRate());
         }
-    };
+    };*/
+
+
 
     // Initialization Statistics
     struct InitializationState {
-        PhaseStatistics discovery{};
-        PhaseStatistics parsing{};
-        PhaseStatistics resolution{};
-        PhaseStatistics load{};
-        PhaseStatistics start{};
-        PhaseStatistics update{};
+        /*StageStatistics discovery{};
+        /*StageStatistics parsing{};
+        /*StageStatistics resolution{};
+        /*StageStatistics load{};
+        /*StageStatistics start{};
+        /*StageStatistics update{};
 
         std::deque<std::pair<std::string, std::string>> errorLog;
         std::deque<std::pair<std::string, std::string>> warningLog;
@@ -96,7 +98,7 @@ namespace plugify {
             }
 
             return buffer;
-        }
+        }*/
     };
 
 	class Plugify;

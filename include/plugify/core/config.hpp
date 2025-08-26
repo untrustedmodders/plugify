@@ -46,6 +46,7 @@ namespace plugify {
 		//std::chrono::milliseconds initializationTimeout{30000};
 		//std::chrono::milliseconds perPackageTimeout{5000};
 
+	    bool printReport = true;
         bool printLoadOrder = true;
 	    bool printDependencyGraph = true;
 	    std::optional<std::filesystem::path> exportDigraphDot;
@@ -59,8 +60,8 @@ namespace plugify {
 
 
 		// Filtering
-		std::optional<std::vector<std::string>> whitelistedPackages;
-		std::optional<std::vector<std::string>> blacklistedPackages;
+		std::optional<std::unordered_set<std::string>> whitelistedPackages;
+		std::optional<std::unordered_set<std::string>> blacklistedPackages;
 
 
 

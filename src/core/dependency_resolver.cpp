@@ -57,8 +57,8 @@ struct LibsolvDependencyResolver::Impl {
 
     std::unique_ptr<Pool, PoolDeleter> pool;
     Repo* repo = nullptr;
-    plg::flat_map<UniqueId, Id> packageToSolvableId;
-    plg::flat_map<Id, UniqueId> solvableIdToPackage;
+    std::unordered_map<UniqueId, Id> packageToSolvableId;
+    std::unordered_map<Id, UniqueId> solvableIdToPackage;
 
     // Setup functions
     void InitializePool();

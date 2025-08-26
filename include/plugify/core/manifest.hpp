@@ -42,5 +42,12 @@ namespace plugify {
 		std::optional<bool> forceLoad;
 	};
 
-	using ManifestPtr = std::shared_ptr<PackageManifest>;
+    using ManifestPtr = std::shared_ptr<PackageManifest>;
+
+    struct BasePaths {
+        fs::path base;
+        fs::path configs;
+        fs::path data;
+        fs::path logs;
+    };
 }

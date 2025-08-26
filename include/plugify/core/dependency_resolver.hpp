@@ -45,11 +45,11 @@ namespace plugify {
         };
 
         // Main report data
-        std::flat_map<UniqueId, std::vector<Issue>> issues;
+        std::unordered_map<UniqueId, std::vector<Issue>> issues;
 
         // Dependency graph
-        std::flat_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
-        std::flat_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping dependents
+        std::unordered_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
+        std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping dependents
 
         // Load order
         std::vector<UniqueId> loadOrder;

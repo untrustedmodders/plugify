@@ -23,13 +23,12 @@ namespace plugify {
 	    EnumValue& operator=(EnumValue&& other) noexcept;
 
 	    // Getters
-	    [[nodiscard]] std::string_view GetName() const noexcept;
+	    [[nodiscard]] const std::string& GetName() const noexcept;
 	    [[nodiscard]] int64_t GetValue() const noexcept;
 
 	    // Setters (pass by value and move)
-	    void SetName(std::string_view name) noexcept;
+	    void SetName(std::string name) noexcept;
 	    void SetValue(int64_t value) noexcept;
-
 
 		[[nodiscard]] bool operator==(const EnumValue& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const EnumValue& other) const noexcept;

@@ -20,10 +20,10 @@ Enum& Enum::operator=(const Enum& other) {
 
 Enum& Enum::operator=(Enum&& other) noexcept = default;
 
-std::string_view Enum::GetName() const noexcept { return _impl->name; }
-std::span<const EnumValue> Enum::GetValues() const noexcept { return _impl->values; }
-void Enum::SetName(std::string_view name) noexcept { _impl->name = name; }
-void Enum::SetValues(std::span<const EnumValue> values) noexcept { _impl->values = { values.begin(), values.end() }; }
+const std::string& Enum::GetName() const noexcept { return _impl->name; }
+const std::vector<EnumValue>& Enum::GetValues() const noexcept { return _impl->values; }
+void Enum::SetName(std::string name) noexcept { _impl->name = std::move(name); }
+void Enum::SetValues(std::vector<EnumValue> values) noexcept { _impl->values = std::move(values); }
 
 bool Enum::operator==(const Enum& other) const noexcept = default;
 auto Enum::operator<=>(const Enum& other) const noexcept = default;

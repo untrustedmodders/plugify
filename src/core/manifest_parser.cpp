@@ -3,7 +3,7 @@
 
 using namespace plugify;
 
-static plg::flat_map<std::string, PackageType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
+static std::unordered_map<std::string, PackageType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
     {".pplugin", PackageType::Plugin},
     {".pmodule", PackageType::Module}
 };

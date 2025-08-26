@@ -1,9 +1,16 @@
 #pragma once
 
+#include <any>
+
+#include "plugify/asm/assembly_loader.hpp"
 #include "plugify/core/config.hpp"
 #include "plugify/core/manifest.hpp"
+#include "plugify/core/module.hpp"
 #include "plugify/core/package.hpp"
 #include "plugify/core/plugify.hpp"
+#include "plugify/core/plugin.hpp"
+#include "plugify/core/progress_reporter.hpp"
+#include "plugify/core/stage.hpp"
 
 #include "asm/defer.hpp"
 #include "plg/thread_pool.hpp"
@@ -13,181 +20,1129 @@ using namespace std::chrono_literals;
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-// Package Manager Implementation with Thread Pool for Discovery/Validation
-// Sequential Loading/Starting on Main Thread for Simplicity
-//
-// Design Philosophy:
-// - Parallel: Discovery and Validation (I/O bound, no runtime dependencies)
-// - Sequential: Loading and Starting (respects dependencies, avoids threading issues)
-
-// Example implementations
 class ConsoleProgressReporter : public IProgressReporter {
-    plg::synced_stream& syncOut;
-public:
-    ConsoleProgressReporter(plg::synced_stream& out)
-        : syncOut(out) {}
-
     void OnPhaseStart(std::string_view phase, size_t totalItems) override {
-        syncOut.println("[", phase,  "] Starting (",  totalItems, " items)...");
+        std::println("[{}] Starting - {} items", phase, totalItems);
     }
-
     void OnItemComplete(std::string_view phase, std::string_view itemId, bool success) override {
         if (!success) {
-            syncOut.println("  [", phase, "] ✗ ", itemId);
+            std::println("[{}] ✗ {}", phase, itemId);
+        }
+    }
+    void OnPhaseComplete(std::string_view phase, size_t succeeded, size_t failed) override {
+        std::println("[{}] Complete - ✓ {}, ✗ {}", phase, succeeded, failed);
+    }
+};
+
+// ============================================================================
+// Stage Interfaces
+// ============================================================================
+enum class StageType {
+    Transform,    // Parallel processing, no order changes
+    Barrier,      // Can reorder/filter the container
+    Sequential,   // Processes in container order
+    Batch        // Parallel processing in controlled batches
+};
+
+// Execution context
+template<typename T>
+struct ExecutionContext {
+    plg::thread_pool<>& threadPool;
+    std::shared_ptr<IProgressReporter> reporter;
+    //std::shared_ptr<MetricsCollector> metrics;
+    std::shared_ptr<Config> config;
+};
+
+// Base interface
+template<typename T>
+class IStage {
+public:
+    virtual ~IStage() = default;
+    virtual std::string_view GetName() const = 0;
+    virtual StageType GetType() const = 0;
+};
+
+// Transform stage - processes items in place
+template<typename T>
+class ITransformStage : public IStage<T> {
+public:
+    StageType GetType() const override { return StageType::Transform; }
+
+    // Process single item
+    virtual Result<void> ProcessItem(
+        T& item,
+        const ExecutionContext<T>& ctx) = 0;
+
+    // Optional: filter predicate
+    virtual bool ShouldProcess([[maybe_unused]] const T& item) const { return true; }
+
+    // Optional: setup/teardown
+    virtual void Setup(
+        [[maybe_unused]] std::span<T> items,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {}
+    virtual void Teardown(
+        [[maybe_unused]] std::span<T> items,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {}
+};
+
+// Barrier stage - can reorder and filter the container
+template<typename T>
+class IBarrierStage : public IStage<T> {
+public:
+    StageType GetType() const override { return StageType::Barrier; }
+
+    // Process all items, return new container
+    // This allows the stage to reorder, filter, or even add items
+    virtual Result<std::vector<T>> ProcessAll(
+        std::vector<T> items,
+        const ExecutionContext<T>& ctx) = 0;
+};
+
+// Sequential stage - processes in container order
+template<typename T>
+class ISequentialStage : public IStage<T> {
+public:
+    StageType GetType() const override { return StageType::Sequential; }
+
+    // Process item with knowledge of its position
+    virtual Result<void> ProcessItem(
+        T& item,
+        size_t position,
+        size_t total,
+        const ExecutionContext<T>& ctx) = 0;
+
+    // Should we continue after an error?
+    virtual bool ContinueOnError() const { return true; }
+
+    // Optional: filter
+    virtual bool ShouldProcess([[maybe_unused]] const T& item) const { return true; }
+};
+
+// Batch stage - processes items in parallel batches
+template <typename T>
+class IBatchStage : public IStage<T> {
+public:
+
+    StageType GetType() const override {
+        return StageType::Batch;
+    }
+
+    // Process a batch of items (called for each batch)
+    virtual Result<void> ProcessBatch(
+        std::span<T> batch,
+        size_t batchIndex,
+        size_t totalBatches,
+        const ExecutionContext<T>& ctx
+    ) = 0;
+
+    // Get batch size
+    virtual size_t GetBatchSize() const {
+        return 10;
+    }
+
+    // Process items within batch in parallel?
+    virtual bool ProcessBatchInParallel() const {
+        return true;
+    }
+
+    // Optional: Process individual item within batch (for parallel processing)
+    virtual Result<void> ProcessItem(
+        [[maybe_unused]] T& item,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {
+        return {};  // Default: no per-item processing
+    }
+
+    // Optional: filter
+    virtual bool ShouldProcess([[maybe_unused]] const T& item) const {
+        return true;
+    }
+
+    // Optional: Setup/teardown for entire stage
+    virtual void Setup(
+        [[maybe_unused]] std::span<T> items,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {
+    }
+
+    virtual void Teardown(
+        [[maybe_unused]] std::span<T> items,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {
+    }
+
+    // Optional: Setup/teardown for each batch
+    virtual void SetupBatch(
+        [[maybe_unused]] std::span<T> batch,
+        [[maybe_unused]] size_t batchIndex,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {
+    }
+
+    virtual void TeardownBatch(
+        [[maybe_unused]] std::span<T> batch,
+        [[maybe_unused]] size_t batchIndex,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {
+    }
+};
+
+// ============================================================================
+// FlexiblePipeline Implementation
+// ============================================================================
+
+// Stage statistics
+struct StageStatistics {
+    size_t itemsIn = 0;
+    size_t itemsOut = 0;
+    size_t succeeded = 0;
+    size_t failed = 0;
+    Duration elapsed{0};
+    std::vector<std::string> errors;
+};
+
+template<typename T>
+class FlexiblePipeline {
+public:
+    struct PipelineReport {
+        std::vector<std::pair<std::string_view, StageStatistics>> stages;
+        Duration totalTime{0};
+        size_t initialItems = 0;
+        size_t finalItems = 0;
+
+        void Print() const {
+            std::println("=== Pipeline Report ===");
+            std::println("Items: {} -> {} ({}ms total)",
+                       initialItems, finalItems, totalTime.count());
+
+            for (size_t i = 0; i < stages.size(); ++i) {
+                const auto& [n, s] = stages[i];
+                std::println("  Stage {} ({}): {} -> {} items, {} succeeded, {} failed ({}ms)",
+                           i, n, s.itemsIn, s.itemsOut, s.succeeded, s.failed, s.elapsed.count());
+
+                if (!s.errors.empty()) {
+                    for (const auto& err : s.errors) {
+                        std::println("    ERROR: {}", err);
+                    }
+                }
+            }
+        }
+    };
+
+    // Builder pattern for pipeline construction
+    class Builder {
+        friend class FlexiblePipeline;
+
+        struct StageEntry {
+            std::unique_ptr<IStage<T>> stage;
+            bool required = true;
+        };
+
+        std::vector<StageEntry> stages_;
+        std::shared_ptr<IProgressReporter> reporter_;
+        //std::shared_ptr<MetricsCollector> metrics_;
+        size_t threadPoolSize_ = std::thread::hardware_concurrency();
+        std::shared_ptr<Config> config_;
+
+    public:
+        template<typename StageType>
+        Builder& AddStage(std::unique_ptr<StageType> stage, bool required = true) {
+            static_assert(std::is_base_of_v<IStage<T>, StageType>);
+            stages_.push_back({std::move(stage), required});
+            return *this;
+        }
+
+        Builder& WithReporter(std::shared_ptr<IProgressReporter> reporter) {
+            reporter_ = std::move(reporter);
+            return *this;
+        }
+
+        /*Builder& WithMetrics(std::shared_ptr<MetricsCollector> metrics) {
+            metrics_ = std::move(metrics);
+            return *this;
+        }*/
+
+        Builder& WithThreadPoolSize(size_t size) {
+            threadPoolSize_ = size;
+            return *this;
+        }
+
+        Builder& WithConfig(std::shared_ptr<Config> config) {
+            config_ = std::move(config);
+            return *this;
+        }
+
+        std::unique_ptr<FlexiblePipeline> Build() {
+            return std::unique_ptr<FlexiblePipeline>(new FlexiblePipeline(std::move(*this)));
+        }
+    };
+
+    static Builder Create() { return Builder{}; }
+
+private:
+    FlexiblePipeline(Builder&& builder)
+        : threadPool_(builder.threadPoolSize_)
+        , reporter_(std::move(builder.reporter_))
+        //, metrics_(std::move(builder.metrics_))
+        , config_(std::move(builder.config_)) {
+
+        for (auto& [stage, required] : builder.stages_) {
+            stages_.push_back({std::move(stage), required});
         }
     }
 
-    void OnPhaseComplete(std::string_view phase, size_t succeeded, size_t failed) override {
-        syncOut.println("[", phase, "] Complete - ✓ ", succeeded, ", ✗ ", failed);
-    }
-};
-
-class PhaseScope {
-    IProgressReporter* reporter;
-    std::string_view phase;
-    PhaseStatistics& stats;
 public:
-    PhaseScope(IProgressReporter* r, std::string_view p, PhaseStatistics& s, size_t total)
-        : reporter(r), phase(p), stats(s) {
-        if (reporter) reporter->OnPhaseStart(phase, total);
+    // Execute pipeline - container is modified in place
+    std::pair<std::vector<T>, PipelineReport> Execute(std::vector<T> items) {
+        PipelineReport report;
+        report.stages.reserve(stages_.size());
+        report.initialItems = items.size();
+
+        auto pipelineStart = Clock::now();
+
+        // Create execution context
+        ExecutionContext<T> ctx{
+            .threadPool = threadPool_,
+            .reporter = reporter_,
+            //.metrics = metrics_,
+            .config = config_
+        };
+
+        // Execute each stage
+        for (const auto& [stage, required] : stages_) {
+            auto stats = ExecuteStage(stage.get(), items, ctx);
+            report.stages.emplace_back(stage->GetName(), stats);
+
+            // Check if we should continue
+            if (stats.failed > 0 && required) {
+                PL_LOG_ERROR("Required stage '{}' had failures, stopping pipeline",
+                           stage->GetName());
+                break;
+            }
+        }
+
+        report.finalItems = items.size();
+        report.totalTime = std::chrono::duration_cast<Duration>(
+            Clock::now() - pipelineStart
+        );
+
+        return {std::move(items), report};
     }
-    ~PhaseScope() {
-        if (reporter) reporter->OnPhaseComplete(phase, stats.success.load(), stats.failed.load());
+
+private:
+    StageStatistics ExecuteStage(
+        IStage<T>* stage,
+        std::vector<T>& items,
+        const ExecutionContext<T>& ctx) {
+
+        StageStatistics stats;
+        stats.itemsIn = items.size();
+        auto startTime = Clock::now();
+
+        if (reporter_) {
+            reporter_->OnPhaseStart(stage->GetName(), items.size());
+        }
+
+        // Execute based on stage type
+        switch (stage->GetType()) {
+            case StageType::Transform:
+                ExecuteTransform(static_cast<ITransformStage<T>*>(stage), items, stats, ctx);
+                break;
+
+            case StageType::Barrier:
+                ExecuteBarrier(static_cast<IBarrierStage<T>*>(stage), items, stats, ctx);
+                break;
+
+            case StageType::Sequential:
+                ExecuteSequential(static_cast<ISequentialStage<T>*>(stage), items, stats, ctx);
+                break;
+
+            case StageType::Batch:
+                ExecuteBatch(static_cast<IBatchStage<T>*>(stage), items, stats, ctx);
+                break;
+        }
+
+        stats.itemsOut = items.size();
+        stats.elapsed = std::chrono::duration_cast<Duration>(Clock::now() - startTime);
+
+        if (reporter_) {
+            reporter_->OnPhaseComplete(stage->GetName(), stats.succeeded, stats.failed);
+        }
+
+        return stats;
     }
-    void ReportItem(std::string_view item, bool success) {
-        if (reporter) reporter->OnItemComplete(phase, item, success);
+
+    void ExecuteTransform(
+        ITransformStage<T>* stage,
+        std::vector<T>& items,
+        StageStatistics& stats,
+        const ExecutionContext<T>& ctx) {
+
+        // Setup
+        std::span<T> itemSpan(items);
+        stage->Setup(itemSpan, ctx);
+
+        // Process items in parallel
+        std::atomic<size_t> succeeded{0};
+        std::atomic<size_t> failed{0};
+        std::mutex errorMutex;
+
+        threadPool_.submit_sequence(0, items.size(), [&](size_t i) {
+            auto& item = items[i];
+
+            if (!stage->ShouldProcess(item)) {
+                return;
+            }
+
+            auto result = stage->ProcessItem(item, ctx);
+
+            if (result.has_value()) {
+                succeeded.fetch_add(1, std::memory_order_relaxed);
+                ReportItemComplete(stage->GetName(), item, true);
+            } else {
+                failed.fetch_add(1, std::memory_order_relaxed);
+                {
+                    std::lock_guard lock(errorMutex);
+                    stats.errors.push_back(
+                        std::format("{}: {}", GetItemName(item), result.error())
+                    );
+                }
+                ReportItemComplete(stage->GetName(), item, false);
+            }
+        }).wait();
+
+        stats.succeeded = succeeded.load();
+        stats.failed = failed.load();
+
+        // Teardown
+        stage->Teardown(itemSpan, ctx);
+    }
+
+    void ExecuteBarrier(
+        IBarrierStage<T>* stage,
+        std::vector<T>& items,
+        StageStatistics& stats,
+        const ExecutionContext<T>& ctx) {
+
+        // Process all items together
+        auto result = stage->ProcessAll(std::move(items), ctx);
+
+        if (result.has_value()) {
+            // Replace container with processed result
+            items = std::move(*result);
+            stats.succeeded = items.size();
+
+            // Report all items as processed
+            for (const auto& item : items) {
+                ReportItemComplete(stage->GetName(), item, true);
+            }
+        } else {
+            stats.failed = items.size();
+            stats.errors.push_back(result.error());
+
+            // Report all items as failed
+            for (const auto& item : items) {
+                ReportItemComplete(stage->GetName(), item, false);
+            }
+        }
+    }
+
+    void ExecuteSequential(
+        ISequentialStage<T>* stage,
+        std::vector<T>& items,
+        StageStatistics& stats,
+        const ExecutionContext<T>& ctx) {
+
+        bool continueOnError = stage->ContinueOnError();
+        size_t total = items.size();
+
+        for (size_t i = 0; i < items.size(); ++i) {
+            auto& item = items[i];
+
+            if (!stage->ShouldProcess(item)) {
+                continue;
+            }
+
+            // Stop if error occurred and stage doesn't continue on error
+            if (stats.failed > 0 && !continueOnError) {
+                break;
+            }
+
+            auto result = stage->ProcessItem(item, i, total, ctx);
+
+            if (result.has_value()) {
+                stats.succeeded++;
+                ReportItemComplete(stage->GetName(), item, true);
+            } else {
+                stats.failed++;
+                stats.errors.push_back(
+                    std::format("{}: {}", GetItemName(item), result.error())
+                );
+                ReportItemComplete(stage->GetName(), item, false);
+            }
+        }
+    }
+
+    void ExecuteBatch(
+        IBatchStage<T>* stage,
+        std::vector<T>& items,
+        StageStatistics& stats,
+        const ExecutionContext<T>& ctx) {
+
+        // Setup
+        std::span<T> itemSpan(items);
+        stage->Setup(itemSpan, ctx);
+
+        size_t batchSize = stage->GetBatchSize();
+        size_t numBatches = (items.size() + batchSize - 1) / batchSize;
+        bool processInParallel = stage->ProcessBatchInParallel();
+
+        std::atomic<size_t> succeeded{0};
+        std::atomic<size_t> failed{0};
+        std::mutex errorMutex;
+
+        // Process each batch
+        for (size_t batchIdx = 0; batchIdx < numBatches; ++batchIdx) {
+            size_t start = batchIdx * batchSize;
+            size_t end = std::min(start + batchSize, items.size());
+            std::span<T> batch(&items[start], end - start);
+
+            // Setup batch
+            stage->SetupBatch(batch, batchIdx, ctx);
+
+            // Process batch
+            auto batchResult = stage->ProcessBatch(batch, batchIdx, numBatches, ctx);
+
+            if (batchResult.has_value()) {
+                // If batch processing succeeded, optionally process items within batch
+                if (processInParallel) {
+                    // Process items within batch in parallel
+                    threadPool_.submit_sequence(0, batch.size(), [&](size_t i) {
+                        auto& item = batch[i];
+
+                        if (!stage->ShouldProcess(item)) {
+                            return;
+                        }
+
+                        auto result = stage->ProcessItem(item, ctx);
+
+                        if (result.has_value()) {
+                            succeeded.fetch_add(1, std::memory_order_relaxed);
+                            ReportItemComplete(stage->GetName(), item, true);
+                        } else {
+                            failed.fetch_add(1, std::memory_order_relaxed);
+                            {
+                                std::lock_guard lock(errorMutex);
+                                stats.errors.push_back(
+                                    std::format("{}: {}", GetItemName(item), result.error())
+                                );
+                            }
+                            ReportItemComplete(stage->GetName(), item, false);
+                        }
+                    }).wait();
+                } else {
+                    // Process items within batch sequentially
+                    for (auto& item : batch) {
+                        if (!stage->ShouldProcess(item)) {
+                            continue;
+                        }
+
+                        auto result = stage->ProcessItem(item, ctx);
+
+                        if (result.has_value()) {
+                            succeeded.fetch_add(1, std::memory_order_relaxed);
+                            ReportItemComplete(stage->GetName(), item, true);
+                        } else {
+                            failed.fetch_add(1, std::memory_order_relaxed);
+                            stats.errors.push_back(
+                                std::format("{}: {}", GetItemName(item), result.error())
+                            );
+                            ReportItemComplete(stage->GetName(), item, false);
+                        }
+                    }
+                }
+            } else {
+                // Batch processing failed
+                failed.fetch_add(batch.size());
+                {
+                    std::lock_guard lock(errorMutex);
+                    stats.errors.push_back(
+                        std::format("Batch {} failed: {}", batchIdx, batchResult.error())
+                    );
+                }
+
+                // Report all items in batch as failed
+                for (const auto& item : batch) {
+                    ReportItemComplete(stage->GetName(), item, false);
+                }
+            }
+
+            // Teardown batch
+            stage->TeardownBatch(batch, batchIdx, ctx);
+
+            // Optional: Add delay between batches if needed
+            if (batchIdx < numBatches - 1) {
+                // Could add a virtual method for inter-batch delay
+                // std::this_thread::sleep_for(stage->GetInterBatchDelay());
+            }
+        }
+
+        stats.succeeded = succeeded.load();
+        stats.failed = failed.load();
+
+        // Teardown
+        stage->Teardown(itemSpan, ctx);
+    }
+
+    void ReportItemComplete(std::string_view stage, const T& item, bool success) {
+        if (reporter_) {
+            reporter_->OnItemComplete(stage, GetItemName(item), success);
+        }
+    }
+
+    static std::string_view GetItemName(const T& item) {
+        if constexpr (requires { item.GetName(); }) {
+            return item.GetName();
+        } else if constexpr (requires { item.name; }) {
+            return item.name;
+        } else {
+            return "item";
+        }
+    }
+
+private:
+    struct StageEntry {
+        std::unique_ptr<IStage<T>> stage;
+        bool required;
+    };
+
+    std::vector<StageEntry> stages_;
+    plg::thread_pool<> threadPool_;
+    std::shared_ptr<IProgressReporter> reporter_;
+    //std::shared_ptr<MetricsCollector> metrics_;
+    std::shared_ptr<Config> config_;
+};
+
+// ============================================================================
+// Concrete Stage Implementations
+// ============================================================================
+
+// Parsing Stage - Transform type
+class ParsingStage : public ITransformStage<PackageInfo> {
+    std::shared_ptr<IManifestParser> parser_;
+    std::shared_ptr<IFileSystem> fileSystem_;
+
+public:
+    ParsingStage(std::shared_ptr<IManifestParser> parser,
+                 std::shared_ptr<IFileSystem> fs)
+        : parser_(std::move(parser)), fileSystem_(std::move(fs)) {}
+
+    std::string_view GetName() const override { return "Parsing"; }
+
+    bool ShouldProcess(const PackageInfo& item) const override {
+        return item.GetState() == PackageState::Discovered;
+    }
+
+    std::expected<void, std::string> ProcessItem(
+        PackageInfo& pkg,
+        [[maybe_unused]] const ExecutionContext<PackageInfo>& ctx) override {
+
+        pkg.StartOperation(PackageState::Parsing);
+
+        auto content = fileSystem_->ReadTextFile(pkg.GetPath());
+        if (!content) {
+            pkg.EndOperation(PackageState::Corrupted);
+            return std::unexpected(content.error());
+        }
+
+        auto manifest = parser_->Parse(*content, pkg.GetPath());
+        if (!manifest) {
+            pkg.EndOperation(PackageState::Corrupted);
+            return std::unexpected(manifest.error());
+        }
+
+        pkg.SetManifest(std::move(*manifest));
+        pkg.EndOperation(PackageState::Parsed);
+
+        return {};
     }
 };
 
-// Main Package Manager Class
+// Resolution Stage - Barrier type (reorders and filters)
+class ResolutionStage : public IBarrierStage<PackageInfo> {
+    std::shared_ptr<IDependencyResolver> resolver_;
+    std::unordered_map<UniqueId, std::vector<UniqueId>>* dependencyGraph_;
+    std::unordered_map<UniqueId, std::vector<UniqueId>>* reverseDependencyGraph_;
+    std::optional<std::unordered_set<std::string>> whitelist_;
+    std::optional<std::unordered_set<std::string>> blacklist_;
+    
+public:
+    ResolutionStage(std::shared_ptr<IDependencyResolver> resolver,
+                    std::unordered_map<UniqueId, std::vector<UniqueId>>* depGraph,
+                    std::unordered_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph)
+        : resolver_(std::move(resolver))
+        , dependencyGraph_(depGraph)
+        , reverseDependencyGraph_(reverseDepGraph) {}
+    
+    std::string_view GetName() const override { return "Resolution"; }
+    
+    void SetFilters(std::optional<std::unordered_set<std::string>> white,
+                    std::optional<std::unordered_set<std::string>> black) {
+        whitelist_ = std::move(white);
+        blacklist_ = std::move(black);
+    }
+    
+    std::expected<std::vector<PackageInfo>, std::string> ProcessAll(
+        std::vector<PackageInfo> items,
+        [[maybe_unused]] const ExecutionContext<PackageInfo>& ctx
+    ) override {
+        // Step 1: Filter packages based on whitelist/blacklist
+        std::vector<PackageInfo> filtered;
+        std::vector<PackageInfo> excluded;
+
+        filtered.reserve(items.size());
+        //excluded.reserve(items.size());
+        
+        for (auto&& pkg : items) {
+            bool include = true;
+            
+            // Check parsed state
+            if (pkg.GetState() != PackageState::Parsed) {
+                include = false;
+            }
+            
+            // Check whitelist
+            if (include && whitelist_ && 
+                !whitelist_->contains(pkg.GetName())) {
+                include = false;
+            }
+            
+            // Check blacklist
+            if (include && blacklist_ && 
+                blacklist_->contains(pkg.GetName())) {
+                include = false;
+            }
+            
+            if (include) {
+                filtered.push_back(std::move(pkg));
+            } else {
+                pkg.SetState(PackageState::Disabled);
+                excluded.push_back(std::move(pkg));
+            }
+        }
+        
+        if (filtered.empty()) {
+            return std::unexpected("No valid packages to resolve");
+        }
+        
+        // Step 2: Build language registry and add language dependencies
+        {
+            std::unordered_map<std::string, UniqueId> languages;
+
+            for (const auto& pkg : filtered) {
+                if (pkg.GetType() == PackageType::Module) {
+                    languages[pkg.GetLanguage()] = pkg.GetId();
+                }
+            }
+
+            for (auto& pkg : filtered) {
+                if (pkg.GetType() == PackageType::Plugin) {
+                    if (auto it = languages.find(pkg.GetLanguage()); it != languages.end()) {
+                        pkg.AddDependency(GetPackageName(filtered, it->second));
+                    }
+                }
+            }
+        }
+        
+        // Step 3: Build collection for resolver
+        PackageCollection collection;
+        collection.reserve(filtered.size());
+        
+        for (auto& pkg : filtered) {
+            pkg.SetState(PackageState::Resolving);
+            collection.emplace_back(pkg.GetId(), pkg.GetManifest());
+        }
+        
+        // Step 4: Resolve dependencies
+        auto report = resolver_->Resolve(collection);
+        
+        // Store dependency graphs
+        *dependencyGraph_ = std::move(report.dependencyGraph);
+        *reverseDependencyGraph_ = std::move(report.reverseDependencyGraph);
+        
+        // Step 5: Create ID to package mapping for efficient lookup
+        std::unordered_map<UniqueId, PackageInfo> idToPackage;
+        idToPackage.reserve(idToPackage.size());
+
+        for (auto&& pkg : filtered) {
+            idToPackage[pkg.GetId()] = std::move(pkg);
+        }
+        
+        // Step 6: Build result in dependency order
+        std::vector<PackageInfo> result;
+        result.reserve(report.loadOrder.size() + excluded.size());
+        
+        // Add resolved packages in load order
+        for (auto id : report.loadOrder) {
+            if (auto it = idToPackage.find(id); it != idToPackage.end()) {
+                auto& pkg = it->second;
+                pkg.SetState(PackageState::Resolved);
+                result.push_back(std::move(pkg));
+                idToPackage.erase(it);
+            }
+        }
+        
+        // Add unresolved packages at the end
+        for (auto& [id, pkg] : idToPackage) {
+            pkg.SetState(PackageState::Unresolved);
+            
+            // Add resolution errors if any
+            if (auto it = report.issues.find(id); it != report.issues.end()) {
+                for (const auto& issue : it->second) {
+                    if (issue.isBlocking) {
+                        pkg.AddError(issue.GetDetailedDescription());
+                    } else {
+                        pkg.AddWarning(issue.GetDetailedDescription());
+                    }
+                }
+            }
+            
+            result.push_back(std::move(pkg));
+        }
+        
+        // Add excluded packages at the very end
+        result.insert(result.end(), 
+                     std::make_move_iterator(excluded.begin()),
+                     std::make_move_iterator(excluded.end()));
+        
+        return result;
+    }
+    
+private:
+    std::string_view GetPackageName(const std::vector<PackageInfo>& packages, UniqueId id) const {
+        auto it = std::ranges::find(packages, id, &PackageInfo::GetId);
+        return it != packages.end() ? it->GetName() : "";
+    }
+};
+
+// Example: Initialization Stage - Batch type for resource-limited operations
+/*class InitializationStage : public IBatchStage<PackageInfo> {
+    Plugify& plugify_;
+    std::atomic<size_t> activeInitializations_{0};
+    static constexpr size_t MAX_CONCURRENT_INITS = 4;
+
+public:
+    InitializationStage(Plugify& p) : plugify_(p) {}
+
+    std::string_view GetName() const override { return "Initialization"; }
+
+    size_t GetBatchSize() const override {
+        return MAX_CONCURRENT_INITS;  // Limit concurrent initializations
+    }
+
+    bool ProcessBatchInParallel() const override { return true; }
+
+    void SetupBatch(std::span<PackageInfo> batch, size_t batchIndex,
+                    const ExecutionContext<PackageInfo>& ctx) override {
+        PL_LOG_DEBUG("Initializing batch {} with {} packages", batchIndex, batch.size());
+        activeInitializations_ = 0;
+    }
+
+    std::expected<void, std::string> ProcessBatch(
+        std::span<PackageInfo> batch,
+        size_t batchIndex,
+        size_t totalBatches,
+        const ExecutionContext<PackageInfo>& ctx) override {
+
+        // Could perform batch-level resource allocation here
+        // For example, pre-allocate shared resources for the batch
+
+        return {};
+    }
+
+    void TeardownBatch(std::span<PackageInfo> batch, size_t batchIndex,
+                      const ExecutionContext<PackageInfo>& ctx) override {
+        // Wait for all initializations in batch to complete
+        while (activeInitializations_.load() > 0) {
+            std::this_thread::yield();
+        }
+    }
+};*/
+
+// Initialization Stage - Transform type
+class InitializationStage : public ITransformStage<PackageInfo> {
+    std::shared_ptr<IAssemblyLoader> loader_;
+    std::unordered_map<std::string, std::shared_ptr<Module>> loadedModules_;
+
+public:
+    InitializationStage(std::shared_ptr<IAssemblyLoader> loader)
+        : loader_(std::move(loader)) {}
+
+    std::string_view GetName() const override { return "Initializing"; }
+
+    bool ShouldProcess(const PackageInfo& item) const override {
+        return item.GetState() == PackageState::Resolved;
+    }
+
+    std::expected<void, std::string> ProcessItem(
+        PackageInfo& pkg,
+        [[maybe_unused]] const ExecutionContext<PackageInfo>& ctx) override {
+        pkg.StartOperation(PackageState::Initializing);
+
+        try {
+            std::shared_ptr<void> instance;
+
+            switch (pkg.GetType()) {
+                case PackageType::Module: {
+                    auto module = std::make_shared<Module>(pkg.GetId(), pkg.GetManifest());
+
+                    auto result = module->Initialize(loader_);
+                    if (!result) {
+                        throw std::runtime_error(result.error());
+                    }
+
+                    loadedModules_[pkg.GetLanguage()] = module;
+                    instance = std::move(module);
+                    break;
+                }
+
+                case PackageType::Plugin: {
+                    auto it = loadedModules_.find(pkg.GetLanguage());
+                    if (it == loadedModules_.end()) {
+                        throw std::runtime_error(
+                            std::format("Language module '{}' not found", pkg.GetLanguage())
+                        );
+                    }
+
+                    auto plugin = std::make_shared<Plugin>(pkg.GetId(), pkg.GetManifest());
+                    plugin->SetModule(it->second);
+
+                    auto result = plugin->Initialize(loader_);
+                    if (!result) {
+                        throw std::runtime_error(result.error());
+                    }
+
+                    instance = std::move(plugin);
+                    break;
+                }
+
+                default:
+                    throw std::runtime_error("Unknown package type");
+            }
+
+            pkg.SetInstance(std::move(instance));
+            pkg.EndOperation(PackageState::Initialized);
+
+            // Log progress if verbose
+            std::println("Initialized {}", pkg.GetName());
+
+            return {};
+
+        } catch (const std::exception& e) {
+            pkg.EndOperation(PackageState::Failed);
+            // TODO: propagate deps
+            return std::unexpected(e.what());
+        }
+
+        return {};
+    }
+};
+
+// Loading Stage - Sequential type
+class LoadingStage : public ISequentialStage<PackageInfo> {
+    Plugify& plugify_;
+    std::unordered_set<UniqueId> failedPackages_;
+    
+public:
+    LoadingStage(Plugify& plugify,
+                const std::unordered_map<UniqueId, std::vector<UniqueId>>* deps)
+        : plugify_(plugify), dependencyGraph_(deps) {}
+    
+    std::string_view GetName() const override { return "Loading"; }
+    
+    bool ContinueOnError() const override { return true; }
+    
+    bool ShouldProcess(const PackageInfo& item) const override {
+        return item.GetState() == PackageState::Initialized;
+    }
+    
+    std::expected<void, std::string> ProcessItem(
+        PackageInfo& pkg,
+        size_t position,
+        size_t total,
+        const ExecutionContext<PackageInfo>& ctx) override {
+        
+        pkg.StartOperation(PackageState::Loading);
+        
+        try {
+            switch (pkg.GetType()) {
+                case PackageType::Module: {
+                    auto module = std::static_pointer_cast<Module>(pkg.GetInstance());
+                    
+                    auto result = module->Load(plugify_);
+                    if (!result) {
+                        throw std::runtime_error(result.error());
+                    }
+                    break;
+                }
+                
+                case PackageType::Plugin: {
+                    auto plugin = std::static_pointer_cast<Plugin>(pkg.GetInstance());
+
+                    auto result = plugin->Load(plugify_);
+                    if (!result) {
+                        throw std::runtime_error(result.error());
+                    }
+                    break;
+                }
+                
+                default:
+                    throw std::runtime_error("Unknown package type");
+            }
+
+            pkg.EndOperation(PackageState::Loaded);
+            
+            // Log progress if verbose
+            std::println("[{}/{}] Loaded {}", position + 1, total, pkg.GetName());
+            
+            return {};
+            
+        } catch (const std::exception& e) {
+            pkg.EndOperation(PackageState::Failed);
+            // TODO: propagate deps
+            return std::unexpected(e.what());
+        }
+    }
+};
+
 struct Manager::Impl {
     Impl(Plugify& p) : plugify(p) {
-        fileSystem = std::make_shared<StandardFileSystem>();
-        manifestParser = std::make_shared<GlazeManifestParser>();
-        resolver = std::make_shared<LibsolvDependencyResolver>();
-        //loader = std::make_shared<DefaultPackageLoader>(plugify.GetAssemblyLoader(),
-        progressReporter = std::make_shared<ConsoleProgressReporter>(syncOut);
+        // Create services
+        assemblyLoader = std::make_shared<AssemblyLoader>();  // Your implementation
+        fileSystem = std::make_shared<StandardFileSystem>();  // Your implementation
+        manifestParser = std::make_shared<GlazeManifestParser>();  // Your implementation
+        //validator = std::make_shared<PackageValidator>();  // Your implementation
+        resolver = std::make_shared<LibsolvDependencyResolver>();  // Your libsolv wrapper
+        //loader = std::make_shared<DynamicPackageLoader>();  // Your implementation
+        progressReporter = std::make_shared<ConsoleProgressReporter>();  // Your implementation
+        //metricsCollector = std::make_shared<MetricsCollector>();  // Your implementation
+
     }
-
-    // Plugify
     Plugify& plugify;
-
-    // Configuration
     std::shared_ptr<Config> config;
-
-    // Initialization state
-    std::shared_ptr<InitializationState> state;
     
-    // Main initialization method - MUST be called from main thread
+    // Services
+    std::shared_ptr<IAssemblyLoader> assemblyLoader;
+    std::shared_ptr<IFileSystem> fileSystem;
+    std::shared_ptr<IManifestParser> manifestParser;
+    std::shared_ptr<IDependencyResolver> resolver;
+    //std::shared_ptr<IPackageValidator> validator;
+    //std::shared_ptr<IPackageRegistry> registry;
+    std::shared_ptr<IProgressReporter> progressReporter;
+    //std::shared_ptr<MetricsCollector> metricsCollector;
+    
+    // Dependency graphs (filled by resolution stage)
+    std::unordered_map<UniqueId, std::vector<UniqueId>> dependencyGraph;
+    std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;
+    
+public:
     std::shared_ptr<InitializationState> Initialize() {
-        state = std::make_shared<InitializationState>();
-
-        // Execute phases with timing
-        ExecutePhase("Discovery", state->discovery,
-            [this] { DiscoverManifests(); });
-
-        ExecutePhase("Parsing", state->parsing,
-            [this] { ParseManifests(); });
-
-        ExecutePhase("Resolution", state->resolution,
-            [this] { ResolveDependencies(); });
-
-        /*ExecutePhase("Loading", state->load,
-            [this] { LoadPackagesSequentially(); });
-
-        ExecutePhase("Starting", state->start,
-            [this] { StartPackagesSequentially(); });*/
-
+        auto state = std::make_shared<InitializationState>();
+        
+        // Step 1: Quick discovery
+        std::vector<PackageInfo> packages = DiscoverPackages();
+        
+        // Step 2: Create resolution stage with filters
+        auto resolutionStage = std::make_unique<ResolutionStage>(
+            resolver, &dependencyGraph, &reverseDependencyGraph
+        );
+        resolutionStage->SetFilters(config->whitelistedPackages, config->blacklistedPackages);
+        
+        // Step 3: Build pipeline
+        auto pipeline = FlexiblePipeline<PackageInfo>::Create()
+            // Parse manifests in parallel (Transform stage)
+            .AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
+            
+            // Validate packages in batches (Batch stage)
+            //.AddStage(std::make_unique<ValidationStage>(validator, 20), false)
+            
+            // Fetch metadata in controlled batches (Batch stage with rate limiting)
+            //.AddStage(std::make_unique<NetworkFetchStage>(registry), false)
+            
+            // Resolve dependencies and reorder container (Barrier stage)
+            .AddStage(std::move(resolutionStage))
+            
+            // Optional: Remove failed packages to save processing
+            //.AddStage(std::make_unique<FilterFailedStage>(), false)
+            
+            // Initialize packages in batches (Batch stage for resource control)
+            .AddStage(std::make_unique<InitializationStage>(assemblyLoader), false)
+            
+            // Load packages in dependency order (Sequential stage)
+            .AddStage(std::make_unique<LoadingStage>(plugify, &dependencyGraph))
+            
+            // Start packages in order (Sequential stage)
+            //.AddStage(std::make_unique<StartingStage>())
+            
+            .WithReporter(progressReporter)
+            //.WithMetrics(metricsCollector)
+            .WithConfig(config)
+            .WithThreadPoolSize(std::thread::hardware_concurrency())
+            .Build();
+        
+        // Step 4: Execute pipeline
+        auto [finalPackages, report] = pipeline->Execute(std::move(packages));
+        
+        // Step 5: Store results
+        packages_ = std::move(finalPackages);
+        
+        // Convert report to state
+        //ConvertReportToState(report, state);
+        
+        // Print reports if configured
+        if (config->printReport) {
+            report.Print();
+        }
+        
         return state;
     }
-
-    // Terminate packages in reverse order
-    void Terminate() {
-        // Terminate in reverse order of initialization
-        /*for (auto it = loadedPackages.rbegin(); it != loadedPackages.rend(); ++it) {
-            try {
-                auto& pkgInfo = packages[*it];
-                if (pkgInfo.instance && pkgInfo.state == PackageState::Stalled) {
-                    if (config.enableDetailedLogging) {
-                        std::cout << "[Terminate] Stopping " << *it << std::endl;
-                    }
-                    pkgInfo.instance->stop();
-                    pkgInfo.instance->unload();
-                    pkgInfo.state = PackageState::Terminated;
-                }
-            } catch (const std::exception& e) {
-                // Log but continue termination
-                std::cerr << "[ERROR] Failed to terminate " << *it << ": " << e.what() << std::endl;
-            }
-        }*/
-        loadedPackages.clear();
-        packages.clear();
-    }
-
-    // Get current package states (for monitoring)
-    plg::flat_map<std::string, PackageState> GetPackageStates() const {
-        plg::flat_map<std::string, PackageState> states;
-        states.reserve(packages.size());
-        for (const auto& pkg : packages) {
-            states[pkg.GetName()] = pkg.GetState();
-        }
-        return states;
-    }
-
+    
+private:
+    std::vector<PackageInfo> packages_;
+    
     static constexpr std::array<std::string_view, 2> MANIFEST_EXTENSIONS = {
         "*.pplugin"sv, "*.pmodule"sv
     };
 
-    // Clean phase execution with timing
-    template<typename Func>
-    static void ExecutePhase(std::string_view name, PhaseStatistics& stats, Func&& func) {
-        PL_LOG_VERBOSE("Entering phase: {}", name);
-        auto start = Clock::now();
-        func();
-        stats.time = std::chrono::duration_cast<Duration>(Clock::now() - start);
-        PL_LOG_VERBOSE("  {}", stats.GetText(name));
-    }
-
-    PLUGIFY_WARN_PUSH()
-#if PLUGIFY_COMPILER_MSVC
-    PLUGIFY_WARN_IGNORE(4324)
-#endif
-    struct alignas(std::hardware_destructive_interference_size) PathBatch {
-        std::vector<std::filesystem::path> v{};
-
-        auto begin() { return v.begin(); }
-        auto end() { return v.end(); }
-        auto begin() const { return v.begin(); }
-        auto end() const { return v.end(); }
-        auto size() const { return v.size(); }
-        auto empty() const { return v.empty(); }
-    };
-    PLUGIFY_WARN_POP()
-
     // Collect manifest paths from all search directories
     auto CollectManifestPaths() {
-        std::vector<PathBatch> batches;
+        std::vector<std::vector<std::filesystem::path>> batches;
         batches.resize(config->searchPaths.size());
 
-        threadPool.submit_sequence(0, config->searchPaths.size(),
-        [this, &batches](size_t i) {
-            const auto& searchPath = config->searchPaths[i];
+        for (const auto& searchPath : config->searchPaths) {
+            auto files = fileSystem->FindFiles(
+                searchPath,
+                MANIFEST_EXTENSIONS,
+                true
+            );
 
-            if (auto result = fileSystem->FindFiles(searchPath, MANIFEST_EXTENSIONS, true)) {
-                batches[i].v = std::move(*result);
+            if (files) {
+                batches.emplace_back(std::move(*files));
             } else {
-                state->AddError(std::format("Discovery: {}", searchPath.string()), std::move(result.error()));
+                PL_LOG_ERROR("Error searching '{}': {}", searchPath.string(), files.error());
             }
-        }).wait();
+        }
 
         return batches;
     }
 
     // Step 1: Find all manifest files in parallel
-    void DiscoverManifests() {
-        PhaseScope scope(progressReporter.get(), "Discovery", state->discovery, config->searchPaths.size());
+    std::vector<PackageInfo> DiscoverPackages() {
+        std::vector<PackageInfo> packages;
 
-        // Collect all paths in parallel
+        // Collect all paths
         auto allPaths = CollectManifestPaths();
 
         // Create package entries
@@ -198,678 +1153,30 @@ struct Manager::Impl {
             pkg.SetId(static_cast<UniqueId>(packages.size() - 1));
             pkg.SetPath(std::move(path));
             pkg.SetState(PackageState::Discovered);
-            scope.ReportItem(pkg.GetPath().string(), true);
         }
+
+        return packages;
     }
-
-    // Phase 2: Parse manifests in parallel
-    void ParseManifests() {
-        PhaseScope scope(progressReporter.get(), "Discovery", state->parsing, packages.size());
-
-        threadPool.submit_sequence(0, packages.size(),
-        [this, &scope](size_t i) {
-            auto& pkg = packages[i];
-            bool success = ParseSingleManifest(pkg);
-            scope.ReportItem(pkg.GetName(), success);
-        }).wait();
-    }
-
-    // Parse a single manifest with proper error handling
-    bool ParseSingleManifest(PackageInfo& pkg) {
-        pkg.StartOperation(PackageState::Parsing);
-
-        if (auto manifest = ParseManifest(pkg.GetPath())) {
-            pkg.SetManifest(std::move(*manifest));
-            pkg.EndOperation(PackageState::Parsed);
-            state->parsing.AddSuccess();
-            return true;
-        } else {
-            pkg.AddError(manifest.error());
-            pkg.EndOperation(PackageState::Corrupted);
-            state->parsing.AddFailed();
-            return false;
+    
+    /*void ConvertReportToState(
+        const FlexiblePipeline<PackageInfo>::PipelineReport& report,
+        std::shared_ptr<InitializationState>& state) {
+        
+        // Map stage results to state based on stage names
+        for (size_t i = 0; i < report.stages.size(); ++i) {
+            const auto& stage = report.stages[i];
+            
+            // You would map based on actual stage names
+            // This is just an example
+            PL_LOG_DEBUG("Stage {}: {} in, {} out, {} succeeded, {} failed",
+                       i, stage.itemsIn, stage.itemsOut, 
+                       stage.succeeded, stage.failed);
         }
-    }
-
-    std::expected<ManifestPtr, std::string> ParseManifest(const std::filesystem::path& path) const {
-        auto content = fileSystem->ReadTextFile(path);
-        if (!content) return std::unexpected(content.error());
-
-        auto parsed = manifestParser->Parse(content.value(), path);
-        if (!parsed) return std::unexpected(parsed.error());
-
-        return std::move(parsed.value());
-    }
-
-    // Build registry of language modules
-    auto BuildLanguageRegistry() const {
-        plg::flat_map<std::string, std::string, plg::case_insensitive_hash, plg::case_insensitive_equal> languages;
-
-        for (const auto& pkg : packages) {
-            if (pkg.GetState() == PackageState::Parsed && pkg.GetType() == PackageType::Module) {
-                languages[pkg.GetLanguage()] = pkg.GetName();
-            }
-        }
-
-        return languages;
-    }
-
-    // Prepare valid packages with filtering
-    auto PrepareValidPackages(const auto& languages) {
-        PackageCollection validPackages;
-        validPackages.reserve(packages.size());
-
-        for (auto& pkg : packages) {
-            if (pkg.GetState() != PackageState::Parsed) {
-                continue;
-            }
-
-            // Apply filters
-            if (IsPackageFiltered(pkg)) {
-                pkg.SetState(PackageState::Disabled);
-                state->resolution.AddFailed();
-                continue;
-            }
-
-            // Add language dependency for plugins
-            if (pkg.GetType() == PackageType::Plugin) {
-                auto it = languages.find(pkg.GetLanguage());
-                if (it != languages.end()) {
-                    pkg.AddDependency(it->second);
-               }
-            }
-
-            pkg.StartOperation(PackageState::Resolving);
-            validPackages.emplace_back(pkg.GetId(), pkg.GetManifest());
-        }
-
-        return validPackages;
-    }
-
-    // Check if package is filtered
-    bool IsPackageFiltered(const PackageInfo& pkg) const {
-        const auto& name = pkg.GetName();
-
-        // Whitelist check
-        if (config->whitelistedPackages &&
-            !config->whitelistedPackages->contains(name)) {
-            return true;
-        }
-
-        // Blacklist check
-        if (config->blacklistedPackages &&
-            config->blacklistedPackages->contains(name)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    // Phase 3: Dependency Resolution
-    void ResolveDependencies() {
-        PhaseScope scope(progressReporter.get(), "Resolution", state->resolution, packages.size());
-
-        // Build language registry
-        auto languages = BuildLanguageRegistry();
-
-        // Apply filters and prepare valid packages
-        auto validPackages = PrepareValidPackages(languages);
-
-        // Resolve dependencies
-        if (!validPackages.empty()) {
-            ResolveDependencyGraph(validPackages);
-        }
-    }
-
-    // Resolve dependency graph using resolver
-    void ResolveDependencyGraph(const auto& validPackages) {
-        auto processResult = [this](PackageInfo& pkg, bool success, const auto& issues) {
-            if (success) {
-                pkg.EndOperation(PackageState::Resolved);
-                state->resolution.AddSuccess();
-            } else {
-                pkg.EndOperation(PackageState::Unresolved);
-                state->resolution.AddFailed();
-
-                // Add resolution issues if any
-                auto it = issues.find(pkg.GetId());
-                if (it != issues.end()) {
-                    for (const auto& issue : it->second) {
-                        auto details = issue.GetDetailedDescription();
-                        if (issue.isBlocking) {
-                            pkg.AddError(details);
-                            state->AddError(std::format("Resolution: {}", pkg.GetName()), std::move(details));
-                        } else {
-                            pkg.AddWarning(details);
-                            state->AddWarning(std::format("Resolution: {}", pkg.GetName()), std::move(details));
-                        }
-                    }
-                }
-            }
-
-            ReportItemComplete("Resolution", pkg.GetName(), success);
-        };
-        // TODO: Catch???
-        //try {
-        // Call dependency resolver
-        auto depReport = resolver->Resolve(validPackages);
-
-        // Create resolved set for quick lookup
-        std::unordered_set<UniqueId> resolvedSet(
-            depReport.loadOrder.begin(),
-            depReport.loadOrder.end()
-        );
-
-        // Update package states based on resolution
-        for (auto& pkg : packages) {
-            if (pkg.GetState() != PackageState::Resolving) {
-                continue;
-            }
-
-            processResult(pkg, resolvedSet.contains(pkg.GetId()), depReport.issues);
-        }
-
-        // Store resolution results
-        loadOrder = std::move(depReport.loadOrder);
-        dependencyGraph = std::move(depReport.dependencyGraph);
-        reverseDependencyGraph = std::move(depReport.reverseDependencyGraph);
-        /*} catch (const std::exception& e) {
-            // Resolution failed completely
-            state->AddError("Resolution", e.what());
-
-            // Mark all resolving packages as unresolved
-            for (auto& pkg : packages) {
-                if (pkg.GetState() == PackageState::Resolving) {
-                    pkg.EndOperation(PackageState::Unresolved);
-                    state->resolution.AddFailed();
-                }
-            }
-        }*/
-
-        // Debug print
-        if (config->printLoadOrder) {
-            PrintLoadOrder();
-        }
-        if (config->printDependencyGraph) {
-            PrintDependencyGraph();
-        }
-        if (config->exportDigraphDot) {
-            ExportDependencyGraphDOT(*config->exportDigraphDot);
-        }
-    }
-
-    void PrintLoadOrder() const {
-        std::string buffer;
-        buffer.reserve(1024); // preallocate some space to reduce reallocs
-
-        std::format_to(std::back_inserter(buffer), "=== Load Order ===\n");
-
-        if (loadOrder.empty()) {
-            std::format_to(std::back_inserter(buffer), "(empty)\n\n");
-            LogSystem::Log(buffer, Color::None);
-            return;
-        }
-
-        for (size_t i = 0; i < loadOrder.size(); ++i) {
-            auto id = loadOrder[i];
-            std::format_to(std::back_inserter(buffer), "{:3}: {} (id={})\n", i, packages[id].GetName(), id);
-        }
-
-        buffer.push_back('\n');
-        LogSystem::Log(buffer, Color::None);
-    }
-
-    void PrintDependencyGraph() const {
-        std::string buffer;
-        buffer.reserve(2048);
-
-        std::format_to(std::back_inserter(buffer), "=== Dependency Graph (pkg -> [deps]) ===\n");
-
-        if (dependencyGraph.empty()) {
-            std::format_to(std::back_inserter(buffer), "(empty)\n\n");
-            LogSystem::Log(buffer, Color::None);
-            return;
-        }
-
-        for (const auto& [pkgId, deps] : dependencyGraph) {
-            std::format_to(std::back_inserter(buffer), "{} (id={}) -> ", packages[pkgId].GetName(), pkgId);
-            if (deps.empty()) {
-                std::format_to(std::back_inserter(buffer), "[]\n");
-                continue;
-            }
-
-            buffer.push_back('[');
-            bool first = true;
-            for (auto d : deps) {
-                if (!first) {
-                    std::format_to(std::back_inserter(buffer), ", ");
-                }
-                std::format_to(std::back_inserter(buffer), "{} (id={})", packages[d].GetName(), d);
-                first = false;
-            }
-            std::format_to(std::back_inserter(buffer), "]\n");
-        }
-
-        buffer.push_back('\n');
-        LogSystem::Log(buffer, Color::None);
-    }
-
-    void ExportDependencyGraphDOT(const std::filesystem::path& outPath) const {
-        std::string buffer;
-        buffer.reserve(4096);
-
-        std::format_to(std::back_inserter(buffer), "digraph packages {{\n");
-        std::format_to(std::back_inserter(buffer), "  rankdir=LR;\n");
-
-        // nodes
-        for (size_t i = 0; i < packages.size(); ++i) {
-            std::format_to(std::back_inserter(buffer),
-                           "  node{} [label=\"{}\\n(id={})\"];\n",
-                           i, packages[i].GetName(), i);
-        }
-
-        // edges
-        for (const auto& [pkgId, deps] : dependencyGraph) {
-            for (auto dep : deps) {
-                std::format_to(std::back_inserter(buffer), "  node{} -> node{};\n", pkgId, dep);
-            }
-        }
-
-        std::format_to(std::back_inserter(buffer), "}}\n");
-
-        auto writeResult = fileSystem->WriteTextFile(outPath, buffer);
-        if (!writeResult) {
-            state->AddError("Export DOT", std::move(writeResult.error()));
-        }
-    }
-
-    // Phase 4: Loading packages sequentially
-    void LoadPackagesSequentially() {
-        PhaseScope scope(progressReporter.get(), "Loading", state->load, loadOrder.size());
-
-        std::unordered_set<UniqueId> failedPackages;
-
-        for (const auto& pkgId : loadOrder) {
-            LoadSinglePackage(packages[pkgId], failedPackages);
-            // Stop on critical failure if configured
-            if (config_->stopOnCriticalFailure &&
-                failedPackages.contains(pkgId) &&
-                packages[pkgId].GetType() == PackageType::Module) {
-
-                PL_LOG_ERROR("[CRITICAL] Language module {} failed to load", packages[pkgId].GetName());
-                break;
-            }
-        }
-    }
-
-    // Load a single package with dependency checking
-    void LoadSinglePackage(
-        PackageInfo& pkg,
-        std::unordered_set<UniqueId>& failedPackages) {
-
-        // Check if dependencies failed
-        auto failedDeps = GetFailedDependencies(pkg.GetId(), failedPackages);
-        if (!failedDeps.empty()) {
-            HandleSkippedPackage(pkg, failedDeps, failedPackages);
-            return;
-        }
-
-        // Start loading operation
-        pkg.StartOperation(PackageState::Loading);
-
-        try {
-            // Attempt to load the package
-            auto loadResult = LoadPackage(pkg);
-
-            // Success
-            pkg.SetInstance(std::move(loadResult));
-            pkg.EndOperation(PackageState::Loaded);
-            state->load.AddSuccess();
-            loadedPackages.push_back(pkg.GetId());
-
-            // Check for slow loading
-            if (config->enableDetailedLogging) {
-                auto startTime = pkg.GetOperationTime(PackageState::Loading);
-                if (startTime > 1000ms) {
-                    PL_LOG_WARNING("Package {} took {}ms to start",
-                        pkg.GetName(), startTime.count());
-                }
-            }
-
-            ReportItemComplete("Loading", pkg.GetName(), true);
-
-        } catch (const std::exception& e) {
-            HandleFailedPackage(pkg, e.what(), failedPackages);
-        }
-    }
-
-    // Get list of failed dependencies
-    std::vector<std::string_view> GetFailedDependencies(
-        UniqueId pkgId,
-        const std::unordered_set<UniqueId>& failedPackages) const {
-
-        std::vector<std::string_view> failedDeps;
-
-        if (auto it = dependencyGraph.find(pkgId); it != dependencyGraph.end()) {
-            for (const auto& depId : it->second) {
-                if (failedPackages.contains(depId)) {
-                    failedDeps.push_back(packages[depId].GetName());
-                }
-            }
-        }
-
-        return failedDeps;
-    }
-
-    // Handle skipped package due to failed dependencies
-    void HandleSkippedPackage(
-        PackageInfo& pkg,
-        const std::vector<std::string_view>& failedDeps,
-        std::unordered_set<UniqueId>& failedPackages) {
-
-        pkg.SetState(PackageState::Skipped);
-
-        for (const auto& dep : failedDeps) {
-            pkg.AddError(std::format("Dependency failed: {}", dep));
-        }
-
-        state->load.AddFailed();
-        failedPackages.insert(pkg.GetId());
-
-        ReportItemComplete("Loading", pkg.GetName(), false);
-    }
-
-    // Handle failed package loading
-    void HandleFailedPackage(
-        PackageInfo& pkg,
-        std::string_view error,
-        std::unordered_set<UniqueId>& failedPackages) {
-
-        pkg.EndOperation(PackageState::Failed);
-
-        auto errorMsg = std::format("Load failed: {}", error);
-        pkg.AddError(errorMsg);
-        state->AddError(std::format("Loading: {}", pkg.GetName()), errorMsg);
-
-        state->load.AddFailed();
-        failedPackages.insert(pkg.GetId());
-
-        // before loading package I check failed deps via GetFailedDependencies
-        //PropagateFailure(pkg.GetId(), failedPackages);
-
-        ReportItemComplete("Loading", pkg.GetName(), false);
-    }
-
-    std::shared_ptr<IPackage> LoadPackage(PackageInfo& pkg) {
-        switch (pkg.GetType()) {
-            case PackageType::Module:
-                auto module = std::shared_ptr<Module>(pkg.GetId(), pkg.GetManifest());
-
-                // Load module
-                auto result = module->Initialize(plugify);
-                if (!result) {
-                    throw std::runtime_error(result.error());
-                }
-
-                // Store for plugin loading
-                loadedModules[pkg.GetLanguage()] = module;
-                return module;
-
-            case PackageType::Plugin:
-                // Find language module (must exist due to dependency order)
-                auto moduleIt = loadedModules.find(pkg.GetLanguage());
-                if (moduleIt == loadedModules.end()) {
-                    throw std::runtime_error(
-                        std::format("Language module '{}' not found", pkg.GetLanguage()));
-                }
-
-                auto plugin = std::dynamic_pointer_cast<Plugin>(pkg.GetId(), pkg.GetManifest());
-
-                // Set the language module
-                plugin->SetModule(moduleIt->second);
-
-                // Load plugin
-                auto result = plugin->Intitialize(plugify);
-                if (!result) {
-                    throw std::runtime_error(result.error());
-                }
-
-                return plugin;
-
-            default:
-                throw std::runtime_error("Unknown package type");
-        }
-    }
-
-    // Phase 5: Starting packages sequentially
-    /*void StartPackagesSequentially() {
-        ReportPhaseStart("Starting", loadedPackages.size());
-
-        for (const auto& pkgId : loadedPackages) {
-            StartSinglePackage(packages[pkgId]);
-        }
-
-        ReportPhaseComplete("Starting", state->start);
-    }
-
-    // Start a single package
-    void StartSinglePackage(PackageInfo& pkg) {
-        pkg.StartOperation(PackageState::Starting);
-
-        try {
-            // Attempt to start the package
-            if (!pkg.GetInstance()) {
-                throw std::runtime_error("Package instance is null");
-            }
-
-            bool started = pkg.GetInstance()->Start();
-
-            if (!started) {
-                throw std::runtime_error("Start() returned false");
-            }
-
-            // Success
-            pkg.EndOperation(PackageState::Started);
-            state->start.AddSuccess();
-
-            // Check for slow start
-            if (config->enableDetailedLogging) {
-                auto startTime = pkg.GetOperationTime(PackageState::Starting);
-                if (startTime > 500ms) {
-                    PL_LOG_WARNING("Package {} took {}ms to start",
-                        pkg.GetName(), startTime.count());
-                }
-            }
-
-            ReportItemComplete("Starting", pkg.GetName(), true);
-
-        } catch (const std::exception& e) {
-            HandleFailedStart(pkg, e.what());
-        }
-    }
-
-    // Handle failed package start
-    void HandleFailedStart(
-        PackageInfo& pkg,
-        std::string_view error) {
-
-        pkg.EndOperation(PackageState::Stalled);
-
-        auto errorMsg = std::format("Start failed: {}", error);
-        pkg.AddError(errorMsg);
-        state->AddError(std::format("Starting: {}", pkg.GetName()), errorMsg);
-
-        state->start.AddFailed();
-
-        // Note: We don't propagate failure here because dependents
-        // are already loaded. You might want to handle this differently
-        // based on your requirements.
-
-        ReportItemComplete("Starting", pkg.GetName(), false);
-
-        // Optionally unload the package if it failed to start
-        if (config->unloadOnStartFailure && pkg.GetInstance()) {
-            try {
-                pkg.GetInstance()->Unload();
-                pkg.SetInstance(nullptr);
-            } catch (const std::exception& e) {
-                PL_LOG_ERROR("Failed to unload stalled package {}: {}",
-                           pkg.GetName(), e.what());
-            }
-        }
+        
+        state->totalPackages = report.finalItems;
+        state->totalTime = report.totalTime;
     }*/
-
-    // Propagate failure to dependent packages
-    /*void PropagateFailure(
-        UniqueId failedPkg,
-        std::unordered_set<UniqueId>& failedSet) {
-
-        // Use iterative approach to avoid stack overflow
-        std::stack<UniqueId> toProcess;
-        toProcess.push(failedPkg);
-
-        while (!toProcess.empty()) {
-            UniqueId current = toProcess.top();
-            toProcess.pop();
-
-            // Find all packages that depend on the current failed package
-            if (auto it = reverseDependencyGraph.find(current);
-                it != reverseDependencyGraph.end()) {
-
-                for (const auto& dependent : it->second) {
-                    auto [iter, inserted] = failedSet.insert(dependent);
-                    // Mark as failed if not already
-                    if (inserted) {
-                        toProcess.push(dependent);
-
-                        // Update package state if it hasn't been processed yet
-                        auto& pkg = packages[dependent];
-                        if (pkg.GetState() == PackageState::Resolved) {
-                            pkg.SetState(PackageState::Skipped);
-                            pkg.AddError(
-                                std::format("Dependency {} failed", packages[current].GetName())
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }*/
-
-    // Helper methods for reporting
-    /*void ReportPhaseStart(std::string_view phase, size_t count) {
-        if (progressReporter) {
-            progressReporter->OnPhaseStart(phase, count);
-        }
-    }
-
-    void ReportPhaseComplete(std::string_view phase, const PhaseStatistics& stats) {
-        if (progressReporter) {
-            progressReporter->OnPhaseComplete(phase, stats.success.load(), stats.failed.load());
-        }
-    }
-
-    void ReportItemComplete(std::string_view phase, std::string_view item, bool success) {
-        if (progressReporter) {
-            progressReporter->OnItemComplete(phase, item, success);
-        }
-    }*/
-
-private:
-    std::shared_ptr<IFileSystem> fileSystem;
-    std::shared_ptr<IManifestParser> manifestParser;
-    std::shared_ptr<IDependencyResolver> resolver;
-    //std::shared_ptr<IPackageLoader> loader;
-    std::shared_ptr<IProgressReporter> progressReporter;
-
-    //ManagerConfig config;
-    plg::synced_stream syncOut;
-    plg::thread_pool<> threadPool;
-
-    std::vector<PackageInfo> packages;
-    //std::mutex mutex;
-
-    std::unordered_set<UniqueId> failedPackages;
-    std::vector<UniqueId> loadedPackages;
-
-    // Track loaded language modules for plugin loading
-    plg::flat_map<std::string, std::shared_ptr<Module>, plg::case_insensitive_hash, plg::case_insensitive_equal> loadedModules;
-
-    plg::flat_map<UniqueId, std::vector<UniqueId>> dependencyGraph;
-    plg::flat_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;
-
-    std::vector<UniqueId> loadOrder;
-    std::vector<UniqueId> startOrder;
 };
-
-/*
-// Usage Example
-inline void exampleUsage() {
-    // Configuration
-    ManagerConfig config;
-    config.threadPoolSize = std::thread::hardware_concurrency();
-    config.stopOnCriticalFailure = true;
-    config.enableDetailedLogging = true;
-    config.validateInParallel = true;
-
-    // Create services
-    auto fileSystem = std::make_shared<FileSystem>();  // Your implementation
-    auto manifestParser = std::make_shared<JsonManifestParser>();  // Your implementation
-    auto validator = std::make_shared<PackageValidator>();  // Your implementation
-    auto resolver = std::make_shared<LibSolvDependencyResolver>();  // Your libsolv wrapper
-    auto loader = std::make_shared<DynamicPackageLoader>();  // Your implementation
-
-    // Create package manager
-    auto Manager = std::make_unique<Manager>(
-        fileSystem, manifestParser, validator, resolver, loader, config
-    );
-
-    // Set progress reporter
-    Manager->setProgressReporter(
-        std::make_shared<ConsoleProgressReporter>()
-    );
-
-    // Initialize packages (MUST be called from main thread)
-    std::cout << "=== Package Initialization Starting ===" << std::endl;
-
-    auto state = Manager->initialize(
-        {"/usr/local/packages", "/opt/plugins", "~/.local/packages"},
-        {"*.manifest.json", "package.json"}
-    );
-
-    // Report results
-    std::cout << "\n=== Initialization Summary ===" << std::endl;
-    std::cout << "Discovered:    " << state->totalDiscovered << std::endl;
-    std::cout << "Validated:     " << state->validationPassed << std::endl;
-    std::cout << "Failed Valid:  " << state->validationFailed << std::endl;
-    std::cout << "Resolved:      " << state->dependencyResolved << std::endl;
-    std::cout << "Loaded:        " << state->loaded << std::endl;
-    std::cout << "Started:       " << state->started << std::endl;
-    std::cout << "Failed:        " << state->failed << std::endl;
-    std::cout << "Skipped:       " << state->skipped << std::endl;
-
-    std::cout << "\n=== Timing ===" << std::endl;
-    std::cout << "Discovery:     " << state->totalDiscoveryTime.count() << "ms" << std::endl;
-    std::cout << "Validation:    " << state->totalValidationTime.count() << "ms" << std::endl;
-    std::cout << "Resolution:    " << state->totalResolutionTime.count() << "ms" << std::endl;
-    std::cout << "Loading:       " << state->totalLoadTime.count() << "ms" << std::endl;
-    std::cout << "Starting:      " << state->totalStartTime.count() << "ms" << std::endl;
-
-    if (!state->errorLog.empty()) {
-        std::cout << "\n=== Errors ===" << std::endl;
-        for (const auto& [context, error] : state->errorLog) {
-            std::cout << "[" << context << "] " << error << std::endl;
-        }
-    }
-
-    // Run your application...
-
-    // Cleanup
-    std::cout << "\n=== Shutting down ===" << std::endl;
-    Manager->terminate();
-}
-*/
-
 
 Manager::Manager(Plugify& plugify) : _impl(std::make_unique<Impl>(plugify)) {}
 

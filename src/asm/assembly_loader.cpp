@@ -5,11 +5,15 @@
 using namespace plugify;
 namespace fs = std::filesystem;
 
-Result<std::unique_ptr<IAssembly>> AssemblyLoader::Load(const std::filesystem::path& path, LoadFlag flags) {
-	auto assembly = std::make_unique<Assembly>(path, flags, _searchPaths, false);
+#if PLUGIFY_PLATFORM_WINDOWS
+thread_local std::vector<fs::path> searchPaths;
+#endif
+
+Result<std::unique_ptr<IAssembly>> AssemblyLoader::Load(const fs::path& path, LoadFlag flags) {
+	auto assembly = std::make_unique<Assembly>(path, flags, searchPaths, false);
 #if PLUGIFY_PLATFORM_WINDOWS
 	defer {
-		_searchPaths.clear();
+		searchPaths.clear();
 	};
 #endif
 	if (!assembly->IsValid()) {
@@ -18,11 +22,11 @@ Result<std::unique_ptr<IAssembly>> AssemblyLoader::Load(const std::filesystem::p
 	return std::unique_ptr<IAssembly>(std::move(assembly));
 }
 
-bool AssemblyLoader::AddSearchPath(const std::filesystem::path& path) {
+bool AssemblyLoader::AddSearchPath(const fs::path& path) {
 #if PLUGIFY_PLATFORM_WINDOWS
 	std::error_code ec;
 
-	std::filesystem::path libraryDirectory = fs::absolute(path, ec);
+	fs::path libraryDirectory = fs::absolute(path, ec);
 	if (!fs::is_directory(libraryDirectory, ec)) {
 		return false;
 	}
@@ -37,7 +41,7 @@ bool AssemblyLoader::AddSearchPath(const std::filesystem::path& path) {
 
 	libraryDirectory.make_preferred();
 
-	_searchPaths.push_back(std::move(libraryDirectory));
+	searchPaths.push_back(std::move(libraryDirectory));
 
 	return true;
 #else

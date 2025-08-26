@@ -24,13 +24,13 @@ namespace plugify {
 
 		bool IsPreferOwnSymbols() const noexcept;
 		
-		//bool IsPluginLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;
+		bool IsPluginLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;
 		
-		//bool IsModuleLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;
+		bool IsModuleLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;
 
-		//PluginHandle FindPlugin(std::string_view name) const noexcept;
+		std::shared_ptr<Plugin> FindPlugin(std::string_view name) const noexcept;
 
-		//ModuleHandle FindModule(std::string_view name) const noexcept;
+		std::shared_ptr<Module> FindModule(std::string_view name) const noexcept;
 
 		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const noexcept;
 
