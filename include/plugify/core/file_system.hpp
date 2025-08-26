@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <functional>
 
-#include "plg/expected.hpp"
+#include "plugify/core/types.hpp"
 
 namespace plugify {
 	/**
@@ -32,9 +32,6 @@ namespace plugify {
 	    std::vector<std::string> extensions;  // Filter by extensions (e.g., {".json", ".yaml"})
 	    std::function<bool(const FileInfo&)> filter;  // Custom filter predicate
 	};
-
-	template<typename T>
-	using Result = plg::expected<T, std::string>;
 
 	/**
 	 * @brief Simple filesystem interface for reading files and iterating directories

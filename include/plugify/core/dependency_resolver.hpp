@@ -88,6 +88,7 @@ namespace plugify {
      * constraints, and conflict detection.
      */
     class LibsolvDependencyResolver : public IDependencyResolver {
+        struct Impl;
     public:
         LibsolvDependencyResolver();
         ~LibsolvDependencyResolver() override;
@@ -100,7 +101,6 @@ namespace plugify {
         DependencyResolution Resolve(const PackageCollection& packages) override;
 
     private:
-        struct Impl;
         std::unique_ptr<Impl> _impl;
     };
 }  // namespace plugify

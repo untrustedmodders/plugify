@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "date_time.hpp"
-#include "plg/expected.hpp"
 #include "plugify/asm/mem_addr.hpp"
+#include "plugify/core/types.hpp"
 
 namespace plugify {
 	class Plugin;
@@ -35,9 +35,6 @@ namespace plugify {
 		MemAddr data; ///< Data associated with the loaded plugin.
 		MethodTable table; ///< Method table for the loaded plugin.
 	};
-
-	template<typename T>
-	using Result = plg::expected<T, std::string>;
 
 	/**
 	 * @class ILanguageModule

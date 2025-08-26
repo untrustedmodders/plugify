@@ -6,7 +6,8 @@
 
 #include "plg/expected.hpp"
 #include "plugify/asm/load_flag.hpp"
-#include "plugify/asm/mem_addr.hpp"
+#include "plugify/asm/load_flag.hpp"
+#include "plugify/core/types.hpp"
 
 namespace plugify {
 	/**
@@ -26,9 +27,6 @@ namespace plugify {
 		 */
 		virtual MemAddr GetSymbol(std::string_view name) const = 0;
 	};
-
-	template<typename T>
-	using Result = plg::expected<T, std::string>;
 
 	/**
 	 * @class IAssemblyLoader

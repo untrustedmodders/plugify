@@ -3,72 +3,9 @@
 #include "plugify/core/manifest.hpp"
 
 namespace plugify {
-#if 0
-#include "plugify/../../src/core/module_manifest.hpp"
-#include "plugify/_/module_handle.hpp"
-#include "date_time.hpp"
-#include "language_module.hpp"
-#include "plugify/asm/assembly.hpp"
-#include "plugify/core/dependency.hpp"
-
-	struct Manifest;
-	class Plugin;
-	class Plugify;
-	class Module {
-	public:
-		using State = ModuleState;
-		using Utils = ModuleUtils;
-
-		Module(UniqueId id, BasePaths paths, std::shared_ptr<Manifest> manifest);
-		Module(const Module& module) = delete;
-		Module(Module&& module) noexcept;
-		~Module() = default;
-
-	public:
-
-		std::span<const std::unique_ptr<Dependency>> GetDependencies() const noexcept {
-			return _manifest->dependencies ? *_manifest->dependencies : std::span<const std::unique_ptr<Dependency>>{};
-		}
-
-		std::span<const std::unique_ptr<Conflict>> GetConflicts() const noexcept {
-			return _manifest->conflicts ? *_manifest->conflicts : std::span<const std::unique_ptr<Conflict>>{};
-		}
-
-		const std::string& GetLanguage() const noexcept {
-			return _manifest->language;
-		}
-
-		const std::filesystem::path& GetBaseDir() const noexcept {
-			return _paths.base;
-		}
-
-
-
-
-
-
-		void SetError(std::string error);
-
-		ILanguageModule* GetLanguageModule() const {
-			return _languageModule;
-		}
-
-
-		Module& operator=(const Module&) = delete;
-		Module& operator=(Module&& other) noexcept = default;
-
-	private:
-		UniqueId _id;
-		BasePaths _paths;
-		std::shared_ptr<ModuleManifest> _manifest;
-		std::string_view _error;
-		mutable std::vector<PluginHandle> _loadedPlugins; // debug only
-	};
-#endif
     class Plugify;
 	class Dependency;
 	class Conflict;
-
 	// Module Class
     class PLUGIFY_API Module {
         struct Impl;
