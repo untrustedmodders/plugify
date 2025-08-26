@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <iostream>
 #include <atomic>
+#include <cstdint>
+#include <iostream>
+#include <source_location>
+#include <string>
 
 namespace plugify {
 	/**
@@ -22,32 +23,6 @@ namespace plugify {
 	};
 
 	/**
-	 * @brief Enumeration of available text colors and styles for console output.
-	 *
-	 * This enum defines both normal and bold variations of commonly used colors.
-	 * It is typically used in conjunction with ANSI escape codes to provide
-	 * colored or emphasized text output in supported terminals.
-	 *
-	 * @note Not all terminals support ANSI escape sequences. If unsupported,
-	 *       the raw escape codes may be displayed instead of colored text.
-	 */
-	enum class Color {
-		None,       ///< No color / reset to default.
-		Red,        ///< Standard red text.
-		Green,      ///< Standard green text.
-		Yellow,     ///< Standard yellow text.
-		Blue,       ///< Standard blue text.
-		Cyan,       ///< Standard cyan text.
-		Gray,       ///< Standard gray text.
-		Bold,       ///< Bold text (no color).
-		BoldRed,    ///< Bold red text.
-		BoldGreen,  ///< Bold green text.
-		BoldYellow, ///< Bold yellow text.
-		BoldBlue,   ///< Bold blue text.
-		BoldCyan    ///< Bold cyan text.
-	};
-
-	/**
 	 * @class ILogger
 	 * @brief Interface for logging messages with different severity levels.
 	 */
@@ -57,17 +32,24 @@ namespace plugify {
 
 		/**
 		 * @brief Log a message with the specified severity level.
-		 * @param msg The log message.
+		 * @param message The log message.
 		 * @param severity The severity level of the log message.
+		 * @param loc
 		 */
-		virtual void Log(std::string_view msg, Severity severity) = 0;
+	    virtual void Log(std::string_view message, Severity severity, std::source_location loc = std::source_location::current()) = 0;
 
-		/**
-		 * @brief Log a message with the specified color.
-		 * @param msg The log message.
-		 * @param color The color of the log message.
-		 */
-		virtual void Log(std::string_view msg, Color color) = 0;
+	    /**
+         * @brief Set the minimum severity level for logging messages.
+         * @param minSeverity The minimum severity level to log.
+         */
+	    virtual void SetLogLevel(Severity minSeverity) = 0;
+
+	    /**
+         * @brief Flush any buffered log messages.
+         */
+	    virtual void Flush() = 0;
 	};
+
+
 
 } // namespace plugify

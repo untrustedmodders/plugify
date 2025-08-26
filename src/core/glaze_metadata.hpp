@@ -1,53 +1,46 @@
 #pragma once
 
+#include <glaze/glaze.hpp>
+
 #include "plugify/core/config.hpp"
+#include "plugify/core/logger.hpp"
 #include "plugify/core/manifest.hpp"
 
-#include "core/dependency_impl.hpp"
 #include "core/conflict_impl.hpp"
+#include "core/dependency_impl.hpp"
 #include "core/enum_impl.hpp"
 #include "core/enum_value_impl.hpp"
-#include "core/property_impl.hpp"
 #include "core/method_impl.hpp"
+#include "core/property_impl.hpp"
 
-#include <glaze/glaze.hpp>
 /*
 template <>
 struct glz::meta<plugify::Config> {
-	using T = plugify::Config;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"baseDir", &T::baseDir,
-			"configsDir", &T::configsDir,
-			"dataDir", &T::dataDir,
-			"logsDir", &T::logsDir,
-			"logSeverity", &T::logSeverity,
-			"preferOwnSymbols", &T::preferOwnSymbols
-	);
-};*/
-
-template <>
-struct glz::meta<plugify::Conflict> {
-	static constexpr auto value = object(
-		"name", [](auto&& self) -> auto& { return self._impl->name; },
-		"constraints", [](auto&& self) -> auto& { return self._impl->constraints; },
-		"reason", [](auto&& self) -> auto& { return self._impl->reason; }
-	);
+    using T = plugify::Config;
+    static constexpr auto value = object(
+            "$schema", skip{},
+            "baseDir", &T::baseDir,
+            "configsDir", &T::configsDir,
+            "dataDir", &T::dataDir,
+            "logsDir", &T::logsDir,
+            "logSeverity", &T::logSeverity,
+            "preferOwnSymbols", &T::preferOwnSymbols
+    );
 };
 
 template<>
 struct glz::meta<plugify::Severity> {
-	using T = plugify::Severity;
-	static constexpr auto value = enumerate(
-			"none", T::None,
-			"fatal", T::Fatal,
-			"error", T::Error,
-			"warn", T::Warning,
-			"info", T::Info,
-			"debug", T::Debug,
-			"verbose", T::Verbose
-	);
-};
+    using T = plugify::Severity;
+    static constexpr auto value = enumerate(
+            "none", T::None,
+            "fatal", T::Fatal,
+            "error", T::Error,
+            "warn", T::Warning,
+            "info", T::Info,
+            "debug", T::Debug,
+            "verbose", T::Verbose
+    );
+};*/
 
 template <>
 struct glz::meta<plugify::Method> {
@@ -119,6 +112,24 @@ struct glz::meta<plugify::PluginManifest> {
 	);
 };
 
+template<>
+struct glz::meta<plugify::Dependency> {
+    static constexpr auto value = object(
+        "name", [](auto&& self) -> auto& { return self._impl->name; },
+        "constraints", [](auto&& self) -> auto& { return self._impl->constraints; },
+        "optional", [](auto&& self) -> auto& { return self._impl->optional; }
+    );
+};
+
+template <>
+struct glz::meta<plugify::Conflict> {
+    static constexpr auto value = object(
+        "name", [](auto&& self) -> auto& { return self._impl->name; },
+        "constraints", [](auto&& self) -> auto& { return self._impl->constraints; },
+        "reason", [](auto&& self) -> auto& { return self._impl->reason; }
+    );
+};
+
 template <>
 struct glz::meta<plugify::Property> {
 	static constexpr auto value = object(
@@ -129,15 +140,6 @@ struct glz::meta<plugify::Property> {
 		"prototype", [](auto&& self) -> auto& { return self._impl->prototype; },
 		"enumerate", [](auto&& self) -> auto& { return self._impl->enumerate; },
 		"default", skip{}
-	);
-};
-
-template<>
-struct glz::meta<plugify::Dependency> {
-	static constexpr auto value = object(
-		"name", [](auto&& self) -> auto& { return self._impl->name; },
-		"constraints", [](auto&& self) -> auto& { return self._impl->constraints; },
-		"optional", [](auto&& self) -> auto& { return self._impl->optional; }
 	);
 };
 
@@ -158,20 +160,6 @@ struct glz::meta<plugify::EnumValue> {
 		"value", [](auto&& self) -> auto& { return self._impl->value; }
 	);
 };
-/*
-template <>
-struct glz::meta<plugify::DependencyReport::IssueType> {
-	using T = plugify::DependencyReport::IssueType;
-	static constexpr auto value = glz::enumerate(
-		"none", T::None,
-		"missing_dependency", T::MissingDependency,
-		"version_conflict", T::VersionConflict,
-		"circular_dependency", T::CircularDependency,
-		"optional_missing", T::OptionalMissing,
-		"transitive_missing", T::TransitiveMissing,
-		"conflicting_providers", T::ConflictingProviders
-	);
-};*/
 
 template<>
 struct glz::meta<plugify::ValueType> {
@@ -294,7 +282,6 @@ namespace glz {
 	struct to<JSON, plugify::Constraint> {
 	    template <auto Opts>
 	    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
-
 	    }
 	};*/
 #else
@@ -368,7 +355,6 @@ namespace glz {
 		struct to_json<plugify::Constraint> {
 		    template <auto Opts>
 		    static void op(const plugify::Constraint& value, auto&&... args) noexcept {
-
 		    }
 		};*/
 	}

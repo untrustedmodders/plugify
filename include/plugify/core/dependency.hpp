@@ -25,12 +25,12 @@ namespace plugify {
 		Dependency& operator=(Dependency&& other) noexcept;
 
 		// Getters
-		[[nodiscard]] std::string_view GetName() const noexcept;
+		[[nodiscard]] const std::string& GetName() const noexcept;
 		[[nodiscard]] Constraint GetConstraints() const noexcept;
 		[[nodiscard]] bool IsOptional() const noexcept;
 
 		// Setters (pass by value and move)
-		void SetName(std::string_view name) noexcept;
+		void SetName(std::string name) noexcept;
 		void SetConstraints(Constraint constraints) noexcept;
 		void SetOptional(bool optional) noexcept;
 

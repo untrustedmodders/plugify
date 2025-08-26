@@ -10,7 +10,7 @@ namespace plugify {
 	 * @class IAssemblyLoader
 	 * @brief Interface for loading assemblies.
 	 */
-	class AssemblyLoader final : public IAssemblyLoader {
+	class AssemblyLoader : public IAssemblyLoader {
 	public:
 		~AssemblyLoader() override = default;
 

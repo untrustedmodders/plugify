@@ -1,4 +1,4 @@
-#include "plugify/core/file_system.hpp"
+#include "core/standart_file_system.hpp"
 
 using namespace plugify;
 
@@ -285,10 +285,12 @@ std::string StandardFileSystem::SystemError() {
 	strerror_s(result.data(), result.size(), errno);
 #elif PLUGIFY_PLATFORM_APPLE
 	strerror_r(errno, result.data(), result.size());
-#else
+#elif PLUGIFY_PLATFORM_UNIX
 	auto b = result.data();
 	auto r = strerror_r(errno, b, result.size());
 	if (r != b) return r;
+#else
+    result.assign(std::strerror);
 #endif
 	result.resize(strlen(result.data()));
 	return result;

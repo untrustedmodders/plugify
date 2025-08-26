@@ -169,7 +169,7 @@ bool Assembly::IsExist(const std::filesystem::path& path) {
 
 	if (!std::filesystem::exists(path, ec)) {
 		if (ec) {
-			_error = std::format("Error checking path existence: {}", ec.message());
+			_error = "Error checking path existence: " + ec.message();
 		} else {
 			_error = "Path does not exist";
 		}
@@ -178,7 +178,7 @@ bool Assembly::IsExist(const std::filesystem::path& path) {
 
 	if (!std::filesystem::is_regular_file(path, ec)) {
 		if (ec) {
-			_error = std::format("Error checking if path is a regular file: {}", ec.message());
+			_error = "Error checking if path is a regular file: " + ec.message();
 		} else {
 			_error = "Path is not a regular file";
 		}
@@ -190,7 +190,7 @@ bool Assembly::IsExist(const std::filesystem::path& path) {
 	auto perms = fs::status(path, ec).permissions();
 
 	if (ec) {
-		_error =  std::format("Error checking file permissions: {}", ec.message());
+		_error =  "Error checking file permissions: " + ec.message();
 		return false;
 	}
 

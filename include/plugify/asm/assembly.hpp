@@ -11,7 +11,7 @@ namespace plugify {
 	 * @class Assembly
 	 * @brief Represents an assembly (module) within a process.
 	 */
-	class Assembly final : public IAssembly {
+	class Assembly : public IAssembly {
 	public:
 		/**
 		 * @struct Section

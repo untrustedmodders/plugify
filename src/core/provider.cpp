@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "plugify/core/plugify.hpp"
 #include "plugify/core/manager.hpp"
 #include "plugify/core/provider.hpp"
@@ -5,73 +7,120 @@
 using namespace plugify;
 
 struct Provider::Impl {
-    Impl(Plugify& p) : plugify(p) {}
-	Plugify& plugify;
+    struct Paths {
+        std::filesystem::path baseDir;
+        std::filesystem::path pluginsDir;
+        std::filesystem::path configsDir;
+        std::filesystem::path dataDir;
+        std::filesystem::path logsDir;
+        std::filesystem::path cacheDir;
+    } paths;
+    std::shared_ptr<ILogger> logger;
+    std::shared_ptr<IFileSystem> fileSystem;
+    std::shared_ptr<IAssemblyLoader> assemblyLoader;
+    std::shared_ptr<IConfigProvider> configProvider;
+
+    Impl(std::weak_ptr<ServiceLocator> services) {
+        // Cache frequently used services
+        if (auto s = services.lock()) {
+            logger = s->Get<ILogger>();
+            fileSystem = s->Get<IFileSystem>();
+            assemblyLoader = s->Get<IAssemblyLoader>();
+            configProvider = s->Get<IConfigProvider>();
+
+            // Load configuration settings
+            LoadConfiguration();
+        }
+    }
+
+    void LoadConfiguration() {
+        // Continue loading other config values...
+        LoadPathConfig(configProvider, "paths.baseDir", paths.baseDir);
+        LoadPathConfig(configProvider, "paths.pluginsDir", paths.pluginsDir);
+        LoadPathConfig(configProvider, "paths.configsDir", paths.configsDir);
+        LoadPathConfig(configProvider, "paths.dataDir", paths.dataDir);
+        LoadPathConfig(configProvider, "paths.logsDir", paths.logsDir);
+        LoadPathConfig(configProvider, "paths.cacheDir", paths.cacheDir);
+
+        // Ensure directories exist
+        //CreateDirectories();
+    }
+
+    void LoadPathConfig(const std::shared_ptr<IConfigProvider>& provider,
+                       std::string_view key,
+                       std::filesystem::path& target) {
+        if (auto result = provider->GetValue(key); result) {
+            if (auto* path = std::any_cast<std::string>(&result.value())) {
+                target = *path;
+            }
+        }
+    }
+
+    void CreateDirectories() {
+        auto createDir = [&](const std::filesystem::path& dir) {
+            if (!dir.empty() && !fileSystem->IsExists(dir)) {
+                auto result = fileSystem->CreateDirectories(dir);
+                if (!result) {
+                    logger->Log(std::format("Failed to create directory '{}': {}", dir.string(), result.error()), Severity::Error);
+                } else {
+                    logger->Log(std::format("Created directory: {}", dir.string()), Severity::Info);
+                }
+            }
+        };
+
+        createDir(paths.baseDir);
+        createDir(paths.baseDir / paths.pluginsDir);
+        createDir(paths.baseDir / paths.configsDir);
+        createDir(paths.baseDir / paths.dataDir);
+        createDir(paths.baseDir / paths.logsDir);
+        createDir(paths.baseDir / paths.cacheDir);
+    }
+
+    std::filesystem::path GetFullPath(const std::filesystem::path& relativePath) const {
+        if (relativePath.is_absolute()) {
+            return relativePath;
+        }
+        return paths.baseDir / relativePath;
+    }
 };
 
-Provider::Provider(Plugify& plugify) : _impl(std::make_unique<Impl>(plugify)) {}
+Provider::Provider(std::weak_ptr<ServiceLocator> services)
+    : _impl(std::make_unique<Impl>(services)) {
+}
 
 Provider::~Provider() = default;
 
 void Provider::Log(std::string_view msg, Severity severity) const {
-	_impl->plugify.Log(msg, severity);
+    if (_impl->logger) {
+        _impl->logger->Log(msg, severity);
+    }
 }
-static std::filesystem::path ___;
+
 const std::filesystem::path& Provider::GetBaseDir() const noexcept {
-	return ___;//_impl->plugify.GetConfig().baseDir;
+    return _impl->paths.baseDir;
+}
+
+const std::filesystem::path& Provider::GetPluginsDir() const noexcept {
+    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.pluginsDir);
+    return fullPath;
 }
 
 const std::filesystem::path& Provider::GetConfigsDir() const noexcept {
-	return _impl->plugify.GetConfig()->configsDir;
+    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.configsDir);
+    return fullPath;
 }
 
 const std::filesystem::path& Provider::GetDataDir() const noexcept {
-	return _impl->plugify.GetConfig()->dataDir;
+    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.dataDir);
+    return fullPath;
 }
 
 const std::filesystem::path& Provider::GetLogsDir() const noexcept {
-	return _impl->plugify.GetConfig()->logsDir;
+    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.logsDir);
+    return fullPath;
 }
 
-bool Provider::IsPreferOwnSymbols() const noexcept {
-	return false;//_impl->plugify.GetConfig().preferOwnSymbols.value_or(false);
+const std::filesystem::path& Provider::GetCacheDir() const noexcept {
+    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.cacheDir);
+    return fullPath;
 }
-
-/*bool Provider::IsPluginLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
-	auto plugin = _impl->plugify.GetManager().FindPlugin(name);
-	if (!plugin)
-		return false;
-	if (plugin.GetState() != PluginState::Loaded && plugin.GetState() != PluginState::Running)
-		return false;
-	if (constraint)
-		return constraint->IsSatisfiedBy(plugin.GetManifest().GetVersion());
-	return true;
-}
-
-bool Provider::IsModuleLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
-	auto module = _impl->plugify.GetManager().FindModule(name);
-	if (!module)
-		return false;
-	if (module.GetState() != ModuleState::Loaded)
-		return false;
-	if (constraint)
-		return constraint->IsSatisfiedBy(module.GetManifest().GetVersion());
-	return true;
-}
-
-PluginHandle Provider::FindPlugin(std::string_view name) const noexcept {
-	return _impl->plugify.GetManager().FindPlugin(name);
-}
-
-ModuleHandle Provider::FindModule(std::string_view name) const noexcept {
-	return _impl->plugify.GetManager().FindModule(name);
-}*/
-
-std::shared_ptr<IAssemblyLoader> Provider::GetAssemblyLoader() const noexcept {
-	return _impl->plugify.GetAssemblyLoader();
-}
-
-std::shared_ptr<IFileSystem> Provider::GetFileSystem() const noexcept {
-	return _impl->plugify.GetFileSystem();
-}
-

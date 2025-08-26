@@ -20,20 +20,6 @@ using namespace std::chrono_literals;
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-class ConsoleProgressReporter : public IProgressReporter {
-    void OnPhaseStart(std::string_view phase, size_t totalItems) override {
-        std::println("[{}] Starting - {} items", phase, totalItems);
-    }
-    void OnItemComplete(std::string_view phase, std::string_view itemId, bool success) override {
-        if (!success) {
-            std::println("[{}] ✗ {}", phase, itemId);
-        }
-    }
-    void OnPhaseComplete(std::string_view phase, size_t succeeded, size_t failed) override {
-        std::println("[{}] Complete - ✓ {}, ✗ {}", phase, succeeded, failed);
-    }
-};
-
 // ============================================================================
 // Stage Interfaces
 // ============================================================================
@@ -871,26 +857,33 @@ public:
     }
 };*/
 
-// Initialization Stage - Transform type
-class InitializationStage : public ITransformStage<PackageInfo> {
-    std::shared_ptr<IAssemblyLoader> loader_;
+// Loading Stage - Sequential type
+class LoadingStage : public ISequentialStage<PackageInfo> {
+    Plugify& plugify_;
     std::unordered_map<std::string, std::shared_ptr<Module>> loadedModules_;
-
+    const std::unordered_map<UniqueId, std::vector<UniqueId>>* dependencyGraph_;
+    
 public:
-    InitializationStage(std::shared_ptr<IAssemblyLoader> loader)
-        : loader_(std::move(loader)) {}
-
-    std::string_view GetName() const override { return "Initializing"; }
-
+    LoadingStage(Plugify& plugify,
+                const std::unordered_map<UniqueId, std::vector<UniqueId>>* deps)
+        : plugify_(plugify), dependencyGraph_(deps) {}
+    
+    std::string_view GetName() const override { return "Loading"; }
+    
+    bool ContinueOnError() const override { return true; }
+    
     bool ShouldProcess(const PackageInfo& item) const override {
         return item.GetState() == PackageState::Resolved;
     }
-
+    
     std::expected<void, std::string> ProcessItem(
         PackageInfo& pkg,
-        [[maybe_unused]] const ExecutionContext<PackageInfo>& ctx) override {
-        pkg.StartOperation(PackageState::Initializing);
-
+        size_t position,
+        size_t total,
+        const ExecutionContext<PackageInfo>& ctx) override {
+        
+        pkg.StartOperation(PackageState::Loading);
+        
         try {
             std::shared_ptr<void> instance;
 
@@ -898,7 +891,7 @@ public:
                 case PackageType::Module: {
                     auto module = std::make_shared<Module>(pkg.GetId(), pkg.GetManifest());
 
-                    auto result = module->Initialize(loader_);
+                    auto result = module->Load(loader_);
                     if (!result) {
                         throw std::runtime_error(result.error());
                     }
@@ -919,7 +912,7 @@ public:
                     auto plugin = std::make_shared<Plugin>(pkg.GetId(), pkg.GetManifest());
                     plugin->SetModule(it->second);
 
-                    auto result = plugin->Initialize(loader_);
+                    auto result = plugin->Load(loader_);
                     if (!result) {
                         throw std::runtime_error(result.error());
                     }
@@ -933,74 +926,6 @@ public:
             }
 
             pkg.SetInstance(std::move(instance));
-            pkg.EndOperation(PackageState::Initialized);
-
-            // Log progress if verbose
-            std::println("Initialized {}", pkg.GetName());
-
-            return {};
-
-        } catch (const std::exception& e) {
-            pkg.EndOperation(PackageState::Failed);
-            // TODO: propagate deps
-            return std::unexpected(e.what());
-        }
-
-        return {};
-    }
-};
-
-// Loading Stage - Sequential type
-class LoadingStage : public ISequentialStage<PackageInfo> {
-    Plugify& plugify_;
-    std::unordered_set<UniqueId> failedPackages_;
-    
-public:
-    LoadingStage(Plugify& plugify,
-                const std::unordered_map<UniqueId, std::vector<UniqueId>>* deps)
-        : plugify_(plugify), dependencyGraph_(deps) {}
-    
-    std::string_view GetName() const override { return "Loading"; }
-    
-    bool ContinueOnError() const override { return true; }
-    
-    bool ShouldProcess(const PackageInfo& item) const override {
-        return item.GetState() == PackageState::Initialized;
-    }
-    
-    std::expected<void, std::string> ProcessItem(
-        PackageInfo& pkg,
-        size_t position,
-        size_t total,
-        const ExecutionContext<PackageInfo>& ctx) override {
-        
-        pkg.StartOperation(PackageState::Loading);
-        
-        try {
-            switch (pkg.GetType()) {
-                case PackageType::Module: {
-                    auto module = std::static_pointer_cast<Module>(pkg.GetInstance());
-                    
-                    auto result = module->Load(plugify_);
-                    if (!result) {
-                        throw std::runtime_error(result.error());
-                    }
-                    break;
-                }
-                
-                case PackageType::Plugin: {
-                    auto plugin = std::static_pointer_cast<Plugin>(pkg.GetInstance());
-
-                    auto result = plugin->Load(plugify_);
-                    if (!result) {
-                        throw std::runtime_error(result.error());
-                    }
-                    break;
-                }
-                
-                default:
-                    throw std::runtime_error("Unknown package type");
-            }
 
             pkg.EndOperation(PackageState::Loaded);
             
@@ -1018,16 +943,19 @@ public:
 };
 
 struct Manager::Impl {
-    Impl(Plugify& p) : plugify(p) {
-        // Create services
-        assemblyLoader = std::make_shared<AssemblyLoader>();  // Your implementation
-        fileSystem = std::make_shared<StandardFileSystem>();  // Your implementation
-        manifestParser = std::make_shared<GlazeManifestParser>();  // Your implementation
-        //validator = std::make_shared<PackageValidator>();  // Your implementation
-        resolver = std::make_shared<LibsolvDependencyResolver>();  // Your libsolv wrapper
-        //loader = std::make_shared<DynamicPackageLoader>();  // Your implementation
-        progressReporter = std::make_shared<ConsoleProgressReporter>();  // Your implementation
-        //metricsCollector = std::make_shared<MetricsCollector>();  // Your implementation
+    Impl(std::weak_ptr<ServiceLocator> services) {
+        // Cache frequently used services
+        if (auto s = services.lock()) {
+            // Create services
+            assemblyLoader = s->Get<IAssemblyLoader>();
+            fileSystem = s->Get<IFileSystem>();
+            manifestParser = s->Get<IManifestParser>();
+            //validator = s->Get<PackageValidator>();
+            resolver = s->Get<IDependencyResolver>();  // Your libsolv wrapper
+            //loader = s->Get<DynamicPackageLoader>();
+            progressReporter = s->Get<ConsoleProgressReporter>();
+            //metricsCollector = s->Get<MetricsCollector>();
+        }
 
     }
     Plugify& plugify;
@@ -1078,7 +1006,7 @@ public:
             //.AddStage(std::make_unique<FilterFailedStage>(), false)
             
             // Initialize packages in batches (Batch stage for resource control)
-            .AddStage(std::make_unique<InitializationStage>(assemblyLoader), false)
+            //.AddStage(std::make_unique<InitializationStage>(assemblyLoader), false)
             
             // Load packages in dependency order (Sequential stage)
             .AddStage(std::make_unique<LoadingStage>(plugify, &dependencyGraph))

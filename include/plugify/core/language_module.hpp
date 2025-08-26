@@ -66,6 +66,11 @@ namespace plugify {
 		 */
 		virtual void OnUpdate(DateTime dt) = 0;
 
+        /**
+	     * @brief
+	     */
+        //virtual void OnPluginInitialize(std::weak_ptr<Plugin> plugin) = 0;
+
 		/**
 		 * @brief Handle plugin load event.
 		 * @param plugin Weak pointer to the loaded plugin.

@@ -488,10 +488,118 @@ int main(int argc, char** argv) {
 #endif
 
 int main() {
-	std::cout << "Plugify Test Application\n";
-	auto plug = plugify::MakePlugify();
-	if (plug) {
-		plug->Initialize("");
-		auto _ = plug->GetManager()->Initialize();
-	}
+    auto result = plugify::MakePlugify("./app");
+    if (!result) {
+        std::cerr << "Failed to create Plugify: " << result.error() << std::endl;
+        return 1;
+    }
+
+    auto plugify = result.value();
+    if (auto initResult = plugify->Initialize(); !initResult) {
+        std::cerr << "Failed to initialize: " << initResult.error() << std::endl;
+        return 1;
+    }
+
+    // Load plugins
+    auto manager = plugify->GetManager();
+    manager->Initialize();
+
+    // Main loop
+    bool running = true;
+    while (running) {
+        plugify->Update();
+        // Your application logic here
+    }
+
+    plugify->Terminate();
+    return 0;
 }
+
+
+// ============================================================================
+// Usage Examples
+// ============================================================================
+/*
+// Example 1: Simple usage with defaults
+int main() {
+    auto result = plugify::MakePlugify("./app");
+    if (!result) {
+        std::cerr << "Failed to create Plugify: " << result.error().message << std::endl;
+        return 1;
+    }
+
+    auto plugify = result.value();
+    if (auto initResult = plugify->Initialize(); !initResult) {
+        std::cerr << "Failed to initialize: " << initResult.error().message << std::endl;
+        return 1;
+    }
+
+    // Load plugins
+    auto manager = plugify->GetManager();
+    manager->LoadAllPlugins();
+
+    // Main loop
+    bool running = true;
+    while (running) {
+        plugify->Update();
+        // Your application logic here
+    }
+
+    plugify->Terminate();
+    return 0;
+}
+
+// Example 2: Advanced configuration
+int main() {
+    // Create custom logger
+    auto logger = std::make_shared<plugify::impl::AsyncLogger>(
+        std::make_shared<plugify::impl::FileLogger>("./logs/app.log")
+    );
+
+    // Configure plugin manager
+    plugify::PluginManagerConfig config;
+    config.paths.baseDir = "./app";
+    config.paths.pluginsDir = "plugins";
+    config.loading.enableHotReload = true;
+    config.loading.parallelLoading = true;
+    config.runtime.updateInterval = std::chrono::milliseconds(16);
+
+    // Build Plugify instance
+    auto result = plugify::Plugify::CreateBuilder()
+        .WithConfig(config)
+        .WithLogger(logger)
+        .WithService<MyCustomService>(std::make_shared<MyCustomServiceImpl>())
+        .Build();
+
+    if (!result) {
+        std::cerr << "Failed: " << result.error().message << std::endl;
+        return 1;
+    }
+
+    auto plugify = result.value();
+
+    // Initialize asynchronously
+    auto initFuture = plugify->InitializeAsync();
+
+    // Do other initialization...
+
+    // Wait for initialization
+    if (auto initResult = initFuture.get(); !initResult) {
+        std::cerr << "Failed to initialize: " << initResult.error().message << std::endl;
+        return 1;
+    }
+
+    // Access provider for convenient operations
+    auto provider = plugify->GetProvider();
+    provider->LogInfo("Application started");
+
+    // Main loop
+    bool running = true;
+    while (running) {
+        plugify->Update();
+    }
+
+    plugify->Terminate();
+    return 0;
+}
+*/

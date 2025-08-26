@@ -1,12 +1,8 @@
-#include "plugify/core/manifest_parser.hpp"
-#include "core/glaze.hpp"
+#include "core/glaze_manifest_parser.hpp"
+
+#include "core/glaze_metadata.hpp"
 
 using namespace plugify;
-
-static std::unordered_map<std::string, PackageType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
-    {".pplugin", PackageType::Plugin},
-    {".pmodule", PackageType::Module}
-};
 
 Result<ManifestPtr> ParsePlugin(const std::string& content, const std::filesystem::path& path) {
     auto parsed = glz::read_jsonc<std::shared_ptr<PluginManifest>>(content);
@@ -32,6 +28,11 @@ Result<ManifestPtr> ParseModule(const std::string& content, const std::filesyste
 
 Result<ManifestPtr>
 GlazeManifestParser::Parse(const std::string& content, const std::filesystem::path& path) {
+    static std::unordered_map<std::string, PackageType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
+        {".pplugin", PackageType::Plugin},
+        {".pmodule", PackageType::Module}
+    };
+
     auto ext = path.extension().string();
     auto it = manifests.find(ext);
     if (it == manifests.end()) {

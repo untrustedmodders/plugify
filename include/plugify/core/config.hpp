@@ -4,29 +4,69 @@
 #include <optional>
 #include <string>
 
-#include "plugify/core/log_system.hpp"
-#include "plugify/core/types.hpp"
+#include "plugify/core/logger.hpp"
 
 namespace plugify {
+    struct Config {
+        // Paths configuration
+        struct Paths {
+            std::filesystem::path baseDir;
+            std::filesystem::path pluginsDir = "plugins";
+            std::filesystem::path configsDir = "configs";
+            std::filesystem::path dataDir = "data";
+            std::filesystem::path logsDir = "logs";
+            std::filesystem::path cacheDir = "cache";
+        } paths;
 
-	// Retry configuration
-	struct RetryPolicy {
-		std::size_t maxAttempts = 3;
-		std::chrono::milliseconds baseDelay{100};
-		std::chrono::milliseconds maxDelay{5000};
-		bool exponentialBackoff = true;
-		bool retryOnlyTransient = true;
-	};
+        // Loading configuration
+        struct Loading {
+            bool preferOwnSymbols = true;
+            bool enableHotReload = false;
+            bool lazyLoading = false;
+            bool parallelLoading = true;
+            size_t maxConcurrentLoads = 4;
+            std::chrono::seconds loadTimeout{30};
+        } loading;
 
+        // Runtime configuration
+        struct Runtime {
+            bool enableSandboxing = false;
+            bool enableProfiling = false;
+            size_t maxMemoryPerPlugin = 0; // 0 = unlimited
+            std::chrono::milliseconds updateInterval{16}; // ~60 FPS
+        } runtime;
+
+        // Security configuration
+        struct Security {
+            //bool verifySignatures = false;
+            //bool allowUnsignedPlugins = true;
+            //std::vector<std::string> trustedPublishers;
+            std::vector<std::string> whitelistedPackages;
+            std::vector<std::string> blacklistedPackages;
+        } security;
+
+        // Logging configuration
+        struct Logging {
+            bool printReport = false;
+            bool printLoadOrder = false;
+            bool printDependencyGraph = false;
+            std::filesystem::path exportDigraphDot;
+            Severity severity{Severity::Error};
+        } logging;
+
+        // Retry configuration
+        /*struct RetryPolicy {
+            std::size_t maxAttempts = 3;
+            std::chrono::milliseconds baseDelay{100};
+            std::chrono::milliseconds maxDelay{5000};
+            bool exponentialBackoff = true;
+            bool retryOnlyTransient = true;
+        } retryPolicy;*/
+    };
+
+
+	/*
 	struct Config {
-		// Retry configuration
-		RetryPolicy retryPolicy;
-
-		std::vector<std::filesystem::path> searchPaths;
-		bool autoResolveConflicts = false;
-		bool strictVersionChecking = true;
-		bool loadDisabledPackages = false;
-
 		// Initialization behavior
 		bool partialStartupMode = true;
 		bool failOnMissingDependencies = false;
@@ -46,29 +86,7 @@ namespace plugify {
 		//std::chrono::milliseconds initializationTimeout{30000};
 		//std::chrono::milliseconds perPackageTimeout{5000};
 
-	    bool printReport = true;
-        bool printLoadOrder = true;
-	    bool printDependencyGraph = true;
-	    std::optional<std::filesystem::path> exportDigraphDot;
-
-
-
-
-
-
-
-
 
 		// Filtering
-		std::optional<std::unordered_set<std::string>> whitelistedPackages;
-		std::optional<std::unordered_set<std::string>> blacklistedPackages;
-
-
-
-		// Other
-		std::filesystem::path configsDir;
-		std::filesystem::path dataDir;
-		std::filesystem::path logsDir;
-		std::optional<Severity> logSeverity;
-	};
+	};*/
 } // namespace plugify

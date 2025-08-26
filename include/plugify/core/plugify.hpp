@@ -1,41 +1,81 @@
 #pragma once
 
-#include "plugify/core/provider.hpp"
-#include "plugify/core/manager.hpp"
 #include "plugify/core/config.hpp"
+#include "plugify/core/manager.hpp"
+#include "plugify/core/provider.hpp"
+#include "plugify/core/config_provider.hpp"
+#include "plugify/core/event_bus.hpp"
+#include "plugify/core/plugin_lifecycle.hpp"
 
 #include "plugify_export.h"
 
 namespace plugify {
-	class PLUGIFY_API Plugify {
-		struct Impl;
-	public:
-		Plugify();
-		~Plugify();
+	// Builder pattern for configuration
+    class PLUGIFY_API PlugifyBuilder {
+    public:
+        PlugifyBuilder& WithBaseDir(const std::filesystem::path& dir);
+        PlugifyBuilder& WithConfig(const Config& config);
+        PlugifyBuilder& WithConfig(Config&& config);
+        PlugifyBuilder& WithLogger(std::shared_ptr<ILogger> logger);
+        PlugifyBuilder& WithFileSystem(std::shared_ptr<IFileSystem> fs);
+        PlugifyBuilder& WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
+        PlugifyBuilder& WithConfigProvider(std::shared_ptr<IConfigProvider> provider);
+        PlugifyBuilder& WithManifestParser(std::shared_ptr<IManifestParser> parser);
+        PlugifyBuilder& WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver);
+        PlugifyBuilder& WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle);
+        PlugifyBuilder& WithEventBus(std::shared_ptr<IEventBus> bus);
 
-		bool Initialize(const std::filesystem::path& rootDir);
-		void Terminate() const;
-		bool IsInitialized() const;
-		void Update() const;
+        // Register custom services
+        template<typename Interface>
+        PlugifyBuilder& WithService(std::shared_ptr<Interface> service) {
+            _services.Register(std::move(service));
+            return *this;
+        }
 
-		std::shared_ptr<Manager> GetManager() const;
-		std::shared_ptr<Provider> GetProvider() const;
-		std::shared_ptr<Config> GetConfig() const;
-		Version GetVersion() const;
+        Result<std::shared_ptr<Plugify>> Build();
 
-		void SetAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
-		std::shared_ptr<IAssemblyLoader> GetAssemblyLoader() const;
+    private:
+        Config _config;
+        ServiceLocator _services;
+    };
 
-		void SetFileSystem(std::shared_ptr<IFileSystem> reader);
-		std::shared_ptr<IFileSystem> GetFileSystem() const;
+    class PLUGIFY_API Plugify {
+        struct Impl;
+    public:
+        ~Plugify();
 
-		void Log(std::string_view msg, Severity severity) const;
-		void SetLogger(std::shared_ptr<ILogger> logger);
+        // Lifecycle
+        Result<void> Initialize();
+        void Terminate();
+        [[nodiscard]] bool IsInitialized() const noexcept;
+        void Update();
 
-	private:
-		std::unique_ptr<Impl> _impl;
-	};
+        // Async operations with coroutines (C++20)
+        std::future<Result<void>> InitializeAsync();
+        std::future<void> TerminateAsync();
 
-	PLUGIFY_API std::shared_ptr<Plugify> MakePlugify();
+        // Component access
+        [[nodiscard]] std::shared_ptr<Manager> GetManager() const;
+        [[nodiscard]] std::shared_ptr<Provider> GetProvider() const;
+        [[nodiscard]] const Config& GetConfig() const;
+        [[nodiscard]] Version GetVersion() const;
+
+        // Service access
+        [[nodiscard]] std::shared_ptr<ServiceLocator> GetServices() const;
+
+        // Factory method
+        [[nodiscard]] static PlugifyBuilder CreateBuilder();
+
+    private:
+        friend class PlugifyBuilder;
+        explicit Plugify(Config config, ServiceLocator services);
+
+    private:
+        std::unique_ptr<Impl> _impl;
+    };
+
+    // Convenience factory
+    PLUGIFY_API Result<std::shared_ptr<Plugify>> MakePlugify(
+        const std::filesystem::path& rootDir = std::filesystem::current_path());
 }
 

@@ -1,7 +1,6 @@
-#include "plugify/core/dependency_resolver.hpp"
-
 #include "core/conflict_impl.hpp"
 #include "core/dependency_impl.hpp"
+#include "core/libsolv_dependency_resolver.hpp"
 
 extern "C" {
 #include <solv/evr.h>
@@ -104,11 +103,11 @@ LibsolvDependencyResolver::Impl::Resolve(const PackageCollection& packages) {
 
 static void debug_callback([[maybe_unused]] Pool* pool, [[maybe_unused]] void* data, int type, const char* str) {
     if (type & (SOLV_FATAL | SOLV_ERROR))
-        PL_LOG_ERROR("libsolv: {}", str);
+        std::println("libsolv: {}", str);
     else if (type & SOLV_WARN)
-        PL_LOG_WARNING("libsolv: {}", str);
+        std::println("libsolv: {}", str);
     else
-        PL_LOG_VERBOSE("libsolv: {}", str);
+        std::println("libsolv: {}", str);
 }
 
 void

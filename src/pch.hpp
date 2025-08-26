@@ -17,16 +17,17 @@
 #include <array>
 #include <cmath>
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 #include <queue>
 #include <ranges>
 #include <numeric>
 #include <deque>
 #include <stack>
+#include <future>
 
 #include <print>
 
 #include "plugify/core/global.h"
-#include "plugify/core/log_system.hpp"
 
 namespace fs = std::filesystem;

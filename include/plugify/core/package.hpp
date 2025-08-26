@@ -24,8 +24,8 @@ namespace plugify {
         Skipped,
         Failed,
 
-        Initializing,
-        Initialized,
+        //Initializing,
+        //Initialized,
 
         Loading,
         Loaded,
@@ -101,8 +101,8 @@ namespace plugify {
         std::shared_ptr<PackageManifest> _manifest;
 
         // Basic info
-        std::string _name;
-        std::string _language;
+        //std::string _name;
+        //std::string _language;
         std::filesystem::path _path;
 
         void StartOperation(PackageState newState) {
@@ -119,7 +119,7 @@ namespace plugify {
         UniqueId GetId() const { return _id; }
         PackageType GetType() const { return _type; }
         PackageState GetState() const { return _state; }
-        const std::shared_ptr<IPackage>& GetInstance() const { return _instance; }
+        const std::shared_ptr<void>& GetInstance() const { return _instance; }
         const std::shared_ptr<PackageManifest>& GetManifest() const { return _manifest; }
         const std::filesystem::path& GetPath() const { return _path; }
         const std::deque<std::string>& GetErrors() const { return _errors; }
@@ -149,12 +149,12 @@ namespace plugify {
             _warnings.emplace_back(std::move(warning));
         }
 
-        void AddDependency(std::string_view dep) {
+        void AddDependency(std::string dep) {
             if (_manifest) {
                 if (!_manifest->dependencies) {
                     _manifest->dependencies = {};
                 }
-                _manifest->dependencies->emplace_back().SetName(dep);
+                _manifest->dependencies->emplace_back().SetName(std::move(dep));
             }
         }
 

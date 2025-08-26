@@ -20,18 +20,20 @@ Conflict& Conflict::operator=(const Conflict& other) {
 
 Conflict& Conflict::operator=(Conflict&& other) noexcept = default;
 
-std::string_view Conflict::GetName() const noexcept { return _impl->name; }
+static std::string emptyString;
+
+const std::string& Conflict::GetName() const noexcept { return _impl->name; }
 Constraint Conflict::GetConstraints() const noexcept {
 	return _impl->constraints.value_or(Constraint{});
 }
-std::string_view Conflict::GetReason() const noexcept { return _impl->reason.value_or(""); }
+const std::string& Conflict::GetReason() const noexcept { return _impl->reason ? *_impl->reason : emptyString; }
 
-void Conflict::SetName(std::string_view name) noexcept { _impl->name = name; }
+void Conflict::SetName(std::string name) noexcept { _impl->name = std::move(name); }
 void Conflict::SetConstraints(Constraint constraints) noexcept {
 	_impl->constraints = std::move(constraints);
 }
-void Conflict::SetReason(std::string_view reason) noexcept {
-	_impl->reason = reason;
+void Conflict::SetReason(std::string reason) noexcept {
+	_impl->reason = std::move(reason);
 }
 
 bool Conflict::operator==(const Conflict& other) const noexcept = default;
