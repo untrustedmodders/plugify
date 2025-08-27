@@ -639,14 +639,16 @@ public:
 
         auto content = fileSystem_->ReadTextFile(pkg.GetPath());
         if (!content) {
+            pkg.AddError(content.error());
             pkg.EndOperation(PackageState::Corrupted);
-            return std::unexpected(content.error());
+            return std::unexpected(std::move(content.error()));
         }
 
         auto manifest = parser_->Parse(*content, pkg.GetPath());
         if (!manifest) {
+            pkg.AddError(manifest.error());
             pkg.EndOperation(PackageState::Corrupted);
-            return std::unexpected(manifest.error());
+            return std::unexpected(std::move(manifest.error()));
         }
 
         pkg.SetManifest(std::move(*manifest));
@@ -715,6 +717,7 @@ public:
                 filtered.push_back(std::move(pkg));
             } else {
                 pkg.SetState(PackageState::Disabled);
+                pkg.AddWarning("Excluded due to policy");
                 excluded.push_back(std::move(pkg));
             }
         }
@@ -807,8 +810,10 @@ public:
     }
     
 private:
-    std::string_view GetPackageName(const std::vector<PackageInfo>& packages, UniqueId id) const {
-        auto it = std::ranges::find(packages, id, &PackageInfo::GetId);
+    std::string GetPackageName(const std::vector<PackageInfo>& packages, UniqueId id) const {
+        auto it = std::find_if(packages.begin(), packages.end(), [&](const PackageInfo& p) {
+            return p.GetId() == id;
+        });
         return it != packages.end() ? it->GetName() : "";
     }
 };
@@ -935,6 +940,7 @@ public:
             return {};
             
         } catch (const std::exception& e) {
+            pkg.AddError(e.what());
             pkg.EndOperation(PackageState::Failed);
             // TODO: propagate deps
             return std::unexpected(e.what());
@@ -943,26 +949,23 @@ public:
 };
 
 struct Manager::Impl {
-    Impl(std::weak_ptr<ServiceLocator> services) {
-        // Cache frequently used services
-        if (auto s = services.lock()) {
-            // Create services
-            assemblyLoader = s->Get<IAssemblyLoader>();
-            fileSystem = s->Get<IFileSystem>();
-            manifestParser = s->Get<IManifestParser>();
-            //validator = s->Get<PackageValidator>();
-            resolver = s->Get<IDependencyResolver>();  // Your libsolv wrapper
-            //loader = s->Get<DynamicPackageLoader>();
-            progressReporter = s->Get<ConsoleProgressReporter>();
-            //metricsCollector = s->Get<MetricsCollector>();
-        }
+    Impl(std::shared_ptr<Context> context) {
+        // Create services
+        assemblyLoader = context->Get<IAssemblyLoader>();
+        fileSystem = context->Get<IFileSystem>();
+        manifestParser = context->Get<IManifestParser>();
+        //validator = context->Get<PackageValidator>();
+        resolver = context->Get<IDependencyResolver>();  // Your libsolv wrapper
+        //loader = context->Get<DynamicPackageLoader>();
+        progressReporter = context->Get<ConsoleProgressReporter>();
+        //metricsCollector = context->Get<MetricsCollector>();
 
     }
     Plugify& plugify;
     std::shared_ptr<Config> config;
     
     // Services
-    std::shared_ptr<IAssemblyLoader> assemblyLoader;
+    //std::shared_ptr<IAssemblyLoader> assemblyLoader;
     std::shared_ptr<IFileSystem> fileSystem;
     std::shared_ptr<IManifestParser> manifestParser;
     std::shared_ptr<IDependencyResolver> resolver;
@@ -1046,24 +1049,18 @@ private:
 
     // Collect manifest paths from all search directories
     auto CollectManifestPaths() {
-        std::vector<std::vector<std::filesystem::path>> batches;
-        batches.resize(config->searchPaths.size());
+        auto files = fileSystem->FindFiles(
+            searchPath,
+            MANIFEST_EXTENSIONS,
+            true
+        );
 
-        for (const auto& searchPath : config->searchPaths) {
-            auto files = fileSystem->FindFiles(
-                searchPath,
-                MANIFEST_EXTENSIONS,
-                true
-            );
-
-            if (files) {
-                batches.emplace_back(std::move(*files));
-            } else {
-                PL_LOG_ERROR("Error searching '{}': {}", searchPath.string(), files.error());
-            }
+        if (!files) {
+            PL_LOG_ERROR("Error searching '{}': {}", searchPath.string(), files.error());
+            return {};
         }
 
-        return batches;
+        return *files;
     }
 
     // Step 1: Find all manifest files in parallel
@@ -1071,11 +1068,10 @@ private:
         std::vector<PackageInfo> packages;
 
         // Collect all paths
-        auto allPaths = CollectManifestPaths();
+        auto paths = CollectManifestPaths();
 
         // Create package entries
-        auto paths = allPaths | std::views::join;
-        packages.reserve(std::ranges::distance(paths));
+        packages.reserve(paths.size());
         for (auto&& path : paths) {
             auto& pkg = packages.emplace_back();
             pkg.SetId(static_cast<UniqueId>(packages.size() - 1));
@@ -1085,28 +1081,10 @@ private:
 
         return packages;
     }
-    
-    /*void ConvertReportToState(
-        const FlexiblePipeline<PackageInfo>::PipelineReport& report,
-        std::shared_ptr<InitializationState>& state) {
-        
-        // Map stage results to state based on stage names
-        for (size_t i = 0; i < report.stages.size(); ++i) {
-            const auto& stage = report.stages[i];
-            
-            // You would map based on actual stage names
-            // This is just an example
-            PL_LOG_DEBUG("Stage {}: {} in, {} out, {} succeeded, {} failed",
-                       i, stage.itemsIn, stage.itemsOut, 
-                       stage.succeeded, stage.failed);
-        }
-        
-        state->totalPackages = report.finalItems;
-        state->totalTime = report.totalTime;
-    }*/
 };
 
-Manager::Manager(Plugify& plugify) : _impl(std::make_unique<Impl>(plugify)) {}
+Manager::Manager(std::shared_ptr<Context> context)
+    : _impl(std::make_unique<Impl>(std::move(context))) {}
 
 Manager::~Manager() = default;
 

@@ -8,6 +8,7 @@ namespace plugify {
     public:
         ConsoleLogger(Severity minSeverity = Severity::Info)
             : _minSeverity(minSeverity) {}
+        ~ConsoleLogger() override = default;
 
         void Log(std::string_view message, Severity severity,
                  std::source_location loc = std::source_location::current()) override {

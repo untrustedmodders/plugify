@@ -213,24 +213,43 @@ struct glz::meta<plugify::ValueType> {
 
 namespace glz {
 #if PLUGIFY_CPP_VERSION > 202002L
-	template<>
-	struct from<JSON, std::chrono::milliseconds> {
-		template <auto Opts>
-		static void op(std::chrono::milliseconds& value, auto&&... args) {
-			int64_t val;
-			parse<JSON>::op<Opts>(val, args...);
-			value = std::chrono::milliseconds(val);
-		}
-	};
+    // std::chrono::duration
+    template <class R, class P>
+    struct from<JSON, std::chrono::duration<R, P>> {
+        template <auto Opts>
+        static void op(auto&& value, auto&&... args) {
+            R rep;
+            parse<JSON>::op<Opts>(rep, args...);
+            value = std::chrono::duration<R, P>(rep);
+        }
+    };
+    template <class R, class P>
+    struct to<JSON, std::chrono::duration<R, P>> {
+        template <auto Opts>
+        static void op(auto&& value, auto&&... args) noexcept {
+            serialize<JSON>::op<Opts>(value.count(), args...);
+        }
+    };
 
-	template<>
-	struct to<JSON, std::chrono::milliseconds> {
-		template <auto Opts>
-		static void op(const std::chrono::milliseconds& value, auto&&... args) noexcept {
-			serialize<JSON>::op<Opts>(value.count(), args...);
-		}
-	};
+    // std::chrono::time_point
+    template <class C, class D>
+    struct from<JSON, std::chrono::time_point<C, D>> {
+        template <auto Opts>
+        static void op(auto&& value, auto&&... args) {
+            D duration;
+            parse<JSON>::op<Opts>(duration, args...);
+            value = std::chrono::time_point<C, D>(duration);
+        }
+    };
+    template <class C, class D>
+    struct to<JSON, std::chrono::time_point<C, D>> {
+        template <auto Opts>
+        static void op(auto&& value, auto&&... args) noexcept {
+            serialize<JSON>::op<Opts>(value.time_since_epoch(), args...);
+        }
+    };
 
+    // std::filesystem::path
 	template<>
 	struct from<JSON, std::filesystem::path> {
 		template <auto Opts>
@@ -250,6 +269,7 @@ namespace glz {
 		}
 	};
 
+    // plg::version
 	template<>
 	struct from<JSON, plugify::Version> {
 		template <auto Opts>
@@ -268,6 +288,7 @@ namespace glz {
 		}
 	};
 
+    // plg::range
 	template<>
 	struct from<JSON, plugify::Constraint> {
 	    template <auto Opts>
@@ -286,24 +307,43 @@ namespace glz {
 	};*/
 #else
 	namespace detail {
-		template<>
-		struct from_json<std::chrono::milliseconds> {
-			template<auto Opts>
-			static void op(std::chrono::milliseconds& value, auto&&... args) {
-				int64_t val;
-				read<json>::op<Opts>(val, args...);
-				value = std::chrono::milliseconds(val);
-			}
-		};
+	    // std::chrono::duration
+	    template <class R, class P>
+        struct from_json<std::chrono::duration<R, P>> {
+	        template <auto Opts>
+            static void op(auto&& value, auto&&... args) {
+	            R rep;
+	            parse<JSON>::op<Opts>(rep, args...);
+	            value = std::chrono::duration<R, P>(rep);
+	        }
+	    };
+	    template <class R, class P>
+        struct from_json<std::chrono::duration<R, P>> {
+	        template <auto Opts>
+            static void op(auto&& value, auto&&... args) noexcept {
+	            serialize<JSON>::op<Opts>(value.count(), args...);
+	        }
+	    };
 
-		template<>
-		struct to_json<std::chrono::milliseconds> {
-			template<auto Opts>
-			static void op(const std::chrono::milliseconds& value, auto&&... args) noexcept {
-				write<json>::op<Opts>(value.count(), args...);
-			}
-		};
+	    // std::chrono::time_point
+	    template <class C, class D>
+        struct from_json<std::chrono::time_point<C, D>> {
+	        template <auto Opts>
+            static void op(auto&& value, auto&&... args) {
+	            D duration;
+	            parse<JSON>::op<Opts>(duration, args...);
+	            value = std::chrono::time_point<C, D>(duration);
+	        }
+	    };
+	    template <class C, class D>
+        struct from_json<std::chrono::time_point<C, D>> {
+	        template <auto Opts>
+            static void op(auto&& value, auto&&... args) noexcept {
+	            serialize<JSON>::op<Opts>(value.time_since_epoch(), args...);
+	        }
+	    };
 
+	    // std::filesystem::path
 		template<>
 		struct from_json<std::filesystem::path> {
 			template<auto Opts>

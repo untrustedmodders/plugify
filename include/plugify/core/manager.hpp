@@ -1,8 +1,5 @@
 #pragma once
 
-#include <deque>
-#include <ranges>
-
 #include "plugify/core/dependency_resolver.hpp"
 #include "plugify/core/manifest_parser.hpp"
 #include "plugify/core/progress_reporter.hpp"
@@ -12,11 +9,13 @@
 #include "service_locator.hpp"
 
 namespace plugify {
-    class PLUGIFY_API PluginManager {
+    class Module;
+    class Plugin;
+    class PLUGIFY_API Manager {
         struct Impl;
     public:
-        explicit PluginManager(ServiceLocator services);
-        ~PluginManager();
+        explicit Manager(ServiceLocator services);
+        ~Manager();
 
         // Plugin operations
         Result<std::shared_ptr<Plugin>> LoadPlugin(const std::filesystem::path& path);

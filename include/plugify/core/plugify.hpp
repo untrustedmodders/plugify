@@ -1,6 +1,7 @@
 #pragma once
 
 #include "plugify/core/config.hpp"
+#include "plugify/core/context.hpp"
 #include "plugify/core/manager.hpp"
 #include "plugify/core/provider.hpp"
 #include "plugify/core/config_provider.hpp"
@@ -19,16 +20,19 @@ namespace plugify {
         PlugifyBuilder& WithLogger(std::shared_ptr<ILogger> logger);
         PlugifyBuilder& WithFileSystem(std::shared_ptr<IFileSystem> fs);
         PlugifyBuilder& WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
-        PlugifyBuilder& WithConfigProvider(std::shared_ptr<IConfigProvider> provider);
+        //PlugifyBuilder& WithConfigProvider(std::shared_ptr<IConfigProvider> provider);
         PlugifyBuilder& WithManifestParser(std::shared_ptr<IManifestParser> parser);
         PlugifyBuilder& WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver);
         PlugifyBuilder& WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle);
         PlugifyBuilder& WithEventBus(std::shared_ptr<IEventBus> bus);
 
-        // Register custom services
-        template<typename Interface>
-        PlugifyBuilder& WithService(std::shared_ptr<Interface> service) {
-            _services.Register(std::move(service));
+        PlugifyBuilder& WithDefaults();
+
+        // Service registration with concepts for type safety
+        template<typename Interface, typename Implementation>
+            requires std::derived_from<Implementation, Interface>
+        PlugifyBuilder& WithService(std::shared_ptr<Implementation> service) {
+            _services.Register<Interface>(std::move(service));
             return *this;
         }
 
@@ -48,7 +52,7 @@ namespace plugify {
         Result<void> Initialize();
         void Terminate();
         [[nodiscard]] bool IsInitialized() const noexcept;
-        void Update();
+        void Update(double deltaTime = 0.016);
 
         // Async operations with coroutines (C++20)
         std::future<Result<void>> InitializeAsync();
@@ -57,18 +61,24 @@ namespace plugify {
         // Component access
         [[nodiscard]] std::shared_ptr<Manager> GetManager() const;
         [[nodiscard]] std::shared_ptr<Provider> GetProvider() const;
-        [[nodiscard]] const Config& GetConfig() const;
+        [[nodiscard]] std::shared_ptr<Context> GetContext() const;
         [[nodiscard]] Version GetVersion() const;
 
-        // Service access
-        [[nodiscard]] std::shared_ptr<ServiceLocator> GetServices() const;
+        // Metrics and profiling
+        /*struct Metrics {
+            size_t loadedPackages;
+            size_t memoryUsageMB;
+            double averageLoadTimeMs;
+            double averageUpdateTimeMs;
+        };
+        [[nodiscard]] Metrics GetMetrics() const;*/
 
         // Factory method
         [[nodiscard]] static PlugifyBuilder CreateBuilder();
 
     private:
         friend class PlugifyBuilder;
-        explicit Plugify(Config config, ServiceLocator services);
+        explicit Plugify(std::shared_ptr<Context> context);
 
     private:
         std::unique_ptr<Impl> _impl;

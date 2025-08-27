@@ -5,6 +5,182 @@
 #include "core/glaze_metadata.hpp"
 
 namespace plugify {
+#if 0
+    // Alternative: strongly-typed configuration using Glaze's compile-time reflection
+    template<typename ConfigType>
+    class TypedGlazeConfigProvider : public IConfigProvider {
+    public:
+        TypedGlazeConfigProvider() = default;
+        ~TypedGlazeConfigProvider() override = default;
+
+        Result<std::any> GetValue(std::string_view key) override {
+            std::shared_lock lock(_mutex);
+
+            // For typed config, we need to use Glaze's JSON pointer syntax
+            std::string jsonPointer = std::format("/{}", jsonPointer);
+            std::replace(jsonPointer.begin(), jsonPointer.end(), '.', '/');
+
+            try {
+                glz::json_t json;
+                auto buffer = glz::write_json(_config);
+
+                if (buffer) {
+                    auto error = glz::read_jsonc(json, buffer.value());
+                    if (error) {
+                        return plg::unexpected(
+                            std::format("Configuration key '{}' could not be read: {}", key, glz::format_error(error, buffer))
+                        );
+                    }
+
+                    // Navigate using JSON pointer
+                    auto* value = glz::get_if<glz::json_t>(json, jsonPointer);
+                    if (!value) {
+                        return plg::unexpected(
+                            std::format("Configuration key '{}' not found", key)
+                        );
+                    }
+
+                    return ConvertGlazeValue(*value);
+                }
+
+                return plg::unexpected(
+                    "Failed to serialize configuration"
+                );
+            } catch (const std::exception& e) {
+                return plg::unexpected(
+                    std::format("Failed to get config value: {}", e.what())
+                );
+            }
+        }
+
+        Result<void> SetValue(std::string_view key, std::any value) override {
+            std::unique_lock lock(_mutex);
+
+            // For strongly typed config, this is more complex
+            // You'd need to use runtime reflection or limit to specific paths
+            return plg::unexpected(
+                "Setting individual values not supported for typed configuration. "
+                "Use SetConfig() to update the entire configuration object."
+            );
+        }
+
+        Result<void> LoadFromFile(const std::filesystem::path& path) override {
+            std::unique_lock lock(_mutex);
+
+            try {
+                auto file_result = glz::read_file_jsonc<ConfigType>(path.string());
+
+                if (file_result) {
+                    _config = std::move(file_result.value());
+                    _configPath = path;
+                    _isDirty = false;
+                    return {};
+                }
+
+                return plg::unexpected(
+                    std::format("Failed to load configuration: {}", file_result.error())
+                );
+            } catch (const std::exception& e) {
+                return plg::unexpected(
+                    std::format("Failed to load configuration: {}", e.what())
+                );
+            }
+        }
+
+        Result<void> SaveToFile(const std::filesystem::path& path) override {
+            std::shared_lock lock(_mutex);
+
+            try {
+                // Create directory if needed
+                auto parent = path.parent_path();
+                if (!parent.empty() && !std::filesystem::exists(parent)) {
+                    std::filesystem::create_directories(parent);
+                }
+
+                auto result = glz::write_file_json(_config, path.string(), std::string{});
+
+                if (result) {
+                    return plg::unexpected(
+                        "Failed to save configuration file"
+                    );
+                }
+
+                _isDirty = false;
+                return {};
+            } catch (const std::exception& e) {
+                return plg::unexpected(
+                    std::format("Failed to save configuration: {}", e.what())
+                );
+            }
+        }
+
+        // Direct access to typed configuration
+        const ConfigType& GetConfig() const {
+            std::shared_lock lock(_mutex);
+            return _config;
+        }
+
+        void SetConfig(ConfigType config) {
+            std::unique_lock lock(_mutex);
+            _config = std::move(config);
+            _isDirty = true;
+        }
+
+        bool IsDirty() const override {
+            std::shared_lock lock(_mutex);
+            return _isDirty;
+        }
+
+    private:
+        mutable std::shared_mutex _mutex;
+        ConfigType _config{};
+        std::filesystem::path _configPath;
+        mutable bool _isDirty = false;
+
+        static std::any ConvertGlazeValue(const glz::json_t& value) {
+            return std::visit([](const auto& val) -> std::any {
+                using T = std::decay_t<decltype(val)>;
+
+                if constexpr (std::is_same_v<T, glz::json_t::null_t>) {
+                    return std::any{};
+                }
+                else if constexpr (std::is_same_v<T, bool>) {
+                    return val;
+                }
+                else if constexpr (std::is_same_v<T, glz::json_t::val_t>) {
+                    return std::visit([](const auto& num) -> std::any {
+                        using NumType = std::decay_t<decltype(num)>;
+                        if constexpr (std::is_integral_v<NumType>) {
+                            return static_cast<int64_t>(num);
+                        } else {
+                            return static_cast<double>(num);
+                        }
+                    }, val);
+                }
+                else if constexpr (std::is_same_v<T, std::string>) {
+                    return val;
+                }
+                else if constexpr (std::is_same_v<T, glz::json_t::array_t>) {
+                    std::vector<std::any> vec;
+                    for (const auto& item : val) {
+                        vec.push_back(ConvertGlazeValue(item));
+                    }
+                    return vec;
+                }
+                else if constexpr (std::is_same_v<T, glz::json_t::object_t>) {
+                    std::unordered_map<std::string, std::any> map;
+                    for (const auto& [k, v] : val) {
+                        map[k] = ConvertGlazeValue(v);
+                    }
+                    return map;
+                }
+                else {
+                    return std::any{};
+                }
+            }, value.data);
+        }
+    };
+
     // Configuration value types that we support
     using ConfigValue = std::variant<
         std::monostate,  // null
@@ -142,6 +318,7 @@ namespace plugify {
     class GlazeConfigProvider : public IConfigProvider {
     public:
         GlazeConfigProvider() = default;
+        ~GlazeConfigProvider() = default;
 
         Result<std::any> GetValue(std::string_view key) override {
             std::shared_lock lock(_mutex);
@@ -156,10 +333,9 @@ namespace plugify {
                 for (size_t i = 0; i < keys.size(); ++i) {
                     auto it = currentMap->find(keys[i]);
                     if (it == currentMap->end()) {
-                        return std::unexpected(Error{
-                            ErrorCode::InvalidPath,
+                        return plg::unexpected(
                             std::format("Configuration key '{}' not found", key)
-                        });
+                        );
                     }
 
                     current = &it->second;
@@ -168,21 +344,19 @@ namespace plugify {
                     if (i < keys.size() - 1) {
                         currentMap = std::any_cast<std::unordered_map<std::string, std::any>>(current);
                         if (!currentMap) {
-                            return std::unexpected(Error{
-                                ErrorCode::InvalidPath,
+                            return plg::unexpected(
                                 std::format("Configuration path '{}' is not an object",
                                            JoinKeys(keys, i))
-                            });
+                            );
                         }
                     }
                 }
 
                 return *current;
             } catch (const std::exception& e) {
-                return std::unexpected(Error{
-                    ErrorCode::SystemError,
+                return plg::unexpected(
                     std::format("Failed to get config value: {}", e.what())
-                });
+                );
             }
         }
 
@@ -192,10 +366,9 @@ namespace plugify {
             try {
                 auto keys = SplitKey(key);
                 if (keys.empty()) {
-                    return std::unexpected(Error{
-                        ErrorCode::InvalidPath,
+                    return plg::unexpected(
                         "Empty configuration key"
-                    });
+                    );
                 }
 
                 // Navigate to the parent object, creating path if needed
@@ -213,18 +386,16 @@ namespace plugify {
                     try {
                         current = std::any_cast<std::unordered_map<std::string, std::any>>(&next);
                         if (!current) {
-                            return std::unexpected(Error{
-                                ErrorCode::InvalidPath,
+                            return plg::unexpected(
                                 std::format("Configuration path '{}' is not an object",
                                            JoinKeys(keys, i))
-                            });
+                            );
                         }
                     } catch (const std::bad_any_cast&) {
-                        return std::unexpected(Error{
-                            ErrorCode::InvalidPath,
+                        return plg::unexpected(
                             std::format("Configuration path '{}' is not an object",
                                        JoinKeys(keys, i))
-                        });
+                        );
                     }
                 }
 
@@ -234,10 +405,9 @@ namespace plugify {
 
                 return {};
             } catch (const std::exception& e) {
-                return std::unexpected(Error{
-                    ErrorCode::SystemError,
+                return plg::unexpected(
                     std::format("Failed to set config value: {}", e.what())
-                });
+                );
             }
         }
 
@@ -246,19 +416,17 @@ namespace plugify {
 
             try {
                 if (!std::filesystem::exists(path)) {
-                    return std::unexpected(Error{
-                        ErrorCode::InvalidPath,
+                    return plg::unexpected(
                         std::format("Configuration file '{}' not found", path.string())
-                    });
+                    );
                 }
 
                 // Read file contents
                 std::ifstream file(path, std::ios::binary | std::ios::ate);
                 if (!file) {
-                    return std::unexpected(Error{
-                        ErrorCode::SystemError,
+                    return plg::unexpected(
                         std::format("Failed to open configuration file '{}'", path.string())
-                    });
+                    );
                 }
 
                 auto size = file.tellg();
@@ -266,10 +434,9 @@ namespace plugify {
 
                 std::string buffer(size, '\0');
                 if (!file.read(buffer.data(), size)) {
-                    return std::unexpected(Error{
-                        ErrorCode::SystemError,
+                    return plg::unexpected(
                         std::format("Failed to read configuration file '{}'", path.string())
-                    });
+                    );
                 }
 
                 // Parse JSON with Glaze
@@ -277,11 +444,10 @@ namespace plugify {
                 auto parse_result = glz::read_jsonc(json, buffer);
 
                 if (parse_result) {
-                    return std::unexpected(Error{
-                        ErrorCode::SystemError,
+                    return plg::unexpected(
                         std::format("Failed to parse JSON: {}",
                                    glz::format_error(parse_result, buffer))
-                    });
+                    );
                 }
 
                 // Convert to our internal format
@@ -293,10 +459,9 @@ namespace plugify {
 
                 return {};
             } catch (const std::exception& e) {
-                return std::unexpected(Error{
-                    ErrorCode::SystemError,
+                return plg::unexpected(
                     std::format("Failed to load configuration: {}", e.what())
-                });
+                );
             }
         }
 
@@ -320,10 +485,9 @@ namespace plugify {
                 auto write_result = glz::write_json(json, buffer);
 
                 if (write_result) {
-                    return std::unexpected(Error{
-                        ErrorCode::SystemError,
+                    return plg::unexpected(
                         "Failed to serialize configuration to JSON"
-                    });
+                    );
                 }
 
                 // Pretty print the JSON
@@ -338,29 +502,26 @@ namespace plugify {
                 // Write to file
                 std::ofstream file(path, std::ios::binary);
                 if (!file) {
-                    return std::unexpected(Error{
-                        ErrorCode::SystemError,
+                    return plg::unexpected(
                         std::format("Failed to create configuration file '{}'", path.string())
-                    });
+                    );
                 }
 
                 file.write(pretty_json.data(), pretty_json.size());
 
                 if (!file) {
-                    return std::unexpected(Error{
-                        ErrorCode::SystemError,
+                    return plg::unexpected(
                         std::format("Failed to write configuration file '{}'", path.string())
-                    });
+                    );
                 }
 
                 _isDirty = false;
 
                 return {};
             } catch (const std::exception& e) {
-                return std::unexpected(Error{
-                    ErrorCode::SystemError,
+                return plg::unexpected(
                     std::format("Failed to save configuration: {}", e.what())
-                });
+                );
             }
         }
 
@@ -400,7 +561,7 @@ namespace plugify {
         Result<T> GetTyped(std::string_view key) {
             auto result = GetValue(key);
             if (!result) {
-                return std::unexpected(result.error());
+                return plg::unexpected(result.error());
             }
 
             try {
@@ -418,15 +579,13 @@ namespace plugify {
                     }
                 }
 
-                return std::unexpected(Error{
-                    ErrorCode::SystemError,
+                return plg::unexpected(
                     std::format("Configuration value '{}' has incorrect type", key)
-                });
+                );
             } catch (const std::exception& e) {
-                return std::unexpected(Error{
-                    ErrorCode::SystemError,
+                return plg::unexpected(
                     std::format("Failed to convert configuration value: {}", e.what())
-                });
+                );
             }
         }
 
@@ -519,200 +678,5 @@ namespace plugify {
             }
         }
     };
-}
-
-#if 0
-// Alternative: strongly-typed configuration using Glaze's compile-time reflection
-template<typename ConfigType>
-class TypedGlazeConfigProvider : public IConfigProvider {
-public:
-    TypedGlazeConfigProvider() = default;
-
-    Result<std::any> GetValue(std::string_view key) override {
-        std::shared_lock lock(_mutex);
-
-        // For typed config, we need to use Glaze's JSON pointer syntax
-        std::string jsonPointer = "/" + ReplaceAll(std::string(key), ".", "/");
-
-        try {
-            glz::json_t json;
-            auto buffer = glz::write_json(_config);
-
-            if (buffer) {
-                auto error = glz::read_jsonc(json, buffer.value());
-                if (error) {
-                    return  std::unexpected(Error{
-                        ErrorCode::InvalidPath,
-                        std::format("Configuration key '{}' could not be read: {}", key, glz::format_error(error, buffer))
-                    });
-                }
-
-                // Navigate using JSON pointer
-                auto* value = glz::get_if(json, jsonPointer);
-                if (!value) {
-                    return std::unexpected(Error{
-                        ErrorCode::InvalidPath,
-                        std::format("Configuration key '{}' not found", key)
-                    });
-                }
-
-                return ConvertGlazeValue(*value);
-            }
-
-            return std::unexpected(Error{
-                ErrorCode::SystemError,
-                "Failed to serialize configuration"
-            });
-        } catch (const std::exception& e) {
-            return std::unexpected(Error{
-                ErrorCode::SystemError,
-                std::format("Failed to get config value: {}", e.what())
-            });
-        }
-    }
-
-    Result<void> SetValue(std::string_view key, std::any value) override {
-        std::unique_lock lock(_mutex);
-
-        // For strongly typed config, this is more complex
-        // You'd need to use runtime reflection or limit to specific paths
-        return std::unexpected(Error{
-            ErrorCode::SystemError,
-            "Setting individual values not supported for typed configuration. "
-            "Use SetConfig() to update the entire configuration object."
-        });
-    }
-
-    Result<void> LoadFromFile(const std::filesystem::path& path) override {
-        std::unique_lock lock(_mutex);
-
-        try {
-            auto file_result = glz::read_file_json<ConfigType>(path.string());
-
-            if (file_result) {
-                _config = std::move(file_result.value());
-                _configPath = path;
-                _isDirty = false;
-                return {};
-            }
-
-            return std::unexpected(Error{
-                ErrorCode::SystemError,
-                std::format("Failed to load configuration: {}",
-                           file_result.error())
-            });
-        } catch (const std::exception& e) {
-            return std::unexpected(Error{
-                ErrorCode::SystemError,
-                std::format("Failed to load configuration: {}", e.what())
-            });
-        }
-    }
-
-    Result<void> SaveToFile(const std::filesystem::path& path) override {
-        std::shared_lock lock(_mutex);
-
-        try {
-            // Create directory if needed
-            auto parent = path.parent_path();
-            if (!parent.empty() && !std::filesystem::exists(parent)) {
-                std::filesystem::create_directories(parent);
-            }
-
-            auto result = glz::write_file_json(_config, path.string(), std::string{});
-
-            if (result) {
-                return std::unexpected(Error{
-                    ErrorCode::SystemError,
-                    "Failed to save configuration file"
-                });
-            }
-
-            _isDirty = false;
-            return {};
-        } catch (const std::exception& e) {
-            return std::unexpected(Error{
-                ErrorCode::SystemError,
-                std::format("Failed to save configuration: {}", e.what())
-            });
-        }
-    }
-
-    // Direct access to typed configuration
-    const ConfigType& GetConfig() const {
-        std::shared_lock lock(_mutex);
-        return _config;
-    }
-
-    void SetConfig(ConfigType config) {
-        std::unique_lock lock(_mutex);
-        _config = std::move(config);
-        _isDirty = true;
-    }
-
-    bool IsDirty() const override {
-        std::shared_lock lock(_mutex);
-        return _isDirty;
-    }
-
-private:
-    mutable std::shared_mutex _mutex;
-    ConfigType _config{};
-    std::filesystem::path _configPath;
-    mutable bool _isDirty = false;
-
-    static std::string ReplaceAll(std::string str,
-                                  const std::string& from,
-                                  const std::string& to) {
-        size_t pos = 0;
-        while ((pos = str.find(from, pos)) != std::string::npos) {
-            str.replace(pos, from.length(), to);
-            pos += to.length();
-        }
-        return str;
-    }
-
-    static std::any ConvertGlazeValue(const glz::json_t& value) {
-        return std::visit([](const auto& val) -> std::any {
-            using T = std::decay_t<decltype(val)>;
-
-            if constexpr (std::is_same_v<T, glz::json_t::null_t>) {
-                return std::any{};
-            }
-            else if constexpr (std::is_same_v<T, bool>) {
-                return val;
-            }
-            else if constexpr (std::is_same_v<T, glz::json_t::val_t>) {
-                return std::visit([](const auto& num) -> std::any {
-                    using NumType = std::decay_t<decltype(num)>;
-                    if constexpr (std::is_integral_v<NumType>) {
-                        return static_cast<int64_t>(num);
-                    } else {
-                        return static_cast<double>(num);
-                    }
-                }, val);
-            }
-            else if constexpr (std::is_same_v<T, std::string>) {
-                return val;
-            }
-            else if constexpr (std::is_same_v<T, glz::json_t::array_t>) {
-                std::vector<std::any> vec;
-                for (const auto& item : val) {
-                    vec.push_back(ConvertGlazeValue(item));
-                }
-                return vec;
-            }
-            else if constexpr (std::is_same_v<T, glz::json_t::object_t>) {
-                std::unordered_map<std::string, std::any> map;
-                for (const auto& [k, v] : val) {
-                    map[k] = ConvertGlazeValue(v);
-                }
-                return map;
-            }
-            else {
-                return std::any{};
-            }
-        }, value.data);
-    }
-};
 #endif
+}

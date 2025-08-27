@@ -45,6 +45,9 @@ namespace plugify {
 	template<typename T>
 	using Result = plg::expected<T, std::string>;
 
+    /**
+     *
+     */
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
     using Duration = std::chrono::milliseconds;

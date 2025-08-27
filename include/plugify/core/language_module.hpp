@@ -62,9 +62,9 @@ namespace plugify {
 
 		/**
 		 * @brief Handle actions to be performed on each frame.
-		 * @param dt The time delta since the last update.
+		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnUpdate(DateTime dt) = 0;
+		virtual void OnUpdate(double deltaTime) = 0;
 
         /**
 	     * @brief
@@ -87,9 +87,9 @@ namespace plugify {
 		/**
 		 * @brief Handle plugin update event.
 		 * @param plugin Weak pointer to the started plugin.
-		 * @param dt The time delta since the last update.
+		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnPluginUpdate(std::weak_ptr<Plugin> plugin, DateTime dt) = 0;
+		virtual void OnPluginUpdate(std::weak_ptr<Plugin> plugin, double deltaTime) = 0;
 
 		/**
 		 * @brief Handle plugin end event.

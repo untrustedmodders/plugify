@@ -45,9 +45,9 @@ namespace plugify {
     using ManifestPtr = std::shared_ptr<PackageManifest>;
 
     struct BasePaths {
-        fs::path base;
-        fs::path configs;
-        fs::path data;
-        fs::path logs;
+        std::filesystem::path base;
+        std::filesystem::path configs;
+        std::filesystem::path data;
+        std::filesystem::path logs;
     };
 }

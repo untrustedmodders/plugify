@@ -1,6 +1,22 @@
 #pragma once
 
+#include "plugify/core/logger.hpp"
 #include "plugify/core/dependency_resolver.hpp"
+
+extern "C" {
+#include <solv/evr.h>
+#include <solv/policy.h>
+#include <solv/pool.h>
+#include <solv/poolarch.h>
+#include <solv/queue.h>
+#include <solv/repo.h>
+#include <solv/repo_solv.h>
+#include <solv/selection.h>
+#include <solv/solvable.h>
+#include <solv/solver.h>
+#include <solv/solverdebug.h>
+#include <solv/transaction.h>
+}
 
 namespace plugify {
     /**
@@ -11,10 +27,40 @@ namespace plugify {
      * constraints, and conflict detection.
      */
     class LibsolvDependencyResolver : public IDependencyResolver {
-        struct Impl;
+        struct PoolDeleter {
+            void operator()(Pool* p) const {
+                if (p) {
+                    pool_free(p);
+                }
+            }
+        };
+
+        struct SolverDeleter {
+            void operator()(Solver* s) const {
+                if (s) {
+                    solver_free(s);
+                }
+            }
+        };
+
+        struct TransactionDeleter {
+            void operator()(Transaction* t) const {
+                if (t) {
+                    transaction_free(t);
+                }
+            }
+        };
+
+        struct QueueDeleter {
+            void operator()(Queue* q) const {
+                if (q) {
+                    queue_free(q);
+                }
+            }
+        };
+
     public:
-        LibsolvDependencyResolver();
-        ~LibsolvDependencyResolver() override;
+        ~LibsolvDependencyResolver() override = default;
 
         /**
          * Resolves dependencies for all packages, producing a report with resolutions,
@@ -23,7 +69,33 @@ namespace plugify {
          */
         DependencyResolution Resolve(const PackageCollection& packages) override;
 
+        void SetLogger(std::shared_ptr<ILogger> logger);
+
     private:
-        std::unique_ptr<Impl> _impl;
+        // Setup functions
+        void InitializePool();
+        void AddPackagesToPool(const PackageCollection& packages);
+        Id AddSolvable(const ManifestPtr& manifest);
+        void SetupDependencies(Id solvableId, const ManifestPtr& manifest);
+        void SetupConflicts(Id solvableId, const ManifestPtr& manifest);
+        void SetupObsoletes(Id solvableId, const ManifestPtr& manifest);
+
+        // Constraint conversion
+        Id
+        MakeDepConstraint(const std::string& name, const std::optional<Constraint>& constraints);
+        int ConvertComparison(plg::detail::range_operator op);
+
+        // Resolution
+        DependencyResolution RunSolver();
+        void ProcessSolverProblems(Solver* solver, DependencyResolution& resolution);
+        std::vector<std::string> ExtractSolutions(Solver* solver, Id problemId);
+        void ComputeInstallationOrder(Transaction* trans, DependencyResolution& resolution);
+
+    private:
+        std::unique_ptr<Pool, PoolDeleter> _pool;
+        Repo* _repo = nullptr;
+        std::unordered_map<UniqueId, Id> _packageToSolvableId;
+        std::unordered_map<Id, UniqueId> _solvableIdToPackage;
+        std::shared_ptr<ILogger> _logger;
     };
 } // namespace plugify

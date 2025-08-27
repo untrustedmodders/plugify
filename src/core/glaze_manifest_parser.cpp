@@ -1,10 +1,12 @@
 #include "core/glaze_manifest_parser.hpp"
-
 #include "core/glaze_metadata.hpp"
 
 using namespace plugify;
 
-Result<ManifestPtr> ParsePlugin(const std::string& content, const std::filesystem::path& path) {
+Result<ManifestPtr> ParsePlugin(
+    const std::string& content,
+    const std::filesystem::path& path
+) {
     auto parsed = glz::read_jsonc<std::shared_ptr<PluginManifest>>(content);
     if (!parsed) {
         return plg::unexpected(glz::format_error(parsed.error(), content));
@@ -15,7 +17,10 @@ Result<ManifestPtr> ParsePlugin(const std::string& content, const std::filesyste
     return std::static_pointer_cast<PackageManifest>(std::move(manifest));
 }
 
-Result<ManifestPtr> ParseModule(const std::string& content, const std::filesystem::path& path) {
+Result<ManifestPtr> ParseModule(
+    const std::string& content,
+    const std::filesystem::path& path
+) {
     auto parsed = glz::read_jsonc<std::shared_ptr<ModuleManifest>>(content);
     if (!parsed) {
         return plg::unexpected(glz::format_error(parsed.error(), content));
@@ -26,11 +31,13 @@ Result<ManifestPtr> ParseModule(const std::string& content, const std::filesyste
     return std::static_pointer_cast<PackageManifest>(std::move(manifest));
 }
 
-Result<ManifestPtr>
-GlazeManifestParser::Parse(const std::string& content, const std::filesystem::path& path) {
+Result<ManifestPtr> GlazeManifestParser::Parse(
+    const std::string& content,
+    const std::filesystem::path& path
+) {
     static std::unordered_map<std::string, PackageType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
-        {".pplugin", PackageType::Plugin},
-        {".pmodule", PackageType::Module}
+        { ".pplugin", PackageType::Plugin },
+        { ".pmodule", PackageType::Module }
     };
 
     auto ext = path.extension().string();

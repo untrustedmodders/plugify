@@ -2,83 +2,6 @@
 #include "core/dependency_impl.hpp"
 #include "core/libsolv_dependency_resolver.hpp"
 
-extern "C" {
-#include <solv/evr.h>
-#include <solv/policy.h>
-#include <solv/pool.h>
-#include <solv/poolarch.h>
-#include <solv/queue.h>
-#include <solv/repo.h>
-#include <solv/repo_solv.h>
-#include <solv/selection.h>
-#include <solv/solvable.h>
-#include <solv/solver.h>
-#include <solv/solverdebug.h>
-#include <solv/transaction.h>
-}
-
-using namespace plugify;
-
-struct LibsolvDependencyResolver::Impl {
-    struct PoolDeleter {
-        void operator()(Pool* p) const {
-            if (p) {
-                pool_free(p);
-            }
-        }
-    };
-
-    struct SolverDeleter {
-        void operator()(Solver* s) const {
-            if (s) {
-                solver_free(s);
-            }
-        }
-    };
-
-    struct TransactionDeleter {
-        void operator()(Transaction* t) const {
-            if (t) {
-                transaction_free(t);
-            }
-        }
-    };
-
-    struct QueueDeleter {
-        void operator()(Queue* q) const {
-            if (q) {
-                queue_free(q);
-            }
-        }
-    };
-
-    DependencyResolution Resolve(const PackageCollection& packages);
-
-    std::unique_ptr<Pool, PoolDeleter> pool;
-    Repo* repo = nullptr;
-    std::unordered_map<UniqueId, Id> packageToSolvableId;
-    std::unordered_map<Id, UniqueId> solvableIdToPackage;
-
-    // Setup functions
-    void InitializePool();
-    void AddPackagesToPool(const PackageCollection& packages);
-    Id AddSolvable(const ManifestPtr& manifest);
-    void SetupDependencies(Id solvableId, const ManifestPtr& manifest);
-    void SetupConflicts(Id solvableId, const ManifestPtr& manifest);
-    void SetupObsoletes(Id solvableId, const ManifestPtr& manifest);
-
-    // Constraint conversion
-    Id
-    MakeDepConstraint(const std::string& name, const std::optional<Constraint>& constraints);
-    int ConvertComparison(plg::detail::range_operator op);
-
-    // Resolution
-    DependencyResolution RunSolver();
-    void ProcessSolverProblems(Solver* solver, DependencyResolution& resolution);
-    std::vector<std::string> ExtractSolutions(Solver* solver, Id problemId);
-    void ComputeInstallationOrder(Transaction* trans, DependencyResolution& resolution);
-};
-
 using namespace plugify;
 
 // ============================================================================
@@ -86,7 +9,7 @@ using namespace plugify;
 // ============================================================================
 
 DependencyResolution
-LibsolvDependencyResolver::Impl::Resolve(const PackageCollection& packages) {
+LibsolvDependencyResolver::Resolve(const PackageCollection& packages) {
     // Step 1: Initialize libsolv pool
     InitializePool();
 
@@ -97,41 +20,52 @@ LibsolvDependencyResolver::Impl::Resolve(const PackageCollection& packages) {
     return RunSolver();
 }
 
+void LibsolvDependencyResolver::SetLogger(std::shared_ptr<ILogger> logger) {
+    _logger = std::move(logger);
+}
+
 // ============================================================================
 // Pool Setup
 // ============================================================================
 
-static void debug_callback([[maybe_unused]] Pool* pool, [[maybe_unused]] void* data, int type, const char* str) {
-    if (type & (SOLV_FATAL | SOLV_ERROR))
-        std::println("libsolv: {}", str);
+static void debug_callback([[maybe_unused]] Pool* pool, void* data, int type, const char* str) {
+    auto* logger = reinterpret_cast<ILogger*>(data);
+    if (logger ==  nullptr)
+        return;
+
+    std::string title = std::format("libsolv: {}", str);
+    if (type & SOLV_FATAL)
+        logger->Log(title, Severity::Fatal);
+    else if (type & SOLV_ERROR)
+        logger->Log(title, Severity::Error);
     else if (type & SOLV_WARN)
-        std::println("libsolv: {}", str);
+        logger->Log(title, Severity::Warning);
     else
-        std::println("libsolv: {}", str);
+        logger->Log(title, Severity::Info);
 }
 
 void
-LibsolvDependencyResolver::Impl::InitializePool() {
-    pool.reset(pool_create());
+LibsolvDependencyResolver::InitializePool() {
+    _pool.reset(pool_create());
 
-    pool_setdebugcallback(pool.get(), debug_callback, this);
+    pool_setdebugcallback(_pool.get(), debug_callback, _logger.get());
 
     constexpr int level = PLUGIFY_IS_DEBUG ? 3 : 1;
-    pool_setdebuglevel(pool.get(), level);
+    pool_setdebuglevel(_pool.get(), level);
 
     // Create a repository for our packages
-    repo = repo_create(pool.get(), "installed");
+    _repo = repo_create(_pool.get(), "installed");
 }
 
 void
-LibsolvDependencyResolver::Impl::AddPackagesToPool(const PackageCollection& packages) {
-    packageToSolvableId.reserve(packages.size());
-    solvableIdToPackage.reserve(packages.size());
+LibsolvDependencyResolver::AddPackagesToPool(const PackageCollection& packages) {
+    _packageToSolvableId.reserve(packages.size());
+    _solvableIdToPackage.reserve(packages.size());
 
     for (const auto& [id, manifest] : packages) {
         Id solvableId = AddSolvable(manifest);
-        packageToSolvableId[id] = solvableId;
-        solvableIdToPackage[solvableId] = id;
+        _packageToSolvableId[id] = solvableId;
+        _solvableIdToPackage[solvableId] = id;
 
         // Setup dependencies and conflicts
         SetupDependencies(solvableId, manifest);
@@ -140,28 +74,28 @@ LibsolvDependencyResolver::Impl::AddPackagesToPool(const PackageCollection& pack
     }
 
     // Create provides for all packages (self-provides)
-    pool_createwhatprovides(pool.get());
+    pool_createwhatprovides(_pool.get());
 }
 
 Id
-LibsolvDependencyResolver::Impl::AddSolvable(const ManifestPtr& manifest) {
-    Id solvableId = repo_add_solvable(repo);
-    Solvable* s = pool_id2solvable(pool.get(), solvableId);
+LibsolvDependencyResolver::AddSolvable(const ManifestPtr& manifest) {
+    Id solvableId = repo_add_solvable(_repo);
+    Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
     // Set package name
-    s->name = pool_str2id(pool.get(), manifest->name.c_str(), 1);
+    s->name = pool_str2id(_pool.get(), manifest->name.c_str(), 1);
 
     // Set version
     std::string versionStr = manifest->version.to_string();
-    s->evr = pool_str2id(pool.get(), versionStr.c_str(), 1);
+    s->evr = pool_str2id(_pool.get(), versionStr.c_str(), 1);
 
     // Set vendor
     if (manifest->author) {
-        s->vendor = pool_str2id(pool.get(), manifest->author->c_str(), 1);
+        s->vendor = pool_str2id(_pool.get(), manifest->author->c_str(), 1);
     }
 
     // Add self-provides
-    Id provideDep = pool_rel2id(pool.get(), s->name, s->evr, REL_EQ, 1);
+    Id provideDep = pool_rel2id(_pool.get(), s->name, s->evr, REL_EQ, 1);
     solvable_add_deparray(s, SOLVABLE_PROVIDES, provideDep, 0);
 
     return solvableId;
@@ -172,12 +106,12 @@ LibsolvDependencyResolver::Impl::AddSolvable(const ManifestPtr& manifest) {
 // ============================================================================
 
 void
-LibsolvDependencyResolver::Impl::SetupDependencies(Id solvableId, const ManifestPtr& manifest) {
+LibsolvDependencyResolver::SetupDependencies(Id solvableId, const ManifestPtr& manifest) {
     if (!manifest->dependencies || manifest->dependencies->empty()) {
         return;
     }
 
-    Solvable* s = pool_id2solvable(pool.get(), solvableId);
+    Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
     for (const auto& dependency : *manifest->dependencies) {
         const auto& [depName, constraints, optional] = *dependency._impl;
@@ -195,12 +129,12 @@ LibsolvDependencyResolver::Impl::SetupDependencies(Id solvableId, const Manifest
 }
 
 void
-LibsolvDependencyResolver::Impl::SetupConflicts(Id solvableId, const ManifestPtr& manifest) {
+LibsolvDependencyResolver::SetupConflicts(Id solvableId, const ManifestPtr& manifest) {
     if (!manifest->conflicts || manifest->conflicts->empty()) {
         return;
     }
 
-    Solvable* s = pool_id2solvable(pool.get(), solvableId);
+    Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
     for (const auto& conflict : *manifest->conflicts) {
         const auto& [conflictName, constraints, reason] = *conflict._impl;
@@ -213,12 +147,12 @@ LibsolvDependencyResolver::Impl::SetupConflicts(Id solvableId, const ManifestPtr
 }
 
 void
-LibsolvDependencyResolver::Impl::SetupObsoletes(Id solvableId, const ManifestPtr& manifest) {
+LibsolvDependencyResolver::SetupObsoletes(Id solvableId, const ManifestPtr& manifest) {
     if (!manifest->obsoletes || manifest->obsoletes->empty()) {
         return;
     }
 
-    Solvable* s = pool_id2solvable(pool.get(), solvableId);
+    Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
     for (const auto& obsolete : *manifest->obsoletes) {
         const auto& [obsoleteName, constraints, reason] = *obsolete._impl;
@@ -231,11 +165,11 @@ LibsolvDependencyResolver::Impl::SetupObsoletes(Id solvableId, const ManifestPtr
 }
 
 Id
-LibsolvDependencyResolver::Impl::MakeDepConstraint(
+LibsolvDependencyResolver::MakeDepConstraint(
     const std::string& name,
     const std::optional<Constraint>& constraints
 ) {
-    Id nameId = pool_str2id(pool.get(), name.c_str(), 1);
+    Id nameId = pool_str2id(_pool.get(), name.c_str(), 1);
 
     if (!constraints || constraints->empty()) {
         return nameId;  // No version constraint
@@ -250,16 +184,16 @@ LibsolvDependencyResolver::Impl::MakeDepConstraint(
 
         for (const auto& comparator : constraint) {
             std::string versionStr = comparator.get_version().to_string();
-            Id evr = pool_str2id(pool.get(), versionStr.c_str(), 1);
+            Id evr = pool_str2id(_pool.get(), versionStr.c_str(), 1);
 
             int flags = ConvertComparison(comparator.get_operator());
-            Id dep = pool_rel2id(pool.get(), nameId, evr, flags, 1);
+            Id dep = pool_rel2id(_pool.get(), nameId, evr, flags, 1);
 
             if (innerDep == 0) {
                 innerDep = dep;
             } else {
                 // Combine with AND for multiple constraints
-                innerDep = pool_rel2id(pool.get(), innerDep, dep, REL_AND, 1);
+                innerDep = pool_rel2id(_pool.get(), innerDep, dep, REL_AND, 1);
             }
         }
 
@@ -267,7 +201,7 @@ LibsolvDependencyResolver::Impl::MakeDepConstraint(
             resultDep = innerDep;
         } else {
             // Combine with OR for multiple constraints
-            resultDep = pool_rel2id(pool.get(), resultDep, innerDep, REL_OR, 1);
+            resultDep = pool_rel2id(_pool.get(), resultDep, innerDep, REL_OR, 1);
         }
     }
 
@@ -275,7 +209,7 @@ LibsolvDependencyResolver::Impl::MakeDepConstraint(
 }
 
 int
-LibsolvDependencyResolver::Impl::ConvertComparison(plg::detail::range_operator op) {
+LibsolvDependencyResolver::ConvertComparison(plg::detail::range_operator op) {
     switch (op) {
         case plg::detail::range_operator::less:
             return REL_LT;
@@ -297,11 +231,11 @@ LibsolvDependencyResolver::Impl::ConvertComparison(plg::detail::range_operator o
 // ============================================================================
 
 DependencyResolution
-LibsolvDependencyResolver::Impl::RunSolver() {
+LibsolvDependencyResolver::RunSolver() {
     DependencyResolution resolution;
 
     // Create solver
-    std::unique_ptr<Solver, SolverDeleter> solver(solver_create(pool.get()));
+    std::unique_ptr<Solver, SolverDeleter> solver(solver_create(_pool.get()));
 
     // Set solver flags
     solver_set_flag(solver.get(), SOLVER_FLAG_ALLOW_DOWNGRADE, 1);
@@ -313,7 +247,7 @@ LibsolvDependencyResolver::Impl::RunSolver() {
     queue_init(jobs.get());
 
     // Add all packages as install jobs
-    for (const auto& [pkgId, solvId] : packageToSolvableId) {
+    for (const auto& [pkgId, solvId] : _packageToSolvableId) {
         queue_push2(jobs.get(), SOLVER_SOLVABLE | SOLVER_INSTALL, solvId);
     }
 
@@ -340,7 +274,7 @@ LibsolvDependencyResolver::Impl::RunSolver() {
 // ============================================================================
 
 void
-LibsolvDependencyResolver::Impl::ProcessSolverProblems(Solver* solver, DependencyResolution& resolution) {
+LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, DependencyResolution& resolution) {
     Id problemCount = static_cast<Id>(solver_problem_count(solver));
 
     for (Id problemId = 1; problemId <= problemCount; problemId++) {
@@ -356,15 +290,15 @@ LibsolvDependencyResolver::Impl::ProcessSolverProblems(Solver* solver, Dependenc
 
         // Determine affected packages
         if (source) {
-            auto it = solvableIdToPackage.find(source);
-            if (it != solvableIdToPackage.end()) {
+            auto it = _solvableIdToPackage.find(source);
+            if (it != _solvableIdToPackage.end()) {
                 issue.affectedPackage = it->second;
             }
         }
 
         if (target) {
-            auto it = solvableIdToPackage.find(target);
-            if (it != solvableIdToPackage.end()) {
+            auto it = _solvableIdToPackage.find(target);
+            if (it != _solvableIdToPackage.end()) {
                 issue.involvedPackage = it->second;
             }
         }
@@ -388,7 +322,7 @@ LibsolvDependencyResolver::Impl::ProcessSolverProblems(Solver* solver, Dependenc
 }
 
 std::vector<std::string>
-LibsolvDependencyResolver::Impl::ExtractSolutions(Solver* solver, Id problemId) {
+LibsolvDependencyResolver::ExtractSolutions(Solver* solver, Id problemId) {
     // Get solution count for this problem
     Id solutionCount = static_cast<Id>(solver_solution_count(solver, problemId));
 
@@ -430,7 +364,7 @@ LibsolvDependencyResolver::Impl::ExtractSolutions(Solver* solver, Id problemId) 
 // ============================================================================
 
 void
-LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
+LibsolvDependencyResolver::ComputeInstallationOrder(
     Transaction* trans,
     DependencyResolution& resolution
 ) {
@@ -438,6 +372,7 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
     transaction_order(trans, 0);
 
     size_t count = static_cast<size_t>(trans->steps.count);
+    resolution.loadOrder.reserve(count);
     resolution.dependencyGraph.reserve(count);
     resolution.reverseDependencyGraph.reserve(count);
 
@@ -453,13 +388,13 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
             type == SOLVER_TRANSACTION_DOWNGRADE ||
             type == SOLVER_TRANSACTION_UPGRADE)*/
         {
-            auto pkgIt = solvableIdToPackage.find(p);
-            if (pkgIt != solvableIdToPackage.end()) {
+            auto pkgIt = _solvableIdToPackage.find(p);
+            if (pkgIt != _solvableIdToPackage.end()) {
                 const UniqueId& pkgId = pkgIt->second;
                 resolution.loadOrder.push_back(pkgId);
 
                 // Build dependency graph
-                Solvable* s = pool_id2solvable(pool.get(), p);
+                Solvable* s = pool_id2solvable(_pool.get(), p);
 
                 // Process requires
                 if (s->dep_requires) {
@@ -467,13 +402,13 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
                     reqp = s->repo->idarraydata + s->dep_requires;
                     while ((req = *reqp++) != 0) {
                         // Find what provides this requirement using pool_whatprovides
-                        Id providers = pool_whatprovides(pool.get(), req);
+                        Id providers = pool_whatprovides(_pool.get(), req);
                         if (providers) {
                             Id* pp;
-                            for (pp = pool->whatprovidesdata + providers; *pp; pp++) {
+                            for (pp = _pool->whatprovidesdata + providers; *pp; pp++) {
                                 Id providerId = *pp;
-                                auto depIt = solvableIdToPackage.find(providerId);
-                                if (depIt != solvableIdToPackage.end() && providerId != p) {
+                                auto depIt = _solvableIdToPackage.find(providerId);
+                                if (depIt != _solvableIdToPackage.end() && providerId != p) {
                                     const UniqueId& depId = depIt->second;
                                     resolution.dependencyGraph[pkgId].push_back(depId);
                                     resolution.reverseDependencyGraph[depId].push_back(pkgId);
@@ -487,15 +422,4 @@ LibsolvDependencyResolver::Impl::ComputeInstallationOrder(
     }
 
     resolution.isLoadOrderValid = true; // Since libsolv provides a valid transaction order
-}
-
-LibsolvDependencyResolver::LibsolvDependencyResolver()
-    : _impl(std::make_unique<Impl>()) {
-}
-
-LibsolvDependencyResolver::~LibsolvDependencyResolver() = default;
-
-DependencyResolution
-LibsolvDependencyResolver::Resolve(const PackageCollection& packages) {
-    return _impl->Resolve(packages);
 }

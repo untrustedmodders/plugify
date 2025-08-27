@@ -1,4 +1,4 @@
-#include once
+#pragma once
 
 #include "plugify/core/manifest_parser.hpp"
 
