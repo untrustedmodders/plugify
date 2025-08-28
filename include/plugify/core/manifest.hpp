@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <filesystem>
+#include <string>
 #include <unordered_map>
 
 #include "plugify/core/conflict.hpp"
@@ -10,6 +10,8 @@
 
 namespace plugify {
 	struct PackageManifest {
+        using Ptr = std::shared_ptr<PackageManifest>;
+
 		std::string name;
 		PackageType type{};
 		Version version;
@@ -17,7 +19,9 @@ namespace plugify {
 		std::optional<std::string> author;
 		std::optional<std::string> website;
 		std::optional<std::string> license;
+
 		std::filesystem::path path;
+		std::filesystem::path root;
 
 		// Dependencies and conflicts
 		std::optional<std::vector<std::string>> platforms;
@@ -31,23 +35,16 @@ namespace plugify {
 	};
 
 	struct PluginManifest final : PackageManifest {
+        using Ptr = std::shared_ptr<PluginManifest>;
+
 		std::string entry;
-		std::optional<std::vector<std::string>> capabilities;
 		std::optional<std::vector<Method>> methods;
 	};
 
     struct ModuleManifest final : PackageManifest {
+        using Ptr = std::shared_ptr<ModuleManifest>;
+
 		std::optional<std::filesystem::path> runtime;
-		std::optional<std::vector<std::string>> directories;
-		std::optional<bool> forceLoad;
+		std::optional<std::vector<std::filesystem::path>> directories;
 	};
-
-    using ManifestPtr = std::shared_ptr<PackageManifest>;
-
-    struct BasePaths {
-        std::filesystem::path base;
-        std::filesystem::path configs;
-        std::filesystem::path data;
-        std::filesystem::path logs;
-    };
 }

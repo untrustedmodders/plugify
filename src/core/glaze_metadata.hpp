@@ -63,7 +63,6 @@ struct glz::meta<plugify::ModuleManifest> {
 			"$schema", skip{},
 			"metadata", skip{},
 			"type", skip{},
-			"path", skip{},
 
 			"name", &T::name,
 			"version", &T::version,
@@ -72,6 +71,9 @@ struct glz::meta<plugify::ModuleManifest> {
 			"website", &T::website,
 			"license", &T::license,
 
+			"path", skip{},
+            "root", skip{},
+
 			"platforms", &T::platforms,
 			"dependencies", &T::dependencies,
 			"conflicts", &T::conflicts,
@@ -79,8 +81,7 @@ struct glz::meta<plugify::ModuleManifest> {
 			"language", &T::language,
 
 			"runtime", &T::runtime,
-			"directories", &T::directories,
-			"forceLoad", &T::forceLoad
+			"directories", &T::directories
 	);
 };
 
@@ -91,7 +92,6 @@ struct glz::meta<plugify::PluginManifest> {
 			"$schema", skip{},
 			"metadata", skip{},
 			"type", skip{},
-			"path", skip{},
 
 			"name", &T::name,
 			"version", &T::version,
@@ -100,6 +100,9 @@ struct glz::meta<plugify::PluginManifest> {
 			"website", &T::website,
 			"license", &T::license,
 
+			"path", skip{},
+            "root", skip{},
+
 			"platforms", &T::platforms,
 			"dependencies", &T::dependencies,
 			"conflicts", &T::conflicts,
@@ -107,7 +110,6 @@ struct glz::meta<plugify::PluginManifest> {
 			"language", &T::language,
 
 			"entry", &T::entry,
-			"capabilities", &T::capabilities,
 			"methods", &T::methods
 	);
 };

@@ -129,7 +129,6 @@
         }
       }
     },
-
     "language": {
       "type": "string",
       "description": "The programming language identifier that this module provides support for. Should match the language's common abbreviation or file extension (e.g., 'cpp' for C++, 'py' for Python, 'js' for JavaScript).",
@@ -143,6 +142,10 @@
         "lua"
       ]
     },
+    "runtime": {
+      "type": "string",
+      "description": ""
+    },
     "directories": {
       "type": "array",
       "description": "Additional directories relative to the module's location where native libraries, bindings, or runtime files are located. These paths are added to the module's library search path.",
@@ -151,10 +154,6 @@
         "description": "Relative folder path.",
         "minLength": 1
       }
-    },
-    "forceLoad": {
-      "type": "boolean",
-      "description": "When true, ensures this module is loaded even if no plugins explicitly depend on it. Useful for core language modules that provide essential runtime services. Default is false."
     }
   }
 }

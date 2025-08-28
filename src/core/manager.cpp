@@ -10,8 +10,8 @@
 #include "plugify/core/plugify.hpp"
 #include "plugify/core/plugin.hpp"
 #include "plugify/core/progress_reporter.hpp"
-#include "plugify/core/stage.hpp"
 
+#include "core/loader.hpp"
 #include "asm/defer.hpp"
 #include "plg/thread_pool.hpp"
 
@@ -896,7 +896,7 @@ public:
                 case PackageType::Module: {
                     auto module = std::make_shared<Module>(pkg.GetId(), pkg.GetManifest());
 
-                    auto result = module->Load(loader_);
+                    auto result = Loader::LoadModule(provider, module);
                     if (!result) {
                         throw std::runtime_error(result.error());
                     }
@@ -915,9 +915,8 @@ public:
                     }
 
                     auto plugin = std::make_shared<Plugin>(pkg.GetId(), pkg.GetManifest());
-                    plugin->SetModule(it->second);
 
-                    auto result = plugin->Load(loader_);
+                    auto result = Loader::LoadPlugin(it->second, plugin);
                     if (!result) {
                         throw std::runtime_error(result.error());
                     }

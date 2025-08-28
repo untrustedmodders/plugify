@@ -17,22 +17,17 @@ using namespace plugify;
 struct Plugify::Impl {
     std::shared_ptr<Context> context;
     std::shared_ptr<Manager> manager;
-    std::shared_ptr<Provider> provider;
     Version version;
     std::jthread updateThread;
     std::atomic<bool> initialized{false};
     std::atomic<bool> shouldStop{false};
 
-    Impl(std::shared_ptr<Context> ctx)
-        : context(std::move(ctx)) {
+    Impl(std::shared_ptr<Context> ctx) : context(std::move(ctx)) {
         // Get version
         plg::parse(PLUGIFY_VERSION, version);
 
         // Create manager
         manager = std::make_shared<Manager>(context);
-
-        // Create provider
-        provider = std::make_shared<Provider>(context, manager);
     }
 
     ~Impl() {
@@ -67,6 +62,9 @@ struct Plugify::Impl {
             return std::unexpected("Failed to create directories");
         }
 
+        // Initialize manager
+        manager->Initialize();
+
         // Start update thread if configured
         StartUpdateThread();
 
@@ -96,9 +94,7 @@ struct Plugify::Impl {
         StopUpdateThread();
 
         // Terminate manager
-        if (manager) {
-            manager->Terminate();
-        }
+        manager->Terminate();
 
         // Save configuration
         /*if (auto configProvider = context->GetConfigProvider()) {
@@ -127,9 +123,7 @@ struct Plugify::Impl {
     void Update(double deltaTime) {
         if (!initialized) return;
 
-        if (manager) {
-            manager->Update(deltaTime);
-        }
+        manager->Update(deltaTime);
 
         // Process events if event bus is available
         /*if (auto eventBus = context->GetEventBus()) {
@@ -139,15 +133,15 @@ struct Plugify::Impl {
 
 private:
     bool CreateDirectories() {
+        if (!CheckDirectories()) {
+            return false;
+        }
+
         auto fileSystem = context->GetService<IFileSystem>();
         if (!fileSystem) {
             return false;
         }
 
-        if (!CheckDirectories()) {
-            return false;
-        }
-        
         auto createDir = [&](const std::filesystem::path& dir) {
             if (!dir.empty() && !fileSystem->IsExists(dir)) {
                 if (auto result = fileSystem->CreateDirectories(dir); !result) {
@@ -189,17 +183,21 @@ private:
         if (!checkPath(paths.logsDir)) {
             errors.push_back(std::format("logsDir: {}", paths.logsDir.string()));
         }
+        if (!checkPath(paths.cacheDir)) {
+            errors.push_back(std::format("cacheDir: {}", paths.cacheDir.string()));
+        }
 
         if (!errors.empty()) {
             LogError(std::format("{} path(s) must be relative", plg::join(errors, ", ")));
             return false;
         }
 
-        std::array<std::filesystem::path, 5> dirs = {
+        std::array<std::filesystem::path, 6> dirs = {
                 paths.pluginsDir,
                 paths.configsDir,
                 paths.dataDir,
                 paths.logsDir,
+                paths.cacheDir,
         };
 
         auto pathCollides = [](const std::filesystem::path& first, const std::filesystem::path& second) {
@@ -277,7 +275,7 @@ void Plugify::Terminate() {
     _impl->Terminate();
 }
 
-bool Plugify::IsInitialized() const noexcept {
+bool Plugify::IsInitialized() const {
     return _impl->initialized;
 }
 
@@ -297,7 +295,7 @@ std::future<void> Plugify::TerminateAsync() {
     });
 }
 
-std::shared_ptr<Manager> Plugify::GetManager() const {
+/*std::shared_ptr<Manager> Plugify::GetManager() const {
     return _impl->manager;
 }
 
@@ -311,7 +309,7 @@ std::shared_ptr<Context> Plugify::GetContext() const {
 
 Version Plugify::GetVersion() const {
     return _impl->version;
-}
+}*/
 
 // PlugifyBuilder implementation
 PlugifyBuilder& PlugifyBuilder::WithBaseDir(const std::filesystem::path& dir) {
@@ -417,7 +415,7 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
     return *this;
 }
 
-Result<std::shared_ptr<Plugify>> PlugifyBuilder::Build() {
+std::shared_ptr<Plugify> PlugifyBuilder::Build() {
     // Ensure defaults are set
     WithDefaults();
 

@@ -11,6 +11,8 @@
 #include "plugify_export.h"
 
 namespace plugify {
+    class Plugify;
+
 	// Builder pattern for configuration
     class PLUGIFY_API PlugifyBuilder {
     public:
@@ -36,11 +38,11 @@ namespace plugify {
             return *this;
         }
 
-        Result<std::shared_ptr<Plugify>> Build();
+        std::shared_ptr<Plugify> Build();
 
     private:
-        Config _config;
         ServiceLocator _services;
+        Config _config;
     };
 
     class PLUGIFY_API Plugify {
@@ -51,7 +53,7 @@ namespace plugify {
         // Lifecycle
         Result<void> Initialize();
         void Terminate();
-        [[nodiscard]] bool IsInitialized() const noexcept;
+        [[nodiscard]] bool IsInitialized() const;
         void Update(double deltaTime = 0.016);
 
         // Async operations with coroutines (C++20)
@@ -59,13 +61,13 @@ namespace plugify {
         std::future<void> TerminateAsync();
 
         // Component access
-        [[nodiscard]] std::shared_ptr<Manager> GetManager() const;
+        /*[[nodiscard]] std::shared_ptr<Manager> GetManager() const;
         [[nodiscard]] std::shared_ptr<Provider> GetProvider() const;
         [[nodiscard]] std::shared_ptr<Context> GetContext() const;
         [[nodiscard]] Version GetVersion() const;
 
         // Metrics and profiling
-        /*struct Metrics {
+        struct Metrics {
             size_t loadedPackages;
             size_t memoryUsageMB;
             double averageLoadTimeMs;

@@ -130,13 +130,6 @@
         }
       }
     },
-
-    "entry": {
-      "type": "string",
-      "description": "The entry point file or main executable for the plugin, relative to the plugin's directory. This is the file that will be loaded when the plugin starts (e.g., 'main.dll', 'plugin.so', 'index.js').",
-      "minLength": 1,
-      "examples": ["main.dll", "plugin.so", "index.js", "Plugin.cs", "plugin.py"]
-    },
     "language": {
       "type": "object",
       "description": "Specifies the programming language and language module required to run this plugin. The specified language module must be installed for the plugin to load.",
@@ -162,6 +155,12 @@
           "minLength": 1
         }
       }
+    },
+    "entry": {
+      "type": "string",
+      "description": "The entry point file or main executable for the plugin, relative to the plugin's directory. This is the file that will be loaded when the plugin starts (e.g., 'main.dll', 'plugin.so', 'index.js').",
+      "minLength": 1,
+      "examples": ["main.dll", "plugin.so", "index.js", "Plugin.cs", "plugin.py"]
     },
     "methods": {
       "type": "array",

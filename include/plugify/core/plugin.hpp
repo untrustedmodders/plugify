@@ -3,6 +3,18 @@
 #include "plugify/core/manifest.hpp"
 
 namespace plugify {
+    /**
+     * @enum PluginState
+     * @brief Represents the possible states of a plugin.
+     */
+    enum class PluginState {
+        Loaded,
+        Started,
+        Ended,
+        Unloaded,
+        Failed
+    };
+
     class Plugify;
     class Dependency;
     class Conflict;
@@ -18,16 +30,10 @@ namespace plugify {
 	    Plugin& operator=(const Plugin& other);
 	    Plugin& operator=(Plugin&& other) noexcept;
 
-	PLUGIFY_ACCESS:
-	    Result<void> Initialize();
-	    Result<void> Load(Plugify& plugify);
-	    void Update();
-        void Unload();
-	    void Terminate();
-
 	public:
 		// Getters
 		[[nodiscard]] UniqueId GetId() const noexcept;
+		[[nodiscard]] PluginState GetState() const noexcept;
 		[[nodiscard]] std::shared_ptr<Module> GetModule() const noexcept;
 		[[nodiscard]] const std::string& GetName() const noexcept;
 		[[nodiscard]] PackageType GetType() const noexcept;
@@ -45,7 +51,6 @@ namespace plugify {
 		// Getters
 		[[nodiscard]] const std::string& GetLanguage() const noexcept;
 		[[nodiscard]] const std::string& GetEntry() const noexcept;
-		[[nodiscard]] const std::vector<std::string>& GetCapabilities() const noexcept;
 		[[nodiscard]] const std::vector<Method>& GetMethods() const;
 	    [[nodiscard]] const std::vector<MethodData>& GetMethodsData() const noexcept;
 
@@ -54,10 +59,13 @@ namespace plugify {
 	    const std::filesystem::path& GetConfigsDir() const noexcept;
 	    const std::filesystem::path& GetDataDir() const noexcept;
 	    const std::filesystem::path& GetLogsDir() const noexcept;
+	    ILanguageModule* GetLanguageModule() const noexcept;
 	    MemAddr GetUserData() const noexcept;
+	    MethodTable GetTable() const noexcept;
 
 		// Setters
 		void SetId(UniqueId id) noexcept;
+		void SetState(PluginState state) noexcept;
 		void SetModule(std::shared_ptr<Module> module) noexcept;
 		void SetName(std::string name) noexcept;
 		void SetType(PackageType type) noexcept;
@@ -75,7 +83,6 @@ namespace plugify {
 		// Setters
 		void SetLanguage(std::string language) noexcept;
 		void SetEntry(std::string entry) noexcept;
-		void SetCapabilities(std::vector<std::string> capabilities) noexcept;
 		void SetMethods(std::vector<Method> methods) noexcept;
 	    void SetMethodsData(std::vector<MethodData> methodsData) noexcept;
 
@@ -84,7 +91,9 @@ namespace plugify {
 	    void SetConfigsDir(std::filesystem::path configs) noexcept;
 	    void SetDataDir(std::filesystem::path data) noexcept;
 	    void SetLogsDir(std::filesystem::path logs) noexcept;
+	    void SetLanguageModule(ILanguageModule* module) noexcept;
 	    void SetUserData(MemAddr userData) noexcept;
+	    void SetTable(MethodTable table) noexcept;
 
 		[[nodiscard]] bool operator==(const Plugin& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Plugin& other) const noexcept;

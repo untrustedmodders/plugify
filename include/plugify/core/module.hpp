@@ -3,6 +3,18 @@
 #include "plugify/core/manifest.hpp"
 
 namespace plugify {
+    /**
+     * @enum ModuleState
+     * @brief Represents the possible states of a module.
+     */
+    enum class ModuleState {
+        Loaded,
+        Started,
+        Ended,
+        Unloaded,
+        Failed
+    };
+
     class Plugify;
 	class Dependency;
 	class Conflict;
@@ -17,22 +29,10 @@ namespace plugify {
 	    Module& operator=(const Module& other);
 	    Module& operator=(Module&& other) noexcept;
 
-    PLUGIFY_ACCESS:
-        Result<void> Initialize();
-        Result<void> Load(Plugify& plugify);
-        void Update();
-        void Unload();
-	    void Terminate();
-
-        //bool LoadPlugin(std::shared_ptr<Plugin> plugin) const;
-        //void StartPlugin(std::shared_ptr<Plugin> plugin) const;
-        //void UpdatePlugin(std::shared_ptr<Plugin> plugin, DateTime dt) const;
-        //void EndPlugin(std::shared_ptr<Plugin> plugin) const;
-        //void MethodExport(std::shared_ptr<Plugin> plugin) const;
-
     public:
 	    // Getters
 	    [[nodiscard]] const UniqueId& GetId() const noexcept;
+		[[nodiscard]] ModuleState GetState() const noexcept;
 	    [[nodiscard]] const std::string& GetName() const noexcept;
 	    [[nodiscard]] PackageType GetType() const noexcept;
 	    [[nodiscard]] const Version& GetVersion() const noexcept;
@@ -49,8 +49,7 @@ namespace plugify {
 		// Getters
 		[[nodiscard]] const std::string& GetLanguage() const noexcept;
 		[[nodiscard]] const std::filesystem::path& GetRuntime() const noexcept;
-		[[nodiscard]] const std::vector<std::string> GetDirectories() const noexcept;
-		[[nodiscard]] bool GetForceLoad() const noexcept;
+		[[nodiscard]] const std::vector<std::filesystem::path> GetDirectories() const noexcept;
 
         // Getters
         const std::filesystem::path& GetBaseDir() const noexcept;
@@ -60,6 +59,7 @@ namespace plugify {
 
 	    // Setters
 	    void SetId(UniqueId id) noexcept;
+		void SetState(ModuleState state) noexcept;
 	    void SetName(std::string name) noexcept;
 	    void SetType(PackageType type) noexcept;
 	    void SetVersion(Version version) noexcept;
@@ -76,8 +76,7 @@ namespace plugify {
 		// Setters (pass by value and move)
 		void SetLanguage(std::string language) noexcept;
 		void SetRuntime(std::filesystem::path runtimePath) noexcept;
-		void SetDirectories(std::vector<std::string> directories) noexcept;
-		void SetForceLoad(bool forceLoad) noexcept;
+		void SetDirectories(std::vector<std::filesystem::path> directories) noexcept;
 
         // Setters
         void SetBaseDir(std::filesystem::path base) noexcept;
@@ -89,7 +88,6 @@ namespace plugify {
 		[[nodiscard]] auto operator<=>(const Module& other) const noexcept;
 
 		static inline constexpr std::string_view kFileExtension = "*.pmodule";
-		static inline constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
 
 	PLUGIFY_ACCESS:
 	    std::unique_ptr<Impl> _impl;

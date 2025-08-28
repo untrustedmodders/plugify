@@ -22,7 +22,7 @@ namespace plugify {
 
         // Loading configuration
         struct Loading {
-            //bool preferOwnSymbols = true;
+            bool preferOwnSymbols = true;
             //bool enableHotReload = false;
             //bool lazyLoading = false;
             //bool parallelLoading = true;

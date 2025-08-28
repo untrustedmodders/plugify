@@ -14,6 +14,7 @@ Result<ManifestPtr> ParsePlugin(
     auto& manifest = parsed.value();
     manifest->type = PackageType::Plugin;
     manifest->path = path;
+    manifest->root = path.parent_path();
     return std::static_pointer_cast<PackageManifest>(std::move(manifest));
 }
 
@@ -28,6 +29,13 @@ Result<ManifestPtr> ParseModule(
     auto& manifest = parsed.value();
     manifest->type = PackageType::Module;
     manifest->path = path;
+    manifest->root = path.parent_path();
+    // to validation
+    if (!manifest->runtime || manifest->runtime->empty()) {
+        // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
+        manifest->runtime = manifest->runtime.value_or(path / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, manifest->name));
+    }
+
     return std::static_pointer_cast<PackageManifest>(std::move(manifest));
 }
 

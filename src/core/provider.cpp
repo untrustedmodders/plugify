@@ -1,75 +1,78 @@
 #include <utility>
 
-#include "glaze/core/context.hpp"
-#include "plugify/core/manager.hpp"
-#include "plugify/core/plugify.hpp"
 #include "plugify/core/provider.hpp"
+#include "plugify/core/context.hpp"
+#include "plugify/core/manager.hpp"
 
 using namespace plugify;
 
 struct Provider::Impl {
-    std::shared_ptr<ILogger> logger;
-    std::shared_ptr<IFileSystem> fileSystem;
-
-    Impl(std::shared_ptr<Context> context) {
-
-    }
-
-    std::filesystem::path GetFullPath(const std::filesystem::path& relativePath) const {
-        if (relativePath.is_absolute()) {
-            return relativePath;
-        }
-        return paths.baseDir / relativePath;
-    }
+    std::shared_ptr<Context> context;
+    std::shared_ptr<Manager> manager;
 };
 
-Provider::Provider(std::shared_ptr<Context> context)
-    : _impl(std::make_unique<Impl>(context)) {
+Provider::Provider(std::shared_ptr<Context> context, std::shared_ptr<Manager> manager)
+    : _impl(std::make_unique<Impl>(std::move(context), std::move(manager))) {
 }
 
 Provider::~Provider() = default;
 
-void Provider::Log(std::string_view msg, Severity severity) const {
-    if (auto logger = _impl->context->GetLogger()) {
-        logger->Log(msg, severity);
-    }
-}
-
-void Provider::Log(Severity severity, std::string_view msg, const std::source_location& loc) const {
-    if (auto logger = _impl->context->GetLogger()) {
+void Provider::Log(std::string_view msg, Severity severity, const std::source_location& loc) const {
+    if (auto logger = _impl->context->GetService<ILogger>()) {
         logger->Log(msg, severity, loc);
     }
 }
 
+bool Provider::IsPreferOwnSymbols() const noexcept {
+    return _impl->context->GetConfig().loading.preferOwnSymbols;
+}
+
 const std::filesystem::path& Provider::GetBaseDir() const noexcept {
-    if (auto config = _impl->context->GetConfig()) {
-        return config
-    }
+    return _impl->context->GetConfig().paths.baseDir;
 }
 
 const std::filesystem::path& Provider::GetPluginsDir() const noexcept {
-    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->context>GetConfig().pluginsDir);
-    return fullPath;
+    return _impl->context->GetConfig().paths.pluginsDir;
 }
 
 const std::filesystem::path& Provider::GetConfigsDir() const noexcept {
-    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.configsDir);
-    return fullPath;
+    return _impl->context->GetConfig().paths.configsDir;
 }
 
 const std::filesystem::path& Provider::GetDataDir() const noexcept {
-    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.dataDir);
-    return fullPath;
+    return _impl->context->GetConfig().paths.dataDir;
 }
 
 const std::filesystem::path& Provider::GetLogsDir() const noexcept {
-    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.logsDir);
-    return fullPath;
+    return _impl->context->GetConfig().paths.logsDir;
 }
 
 const std::filesystem::path& Provider::GetCacheDir() const noexcept {
-    static std::filesystem::path fullPath = _impl->GetFullPath(_impl->paths.cacheDir);
-    return fullPath;
+    return _impl->context->GetConfig().paths.cacheDir;
+}
+
+bool Provider::IsPluginLoaded(std::string_view name, std::optional<Constraint> version) const noexcept {
+    return _impl->manager->IsPluginLoaded(name, version);
+}
+
+std::shared_ptr<Plugin> Provider::FindPlugin(std::string_view name) const {
+    return _impl->manager->FindPlugin(name);
+}
+
+std::vector<std::shared_ptr<Plugin>> Provider::GetPlugins() const {
+    return _impl->manager->GetPlugins();
+}
+
+bool Provider::IsModuleLoaded(std::string_view name, std::optional<Constraint> version) const noexcept {
+    return _impl->manager->IsModuleLoaded(name, version);
+}
+
+std::shared_ptr<Module> Provider::FindModule(std::string_view name) const {
+    return _impl->manager->FindModule(name);
+}
+
+std::vector<std::shared_ptr<Module>> Provider::GetModules() const {
+    return _impl->manager->GetModules();
 }
 
 std::shared_ptr<Context> Provider::GetContext() const noexcept {

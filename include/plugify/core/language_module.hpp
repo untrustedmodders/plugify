@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "date_time.hpp"
 #include "plugify/asm/mem_addr.hpp"
 #include "plugify/core/types.hpp"
+#include "plugify/core/method.hpp"
 
 namespace plugify {
 	class Plugin;
