@@ -75,10 +75,10 @@ namespace plugify {
         // Setup functions
         void InitializePool();
         void AddPackagesToPool(const PackageCollection& packages);
-        Id AddSolvable(const ManifestPtr& manifest);
-        void SetupDependencies(Id solvableId, const ManifestPtr& manifest);
-        void SetupConflicts(Id solvableId, const ManifestPtr& manifest);
-        void SetupObsoletes(Id solvableId, const ManifestPtr& manifest);
+        Id AddSolvable(const PackageManifest& manifest);
+        void SetupDependencies(Id solvableId, const PackageManifest& manifest);
+        void SetupConflicts(Id solvableId, const PackageManifest& manifest);
+        void SetupObsoletes(Id solvableId, const PackageManifest& manifest);
 
         // Constraint conversion
         Id
@@ -94,8 +94,8 @@ namespace plugify {
     private:
         std::unique_ptr<Pool, PoolDeleter> _pool;
         Repo* _repo = nullptr;
-        std::unordered_map<UniqueId, Id> _packageToSolvableId;
-        std::unordered_map<Id, UniqueId> _solvableIdToPackage;
+        plg::flat_map<UniqueId, Id> _packageToSolvableId;
+        plg::flat_map<Id, UniqueId> _solvableIdToPackage;
         std::shared_ptr<ILogger> _logger;
     };
 } // namespace plugify

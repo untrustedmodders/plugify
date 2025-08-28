@@ -30,9 +30,9 @@ namespace plugify {
 		[[nodiscard]] const std::string& GetReason() const noexcept;
 
 		// Setters (pass by value and move)
-		void SetName(std::string name) noexcept;
-		void SetConstraints(Constraint constraints) noexcept;
-		void SetReason(std::string reason) noexcept;
+		void SetName(std::string name);
+		void SetConstraints(Constraint constraints);
+		void SetReason(std::string reason);
 
 		[[nodiscard]] bool operator==(const Conflict& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Conflict& other) const noexcept;

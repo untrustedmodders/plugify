@@ -16,6 +16,8 @@
 #  define __has_builtin(x) 0
 #endif
 
+#include <version>
+
 #define PLUGIFY_HAS_EXCEPTIONS (__cpp_exceptions || __EXCEPTIONS || _HAS_EXCEPTIONS)
 
 #ifndef PLUGIFY_EXCEPTIONS

@@ -57,6 +57,32 @@ struct glz::meta<plugify::Method> {
 };
 
 template <>
+struct glz::meta<plugify::PackageManifest> {
+    using T = plugify::PackageManifest;
+    static constexpr auto value = object(
+            "$schema", skip{},
+            "metadata", skip{},
+
+            "name", &T::name,
+            "version", &T::version,
+            "description", &T::description,
+            "author", &T::author,
+            "website", &T::website,
+            "license", &T::license,
+
+            "platforms", &T::platforms,
+            "dependencies", &T::dependencies,
+            "conflicts", &T::conflicts,
+            "obsoletes", &T::obsoletes,
+            "language", &T::language,
+
+            "entry", &T::entry,
+            "methods", &T::methods,
+            "runtime", &T::runtime,
+            "directories", &T::directories
+    );
+};
+/*template <>
 struct glz::meta<plugify::ModuleManifest> {
 	using T = plugify::ModuleManifest;
 	static constexpr auto value = object(
@@ -112,7 +138,7 @@ struct glz::meta<plugify::PluginManifest> {
 			"entry", &T::entry,
 			"methods", &T::methods
 	);
-};
+};*/
 
 template<>
 struct glz::meta<plugify::Dependency> {

@@ -27,8 +27,8 @@ namespace plugify {
 	    [[nodiscard]] int64_t GetValue() const noexcept;
 
 	    // Setters (pass by value and move)
-	    void SetName(std::string name) noexcept;
-	    void SetValue(int64_t value) noexcept;
+	    void SetName(std::string name);
+	    void SetValue(int64_t value);
 
 		[[nodiscard]] bool operator==(const EnumValue& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const EnumValue& other) const noexcept;

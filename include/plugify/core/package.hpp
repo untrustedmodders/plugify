@@ -3,9 +3,6 @@
 #include <optional>
 
 #include "plugify/core/manifest.hpp"
-
-#include "date_time.hpp"
-
 namespace plugify {
     // Package State Enum
     enum class PackageState {
@@ -43,148 +40,111 @@ namespace plugify {
         Terminated,
         Max
     };
+    // Unified Package class
+    class PLUGIFY_API Package {
+        struct Impl;
 
-    // Package Information with State
-    struct alignas(std::hardware_destructive_interference_size) PackageInfo {
-        // Hot data (frequently accessed together)
-        /*struct alignas(64) HotData {
-            UniqueId id;
-            PackageState state;
-            PackageType type;
-            std::string_view name;
-        };
+    public:
+        Package(UniqueId id, std::filesystem::path location);
+        ~Package();
 
-        // Cold data (less frequently accessed)
-        struct ColdData {
-            std::filesystem::path path;
-            ManifestPtr manifest;
-            std::shared_ptr<IPackage> instance;
-            std::vector<std::string> errors;
-            std::vector<std::string> warnings;
-        };*/
-        struct Timings {
-            std::map<PackageState, Duration> _timepoints;
+        // Delete copy/move for safety (can be implemented if needed)
+        Package(const Package&) = delete;
+        Package(Package&&) noexcept;
+        Package& operator=(const Package&) = delete;
+        Package& operator=(Package&&) noexcept;
 
-            Duration GetTotalTime() const {
-                Duration total{};
-                for (const auto& [_, t] : _timepoints) {
-                    total += t;
-                }
-                return total;
-            }
+        // --- Core Getters ---
+        [[nodiscard]] UniqueId GetId() const noexcept;
+        [[nodiscard]] PackageType GetType() const noexcept;
+        [[nodiscard]] PackageState GetState() const noexcept;
+        [[nodiscard]] const std::string& GetName() const noexcept;
+        [[nodiscard]] const Version& GetVersion() const noexcept;
+        [[nodiscard]] const std::string& GetLanguage() const noexcept;
+        [[nodiscard]] const std::filesystem::path& GetLocation() const noexcept;
 
-            std::string ToString() const {
-                std::string merged;
-                merged.reserve(256);
-                for (const auto& [state, timepoint] : _timepoints) {
-                    std::format_to(std::back_inserter(merged), "{} {}ms, ", plg::enum_to_string(state), timepoint.count());
-                }
-                std::format_to(std::back_inserter(merged), "Total {}ms", GetTotalTime());
-                return merged;
-            }
-        };
+        // --- Optional Info Getters ---
+        [[nodiscard]] const std::string& GetDescription() const noexcept;
+        [[nodiscard]] const std::string& GetAuthor() const noexcept;
+        [[nodiscard]] const std::string& GetWebsite() const noexcept;
+        [[nodiscard]] const std::string& GetLicense() const noexcept;
 
-        UniqueId _id{-1};
-        PackageType _type{PackageType::Unknown};
-        PackageState _state{PackageState::Unknown};
+        // --- Dependencies/Conflicts ---
+        [[nodiscard]] const std::vector<std::string>& GetPlatforms() const noexcept;
+        [[nodiscard]] const std::vector<Dependency>& GetDependencies() const noexcept;
+        [[nodiscard]] const std::vector<Conflict>& GetConflicts() const noexcept;
+        [[nodiscard]] const std::vector<Obsolete>& GetObsoletes() const noexcept;
 
-        // Timing information
-        Timings _timings;
-        TimePoint _lastOperationStart;
+        // --- Plugin-specific (returns empty/null for modules) ---
+        [[nodiscard]] const std::string& GetEntry() const noexcept;
+        [[nodiscard]] const std::vector<Method>& GetMethods() const noexcept;
+        [[nodiscard]] const std::vector<MethodData>& GetMethodsData() const noexcept;
 
-        // Error tracking
-        std::deque<std::string> _errors;
-        std::deque<std::string> _warnings;
+        // --- Module-specific (returns empty/null for plugins) ---
+        [[nodiscard]] const std::filesystem::path& GetRuntime() const noexcept;
+        [[nodiscard]] const std::vector<std::filesystem::path>& GetDirectories() const noexcept;
+        [[nodiscard]] std::shared_ptr<IAssembly> GetAssembly() const noexcept;
 
-        // Actual loaded instance (if any)
-        std::shared_ptr<void> _instance;
-        std::shared_ptr<PackageManifest> _manifest;
+        // --- Shared Runtime ---
+        [[nodiscard]] MemAddr GetUserData() const noexcept;
+        [[nodiscard]] MethodTable GetMethodTable() const noexcept;
+        [[nodiscard]] ILanguageModule* GetLanguageModule() const noexcept;
+        [[nodiscard]] const PackageManifest& GetManifest() const noexcept;
 
-        // Basic info
-        //std::string _name;
-        //std::string _language;
-        std::filesystem::path _path;
+        // --- State & Error Management ---
+        [[nodiscard]] const std::deque<std::string>& GetErrors() const noexcept;
+        [[nodiscard]] const std::deque<std::string>& GetWarnings() const noexcept;
+        [[nodiscard]] bool HasErrors() const noexcept;
+        [[nodiscard]] bool IsLoaded() const noexcept;
+        [[nodiscard]] bool IsPlugin() const noexcept { return GetType() == PackageType::Plugin; }
+        [[nodiscard]] bool IsModule() const noexcept { return GetType() == PackageType::Module; }
 
-        void StartOperation(PackageState newState) {
-            _lastOperationStart = Clock::now();
-            SetState(newState);
-        }
+        // --- Timing/Performance ---
+        [[nodiscard]] Duration GetOperationTime(PackageState state) const;
+        [[nodiscard]] Duration GetTotalTime() const;
+        [[nodiscard]] std::string GetPerformanceReport() const;
 
-        void EndOperation(PackageState newState) {
-            auto duration = std::chrono::duration_cast<Duration>(Clock::now() - _lastOperationStart);
-            _timings._timepoints[newState] = duration;
-            SetState(newState);
-        }
+        // --- State Management ---
+        void StartOperation(PackageState newState);
+        void EndOperation(PackageState newState);
+        void SetState(PackageState state);
 
-        UniqueId GetId() const { return _id; }
-        PackageType GetType() const { return _type; }
-        PackageState GetState() const { return _state; }
-        const std::shared_ptr<void>& GetInstance() const { return _instance; }
-        const std::shared_ptr<PackageManifest>& GetManifest() const { return _manifest; }
-        const std::filesystem::path& GetPath() const { return _path; }
-        const std::deque<std::string>& GetErrors() const { return _errors; }
-        const std::deque<std::string>& GetWarnings() const { return _warnings; }
+        // --- Error/Warning Management ---
+        void AddError(std::string error);
+        void AddWarning(std::string warning);
+        void ClearErrors();
+        void ClearWarnings();
 
-        void SetId(UniqueId id) { _id = std::move(id); }
-        void SetType(PackageType type) { _type = type; }
-        void SetState(PackageState state) {
-            //PL_ASSERT(IsValidTransition(_state, state) && "Invalid state transition");
-            _state = state;
-        }
-        void SetManifest(std::shared_ptr<PackageManifest> manifest) {
-            _manifest = std::move(manifest);
-        }
-        void SetInstance(std::shared_ptr<void> instance) {
-            _instance = std::move(instance);
-        }
-        void SetPath(std::filesystem::path path) {
-            _path = std::move(path);
-        }
+        // --- Runtime Updates ---
+        void SetUserData(MemAddr data);
+        void SetMethodTable(MethodTable table);
+        void SetLanguageModule(ILanguageModule* module);
+        void SetManifest(PackageManifest manifest);
 
-        void AddError(std::string error) {
-            _errors.emplace_back(std::move(error));
-        }
+        // --- Plugin-specific setters ---
+        void SetMethodsData(std::vector<MethodData> methodsData);
 
-        void AddWarning(std::string warning) {
-            _warnings.emplace_back(std::move(warning));
-        }
+        // --- Module-specific setters ---
+        void SetAssembly(std::shared_ptr<IAssembly> assembly);
 
-        void AddDependency(std::string dep) {
-            if (_manifest) {
-                if (!_manifest->dependencies) {
-                    _manifest->dependencies = {};
-                }
-                _manifest->dependencies->emplace_back().SetName(std::move(dep));
-            }
-        }
+        // --- Comparison ---
+        [[nodiscard]] bool operator==(const Package& other) const noexcept;
+        [[nodiscard]] auto operator<=>(const Package& other) const noexcept;
 
-        /*static bool IsValidTransition(PackageState from, PackageState to) {
-            static const std::unordered_map<PackageState, std::unordered_set<PackageState>> transitions = {
-                {PackageState::Initialized, {PackageState::Discovered}},
-                {PackageState::Discovered, {PackageState::Parsed, PackageState::Corrupted}},
-                {PackageState::Parsed, {PackageState::Resolved, PackageState::Unresolved}},
-                {PackageState::Resolved, {PackageState::Loading, PackageState::Skipped, PackageState::Failed}},
-                {PackageState::Loaded, {PackageState::Starting, PackageState::Started, PackageState::Failed}},
-                {PackageState::Started, {PackageState::Updating, PackageState::Updated, PackageState::Failed}},
-                {PackageState::Updated, {PackageState::Updating, PackageState::Updated, PackageState::Failed, PackageState::Ending}},
-                {PackageState::Ending, {PackageState::Ended}},
-            };
+        // --- File extensions ---
+        [[nodiscard]] static std::string_view GetFileExtension(PackageType type);
+        [[nodiscard]] static PackageType GetPackageType(const std::filesystem::path& path);
 
-            auto it = transitions.find(from);
-            return it != transitions.end() && it->second.contains(to);
-        }*/
+        // --- Helpers ---
+        [[nodiscard]] static bool IsValidTransition(PackageState from, PackageState to);
+        [[nodiscard]] std::string ToString() const;
+        bool CanLoad() const noexcept;
+        bool CanStart() const noexcept;
+        bool CanStop() const noexcept;
+        void AddDependency(std::string dep);
+        void Reset();
 
-        static inline const std::string invalid = "<unknown>";
-        const std::string GetName() const { return _manifest ? _manifest->name : invalid; }
-        const std::string GetLanguage() const { return _manifest ? _manifest->language : invalid; }
-
-        Duration GetOperationTime(PackageState state) const {
-            return _timings._timepoints.at(state);
-        }
-
-        std::string GetPerformanceReport() const {
-            return std::format("{}: {}", GetName(), _timings.ToString());
-        }
-
+    private:
+        std::unique_ptr<Impl> _impl;
     };
 }

@@ -36,46 +36,6 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
 endif()
 
 # ------------------------------------------------------------------------------
-# Stacktrace
-#[[
-cmake_push_check_state()
-
-check_cxx_source_compiles("
-    #include <stacktrace>
-
-    int main() {
-        auto trace = std::stacktrace::current();
-        return 0;
-    }
-    " COMPILER_SUPPORTS_STACKTRACE)
-
-cmake_pop_check_state()
-
-if(NOT COMPILER_SUPPORTS_STACKTRACE)
-    if(PLUGIFY_USE_EXTERNAL_CPPTRACE)
-        find_package(cpptrace REQUIRED)
-    else()
-        include(FetchCppTrace)
-    endif()
-endif()
-]]#
-
-# ------------------------------------------------------------------------------
-# Debugging
-cmake_push_check_state()
-
-check_cxx_source_compiles("
-    #include <debugging>
-
-    int main() {
-        auto debugger = std::is_debugger_present();
-        return 0;
-    }
-    " COMPILER_SUPPORTS_DEBUGGING)
-
-cmake_pop_check_state()
-
-# ------------------------------------------------------------------------------
 # Git
 include(FetchGit)
 

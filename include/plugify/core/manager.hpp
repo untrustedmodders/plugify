@@ -17,6 +17,10 @@ namespace plugify {
     public:
         explicit Manager(std::shared_ptr<Context> context);
         ~Manager();
+        Manager(const Manager& other) = delete;
+        Manager(Manager&& other) noexcept = delete;
+        Manager& operator=(const Manager& other) = delete;
+        Manager& operator=(Manager&& other) noexcept = delete;
 
         // Lifecycle
         void Initialize();
@@ -46,6 +50,9 @@ namespace plugify {
         [[nodiscard]] std::shared_ptr<Module> FindModule(std::string_view name) const noexcept;
         [[nodiscard]] std::vector<std::shared_ptr<Module>> GetModules() const;
         [[nodiscard]] std::vector<std::shared_ptr<Module>> GetModulesByState(ModuleState state) const;
+
+        [[nodiscard]] bool operator==(const Manager& other) const noexcept;
+        [[nodiscard]] auto operator<=>(const Manager& other) const noexcept;
 
     private:
         std::unique_ptr<Impl> _impl;

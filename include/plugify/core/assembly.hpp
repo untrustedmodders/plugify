@@ -44,7 +44,7 @@ namespace plugify {
 		 * @param flags Flags for loading the assembly.
 		 * @return A unique pointer to the loaded assembly.
 		 */
-		virtual Result<std::unique_ptr<IAssembly>> Load(const std::filesystem::path& path, LoadFlag flags) = 0;
+		virtual Result<std::shared_ptr<IAssembly>> Load(const std::filesystem::path& path, LoadFlag flags) = 0;
 
 		/**
 		 * @brief Adds a search path for loading assemblies.

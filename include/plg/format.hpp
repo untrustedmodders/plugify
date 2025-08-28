@@ -1,10 +1,12 @@
 #pragma once
 
-#if PLUGIFY_FORMAT_SUPPORT
+#include "plg/macro.hpp"
+
+#ifdef __cpp_lib_format
 
 #include <format>
 
-#else // PLUGIFY_FORMAT_SUPPORT
+#else // __cpp_lib_format
 
 // Define FMT_FORMAT_H externally to force a difference location for {fmt}
 #ifndef FMT_FORMAT_H
@@ -21,7 +23,7 @@ namespace std {
 	using namespace fmt::detail;
 }
 
-#endif // PLUGIFY_FORMAT_SUPPORT
+#endif // __cpp_lib_format
 
 #include <type_traits>
 #include <string>

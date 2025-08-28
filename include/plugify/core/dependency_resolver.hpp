@@ -1,15 +1,12 @@
 #pragma once
 
-#include <unordered_map>
-#include <unordered_set>
-
-#include "plugify/core/manifest.hpp"
+#include "plugify/core/package.hpp"
 
 namespace plugify {
     /**
      * @brief Represents a collection of packages with their manifests
      */
-    using PackageCollection = std::vector<std::pair<UniqueId, ManifestPtr>>;
+    using PackageCollection = std::span<const Package>;
 
     /**
      * @brief Represents the result of a dependency resolution process
@@ -45,11 +42,11 @@ namespace plugify {
         };
 
         // Main report data
-        std::unordered_map<UniqueId, std::vector<Issue>> issues;
+        plg::flat_map<UniqueId, std::vector<Issue>> issues;
 
         // Dependency graph
-        std::unordered_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
-        std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping dependents
+        plg::flat_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
+        plg::flat_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping dependents
 
         // Load order
         std::vector<UniqueId> loadOrder;

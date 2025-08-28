@@ -49,6 +49,10 @@ namespace plugify {
         struct Impl;
     public:
         ~Plugify();
+        Plugify(const Plugify& other) = delete;
+        Plugify(Plugify&& other) noexcept = delete;
+        Plugify& operator=(const Plugify& other) = delete;
+        Plugify& operator=(Plugify&& other) noexcept = delete;
 
         // Lifecycle
         Result<void> Initialize();

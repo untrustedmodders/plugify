@@ -17,9 +17,9 @@ namespace plugify {
         /**
          * @brief Parse the manifest content from a string
          * @param content The content of the manifest file as a string
-         * @param path The filesystem path to the manifest file (for error reporting)
+         * @param type The manifest type
          * @return A Result containing the parsed Manifest or an error
          */
-        virtual Result<ManifestPtr> Parse(const std::string& content, const std::filesystem::path& path) = 0;
+        virtual Result<PackageManifest> Parse(const std::string& content, PackageType type) = 0;
     };
 }

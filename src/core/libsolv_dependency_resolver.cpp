@@ -62,7 +62,10 @@ LibsolvDependencyResolver::AddPackagesToPool(const PackageCollection& packages) 
     _packageToSolvableId.reserve(packages.size());
     _solvableIdToPackage.reserve(packages.size());
 
-    for (const auto& [id, manifest] : packages) {
+    for (const auto& package : packages) {
+        const auto& id = package.GetId();
+        const auto& manifest = package.GetManifest();
+
         Id solvableId = AddSolvable(manifest);
         _packageToSolvableId[id] = solvableId;
         _solvableIdToPackage[solvableId] = id;
@@ -78,20 +81,20 @@ LibsolvDependencyResolver::AddPackagesToPool(const PackageCollection& packages) 
 }
 
 Id
-LibsolvDependencyResolver::AddSolvable(const ManifestPtr& manifest) {
+LibsolvDependencyResolver::AddSolvable(const PackageManifest& manifest) {
     Id solvableId = repo_add_solvable(_repo);
     Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
     // Set package name
-    s->name = pool_str2id(_pool.get(), manifest->name.c_str(), 1);
+    s->name = pool_str2id(_pool.get(), manifest.name.c_str(), 1);
 
     // Set version
-    std::string versionStr = manifest->version.to_string();
+    std::string versionStr = manifest.version.to_string();
     s->evr = pool_str2id(_pool.get(), versionStr.c_str(), 1);
 
     // Set vendor
-    if (manifest->author) {
-        s->vendor = pool_str2id(_pool.get(), manifest->author->c_str(), 1);
+    if (manifest.author) {
+        s->vendor = pool_str2id(_pool.get(), manifest.author->c_str(), 1);
     }
 
     // Add self-provides
@@ -106,14 +109,14 @@ LibsolvDependencyResolver::AddSolvable(const ManifestPtr& manifest) {
 // ============================================================================
 
 void
-LibsolvDependencyResolver::SetupDependencies(Id solvableId, const ManifestPtr& manifest) {
-    if (!manifest->dependencies || manifest->dependencies->empty()) {
+LibsolvDependencyResolver::SetupDependencies(Id solvableId, const PackageManifest& manifest) {
+    if (!manifest.dependencies || manifest.dependencies->empty()) {
         return;
     }
 
     Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
-    for (const auto& dependency : *manifest->dependencies) {
+    for (const auto& dependency : *manifest.dependencies) {
         const auto& [depName, constraints, optional] = *dependency._impl;
 
         Id depId = MakeDepConstraint(depName, constraints);
@@ -129,14 +132,14 @@ LibsolvDependencyResolver::SetupDependencies(Id solvableId, const ManifestPtr& m
 }
 
 void
-LibsolvDependencyResolver::SetupConflicts(Id solvableId, const ManifestPtr& manifest) {
-    if (!manifest->conflicts || manifest->conflicts->empty()) {
+LibsolvDependencyResolver::SetupConflicts(Id solvableId, const PackageManifest& manifest) {
+    if (!manifest.conflicts || manifest.conflicts->empty()) {
         return;
     }
 
     Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
-    for (const auto& conflict : *manifest->conflicts) {
+    for (const auto& conflict : *manifest.conflicts) {
         const auto& [conflictName, constraints, reason] = *conflict._impl;
 
         Id conflictId = MakeDepConstraint(conflictName, constraints);
@@ -147,14 +150,14 @@ LibsolvDependencyResolver::SetupConflicts(Id solvableId, const ManifestPtr& mani
 }
 
 void
-LibsolvDependencyResolver::SetupObsoletes(Id solvableId, const ManifestPtr& manifest) {
-    if (!manifest->obsoletes || manifest->obsoletes->empty()) {
+LibsolvDependencyResolver::SetupObsoletes(Id solvableId, const PackageManifest& manifest) {
+    if (!manifest.obsoletes || manifest.obsoletes->empty()) {
         return;
     }
 
     Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
-    for (const auto& obsolete : *manifest->obsoletes) {
+    for (const auto& obsolete : *manifest.obsoletes) {
         const auto& [obsoleteName, constraints, reason] = *obsolete._impl;
 
         Id obsoleteId = MakeDepConstraint(obsoleteName, constraints);

@@ -78,7 +78,7 @@ namespace plugify {
             }
         }
     };
-
+#if 0
     // Enhanced Loader class with better error handling and preloading support
     class Loader {
     public:
@@ -268,6 +268,19 @@ namespace plugify {
             assemblyCache[*absPath] = *assemblyResult;
             return {};
         }*/
+
+        void Loader::MethodExport(std::shared_ptr<Module> module, std::shared_ptr<Plugin> plugin) {
+            StateTransition scope1(module.get(), ModuleState::Loaded, ModuleState::Loaded);
+            StateTransition scope2(plugin.get(), PluginState::Loaded, PluginState::Loaded);
+
+            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin->GetTable();
+            if (hasExport) {
+                module->GetLanguageModule()->OnMethodExport(plugin);
+            }
+
+            scope1.Commit();
+            scope2.Commit();
+        }
 
         // Statistics
         const LoadStatistics& GetStatistics() const { return stats; }

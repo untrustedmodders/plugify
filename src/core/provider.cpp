@@ -17,6 +17,19 @@ Provider::Provider(std::shared_ptr<Context> context, std::shared_ptr<Manager> ma
 
 Provider::~Provider() = default;
 
+/*Provider::Provider(const Provider& other)
+    : _impl(std::make_unique<Impl>(*other._impl)) {}
+
+Provider::Provider(Provider&& other) noexcept = default;
+
+Provider& Provider::operator=(const Provider& other) {
+    if (this != &other) {
+        _impl = std::make_unique<Impl>(*other._impl);
+    }
+    return *this;
+}
+Provider& Provider::operator=(Provider&& other) noexcept = default;*/
+
 void Provider::Log(std::string_view msg, Severity severity, const std::source_location& loc) const {
     if (auto logger = _impl->context->GetService<ILogger>()) {
         logger->Log(msg, severity, loc);

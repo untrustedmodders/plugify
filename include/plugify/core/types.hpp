@@ -7,6 +7,7 @@
 //#include "plg/uuid.hpp"
 #include "plg/version.hpp"
 #include "plg/expected.hpp"
+#include "plg/flat_map.hpp"
 #include "plg/enum.hpp"
 
 namespace plugify {

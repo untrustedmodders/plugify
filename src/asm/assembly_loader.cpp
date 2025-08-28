@@ -9,8 +9,8 @@ namespace fs = std::filesystem;
 thread_local std::vector<fs::path> searchPaths;
 #endif
 
-Result<std::unique_ptr<IAssembly>> AssemblyLoader::Load(const fs::path& path, LoadFlag flags) {
-	auto assembly = std::make_unique<Assembly>(path, flags, searchPaths, false);
+Result<std::shared_ptr<IAssembly>> AssemblyLoader::Load(const fs::path& path, LoadFlag flags) {
+	auto assembly = std::make_shared<Assembly>(path, flags, searchPaths, false);
 #if PLUGIFY_PLATFORM_WINDOWS
 	defer {
 		searchPaths.clear();
@@ -19,7 +19,7 @@ Result<std::unique_ptr<IAssembly>> AssemblyLoader::Load(const fs::path& path, Lo
 	if (!assembly->IsValid()) {
 		return plg::unexpected(assembly->GetError());
 	}
-	return std::unique_ptr<IAssembly>(std::move(assembly));
+	return assembly;
 }
 
 bool AssemblyLoader::AddSearchPath(const fs::path& path) {

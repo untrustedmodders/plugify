@@ -2,8 +2,7 @@
 
 #include "plg/macro.hpp"
 
-#if PLUGIFY_CPP_VERSION > 202002L
-
+#ifdef __cpp_lib_expected
 #include <expected>
 namespace plg {
 	using std::expected;

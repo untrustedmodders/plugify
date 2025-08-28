@@ -15,6 +15,10 @@ namespace plugify {
     public:
         explicit Provider(std::shared_ptr<Context> context, std::shared_ptr<Manager> manager);
         ~Provider();
+        Provider(const Provider& other) = delete;
+        Provider(Provider&& other) noexcept = delete;
+        Provider& operator=(const Provider& other) = delete;
+        Provider& operator=(Provider&& other) noexcept = delete;
 
         // Logging helpers
         void Log(std::string_view msg, Severity severity = Severity::Info, const std::source_location& loc = std::source_location::current()) const;
@@ -76,6 +80,9 @@ namespace plugify {
         [[nodiscard]] std::shared_ptr<Service> GetService() const {
             return GetContext()->GetService<Service>();
         }
+
+        [[nodiscard]] bool operator==(const Provider& other) const noexcept;
+        [[nodiscard]] auto operator<=>(const Provider& other) const noexcept;
 
     private:
         // Access to context for advanced use cases

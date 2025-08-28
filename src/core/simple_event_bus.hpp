@@ -44,7 +44,7 @@ namespace plugify {
 
     private:
         mutable std::mutex _mutex;
-        std::unordered_map<std::string, std::vector<std::pair<SubscriptionId, EventHandler>>, plg::string_hash> _handlers;
+        plg::flat_map<std::string, std::vector<std::pair<SubscriptionId, EventHandler>>> _handlers;
         SubscriptionId _nextId = 1;
     };
 }

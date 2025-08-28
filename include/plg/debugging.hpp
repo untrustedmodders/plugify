@@ -2,11 +2,11 @@
 
 #include "plg/macro.hpp"
 
-#if PLUGIFY_DEBUGGING_SUPPORT
+#ifdef __cpp_lib_debugging
 
 #include <debugging>
 
-#else // PLUGIFY_DEBUGGING_SUPPORT
+#else //def __cpp_lib_debugging
 
 #if PLUGIFY_PLATFORM_WINDOWS
 #include <windows.h>
@@ -25,16 +25,16 @@
 #include <unistd.h>
 #endif
 
-#endif // PLUGIFY_DEBUGGING_SUPPORT
+#endif //def __cpp_lib_debugging
 
 namespace plg {
-#if PLUGIFY_DEBUGGING_SUPPORT
+#ifdef __cpp_lib_debugging
 
 	using std::breakpoint;
 	using std::breakpoint_if_debugging;
 	using std::is_debugger_present;
 
-#else // PLUGIFY_DEBUGGING_SUPPORT
+#else //def __cpp_lib_debugging
 
 #if PLUGIFY_PLATFORM_WINDOWS
 
@@ -208,5 +208,5 @@ namespace plg {
 		}
 	}
 
-#endif // PLUGIFY_DEBUGGING_SUPPORT
+#endif //def __cpp_lib_debugging
 } // namespace plg

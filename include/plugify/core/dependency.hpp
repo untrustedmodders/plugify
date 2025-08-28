@@ -30,9 +30,9 @@ namespace plugify {
 		[[nodiscard]] bool IsOptional() const noexcept;
 
 		// Setters (pass by value and move)
-		void SetName(std::string name) noexcept;
-		void SetConstraints(Constraint constraints) noexcept;
-		void SetOptional(bool optional) noexcept;
+		void SetName(std::string name);
+		void SetConstraints(Constraint constraints);
+		void SetOptional(bool optional);
 
 		[[nodiscard]] bool operator==(const Dependency& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Dependency& other) const noexcept;

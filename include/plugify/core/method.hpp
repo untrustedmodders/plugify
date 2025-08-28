@@ -34,12 +34,12 @@ namespace plugify {
 	    [[nodiscard]] const std::string& GetCallConv() const noexcept;
 
 	    // Setters (pass by value and move)
-	    void SetParamTypes(std::vector<Property> paramTypes) noexcept;
-	    void SetRetType(Property retType) noexcept;
-	    void SetVarIndex(uint8_t varIndex) noexcept;
-	    void SetName(std::string name) noexcept;
-	    void SetFuncName(std::string funcName) noexcept;
-	    void SetCallConv(std::string callConv) noexcept;
+	    void SetParamTypes(std::vector<Property> paramTypes);
+	    void SetRetType(Property retType);
+	    void SetVarIndex(uint8_t varIndex);
+	    void SetName(std::string name);
+	    void SetFuncName(std::string funcName);
+	    void SetCallConv(std::string callConv);
 
 		[[nodiscard]] bool operator==(const Method& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Method& other) const noexcept;

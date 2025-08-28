@@ -28,8 +28,8 @@ namespace plugify {
 	    [[nodiscard]] const std::vector<EnumValue>& GetValues() const noexcept;
 
 	    // Setters (pass by value and move)
-	    void SetName(std::string name) noexcept;
-	    void SetValues(std::vector<EnumValue> values) noexcept;
+	    void SetName(std::string name);
+	    void SetValues(std::vector<EnumValue> values);
 
 		[[nodiscard]] bool operator==(const Enum& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Enum& other) const noexcept;

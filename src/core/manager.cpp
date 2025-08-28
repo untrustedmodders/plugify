@@ -616,7 +616,7 @@ private:
 // ============================================================================
 
 // Parsing Stage - Transform type
-class ParsingStage : public ITransformStage<PackageInfo> {
+class ParsingStage : public ITransformStage<Package> {
     std::shared_ptr<IManifestParser> parser_;
     std::shared_ptr<IFileSystem> fileSystem_;
 
@@ -627,13 +627,13 @@ public:
 
     std::string_view GetName() const override { return "Parsing"; }
 
-    bool ShouldProcess(const PackageInfo& item) const override {
+    bool ShouldProcess(const Package& item) const override {
         return item.GetState() == PackageState::Discovered;
     }
 
     std::expected<void, std::string> ProcessItem(
-        PackageInfo& pkg,
-        [[maybe_unused]] const ExecutionContext<PackageInfo>& ctx) override {
+        Package& pkg,
+        [[maybe_unused]] const ExecutionContext<Package>& ctx) override {
 
         pkg.StartOperation(PackageState::Parsing);
 
@@ -644,7 +644,7 @@ public:
             return std::unexpected(std::move(content.error()));
         }
 
-        auto manifest = parser_->Parse(*content, pkg.GetPath());
+        auto manifest = parser_->Parse(*content, pkg.GetType());
         if (!manifest) {
             pkg.AddError(manifest.error());
             pkg.EndOperation(PackageState::Corrupted);
@@ -659,17 +659,17 @@ public:
 };
 
 // Resolution Stage - Barrier type (reorders and filters)
-class ResolutionStage : public IBarrierStage<PackageInfo> {
+class ResolutionStage : public IBarrierStage<Package> {
     std::shared_ptr<IDependencyResolver> resolver_;
-    std::unordered_map<UniqueId, std::vector<UniqueId>>* dependencyGraph_;
-    std::unordered_map<UniqueId, std::vector<UniqueId>>* reverseDependencyGraph_;
+    plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph_;
+    plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDependencyGraph_;
     std::optional<std::unordered_set<std::string>> whitelist_;
     std::optional<std::unordered_set<std::string>> blacklist_;
     
 public:
     ResolutionStage(std::shared_ptr<IDependencyResolver> resolver,
-                    std::unordered_map<UniqueId, std::vector<UniqueId>>* depGraph,
-                    std::unordered_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph)
+                    plg::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
+                    plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph)
         : resolver_(std::move(resolver))
         , dependencyGraph_(depGraph)
         , reverseDependencyGraph_(reverseDepGraph) {}
@@ -682,13 +682,13 @@ public:
         blacklist_ = std::move(black);
     }
     
-    std::expected<std::vector<PackageInfo>, std::string> ProcessAll(
-        std::vector<PackageInfo> items,
-        [[maybe_unused]] const ExecutionContext<PackageInfo>& ctx
+    std::expected<std::vector<Package>, std::string> ProcessAll(
+        std::vector<Package> items,
+        [[maybe_unused]] const ExecutionContext<Package>& ctx
     ) override {
         // Step 1: Filter packages based on whitelist/blacklist
-        std::vector<PackageInfo> filtered;
-        std::vector<PackageInfo> excluded;
+        std::vector<Package> filtered;
+        std::vector<Package> excluded;
 
         filtered.reserve(items.size());
         //excluded.reserve(items.size());
@@ -714,6 +714,7 @@ public:
             }
             
             if (include) {
+                pkg.SetState(PackageState::Resolving);
                 filtered.push_back(std::move(pkg));
             } else {
                 pkg.SetState(PackageState::Disabled);
@@ -728,7 +729,7 @@ public:
         
         // Step 2: Build language registry and add language dependencies
         {
-            std::unordered_map<std::string, UniqueId> languages;
+            plg::flat_map<std::string, UniqueId> languages;
 
             for (const auto& pkg : filtered) {
                 if (pkg.GetType() == PackageType::Module) {
@@ -744,33 +745,24 @@ public:
                 }
             }
         }
-        
-        // Step 3: Build collection for resolver
-        PackageCollection collection;
-        collection.reserve(filtered.size());
-        
-        for (auto& pkg : filtered) {
-            pkg.SetState(PackageState::Resolving);
-            collection.emplace_back(pkg.GetId(), pkg.GetManifest());
-        }
-        
-        // Step 4: Resolve dependencies
-        auto report = resolver_->Resolve(collection);
+
+        // Step 3: Resolve dependencies
+        auto report = resolver_->Resolve(filtered);
         
         // Store dependency graphs
         *dependencyGraph_ = std::move(report.dependencyGraph);
         *reverseDependencyGraph_ = std::move(report.reverseDependencyGraph);
         
-        // Step 5: Create ID to package mapping for efficient lookup
-        std::unordered_map<UniqueId, PackageInfo> idToPackage;
+        // Step 4: Create ID to package mapping for efficient lookup
+        plg::flat_map<UniqueId, Package> idToPackage;
         idToPackage.reserve(idToPackage.size());
 
         for (auto&& pkg : filtered) {
             idToPackage[pkg.GetId()] = std::move(pkg);
         }
         
-        // Step 6: Build result in dependency order
-        std::vector<PackageInfo> result;
+        // Step 5: Build result in dependency order
+        std::vector<Package> result;
         result.reserve(report.loadOrder.size() + excluded.size());
         
         // Add resolved packages in load order
@@ -810,8 +802,8 @@ public:
     }
     
 private:
-    std::string GetPackageName(const std::vector<PackageInfo>& packages, UniqueId id) const {
-        auto it = std::find_if(packages.begin(), packages.end(), [&](const PackageInfo& p) {
+    std::string GetPackageName(const std::vector<Package>& packages, UniqueId id) const {
+        auto it = std::find_if(packages.begin(), packages.end(), [&](const Package& p) {
             return p.GetId() == id;
         });
         return it != packages.end() ? it->GetName() : "";
@@ -819,7 +811,7 @@ private:
 };
 
 // Example: Initialization Stage - Batch type for resource-limited operations
-/*class InitializationStage : public IBatchStage<PackageInfo> {
+/*class InitializationStage : public IBatchStage<Package> {
     Plugify& plugify_;
     std::atomic<size_t> activeInitializations_{0};
     static constexpr size_t MAX_CONCURRENT_INITS = 4;
@@ -835,17 +827,17 @@ public:
 
     bool ProcessBatchInParallel() const override { return true; }
 
-    void SetupBatch(std::span<PackageInfo> batch, size_t batchIndex,
-                    const ExecutionContext<PackageInfo>& ctx) override {
+    void SetupBatch(std::span<Package> batch, size_t batchIndex,
+                    const ExecutionContext<Package>& ctx) override {
         PL_LOG_DEBUG("Initializing batch {} with {} packages", batchIndex, batch.size());
         activeInitializations_ = 0;
     }
 
     std::expected<void, std::string> ProcessBatch(
-        std::span<PackageInfo> batch,
+        std::span<Package> batch,
         size_t batchIndex,
         size_t totalBatches,
-        const ExecutionContext<PackageInfo>& ctx) override {
+        const ExecutionContext<Package>& ctx) override {
 
         // Could perform batch-level resource allocation here
         // For example, pre-allocate shared resources for the batch
@@ -853,8 +845,8 @@ public:
         return {};
     }
 
-    void TeardownBatch(std::span<PackageInfo> batch, size_t batchIndex,
-                      const ExecutionContext<PackageInfo>& ctx) override {
+    void TeardownBatch(std::span<Package> batch, size_t batchIndex,
+                      const ExecutionContext<Package>& ctx) override {
         // Wait for all initializations in batch to complete
         while (activeInitializations_.load() > 0) {
             std::this_thread::yield();
@@ -863,29 +855,29 @@ public:
 };*/
 
 // Loading Stage - Sequential type
-class LoadingStage : public ISequentialStage<PackageInfo> {
+class LoadingStage : public ISequentialStage<Package> {
     Plugify& plugify_;
-    std::unordered_map<std::string, std::shared_ptr<Module>> loadedModules_;
-    const std::unordered_map<UniqueId, std::vector<UniqueId>>* dependencyGraph_;
+    plg::flat_map<std::string, std::shared_ptr<Module>> loadedModules_;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph_;
     
 public:
     LoadingStage(Plugify& plugify,
-                const std::unordered_map<UniqueId, std::vector<UniqueId>>* deps)
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>* deps)
         : plugify_(plugify), dependencyGraph_(deps) {}
     
     std::string_view GetName() const override { return "Loading"; }
     
     bool ContinueOnError() const override { return true; }
     
-    bool ShouldProcess(const PackageInfo& item) const override {
+    bool ShouldProcess(const Package& item) const override {
         return item.GetState() == PackageState::Resolved;
     }
     
     std::expected<void, std::string> ProcessItem(
-        PackageInfo& pkg,
+        Package& pkg,
         size_t position,
         size_t total,
-        const ExecutionContext<PackageInfo>& ctx) override {
+        const ExecutionContext<Package>& ctx) override {
         
         pkg.StartOperation(PackageState::Loading);
         
@@ -974,15 +966,15 @@ struct Manager::Impl {
     //std::shared_ptr<MetricsCollector> metricsCollector;
     
     // Dependency graphs (filled by resolution stage)
-    std::unordered_map<UniqueId, std::vector<UniqueId>> dependencyGraph;
-    std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;
+    plg::flat_map<UniqueId, std::vector<UniqueId>> dependencyGraph;
+    plg::flat_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;
     
 public:
     std::shared_ptr<InitializationState> Initialize() {
         auto state = std::make_shared<InitializationState>();
         
         // Step 1: Quick discovery
-        std::vector<PackageInfo> packages = DiscoverPackages();
+        std::vector<Package> packages = DiscoverPackages();
         
         // Step 2: Create resolution stage with filters
         auto resolutionStage = std::make_unique<ResolutionStage>(
@@ -991,7 +983,7 @@ public:
         resolutionStage->SetFilters(config->whitelistedPackages, config->blacklistedPackages);
         
         // Step 3: Build pipeline
-        auto pipeline = FlexiblePipeline<PackageInfo>::Create()
+        auto pipeline = FlexiblePipeline<Package>::Create()
             // Parse manifests in parallel (Transform stage)
             .AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
             
@@ -1040,7 +1032,7 @@ public:
     }
     
 private:
-    std::vector<PackageInfo> packages_;
+    std::vector<Package> packages_;
     
     static constexpr std::array<std::string_view, 2> MANIFEST_EXTENSIONS = {
         "*.pplugin"sv, "*.pmodule"sv
@@ -1063,8 +1055,8 @@ private:
     }
 
     // Step 1: Find all manifest files in parallel
-    std::vector<PackageInfo> DiscoverPackages() {
-        std::vector<PackageInfo> packages;
+    std::vector<Package> DiscoverPackages() {
+        std::vector<Package> packages;
 
         // Collect all paths
         auto paths = CollectManifestPaths();
@@ -1072,10 +1064,7 @@ private:
         // Create package entries
         packages.reserve(paths.size());
         for (auto&& path : paths) {
-            auto& pkg = packages.emplace_back();
-            pkg.SetId(static_cast<UniqueId>(packages.size() - 1));
-            pkg.SetPath(std::move(path));
-            pkg.SetState(PackageState::Discovered);
+            packages.emplace_back(id++, std::move(path));
         }
 
         return packages;
