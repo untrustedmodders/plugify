@@ -27,14 +27,14 @@ const std::string& Method::GetName() const noexcept { return _impl->name; }
 const std::string& Method::GetFuncName() const noexcept { return _impl->funcName; }
 const std::string& Method::GetCallConv() const noexcept { return _impl->callConv; }
 
-void Method::SetParamTypes(std::vector<Property> paramTypes) noexcept {
+void Method::SetParamTypes(std::vector<Property> paramTypes) {
     _impl->paramTypes = std::move(paramTypes);
 }
-void Method::SetRetType(Property retType) noexcept { _impl->retType = std::move(retType); }
-void Method::SetVarIndex(uint8_t varIndex) noexcept { _impl->varIndex = varIndex; }
-void Method::SetName(std::string name) noexcept { _impl->name = std::move(name); }
-void Method::SetFuncName(std::string funcName) noexcept { _impl->funcName = std::move(funcName); }
-void Method::SetCallConv(std::string callConv) noexcept { _impl->callConv = std::move(callConv); }
+void Method::SetRetType(Property retType) { _impl->retType = std::move(retType); }
+void Method::SetVarIndex(uint8_t varIndex) { _impl->varIndex = varIndex; }
+void Method::SetName(std::string name) { _impl->name = std::move(name); }
+void Method::SetFuncName(std::string funcName) { _impl->funcName = std::move(funcName); }
+void Method::SetCallConv(std::string callConv) { _impl->callConv = std::move(callConv); }
 
 bool Method::operator==(const Method& other) const noexcept = default;
 auto Method::operator<=>(const Method& other) const noexcept = default;

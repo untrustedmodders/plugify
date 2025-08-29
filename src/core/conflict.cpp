@@ -28,11 +28,11 @@ Constraint Conflict::GetConstraints() const noexcept {
 }
 const std::string& Conflict::GetReason() const noexcept { return _impl->reason ? *_impl->reason : emptyString; }
 
-void Conflict::SetName(std::string name) noexcept { _impl->name = std::move(name); }
-void Conflict::SetConstraints(Constraint constraints) noexcept {
+void Conflict::SetName(std::string name) { _impl->name = std::move(name); }
+void Conflict::SetConstraints(Constraint constraints) {
 	_impl->constraints = std::move(constraints);
 }
-void Conflict::SetReason(std::string reason) noexcept {
+void Conflict::SetReason(std::string reason) {
 	_impl->reason = std::move(reason);
 }
 

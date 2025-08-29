@@ -63,22 +63,22 @@ namespace plugify {
         ~LibsolvDependencyResolver() override = default;
 
         /**
-         * Resolves dependencies for all packages, producing a report with resolutions,
+         * Resolves dependencies for all extensions, producing a report with resolutions,
          * conflicts, and load order.
          * @return DependencyReport containing the resolution results
          */
-        DependencyResolution Resolve(const PackageCollection& packages) override;
+        DependencyResolution Resolve(const ExtensionCollection& extensions) override;
 
         void SetLogger(std::shared_ptr<ILogger> logger);
 
     private:
         // Setup functions
         void InitializePool();
-        void AddPackagesToPool(const PackageCollection& packages);
-        Id AddSolvable(const PackageManifest& manifest);
-        void SetupDependencies(Id solvableId, const PackageManifest& manifest);
-        void SetupConflicts(Id solvableId, const PackageManifest& manifest);
-        void SetupObsoletes(Id solvableId, const PackageManifest& manifest);
+        void AddExtensionsToPool(const ExtensionCollection& extensions);
+        Id AddSolvable(const Manifest& manifest);
+        void SetupDependencies(Id solvableId, const Manifest& manifest);
+        void SetupConflicts(Id solvableId, const Manifest& manifest);
+        void SetupObsoletes(Id solvableId, const Manifest& manifest);
 
         // Constraint conversion
         Id
@@ -94,8 +94,8 @@ namespace plugify {
     private:
         std::unique_ptr<Pool, PoolDeleter> _pool;
         Repo* _repo = nullptr;
-        plg::flat_map<UniqueId, Id> _packageToSolvableId;
-        plg::flat_map<Id, UniqueId> _solvableIdToPackage;
+        plg::flat_map<UniqueId, Id> _extensionToSolvableId;
+        plg::flat_map<Id, UniqueId> _solvableIdToExtension;
         std::shared_ptr<ILogger> _logger;
     };
 } // namespace plugify

@@ -9,12 +9,12 @@ using namespace plugify;
 // ============================================================================
 
 DependencyResolution
-LibsolvDependencyResolver::Resolve(const PackageCollection& packages) {
+LibsolvDependencyResolver::Resolve(const ExtensionCollection& extensions) {
     // Step 1: Initialize libsolv pool
     InitializePool();
 
-    // Step 2: Add all packages to the pool
-    AddPackagesToPool(packages);
+    // Step 2: Add all extensions to the pool
+    AddExtensionsToPool(extensions);
 
     // Step 3: Run the solver
     return RunSolver();
@@ -53,22 +53,22 @@ LibsolvDependencyResolver::InitializePool() {
     constexpr int level = PLUGIFY_IS_DEBUG ? 3 : 1;
     pool_setdebuglevel(_pool.get(), level);
 
-    // Create a repository for our packages
+    // Create a repository for our extensions
     _repo = repo_create(_pool.get(), "installed");
 }
 
 void
-LibsolvDependencyResolver::AddPackagesToPool(const PackageCollection& packages) {
-    _packageToSolvableId.reserve(packages.size());
-    _solvableIdToPackage.reserve(packages.size());
+LibsolvDependencyResolver::AddExtensionsToPool(const ExtensionCollection& extensions) {
+    _extensionToSolvableId.reserve(extensions.size());
+    _solvableIdToExtension.reserve(extensions.size());
 
-    for (const auto& package : packages) {
-        const auto& id = package.GetId();
-        const auto& manifest = package.GetManifest();
+    for (const auto& extension : extensions) {
+        const auto& id = extension.GetId();
+        const auto& manifest = extension.GetManifest();
 
         Id solvableId = AddSolvable(manifest);
-        _packageToSolvableId[id] = solvableId;
-        _solvableIdToPackage[solvableId] = id;
+        _extensionToSolvableId[id] = solvableId;
+        _solvableIdToExtension[solvableId] = id;
 
         // Setup dependencies and conflicts
         SetupDependencies(solvableId, manifest);
@@ -76,16 +76,16 @@ LibsolvDependencyResolver::AddPackagesToPool(const PackageCollection& packages) 
         SetupObsoletes(solvableId, manifest);
     }
 
-    // Create provides for all packages (self-provides)
+    // Create provides for all extensions (self-provides)
     pool_createwhatprovides(_pool.get());
 }
 
 Id
-LibsolvDependencyResolver::AddSolvable(const PackageManifest& manifest) {
+LibsolvDependencyResolver::AddSolvable(const Manifest& manifest) {
     Id solvableId = repo_add_solvable(_repo);
     Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
-    // Set package name
+    // Set extension name
     s->name = pool_str2id(_pool.get(), manifest.name.c_str(), 1);
 
     // Set version
@@ -109,7 +109,7 @@ LibsolvDependencyResolver::AddSolvable(const PackageManifest& manifest) {
 // ============================================================================
 
 void
-LibsolvDependencyResolver::SetupDependencies(Id solvableId, const PackageManifest& manifest) {
+LibsolvDependencyResolver::SetupDependencies(Id solvableId, const Manifest& manifest) {
     if (!manifest.dependencies || manifest.dependencies->empty()) {
         return;
     }
@@ -132,7 +132,7 @@ LibsolvDependencyResolver::SetupDependencies(Id solvableId, const PackageManifes
 }
 
 void
-LibsolvDependencyResolver::SetupConflicts(Id solvableId, const PackageManifest& manifest) {
+LibsolvDependencyResolver::SetupConflicts(Id solvableId, const Manifest& manifest) {
     if (!manifest.conflicts || manifest.conflicts->empty()) {
         return;
     }
@@ -150,7 +150,7 @@ LibsolvDependencyResolver::SetupConflicts(Id solvableId, const PackageManifest& 
 }
 
 void
-LibsolvDependencyResolver::SetupObsoletes(Id solvableId, const PackageManifest& manifest) {
+LibsolvDependencyResolver::SetupObsoletes(Id solvableId, const Manifest& manifest) {
     if (!manifest.obsoletes || manifest.obsoletes->empty()) {
         return;
     }
@@ -244,13 +244,13 @@ LibsolvDependencyResolver::RunSolver() {
     solver_set_flag(solver.get(), SOLVER_FLAG_ALLOW_DOWNGRADE, 1);
     solver_set_flag(solver.get(), SOLVER_FLAG_SPLITPROVIDES, 1);
 
-    // Create job queue - install all packages
+    // Create job queue - install all extensions
     Queue queue;
     std::unique_ptr<Queue, QueueDeleter> jobs(&queue);
     queue_init(jobs.get());
 
-    // Add all packages as install jobs
-    for (const auto& [pkgId, solvId] : _packageToSolvableId) {
+    // Add all extensions as install jobs
+    for (const auto& [extId, solvId] : _extensionToSolvableId) {
         queue_push2(jobs.get(), SOLVER_SOLVABLE | SOLVER_INSTALL, solvId);
     }
 
@@ -291,18 +291,18 @@ LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, DependencyResol
         issue.problem = std::format("Problem {}/{}", problemId, problemCount);
         issue.isBlocking = true; // All problems from solver are blocking
 
-        // Determine affected packages
+        // Determine affected extensions
         if (source) {
-            auto it = _solvableIdToPackage.find(source);
-            if (it != _solvableIdToPackage.end()) {
-                issue.affectedPackage = it->second;
+            auto it = _solvableIdToExtension.find(source);
+            if (it != _solvableIdToExtension.end()) {
+                issue.affectedExtension = it->second;
             }
         }
 
         if (target) {
-            auto it = _solvableIdToPackage.find(target);
-            if (it != _solvableIdToPackage.end()) {
-                issue.involvedPackage = it->second;
+            auto it = _solvableIdToExtension.find(target);
+            if (it != _solvableIdToExtension.end()) {
+                issue.involvedExtension = it->second;
             }
         }
 
@@ -313,12 +313,12 @@ LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, DependencyResol
         issue.suggestedFixes = ExtractSolutions(solver, problemId);
 
         // Add issue to report
-        if (issue.affectedPackage != -1) {
-            auto it = resolution.issues.find(issue.affectedPackage);
+        if (issue.affectedExtension != -1) {
+            auto it = resolution.issues.find(issue.affectedExtension);
             if (it != resolution.issues.end()) {
                 it->second.push_back(std::move(issue));
             } else {
-                resolution.issues.emplace(issue.affectedPackage, std::vector{std::move(issue)});
+                resolution.issues.emplace(issue.affectedExtension, std::vector{std::move(issue)});
             }
         }
     }
@@ -353,9 +353,9 @@ LibsolvDependencyResolver::ExtractSolutions(Solver* solver, Id problemId) {
 
     // If no solutions found, add generic suggestions
     if (fixes.empty()) {
-        fixes.emplace_back("Check package availability");
+        fixes.emplace_back("Check extension availability");
         fixes.emplace_back("Review version constraints");
-        fixes.emplace_back("Consider removing conflicting packages");
+        fixes.emplace_back("Consider removing conflicting extensions");
     }
 
     // Add fixes to the last issue in report
@@ -379,7 +379,7 @@ LibsolvDependencyResolver::ComputeInstallationOrder(
     resolution.dependencyGraph.reserve(count);
     resolution.reverseDependencyGraph.reserve(count);
 
-    // Get installed packages from transaction
+    // Get installed extensions from transaction
     for (size_t i = 0; i < count; i++) {
         Id p = trans->steps.elements[i];
 
@@ -391,10 +391,10 @@ LibsolvDependencyResolver::ComputeInstallationOrder(
             type == SOLVER_TRANSACTION_DOWNGRADE ||
             type == SOLVER_TRANSACTION_UPGRADE)*/
         {
-            auto pkgIt = _solvableIdToPackage.find(p);
-            if (pkgIt != _solvableIdToPackage.end()) {
-                const UniqueId& pkgId = pkgIt->second;
-                resolution.loadOrder.push_back(pkgId);
+            auto extIt = _solvableIdToExtension.find(p);
+            if (extIt != _solvableIdToExtension.end()) {
+                const UniqueId& extId = extIt->second;
+                resolution.loadOrder.push_back(extId);
 
                 // Build dependency graph
                 Solvable* s = pool_id2solvable(_pool.get(), p);
@@ -410,11 +410,11 @@ LibsolvDependencyResolver::ComputeInstallationOrder(
                             Id* pp;
                             for (pp = _pool->whatprovidesdata + providers; *pp; pp++) {
                                 Id providerId = *pp;
-                                auto depIt = _solvableIdToPackage.find(providerId);
-                                if (depIt != _solvableIdToPackage.end() && providerId != p) {
+                                auto depIt = _solvableIdToExtension.find(providerId);
+                                if (depIt != _solvableIdToExtension.end() && providerId != p) {
                                     const UniqueId& depId = depIt->second;
-                                    resolution.dependencyGraph[pkgId].push_back(depId);
-                                    resolution.reverseDependencyGraph[depId].push_back(pkgId);
+                                    resolution.dependencyGraph[extId].push_back(depId);
+                                    resolution.reverseDependencyGraph[depId].push_back(extId);
                                 }
                             }
                         }

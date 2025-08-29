@@ -44,8 +44,8 @@ const std::filesystem::path& Provider::GetBaseDir() const noexcept {
     return _impl->context->GetConfig().paths.baseDir;
 }
 
-const std::filesystem::path& Provider::GetPluginsDir() const noexcept {
-    return _impl->context->GetConfig().paths.pluginsDir;
+const std::filesystem::path& Provider::GetExtensionsDir() const noexcept {
+    return _impl->context->GetConfig().paths.extensionsDir;
 }
 
 const std::filesystem::path& Provider::GetConfigsDir() const noexcept {
@@ -64,29 +64,21 @@ const std::filesystem::path& Provider::GetCacheDir() const noexcept {
     return _impl->context->GetConfig().paths.cacheDir;
 }
 
-bool Provider::IsPluginLoaded(std::string_view name, std::optional<Constraint> version) const noexcept {
-    return _impl->manager->IsPluginLoaded(name, version);
+bool Provider::IsExtensionLoaded(std::string_view name, std::optional<Constraint> version) const noexcept {
+    return _impl->manager->IsExtensionLoaded(name, std::move(version));
 }
 
-std::shared_ptr<Plugin> Provider::FindPlugin(std::string_view name) const {
-    return _impl->manager->FindPlugin(name);
+std::shared_ptr<Extension> Provider::FindExtension(std::string_view name) const {
+    return _impl->manager->FindExtension(name);
 }
 
-std::vector<std::shared_ptr<Plugin>> Provider::GetPlugins() const {
-    return _impl->manager->GetPlugins();
+std::vector<std::shared_ptr<Extension>> Provider::GetExtensions() const {
+    return _impl->manager->GetExtensions();
 }
 
-bool Provider::IsModuleLoaded(std::string_view name, std::optional<Constraint> version) const noexcept {
-    return _impl->manager->IsModuleLoaded(name, version);
-}
+bool Provider::operator==(const Provider& other) const noexcept = default;
 
-std::shared_ptr<Module> Provider::FindModule(std::string_view name) const {
-    return _impl->manager->FindModule(name);
-}
-
-std::vector<std::shared_ptr<Module>> Provider::GetModules() const {
-    return _impl->manager->GetModules();
-}
+auto Provider::operator<=>(const Provider& other) const noexcept = default;
 
 std::shared_ptr<Context> Provider::GetContext() const noexcept {
     return _impl->context;

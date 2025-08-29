@@ -15,7 +15,7 @@ namespace plugify {
         Context(ServiceLocator services, Config config)
             : _services(std::move(services)), _config(std::move(config)) {}
 
-        // Immutable config access
+        //[[nodiscard]] const ServiceLocator& GetServices() const noexcept {  return _services; }
         [[nodiscard]] const Config& GetConfig() const noexcept { return _config; }
 
         // Service access with type safety
@@ -40,6 +40,7 @@ namespace plugify {
         [[nodiscard]] std::shared_ptr<IConfigProvider> GetConfigProvider() const {
             return GetService<IConfigProvider>();
         }*/
+
 
     private:
         ServiceLocator _services;

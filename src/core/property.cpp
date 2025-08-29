@@ -23,14 +23,14 @@ Property& Property::operator=(Property&& other) noexcept = default;
 ValueType Property::GetType() const noexcept { return _impl->type; }
 bool Property::IsRef() const noexcept { return _impl->ref.value_or(false); }
 std::shared_ptr<Method> Property::GetPrototype() const noexcept { return _impl->prototype; }
-std::shared_ptr<Enum> Property::GetEnumerate() const noexcept { return _impl->enumerate; }
+std::shared_ptr<EnumObject> Property::GetEnumerate() const noexcept { return _impl->enumerate; }
 
-void Property::SetType(ValueType type) noexcept { _impl->type = type; }
-void Property::SetRef(bool ref) noexcept { _impl->ref = ref; }
-void Property::SetPrototype(std::shared_ptr<Method> prototype) noexcept {
+void Property::SetType(ValueType type) { _impl->type = type; }
+void Property::SetRef(bool ref) { _impl->ref = ref; }
+void Property::SetPrototype(std::shared_ptr<Method> prototype) {
     _impl->prototype = std::move(prototype);
 }
-void Property::SetEnumerate(std::shared_ptr<Enum> enumerate) noexcept {
+void Property::SetEnumerate(std::shared_ptr<EnumObject> enumerate) {
     _impl->enumerate = std::move(enumerate);
 }
 

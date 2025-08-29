@@ -1,6 +1,7 @@
 #pragma once
 
 #include "plugify/core/manifest_parser.hpp"
+#include "core/glaze_metadata.hpp"
 
 namespace plugify {
     /**
@@ -14,6 +15,12 @@ namespace plugify {
          * @param type The manifest type
          * @return A Result containing the parsed Manifest or an error
          */
-        Result<PackageManifest> Parse(const std::string& content, PackageType type) override;
+        Result<Manifest> Parse(const std::string& content, [[maybe_unused]] ExtensionType type) override  {
+            auto parsed = glz::read_jsonc<Manifest>(content);
+            if (!parsed) {
+                return plg::unexpected(glz::format_error(parsed.error(), content));
+            }
+            return *parsed;
+        }
     };
 }

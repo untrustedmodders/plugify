@@ -13,7 +13,7 @@ namespace plugify {
         // Paths configuration
         struct Paths {
             std::filesystem::path baseDir;
-            std::filesystem::path pluginsDir = "plugins";
+            std::filesystem::path extensionsDir = "extensions";
             std::filesystem::path configsDir = "configs";
             std::filesystem::path dataDir = "data";
             std::filesystem::path logsDir = "logs";
@@ -43,8 +43,8 @@ namespace plugify {
             //bool verifySignatures = false;
             //bool allowUnsignedPlugins = true;
             //std::vector<std::string> trustedPublishers;
-            std::vector<std::string> whitelistedPackages;
-            std::vector<std::string> blacklistedPackages;
+            std::vector<std::string> whitelistedExtensions;
+            std::vector<std::string> blacklistedExtensions;
         } security;
 
         // Logging configuration
@@ -74,18 +74,18 @@ namespace plugify {
 		//bool failOnModuleError = false;
 		//bool continueOnValidationWarnings = true;
 		bool respectDependencyOrder = true;  // Initialize in dependency order
-		bool skipDependentsOnFailure = true; // Skip packages if their dependencies fail
+		bool skipDependentsOnFailure = true; // Skip extensions if their dependencies fail
 		bool printSummary = true;  // Print initialization summary to console
 
 		// Update behavior
-		//bool failOnUpdateError = false;      // Whether to fail if any package update fails
+		//bool failOnUpdateError = false;      // Whether to fail if any extension update fails
 		//bool verboseUpdates = false;         // Log update errors to console
 		//bool trackUpdatePerformance = true;  // Track update timing statistics
 		//std::chrono::microseconds slowUpdateThreshold{16667}; // ~60 FPS threshold
 
 		// Timeouts
 		//std::chrono::milliseconds initializationTimeout{30000};
-		//std::chrono::milliseconds perPackageTimeout{5000};
+		//std::chrono::milliseconds perExtensionTimeout{5000};
 	};*/
 #if 0
     // TODO: Consider config system

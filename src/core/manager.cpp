@@ -5,10 +5,8 @@
 #include "plugify/asm/assembly_loader.hpp"
 #include "plugify/core/config.hpp"
 #include "plugify/core/manifest.hpp"
-#include "plugify/core/module.hpp"
-#include "plugify/core/package.hpp"
+#include "plugify/core/extension.hpp"
 #include "plugify/core/plugify.hpp"
-#include "plugify/core/plugin.hpp"
 #include "plugify/core/progress_reporter.hpp"
 
 #include "core/loader.hpp"
@@ -36,7 +34,7 @@ struct ExecutionContext {
     plg::thread_pool<>& threadPool;
     std::shared_ptr<IProgressReporter> reporter;
     //std::shared_ptr<MetricsCollector> metrics;
-    std::shared_ptr<Config> config;
+    //std::shared_ptr<Config> config;
 };
 
 // Base interface
@@ -44,8 +42,21 @@ template<typename T>
 class IStage {
 public:
     virtual ~IStage() = default;
+
     virtual std::string_view GetName() const = 0;
+
     virtual StageType GetType() const = 0;
+
+    // Optional: setup/teardown
+    virtual void Setup(
+        [[maybe_unused]] std::span<T> items,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {}
+
+    virtual void Teardown(
+        [[maybe_unused]] std::span<T> items,
+        [[maybe_unused]] const ExecutionContext<T>& ctx
+    ) {}
 };
 
 // Transform stage - processes items in place
@@ -61,16 +72,6 @@ public:
 
     // Optional: filter predicate
     virtual bool ShouldProcess([[maybe_unused]] const T& item) const { return true; }
-
-    // Optional: setup/teardown
-    virtual void Setup(
-        [[maybe_unused]] std::span<T> items,
-        [[maybe_unused]] const ExecutionContext<T>& ctx
-    ) {}
-    virtual void Teardown(
-        [[maybe_unused]] std::span<T> items,
-        [[maybe_unused]] const ExecutionContext<T>& ctx
-    ) {}
 };
 
 // Barrier stage - can reorder and filter the container
@@ -146,19 +147,6 @@ public:
         return true;
     }
 
-    // Optional: Setup/teardown for entire stage
-    virtual void Setup(
-        [[maybe_unused]] std::span<T> items,
-        [[maybe_unused]] const ExecutionContext<T>& ctx
-    ) {
-    }
-
-    virtual void Teardown(
-        [[maybe_unused]] std::span<T> items,
-        [[maybe_unused]] const ExecutionContext<T>& ctx
-    ) {
-    }
-
     // Optional: Setup/teardown for each batch
     virtual void SetupBatch(
         [[maybe_unused]] std::span<T> batch,
@@ -172,6 +160,67 @@ public:
         [[maybe_unused]] size_t batchIndex,
         [[maybe_unused]] const ExecutionContext<T>& ctx
     ) {
+    }
+};
+
+// Shared failure tracker that can be passed between stages
+class FailureTracker {
+    std::unordered_set<UniqueId> failedExtensions_;
+    mutable std::shared_mutex mutex_;
+
+public:
+    FailureTracker(size_t capacity) {
+        failedExtensions_.reserve(capacity);
+    }
+
+    void MarkFailed(UniqueId id) {
+        std::unique_lock lock(mutex_);
+        failedExtensions_.insert(id);
+    }
+
+    bool HasFailed(UniqueId id) const {
+        std::shared_lock lock(mutex_);
+        return failedExtensions_.contains(id);
+    }
+
+    bool HasAnyDependencyFailed(
+        const Extension& ext,
+        const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps) const {
+
+        std::shared_lock lock(mutex_);
+
+        // Check if any of this extension's dependencies have failed
+        if (auto it = reverseDeps.find(ext.GetId()); it != reverseDeps.end()) {
+            for (const auto& depId : it->second) {
+                if (failedExtensions_.contains(depId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    std::string_view GetFailedDependencyName(
+        const Extension& ext,
+        const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps,
+        std::span<const Extension> allExtensions) const {
+
+        std::shared_lock lock(mutex_);
+
+        if (auto it = reverseDeps.find(ext.GetId()); it != reverseDeps.end()) {
+            for (const auto& depId : it->second) {
+                if (failedExtensions_.contains(depId)) {
+                    // Find the name of the failed dependency
+                    auto extIt = std::find_if(allExtensions.begin(), allExtensions.end(),
+                        [&](const Extension& e) { return e.GetId() == depId; });
+                    if (extIt != allExtensions.end()) {
+                        return extIt->GetName();
+                    }
+                    return "unknown";
+                }
+            }
+        }
+        return "";
     }
 };
 
@@ -193,7 +242,7 @@ template<typename T>
 class FlexiblePipeline {
 public:
     struct PipelineReport {
-        std::vector<std::pair<std::string_view, StageStatistics>> stages;
+        std::vector<std::pair<std::string, StageStatistics>> stages;
         Duration totalTime{0};
         size_t initialItems = 0;
         size_t finalItems = 0;
@@ -226,8 +275,8 @@ public:
             bool required = true;
         };
 
-        std::vector<StageEntry> stages_;
-        std::shared_ptr<IProgressReporter> reporter_;
+        std::vector<StageEntry> _stages;
+        std::shared_ptr<IProgressReporter> _reporter;
         //std::shared_ptr<MetricsCollector> metrics_;
         size_t threadPoolSize_ = std::thread::hardware_concurrency();
         std::shared_ptr<Config> config_;
@@ -236,12 +285,12 @@ public:
         template<typename StageType>
         Builder& AddStage(std::unique_ptr<StageType> stage, bool required = true) {
             static_assert(std::is_base_of_v<IStage<T>, StageType>);
-            stages_.push_back({std::move(stage), required});
+            _stages.push_back({std::move(stage), required});
             return *this;
         }
 
         Builder& WithReporter(std::shared_ptr<IProgressReporter> reporter) {
-            reporter_ = std::move(reporter);
+            _reporter = std::move(reporter);
             return *this;
         }
 
@@ -269,13 +318,13 @@ public:
 
 private:
     FlexiblePipeline(Builder&& builder)
-        : threadPool_(builder.threadPoolSize_)
-        , reporter_(std::move(builder.reporter_))
+        : _threadPool(builder.threadPoolSize_)
+        , _reporter(std::move(builder._reporter))
         //, metrics_(std::move(builder.metrics_))
         , config_(std::move(builder.config_)) {
 
-        for (auto& [stage, required] : builder.stages_) {
-            stages_.push_back({std::move(stage), required});
+        for (auto& [stage, required] : builder._stages) {
+            _stages.push_back({std::move(stage), required});
         }
     }
 
@@ -283,30 +332,27 @@ public:
     // Execute pipeline - container is modified in place
     std::pair<std::vector<T>, PipelineReport> Execute(std::vector<T> items) {
         PipelineReport report;
-        report.stages.reserve(stages_.size());
+        report.stages.reserve(_stages.size());
         report.initialItems = items.size();
 
         auto pipelineStart = Clock::now();
 
         // Create execution context
         ExecutionContext<T> ctx{
-            .threadPool = threadPool_,
-            .reporter = reporter_,
-            //.metrics = metrics_,
-            .config = config_
+            .threadPool = _threadPool,
+            .reporter = _reporter
         };
 
         // Execute each stage
-        for (const auto& [stage, required] : stages_) {
+        for (const auto& [stage, required] : _stages) {
+            auto title = std::format("{} [()]", stage->GetName(), plg::enum_to_string(stage->GetType()));
             auto stats = ExecuteStage(stage.get(), items, ctx);
-            report.stages.emplace_back(stage->GetName(), stats);
+            bool failed = stats.failed > 0 && required;
+            report.stages.emplace_back(std::move(title), std::move(stats));
 
             // Check if we should continue
-            if (stats.failed > 0 && required) {
-                PL_LOG_ERROR("Required stage '{}' had failures, stopping pipeline",
-                           stage->GetName());
+            if (failed)
                 break;
-            }
         }
 
         report.finalItems = items.size();
@@ -327,9 +373,12 @@ private:
         stats.itemsIn = items.size();
         auto startTime = Clock::now();
 
-        if (reporter_) {
-            reporter_->OnPhaseStart(stage->GetName(), items.size());
+        if (_reporter) {
+            _reporter->OnStageStart(stage->GetName(), items.size());
         }
+
+        // Setup
+        stage->Setup(items, ctx);
 
         // Execute based on stage type
         switch (stage->GetType()) {
@@ -350,11 +399,14 @@ private:
                 break;
         }
 
+        // Teardown
+        stage->Teardown(items, ctx);
+
         stats.itemsOut = items.size();
         stats.elapsed = std::chrono::duration_cast<Duration>(Clock::now() - startTime);
 
-        if (reporter_) {
-            reporter_->OnPhaseComplete(stage->GetName(), stats.succeeded, stats.failed);
+        if (_reporter) {
+            _reporter->OnStageComplete(stage->GetName(), stats.succeeded, stats.failed);
         }
 
         return stats;
@@ -366,16 +418,12 @@ private:
         StageStatistics& stats,
         const ExecutionContext<T>& ctx) {
 
-        // Setup
-        std::span<T> itemSpan(items);
-        stage->Setup(itemSpan, ctx);
-
         // Process items in parallel
         std::atomic<size_t> succeeded{0};
         std::atomic<size_t> failed{0};
         std::mutex errorMutex;
 
-        threadPool_.submit_sequence(0, items.size(), [&](size_t i) {
+        _threadPool.submit_sequence(0, items.size(), [&](size_t i) {
             auto& item = items[i];
 
             if (!stage->ShouldProcess(item)) {
@@ -401,9 +449,6 @@ private:
 
         stats.succeeded = succeeded.load();
         stats.failed = failed.load();
-
-        // Teardown
-        stage->Teardown(itemSpan, ctx);
     }
 
     void ExecuteBarrier(
@@ -426,7 +471,7 @@ private:
             }
         } else {
             stats.failed = items.size();
-            stats.errors.push_back(result.error());
+            stats.errors.push_back(std::move(result.error()));
 
             // Report all items as failed
             for (const auto& item : items) {
@@ -477,10 +522,6 @@ private:
         StageStatistics& stats,
         const ExecutionContext<T>& ctx) {
 
-        // Setup
-        std::span<T> itemSpan(items);
-        stage->Setup(itemSpan, ctx);
-
         size_t batchSize = stage->GetBatchSize();
         size_t numBatches = (items.size() + batchSize - 1) / batchSize;
         bool processInParallel = stage->ProcessBatchInParallel();
@@ -505,7 +546,7 @@ private:
                 // If batch processing succeeded, optionally process items within batch
                 if (processInParallel) {
                     // Process items within batch in parallel
-                    threadPool_.submit_sequence(0, batch.size(), [&](size_t i) {
+                    _threadPool.submit_sequence(0, batch.size(), [&](size_t i) {
                         auto& item = batch[i];
 
                         if (!stage->ShouldProcess(item)) {
@@ -577,14 +618,11 @@ private:
 
         stats.succeeded = succeeded.load();
         stats.failed = failed.load();
-
-        // Teardown
-        stage->Teardown(itemSpan, ctx);
     }
 
     void ReportItemComplete(std::string_view stage, const T& item, bool success) {
-        if (reporter_) {
-            reporter_->OnItemComplete(stage, GetItemName(item), success);
+        if (_reporter) {
+            _reporter->OnItemComplete(stage, GetItemName(item), success);
         }
     }
 
@@ -604,11 +642,10 @@ private:
         bool required;
     };
 
-    std::vector<StageEntry> stages_;
-    plg::thread_pool<> threadPool_;
-    std::shared_ptr<IProgressReporter> reporter_;
-    //std::shared_ptr<MetricsCollector> metrics_;
-    std::shared_ptr<Config> config_;
+    std::vector<StageEntry> _stages;
+    plg::thread_pool<> _threadPool;
+    std::shared_ptr<IProgressReporter> _reporter;
+    //std::shared_ptr<MetricsCollector> _metrics;
 };
 
 // ============================================================================
@@ -616,202 +653,202 @@ private:
 // ============================================================================
 
 // Parsing Stage - Transform type
-class ParsingStage : public ITransformStage<Package> {
-    std::shared_ptr<IManifestParser> parser_;
-    std::shared_ptr<IFileSystem> fileSystem_;
+class ParsingStage : public ITransformStage<Extension> {
+    std::shared_ptr<IManifestParser> _parser;
+    std::shared_ptr<IFileSystem> _fileSystem;
 
 public:
     ParsingStage(std::shared_ptr<IManifestParser> parser,
-                 std::shared_ptr<IFileSystem> fs)
-        : parser_(std::move(parser)), fileSystem_(std::move(fs)) {}
+                 std::shared_ptr<IFileSystem> fileSystem)
+        : _parser(std::move(parser)), _fileSystem(std::move(fileSystem)) {}
 
     std::string_view GetName() const override { return "Parsing"; }
 
-    bool ShouldProcess(const Package& item) const override {
-        return item.GetState() == PackageState::Discovered;
+    bool ShouldProcess(const Extension& item) const override {
+        return item.GetState() == ExtensionState::Discovered;
     }
 
-    std::expected<void, std::string> ProcessItem(
-        Package& pkg,
-        [[maybe_unused]] const ExecutionContext<Package>& ctx) override {
+    Result<void> ProcessItem(
+        Extension& ext,
+        [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
 
-        pkg.StartOperation(PackageState::Parsing);
+        ext.StartOperation(ExtensionState::Parsing);
 
-        auto content = fileSystem_->ReadTextFile(pkg.GetPath());
+        auto content = _fileSystem->ReadTextFile(ext.GetLocation());
         if (!content) {
-            pkg.AddError(content.error());
-            pkg.EndOperation(PackageState::Corrupted);
-            return std::unexpected(std::move(content.error()));
+            ext.AddError(content.error());
+            ext.EndOperation(ExtensionState::Corrupted);
+            return plg::unexpected(std::move(content.error()));
         }
 
-        auto manifest = parser_->Parse(*content, pkg.GetType());
+        auto manifest = _parser->Parse(*content, ext.GetType());
         if (!manifest) {
-            pkg.AddError(manifest.error());
-            pkg.EndOperation(PackageState::Corrupted);
-            return std::unexpected(std::move(manifest.error()));
+            ext.AddError(manifest.error());
+            ext.EndOperation(ExtensionState::Corrupted);
+            return plg::unexpected(std::move(manifest.error()));
         }
 
-        pkg.SetManifest(std::move(*manifest));
-        pkg.EndOperation(PackageState::Parsed);
+        ext.SetManifest(std::move(*manifest));
+        ext.EndOperation(ExtensionState::Parsed);
 
         return {};
     }
 };
 
 // Resolution Stage - Barrier type (reorders and filters)
-class ResolutionStage : public IBarrierStage<Package> {
-    std::shared_ptr<IDependencyResolver> resolver_;
-    plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph_;
-    plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDependencyGraph_;
-    std::optional<std::unordered_set<std::string>> whitelist_;
-    std::optional<std::unordered_set<std::string>> blacklist_;
-    
+class ResolutionStage : public IBarrierStage<Extension> {
+    std::shared_ptr<IDependencyResolver> _resolver;
+    plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
+    plg::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDependencyGraph;
+    std::optional<std::unordered_set<std::string>> _whitelist;
+    std::optional<std::unordered_set<std::string>> _blacklist;
+
 public:
     ResolutionStage(std::shared_ptr<IDependencyResolver> resolver,
                     plg::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
                     plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph)
-        : resolver_(std::move(resolver))
-        , dependencyGraph_(depGraph)
-        , reverseDependencyGraph_(reverseDepGraph) {}
-    
+        : _resolver(std::move(resolver))
+        , _dependencyGraph(depGraph)
+        , _reverseDependencyGraph(reverseDepGraph) {}
+
     std::string_view GetName() const override { return "Resolution"; }
-    
+
     void SetFilters(std::optional<std::unordered_set<std::string>> white,
                     std::optional<std::unordered_set<std::string>> black) {
-        whitelist_ = std::move(white);
-        blacklist_ = std::move(black);
+        _whitelist = std::move(white);
+        _blacklist = std::move(black);
     }
-    
-    std::expected<std::vector<Package>, std::string> ProcessAll(
-        std::vector<Package> items,
-        [[maybe_unused]] const ExecutionContext<Package>& ctx
+
+    Result<std::vector<Extension>> ProcessAll(
+        std::vector<Extension> items,
+        [[maybe_unused]] const ExecutionContext<Extension>& ctx
     ) override {
-        // Step 1: Filter packages based on whitelist/blacklist
-        std::vector<Package> filtered;
-        std::vector<Package> excluded;
+        // Step 1: Filter extensions based on whitelist/blacklist
+        std::vector<Extension> filtered;
+        std::vector<Extension> excluded;
 
         filtered.reserve(items.size());
         //excluded.reserve(items.size());
-        
-        for (auto&& pkg : items) {
+
+        for (auto&& ext : items) {
             bool include = true;
-            
+
             // Check parsed state
-            if (pkg.GetState() != PackageState::Parsed) {
+            if (ext.GetState() != ExtensionState::Parsed) {
                 include = false;
             }
-            
+
             // Check whitelist
-            if (include && whitelist_ && 
-                !whitelist_->contains(pkg.GetName())) {
+            if (include && _whitelist &&
+                !_whitelist->contains(ext.GetName())) {
                 include = false;
             }
-            
+
             // Check blacklist
-            if (include && blacklist_ && 
-                blacklist_->contains(pkg.GetName())) {
+            if (include && _blacklist &&
+                _blacklist->contains(ext.GetName())) {
                 include = false;
             }
-            
+
             if (include) {
-                pkg.SetState(PackageState::Resolving);
-                filtered.push_back(std::move(pkg));
+                ext.SetState(ExtensionState::Resolving);
+                filtered.push_back(std::move(ext));
             } else {
-                pkg.SetState(PackageState::Disabled);
-                pkg.AddWarning("Excluded due to policy");
-                excluded.push_back(std::move(pkg));
+                ext.SetState(ExtensionState::Disabled);
+                ext.AddWarning("Excluded due to policy");
+                excluded.push_back(std::move(ext));
             }
         }
-        
+
         if (filtered.empty()) {
-            return std::unexpected("No valid packages to resolve");
+            return plg::unexpected("No valid extensions to resolve");
         }
-        
+
         // Step 2: Build language registry and add language dependencies
         {
             plg::flat_map<std::string, UniqueId> languages;
 
-            for (const auto& pkg : filtered) {
-                if (pkg.GetType() == PackageType::Module) {
-                    languages[pkg.GetLanguage()] = pkg.GetId();
+            for (const auto& ext : filtered) {
+                if (ext.GetType() == ExtensionType::Module) {
+                    languages[ext.GetLanguage()] = ext.GetId();
                 }
             }
 
-            for (auto& pkg : filtered) {
-                if (pkg.GetType() == PackageType::Plugin) {
-                    if (auto it = languages.find(pkg.GetLanguage()); it != languages.end()) {
-                        pkg.AddDependency(GetPackageName(filtered, it->second));
+            for (auto& ext : filtered) {
+                if (ext.GetType() == ExtensionType::Plugin) {
+                    if (auto it = languages.find(ext.GetLanguage()); it != languages.end()) {
+                        ext.AddDependency(GetExtensionName(filtered, it->second));
                     }
                 }
             }
         }
 
         // Step 3: Resolve dependencies
-        auto report = resolver_->Resolve(filtered);
-        
-        // Store dependency graphs
-        *dependencyGraph_ = std::move(report.dependencyGraph);
-        *reverseDependencyGraph_ = std::move(report.reverseDependencyGraph);
-        
-        // Step 4: Create ID to package mapping for efficient lookup
-        plg::flat_map<UniqueId, Package> idToPackage;
-        idToPackage.reserve(idToPackage.size());
+        auto report = _resolver->Resolve(filtered);
 
-        for (auto&& pkg : filtered) {
-            idToPackage[pkg.GetId()] = std::move(pkg);
+        // Store dependency graphs
+        *_dependencyGraph = std::move(report.dependencyGraph);
+        *_reverseDependencyGraph = std::move(report.reverseDependencyGraph);
+
+        // Step 4: Create ID to extension mapping for efficient lookup
+        std::unordered_map<UniqueId, Extension> idToExtension;
+        idToExtension.reserve(idToExtension.size());
+
+        for (auto&& ext : filtered) {
+            idToExtension.emplace(ext.GetId(), std::move(ext));
         }
-        
+
         // Step 5: Build result in dependency order
-        std::vector<Package> result;
+        std::vector<Extension> result;
         result.reserve(report.loadOrder.size() + excluded.size());
-        
-        // Add resolved packages in load order
+
+        // Add resolved extensions in load order
         for (auto id : report.loadOrder) {
-            if (auto it = idToPackage.find(id); it != idToPackage.end()) {
-                auto& pkg = it->second;
-                pkg.SetState(PackageState::Resolved);
-                result.push_back(std::move(pkg));
-                idToPackage.erase(it);
+            if (auto it = idToExtension.find(id); it != idToExtension.end()) {
+                auto& ext = it->second;
+                ext.SetState(ExtensionState::Resolved);
+                result.push_back(std::move(ext));
+                idToExtension.erase(it);
             }
         }
-        
-        // Add unresolved packages at the end
-        for (auto& [id, pkg] : idToPackage) {
-            pkg.SetState(PackageState::Unresolved);
-            
+
+        // Add unresolved extensions at the end
+        for (auto& [id, ext] : idToExtension) {
+            ext.SetState(ExtensionState::Unresolved);
+
             // Add resolution errors if any
             if (auto it = report.issues.find(id); it != report.issues.end()) {
                 for (const auto& issue : it->second) {
                     if (issue.isBlocking) {
-                        pkg.AddError(issue.GetDetailedDescription());
+                        ext.AddError(issue.GetDetailedDescription());
                     } else {
-                        pkg.AddWarning(issue.GetDetailedDescription());
+                        ext.AddWarning(issue.GetDetailedDescription());
                     }
                 }
             }
-            
-            result.push_back(std::move(pkg));
+
+            result.push_back(std::move(ext));
         }
-        
-        // Add excluded packages at the very end
-        result.insert(result.end(), 
+
+        // Add excluded extensions at the very end
+        result.insert(result.end(),
                      std::make_move_iterator(excluded.begin()),
                      std::make_move_iterator(excluded.end()));
-        
+
         return result;
     }
-    
+
 private:
-    std::string GetPackageName(const std::vector<Package>& packages, UniqueId id) const {
-        auto it = std::find_if(packages.begin(), packages.end(), [&](const Package& p) {
+    std::string GetExtensionName(std::span<const Extension> extensions, UniqueId id) const {
+        auto it = std::find_if(extensions.begin(), extensions.end(), [&](const Extension& p) {
             return p.GetId() == id;
         });
-        return it != packages.end() ? it->GetName() : "";
+        return it != extensions.end() ? it->GetName() : "";
     }
 };
 
 // Example: Initialization Stage - Batch type for resource-limited operations
-/*class InitializationStage : public IBatchStage<Package> {
+/*class InitializationStage : public IBatchStage<Extension> {
     Plugify& plugify_;
     std::atomic<size_t> activeInitializations_{0};
     static constexpr size_t MAX_CONCURRENT_INITS = 4;
@@ -827,17 +864,17 @@ public:
 
     bool ProcessBatchInParallel() const override { return true; }
 
-    void SetupBatch(std::span<Package> batch, size_t batchIndex,
-                    const ExecutionContext<Package>& ctx) override {
-        PL_LOG_DEBUG("Initializing batch {} with {} packages", batchIndex, batch.size());
+    void SetupBatch(std::span<Extension> batch, size_t batchIndex,
+                    const ExecutionContext<Extension>& ctx) override {
+        PL_LOG_DEBUG("Initializing batch {} with {} extensions", batchIndex, batch.size());
         activeInitializations_ = 0;
     }
 
-    std::expected<void, std::string> ProcessBatch(
-        std::span<Package> batch,
+    Result<void> ProcessBatch(
+        std::span<Extension> batch,
         size_t batchIndex,
         size_t totalBatches,
-        const ExecutionContext<Package>& ctx) override {
+        const ExecutionContext<Extension>& ctx) override {
 
         // Could perform batch-level resource allocation here
         // For example, pre-allocate shared resources for the batch
@@ -845,96 +882,340 @@ public:
         return {};
     }
 
-    void TeardownBatch(std::span<Package> batch, size_t batchIndex,
-                      const ExecutionContext<Package>& ctx) override {
+    void TeardownBatch(std::span<Extension> batch, size_t batchIndex,
+                      const ExecutionContext<Extension>& ctx) override {
         // Wait for all initializations in batch to complete
         while (activeInitializations_.load() > 0) {
             std::this_thread::yield();
         }
     }
 };*/
-
+#if 0
 // Loading Stage - Sequential type
-class LoadingStage : public ISequentialStage<Package> {
-    Plugify& plugify_;
-    plg::flat_map<std::string, std::shared_ptr<Module>> loadedModules_;
-    const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph_;
-    
+class LoadingStage : public ISequentialStage<Extension> {
+    Loader& _loader;
+    plg::flat_map<std::string, Extension*> _loadedModules;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
+
 public:
-    LoadingStage(Plugify& plugify,
-                const plg::flat_map<UniqueId, std::vector<UniqueId>>* deps)
-        : plugify_(plugify), dependencyGraph_(deps) {}
-    
+    LoadingStage(Loader& loader,
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph)
+        : _loader(loader), _dependencyGraph(dependencyGraph) {}
+
     std::string_view GetName() const override { return "Loading"; }
-    
+
     bool ContinueOnError() const override { return true; }
-    
-    bool ShouldProcess(const Package& item) const override {
-        return item.GetState() == PackageState::Resolved;
+
+    bool ShouldProcess(const Extension& item) const override {
+        return item.GetState() == ExtensionState::Resolved;
     }
-    
-    std::expected<void, std::string> ProcessItem(
-        Package& pkg,
+
+    Result<void> ProcessItem(
+        Extension& ext,
         size_t position,
         size_t total,
-        const ExecutionContext<Package>& ctx) override {
-        
-        pkg.StartOperation(PackageState::Loading);
-        
-        try {
-            std::shared_ptr<void> instance;
+        const ExecutionContext<Extension>& ctx) override {
 
-            switch (pkg.GetType()) {
-                case PackageType::Module: {
-                    auto module = std::make_shared<Module>(pkg.GetId(), pkg.GetManifest());
+        ext.StartOperation(ExtensionState::Loading);
 
-                    auto result = Loader::LoadModule(provider, module);
-                    if (!result) {
-                        throw std::runtime_error(result.error());
-                    }
-
-                    loadedModules_[pkg.GetLanguage()] = module;
-                    instance = std::move(module);
-                    break;
+        switch (ext.GetType()) {
+            case ExtensionType::Module: {
+                auto result = _loader.LoadModule(ext);
+                if (!result) {
+                    ext.AddError(result.error());
+                    ext.EndOperation(ExtensionState::Failed);
+                    // TODO: propagate deps
+                    return result;
                 }
 
-                case PackageType::Plugin: {
-                    auto it = loadedModules_.find(pkg.GetLanguage());
-                    if (it == loadedModules_.end()) {
-                        throw std::runtime_error(
-                            std::format("Language module '{}' not found", pkg.GetLanguage())
-                        );
-                    }
-
-                    auto plugin = std::make_shared<Plugin>(pkg.GetId(), pkg.GetManifest());
-
-                    auto result = Loader::LoadPlugin(it->second, plugin);
-                    if (!result) {
-                        throw std::runtime_error(result.error());
-                    }
-
-                    instance = std::move(plugin);
-                    break;
-                }
-
-                default:
-                    throw std::runtime_error("Unknown package type");
+                _loadedModules[ext.GetLanguage()] = &ext;
+                break;
             }
 
-            pkg.SetInstance(std::move(instance));
+            case ExtensionType::Plugin: {
+                auto it = _loadedModules.find(ext.GetLanguage());
+                if (it == _loadedModules.end()) {
+                    return plg::unexpected(std::format("Language module '{}' not found", ext.GetLanguage()));
+                }
 
-            pkg.EndOperation(PackageState::Loaded);
-            
-            // Log progress if verbose
-            std::println("[{}/{}] Loaded {}", position + 1, total, pkg.GetName());
-            
-            return {};
-            
-        } catch (const std::exception& e) {
-            pkg.AddError(e.what());
-            pkg.EndOperation(PackageState::Failed);
-            // TODO: propagate deps
-            return std::unexpected(e.what());
+                auto result = _loader.LoadPlugin(*it->second, ext);
+                if (!result) {
+                    ext.AddError(result.error());
+                    ext.EndOperation(ExtensionState::Failed);
+                    // TODO: propagate deps
+                    return result;
+                }
+                break;
+            }
+
+            default:
+                throw std::runtime_error("Unknown extension type");
+        }
+
+        ext.EndOperation(ExtensionState::Loaded);
+
+        // Log progress if verbose
+        //std::println("[{}/{}] Loaded {}", position + 1, total, ext.GetName());
+        return {};
+    }
+
+
+};
+
+// Starting Stage - Sequential type
+class StartingStage : public ISequentialStage<Extension> {
+    Loader& _loader;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
+
+public:
+    StartingStage(Loader& loader,
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph)
+        : _loader(loader), _dependencyGraph(dependencyGraph) {}
+
+    std::string_view GetName() const override { return "Starting"; }
+
+    bool ContinueOnError() const override { return true; }
+
+    bool ShouldProcess(const Extension& item) const override {
+        return item.GetState() == ExtensionState::Loaded;
+    }
+
+    Result<void> ProcessItem(
+        Extension& ext,
+        size_t position,
+        size_t total,
+        const ExecutionContext<Extension>& ctx) override {
+
+        ext.StartOperation(ExtensionState::Loading);
+
+        switch (ext.GetType()) {
+            case ExtensionType::Module: {
+                break;
+            }
+
+            case ExtensionType::Plugin: {
+                auto result = _loader.StartPlugin(ext);
+                if (!result) {
+                    ext.AddError(result.error());
+                    ext.EndOperation(ExtensionState::Failed);
+                    // TODO: propagate deps
+                    return result;
+                }
+                break;
+            }
+
+            default:
+                throw std::runtime_error("Unknown extension type");
+        }
+
+        ext.EndOperation(ExtensionState::Loaded);
+
+        // Log progress if verbose
+        //std::println("[{}/{}] Loaded {}", position + 1, total, ext.GetName());
+        return {};
+    }
+};
+#endif
+
+class LoadingStage : public ISequentialStage<Extension> {
+    Loader& _loader;
+    FailureTracker& _failureTracker;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDependencyGraph;
+    plg::flat_map<std::string, Extension*> _loadedModules;
+    std::span<const Extension> _allExtensions;  // Reference to all extensions for lookup
+
+public:
+    LoadingStage(Loader& loader,
+                FailureTracker& failureTracker,
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph,
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDependencyGraph)
+        : _loader(loader)
+        , _failureTracker(failureTracker)
+        , _dependencyGraph(dependencyGraph)
+        , _reverseDependencyGraph(reverseDependencyGraph) {}
+
+    std::string_view GetName() const override { return "Loading"; }
+
+    bool ContinueOnError() const override { return true; }  // Continue to mark dependents as skipped
+
+    bool ShouldProcess(const Extension& item) const override {
+        return item.GetState() == ExtensionState::Resolved;
+    }
+
+    void Setup(std::span<Extension> items, const ExecutionContext<Extension>& ctx) override {
+        // Store reference to all extensions for name lookup
+        _allExtensions = items;
+    }
+
+    Result<void> ProcessItem(
+        Extension& ext,
+        size_t position,
+        size_t total,
+        const ExecutionContext<Extension>& ctx) override {
+
+        // First check if any dependencies have failed
+        if (_failureTracker.HasAnyDependencyFailed(ext, *_reverseDependencyGraph)) {
+            std::string_view failedDep = _failureTracker.GetFailedDependencyName(
+                ext, *_reverseDependencyGraph, _allExtensions);
+
+            ext.SetState(ExtensionState::Skipped);
+            ext.AddError(std::format("Skipped: dependency '{}' failed to load", failedDep));
+
+            // Important: Mark this as failed too so its dependents are also skipped
+            _failureTracker.MarkFailed(ext.GetId());
+
+            return plg::unexpected(std::format("Dependency '{}' failed", failedDep));
+        }
+
+        // Proceed with normal loading
+        ext.StartOperation(ExtensionState::Loading);
+
+        Result<void> result;
+        switch (ext.GetType()) {
+            case ExtensionType::Module: {
+                result = _loader.LoadModule(ext);
+                if (result) {
+                    _loadedModules[ext.GetLanguage()] = &ext;
+                }
+                break;
+            }
+
+            case ExtensionType::Plugin: {
+                auto it = _loadedModules.find(ext.GetLanguage());
+                if (it == _loadedModules.end()) {
+                    result = plg::unexpected(std::format("Language module '{}' not found", ext.GetLanguage()));
+                } else {
+                    result = _loader.LoadPlugin(*it->second, ext);
+                }
+                break;
+            }
+
+            default:
+                result = plg::unexpected("Unknown extension type");
+        }
+
+        if (!result) {
+            ext.AddError(result.error());
+            ext.EndOperation(ExtensionState::Failed);
+
+            // Mark as failed and propagate to dependents
+            _failureTracker.MarkFailed(ext.GetId());
+            PropagateFailureToDirectDependents(ext);
+
+            return result;
+        }
+
+        ext.EndOperation(ExtensionState::Loaded);
+        return {};
+    }
+
+private:
+    void PropagateFailureToDirectDependents(const Extension& failedExt) {
+        // Mark all direct dependents as will-be-skipped
+        // They'll be properly handled when their turn comes
+        if (auto it = _dependencyGraph->find(failedExt.GetId());
+            it != _dependencyGraph->end()) {
+            for (const auto& dependentId : it->second) {
+                _failureTracker.MarkFailed(dependentId);
+            }
+        }
+    }
+};
+
+// ============================================================================
+// Starting Stage with Failure Propagation
+// ============================================================================
+
+class StartingStage : public ISequentialStage<Extension> {
+    Loader& _loader;
+    FailureTracker& _failureTracker;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDependencyGraph;
+    std::span<const Extension> _allExtensions;
+
+public:
+    StartingStage(Loader& loader,
+                FailureTracker& failureTracker,
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph,
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDependencyGraph)
+        : _loader(loader)
+        , _failureTracker(failureTracker)
+        , _dependencyGraph(dependencyGraph)
+        , _reverseDependencyGraph(reverseDependencyGraph) {}
+
+    std::string_view GetName() const override { return "Starting"; }
+
+    bool ContinueOnError() const override { return true; }
+
+    bool ShouldProcess(const Extension& item) const override {
+        return item.GetState() == ExtensionState::Loaded;
+    }
+
+    void Setup(std::span<Extension> items, const ExecutionContext<Extension>& ctx) override {
+        _allExtensions = items;
+    }
+
+    Result<void> ProcessItem(
+        Extension& ext,
+        size_t position,
+        size_t total,
+        const ExecutionContext<Extension>& ctx) override {
+
+        // Check if any dependencies have failed (during loading or starting)
+        if (_failureTracker.HasAnyDependencyFailed(ext, *_reverseDependencyGraph)) {
+            std::string_view failedDep = _failureTracker.GetFailedDependencyName(
+                ext, *_reverseDependencyGraph, _allExtensions);
+
+            ext.SetState(ExtensionState::Skipped);
+            ext.AddError(std::format("Skipped: dependency '{}' failed to start", failedDep));
+
+            _failureTracker.MarkFailed(ext.GetId());
+
+            return plg::unexpected(std::format("Dependency '{}' failed", failedDep));
+        }
+
+        ext.StartOperation(ExtensionState::Starting);
+
+        Result<void> result;
+        switch (ext.GetType()) {
+            case ExtensionType::Module: {
+                // Modules typically don't need starting
+                result = {};
+                break;
+            }
+
+            case ExtensionType::Plugin: {
+                result = _loader.StartPlugin(ext);
+                break;
+            }
+
+            default:
+                result = plg::unexpected("Unknown extension type");
+        }
+
+        if (!result) {
+            ext.AddError(result.error());
+            ext.EndOperation(ExtensionState::Failed);
+
+            // Mark as failed and propagate
+            _failureTracker.MarkFailed(ext.GetId());
+            PropagateFailureToDirectDependents(ext);
+
+            return result;
+        }
+
+        ext.EndOperation(ExtensionState::Running);
+        return {};
+    }
+
+private:
+    void PropagateFailureToDirectDependents(const Extension& failedExt) {
+        if (auto it = _dependencyGraph->find(failedExt.GetId());
+            it != _dependencyGraph->end()) {
+            for (const auto& dependentId : it->second) {
+                _failureTracker.MarkFailed(dependentId);
+            }
         }
     }
 };
@@ -942,98 +1223,112 @@ public:
 struct Manager::Impl {
     Impl(std::shared_ptr<Context> context) {
         // Create services
-        assemblyLoader = context->Get<IAssemblyLoader>();
-        fileSystem = context->Get<IFileSystem>();
-        manifestParser = context->Get<IManifestParser>();
-        //validator = context->Get<PackageValidator>();
-        resolver = context->Get<IDependencyResolver>();  // Your libsolv wrapper
-        //loader = context->Get<DynamicPackageLoader>();
-        progressReporter = context->Get<ConsoleProgressReporter>();
+        assemblyLoader = context->GetService<IAssemblyLoader>();
+        fileSystem = context->GetService<IFileSystem>();
+        manifestParser = context->GetService<IManifestParser>();
+        //validator = context->GetService<ExtensionValidator>();
+        resolver = context->GetService<IDependencyResolver>();  // Your libsolv wrapper
+        //loader = context->GetService<DynamicExtensionLoader>();
+        progressReporter = context->GetService<IProgressReporter>();
         //metricsCollector = context->Get<MetricsCollector>();
 
     }
-    Plugify& plugify;
     std::shared_ptr<Config> config;
-    
+
     // Services
-    //std::shared_ptr<IAssemblyLoader> assemblyLoader;
+    std::shared_ptr<IAssemblyLoader> assemblyLoader;
     std::shared_ptr<IFileSystem> fileSystem;
     std::shared_ptr<IManifestParser> manifestParser;
     std::shared_ptr<IDependencyResolver> resolver;
-    //std::shared_ptr<IPackageValidator> validator;
-    //std::shared_ptr<IPackageRegistry> registry;
+    //std::shared_ptr<IExtensionValidator> validator;
+    //std::shared_ptr<IExtensionRegistry> registry;
     std::shared_ptr<IProgressReporter> progressReporter;
     //std::shared_ptr<MetricsCollector> metricsCollector;
-    
+    std::make_shared<Provider>(std::move(context), std::move(manager))
+    std::shared_ptr<Provider> provider;
+
     // Dependency graphs (filled by resolution stage)
     plg::flat_map<UniqueId, std::vector<UniqueId>> dependencyGraph;
     plg::flat_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;
-    
+
 public:
-    std::shared_ptr<InitializationState> Initialize() {
-        auto state = std::make_shared<InitializationState>();
-        
+    void Initialize() {
+        Loader loader();
+
         // Step 1: Quick discovery
-        std::vector<Package> packages = DiscoverPackages();
-        
+        std::vector<Extension> extensions = DiscoverExtensions();
+
         // Step 2: Create resolution stage with filters
         auto resolutionStage = std::make_unique<ResolutionStage>(
             resolver, &dependencyGraph, &reverseDependencyGraph
         );
-        resolutionStage->SetFilters(config->whitelistedPackages, config->blacklistedPackages);
-        
+        resolutionStage->SetFilters(config->whitelistedExtensions, config->blacklistedExtensions);
+
         // Step 3: Build pipeline
-        auto pipeline = FlexiblePipeline<Package>::Create()
+        auto pipeline = FlexiblePipeline<Extension>::Create()
             // Parse manifests in parallel (Transform stage)
             .AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
-            
-            // Validate packages in batches (Batch stage)
+
+            // Validate extensions in batches (Batch stage)
             //.AddStage(std::make_unique<ValidationStage>(validator, 20), false)
-            
+
             // Fetch metadata in controlled batches (Batch stage with rate limiting)
             //.AddStage(std::make_unique<NetworkFetchStage>(registry), false)
-            
+
             // Resolve dependencies and reorder container (Barrier stage)
             .AddStage(std::move(resolutionStage))
-            
-            // Optional: Remove failed packages to save processing
-            //.AddStage(std::make_unique<FilterFailedStage>(), false)
-            
-            // Initialize packages in batches (Batch stage for resource control)
+
+            // Initialize extensions in batches (Batch stage for resource control)
             //.AddStage(std::make_unique<InitializationStage>(assemblyLoader), false)
-            
-            // Load packages in dependency order (Sequential stage)
-            .AddStage(std::make_unique<LoadingStage>(plugify, &dependencyGraph))
-            
-            // Start packages in order (Sequential stage)
-            //.AddStage(std::make_unique<StartingStage>())
-            
+
+            // Load extensions in dependency order (Sequential stage)
+            .AddStage(std::make_unique<LoadingStage>(loader, &dependencyGraph))
+
+            // Optional: Remove failed extensions to save processing
+            //.AddStage(std::make_unique<FilterFailedStage>(), false)
+
+            // Start extensions in order (Sequential stage)
+            .AddStage(std::make_unique<StartingStage>())
+
+            // Start extensions in order (Sequential stage)
+            //.AddStage(std::make_unique<ExportStage>())
+
             .WithReporter(progressReporter)
             //.WithMetrics(metricsCollector)
             .WithConfig(config)
             .WithThreadPoolSize(std::thread::hardware_concurrency())
             .Build();
-        
+
         // Step 4: Execute pipeline
-        auto [finalPackages, report] = pipeline->Execute(std::move(packages));
-        
+        auto [finalExtensions, report] = pipeline->Execute(std::move(extensions));
+
         // Step 5: Store results
-        packages_ = std::move(finalPackages);
-        
+        extensions_ = std::move(finalExtensions);
+
         // Convert report to state
         //ConvertReportToState(report, state);
-        
+
         // Print reports if configured
         if (config->printReport) {
             report.Print();
         }
-        
+
         return state;
     }
-    
+
+    void Update(Duration deltaTime) {
+        loader->Update(_extensions, deltaTime);
+    }
+
+    void Terminate() {
+        for (const auto& ext : _extensions) {
+            loader->Update(_extensions, deltaTime);
+        }
+    }
+
 private:
-    std::vector<Package> packages_;
-    
+    std::vector<Extension> _extensions;
+
     static constexpr std::array<std::string_view, 2> MANIFEST_EXTENSIONS = {
         "*.pplugin"sv, "*.pmodule"sv
     };
@@ -1055,19 +1350,19 @@ private:
     }
 
     // Step 1: Find all manifest files in parallel
-    std::vector<Package> DiscoverPackages() {
-        std::vector<Package> packages;
+    std::vector<Extension> DiscoverExtensions() {
+        std::vector<Extension> extensions;
 
         // Collect all paths
         auto paths = CollectManifestPaths();
 
-        // Create package entries
-        packages.reserve(paths.size());
+        // Create extension entries
+        extensions.reserve(paths.size());
         for (auto&& path : paths) {
-            packages.emplace_back(id++, std::move(path));
+            extensions.emplace_back(id++, std::move(path));
         }
 
-        return packages;
+        return extensions;
     }
 };
 
@@ -1076,12 +1371,17 @@ Manager::Manager(std::shared_ptr<Context> context)
 
 Manager::~Manager() = default;
 
-std::shared_ptr<InitializationState> Manager::Initialize() {
-    _impl->config = _impl->plugify.GetConfig();
+void Manager::Initialize() {
     return _impl->Initialize();
 }
 
+void Manager::Update(Duration deltaTime) {
+    return _impl->Update(deltaTime);
+}
 
+void Manager::Terminate() {
+    return _impl->Terminate();
+}
 
 // ============================================================================
 // Dependency Injection
@@ -1092,12 +1392,12 @@ std::shared_ptr<InitializationState> Manager::Initialize() {
     progressReporter = reporter;
 }
 
-void Manager::setPackageDiscovery(std::unique_ptr<IPackageDiscovery> discovery) {
-    _impl->packageDiscovery = std::move(discovery);
+void Manager::setExtensionDiscovery(std::unique_ptr<IExtensionDiscovery> discovery) {
+    _impl->extensionDiscovery = std::move(discovery);
 }
 
-void Manager::setPackageValidator(std::unique_ptr<IPackageValidator> validator) {
-    _impl->packageValidator = std::move(validator);
+void Manager::setExtensionValidator(std::unique_ptr<IExtensionValidator> validator) {
+    _impl->extensionValidator = std::move(validator);
 }
 
 void Manager::SetDependencyResolver(std::unique_ptr<IDependencyResolver> resolver) {
@@ -1111,4 +1411,3 @@ void Manager::SetDependencyResolver(std::unique_ptr<IDependencyResolver> resolve
 void Manager::setPluginLoader(std::unique_ptr<IPluginLoader> loader) {
     _impl->pluginLoader = std::move(loader);
 }*/
-

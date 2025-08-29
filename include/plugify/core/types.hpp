@@ -13,10 +13,10 @@
 namespace plugify {
 	/**
 	 * @typedef Version
-	 * @brief Represents a version of a package.
+	 * @brief Represents a version of a extension.
 	 *
 	 * This type is an alias for plg::version, which encapsulates the versioning
-	 * information for packages in the Plugify ecosystem.
+	 * information for extensions in the Plugify ecosystem.
 	 */
 	using Version = plg::version<>;
 
@@ -34,7 +34,7 @@ namespace plugify {
     /**
      * TODO:
      */
-    enum class PackageType {
+    enum class ExtensionType {
 		Unknown,
 		Module,
 		Plugin
@@ -51,5 +51,5 @@ namespace plugify {
      */
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
-    using Duration = std::chrono::milliseconds;
+    using Duration = std::chrono::microseconds;
 }

@@ -120,7 +120,7 @@ struct Plugify::Impl {
         initialized = false;
     }
 
-    void Update(double deltaTime) {
+    void Update(std::chrono::microseconds deltaTime) {
         if (!initialized) return;
 
         manager->Update(deltaTime);
@@ -145,7 +145,7 @@ private:
         auto createDir = [&](const std::filesystem::path& dir) {
             if (!dir.empty() && !fileSystem->IsExists(dir)) {
                 if (auto result = fileSystem->CreateDirectories(dir); !result) {
-                    LogError(std::format("Failed to create directory '{}': {}", dir.string(), result.error()));
+                    LogError(result.error());
                 } else {
                     LogInfo(std::format("Created directory: {}", dir.string()));
                 }
@@ -154,7 +154,7 @@ private:
 
         const auto& paths = context->GetConfig().paths;
         createDir(paths.baseDir);
-        createDir(paths.baseDir / paths.pluginsDir);
+        createDir(paths.baseDir / paths.extensionsDir);
         createDir(paths.baseDir / paths.configsDir);
         createDir(paths.baseDir / paths.dataDir);
         createDir(paths.baseDir / paths.logsDir);
@@ -171,8 +171,8 @@ private:
 
         const auto& paths = context->GetConfig().paths;
         
-        if (!checkPath(paths.pluginsDir)) {
-            errors.push_back(std::format("pluginsDir: {}", paths.pluginsDir.string()));
+        if (!checkPath(paths.extensionsDir)) {
+            errors.push_back(std::format("extensionsDir: {}", paths.extensionsDir.string()));
         }
         if (!checkPath(paths.configsDir)) {
             errors.push_back(std::format("configsDir: {}", paths.configsDir.string()));
@@ -193,7 +193,7 @@ private:
         }
 
         std::array<std::filesystem::path, 6> dirs = {
-                paths.pluginsDir,
+                paths.extensionsDir,
                 paths.configsDir,
                 paths.dataDir,
                 paths.logsDir,
@@ -223,13 +223,13 @@ private:
 
     void StartUpdateThread() {
         const auto& runtime = context->GetConfig().runtime;
-        if (runtime.updateInterval > std::chrono::milliseconds{0}) {
+        if (runtime.updateInterval > Duration{0}) {
             updateThread = std::jthread([this, interval = runtime.updateInterval](std::stop_token token) {
-                auto lastTime = std::chrono::steady_clock::now();
+                auto lastTime = Clock::now();
 
                 while (!token.stop_requested()) {
-                    auto now = std::chrono::steady_clock::now();
-                    auto deltaTime = std::chrono::duration<double>(now - lastTime).count();
+                    auto now = Clock::now();
+                    auto deltaTime = std::chrono::duration_cast<Duration>(now - lastTime);
                     lastTime = now;
 
                     Update(deltaTime);
@@ -279,11 +279,11 @@ bool Plugify::IsInitialized() const {
     return _impl->initialized;
 }
 
-void Plugify::Update(double deltaTime) {
+void Plugify::Update(Duration deltaTime) {
     _impl->Update(deltaTime);
 }
 
-std::future<Result<void>> Plugify::InitializeAsync() {
+/*std::future<Result<void>> Plugify::InitializeAsync() {
     return std::async(std::launch::async, [this]() {
         return Initialize();
     });
@@ -295,7 +295,7 @@ std::future<void> Plugify::TerminateAsync() {
     });
 }
 
-/*std::shared_ptr<Manager> Plugify::GetManager() const {
+std::shared_ptr<Manager> Plugify::GetManager() const {
     return _impl->manager;
 }
 
@@ -314,7 +314,7 @@ Version Plugify::GetVersion() const {
 // PlugifyBuilder implementation
 PlugifyBuilder& PlugifyBuilder::WithBaseDir(const std::filesystem::path& dir) {
     _config.paths.baseDir = dir;
-    _config.paths.pluginsDir = dir / "plugins";
+    _config.paths.extensionsDir = dir / "extensions";
     _config.paths.configsDir = dir / "configs";
     _config.paths.dataDir = dir / "data";
     _config.paths.logsDir = dir / "logs";
@@ -367,10 +367,10 @@ PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependen
     return *this;
 }
 
-PlugifyBuilder& PlugifyBuilder::WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle) {
+/*PlugifyBuilder& PlugifyBuilder::WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle) {
     _services.Register<IPluginLifecycle>(std::move(lifecycle));
     return *this;
-}
+}*/
 
 PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
     _services.Register<IEventBus>(std::move(bus));
@@ -384,11 +384,11 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
     }
 
     if (!_services.Has<IEventBus>()) {
-        _services.Register<IDependencyResolver>(std::make_shared<SimpleEventBus>());
+        _services.Register<IEventBus>(std::make_shared<SimpleEventBus>());
     }
 
     if (!_services.Has<IFileSystem>()) {
-        _services.Register<IFileSystem>(std::make_shared<StandardFileSystem>());
+        _services.Register<IFileSystem>(std::make_shared<ExtendedFileSystem>());
     }
 
     if (!_services.Has<IAssemblyLoader>()) {

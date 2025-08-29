@@ -3,21 +3,20 @@
 #include "plugify/core/types.hpp"
 
 namespace plugify {
-    class Plugin;
-    // Plugin lifecycle interface
-    class IPluginLifecycle {
+    // Lifecycle interface
+    class ILifecycle {
     public:
-        virtual ~IPluginLifecycle() = default;
-        virtual Result<void> OnBeforeLoad(Plugin& plugin) = 0;
-        virtual Result<void> OnAfterLoad(Plugin& plugin) = 0;
-        virtual Result<void> OnBeforeUnload(Plugin& plugin) = 0;
-        virtual Result<void> OnAfterUnload(Plugin& plugin) = 0;
+        virtual ~ILifecycle() = default;
+        virtual Result<void> OnBeforeLoad(Extension& extension) = 0;
+        virtual Result<void> OnAfterLoad(Extension& extension) = 0;
+        virtual Result<void> OnBeforeUnload(Extension& extension) = 0;
+        virtual Result<void> OnAfterUnload(Extension& extension) = 0;
         /*
-        virtual Result<void> OnReload(Plugin& plugin) = 0;
-        virtual Result<void> OnLoad(Plugin& plugin) = 0;
-        virtual Result<void> OnUnload(Plugin& plugin) = 0;
-        virtual Result<void> OnEnable(Plugin& plugin) = 0;
-        virtual Result<void> OnDisable(Plugin& plugin) = 0;
-        virtual Result<void> OnUpdate(Plugin& plugin, double deltaTime) = 0;*/
+        virtual Result<void> OnReload(Extension& extension) = 0;
+        virtual Result<void> OnLoad(Extension& extension) = 0;
+        virtual Result<void> OnUnload(Extension& extension) = 0;
+        virtual Result<void> OnEnable(Extension& extension) = 0;
+        virtual Result<void> OnDisable(Extension& extension) = 0;
+        virtual Result<void> OnUpdate(Extension& extension, double deltaTime) = 0;*/
     };
 }

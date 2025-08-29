@@ -1,11 +1,12 @@
 #pragma once
 
-#include <span>
-#include <vector>
-#include <string>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <functional>
+#include <regex>
+#include <span>
+#include <string>
+#include <vector>
 
 #include "plugify/core/types.hpp"
 
@@ -13,24 +14,27 @@ namespace plugify {
 	/**
 	 * @brief File information
 	 */
-	struct FileInfo {
-	    std::filesystem::path path;
-	    std::filesystem::file_time_type lastModified;
-	    std::uintmax_t size{};
-	    bool isDirectory{};
-	    bool isRegularFile{};
-	    bool isSymlink{};
+    struct FileInfo {
+        std::filesystem::path path;
+        std::uintmax_t size;
+        std::filesystem::file_time_type last_write_time;
+        std::filesystem::file_type type;
+        std::filesystem::perms permissions;
+
+        bool is_directory() const { return type == std::filesystem::file_type::directory; }
+        bool is_regular_file() const { return type == std::filesystem::file_type::regular; }
+        bool is_symlink() const { return type == std::filesystem::file_type::symlink; }
 	};
 
 	/**
 	 * @brief Directory iteration options
 	 */
 	struct DirectoryIterationOptions {
-	    bool recursive{true};
-	    bool followSymlinks{false};
-	    std::optional<size_t> maxDepth;
-	    std::vector<std::string> extensions;  // Filter by extensions (e.g., {".json", ".yaml"})
-	    std::function<bool(const FileInfo&)> filter;  // Custom filter predicate
+	    bool recursive = false;
+	    bool follow_symlinks = false;
+	    bool skip_permission_denied = true;
+	    std::optional<std::regex> filter_pattern;
+	    std::function<bool(const FileInfo&)> filter_predicate;
 	};
 
 	/**
@@ -127,5 +131,20 @@ namespace plugify {
 	     * @brief Move/rename file or directory
 	     */
 	    virtual Result<void> Move(const std::filesystem::path& from, const std::filesystem::path& to) = 0;
+
+        /**
+         * @brief
+         */
+        virtual Result<std::filesystem::path> GetAbsolutePath(const std::filesystem::path& path) = 0;
+
+	    /**
+         * @brief
+         */
+	    virtual Result<std::filesystem::path> GetCanonicalPath(const std::filesystem::path& path) = 0;
+
+	    /**
+         * @brief
+         */
+	    virtual Result<std::filesystem::path> GetRelativePath(const std::filesystem::path& path, const std::filesystem::path& base) = 0;
 	};
 } // namespace plugify

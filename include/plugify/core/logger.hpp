@@ -50,6 +50,4 @@ namespace plugify {
 	    virtual void Flush() = 0;
 	};
 
-
-
 } // namespace plugify

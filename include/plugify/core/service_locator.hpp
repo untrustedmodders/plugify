@@ -9,7 +9,8 @@ namespace plugify {
     public:
         // Register service with type safety
         template<typename Interface, typename Implementation = Interface>
-        void Register(std::shared_ptr<Implementation> service) {
+        void Register(std::shared_ptr<Implementation> service)
+            requires(std::is_base_of_v<Interface, Implementation>) {
             _services[std::type_index(typeid(Interface))] = std::move(service);
         }
 
@@ -19,6 +20,14 @@ namespace plugify {
             auto it = _services.find(std::type_index(typeid(Interface)));
             if (it != _services.end()) {
                 return std::static_pointer_cast<Interface>(it->second);
+            }
+            auto message = std::format("Service not found: {}", typeid(Interface).name());
+            if constexpr (std::is_base_of_v<ILogger, Interface>) {
+                throw std::runtime_error(message);
+            } else {
+                if (auto logger = Get<ILogger>()) {
+                    logger->Log(message, Severity::Warning);
+                }
             }
             return nullptr;
         }
@@ -37,4 +46,27 @@ namespace plugify {
     private:
         std::unordered_map<std::type_index, std::shared_ptr<void>> _services;
     };
+
+    /*template<typename... Services>
+    class ServiceContext {
+        std::tuple<std::shared_ptr<Services>...> _services;
+
+    public:
+        explicit ServiceContext(const ServiceLocator& locator)
+            : _services(locator.Get<Services>()...) {}
+
+        template<typename T>
+        std::shared_ptr<T> Get() const {
+            return std::get<std::shared_ptr<T>>(_services);
+        }
+
+        bool IsValid() const {
+            return (... && std::get<std::shared_ptr<Services>>(_services));
+        }
+
+        template<typename Func>
+        auto Apply(Func&& func) const {
+            return std::apply(std::forward<Func>(func), _services);
+        }
+    };*/
 }

@@ -1,11 +1,18 @@
 #pragma once
 
-#include <optional>
+#include <string>
+#include <deque>
+#include <vector>
+#include <memory>
+#include <filesystem>
 
 #include "plugify/core/manifest.hpp"
+
 namespace plugify {
-    // Package State Enum
-    enum class PackageState {
+    class IAssembly;
+    class ILanguageModule;
+    // Extension State Enum
+    enum class ExtensionState {
         Unknown,
         Discovered,
 
@@ -40,24 +47,24 @@ namespace plugify {
         Terminated,
         Max
     };
-    // Unified Package class
-    class PLUGIFY_API Package {
+    // Unified Extension class
+    class PLUGIFY_API Extension {
         struct Impl;
 
     public:
-        Package(UniqueId id, std::filesystem::path location);
-        ~Package();
+        Extension(UniqueId id, std::filesystem::path location);
+        ~Extension();
 
         // Delete copy/move for safety (can be implemented if needed)
-        Package(const Package&) = delete;
-        Package(Package&&) noexcept;
-        Package& operator=(const Package&) = delete;
-        Package& operator=(Package&&) noexcept;
+        Extension(const Extension&) = delete;
+        Extension(Extension&&) noexcept;
+        Extension& operator=(const Extension&) = delete;
+        Extension& operator=(Extension&&) noexcept;
 
         // --- Core Getters ---
         [[nodiscard]] UniqueId GetId() const noexcept;
-        [[nodiscard]] PackageType GetType() const noexcept;
-        [[nodiscard]] PackageState GetState() const noexcept;
+        [[nodiscard]] ExtensionType GetType() const noexcept;
+        [[nodiscard]] ExtensionState GetState() const noexcept;
         [[nodiscard]] const std::string& GetName() const noexcept;
         [[nodiscard]] const Version& GetVersion() const noexcept;
         [[nodiscard]] const std::string& GetLanguage() const noexcept;
@@ -89,25 +96,25 @@ namespace plugify {
         [[nodiscard]] MemAddr GetUserData() const noexcept;
         [[nodiscard]] MethodTable GetMethodTable() const noexcept;
         [[nodiscard]] ILanguageModule* GetLanguageModule() const noexcept;
-        [[nodiscard]] const PackageManifest& GetManifest() const noexcept;
+        [[nodiscard]] const Manifest& GetManifest() const noexcept;
 
         // --- State & Error Management ---
         [[nodiscard]] const std::deque<std::string>& GetErrors() const noexcept;
         [[nodiscard]] const std::deque<std::string>& GetWarnings() const noexcept;
         [[nodiscard]] bool HasErrors() const noexcept;
         [[nodiscard]] bool IsLoaded() const noexcept;
-        [[nodiscard]] bool IsPlugin() const noexcept { return GetType() == PackageType::Plugin; }
-        [[nodiscard]] bool IsModule() const noexcept { return GetType() == PackageType::Module; }
+        [[nodiscard]] bool IsPlugin() const noexcept { return GetType() == ExtensionType::Plugin; }
+        [[nodiscard]] bool IsModule() const noexcept { return GetType() == ExtensionType::Module; }
 
         // --- Timing/Performance ---
-        [[nodiscard]] Duration GetOperationTime(PackageState state) const;
+        [[nodiscard]] Duration GetOperationTime(ExtensionState state) const;
         [[nodiscard]] Duration GetTotalTime() const;
         [[nodiscard]] std::string GetPerformanceReport() const;
 
         // --- State Management ---
-        void StartOperation(PackageState newState);
-        void EndOperation(PackageState newState);
-        void SetState(PackageState state);
+        void StartOperation(ExtensionState newState);
+        void EndOperation(ExtensionState newState);
+        void SetState(ExtensionState state);
 
         // --- Error/Warning Management ---
         void AddError(std::string error);
@@ -119,7 +126,7 @@ namespace plugify {
         void SetUserData(MemAddr data);
         void SetMethodTable(MethodTable table);
         void SetLanguageModule(ILanguageModule* module);
-        void SetManifest(PackageManifest manifest);
+        void SetManifest(Manifest manifest);
 
         // --- Plugin-specific setters ---
         void SetMethodsData(std::vector<MethodData> methodsData);
@@ -128,18 +135,19 @@ namespace plugify {
         void SetAssembly(std::shared_ptr<IAssembly> assembly);
 
         // --- Comparison ---
-        [[nodiscard]] bool operator==(const Package& other) const noexcept;
-        [[nodiscard]] auto operator<=>(const Package& other) const noexcept;
+        [[nodiscard]] bool operator==(const Extension& other) const noexcept;
+        [[nodiscard]] auto operator<=>(const Extension& other) const noexcept;
 
         // --- File extensions ---
-        [[nodiscard]] static std::string_view GetFileExtension(PackageType type);
-        [[nodiscard]] static PackageType GetPackageType(const std::filesystem::path& path);
+        [[nodiscard]] static std::string_view GetFileExtension(ExtensionType type);
+        [[nodiscard]] static ExtensionType GetExtensionType(const std::filesystem::path& path);
 
         // --- Helpers ---
-        [[nodiscard]] static bool IsValidTransition(PackageState from, PackageState to);
+        [[nodiscard]] static bool IsValidTransition(ExtensionState from, ExtensionState to);
         [[nodiscard]] std::string ToString() const;
         bool CanLoad() const noexcept;
         bool CanStart() const noexcept;
+        bool CanUpdate() const noexcept;
         bool CanStop() const noexcept;
         void AddDependency(std::string dep);
         void Reset();

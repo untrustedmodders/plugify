@@ -7,6 +7,7 @@
 #include "plugify/core/config_provider.hpp"
 #include "plugify/core/event_bus.hpp"
 #include "plugify/core/plugin_lifecycle.hpp"
+#include "plugify/asm/assembly_loader.hpp"
 
 #include "plugify_export.h"
 
@@ -25,7 +26,7 @@ namespace plugify {
         //PlugifyBuilder& WithConfigProvider(std::shared_ptr<IConfigProvider> provider);
         PlugifyBuilder& WithManifestParser(std::shared_ptr<IManifestParser> parser);
         PlugifyBuilder& WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver);
-        PlugifyBuilder& WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle);
+        //PlugifyBuilder& WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle);
         PlugifyBuilder& WithEventBus(std::shared_ptr<IEventBus> bus);
 
         PlugifyBuilder& WithDefaults();
@@ -58,11 +59,11 @@ namespace plugify {
         Result<void> Initialize();
         void Terminate();
         [[nodiscard]] bool IsInitialized() const;
-        void Update(double deltaTime = 0.016);
+        void Update(Duration deltaTime = Duration{16});
 
         // Async operations with coroutines (C++20)
-        std::future<Result<void>> InitializeAsync();
-        std::future<void> TerminateAsync();
+        //std::future<Result<void>> InitializeAsync();
+        //std::future<void> TerminateAsync();
 
         // Component access
         /*[[nodiscard]] std::shared_ptr<Manager> GetManager() const;
@@ -72,7 +73,7 @@ namespace plugify {
 
         // Metrics and profiling
         struct Metrics {
-            size_t loadedPackages;
+            size_t loadedExtensions;
             size_t memoryUsageMB;
             double averageLoadTimeMs;
             double averageUpdateTimeMs;

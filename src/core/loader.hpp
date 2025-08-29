@@ -1,84 +1,89 @@
 #pragma once
 
 #include "plugify/core/assembly.hpp"
+#include "plugify/core/extension.hpp"
 #include "plugify/core/language_module.hpp"
-#include "plugify/core/module.hpp"
-#include "plugify/core/plugin.hpp"
 #include "plugify/core/provider.hpp"
 
 namespace plugify {
-    struct Loader {
-        // void InitiailizeModule(std::shared_ptr<Module> module)
-        Result<void> LoadModule(std::shared_ptr<Provider> provider, std::shared_ptr<Module> module);
-        void UpdateModule(std::shared_ptr<Module> module, double deltaTime);
-        void UnloadModule(std::shared_ptr<Module> module);
-        // void TerminateModule(std::shared_ptr<Module> module)
-        //void UpdateModules(const std::vector<std::shared_ptr<Module>>& modules, double deltaTime)
+    template<typename Callback>
+    class ScopedTimer {
+    public:
+        explicit ScopedTimer(Callback&& cb) noexcept(std::is_nothrow_move_constructible_v<Callback>)
+            : m_callback(std::forward<Callback>(cb)), m_start(Clock::now()) {}
 
-        Result<void> LoadPlugin(std::shared_ptr<Module> module, std::shared_ptr<Plugin> plugin);
-        void StartPlugin(std::shared_ptr<Plugin> plugin);
-        void UpdatePlugin(std::shared_ptr<Plugin> plugin, double deltaTime);
-        void EndPlugin(std::shared_ptr<Plugin> plugin);
-        void UnloadPlugin(std::shared_ptr<Plugin> plugin);
-        //void UpdatePlugins(const std::vector<std::shared_ptr<Plugin>>& plugins, double deltaTime);
-
-        void MethodExport(std::shared_ptr<Plugin> plugin);
-    };
-
-    template<typename T, typename S>
-    struct StateTransition {
-        T impl;
-        S expected;
-        S next;
-        bool committed = false;
-
-        StateTransition(T i, S exp, S nxt)
-            : impl(i), expected(exp), next(nxt)
-        {
-            PL_ASSERT(impl->GetState() == expected && "Invalid state transition");
+        ~ScopedTimer() noexcept(std::is_nothrow_invocable_v<Callback>) {
+            auto end = Clock::now();
+            auto elapsed = std::chrono::duration_cast<Duration>(end - m_start);
+            m_callback(elapsed);
         }
 
-        void Rollback(S errorState) {
-            impl->SetState(errorState);
-            committed = true;
-        }
+        // Non-copyable
+        ScopedTimer(const ScopedTimer&) = delete;
+        ScopedTimer& operator=(const ScopedTimer&) = delete;
 
-        void Commit() {
-            impl->SetState(next);
-            committed = true;
-        }
+        // Movable
+        ScopedTimer(ScopedTimer&& other) noexcept
+            : m_callback(std::move(other.m_callback)), m_start(other.m_start) {}
 
-        ~StateTransition() {
-            if (!committed) {
-                // Fails loudly if you forgot to commit
-                PL_ASSERT(false && "State transition not committed");
+        ScopedTimer& operator=(ScopedTimer&& other) noexcept {
+            if (this != &other) {
+                m_callback = std::move(other.m_callback);
+                m_start = other.m_start;
             }
+            return *this;
         }
+
+    private:
+        Callback m_callback;
+        TimePoint m_start;
     };
+
+    // Deduction guide (important!)
+    template <typename Callback>
+    ScopedTimer(Callback&&) -> ScopedTimer<std::decay_t<Callback>>;
+
+    /*struct Loader {
+        // void InitiailizeModule(Extension& module)
+        Result<void> LoadModule(std::shared_ptr<Provider> provider, Extension& module);
+        void UpdateModule(Extension& module, double deltaTime);
+        void UnloadModule(Extension& module);
+        // void TerminateModule(Extension& module)
+        //void UpdateModules(const std::vector<Extension&>& modules, double deltaTime)
+
+        Result<void> LoadPlugin(Extension& module, Extension& plugin);
+        void StartPlugin(Extension& plugin);
+        void UpdatePlugin(Extension& plugin, double deltaTime);
+        void EndPlugin(Extension& plugin);
+        void UnloadPlugin(Extension& plugin);
+        //void UpdatePlugins(const std::vector<Extension&>& plugins, double deltaTime);
+
+        void MethodExport(Extension& plugin);
+    };*/
 
     // Advanced: Exception-safe RAII wrapper for plugin calls
-    template<typename Func>
     class SafeCall {
         std::string_view operation;
-        std::string_view packageName;
+        std::string_view extensionName;
 
     public:
         SafeCall(std::string_view op, std::string_view name)
-            : operation(op), packageName(name) {}
+            : operation(op), extensionName(name) {}
 
-        Result<void> Execute(Func&& func) noexcept {
+        template<typename T, typename Func>
+        Result<T> Execute(Func&& func) noexcept {
             try {
                 return func();
             } catch (const std::bad_alloc&) {
                 return plg::unexpected(std::format("{}: out of memory", operation));
             } catch (const std::exception& e) {
-                return plg::unexpected(std::format("{} failed for '{}': {}", operation, packageName, e.what()));
+                return plg::unexpected(std::format("{} failed for '{}': {}", operation, extensionName, e.what()));
             } catch (...) {
-                return plg::unexpected(std::format("{} failed for '{}': unknown exception",  operation, packageName));
+                return plg::unexpected(std::format("{} failed for '{}': unknown exception",  operation, extensionName));
             }
         }
     };
-#if 0
+
     // Enhanced Loader class with better error handling and preloading support
     class Loader {
     public:
@@ -87,264 +92,230 @@ namespace plugify {
             size_t pluginsLoaded{0};
             Duration totalLoadTime{};
             Duration slowestLoad{};
-            std::string slowestPackage;
+            std::string slowestExtension;
         };
 
     private:
-        LoadStatistics stats;
-
-        // Optional: Cache for preloaded binaries
-        //std::unordered_map<std::filesystem::path, std::shared_ptr<IAssembly>, plg::path_hash> assemblyCache;
+        std::shared_ptr<Provider> _provider;
+        using Dependencies = ServiceContext<ILogger, IFileSystem, IAssemblyLoader>;
+        Dependencies _deps;
+        LoadStatistics _stats;
 
     public:
+        Loader(std::shared_ptr<Context> context, std::shared_ptr<Manager> manager)
+            : _deps(context->GetServices())
+            , _provider()
+        {
+            if (!_deps.IsValid()) {
+                throw std::runtime_error("Missing required services");
+            }
+        }
+
         // Module Operations
-        Result<void> LoadModule(std::shared_ptr<Provider> provider, std::shared_ptr<Module> module) {
+        Result<void> LoadModule(Extension& module) {
             auto timer = ScopedTimer([&](Duration elapsed) {
-                stats.totalLoadTime += elapsed;
-                if (elapsed > stats.slowestLoad) {
-                    stats.slowestLoad = elapsed;
-                    stats.slowestPackage = module->GetName();
+                _stats.totalLoadTime += elapsed;
+                if (elapsed > _stats.slowestLoad) {
+                    _stats.slowestLoad = elapsed;
+                    _stats.slowestExtension = module.GetName();
                 }
             });
 
-            StateTransition scope(module.get(), ModuleState::Unloaded, ModuleState::Loaded);
-
             // Try to use preloaded assembly if available
-            auto assemblyResult = GetOrLoadAssembly(provider, module->GetRuntime(), module->GetDirectories());
+            auto assemblyResult = GetOrLoadAssembly(module.GetRuntime(), module.GetDirectories());
             if (!assemblyResult) {
-                return plg::unexpected(assemblyResult.error());
+                return plg::unexpected(std::move(assemblyResult.error()));
             }
 
             // Load language module interface
-            auto langModuleResult = LoadLanguageModule(*assemblyResult, provider, module);
+            auto langModuleResult = LoadLanguageModule(*assemblyResult, module);
             if (!langModuleResult) {
-                // Rollback on failure
-                scope.Rollback(ModuleState::Failed);
                 return langModuleResult;
             }
 
-            stats.modulesLoaded++;
-            scope.Commit();
+            _stats.modulesLoaded++;
             return {};
         }
 
-        void UnloadModule(std::shared_ptr<Module> module) {
-            StateTransition scope(module.get(), ModuleState::Loaded, ModuleState::Unloaded);
+        Result<void> UnloadModule(Extension& module) {
+            Result<void> result;
 
-            if (auto* languageModule = module->GetLanguageModule()) {
-                languageModule->Shutdown();
-                module->SetLanguageModule(nullptr);
+            if (auto* languageModule = module.GetLanguageModule()) {
+                result = SafeCall("Shutdown", module.GetName()).Execute<void>([&] {
+                    languageModule->Shutdown();
+                    return Result<void>{};
+                });
+                module.SetLanguageModule(nullptr);
             }
 
             // Clear assembly and remove from cache
-            if (auto assembly = module->GetAssembly()) {
-                //assemblyCache.erase(module->GetRuntime());
-                module->SetAssembly(nullptr);
+            if (auto assembly = module.GetAssembly()) {
+                module.SetAssembly(nullptr);
             }
 
-            scope.Commit();
+            return result;
         }
 
         // Plugin Operations
-        Result<void> LoadPlugin(std::shared_ptr<Module> module,
-                              std::shared_ptr<Plugin> plugin) {
+        Result<void> LoadPlugin(const Extension& module, Extension& plugin) {
             auto timer = ScopedTimer([&](Duration elapsed) {
-                stats.totalLoadTime += elapsed;
-                if (elapsed > stats.slowestLoad) {
-                    stats.slowestLoad = elapsed;
-                    stats.slowestPackage = plugin->GetName();
+                _stats.totalLoadTime += elapsed;
+                if (elapsed > _stats.slowestLoad) {
+                    _stats.slowestLoad = elapsed;
+                    _stats.slowestExtension = plugin.GetName();
                 }
             });
 
-            StateTransition scope(plugin.get(), PluginState::Unloaded, PluginState::Loaded);
-
             // Validate module is loaded
-            if (!module || module->GetState() != ModuleState::Loaded) {
+            if (module.CanLoad()) {
                 return plg::unexpected("Module not loaded");
             }
 
-            auto* languageModule = module->GetLanguageModule();
+            auto* languageModule = module.GetLanguageModule();
             if (!languageModule) {
                 return plg::unexpected("Language module not available");
             }
 
             // Load plugin through language module
-            auto result = languageModule->OnPluginLoad(plugin);
-            if (!result) {
-                scope.Rollback(PluginState::Failed);
-                return plg::unexpected(result.error());
+            auto loadResult = SafeCall("OnPluginLoad", plugin.GetName()).Execute<LoadData>([&] {
+                return plugin.GetLanguageModule()->OnPluginLoad(plugin);
+            });
+            if (!loadResult) {
+                return plg::unexpected(std::move(loadResult.error()));
             }
 
             // Validate and set plugin data
-            auto validateResult = ValidateAndSetPluginData(plugin, module, *result);
+            auto validateResult = ValidateAndSetPluginData(plugin, languageModule, *loadResult);
             if (!validateResult) {
-                scope.Rollback(PluginState::Failed);
                 return validateResult;
             }
 
-            stats.pluginsLoaded++;
-            scope.Commit();
+            _stats.pluginsLoaded++;
             return {};
         }
 
-        Result<void> StartPlugin(std::shared_ptr<Plugin> plugin) {
-            StateTransition scope(plugin.get(), PluginState::Loaded, PluginState::Started);
-
-            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin->GetTable();
-            if (hasStart) {
-                plugin->GetLanguageModule()->OnPluginStart(plugin);
+        Result<void> StartPlugin(const Extension& plugin) {
+            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
+            if (!hasStart) {
+                return {};
             }
-
-            scope.Commit();
-            return {};
+            return SafeCall("OnPluginStart", plugin.GetName()).Execute<void>([&] {
+                plugin.GetLanguageModule()->OnPluginStart(plugin);
+                return Result<void>{};
+            });
         }
 
-        Result<void> EndPlugin(std::shared_ptr<Plugin> plugin) {
-            StateTransition scope(plugin.get(), PluginState::Started, PluginState::Ended);
-
-            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin->GetTable();
-            if (hasEnd) {
-                plugin->GetLanguageModule()->OnPluginEnd(plugin);
+        Result<void> EndPlugin(const Extension& plugin) {
+            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
+            if (!hasEnd) {
+                return {};
             }
-
-            scope.Commit();
-            return {};
+            return SafeCall("OnPluginEnd", plugin.GetName()).Execute<void>([&] {
+                plugin.GetLanguageModule()->OnPluginEnd(plugin);
+                return Result<void>{};
+            });
         }
 
-        void UnloadPlugin(std::shared_ptr<Plugin> plugin) {
-            StateTransition scope(plugin.get(), PluginState::Ended, PluginState::Unloaded);
-
+        void UnloadPlugin(Extension& plugin) {
             // Clear all plugin data
-            plugin->SetModule(nullptr);
-            plugin->SetLanguageModule(nullptr);
-            plugin->SetUserData(nullptr);
-            plugin->SetMethodsData({});
-
-            scope.Commit();
+            plugin.SetLanguageModule(nullptr);
+            plugin.SetUserData(nullptr);
+            plugin.SetMethodsData({});
         }
 
         // Batch operations for efficiency
-        void UpdateModules(const std::vector<std::shared_ptr<Module>>& modules, double deltaTime) {
-            for (auto& module : modules) {
-                if (module->GetState() != ModuleState::Loaded) continue;
-
-                const auto& [hasUpdate, hasStart, hasEnd, hasExport] = module->GetTable();
+        void Update(std::span<const Extension> extensions, Duration deltaTime) {
+            for (auto& extension : extensions) {
+                if (!extension.CanUpdate()) continue;
+                const auto& [hasUpdate, hasStart, hasEnd, hasExport] = extension.GetMethodTable();
                 if (hasUpdate) {
-                    module->GetLanguageModule()->OnUpdate(deltaTime);
+                    Result<void> result;
+                    switch (extension.GetType()) {
+                        case ExtensionType::Module:
+                            result = SafeCall("OnUpdate", extension.GetName()).Execute<void>([&] {
+                                extension.GetLanguageModule()->OnUpdate(deltaTime);
+                                return Result<void>{};
+                            });
+                            break;
+                        case ExtensionType::Plugin:
+                            result = SafeCall("OnPluginUpdate", extension.GetName()).Execute<void>([&] {
+                                extension.GetLanguageModule()->OnPluginUpdate(extension, deltaTime);
+                                return Result<void>{};
+                            });
+                            break;
+                        default:
+                            result = std::unexpected("Unknown extension type");
+                            break;
+                    }
+                    if (!result) {
+                        _deps.Get<ILogger>()->Log(result.error(), Severity::Error);
+                    }
                 }
             }
         }
 
-        void UpdatePlugins(const std::vector<std::shared_ptr<Plugin>>& plugins, double deltaTime) {
-            for (auto& plugin : plugins) {
-                if (plugin->GetState() != PluginState::Started) continue;
-
-                const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin->GetTable();
-                if (hasUpdate) {
-                    plugin->GetLanguageModule()->OnPluginUpdate(plugin, deltaTime);
-                }
-            }
-        }
-
-        // Preload support
-        /*Result<void> PreloadAssembly(std::shared_ptr<Provider> provider,
-                                    const std::filesystem::path& path) {
-            auto absPath = provider->GetService<IFileSystem>().Absolute(path);
-            if (!absPath) {
-                return plg::unexpected(absPath.error());
-            }
-
-            // Check if already cached
-            if (assemblyCache.contains(*absPath)) {
+        Result<void> MethodExport(const Extension& module, const Extension& plugin) {
+            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
+            if (!hasExport) {
                 return {};
             }
-
-            LoadFlag flags = GetPreLoadFlags(provider);
-            auto assemblyResult = provider->GetService<IAssemblyLoader>()->Load(*absPath, flags);
-            if (!assemblyResult) {
-                return plg::unexpected(assemblyResult.error());
-            }
-
-            assemblyCache[*absPath] = *assemblyResult;
-            return {};
-        }*/
-
-        void Loader::MethodExport(std::shared_ptr<Module> module, std::shared_ptr<Plugin> plugin) {
-            StateTransition scope1(module.get(), ModuleState::Loaded, ModuleState::Loaded);
-            StateTransition scope2(plugin.get(), PluginState::Loaded, PluginState::Loaded);
-
-            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin->GetTable();
-            if (hasExport) {
-                module->GetLanguageModule()->OnMethodExport(plugin);
-            }
-
-            scope1.Commit();
-            scope2.Commit();
+            return SafeCall("OnMethodExport", module.GetName()).Execute<void>([&] {
+                module.GetLanguageModule()->OnMethodExport(plugin);
+                return Result<void>{};
+            });
         }
 
         // Statistics
-        const LoadStatistics& GetStatistics() const { return stats; }
-        void ResetStatistics() { stats = {}; }
+        const LoadStatistics& GetStatistics() const { return _stats; }
+        void ResetStatistics() { _stats = {}; }
 
     private:
         // Helper to get or load assembly
         Result<std::shared_ptr<IAssembly>> GetOrLoadAssembly(
-            std::shared_ptr<Provider> provider,
             const std::filesystem::path& path,
-            std::vector<std::filesystem::path> searchPaths
+            const std::vector<std::filesystem::path>& searchPaths
         ) {
-            auto absPath = provider->GetService<IFileSystem>().Absolute(path);
+            auto absPath = _deps.Get<IFileSystem>()->GetAbsolutePath(path);
             if (!absPath) {
-                return plg::unexpected(absPath.error());
+                return plg::unexpected(std::move(absPath.error()));
             }
 
-            // Check cache first
-            /*if (auto it = assemblyCache.find(*absPath); it != assemblyCache.end()) {
-                return it->second;
-            }*/
-
-            for (const auto& searchPath : searchPaths) {
-                provider->GetService<IAssemblyLoader>()->AddSearchPath(searchPath);
+            if (_deps.Get<IAssemblyLoader>()->CanLinkSearchPaths()) {
+                for (const auto& searchPath : searchPaths) {
+                    _deps.Get<IAssemblyLoader>()->AddSearchPath(searchPath);
+                }
             }
 
             // Load assembly
-            LoadFlag flags = GetLoadFlags(provider);
-            auto assemblyResult = provider->GetService<IAssemblyLoader>()->Load(*absPath, flags);
+            LoadFlag flags = GetLoadFlags();
+            auto assemblyResult = _deps.Get<IAssemblyLoader>()->Load(*absPath, flags);
             if (!assemblyResult) {
-                return plg::unexpected(assemblyResult.error());
+                return plg::unexpected(std::move(assemblyResult.error()));
             }
 
-            // Cache for future use
-            //assemblyCache[*absPath] = *assemblyResult;
             return *assemblyResult;
         }
 
-        static LoadFlag GetLoadFlags(std::shared_ptr<Provider> provider) {
-            LoadFlag flags = LoadFlag::Lazy | LoadFlag::Global |
-                            LoadFlag::SearchUserDirs | LoadFlag::SearchSystem32 |
-                            LoadFlag::SearchDllLoadDir;
-
-            if (provider->IsPreferOwnSymbols()) {
+        LoadFlag GetLoadFlags() {
+            LoadFlag flags = LoadFlag::Lazy | LoadFlag::Global | LoadFlag::SearchUserDirs | LoadFlag::SearchSystem32 | LoadFlag::SearchDllLoadDir;
+            if (_provider->IsPreferOwnSymbols()) {
                 flags |= LoadFlag::Deepbind;
             }
-
             return flags;
         }
 
-        static LoadFlag GetPreLoadFlags() {
+        /*LoadFlag GetPreLoadFlags() {
             LoadFlag flags = LoadFlag::Lazy | LoadFlag::DontResolveDllReferences;
             return flags;
-        }
+        }*/
 
         Result<void> LoadLanguageModule(
             std::shared_ptr<IAssembly> assembly,
-            std::shared_ptr<Provider> provider,
-            std::shared_ptr<Module> module)
+            Extension& module)
         {
             constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
 
-            auto GetLanguageModuleFunc = assembly->GetSymbol(kGetLanguageModuleFn)
-                .RCast<ILanguageModule*(*)()>();
+            auto GetLanguageModuleFunc = assembly->GetSymbol(kGetLanguageModuleFn).RCast<ILanguageModule*(*)()>();
             if (!GetLanguageModuleFunc) {
                 return plg::unexpected(std::format("Function '{}' not found", kGetLanguageModuleFn));
             }
@@ -365,25 +336,28 @@ namespace plugify {
             }
     #endif
 
-            auto initResult = languageModule->Initialize(provider, module);
+            auto initResult = SafeCall("Initialize", module.GetName()).Execute<InitData>([&] {
+                return languageModule->Initialize(_provider, module);
+            });
+
             if (!initResult) {
-                return plg::unexpected(initResult.error());
+                return plg::unexpected(std::move(initResult.error()));
             }
 
-            module->SetLanguageModule(languageModule);
-            module->SetAssembly(std::move(assembly));
-            module->SetTable(initResult->table);
+            module.SetLanguageModule(languageModule);
+            module.SetAssembly(std::move(assembly));
+            module.SetMethodTable(initResult->table);
 
             return {};
         }
 
         Result<void> ValidateAndSetPluginData(
-            std::shared_ptr<Plugin> plugin,
-            std::shared_ptr<Module> module,
-            Result<LoadData>& result
+            Extension& plugin,
+            ILanguageModule* module,
+            LoadData& result
         ) {
             auto& [methods, data, table] = result;
-            const auto& exportedMethods = plugin->GetMethods();
+            const auto& exportedMethods = plugin.GetMethods();
 
             if (methods.size() != exportedMethods.size()) {
                 return plg::unexpected(std::format(
@@ -399,8 +373,8 @@ namespace plugify {
 
                 if (&method != &exportedMethod || !addr) {
                     errors.emplace_back(std::format("{:>3}. {}", i + 1, exportedMethod.GetName()));
-                    if (errors.size() >= 10) {
-                        errors.emplace_back(std::format("... and {} more", methods.size() - 10));
+                    if (constexpr int kMaxDisplay = 10; errors.size() >= kMaxDisplay) {
+                        errors.emplace_back(std::format("... and {} more", methods.size() - kMaxDisplay));
                         break;
                     }
                 }
@@ -410,11 +384,10 @@ namespace plugify {
                 return plg::unexpected(std::format("Invalid methods:\n{}", plg::join(errors, "\n")));
             }
 
-            plugin->SetTable(table);
-            plugin->SetUserData(data);
-            plugin->SetMethodsData(std::move(methods));
-            plugin->SetLanguageModule(module->GetLanguageModule());
-            plugin->SetModule(std::move(module));
+            plugin.SetLanguageModule(module);
+            plugin.SetUserData(data);
+            plugin.SetMethodTable(table);
+            plugin.SetMethodsData(std::move(methods));
 
             return {};
         }

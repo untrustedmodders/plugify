@@ -9,11 +9,11 @@
 #include "plugify/core/method.hpp"
 
 namespace plugify {
-	/*struct PackageManifest {
-        using Ptr = std::shared_ptr<PackageManifest>;
+	/*struct Manifest {
+        using Ptr = std::shared_ptr<Manifest>;
 
 		std::string name;
-		PackageType type{};
+		ExtensionType type{};
 		Version version;
 		std::optional<std::string> description;
 		std::optional<std::string> author;
@@ -34,14 +34,14 @@ namespace plugify {
 		std::string language;
 	};
 
-	struct PluginManifest final : PackageManifest {
+	struct PluginManifest final : Manifest {
         using Ptr = std::shared_ptr<PluginManifest>;
 
 		std::string entry;
 		std::optional<std::vector<Method>> methods;
 	};
 
-    struct ModuleManifest final : PackageManifest {
+    struct ModuleManifest final : Manifest {
         using Ptr = std::shared_ptr<ModuleManifest>;
 
 		std::optional<std::filesystem::path> runtime;
@@ -50,7 +50,7 @@ namespace plugify {
 
 
     // Unified Manifest (combines all fields)
-    struct PackageManifest {
+    struct Manifest {
         // Common fields
         std::string name;
         Version version;

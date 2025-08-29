@@ -8,7 +8,7 @@
 
 #include "core/conflict_impl.hpp"
 #include "core/dependency_impl.hpp"
-#include "core/enum_impl.hpp"
+#include "core/enum_object_impl.hpp"
 #include "core/enum_value_impl.hpp"
 #include "core/method_impl.hpp"
 #include "core/property_impl.hpp"
@@ -57,8 +57,8 @@ struct glz::meta<plugify::Method> {
 };
 
 template <>
-struct glz::meta<plugify::PackageManifest> {
-    using T = plugify::PackageManifest;
+struct glz::meta<plugify::Manifest> {
+    using T = plugify::Manifest;
     static constexpr auto value = object(
             "$schema", skip{},
             "metadata", skip{},
@@ -82,63 +82,6 @@ struct glz::meta<plugify::PackageManifest> {
             "directories", &T::directories
     );
 };
-/*template <>
-struct glz::meta<plugify::ModuleManifest> {
-	using T = plugify::ModuleManifest;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"metadata", skip{},
-			"type", skip{},
-
-			"name", &T::name,
-			"version", &T::version,
-			"description", &T::description,
-			"author", &T::author,
-			"website", &T::website,
-			"license", &T::license,
-
-			"path", skip{},
-            "root", skip{},
-
-			"platforms", &T::platforms,
-			"dependencies", &T::dependencies,
-			"conflicts", &T::conflicts,
-            "obsoletes", &T::obsoletes,
-			"language", &T::language,
-
-			"runtime", &T::runtime,
-			"directories", &T::directories
-	);
-};
-
-template <>
-struct glz::meta<plugify::PluginManifest> {
-	using T = plugify::PluginManifest;
-	static constexpr auto value = object(
-			"$schema", skip{},
-			"metadata", skip{},
-			"type", skip{},
-
-			"name", &T::name,
-			"version", &T::version,
-			"description", &T::description,
-			"author", &T::author,
-			"website", &T::website,
-			"license", &T::license,
-
-			"path", skip{},
-            "root", skip{},
-
-			"platforms", &T::platforms,
-			"dependencies", &T::dependencies,
-			"conflicts", &T::conflicts,
-			"obsoletes", &T::obsoletes,
-			"language", &T::language,
-
-			"entry", &T::entry,
-			"methods", &T::methods
-	);
-};*/
 
 template<>
 struct glz::meta<plugify::Dependency> {
@@ -172,7 +115,7 @@ struct glz::meta<plugify::Property> {
 };
 
 template <>
-struct glz::meta<plugify::Enum> {
+struct glz::meta<plugify::EnumObject> {
 	static constexpr auto value = object(
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
 		"description", skip{},

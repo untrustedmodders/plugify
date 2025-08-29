@@ -26,11 +26,11 @@ Constraint Dependency::GetConstraints() const noexcept {
 }
 bool Dependency::IsOptional() const noexcept { return _impl->optional.value_or(false); }
 
-void Dependency::SetName(std::string name) noexcept { _impl->name = std::move(name); }
-void Dependency::SetConstraints(Constraint constraints) noexcept {
+void Dependency::SetName(std::string name) { _impl->name = std::move(name); }
+void Dependency::SetConstraints(Constraint constraints) {
 	_impl->constraints = std::move(constraints);
 }
-void Dependency::SetOptional(bool optional) noexcept {
+void Dependency::SetOptional(bool optional) {
 	_impl->optional = optional;
 }
 

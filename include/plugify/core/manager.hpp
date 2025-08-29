@@ -9,8 +9,7 @@
 #include "service_locator.hpp"
 
 namespace plugify {
-    class Module;
-    class Plugin;
+    class Extension;
     class Context;
     class PLUGIFY_API Manager {
         struct Impl;
@@ -24,32 +23,22 @@ namespace plugify {
 
         // Lifecycle
         void Initialize();
-        void Update(double deltaTime);
+        void Update(Duration deltaTime);
         void Terminate();
 
-        // Plugin operations
-        Result<std::shared_ptr<Plugin>> LoadPlugin(const std::filesystem::path& path);
-        Result<void> UnloadPlugin(std::string_view name);
-        Result<void> ReloadPlugin(std::string_view name);
-        Result<void> EnablePlugin(std::string_view name);
-        Result<void> DisablePlugin(std::string_view name);
-
-        // Module operations
-        Result<std::shared_ptr<Module>> LoadModule(const std::filesystem::path& path);
-        Result<void> UnloadModule(std::string_view name);
-        Result<void> ReloadModule(std::string_view name);
-        Result<void> EnableModule(std::string_view name);
-        Result<void> DisableModule(std::string_view name);
+        // Extension operations
+        //Result<std::shared_ptr<Extension>> LoadExtension(const std::filesystem::path& path);
+        //Result<void> UnloadExtension(std::string_view name);
+        //Result<void> ReloadExtension(std::string_view name);
+        //Result<void> EnableExtension(std::string_view name);
+        //Result<void> DisableExtension(std::string_view name);
 
         // Query operations
-        [[nodiscard]] bool IsPluginLoaded(std::string_view name, std::optional<Constraint> version = {}) const noexcept;
-        [[nodiscard]] std::shared_ptr<Plugin> FindPlugin(std::string_view name) const noexcept;
-        [[nodiscard]] std::vector<std::shared_ptr<Plugin>> GetPlugins() const;
-        [[nodiscard]] std::vector<std::shared_ptr<Plugin>> GetPluginsByState(PluginState state) const;
-        [[nodiscard]] bool IsModuleLoaded(std::string_view name, std::optional<Constraint> version = {}) const noexcept;
-        [[nodiscard]] std::shared_ptr<Module> FindModule(std::string_view name) const noexcept;
-        [[nodiscard]] std::vector<std::shared_ptr<Module>> GetModules() const;
-        [[nodiscard]] std::vector<std::shared_ptr<Module>> GetModulesByState(ModuleState state) const;
+        [[nodiscard]] bool IsExtensionLoaded(std::string_view name, std::optional<Constraint> version = {}) const noexcept;
+        [[nodiscard]] std::shared_ptr<Extension> FindExtension(std::string_view name) const noexcept;
+        [[nodiscard]] std::vector<std::shared_ptr<Extension>> GetExtensions() const;
+        [[nodiscard]] std::vector<std::shared_ptr<Extension>> GetExtensionsByState(ExtensionState state) const;
+        [[nodiscard]] std::vector<std::shared_ptr<Extension>> GetExtensionsByType(ExtensionType type) const;
 
         [[nodiscard]] bool operator==(const Manager& other) const noexcept;
         [[nodiscard]] auto operator<=>(const Manager& other) const noexcept;

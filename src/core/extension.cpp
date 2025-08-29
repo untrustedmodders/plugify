@@ -1,26 +1,26 @@
 #include "plugify/core/assembly.hpp"
 #include "plugify/core/language_module.hpp"
-#include "plugify/core/package.hpp"
+#include "plugify/core/extension.hpp"
 
 using namespace plugify;
 
 // Implementation structure
-struct Package::Impl {
+struct Extension::Impl {
     // Core identity
     UniqueId id{-1};
-    PackageType type{PackageType::Unknown};
-    PackageState state{PackageState::Unknown};
+    ExtensionType type{ExtensionType::Unknown};
+    ExtensionState state{ExtensionState::Unknown};
 
     // Runtime state
     MethodTable methodTable;
     MemAddr userData;
     ILanguageModule* languageModule{nullptr};
-    PackageManifest manifest;
+    Manifest manifest;
     std::filesystem::path location;
 
     // Timing
     struct Timings {
-        plg::flat_map<PackageState, Duration> timepoints;
+        plg::flat_map<ExtensionState, Duration> timepoints;
         TimePoint lastOperationStart;
 
         Duration GetTotalTime() const {
@@ -34,9 +34,8 @@ struct Package::Impl {
         std::string ToString() const {
             std::string merged;
             merged.reserve(256);
-            for (const auto& [state, timepoint] : timepoints) {
-                std::format_to(std::back_inserter(merged), "{} {}ms, ",
-                              plg::enum_to_string(state), timepoint.count());
+            for (const auto& [s, t] : timepoints) {
+                std::format_to(std::back_inserter(merged), "{} {}ms, ", plg::enum_to_string(s), t.count());
             }
             std::format_to(std::back_inserter(merged), "Total {}ms", GetTotalTime().count());
             return merged;
@@ -56,6 +55,14 @@ struct Package::Impl {
     struct ModuleData {
         std::shared_ptr<IAssembly> assembly;
     } moduleData;
+
+    // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
+    void ApplyPath() {
+        location = location.parent_path(); // strip manifest path
+        if (!manifest.runtime) {
+            manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, manifest.name);
+        }
+    }
 };
 
 // Static empty defaults for returning const references to empty containers
@@ -71,62 +78,56 @@ static const std::vector<MethodData> kEmptyMethodData;
 //static const std::deque<std::string> kEmptyErrors;
 
 // ============================================================================
-// Package::Impl Definition
+// Extension::Impl Definition
 // ============================================================================
 
 // ============================================================================
 // Constructor & Destructor
 // ============================================================================
 
-Package::Package(UniqueId id, std::filesystem::path location)
+Extension::Extension(UniqueId id, std::filesystem::path location)
     : _impl(std::make_unique<Impl>()) {
-
-    /*if (!manifest.runtime || manifest.runtime->empty()) {
-        // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
-        manifest.runtime = manifest.runtime.value_or(path / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, manifest.name));
-    }*/
     _impl->id = id;
-    _impl->state = PackageState::Discovered;
-    _impl->type = GetPackageType(location);
+    _impl->state = ExtensionState::Discovered;
+    _impl->type = GetExtensionType(location);
     _impl->location = std::move(location);
-    PL_ASSERT(_impl->type != PackageType::Unknown);
 }
 
-Package::~Package() = default;
+Extension::~Extension() = default;
 
-Package::Package(Package&& other) noexcept = default;
+Extension::Extension(Extension&& other) noexcept = default;
 
-Package& Package::operator=(Package&& other) noexcept = default;
+Extension& Extension::operator=(Extension&& other) noexcept = default;
 
 // ============================================================================
 // Core Getters
 // ============================================================================
 
-UniqueId Package::GetId() const noexcept {
+UniqueId Extension::GetId() const noexcept {
     return _impl->id;
 }
 
-PackageType Package::GetType() const noexcept {
+ExtensionType Extension::GetType() const noexcept {
     return _impl->type;
 }
 
-PackageState Package::GetState() const noexcept {
+ExtensionState Extension::GetState() const noexcept {
     return _impl->state;
 }
 
-const std::string& Package::GetName() const noexcept {
+const std::string& Extension::GetName() const noexcept {
     return _impl->manifest.name;
 }
 
-const Version& Package::GetVersion() const noexcept {
+const Version& Extension::GetVersion() const noexcept {
     return _impl->manifest.version;
 }
 
-const std::string& Package::GetLanguage() const noexcept {
+const std::string& Extension::GetLanguage() const noexcept {
     return _impl->manifest.language;
 }
 
-const std::filesystem::path& Package::GetLocation() const noexcept {
+const std::filesystem::path& Extension::GetLocation() const noexcept {
     return _impl->location;
 }
 
@@ -134,40 +135,39 @@ const std::filesystem::path& Package::GetLocation() const noexcept {
 // Optional Info Getters
 // ============================================================================
 
-const std::string& Package::GetDescription() const noexcept {
+const std::string& Extension::GetDescription() const noexcept {
     return _impl->manifest.description ? *_impl->manifest.description : kEmptyString;
 }
 
-const std::string& Package::GetAuthor() const noexcept {
+const std::string& Extension::GetAuthor() const noexcept {
     return _impl->manifest.author ? *_impl->manifest.author : kEmptyString;
 }
 
-const std::string& Package::GetWebsite() const noexcept {
+const std::string& Extension::GetWebsite() const noexcept {
     return _impl->manifest.website ? *_impl->manifest.website : kEmptyString;
 }
 
-const std::string& Package::GetLicense() const noexcept {
+const std::string& Extension::GetLicense() const noexcept {
     return _impl->manifest.license ? *_impl->manifest.license : kEmptyString;
 }
-
 
 // ============================================================================
 // Dependencies/Conflicts Getters
 // ============================================================================
 
-const std::vector<std::string>& Package::GetPlatforms() const noexcept {
+const std::vector<std::string>& Extension::GetPlatforms() const noexcept {
     return _impl->manifest.platforms ? *_impl->manifest.platforms : kEmptyStrings;
 }
 
-const std::vector<Dependency>& Package::GetDependencies() const noexcept {
+const std::vector<Dependency>& Extension::GetDependencies() const noexcept {
     return _impl->manifest.dependencies ? *_impl->manifest.dependencies : kEmptyDependencies;
 }
 
-const std::vector<Conflict>& Package::GetConflicts() const noexcept {
+const std::vector<Conflict>& Extension::GetConflicts() const noexcept {
     return _impl->manifest.conflicts ? *_impl->manifest.conflicts : kEmptyConflicts;
 }
 
-const std::vector<Obsolete>& Package::GetObsoletes() const noexcept {
+const std::vector<Obsolete>& Extension::GetObsoletes() const noexcept {
     return _impl->manifest.obsoletes ? *_impl->manifest.obsoletes : kEmptyObsoletes;
 }
 
@@ -175,22 +175,22 @@ const std::vector<Obsolete>& Package::GetObsoletes() const noexcept {
 // Plugin-specific Getters
 // ============================================================================
 
-const std::string& Package::GetEntry() const noexcept {
-    if (_impl->type == PackageType::Plugin && _impl->manifest.entry) {
+const std::string& Extension::GetEntry() const noexcept {
+    if (_impl->type == ExtensionType::Plugin && _impl->manifest.entry) {
         return *_impl->manifest.entry;
     }
     return kEmptyString;
 }
 
-const std::vector<Method>& Package::GetMethods() const noexcept {
-    if (_impl->type == PackageType::Plugin && _impl->manifest.methods) {
+const std::vector<Method>& Extension::GetMethods() const noexcept {
+    if (_impl->type == ExtensionType::Plugin && _impl->manifest.methods) {
         return *_impl->manifest.methods;
     }
     return kEmptyMethods;
 }
 
-const std::vector<MethodData>& Package::GetMethodsData() const noexcept {
-    if (_impl->type == PackageType::Plugin) {
+const std::vector<MethodData>& Extension::GetMethodsData() const noexcept {
+    if (_impl->type == ExtensionType::Plugin) {
         return _impl->pluginData.methodData;
     }
     return kEmptyMethodData;
@@ -200,22 +200,22 @@ const std::vector<MethodData>& Package::GetMethodsData() const noexcept {
 // Module-specific Getters
 // ============================================================================
 
-const std::filesystem::path& Package::GetRuntime() const noexcept {
-    if (_impl->type == PackageType::Module && _impl->manifest.runtime) {
+const std::filesystem::path& Extension::GetRuntime() const noexcept {
+    if (_impl->type == ExtensionType::Module && _impl->manifest.runtime) {
         return *_impl->manifest.runtime;
     }
     return kEmptyPath;
 }
 
-const std::vector<std::filesystem::path>& Package::GetDirectories() const noexcept {
-    if (_impl->type == PackageType::Module && _impl->manifest.directories) {
+const std::vector<std::filesystem::path>& Extension::GetDirectories() const noexcept {
+    if (_impl->type == ExtensionType::Module && _impl->manifest.directories) {
         return *_impl->manifest.directories;
     }
     return kEmptyPaths;
 }
 
-std::shared_ptr<IAssembly> Package::GetAssembly() const noexcept {
-    if (_impl->type == PackageType::Module) {
+std::shared_ptr<IAssembly> Extension::GetAssembly() const noexcept {
+    if (_impl->type == ExtensionType::Module) {
         return _impl->moduleData.assembly;
     }
     return nullptr;
@@ -225,19 +225,19 @@ std::shared_ptr<IAssembly> Package::GetAssembly() const noexcept {
 // Shared Runtime Getters
 // ============================================================================
 
-MemAddr Package::GetUserData() const noexcept {
+MemAddr Extension::GetUserData() const noexcept {
     return _impl->userData;
 }
 
-MethodTable Package::GetMethodTable() const noexcept {
+MethodTable Extension::GetMethodTable() const noexcept {
     return _impl->methodTable;
 }
 
-ILanguageModule* Package::GetLanguageModule() const noexcept {
+ILanguageModule* Extension::GetLanguageModule() const noexcept {
     return _impl->languageModule;
 }
 
-const PackageManifest& Package::GetManifest() const noexcept {
+const Manifest& Extension::GetManifest() const noexcept {
     return _impl->manifest;
 }
 
@@ -245,23 +245,23 @@ const PackageManifest& Package::GetManifest() const noexcept {
 // State & Error Management Getters
 // ============================================================================
 
-const std::deque<std::string>& Package::GetErrors() const noexcept {
+const std::deque<std::string>& Extension::GetErrors() const noexcept {
     return _impl->errors;
 }
 
-const std::deque<std::string>& Package::GetWarnings() const noexcept {
+const std::deque<std::string>& Extension::GetWarnings() const noexcept {
     return _impl->warnings;
 }
 
-bool Package::HasErrors() const noexcept {
+bool Extension::HasErrors() const noexcept {
     return !_impl->errors.empty();
 }
 
-bool Package::IsLoaded() const noexcept {
+bool Extension::IsLoaded() const noexcept {
     switch (_impl->state) {
-        case PackageState::Loaded:
-        case PackageState::Started:
-        case PackageState::Updated:
+        case ExtensionState::Loaded:
+        case ExtensionState::Started:
+        case ExtensionState::Updated:
             return true;
         default:
             return false;
@@ -272,7 +272,7 @@ bool Package::IsLoaded() const noexcept {
 // Timing/Performance Getters
 // ============================================================================
 
-Duration Package::GetOperationTime(PackageState state) const {
+Duration Extension::GetOperationTime(ExtensionState state) const {
     auto it = _impl->timings.timepoints.find(state);
     if (it != _impl->timings.timepoints.end()) {
         return it->second;
@@ -280,11 +280,11 @@ Duration Package::GetOperationTime(PackageState state) const {
     return Duration{};
 }
 
-Duration Package::GetTotalTime() const {
+Duration Extension::GetTotalTime() const {
     return _impl->timings.GetTotalTime();
 }
 
-std::string Package::GetPerformanceReport() const {
+std::string Extension::GetPerformanceReport() const {
     return std::format("{}: {}", GetName(), _impl->timings.ToString());
 }
 
@@ -292,12 +292,12 @@ std::string Package::GetPerformanceReport() const {
 // State Management
 // ============================================================================
 
-void Package::StartOperation(PackageState newState) {
+void Extension::StartOperation(ExtensionState newState) {
     _impl->timings.lastOperationStart = Clock::now();
     SetState(newState);
 }
 
-void Package::EndOperation(PackageState newState) {
+void Extension::EndOperation(ExtensionState newState) {
     auto duration = std::chrono::duration_cast<Duration>(
         Clock::now() - _impl->timings.lastOperationStart
     );
@@ -309,8 +309,8 @@ void Package::EndOperation(PackageState newState) {
     SetState(newState);
 }
 
-void Package::SetState(PackageState state) {
-    PL_ASSERT(IsValidTransition(_impl->state, state) && "Invalid state transition");
+void Extension::SetState(ExtensionState state) {
+    assert(IsValidTransition(_impl->state, state) && "Invalid state transition");
     _impl->state = state;
 }
 
@@ -318,19 +318,19 @@ void Package::SetState(PackageState state) {
 // Error/Warning Management
 // ============================================================================
 
-void Package::AddError(std::string error) {
+void Extension::AddError(std::string error) {
     _impl->errors.emplace_back(std::move(error));
 }
 
-void Package::AddWarning(std::string warning) {
+void Extension::AddWarning(std::string warning) {
     _impl->warnings.emplace_back(std::move(warning));
 }
 
-void Package::ClearErrors() {
+void Extension::ClearErrors() {
     _impl->errors.clear();
 }
 
-void Package::ClearWarnings() {
+void Extension::ClearWarnings() {
     _impl->warnings.clear();
 }
 
@@ -338,29 +338,29 @@ void Package::ClearWarnings() {
 // Runtime Updates
 // ============================================================================
 
-void Package::SetUserData(MemAddr data) {
+void Extension::SetUserData(MemAddr data) {
     _impl->userData = data;
 }
 
-void Package::SetMethodTable(MethodTable table) {
+void Extension::SetMethodTable(MethodTable table) {
     _impl->methodTable = table;
 }
 
-void Package::SetLanguageModule(ILanguageModule* module) {
+void Extension::SetLanguageModule(ILanguageModule* module) {
     _impl->languageModule = module;
 }
 
-void Package::SetManifest(PackageManifest manifest) {
+void Extension::SetManifest(Manifest manifest) {
     _impl->manifest = std::move(manifest);
-    _impl->location = _impl->location.parent_path();
+    _impl->ApplyPath();
 }
 
 // ============================================================================
 // Plugin-specific Setters
 // ============================================================================
 
-void Package::SetMethodsData(std::vector<MethodData> methodsData) {
-    if (_impl->type == PackageType::Plugin) {
+void Extension::SetMethodsData(std::vector<MethodData> methodsData) {
+    if (_impl->type == ExtensionType::Plugin) {
         _impl->pluginData.methodData = std::move(methodsData);
     }
 }
@@ -369,8 +369,8 @@ void Package::SetMethodsData(std::vector<MethodData> methodsData) {
 // Module-specific Setters
 // ============================================================================
 
-void Package::SetAssembly(std::shared_ptr<IAssembly> assembly) {
-    if (_impl->type == PackageType::Module) {
+void Extension::SetAssembly(std::shared_ptr<IAssembly> assembly) {
+    if (_impl->type == ExtensionType::Module) {
         _impl->moduleData.assembly = std::move(assembly);
     }
 }
@@ -379,11 +379,11 @@ void Package::SetAssembly(std::shared_ptr<IAssembly> assembly) {
 // Comparison Operators
 // ============================================================================
 
-bool Package::operator==(const Package& other) const noexcept {
+bool Extension::operator==(const Extension& other) const noexcept {
     return _impl->id == other._impl->id;
 }
 
-auto Package::operator<=>(const Package& other) const noexcept {
+auto Extension::operator<=>(const Extension& other) const noexcept {
     return _impl->id <=> other._impl->id;
 }
 
@@ -391,18 +391,18 @@ auto Package::operator<=>(const Package& other) const noexcept {
 // Static Helper Methods
 // ============================================================================
 
-std::string_view Package::GetFileExtension(PackageType type) {
+std::string_view Extension::GetFileExtension(ExtensionType type) {
     switch(type) {
-        case PackageType::Plugin: return ".pplugin";
-        case PackageType::Module: return ".pmodule";
+        case ExtensionType::Plugin: return ".pplugin";
+        case ExtensionType::Module: return ".pmodule";
         default: return "";
     }
 }
 
-PackageType Package::GetPackageType(const std::filesystem::path& path) {
-    static std::unordered_map<std::string, PackageType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
-        { ".pplugin", PackageType::Plugin },
-        { ".pmodule", PackageType::Module }
+ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
+    static std::unordered_map<std::string, ExtensionType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
+        { ".pplugin", ExtensionType::Plugin },
+        { ".pmodule", ExtensionType::Module }
     };
     return manifests[path.extension().string()];
 }
@@ -412,75 +412,75 @@ PackageType Package::GetPackageType(const std::filesystem::path& path) {
 // ============================================================================
 
 // Helper to validate state transitions (optional implementation)
-bool Package::IsValidTransition(PackageState from, PackageState to) {
+bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
     // Define valid state transitions
     // This is just an example - adjust based on your actual state machine
     switch (from) {
-        case PackageState::Unknown:
-            return to == PackageState::Discovered;
+        case ExtensionState::Unknown:
+            return to == ExtensionState::Discovered;
 
-        case PackageState::Discovered:
-            return to == PackageState::Parsing ||
-                   to == PackageState::Failed ||
-                   to == PackageState::Disabled;
+        case ExtensionState::Discovered:
+            return to == ExtensionState::Parsing ||
+                   to == ExtensionState::Failed ||
+                   to == ExtensionState::Disabled;
 
-        case PackageState::Parsing:
-            return to == PackageState::Parsed ||
-                   to == PackageState::Corrupted;
+        case ExtensionState::Parsing:
+            return to == ExtensionState::Parsed ||
+                   to == ExtensionState::Corrupted;
 
-        case PackageState::Parsed:
-            return to == PackageState::Resolving ||
-                   to == PackageState::Failed;
+        case ExtensionState::Parsed:
+            return to == ExtensionState::Resolving ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Resolving:
-            return to == PackageState::Resolved ||
-                   to == PackageState::Unresolved;
+        case ExtensionState::Resolving:
+            return to == ExtensionState::Resolved ||
+                   to == ExtensionState::Unresolved;
 
-        case PackageState::Resolved:
-            return to == PackageState::Loading ||
-                   to == PackageState::Skipped ||
-                   to == PackageState::Failed;
+        case ExtensionState::Resolved:
+            return to == ExtensionState::Loading ||
+                   to == ExtensionState::Skipped ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Loading:
-            return to == PackageState::Loaded ||
-                   to == PackageState::Failed;
+        case ExtensionState::Loading:
+            return to == ExtensionState::Loaded ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Loaded:
-            return to == PackageState::Starting ||
-                   to == PackageState::Ending ||
-                   to == PackageState::Failed;
+        case ExtensionState::Loaded:
+            return to == ExtensionState::Starting ||
+                   to == ExtensionState::Ending ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Starting:
-            return to == PackageState::Started ||
-                   to == PackageState::Failed;
+        case ExtensionState::Starting:
+            return to == ExtensionState::Started ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Started:
-            return to == PackageState::Updating ||
-                   to == PackageState::Ending ||
-                   to == PackageState::Failed;
+        case ExtensionState::Started:
+            return to == ExtensionState::Updating ||
+                   to == ExtensionState::Ending ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Updating:
-            return to == PackageState::Updated ||
-                   to == PackageState::Failed;
+        case ExtensionState::Updating:
+            return to == ExtensionState::Updated ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Updated:
-            return to == PackageState::Updating ||
-                   to == PackageState::Ending ||
-                   to == PackageState::Failed;
+        case ExtensionState::Updated:
+            return to == ExtensionState::Updating ||
+                   to == ExtensionState::Ending ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Ending:
-            return to == PackageState::Ended ||
-                   to == PackageState::Failed;
+        case ExtensionState::Ending:
+            return to == ExtensionState::Ended ||
+                   to == ExtensionState::Failed;
 
-        case PackageState::Ended:
-            return to == PackageState::Terminated;
+        case ExtensionState::Ended:
+            return to == ExtensionState::Terminated;
 
-        case PackageState::Failed:
-        case PackageState::Terminated:
-        case PackageState::Corrupted:
-        case PackageState::Unresolved:
-        case PackageState::Disabled:
-        case PackageState::Skipped:
+        case ExtensionState::Failed:
+        case ExtensionState::Terminated:
+        case ExtensionState::Corrupted:
+        case ExtensionState::Unresolved:
+        case ExtensionState::Disabled:
+        case ExtensionState::Skipped:
             return false; // Terminal states
 
         default:
@@ -489,8 +489,8 @@ bool Package::IsValidTransition(PackageState from, PackageState to) {
 }
 
 // Debug/logging helper
-std::string Package::ToString() const {
-    return std::format("Package[id={}, name={}, type={}, state={}, errors={}, warnings={}]",
+std::string Extension::ToString() const {
+    return std::format("Extension[id={}, name={}, type={}, state={}, errors={}, warnings={}]",
                       _impl->id,
                       GetName(),
                       plg::enum_to_string(_impl->type),
@@ -499,35 +499,42 @@ std::string Package::ToString() const {
                       _impl->warnings.size());
 }
 
-// Helper to check if package can be loaded
-bool Package::CanLoad() const noexcept {
-    return (_impl->state == PackageState::Resolved ||
-            _impl->state == PackageState::Ended) &&
+// Helper to check if extension can be loaded
+bool Extension::CanLoad() const noexcept {
+    return (_impl->state == ExtensionState::Resolved ||
+            _impl->state == ExtensionState::Ended) &&
            !HasErrors();
 }
 
-// Helper to check if package can be started
-bool Package::CanStart() const noexcept {
-    return _impl->state == PackageState::Loaded && !HasErrors();
+// Helper to check if extension can be started
+bool Extension::CanStart() const noexcept {
+    return _impl->state == ExtensionState::Loaded && !HasErrors();
 }
 
-// Helper to check if package can be stopped
-bool Package::CanStop() const noexcept {
-    return _impl->state == PackageState::Started ||
-           _impl->state == PackageState::Updated;
+// Helper to check if extension can be updated
+bool Extension::CanUpdate() const noexcept {
+    return (_impl->state == ExtensionState::Started ||
+            _impl->state == ExtensionState::Updated) &&
+           !HasErrors();
+}
+
+// Helper to check if extension can be stopped
+bool Extension::CanStop() const noexcept {
+    return _impl->state == ExtensionState::Started ||
+           _impl->state == ExtensionState::Updated;
 }
 
 // Add dependency helper (for runtime dependency injection)
-void Package::AddDependency(std::string dep) {
+void Extension::AddDependency(std::string dep) {
     if (!_impl->manifest.dependencies) {
         _impl->manifest.dependencies = std::vector<Dependency>{};
     }
     _impl->manifest.dependencies->emplace_back().SetName(std::move(dep));
 }
 
-// Reset package to initial state (useful for reload scenarios)
-void Package::Reset() {
-    _impl->state = PackageState::Unknown;
+// Reset extension to initial state (useful for reload scenarios)
+void Extension::Reset() {
+    _impl->state = ExtensionState::Unknown;
     _impl->languageModule = nullptr;
     _impl->errors.clear();
     _impl->warnings.clear();
@@ -535,9 +542,9 @@ void Package::Reset() {
     _impl->methodTable = MethodTable{};
     _impl->userData = nullptr;
 
-    if (_impl->type == PackageType::Plugin) {
+    if (_impl->type == ExtensionType::Plugin) {
         _impl->pluginData.methodData.clear();
-    } else if (_impl->type == PackageType::Module) {
+    } else if (_impl->type == ExtensionType::Module) {
         _impl->moduleData.assembly.reset();
     }
 }

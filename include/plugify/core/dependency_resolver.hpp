@@ -1,12 +1,12 @@
 #pragma once
 
-#include "plugify/core/package.hpp"
+#include "plugify/core/extension.hpp"
 
 namespace plugify {
     /**
-     * @brief Represents a collection of packages with their manifests
+     * @brief Represents a collection of extensions with their manifests
      */
-    using PackageCollection = std::span<const Package>;
+    using ExtensionCollection = std::span<const Extension>;
 
     /**
      * @brief Represents the result of a dependency resolution process
@@ -16,12 +16,12 @@ namespace plugify {
          * @brief Represents a specific issue found during dependency resolution
          */
         struct Issue {
-            UniqueId affectedPackage{-1};
-            UniqueId involvedPackage{-1};
+            UniqueId affectedExtension{-1};
+            UniqueId involvedExtension{-1};
             std::string problem;
             std::string description;
             std::optional<std::vector<std::string>> suggestedFixes;
-            bool isBlocking{true}; // True if this issue prevents loading the package
+            bool isBlocking{true}; // True if this issue prevents loading the extension
 
             // Generate detailed description with constraint info
             std::string GetDetailedDescription() const {
@@ -57,7 +57,7 @@ namespace plugify {
      * @brief Interface for resolving dependencies in a Plugify environment
      *
      * This interface defines the contract for resolving dependencies, which includes
-     * gathering package information, validating versions, and generating a dependency report.
+     * gathering extension information, validating versions, and generating a dependency report.
      */
     class IDependencyResolver {
     public:
@@ -67,13 +67,13 @@ namespace plugify {
          * @brief Resolve dependencies and generate a report
          *
          * This method performs the entire dependency resolution process, including:
-         * - Gathering package information
+         * - Gathering extension information
          * - Validating versions and constraints
          * - Detecting conflicts
          * - Generating a load order
          *
          * @return DependencyResolution containing the results of the resolution process
          */
-        virtual DependencyResolution Resolve(const PackageCollection& packages) = 0;
+        virtual DependencyResolution Resolve(const ExtensionCollection& extensions) = 0;
     };
 }  // namespace plugify

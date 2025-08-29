@@ -13,15 +13,15 @@ namespace plugify {
 	class EnumValue;
 
 	// Enum Class
-	class PLUGIFY_API Enum {
+	class PLUGIFY_API EnumObject {
 	    struct Impl;
 	public:
-	    Enum();
-	    ~Enum();
-	    Enum(const Enum& other);
-	    Enum(Enum&& other) noexcept;
-	    Enum& operator=(const Enum& other);
-	    Enum& operator=(Enum&& other) noexcept;
+	    EnumObject();
+	    ~EnumObject();
+	    EnumObject(const EnumObject& other);
+	    EnumObject(EnumObject&& other) noexcept;
+	    EnumObject& operator=(const EnumObject& other);
+	    EnumObject& operator=(EnumObject&& other) noexcept;
 
 	    // Getters
 	    [[nodiscard]] const std::string& GetName() const noexcept;
@@ -31,8 +31,8 @@ namespace plugify {
 	    void SetName(std::string name);
 	    void SetValues(std::vector<EnumValue> values);
 
-		[[nodiscard]] bool operator==(const Enum& other) const noexcept;
-		[[nodiscard]] auto operator<=>(const Enum& other) const noexcept;
+		[[nodiscard]] bool operator==(const EnumObject& other) const noexcept;
+		[[nodiscard]] auto operator<=>(const EnumObject& other) const noexcept;
 
 	PLUGIFY_ACCESS:
 	    std::unique_ptr<Impl> _impl;

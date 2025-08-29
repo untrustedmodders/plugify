@@ -20,6 +20,6 @@ namespace plugify {
          * @param type The manifest type
          * @return A Result containing the parsed Manifest or an error
          */
-        virtual Result<PackageManifest> Parse(const std::string& content, PackageType type) = 0;
+        virtual Result<Manifest> Parse(const std::string& content, ExtensionType type) = 0;
     };
 }

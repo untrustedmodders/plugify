@@ -9,9 +9,7 @@
 #include "plugify/core/method.hpp"
 
 namespace plugify {
-	class Plugin;
-	class Module;
-	class Method;
+	class Extension;
 	class Provider;
 
 	/**
@@ -49,11 +47,11 @@ namespace plugify {
 	public:
 		/**
 		 * @brief Initialize the language module.
-		 * @param provider Weak pointer to the Plugify provider.
-		 * @param module Weak pointer to the language module being initialized.
-		 * @return Result of the initialization, either InitResultData or ErrorData.
+		 * @param provider Weak ptr to the Plugify provider.
+		 * @param module Ref to the language module being initialized.
+		 * @return Result of the initialization, either InitResultData or string.
 		 */
-		virtual Result<InitData> Initialize(std::weak_ptr<Provider> provider, std::weak_ptr<Module> module) = 0;
+		virtual Result<InitData> Initialize(std::weak_ptr<Provider> provider, const Extension& module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.
@@ -64,49 +62,49 @@ namespace plugify {
 		 * @brief Handle actions to be performed on each frame.
 		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnUpdate(double deltaTime) = 0;
+		virtual void OnUpdate(Duration deltaTime) = 0;
 
         /**
 	     * @brief
 	     */
-        //virtual void OnPluginInitialize(std::weak_ptr<Plugin> plugin) = 0;
+        //virtual void OnPluginInitialize(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin load event.
-		 * @param plugin Weak pointer to the loaded plugin.
-		 * @return Result of the load event, either LoadResultData or ErrorData.
+		 * @param plugin Ref to the loaded plugin.
+		 * @return Result of the load event, either LoadResultData or string.
 		 */
-		virtual Result<LoadData> OnPluginLoad(std::weak_ptr<Plugin> plugin) = 0;
+		virtual Result<LoadData> OnPluginLoad(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin start event.
-		 * @param plugin Weak pointer to the started plugin.
+		 * @param plugin Ref to the started plugin.
 		 */
-		virtual void OnPluginStart(std::weak_ptr<Plugin> plugin) = 0;
+		virtual void OnPluginStart(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin update event.
-		 * @param plugin Weak pointer to the started plugin.
+		 * @param plugin Ref to the started plugin.
 		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnPluginUpdate(std::weak_ptr<Plugin> plugin, double deltaTime) = 0;
+		virtual void OnPluginUpdate(const Extension& plugin, Duration deltaTime) = 0;
 
 		/**
 		 * @brief Handle plugin end event.
-		 * @param plugin Weak pointer to the ended plugin.
+		 * @param plugin Ref to the ended plugin.
 		 */
-		virtual void OnPluginEnd(std::weak_ptr<Plugin> plugin) = 0;
+		virtual void OnPluginEnd(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle method export event.
-		 * @param plugin Weak pointer to the plugin exporting a method.
+		 * @param plugin Ref to the plugin exporting a method.
 		 */
-		virtual void OnMethodExport(std::weak_ptr<Plugin> plugin) = 0;
+		virtual void OnMethodExport(const Extension& plugin) = 0;
 
 		/**
 		* @brief Determine if language module is build with debugging mode.
 		* @return True if the assembly is build with debugging, false otherwise.
 		*/
-		virtual bool IsDebugBuild() = 0;
+		virtual bool IsDebugBuild() const noexcept = 0;
 	};
 } // namespace plugify

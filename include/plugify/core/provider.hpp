@@ -7,8 +7,7 @@
 namespace plugify {
     class Context;
     class Manager;
-    class Plugin;
-    class Module;
+    class Extension;
     // Provider acts as a facade to simplify access to common services
     class PLUGIFY_API Provider {
         struct Impl;
@@ -28,8 +27,8 @@ namespace plugify {
         void LogWarning(std::string_view msg, const std::source_location& loc = std::source_location::current()) const { Log(msg, Severity::Warning, loc); }
         void LogError(std::string_view msg, const std::source_location& loc = std::source_location::current()) const { Log(msg, Severity::Error, loc); }
         void LogFatal(std::string_view msg, const std::source_location& loc = std::source_location::current()) const { Log(msg, Severity::Fatal, loc); }
-        template<typename... Args>
-        void LogFormat(Severity severity, std::format_string<Args...> fmt, Args&&... args) const {
+        /*template<typename... Args>
+        void Log(Severity severity, std::format_string<Args...> fmt, Args&&... args) const {
             Log(std::format(fmt, std::forward<Args>(args)...), severity);
         }
         template<typename... Args>
@@ -55,25 +54,22 @@ namespace plugify {
         template<typename... Args>
         void LogFatal(std::format_string<Args...> fmt, Args&&... args) const {
             Log(std::format(fmt, std::forward<Args>(args)...), Severity::Fatal);
-        }
+        }*/
 
         bool IsPreferOwnSymbols() const noexcept;
 
         // Path helpers
         [[nodiscard]] const std::filesystem::path& GetBaseDir() const noexcept;
-        [[nodiscard]] const std::filesystem::path& GetPluginsDir() const noexcept;
+        [[nodiscard]] const std::filesystem::path& GetExtensionsDir() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetConfigsDir() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetDataDir() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetLogsDir() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetCacheDir() const noexcept;
 
         // Manager
-        [[nodiscard]] bool IsPluginLoaded(std::string_view name, std::optional<Constraint> version = {}) const noexcept;
-        [[nodiscard]] std::shared_ptr<Plugin> FindPlugin(std::string_view name) const;
-        [[nodiscard]] std::vector<std::shared_ptr<Plugin>> GetPlugins() const;
-        [[nodiscard]] bool IsModuleLoaded(std::string_view name, std::optional<Constraint> version = {}) const noexcept;
-        [[nodiscard]] std::shared_ptr<Module> FindModule(std::string_view name) const;
-        [[nodiscard]] std::vector<std::shared_ptr<Module>> GetModules() const;
+        [[nodiscard]] bool IsExtensionLoaded(std::string_view name, std::optional<Constraint> version = {}) const noexcept;
+        [[nodiscard]] std::shared_ptr<Extension> FindExtension(std::string_view name) const;
+        [[nodiscard]] std::vector<std::shared_ptr<Extension>> GetExtensions() const;
 
         // Service access helpers
         template<typename Service>
