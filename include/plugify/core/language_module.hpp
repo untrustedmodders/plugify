@@ -51,7 +51,7 @@ namespace plugify {
 		 * @param module Ref to the language module being initialized.
 		 * @return Result of the initialization, either InitResultData or string.
 		 */
-		virtual Result<InitData> Initialize(std::weak_ptr<Provider> provider, const Extension& module) = 0;
+		virtual Result<InitData> Initialize(const Provider& provider, const Extension& module) = 0;
 
 		/**
 		 * @brief Shutdown the language module.

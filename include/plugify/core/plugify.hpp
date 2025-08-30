@@ -1,12 +1,16 @@
 #pragma once
 
 #include "plugify/core/config.hpp"
-#include "plugify/core/context.hpp"
+#include "plugify/core/service_locator.hpp"
 #include "plugify/core/manager.hpp"
 #include "plugify/core/provider.hpp"
 #include "plugify/core/config_provider.hpp"
 #include "plugify/core/event_bus.hpp"
-#include "plugify/core/plugin_lifecycle.hpp"
+#include "plugify/core/dependency_resolver.hpp"
+#include "plugify/core/file_system.hpp"
+#include "plugify/core/manifest_parser.hpp"
+#include "plugify/core/progress_reporter.hpp"
+//#include "plugify/core/plugin_lifecycle.hpp"
 #include "plugify/asm/assembly_loader.hpp"
 
 #include "plugify_export.h"
@@ -27,6 +31,7 @@ namespace plugify {
         PlugifyBuilder& WithManifestParser(std::shared_ptr<IManifestParser> parser);
         PlugifyBuilder& WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver);
         //PlugifyBuilder& WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle);
+        PlugifyBuilder& WithProgressReporter(std::shared_ptr<IProgressReporter> reporter);
         PlugifyBuilder& WithEventBus(std::shared_ptr<IEventBus> bus);
 
         PlugifyBuilder& WithDefaults();
@@ -56,23 +61,23 @@ namespace plugify {
         Plugify& operator=(Plugify&& other) noexcept = delete;
 
         // Lifecycle
-        Result<void> Initialize();
-        void Terminate();
+        Result<void> Initialize() const;
+        void Terminate() const;
         [[nodiscard]] bool IsInitialized() const;
-        void Update(Duration deltaTime = Duration{16});
+        void Update(Duration deltaTime = Duration{16}) const;
 
         // Async operations with coroutines (C++20)
         //std::future<Result<void>> InitializeAsync();
         //std::future<void> TerminateAsync();
 
         // Component access
-        /*[[nodiscard]] std::shared_ptr<Manager> GetManager() const;
-        [[nodiscard]] std::shared_ptr<Provider> GetProvider() const;
-        [[nodiscard]] std::shared_ptr<Context> GetContext() const;
-        [[nodiscard]] Version GetVersion() const;
+        [[nodiscard]] const Manager& GetManager() const noexcept;
+        [[nodiscard]] const ServiceLocator& GetServices() const noexcept;
+        [[nodiscard]] const Config& GetConfig() const noexcept;
+        [[nodiscard]] const Version& GetVersion() const noexcept;
 
         // Metrics and profiling
-        struct Metrics {
+        /*struct Metrics {
             size_t loadedExtensions;
             size_t memoryUsageMB;
             double averageLoadTimeMs;
@@ -85,7 +90,7 @@ namespace plugify {
 
     private:
         friend class PlugifyBuilder;
-        explicit Plugify(std::shared_ptr<Context> context);
+        explicit Plugify(ServiceLocator services, Config config);
 
     private:
         std::unique_ptr<Impl> _impl;

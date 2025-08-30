@@ -17,6 +17,7 @@ struct Extension::Impl {
     ILanguageModule* languageModule{nullptr};
     Manifest manifest;
     std::filesystem::path location;
+    std::string version;
 
     // Timing
     struct Timings {
@@ -34,10 +35,11 @@ struct Extension::Impl {
         std::string ToString() const {
             std::string merged;
             merged.reserve(256);
+            auto it = std::back_inserter(merged);
             for (const auto& [s, t] : timepoints) {
-                std::format_to(std::back_inserter(merged), "{} {}ms, ", plg::enum_to_string(s), t.count());
+                std::format_to(it, "  {} {},\n", plg::enum_to_string(s), t);
             }
-            std::format_to(std::back_inserter(merged), "Total {}ms", GetTotalTime().count());
+            std::format_to(it, "  - Total {}\n", GetTotalTime());
             return merged;
         }
     } timings;
@@ -56,10 +58,11 @@ struct Extension::Impl {
         std::shared_ptr<IAssembly> assembly;
     } moduleData;
 
-    // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
-    void ApplyPath() {
-        location = location.parent_path(); // strip manifest path
-        if (!manifest.runtime) {
+    void Cache() {
+        version = manifest.version.to_string();
+        location = location.parent_path();
+        if (type == ExtensionType::Module && !manifest.runtime) {
+            // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
             manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, manifest.name);
         }
     }
@@ -257,16 +260,15 @@ bool Extension::HasErrors() const noexcept {
     return !_impl->errors.empty();
 }
 
-bool Extension::IsLoaded() const noexcept {
+/*bool Extension::IsLoaded() const noexcept {
     switch (_impl->state) {
         case ExtensionState::Loaded:
         case ExtensionState::Started:
-        case ExtensionState::Updated:
             return true;
         default:
             return false;
     }
-}
+}*/
 
 // ============================================================================
 // Timing/Performance Getters
@@ -285,7 +287,7 @@ Duration Extension::GetTotalTime() const {
 }
 
 std::string Extension::GetPerformanceReport() const {
-    return std::format("{}: {}", GetName(), _impl->timings.ToString());
+    return std::format("{}:\n{}", GetName(), _impl->timings.ToString());
 }
 
 // ============================================================================
@@ -352,7 +354,7 @@ void Extension::SetLanguageModule(ILanguageModule* module) {
 
 void Extension::SetManifest(Manifest manifest) {
     _impl->manifest = std::move(manifest);
-    _impl->ApplyPath();
+    _impl->Cache();
 }
 
 // ============================================================================
@@ -421,8 +423,7 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 
         case ExtensionState::Discovered:
             return to == ExtensionState::Parsing ||
-                   to == ExtensionState::Failed ||
-                   to == ExtensionState::Disabled;
+                   to == ExtensionState::Failed;
 
         case ExtensionState::Parsing:
             return to == ExtensionState::Parsed ||
@@ -434,7 +435,8 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 
         case ExtensionState::Resolving:
             return to == ExtensionState::Resolved ||
-                   to == ExtensionState::Unresolved;
+                   to == ExtensionState::Unresolved ||
+                   to == ExtensionState::Disabled;
 
         case ExtensionState::Resolved:
             return to == ExtensionState::Loading ||
@@ -447,25 +449,16 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 
         case ExtensionState::Loaded:
             return to == ExtensionState::Starting ||
-                   to == ExtensionState::Ending ||
+                   to == ExtensionState::Skipped ||
                    to == ExtensionState::Failed;
 
         case ExtensionState::Starting:
             return to == ExtensionState::Started ||
+                   to == ExtensionState::Skipped ||
                    to == ExtensionState::Failed;
 
         case ExtensionState::Started:
-            return to == ExtensionState::Updating ||
-                   to == ExtensionState::Ending ||
-                   to == ExtensionState::Failed;
-
-        case ExtensionState::Updating:
-            return to == ExtensionState::Updated ||
-                   to == ExtensionState::Failed;
-
-        case ExtensionState::Updated:
-            return to == ExtensionState::Updating ||
-                   to == ExtensionState::Ending ||
+            return to == ExtensionState::Ending ||
                    to == ExtensionState::Failed;
 
         case ExtensionState::Ending:
@@ -499,11 +492,12 @@ std::string Extension::ToString() const {
                       _impl->warnings.size());
 }
 
+const std::string& Extension::GetVersionString() const noexcept {
+    return _impl->version;
+}
 // Helper to check if extension can be loaded
-bool Extension::CanLoad() const noexcept {
-    return (_impl->state == ExtensionState::Resolved ||
-            _impl->state == ExtensionState::Ended) &&
-           !HasErrors();
+/*bool Extension::CanLoad() const noexcept {
+    return (_impl->state == ExtensionState::Loading) && !HasErrors();
 }
 
 // Helper to check if extension can be started
@@ -513,16 +507,13 @@ bool Extension::CanStart() const noexcept {
 
 // Helper to check if extension can be updated
 bool Extension::CanUpdate() const noexcept {
-    return (_impl->state == ExtensionState::Started ||
-            _impl->state == ExtensionState::Updated) &&
-           !HasErrors();
+    return _impl->state == ExtensionState::Started && !HasErrors();
 }
 
 // Helper to check if extension can be stopped
 bool Extension::CanStop() const noexcept {
-    return _impl->state == ExtensionState::Started ||
-           _impl->state == ExtensionState::Updated;
-}
+    return _impl->state == ExtensionState::Started && !HasErrors();
+}*/
 
 // Add dependency helper (for runtime dependency injection)
 void Extension::AddDependency(std::string dep) {
@@ -535,12 +526,16 @@ void Extension::AddDependency(std::string dep) {
 // Reset extension to initial state (useful for reload scenarios)
 void Extension::Reset() {
     _impl->state = ExtensionState::Unknown;
-    _impl->languageModule = nullptr;
     _impl->errors.clear();
     _impl->warnings.clear();
     _impl->timings.timepoints.clear();
-    _impl->methodTable = MethodTable{};
+    _impl->timings.lastOperationStart = {};
+    _impl->languageModule = nullptr;
+    _impl->methodTable = {};
     _impl->userData = nullptr;
+    _impl->manifest = {};
+    _impl->location.clear();
+    _impl->version.clear();
 
     if (_impl->type == ExtensionType::Plugin) {
         _impl->pluginData.methodData.clear();

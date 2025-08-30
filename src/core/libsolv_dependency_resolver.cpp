@@ -8,6 +8,9 @@ using namespace plugify;
 // Main Resolution Function
 // ============================================================================
 
+LibsolvDependencyResolver::LibsolvDependencyResolver(std::shared_ptr<ILogger> logger)
+    : _logger(std::move(logger)) {}
+
 DependencyResolution
 LibsolvDependencyResolver::Resolve(const ExtensionCollection& extensions) {
     // Step 1: Initialize libsolv pool
@@ -18,10 +21,6 @@ LibsolvDependencyResolver::Resolve(const ExtensionCollection& extensions) {
 
     // Step 3: Run the solver
     return RunSolver();
-}
-
-void LibsolvDependencyResolver::SetLogger(std::shared_ptr<ILogger> logger) {
-    _logger = std::move(logger);
 }
 
 // ============================================================================

@@ -26,8 +26,9 @@ namespace plugify {
             //bool enableHotReload = false;
             //bool lazyLoading = false;
             //bool parallelLoading = true;
-            size_t maxConcurrentLoads = 4;
-            std::chrono::seconds loadTimeout{30};
+            size_t maxConcurrentLoads = 4; // 0 for auto
+            std::chrono::microseconds loadTimeout{5000};
+            std::chrono::microseconds startTimeout{10000};
         } loading;
 
         // Runtime configuration
@@ -43,17 +44,18 @@ namespace plugify {
             //bool verifySignatures = false;
             //bool allowUnsignedPlugins = true;
             //std::vector<std::string> trustedPublishers;
-            std::vector<std::string> whitelistedExtensions;
-            std::vector<std::string> blacklistedExtensions;
+            std::unordered_set<std::string> whitelistedExtensions;
+            std::unordered_set<std::string> blacklistedExtensions;
         } security;
 
         // Logging configuration
         struct Logging {
-            bool printReport = false;
-            bool printLoadOrder = false;
-            bool printDependencyGraph = false;
-            std::filesystem::path exportDigraphDot;
             Severity severity{Severity::Error};
+            bool printReport = true;
+            bool printLoadOrder = true;
+            //bool printLoadStatistics = true;
+            bool printDependencyGraph = true;
+            std::filesystem::path exportDigraphDot;
         } logging;
 
         // Retry configuration

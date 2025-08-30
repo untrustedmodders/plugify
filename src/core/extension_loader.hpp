@@ -1,7 +1,9 @@
 #pragma once
 
 #include "plugify/core/assembly.hpp"
+#include "plugify/core/config.hpp"
 #include "plugify/core/extension.hpp"
+#include "plugify/core/file_system.hpp"
 #include "plugify/core/language_module.hpp"
 #include "plugify/core/provider.hpp"
 
@@ -43,24 +45,6 @@ namespace plugify {
     template <typename Callback>
     ScopedTimer(Callback&&) -> ScopedTimer<std::decay_t<Callback>>;
 
-    /*struct Loader {
-        // void InitiailizeModule(Extension& module)
-        Result<void> LoadModule(std::shared_ptr<Provider> provider, Extension& module);
-        void UpdateModule(Extension& module, double deltaTime);
-        void UnloadModule(Extension& module);
-        // void TerminateModule(Extension& module)
-        //void UpdateModules(const std::vector<Extension&>& modules, double deltaTime)
-
-        Result<void> LoadPlugin(Extension& module, Extension& plugin);
-        void StartPlugin(Extension& plugin);
-        void UpdatePlugin(Extension& plugin, double deltaTime);
-        void EndPlugin(Extension& plugin);
-        void UnloadPlugin(Extension& plugin);
-        //void UpdatePlugins(const std::vector<Extension&>& plugins, double deltaTime);
-
-        void MethodExport(Extension& plugin);
-    };*/
-
     // Advanced: Exception-safe RAII wrapper for plugin calls
     class SafeCall {
         std::string_view operation;
@@ -85,7 +69,7 @@ namespace plugify {
     };
 
     // Enhanced Loader class with better error handling and preloading support
-    class Loader {
+    class ExtensionLoader {
     public:
         struct LoadStatistics {
             size_t modulesLoaded{0};
@@ -93,23 +77,42 @@ namespace plugify {
             Duration totalLoadTime{};
             Duration slowestLoad{};
             std::string slowestExtension;
+
+            std::string ToString() const {
+                return std::format(
+                    "=== Loader Report ===\n"
+                    "  Modules loaded: {}\n"
+                    "  Plugins loaded: {}\n"
+                    "  Total load time: {}\n"
+                    "  Slowest load: {}\n"
+                    "  Slowest extension: {}\n",
+                    modulesLoaded,
+                    pluginsLoaded,
+                    totalLoadTime,
+                    slowestLoad,
+                    slowestExtension.empty() ? "<none>" : slowestExtension
+                );
+            }
         };
 
     private:
-        std::shared_ptr<Provider> _provider;
-        using Dependencies = ServiceContext<ILogger, IFileSystem, IAssemblyLoader>;
-        Dependencies _deps;
+        const Config& _config;
+        const Provider& _provider;
+        std::shared_ptr<IFileSystem> _fileSystem;
+        std::shared_ptr<IAssemblyLoader> _assemblyLoader;
         LoadStatistics _stats;
 
     public:
-        Loader(std::shared_ptr<Context> context, std::shared_ptr<Manager> manager)
-            : _deps(context->GetServices())
-            , _provider()
-        {
-            if (!_deps.IsValid()) {
-                throw std::runtime_error("Missing required services");
-            }
-        }
+        ExtensionLoader(
+            const ServiceLocator& locator,
+            const Config& config,
+            const Provider& provider
+        )
+            : _config(config)
+            , _provider(provider)
+            , _fileSystem(locator.Get<IFileSystem>())
+            , _assemblyLoader(locator.Get<IAssemblyLoader>())
+        {}
 
         // Module Operations
         Result<void> LoadModule(Extension& module) {
@@ -133,8 +136,19 @@ namespace plugify {
                 return langModuleResult;
             }
 
-            _stats.modulesLoaded++;
+            ++_stats.modulesLoaded;
             return {};
+        }
+
+        Result<void> UpdateModule(const Extension& module, Duration deltaTime) {
+            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = module.GetMethodTable();
+            if (!hasUpdate) {
+                return {};
+            }
+            return SafeCall("OnUpdate", module.GetName()).Execute<void>([&] {
+                module.GetLanguageModule()->OnUpdate(deltaTime);
+                return Result<void>{};
+            });
         }
 
         Result<void> UnloadModule(Extension& module) {
@@ -153,6 +167,7 @@ namespace plugify {
                 module.SetAssembly(nullptr);
             }
 
+            --_stats.modulesLoaded;
             return result;
         }
 
@@ -165,11 +180,6 @@ namespace plugify {
                     _stats.slowestExtension = plugin.GetName();
                 }
             });
-
-            // Validate module is loaded
-            if (module.CanLoad()) {
-                return plg::unexpected("Module not loaded");
-            }
 
             auto* languageModule = module.GetLanguageModule();
             if (!languageModule) {
@@ -190,7 +200,7 @@ namespace plugify {
                 return validateResult;
             }
 
-            _stats.pluginsLoaded++;
+            ++_stats.pluginsLoaded;
             return {};
         }
 
@@ -216,42 +226,24 @@ namespace plugify {
             });
         }
 
-        void UnloadPlugin(Extension& plugin) {
+        Result<void> UpdatePlugin(const Extension& plugin, Duration deltaTime) {
+            const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
+            if (!hasUpdate) {
+                return {};
+            }
+            return SafeCall("OnPluginUpdate", plugin.GetName()).Execute<void>([&] {
+                plugin.GetLanguageModule()->OnPluginUpdate(plugin, deltaTime);
+                return Result<void>{};
+            });
+        }
+
+        Result<void> UnloadPlugin(Extension& plugin) {
             // Clear all plugin data
             plugin.SetLanguageModule(nullptr);
             plugin.SetUserData(nullptr);
             plugin.SetMethodsData({});
-        }
-
-        // Batch operations for efficiency
-        void Update(std::span<const Extension> extensions, Duration deltaTime) {
-            for (auto& extension : extensions) {
-                if (!extension.CanUpdate()) continue;
-                const auto& [hasUpdate, hasStart, hasEnd, hasExport] = extension.GetMethodTable();
-                if (hasUpdate) {
-                    Result<void> result;
-                    switch (extension.GetType()) {
-                        case ExtensionType::Module:
-                            result = SafeCall("OnUpdate", extension.GetName()).Execute<void>([&] {
-                                extension.GetLanguageModule()->OnUpdate(deltaTime);
-                                return Result<void>{};
-                            });
-                            break;
-                        case ExtensionType::Plugin:
-                            result = SafeCall("OnPluginUpdate", extension.GetName()).Execute<void>([&] {
-                                extension.GetLanguageModule()->OnPluginUpdate(extension, deltaTime);
-                                return Result<void>{};
-                            });
-                            break;
-                        default:
-                            result = std::unexpected("Unknown extension type");
-                            break;
-                    }
-                    if (!result) {
-                        _deps.Get<ILogger>()->Log(result.error(), Severity::Error);
-                    }
-                }
-            }
+            --_stats.pluginsLoaded;
+            return {};
         }
 
         Result<void> MethodExport(const Extension& module, const Extension& plugin) {
@@ -275,20 +267,20 @@ namespace plugify {
             const std::filesystem::path& path,
             const std::vector<std::filesystem::path>& searchPaths
         ) {
-            auto absPath = _deps.Get<IFileSystem>()->GetAbsolutePath(path);
+            auto absPath = _fileSystem->GetAbsolutePath(path);
             if (!absPath) {
                 return plg::unexpected(std::move(absPath.error()));
             }
 
-            if (_deps.Get<IAssemblyLoader>()->CanLinkSearchPaths()) {
+            if (_assemblyLoader->CanLinkSearchPaths()) {
                 for (const auto& searchPath : searchPaths) {
-                    _deps.Get<IAssemblyLoader>()->AddSearchPath(searchPath);
+                    _assemblyLoader->AddSearchPath(searchPath);
                 }
             }
 
             // Load assembly
             LoadFlag flags = GetLoadFlags();
-            auto assemblyResult = _deps.Get<IAssemblyLoader>()->Load(*absPath, flags);
+            auto assemblyResult = _assemblyLoader->Load(*absPath, flags);
             if (!assemblyResult) {
                 return plg::unexpected(std::move(assemblyResult.error()));
             }
@@ -298,7 +290,7 @@ namespace plugify {
 
         LoadFlag GetLoadFlags() {
             LoadFlag flags = LoadFlag::Lazy | LoadFlag::Global | LoadFlag::SearchUserDirs | LoadFlag::SearchSystem32 | LoadFlag::SearchDllLoadDir;
-            if (_provider->IsPreferOwnSymbols()) {
+            if (_config.loading.preferOwnSymbols) {
                 flags |= LoadFlag::Deepbind;
             }
             return flags;

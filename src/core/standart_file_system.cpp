@@ -624,8 +624,9 @@ Result<bool> ExtendedFileSystem::FilesEqual(const std::filesystem::path& path1, 
     
     if (!file1 || !file2) {
         std::string error = "Failed to open files for comparison";
-        if (errno != 0) {
-            error = std::format("{}: {}", error, GetSystemError());
+        int err = errno;
+        if (err != 0) {
+            error = std::format("{}: {}", error, GetSystemError(err));
         }
         return std::unexpected(error);
     }

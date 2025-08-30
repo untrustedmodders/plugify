@@ -1,5 +1,6 @@
 #pragma once
 
+#include "plugify/core/logger.hpp"
 #include "plugify/core/progress_reporter.hpp"
 
 namespace plugify {
@@ -12,9 +13,7 @@ namespace plugify {
         }
 
         void OnItemComplete(std::string_view stage, std::string_view itemId, bool success) override {
-            if (!success) {
-                _logger->Log(std::format("[{}] x {}", stage, itemId), Severity::Info);
-            }
+            _logger->Log( std::format("[{}] {} {}", stage, success ? 'v' : 'x', itemId), Severity::Info);
         }
 
         void OnStageComplete(std::string_view stage, size_t succeeded, size_t failed) override {

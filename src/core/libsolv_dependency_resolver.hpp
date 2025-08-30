@@ -60,6 +60,7 @@ namespace plugify {
         };
 
     public:
+        LibsolvDependencyResolver(std::shared_ptr<ILogger> logger);
         ~LibsolvDependencyResolver() override = default;
 
         /**
@@ -68,8 +69,6 @@ namespace plugify {
          * @return DependencyReport containing the resolution results
          */
         DependencyResolution Resolve(const ExtensionCollection& extensions) override;
-
-        void SetLogger(std::shared_ptr<ILogger> logger);
 
     private:
         // Setup functions
@@ -92,10 +91,10 @@ namespace plugify {
         void ComputeInstallationOrder(Transaction* trans, DependencyResolution& resolution);
 
     private:
+        std::shared_ptr<ILogger> _logger;
         std::unique_ptr<Pool, PoolDeleter> _pool;
         Repo* _repo = nullptr;
         plg::flat_map<UniqueId, Id> _extensionToSolvableId;
         plg::flat_map<Id, UniqueId> _solvableIdToExtension;
-        std::shared_ptr<ILogger> _logger;
     };
 } // namespace plugify

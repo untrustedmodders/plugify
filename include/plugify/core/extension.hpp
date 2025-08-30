@@ -37,14 +37,16 @@ namespace plugify {
         Starting,
         Started,
 
-        Updating,
-        Updated,
+        //Updating,
+        //Updated,
         /**/
 
         Ending,
         Ended,
 
+        Terminating,
         Terminated,
+
         Max
     };
     // Unified Extension class
@@ -102,7 +104,7 @@ namespace plugify {
         [[nodiscard]] const std::deque<std::string>& GetErrors() const noexcept;
         [[nodiscard]] const std::deque<std::string>& GetWarnings() const noexcept;
         [[nodiscard]] bool HasErrors() const noexcept;
-        [[nodiscard]] bool IsLoaded() const noexcept;
+        //[[nodiscard]] bool IsLoaded() const noexcept;
         [[nodiscard]] bool IsPlugin() const noexcept { return GetType() == ExtensionType::Plugin; }
         [[nodiscard]] bool IsModule() const noexcept { return GetType() == ExtensionType::Module; }
 
@@ -145,10 +147,11 @@ namespace plugify {
         // --- Helpers ---
         [[nodiscard]] static bool IsValidTransition(ExtensionState from, ExtensionState to);
         [[nodiscard]] std::string ToString() const;
-        bool CanLoad() const noexcept;
-        bool CanStart() const noexcept;
-        bool CanUpdate() const noexcept;
-        bool CanStop() const noexcept;
+        [[nodiscard]] const std::string& GetVersionString() const noexcept;
+        //bool CanLoad() const noexcept;
+        //bool CanStart() const noexcept;
+        //bool CanUpdate() const noexcept;
+        //bool CanStop() const noexcept;
         void AddDependency(std::string dep);
         void Reset();
 

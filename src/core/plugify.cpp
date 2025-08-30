@@ -6,28 +6,35 @@
 #include "core/console_logger.hpp"
 #include "core/glaze_config_provider.hpp"
 #include "core/glaze_manifest_parser.hpp"
-#include "core/libsolv_dependency_resolver.hpp"
-#include "core/standart_file_system.hpp"
 #include "core/glaze_metadata.hpp"
+#include "core/libsolv_dependency_resolver.hpp"
+#include "core/default_progress_reporter.hpp"
 #include "core/simple_event_bus.hpp"
+#include "core/standart_file_system.hpp"
 
 using namespace plugify;
 
 // Plugify::Impl
 struct Plugify::Impl {
-    std::shared_ptr<Context> context;
-    std::shared_ptr<Manager> manager;
+    ServiceLocator services;
+    Config config;
+    Manager manager;
     Version version;
-    std::jthread updateThread;
-    std::atomic<bool> initialized{false};
-    std::atomic<bool> shouldStop{false};
 
-    Impl(std::shared_ptr<Context> ctx) : context(std::move(ctx)) {
+    std::thread::id ownerThreadId;
+    std::jthread updateThread;
+    bool initialized{false};
+    bool shouldStop{false};
+
+    static inline const std::thread::id mainThreadId = std::this_thread::get_id();
+
+    Impl(ServiceLocator srv, Config cfg)
+        : services(std::move(srv))
+        , config(std::move(cfg))
+        , manager(services, config)
+        , ownerThreadId(std::this_thread::get_id()) {
         // Get version
         plg::parse(PLUGIFY_VERSION, version);
-
-        // Create manager
-        manager = std::make_shared<Manager>(context);
     }
 
     ~Impl() {
@@ -37,6 +44,10 @@ struct Plugify::Impl {
     }
 
     Result<void> Initialize() {
+        if (std::this_thread::get_id() != ownerThreadId) {
+            throw std::runtime_error("Initialization called from non-owner thread");
+        }
+
         if (initialized) {
             return std::unexpected("Already initialized");
         }
@@ -63,7 +74,7 @@ struct Plugify::Impl {
         }
 
         // Initialize manager
-        manager->Initialize();
+        //manager.Initialize();
 
         // Start update thread if configured
         StartUpdateThread();
@@ -76,7 +87,7 @@ struct Plugify::Impl {
         initialized = true;
 
         // Publish initialization event
-        if (auto bus = context->GetService<IEventBus>()) {
+        if (auto bus = services.Get<IEventBus>()) {
             bus->Publish("plugify.initialized", std::any{});
         }
 
@@ -84,6 +95,10 @@ struct Plugify::Impl {
     }
 
     void Terminate() {
+        if (std::this_thread::get_id() != ownerThreadId) {
+            throw std::runtime_error("Termanation called from non-owner thread");
+        }
+
         if (!initialized) {
             return;
         }
@@ -94,7 +109,7 @@ struct Plugify::Impl {
         StopUpdateThread();
 
         // Terminate manager
-        manager->Terminate();
+        manager.Terminate();
 
         // Save configuration
         /*if (auto configProvider = context->GetConfigProvider()) {
@@ -107,12 +122,12 @@ struct Plugify::Impl {
         }*/
         
         // Publish termination event
-        if (auto bus = context->GetService<IEventBus>()) {
+        if (auto bus = services.Get<IEventBus>()) {
             bus->Publish("plugify.terminating", std::any{});
         }
         
         // Flush logs
-        if (auto logger = context->GetService<ILogger>()) {
+        if (auto logger = services.Get<ILogger>()) {
             logger->Log("Plugify terminated", Severity::Info);
             logger->Flush();
         }
@@ -121,9 +136,15 @@ struct Plugify::Impl {
     }
 
     void Update(std::chrono::microseconds deltaTime) {
-        if (!initialized) return;
+        if (std::this_thread::get_id() != ownerThreadId) {
+            throw std::runtime_error("Update called from non-owner thread");
+        }
 
-        manager->Update(deltaTime);
+        if (!initialized) {
+            return;
+        }
+
+        manager.Update(deltaTime);
 
         // Process events if event bus is available
         /*if (auto eventBus = context->GetEventBus()) {
@@ -137,7 +158,7 @@ private:
             return false;
         }
 
-        auto fileSystem = context->GetService<IFileSystem>();
+        auto fileSystem = services.Get<IFileSystem>();
         if (!fileSystem) {
             return false;
         }
@@ -152,13 +173,12 @@ private:
             }
         };
 
-        const auto& paths = context->GetConfig().paths;
-        createDir(paths.baseDir);
-        createDir(paths.baseDir / paths.extensionsDir);
-        createDir(paths.baseDir / paths.configsDir);
-        createDir(paths.baseDir / paths.dataDir);
-        createDir(paths.baseDir / paths.logsDir);
-        createDir(paths.baseDir / paths.cacheDir);
+        createDir(config.paths.baseDir);
+        createDir(config.paths.baseDir / config.paths.extensionsDir);
+        createDir(config.paths.baseDir / config.paths.configsDir);
+        createDir(config.paths.baseDir / config.paths.dataDir);
+        createDir(config.paths.baseDir / config.paths.logsDir);
+        createDir(config.paths.baseDir / config.paths.cacheDir);
         return true;
     }
 
@@ -169,22 +189,23 @@ private:
 
         std::vector<std::string> errors;
 
-        const auto& paths = context->GetConfig().paths;
-        
-        if (!checkPath(paths.extensionsDir)) {
-            errors.push_back(std::format("extensionsDir: {}", paths.extensionsDir.string()));
+        if (!checkPath(config.paths.baseDir)) {
+            errors.push_back(std::format("extensionsDir: {}", config.paths.extensionsDir.string()));
         }
-        if (!checkPath(paths.configsDir)) {
-            errors.push_back(std::format("configsDir: {}", paths.configsDir.string()));
+        if (!checkPath(config.paths.extensionsDir)) {
+            errors.push_back(std::format("extensionsDir: {}", config.paths.extensionsDir.string()));
         }
-        if (!checkPath(paths.dataDir)) {
-            errors.push_back(std::format("dataDir: {}", paths.dataDir.string()));
+        if (!checkPath(config.paths.configsDir)) {
+            errors.push_back(std::format("configsDir: {}", config.paths.configsDir.string()));
         }
-        if (!checkPath(paths.logsDir)) {
-            errors.push_back(std::format("logsDir: {}", paths.logsDir.string()));
+        if (!checkPath(config.paths.dataDir)) {
+            errors.push_back(std::format("dataDir: {}", config.paths.dataDir.string()));
         }
-        if (!checkPath(paths.cacheDir)) {
-            errors.push_back(std::format("cacheDir: {}", paths.cacheDir.string()));
+        if (!checkPath(config.paths.logsDir)) {
+            errors.push_back(std::format("logsDir: {}", config.paths.logsDir.string()));
+        }
+        if (!checkPath(config.paths.cacheDir)) {
+            errors.push_back(std::format("cacheDir: {}", config.paths.cacheDir.string()));
         }
 
         if (!errors.empty()) {
@@ -193,11 +214,11 @@ private:
         }
 
         std::array<std::filesystem::path, 6> dirs = {
-                paths.extensionsDir,
-                paths.configsDir,
-                paths.dataDir,
-                paths.logsDir,
-                paths.cacheDir,
+                config.paths.extensionsDir,
+                config.paths.configsDir,
+                config.paths.dataDir,
+                config.paths.logsDir,
+                config.paths.cacheDir,
         };
 
         auto pathCollides = [](const std::filesystem::path& first, const std::filesystem::path& second) {
@@ -222,9 +243,8 @@ private:
     }
 
     void StartUpdateThread() {
-        const auto& runtime = context->GetConfig().runtime;
-        if (runtime.updateInterval > Duration{0}) {
-            updateThread = std::jthread([this, interval = runtime.updateInterval](std::stop_token token) {
+        if (config.runtime.updateInterval > Duration{0}) {
+            updateThread = std::jthread([this](std::stop_token token) {
                 auto lastTime = Clock::now();
 
                 while (!token.stop_requested()) {
@@ -232,9 +252,9 @@ private:
                     auto deltaTime = std::chrono::duration_cast<Duration>(now - lastTime);
                     lastTime = now;
 
-                    Update(deltaTime);
+                    manager.Update(deltaTime);
 
-                    std::this_thread::sleep_for(interval);
+                    std::this_thread::sleep_for(config.runtime.updateInterval);
                 }
             });
         }
@@ -247,31 +267,31 @@ private:
         }
     }
 
-    void LogInfo(std::string_view msg) {
-        if (auto logger = context->GetService<ILogger>()) {
+    void LogInfo(std::string_view msg) const {
+        if (auto logger = services.Get<ILogger>()) {
             logger->Log(msg, Severity::Info);
         }
     }
 
-    void LogError(std::string_view msg) {
-        if (auto logger = context->GetService<ILogger>()) {
+    void LogError(std::string_view msg) const {
+        if (auto logger = services.Get<ILogger>()) {
             logger->Log(msg, Severity::Error);
         }
     }
 };
 
 // Plugify implementation
-Plugify::Plugify(std::shared_ptr<Context> context)
-    : _impl(std::make_unique<Impl>(std::move(context))) {
+Plugify::Plugify(ServiceLocator services, Config config)
+    : _impl(std::make_unique<Impl>(std::move(services), std::move(config))) {
 }
 
 Plugify::~Plugify() = default;
 
-Result<void> Plugify::Initialize() {
+Result<void> Plugify::Initialize() const {
     return _impl->Initialize();
 }
 
-void Plugify::Terminate() {
+void Plugify::Terminate() const {
     _impl->Terminate();
 }
 
@@ -279,7 +299,7 @@ bool Plugify::IsInitialized() const {
     return _impl->initialized;
 }
 
-void Plugify::Update(Duration deltaTime) {
+void Plugify::Update(Duration deltaTime) const {
     _impl->Update(deltaTime);
 }
 
@@ -293,23 +313,23 @@ std::future<void> Plugify::TerminateAsync() {
     return std::async(std::launch::async, [this]() {
         Terminate();
     });
-}
+}*/
 
-std::shared_ptr<Manager> Plugify::GetManager() const {
+const Manager& Plugify::GetManager() const noexcept {
     return _impl->manager;
 }
 
-std::shared_ptr<Provider> Plugify::GetProvider() const {
-    return _impl->provider;
+const ServiceLocator& Plugify::GetServices() const noexcept {
+    return _impl->services;
 }
 
-std::shared_ptr<Context> Plugify::GetContext() const {
-    return _impl->context;
+const Config& Plugify::GetConfig() const noexcept {
+    return _impl->config;
 }
 
-Version Plugify::GetVersion() const {
+const Version& Plugify::GetVersion() const noexcept {
     return _impl->version;
-}*/
+}
 
 // PlugifyBuilder implementation
 PlugifyBuilder& PlugifyBuilder::WithBaseDir(const std::filesystem::path& dir) {
@@ -372,6 +392,11 @@ PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependen
     return *this;
 }*/
 
+PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
+    _services.Register<IProgressReporter>(std::move(reporter));
+    return *this;
+}
+
 PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
     _services.Register<IEventBus>(std::move(bus));
     return *this;
@@ -379,9 +404,7 @@ PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
 
 PlugifyBuilder& PlugifyBuilder::WithDefaults() {
     // Provide default implementations if not specified
-    if (!_services.Has<ILogger>()) {
-        _services.Register<ILogger>(std::make_shared<ConsoleLogger>());
-    }
+    auto logger = std::make_shared<ConsoleLogger>();
 
     if (!_services.Has<IEventBus>()) {
         _services.Register<IEventBus>(std::make_shared<SimpleEventBus>());
@@ -404,7 +427,15 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
     }
 
     if (!_services.Has<IDependencyResolver>()) {
-        _services.Register<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>());
+        _services.Register<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(logger));
+    }
+
+    if (!_services.Has<IProgressReporter>()) {
+        _services.Register<IProgressReporter>(std::make_shared<DefaultProgressReporter>(logger));
+    }
+
+    if (!_services.Has<ILogger>()) {
+        _services.Register<ILogger>(std::move(logger));
     }
 
     // Validate configuration
@@ -419,14 +450,8 @@ std::shared_ptr<Plugify> PlugifyBuilder::Build() {
     // Ensure defaults are set
     WithDefaults();
 
-    // Create context
-    auto context = std::make_shared<Context>(
-        std::move(_services),
-        std::move(_config)
-    );
-
     // Create Plugify instance
-    auto plugify = std::shared_ptr<Plugify>(new Plugify(std::move(context)));
+    auto plugify = std::shared_ptr<Plugify>(new Plugify(std::move(_services), std::move(_config)));
 
     return plugify;
 }

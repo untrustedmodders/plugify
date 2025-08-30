@@ -4,13 +4,15 @@
 
 #include "plugify/asm/assembly_loader.hpp"
 #include "plugify/core/config.hpp"
-#include "plugify/core/manifest.hpp"
+#include "plugify/core/dependency_resolver.hpp"
 #include "plugify/core/extension.hpp"
+#include "plugify/core/manifest.hpp"
+#include "plugify/core/manifest_parser.hpp"
 #include "plugify/core/plugify.hpp"
 #include "plugify/core/progress_reporter.hpp"
 
-#include "core/loader.hpp"
-#include "asm/defer.hpp"
+//#include "asm/defer.hpp"
+#include "core/extension_loader.hpp"
 #include "plg/thread_pool.hpp"
 
 using namespace plugify;
@@ -32,9 +34,6 @@ enum class StageType {
 template<typename T>
 struct ExecutionContext {
     plg::thread_pool<>& threadPool;
-    std::shared_ptr<IProgressReporter> reporter;
-    //std::shared_ptr<MetricsCollector> metrics;
-    //std::shared_ptr<Config> config;
 };
 
 // Base interface
@@ -165,34 +164,34 @@ public:
 
 // Shared failure tracker that can be passed between stages
 class FailureTracker {
-    std::unordered_set<UniqueId> failedExtensions_;
-    mutable std::shared_mutex mutex_;
+    std::unordered_set<UniqueId> _failedExtensions;
+    mutable std::shared_mutex _mutex;
 
 public:
     FailureTracker(size_t capacity) {
-        failedExtensions_.reserve(capacity);
+        _failedExtensions.reserve(capacity);
     }
 
     void MarkFailed(UniqueId id) {
-        std::unique_lock lock(mutex_);
-        failedExtensions_.insert(id);
+        std::unique_lock lock(_mutex);
+        _failedExtensions.insert(id);
     }
 
     bool HasFailed(UniqueId id) const {
-        std::shared_lock lock(mutex_);
-        return failedExtensions_.contains(id);
+        std::shared_lock lock(_mutex);
+        return _failedExtensions.contains(id);
     }
 
     bool HasAnyDependencyFailed(
         const Extension& ext,
         const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps) const {
 
-        std::shared_lock lock(mutex_);
+        std::shared_lock lock(_mutex);
 
         // Check if any of this extension's dependencies have failed
         if (auto it = reverseDeps.find(ext.GetId()); it != reverseDeps.end()) {
             for (const auto& depId : it->second) {
-                if (failedExtensions_.contains(depId)) {
+                if (_failedExtensions.contains(depId)) {
                     return true;
                 }
             }
@@ -205,11 +204,11 @@ public:
         const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps,
         std::span<const Extension> allExtensions) const {
 
-        std::shared_lock lock(mutex_);
+        std::shared_lock lock(_mutex);
 
         if (auto it = reverseDeps.find(ext.GetId()); it != reverseDeps.end()) {
             for (const auto& depId : it->second) {
-                if (failedExtensions_.contains(depId)) {
+                if (_failedExtensions.contains(depId)) {
                     // Find the name of the failed dependency
                     auto extIt = std::find_if(allExtensions.begin(), allExtensions.end(),
                         [&](const Extension& e) { return e.GetId() == depId; });
@@ -247,22 +246,28 @@ public:
         size_t initialItems = 0;
         size_t finalItems = 0;
 
-        void Print() const {
-            std::println("=== Pipeline Report ===");
-            std::println("Items: {} -> {} ({}ms total)",
-                       initialItems, finalItems, totalTime.count());
+        std::string ToString() const {
+            std::string buffer;
+            buffer.reserve(256);
+            
+            auto it = std::back_inserter(buffer);
+            std::format_to(it, "=== Pipeline Report ===\n");
+            std::format_to(it, "Items: {} -> {} ({} total)\n",
+                       initialItems, finalItems, totalTime);
 
             for (size_t i = 0; i < stages.size(); ++i) {
                 const auto& [n, s] = stages[i];
-                std::println("  Stage {} ({}): {} -> {} items, {} succeeded, {} failed ({}ms)",
-                           i, n, s.itemsIn, s.itemsOut, s.succeeded, s.failed, s.elapsed.count());
+                std::format_to(it, "  Stage {} ({}): {} -> {} items, {} succeeded, {} failed ({})\n",
+                           i, n, s.itemsIn, s.itemsOut, s.succeeded, s.failed, s.elapsed);
 
                 if (!s.errors.empty()) {
                     for (const auto& err : s.errors) {
-                        std::println("    ERROR: {}", err);
+                        std::format_to(it, "    ERROR: {}\n", err);
                     }
                 }
             }
+
+            return buffer;
         }
     };
 
@@ -278,8 +283,8 @@ public:
         std::vector<StageEntry> _stages;
         std::shared_ptr<IProgressReporter> _reporter;
         //std::shared_ptr<MetricsCollector> metrics_;
-        size_t threadPoolSize_ = std::thread::hardware_concurrency();
-        std::shared_ptr<Config> config_;
+        size_t _threadPoolSize = std::thread::hardware_concurrency();
+        const Config* _config;
 
     public:
         template<typename StageType>
@@ -300,12 +305,12 @@ public:
         }*/
 
         Builder& WithThreadPoolSize(size_t size) {
-            threadPoolSize_ = size;
+            _threadPoolSize = size;
             return *this;
         }
 
-        Builder& WithConfig(std::shared_ptr<Config> config) {
-            config_ = std::move(config);
+        Builder& WithConfig(const Config& config) {
+            _config = &config;
             return *this;
         }
 
@@ -321,7 +326,7 @@ private:
         : _threadPool(builder.threadPoolSize_)
         , _reporter(std::move(builder._reporter))
         //, metrics_(std::move(builder.metrics_))
-        , config_(std::move(builder.config_)) {
+        , _config(std::move(builder.config_)) {
 
         for (auto& [stage, required] : builder._stages) {
             _stages.push_back({std::move(stage), required});
@@ -504,10 +509,10 @@ private:
             auto result = stage->ProcessItem(item, i, total, ctx);
 
             if (result.has_value()) {
-                stats.succeeded++;
+                ++stats.succeeded;
                 ReportItemComplete(stage->GetName(), item, true);
             } else {
-                stats.failed++;
+                ++stats.failed;
                 stats.errors.push_back(
                     std::format("{}: {}", GetItemName(item), result.error())
                 );
@@ -646,11 +651,21 @@ private:
     plg::thread_pool<> _threadPool;
     std::shared_ptr<IProgressReporter> _reporter;
     //std::shared_ptr<MetricsCollector> _metrics;
+    const Config& _config;
 };
 
 // ============================================================================
 // Concrete Stage Implementations
 // ============================================================================
+
+static std::string_view GetExtensionName(std::span<const Extension> allExtensions, UniqueId depId) {
+    auto it = std::find_if(allExtensions.begin(), allExtensions.end(),
+        [&](const Extension& e) { return e.GetId() == depId; });
+    if (it != allExtensions.end()) {
+        return it->GetName();
+    }
+    return it != allExtensions.end() ? it->GetName() : "<unknown>";
+}
 
 // Parsing Stage - Transform type
 class ParsingStage : public ITransformStage<Extension> {
@@ -698,26 +713,21 @@ public:
 // Resolution Stage - Barrier type (reorders and filters)
 class ResolutionStage : public IBarrierStage<Extension> {
     std::shared_ptr<IDependencyResolver> _resolver;
-    plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
-    plg::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDependencyGraph;
-    std::optional<std::unordered_set<std::string>> _whitelist;
-    std::optional<std::unordered_set<std::string>> _blacklist;
+    std::vector<UniqueId>* _loadOrder;
+    plg::flat_map<UniqueId, std::vector<UniqueId>>* _depGraph;
+    plg::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDepGraph;
 
 public:
     ResolutionStage(std::shared_ptr<IDependencyResolver> resolver,
+                    std::vector<UniqueId>* loadOrder,
                     plg::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
                     plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph)
         : _resolver(std::move(resolver))
-        , _dependencyGraph(depGraph)
-        , _reverseDependencyGraph(reverseDepGraph) {}
+        , _loadOrder(loadOrder)
+        , _depGraph(depGraph)
+        , _reverseDepGraph(reverseDepGraph) {}
 
     std::string_view GetName() const override { return "Resolution"; }
-
-    void SetFilters(std::optional<std::unordered_set<std::string>> white,
-                    std::optional<std::unordered_set<std::string>> black) {
-        _whitelist = std::move(white);
-        _blacklist = std::move(black);
-    }
 
     Result<std::vector<Extension>> ProcessAll(
         std::vector<Extension> items,
@@ -739,14 +749,14 @@ public:
             }
 
             // Check whitelist
-            if (include && _whitelist &&
-                !_whitelist->contains(ext.GetName())) {
+            if (include && !ctx.config.security.whitelistedExtensions.
+                contains(ext.GetName())) {
                 include = false;
             }
 
             // Check blacklist
-            if (include && _blacklist &&
-                _blacklist->contains(ext.GetName())) {
+            if (include && ctx.config.security.blacklistedExtensions.
+                contains(ext.GetName())) {
                 include = false;
             }
 
@@ -777,7 +787,7 @@ public:
             for (auto& ext : filtered) {
                 if (ext.GetType() == ExtensionType::Plugin) {
                     if (auto it = languages.find(ext.GetLanguage()); it != languages.end()) {
-                        ext.AddDependency(GetExtensionName(filtered, it->second));
+                        ext.AddDependency(std::string(GetExtensionName(filtered, it->second)));
                     }
                 }
             }
@@ -785,10 +795,6 @@ public:
 
         // Step 3: Resolve dependencies
         auto report = _resolver->Resolve(filtered);
-
-        // Store dependency graphs
-        *_dependencyGraph = std::move(report.dependencyGraph);
-        *_reverseDependencyGraph = std::move(report.reverseDependencyGraph);
 
         // Step 4: Create ID to extension mapping for efficient lookup
         std::unordered_map<UniqueId, Extension> idToExtension;
@@ -835,205 +841,36 @@ public:
                      std::make_move_iterator(excluded.begin()),
                      std::make_move_iterator(excluded.end()));
 
+        // Store dependency graphs
+        *_depGraph = std::move(report.dependencyGraph);
+        *_reverseDepGraph = std::move(report.reverseDependencyGraph);
+        *_loadOrder = std::move(report.loadOrder);
+
         return result;
     }
-
-private:
-    std::string GetExtensionName(std::span<const Extension> extensions, UniqueId id) const {
-        auto it = std::find_if(extensions.begin(), extensions.end(), [&](const Extension& p) {
-            return p.GetId() == id;
-        });
-        return it != extensions.end() ? it->GetName() : "";
-    }
 };
 
-// Example: Initialization Stage - Batch type for resource-limited operations
-/*class InitializationStage : public IBatchStage<Extension> {
-    Plugify& plugify_;
-    std::atomic<size_t> activeInitializations_{0};
-    static constexpr size_t MAX_CONCURRENT_INITS = 4;
-
-public:
-    InitializationStage(Plugify& p) : plugify_(p) {}
-
-    std::string_view GetName() const override { return "Initialization"; }
-
-    size_t GetBatchSize() const override {
-        return MAX_CONCURRENT_INITS;  // Limit concurrent initializations
-    }
-
-    bool ProcessBatchInParallel() const override { return true; }
-
-    void SetupBatch(std::span<Extension> batch, size_t batchIndex,
-                    const ExecutionContext<Extension>& ctx) override {
-        PL_LOG_DEBUG("Initializing batch {} with {} extensions", batchIndex, batch.size());
-        activeInitializations_ = 0;
-    }
-
-    Result<void> ProcessBatch(
-        std::span<Extension> batch,
-        size_t batchIndex,
-        size_t totalBatches,
-        const ExecutionContext<Extension>& ctx) override {
-
-        // Could perform batch-level resource allocation here
-        // For example, pre-allocate shared resources for the batch
-
-        return {};
-    }
-
-    void TeardownBatch(std::span<Extension> batch, size_t batchIndex,
-                      const ExecutionContext<Extension>& ctx) override {
-        // Wait for all initializations in batch to complete
-        while (activeInitializations_.load() > 0) {
-            std::this_thread::yield();
-        }
-    }
-};*/
-#if 0
-// Loading Stage - Sequential type
-class LoadingStage : public ISequentialStage<Extension> {
-    Loader& _loader;
-    plg::flat_map<std::string, Extension*> _loadedModules;
-    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
-
-public:
-    LoadingStage(Loader& loader,
-                const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph)
-        : _loader(loader), _dependencyGraph(dependencyGraph) {}
-
-    std::string_view GetName() const override { return "Loading"; }
-
-    bool ContinueOnError() const override { return true; }
-
-    bool ShouldProcess(const Extension& item) const override {
-        return item.GetState() == ExtensionState::Resolved;
-    }
-
-    Result<void> ProcessItem(
-        Extension& ext,
-        size_t position,
-        size_t total,
-        const ExecutionContext<Extension>& ctx) override {
-
-        ext.StartOperation(ExtensionState::Loading);
-
-        switch (ext.GetType()) {
-            case ExtensionType::Module: {
-                auto result = _loader.LoadModule(ext);
-                if (!result) {
-                    ext.AddError(result.error());
-                    ext.EndOperation(ExtensionState::Failed);
-                    // TODO: propagate deps
-                    return result;
-                }
-
-                _loadedModules[ext.GetLanguage()] = &ext;
-                break;
-            }
-
-            case ExtensionType::Plugin: {
-                auto it = _loadedModules.find(ext.GetLanguage());
-                if (it == _loadedModules.end()) {
-                    return plg::unexpected(std::format("Language module '{}' not found", ext.GetLanguage()));
-                }
-
-                auto result = _loader.LoadPlugin(*it->second, ext);
-                if (!result) {
-                    ext.AddError(result.error());
-                    ext.EndOperation(ExtensionState::Failed);
-                    // TODO: propagate deps
-                    return result;
-                }
-                break;
-            }
-
-            default:
-                throw std::runtime_error("Unknown extension type");
-        }
-
-        ext.EndOperation(ExtensionState::Loaded);
-
-        // Log progress if verbose
-        //std::println("[{}/{}] Loaded {}", position + 1, total, ext.GetName());
-        return {};
-    }
-
-
-};
-
-// Starting Stage - Sequential type
-class StartingStage : public ISequentialStage<Extension> {
-    Loader& _loader;
-    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
-
-public:
-    StartingStage(Loader& loader,
-                const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph)
-        : _loader(loader), _dependencyGraph(dependencyGraph) {}
-
-    std::string_view GetName() const override { return "Starting"; }
-
-    bool ContinueOnError() const override { return true; }
-
-    bool ShouldProcess(const Extension& item) const override {
-        return item.GetState() == ExtensionState::Loaded;
-    }
-
-    Result<void> ProcessItem(
-        Extension& ext,
-        size_t position,
-        size_t total,
-        const ExecutionContext<Extension>& ctx) override {
-
-        ext.StartOperation(ExtensionState::Loading);
-
-        switch (ext.GetType()) {
-            case ExtensionType::Module: {
-                break;
-            }
-
-            case ExtensionType::Plugin: {
-                auto result = _loader.StartPlugin(ext);
-                if (!result) {
-                    ext.AddError(result.error());
-                    ext.EndOperation(ExtensionState::Failed);
-                    // TODO: propagate deps
-                    return result;
-                }
-                break;
-            }
-
-            default:
-                throw std::runtime_error("Unknown extension type");
-        }
-
-        ext.EndOperation(ExtensionState::Loaded);
-
-        // Log progress if verbose
-        //std::println("[{}/{}] Loaded {}", position + 1, total, ext.GetName());
-        return {};
-    }
-};
-#endif
+// ============================================================================
+// Loading Stage with Failure Propagation
+// ============================================================================
 
 class LoadingStage : public ISequentialStage<Extension> {
-    Loader& _loader;
+    ExtensionLoader& _loader;
     FailureTracker& _failureTracker;
-    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
-    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDependencyGraph;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>& _depGraph;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
     plg::flat_map<std::string, Extension*> _loadedModules;
     std::span<const Extension> _allExtensions;  // Reference to all extensions for lookup
 
 public:
-    LoadingStage(Loader& loader,
+    LoadingStage(ExtensionLoader& loader,
                 FailureTracker& failureTracker,
-                const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph,
-                const plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDependencyGraph)
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>& depGraph,
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph)
         : _loader(loader)
         , _failureTracker(failureTracker)
-        , _dependencyGraph(dependencyGraph)
-        , _reverseDependencyGraph(reverseDependencyGraph) {}
+        , _depGraph(depGraph)
+        , _reverseDepGraph(reverseDepGraph) {}
 
     std::string_view GetName() const override { return "Loading"; }
 
@@ -1055,9 +892,9 @@ public:
         const ExecutionContext<Extension>& ctx) override {
 
         // First check if any dependencies have failed
-        if (_failureTracker.HasAnyDependencyFailed(ext, *_reverseDependencyGraph)) {
+        if (_failureTracker.HasAnyDependencyFailed(ext, _reverseDepGraph)) {
             std::string_view failedDep = _failureTracker.GetFailedDependencyName(
-                ext, *_reverseDependencyGraph, _allExtensions);
+                ext, _reverseDepGraph, _allExtensions);
 
             ext.SetState(ExtensionState::Skipped);
             ext.AddError(std::format("Skipped: dependency '{}' failed to load", failedDep));
@@ -1107,6 +944,12 @@ public:
         }
 
         ext.EndOperation(ExtensionState::Loaded);
+
+        if (auto loadTime = ext.GetOperationTime(ExtensionState::Loading);
+            loadTime > ctx.config.loading.loadTimeout) {
+            ext.AddWarning(std::format("Took {} to start", loadTime));
+        }
+
         return {};
     }
 
@@ -1114,8 +957,8 @@ private:
     void PropagateFailureToDirectDependents(const Extension& failedExt) {
         // Mark all direct dependents as will-be-skipped
         // They'll be properly handled when their turn comes
-        if (auto it = _dependencyGraph->find(failedExt.GetId());
-            it != _dependencyGraph->end()) {
+        if (auto it = _depGraph.find(failedExt.GetId());
+            it != _depGraph.end()) {
             for (const auto& dependentId : it->second) {
                 _failureTracker.MarkFailed(dependentId);
             }
@@ -1128,21 +971,21 @@ private:
 // ============================================================================
 
 class StartingStage : public ISequentialStage<Extension> {
-    Loader& _loader;
+    ExtensionLoader& _loader;
     FailureTracker& _failureTracker;
-    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _dependencyGraph;
-    const plg::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDependencyGraph;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>& _depGraph;
+    const plg::flat_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
     std::span<const Extension> _allExtensions;
 
 public:
-    StartingStage(Loader& loader,
+    StartingStage(ExtensionLoader& loader,
                 FailureTracker& failureTracker,
-                const plg::flat_map<UniqueId, std::vector<UniqueId>>* dependencyGraph,
-                const plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDependencyGraph)
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>& depGraph,
+                const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph)
         : _loader(loader)
         , _failureTracker(failureTracker)
-        , _dependencyGraph(dependencyGraph)
-        , _reverseDependencyGraph(reverseDependencyGraph) {}
+        , _depGraph(depGraph)
+        , _reverseDepGraph(reverseDepGraph) {}
 
     std::string_view GetName() const override { return "Starting"; }
 
@@ -1163,9 +1006,9 @@ public:
         const ExecutionContext<Extension>& ctx) override {
 
         // Check if any dependencies have failed (during loading or starting)
-        if (_failureTracker.HasAnyDependencyFailed(ext, *_reverseDependencyGraph)) {
+        if (_failureTracker.HasAnyDependencyFailed(ext, _reverseDepGraph)) {
             std::string_view failedDep = _failureTracker.GetFailedDependencyName(
-                ext, *_reverseDependencyGraph, _allExtensions);
+                ext, _reverseDepGraph, _allExtensions);
 
             ext.SetState(ExtensionState::Skipped);
             ext.AddError(std::format("Skipped: dependency '{}' failed to start", failedDep));
@@ -1205,14 +1048,20 @@ public:
             return result;
         }
 
-        ext.EndOperation(ExtensionState::Running);
+        ext.EndOperation(ExtensionState::Started);
+
+        if (auto startTime = ext.GetOperationTime(ExtensionState::Loading);
+            startTime > ctx.config.loading.startTimeout) {
+            ext.AddWarning(std::format("Took {} to start", startTime));
+        }
+
         return {};
     }
 
 private:
-    void PropagateFailureToDirectDependents(const Extension& failedExt) {
-        if (auto it = _dependencyGraph->find(failedExt.GetId());
-            it != _dependencyGraph->end()) {
+    void PropagateFailureToDirectDependents(const Extension& failedExt) const {
+        if (auto it = _depGraph.find(failedExt.GetId());
+            it != _depGraph.end()) {
             for (const auto& dependentId : it->second) {
                 _failureTracker.MarkFailed(dependentId);
             }
@@ -1221,193 +1070,368 @@ private:
 };
 
 struct Manager::Impl {
-    Impl(std::shared_ptr<Context> context) {
+    Impl(const ServiceLocator& services, const Config& cfg, const Manager& manager)
+        : config{cfg}
+        , provider(services, config, manager)
+        , loader(services, config, provider)
+    {
         // Create services
-        assemblyLoader = context->GetService<IAssemblyLoader>();
-        fileSystem = context->GetService<IFileSystem>();
-        manifestParser = context->GetService<IManifestParser>();
-        //validator = context->GetService<ExtensionValidator>();
-        resolver = context->GetService<IDependencyResolver>();  // Your libsolv wrapper
-        //loader = context->GetService<DynamicExtensionLoader>();
-        progressReporter = context->GetService<IProgressReporter>();
-        //metricsCollector = context->Get<MetricsCollector>();
-
+        assemblyLoader = services.Get<IAssemblyLoader>();
+        fileSystem = services.Get<IFileSystem>();
+        logger = services.Get<ILogger>();
+        manifestParser = services.Get<IManifestParser>();
+        resolver = services.Get<IDependencyResolver>();
+        progressReporter = services.Get<IProgressReporter>();
     }
-    std::shared_ptr<Config> config;
+    ~Impl() {
+        if (initialized) {
+            Terminate();
+        }
+    }
+
+    const Config& config;
+    Provider provider;
+    ExtensionLoader loader;
+    std::vector<Extension> extensions;
+    bool initialized{false};
 
     // Services
     std::shared_ptr<IAssemblyLoader> assemblyLoader;
     std::shared_ptr<IFileSystem> fileSystem;
+    std::shared_ptr<ILogger> logger;
     std::shared_ptr<IManifestParser> manifestParser;
     std::shared_ptr<IDependencyResolver> resolver;
-    //std::shared_ptr<IExtensionValidator> validator;
-    //std::shared_ptr<IExtensionRegistry> registry;
     std::shared_ptr<IProgressReporter> progressReporter;
-    //std::shared_ptr<MetricsCollector> metricsCollector;
-    std::make_shared<Provider>(std::move(context), std::move(manager))
-    std::shared_ptr<Provider> provider;
 
     // Dependency graphs (filled by resolution stage)
-    plg::flat_map<UniqueId, std::vector<UniqueId>> dependencyGraph;
-    plg::flat_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;
+    std::vector<UniqueId> loadOrder;
+    plg::flat_map<UniqueId, std::vector<UniqueId>> depGraph;
+    plg::flat_map<UniqueId, std::vector<UniqueId>> reverseDepGraph;
 
 public:
     void Initialize() {
-        Loader loader();
-
-        // Step 1: Quick discovery
-        std::vector<Extension> extensions = DiscoverExtensions();
-
-        // Step 2: Create resolution stage with filters
-        auto resolutionStage = std::make_unique<ResolutionStage>(
-            resolver, &dependencyGraph, &reverseDependencyGraph
-        );
-        resolutionStage->SetFilters(config->whitelistedExtensions, config->blacklistedExtensions);
-
-        // Step 3: Build pipeline
-        auto pipeline = FlexiblePipeline<Extension>::Create()
-            // Parse manifests in parallel (Transform stage)
-            .AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
-
-            // Validate extensions in batches (Batch stage)
-            //.AddStage(std::make_unique<ValidationStage>(validator, 20), false)
-
-            // Fetch metadata in controlled batches (Batch stage with rate limiting)
-            //.AddStage(std::make_unique<NetworkFetchStage>(registry), false)
-
-            // Resolve dependencies and reorder container (Barrier stage)
-            .AddStage(std::move(resolutionStage))
-
-            // Initialize extensions in batches (Batch stage for resource control)
-            //.AddStage(std::make_unique<InitializationStage>(assemblyLoader), false)
-
-            // Load extensions in dependency order (Sequential stage)
-            .AddStage(std::make_unique<LoadingStage>(loader, &dependencyGraph))
-
-            // Optional: Remove failed extensions to save processing
-            //.AddStage(std::make_unique<FilterFailedStage>(), false)
-
-            // Start extensions in order (Sequential stage)
-            .AddStage(std::make_unique<StartingStage>())
-
-            // Start extensions in order (Sequential stage)
-            //.AddStage(std::make_unique<ExportStage>())
-
-            .WithReporter(progressReporter)
-            //.WithMetrics(metricsCollector)
-            .WithConfig(config)
-            .WithThreadPoolSize(std::thread::hardware_concurrency())
-            .Build();
-
-        // Step 4: Execute pipeline
-        auto [finalExtensions, report] = pipeline->Execute(std::move(extensions));
-
-        // Step 5: Store results
-        extensions_ = std::move(finalExtensions);
-
-        // Convert report to state
-        //ConvertReportToState(report, state);
-
-        // Print reports if configured
-        if (config->printReport) {
-            report.Print();
+        if (initialized) {
+            logger->Log("Manager already initialized", Severity::Error);
+            return;
         }
 
-        return state;
+        std::vector<Extension> initialExtensions = DiscoverExtensions();
+
+        FailureTracker failureTracker(initialExtensions.size());
+        
+        auto pipeline = FlexiblePipeline<Extension>::Create()
+            .AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
+            .AddStage(std::make_unique<ResolutionStage>(resolver, &loadOrder, &depGraph, &reverseDepGraph))
+            .AddStage(std::make_unique<LoadingStage>(loader, failureTracker, depGraph, reverseDepGraph))
+            //.AddStage(std::make_unique<ExportStage>())
+            .AddStage(std::make_unique<StartingStage>(loader, failureTracker, depGraph, reverseDepGraph))
+            .WithConfig(config)
+            .WithReporter(progressReporter)
+            .WithThreadPoolSize(config.loading.maxConcurrentLoads)
+            .Build();
+
+        auto [finalExtensions, report] = pipeline->Execute(std::move(initialExtensions));
+
+        extensions = std::move(finalExtensions);
+
+        // Print reports if configured
+        if (config.logging.printReport || report.finalItems == 0) {
+            logger->Log(report.ToString(), Severity::Info);
+            logger->Log(loader.GetStatistics().ToString(), Severity::Info);
+            logger->Log("=== Extensions Report ===", Severity::Info);
+            for (auto& ext : extensions) {
+                logger->Log(ext.GetPerformanceReport(), Severity::Info);
+            }
+        }
+        if (config.logging.printLoadOrder) {
+            logger->Log(DumpLoadOrder(), Severity::Info);
+        }
+        /*if (config.logging.printLoadStatistics) {
+        }*/
+        if (config.logging.printDependencyGraph) {
+            logger->Log(DumpDependencyGraph(), Severity::Info);
+        }
+        const auto& exportPath = config.logging.exportDigraphDot;
+        if (!exportPath.empty()) {
+            auto graph = DumpDependencyGraphDOT();
+            if (auto writeResult = fileSystem->WriteTextFile(exportPath, graph); !writeResult) {
+                logger->Log(std::format("Export DOT: {}", writeResult.error()), Severity::Error);
+            } else {
+                logger->Log(std::format("Export DOT: {}", exportPath.string()), Severity::Info);
+            }
+        }
+
+        initialized = true;
     }
 
     void Update(Duration deltaTime) {
-        loader->Update(_extensions, deltaTime);
-    }
+        if (!initialized) {
+            return;
+        }
 
-    void Terminate() {
-        for (const auto& ext : _extensions) {
-            loader->Update(_extensions, deltaTime);
+        for (const auto& ext : extensions) {
+            if (ext.GetState() == ExtensionState::Started) {
+                Result<void> result;
+                switch (ext.GetType()) {
+                    case ExtensionType::Module: {
+                        result = loader.UpdateModule(ext, deltaTime);
+                        break;
+                    }
+
+                    case ExtensionType::Plugin: {
+                        result = loader.UpdatePlugin(ext, deltaTime);
+                        break;
+                    }
+
+                    default:
+                        result = plg::unexpected("Unknown extension type");
+                }
+                if (!result) {
+                    logger->Log(result.error(), Severity::Error);
+                }
+            }
         }
     }
 
-private:
-    std::vector<Extension> _extensions;
+    void Terminate() {
+        if (!initialized) {
+            return;
+        }
 
+        for (auto it = extensions.rbegin(); it != extensions.rend(); ++it) {
+            auto& ext = *it;
+            if (ext.GetState() == ExtensionState::Started) {
+                ext.StartOperation(ExtensionState::Ending);
+                Result<void> result;
+                switch (ext.GetType()) {
+                    case ExtensionType::Module: {
+                        // Modules typically don't need ending
+                        result = {};
+                        break;
+                    }
+
+                    case ExtensionType::Plugin: {
+                        result = loader.EndPlugin(ext);
+                        break;
+                    }
+
+                    default:
+                        result = plg::unexpected("Unknown extension type");
+                }
+                if (!result) {
+                    logger->Log(result.error(), Severity::Error);
+                }
+                ext.EndOperation(ExtensionState::Ended);
+            }
+        }
+
+        for (auto it = extensions.rbegin(); it != extensions.rend(); ++it) {
+            auto& ext = *it;
+            if (ext.GetState() == ExtensionState::Ended) {
+                ext.StartOperation(ExtensionState::Terminating);
+                Result<void> result;
+                switch (ext.GetType()) {
+                    case ExtensionType::Module: {
+                        result = loader.UnloadModule(ext);
+                        break;
+                    }
+
+                    case ExtensionType::Plugin: {
+                        result = loader.UnloadPlugin(ext);
+                        break;
+                    }
+
+                    default:
+                        result = plg::unexpected("Unknown extension type");
+                }
+                if (!result) {
+                    logger->Log(result.error(), Severity::Error);
+                }
+                ext.EndOperation(ExtensionState::Terminated);
+            }
+        }
+
+        initialized = false;
+    }
+
+private:
     static constexpr std::array<std::string_view, 2> MANIFEST_EXTENSIONS = {
         "*.pplugin"sv, "*.pmodule"sv
     };
 
-    // Collect manifest paths from all search directories
-    auto CollectManifestPaths() {
-        auto files = fileSystem->FindFiles(
-            searchPath,
+    std::vector<Extension> DiscoverExtensions() const {
+        auto paths = fileSystem->FindFiles(
+            config.paths.extensionsDir,
             MANIFEST_EXTENSIONS,
             true
         );
 
-        if (!files) {
-            PL_LOG_ERROR("Error searching '{}': {}", searchPath.string(), files.error());
+        if (!paths) {
+            logger->Log(paths.error(), Severity::Error);
             return {};
         }
 
-        return *files;
+        UniqueId id = 0;
+
+        std::vector<Extension> exts;
+        exts.reserve(paths->size());
+        for (auto&& path : *paths) {
+            exts.emplace_back(id++, std::move(path));
+        }
+        return exts;
     }
 
-    // Step 1: Find all manifest files in parallel
-    std::vector<Extension> DiscoverExtensions() {
-        std::vector<Extension> extensions;
+    std::string DumpLoadOrder() const {
+        std::string buffer;
+        buffer.reserve(1024); // preallocate some space to reduce reallocs
 
-        // Collect all paths
-        auto paths = CollectManifestPaths();
+        auto it = std::back_inserter(buffer);
+        
+        std::format_to(it, "=== Load Order ===\n");
 
-        // Create extension entries
-        extensions.reserve(paths.size());
-        for (auto&& path : paths) {
-            extensions.emplace_back(id++, std::move(path));
+        if (loadOrder.empty()) {
+            std::format_to(it, "(empty)\n\n");
+            return buffer;
         }
 
-        return extensions;
+        for (size_t i = 0; i < loadOrder.size(); ++i) {
+            const auto& id = loadOrder[i];
+            std::format_to(it, "{:3}: {} (id={})\n", i, GetExtensionName(extensions, id), id);
+        }
+
+        buffer.push_back('\n');
+        return buffer;
+    }
+
+    std::string DumpDependencyGraph() const {
+        std::string buffer;
+        buffer.reserve(2048);
+
+        auto it = std::back_inserter(buffer);
+        
+        std::format_to(it, "=== Dependency Graph (pkg -> [deps]) ===\n");
+
+        if (depGraph.empty()) {
+            std::format_to(it, "(empty)\n\n");
+            return buffer;
+        }
+
+        for (const auto& [id, deps] : depGraph) {
+            std::format_to(it, "{} (id={}) -> ", GetExtensionName(extensions, id), id);
+            if (deps.empty()) {
+                std::format_to(it, "[]\n");
+                continue;
+            }
+
+            buffer.push_back('[');
+            bool first = true;
+            for (const auto& d : deps) {
+                if (!first) {
+                    std::format_to(it, ", ");
+                }
+                std::format_to(it, "{} (id={})", GetExtensionName(extensions, d), d);
+                first = false;
+            }
+            std::format_to(it, "]\n");
+        }
+
+        buffer.push_back('\n');
+        return buffer;
+    }
+
+    std::string DumpDependencyGraphDOT() const {
+        std::string buffer;
+        buffer.reserve(4096);
+
+        auto it = std::back_inserter(buffer);
+        
+        std::format_to(it, "digraph packages {{\n");
+        std::format_to(it, "  rankdir=LR;\n");
+
+        // nodes
+        for (size_t i = 0; i < extensions.size(); ++i) {
+            const auto& ext = extensions[i];
+            std::format_to(it,
+                           "  node{} [label=\"{}\\n(id={})\"];\n",
+                           i, ext.GetName(), ext.GetId());
+        }
+
+        // edges
+        for (const auto& [id, deps] : depGraph) {
+            for (auto dep : deps) {
+                std::format_to(it, "  node{} -> node{};\n", id, dep);
+            }
+        }
+
+        std::format_to(it, "}}\n");
+        return buffer;
     }
 };
 
-Manager::Manager(std::shared_ptr<Context> context)
-    : _impl(std::make_unique<Impl>(std::move(context))) {}
+Manager::Manager(const ServiceLocator& services, const Config& config)
+    : _impl(std::make_unique<Impl>(services, config, *this)) {}
 
 Manager::~Manager() = default;
 
-void Manager::Initialize() {
+void Manager::Initialize() const {
     return _impl->Initialize();
 }
 
-void Manager::Update(Duration deltaTime) {
+bool Manager::IsInitialized() const {
+    return _impl->initialized;
+}
+
+void Manager::Update(Duration deltaTime) const {
     return _impl->Update(deltaTime);
 }
 
-void Manager::Terminate() {
+void Manager::Terminate() const {
     return _impl->Terminate();
 }
 
-// ============================================================================
-// Dependency Injection
-// ============================================================================
-
-// Set progress reporter
-/*void Manager::setProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
-    progressReporter = reporter;
+// Query operations
+bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
+    auto it = std::find_if(_impl->extensions.begin(), _impl->extensions.end(),
+        [&](const Extension& e) { return e.GetName() == name; });
+    if (it != _impl->extensions.end()) {
+        return constraint ? constraint->contains(it->GetVersion()) : true;
+    }
+    return false;
+}
+const Extension* Manager::FindExtension(std::string_view name) const noexcept {
+    auto it = std::find_if(_impl->extensions.begin(), _impl->extensions.end(),
+        [&](const Extension& e) { return e.GetName() == name; });
+    if (it != _impl->extensions.end()) {
+        return &(*it);
+    }
+    return nullptr;
 }
 
-void Manager::setExtensionDiscovery(std::unique_ptr<IExtensionDiscovery> discovery) {
-    _impl->extensionDiscovery = std::move(discovery);
+std::span<const Extension> Manager::GetExtensions() const {
+   return _impl->extensions;
 }
 
-void Manager::setExtensionValidator(std::unique_ptr<IExtensionValidator> validator) {
-    _impl->extensionValidator = std::move(validator);
+std::vector<const Extension*> Manager::GetExtensionsByState(ExtensionState state) const {
+    std::vector<const Extension*> result;
+    result.reserve(_impl->extensions.size() / 2);
+    for (auto& ext : _impl->extensions) {
+        if (ext.GetState() == state) {
+            result.push_back(&ext);
+        }
+    }
+    return result;
 }
 
-void Manager::SetDependencyResolver(std::unique_ptr<IDependencyResolver> resolver) {
-    _impl->dependencyResolver = std::move(resolver);
+std::vector<const Extension*> Manager::GetExtensionsByType(ExtensionType type) const {
+    std::vector<const Extension*> result;
+    result.reserve(_impl->extensions.size() / 2);
+    for (auto& ext : _impl->extensions) {
+        if (ext.GetType() == type) {
+            result.push_back(&ext);
+        }
+    }
+    return result;
 }
 
-/*void Manager::setModuleLoader(std::unique_ptr<IModuleLoader> loader) {
-    _impl->moduleLoader = std::move(loader);
-}
-
-void Manager::setPluginLoader(std::unique_ptr<IPluginLoader> loader) {
-    _impl->pluginLoader = std::move(loader);
-}*/
+bool Manager::operator==(const Manager& other) const noexcept = default;
+auto Manager::operator<=>(const Manager& other) const noexcept = default;
