@@ -36,16 +36,6 @@ namespace plugify {
             if (!content) {
                 ext.AddError(content.error());
                 ext.EndOperation(ExtensionState::Corrupted);
-
-                // Record failure metrics
-                /*if (ctx.metrics) {
-                    ctx.metrics->RecordExtensionFailure(
-                        ext.GetId(),
-                        ExtensionState::Parsing,
-                        content.error()
-                    );
-                }*/
-
                 return plg::unexpected(std::move(content.error()));
             }
 
@@ -53,28 +43,11 @@ namespace plugify {
             if (!manifest) {
                 ext.AddError(manifest.error());
                 ext.EndOperation(ExtensionState::Corrupted);
-
-                // Record failure metrics
-                /*if (ctx.metrics) {
-                    ctx.metrics->RecordExtensionFailure(
-                        ext.GetId(),
-                        ExtensionState::Parsing,
-                        content.error()
-                    );
-                }*/
-
                 return plg::unexpected(std::move(manifest.error()));
             }
 
             ext.SetManifest(std::move(*manifest));
             ext.EndOperation(ExtensionState::Parsed);
-
-            // Record successful parsing
-            /*if (ctx.metrics) {
-                auto parseTime = std::chrono::duration_cast<Duration>(Clock::now() - startTime);
-                ctx.metrics->RecordExtensionTiming(ext.GetId(), ExtensionState::Parsing, parseTime);
-            }*/
-
             return {};
         }
     };
@@ -118,39 +91,6 @@ namespace plugify {
 
             auto report = _resolver->Resolve(filtered);
 
-            // Record dependency metrics
-            /*if (ctx.metrics) {
-                // Record circular dependencies if found
-                for (const auto& cycle : report.circularDependencies) {
-                    ctx.metrics->RecordCircularDependency(cycle);
-                }
-
-                // Record dependency counts for each extension
-                for (const auto& ext : filtered) {
-                    size_t directDeps = 0;
-                    size_t totalDeps = 0;
-
-                    if (auto it = _depGraph->find(ext.GetId()); it != _depGraph->end()) {
-                        directDeps = it->second.size();
-                        // Calculate total deps (including transitive)
-                        std::unordered_set<UniqueId> visited;
-                        std::function<void(UniqueId)> countDeps = [&](UniqueId id) {
-                            if (visited.insert(id).second) {
-                                if (auto depIt = _depGraph->find(id); depIt != _depGraph->end()) {
-                                    for (auto depId : depIt->second) {
-                                        countDeps(depId);
-                                    }
-                                }
-                            }
-                        };
-                        countDeps(ext.GetId());
-                        totalDeps = visited.size() - 1; // Exclude self
-                    }
-
-                    ctx.metrics->RecordDependencyCount(ext.GetId(), directDeps, totalDeps);
-                }
-            }*/
-
             if (!report.isLoadOrderValid) {
                 return plg::unexpected("No valid loading order");
             }
@@ -162,7 +102,7 @@ namespace plugify {
                 ));
             }
 
-            return BuildResultInOrder(report, filtered, excluded, ctx);
+            return BuildResultInOrder(report, filtered, excluded);
         }
 
     private:
@@ -234,8 +174,7 @@ namespace plugify {
         std::vector<Extension> BuildResultInOrder(
             ResolutionReport& report,
             std::vector<Extension>& filtered,
-            std::vector<Extension>& excluded,
-            const ExecutionContext<Extension>& ctx
+            std::vector<Extension>& excluded
         ) const {
             std::unordered_map<UniqueId, Extension> idToExtension;
             idToExtension.reserve(idToExtension.size());
@@ -428,30 +367,6 @@ namespace plugify {
 
             if (!result) {
                 HandleOperationFailure(ext, result, ExtensionState::Failed);
-
-                // Record detailed failure metrics
-                /*if (ctx.metrics) {
-                    ctx.metrics->RecordExtensionFailure(ext.GetId(), ExtensionState::Loading, result.error());
-                    ctx.metrics->RecordExtensionTiming(ext.GetId(), ExtensionState::Loading, loadTime);
-
-                    // Check for cascading failure
-                    std::vector<UniqueId> failureChain;
-                    failureChain.push_back(ext.GetId());
-
-                    // Find all extensions that depend on this one
-                    if (auto it = _depGraph.find(ext.GetId()); it != _depGraph.end()) {
-                        for (auto depId : it->second) {
-                            if (_failureTracker.HasFailed(depId)) {
-                                failureChain.push_back(depId);
-                            }
-                        }
-                    }
-
-                    if (failureChain.size() > 1) {
-                        ctx.metrics->RecordCascadingFailure(failureChain);
-                    }
-                }*/
-
                 return result;
             }
 
@@ -472,7 +387,7 @@ namespace plugify {
     // ============================================================================
 
     class ExportingStage : public BaseFailurePropagatingStage<ExportingStage> {
-        std::span<const Extension> _allExtensions;
+        std::vector<const Extension*> _runningModules;
     public:
         using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
@@ -484,8 +399,12 @@ namespace plugify {
         }
 
         void Setup(std::span<Extension> items, [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
-            _allExtensions = items;
-            // No additional setup needed in base - derived classes can override Setup if needed
+            for (const auto& ext : items) {
+                if (ext.GetType() == ExtensionType::Module &&
+                    ext.GetState() == ExtensionState::Running) {
+                    _runningModules.push_back(&ext);
+                }
+            }
         }
 
         Result<void> DoProcessItem(
@@ -496,15 +415,11 @@ namespace plugify {
 
             ext.StartOperation(ExtensionState::Exporting);
 
-            for (const auto& module : _allExtensions) {
-                if (module.GetType() == ExtensionType::Module &&
-                    module.GetState() == ExtensionState::Running) {
-
-                    auto result = _loader.MethodExport(module, ext);
-                    if (!result) {
-                        HandleOperationFailure(ext, result, ExtensionState::Failed);
-                        return result;
-                    }
+            for (const auto& module : _runningModules) {
+                auto result = _loader.MethodExport(*module, ext);
+                if (!result) {
+                    HandleOperationFailure(ext, result, ExtensionState::Failed);
+                    return result;
                 }
             }
 

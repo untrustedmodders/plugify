@@ -1,8 +1,7 @@
 #pragma once
 
+#include "plugify/core/global.h"
 #include "plugify/core/types.hpp"
-
-#include "plugify_export.h"
 
 namespace plugify {
     PLUGIFY_API std::string ToDebugString(UniqueId id) noexcept;

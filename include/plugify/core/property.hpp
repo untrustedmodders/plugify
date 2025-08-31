@@ -8,8 +8,6 @@
 #include "plugify/core/global.h"
 #include "plugify/core/value_type.hpp"
 
-#include "plugify_export.h"
-
 namespace plugify {
 	class EnumObject;
 	class Method;
@@ -41,6 +39,6 @@ namespace plugify {
 		[[nodiscard]] auto operator<=>(const Property& other) const noexcept;
 
 	PLUGIFY_ACCESS:
-	    std::unique_ptr<Impl> _impl;
+	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 }

@@ -157,6 +157,6 @@ namespace plugify {
         void Reset();
 
     private:
-        std::unique_ptr<Impl> _impl;
+        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 }

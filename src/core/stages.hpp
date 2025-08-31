@@ -19,7 +19,7 @@ namespace plugify {
     template<typename T>
     struct ExecutionContext {
         plg::thread_pool<>& threadPool;
-        std::shared_ptr<ILogger> logger;
+        //std::shared_ptr<ILogger> logger;
         //std::shared_ptr<IProgressReporter> reporter;
         //std::shared_ptr<IMetricsCollector> metrics;
     };

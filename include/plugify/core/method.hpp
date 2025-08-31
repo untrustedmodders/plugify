@@ -9,8 +9,6 @@
 #include "plugify/core/value_type.hpp"
 #include "plugify/asm/mem_addr.hpp"
 
-#include "plugify_export.h"
-
 namespace plugify {
 	class Property;
 
@@ -49,7 +47,7 @@ namespace plugify {
 		[[nodiscard]] std::shared_ptr<Method> FindPrototype(std::string_view name) const noexcept;
 
 	PLUGIFY_ACCESS:
-	    std::unique_ptr<Impl> _impl;
+	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 
     /**

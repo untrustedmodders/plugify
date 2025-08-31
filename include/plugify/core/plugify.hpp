@@ -1,5 +1,6 @@
 #pragma once
 
+#include "plugify/core/global.h"
 #include "plugify/core/config.hpp"
 #include "plugify/core/service_locator.hpp"
 #include "plugify/core/manager.hpp"
@@ -13,8 +14,6 @@
 #include "plugify/core/metric_collector.hpp"
 //#include "plugify/core/plugin_lifecycle.hpp"
 #include "plugify/asm/assembly_loader.hpp"
-
-#include "plugify_export.h"
 
 namespace plugify {
     class Plugify;
@@ -95,7 +94,7 @@ namespace plugify {
         explicit Plugify(ServiceLocator services, Config config);
 
     private:
-        std::unique_ptr<Impl> _impl;
+        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 
     // Convenience factory

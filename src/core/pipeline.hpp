@@ -229,8 +229,6 @@ namespace plugify {
             StageStatistics& stats,
             const ExecutionContext<T>& ctx) {
 
-            auto originalSize = items.size();
-
             // Process all items together
             auto result = stage->ProcessAll(std::move(items), ctx);
             if (result) {
@@ -366,6 +364,15 @@ namespace plugify {
         }
     #endif
 
+        static std::string_view GetItemName(const T& item) {
+            if constexpr (requires { item.GetName(); }) {
+                return item.GetName();
+            } else if constexpr (requires { item.name; }) {
+                return item.name;
+            } else {
+                return "item";
+            }
+        }
     private:
         struct StageEntry {
             std::unique_ptr<IStage<T>> stage;

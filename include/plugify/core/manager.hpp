@@ -1,9 +1,8 @@
 #pragma once
 
+#include "plugify/core/global.h"
 #include "plugify/core/types.hpp"
 #include "plugify/core/extension.hpp"
-
-#include "plugify_export.h"
 
 namespace plugify {
     struct Config;
@@ -49,6 +48,6 @@ namespace plugify {
         [[nodiscard]] auto operator<=>(const Manager& other) const noexcept;
 
     private:
-        std::unique_ptr<Impl> _impl;
+        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 }

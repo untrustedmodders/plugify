@@ -81,7 +81,7 @@ public:
             .AddStage(std::make_unique<ExportingStage>(loader, failureTracker, depGraph, reverseDepGraph, config.loading.exportTimeout))
             .AddStage(std::make_unique<StartingStage>(loader, failureTracker, depGraph, reverseDepGraph, config.loading.startTimeout))
             //.WithConfig(config)
-            .WithReporter(progressReporter)
+            //.WithReporter(progressReporter)
             //.WithMetrics(metricsCollector)
             .WithThreadPoolSize(config.loading.maxConcurrentLoads)
             .Build();
