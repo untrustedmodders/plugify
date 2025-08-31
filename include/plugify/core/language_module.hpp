@@ -105,6 +105,6 @@ namespace plugify {
 		* @brief Determine if language module is build with debugging mode.
 		* @return True if the assembly is build with debugging, false otherwise.
 		*/
-		virtual bool IsDebugBuild() const noexcept = 0;
+		virtual bool IsDebugBuild() = 0;
 	};
 } // namespace plugify
