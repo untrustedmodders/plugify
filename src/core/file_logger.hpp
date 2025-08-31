@@ -72,27 +72,25 @@ namespace plugify {
         }
 
         void RotateLog() {
+            using namespace std::chrono;
+
             _logFile.close();
 
-            // Generate timestamp for rotated file
-            auto now = std::chrono::system_clock::now();
-            auto time_t = std::chrono::system_clock::to_time_t(now);
-            std::tm tm{};
-    #if PLUGIFY_PLATFORM_WINDOWS
-            localtime_s(&tm, &time_t);
-    #else
-            localtime_r(&time_t, &tm);
-    #endif
+            auto now = system_clock::now();
+            // floor to seconds so filename has no fractional seconds
+            auto seconds = floor<seconds>(now);
 
+            // zoned_time with current_zone() -> local time
+            std::chrono::zoned_time zt{std::chrono::current_zone(), seconds};
+
+            // Format as: stem.YYYYMMDD_HHMMSS.extension
             auto rotatedPath = _logPath.parent_path() /
-                std::format("{}.{:04d}{:02d}{:02d}_{:02d}{:02d}{:02d}{}",
-                           _logPath.stem().string(),
-                           tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                           tm.tm_hour, tm.tm_min, tm.tm_sec,
-                           _logPath.extension().string());
+                std::format("{}.{:%Y%m%d_%H%M%S}{}",
+                            _logPath.stem().string(),
+                            zt,                              // formatted using chrono spec
+                            _logPath.extension().string());
 
             std::filesystem::rename(_logPath, rotatedPath);
-
             _logFile.open(_logPath, std::ios::app);
         }
     };

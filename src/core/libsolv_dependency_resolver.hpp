@@ -68,7 +68,7 @@ namespace plugify {
          * conflicts, and load order.
          * @return DependencyReport containing the resolution results
          */
-        DependencyResolution Resolve(std::span<const Extension> extensions) override;
+        ResolutionReport Resolve(std::span<const Extension> extensions) override;
 
     private:
         // Setup functions
@@ -85,10 +85,10 @@ namespace plugify {
         int ConvertComparison(plg::detail::range_operator op);
 
         // Resolution
-        DependencyResolution RunSolver();
-        void ProcessSolverProblems(Solver* solver, DependencyResolution& resolution);
+        ResolutionReport RunSolver();
+        void ProcessSolverProblems(Solver* solver, ResolutionReport& resolution);
         std::vector<std::string> ExtractSolutions(Solver* solver, Id problemId);
-        void ComputeInstallationOrder(Transaction* trans, DependencyResolution& resolution);
+        void ComputeInstallationOrder(Transaction* trans, ResolutionReport& resolution);
 
     private:
         std::shared_ptr<ILogger> _logger;

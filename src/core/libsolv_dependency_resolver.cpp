@@ -11,7 +11,7 @@ using namespace plugify;
 LibsolvDependencyResolver::LibsolvDependencyResolver(std::shared_ptr<ILogger> logger)
     : _logger(std::move(logger)) {}
 
-DependencyResolution
+ResolutionReport
 LibsolvDependencyResolver::Resolve(std::span<const Extension> extensions) {
     // Step 1: Initialize libsolv pool
     InitializePool();
@@ -44,7 +44,7 @@ static void debug_callback([[maybe_unused]] Pool* pool, void* data, int type, co
     else if (type & SOLV_WARN)
         logger->Log(sv, Severity::Warning);
     else
-        logger->Log(sv, Severity::Info);
+        logger->Log(sv, Severity::Verbose);
 }
 
 void
@@ -236,9 +236,9 @@ LibsolvDependencyResolver::ConvertComparison(plg::detail::range_operator op) {
 // Solver Execution
 // ============================================================================
 
-DependencyResolution
+ResolutionReport
 LibsolvDependencyResolver::RunSolver() {
-    DependencyResolution resolution;
+    ResolutionReport resolution;
 
     // Create solver
     std::unique_ptr<Solver, SolverDeleter> solver(solver_create(_pool.get()));
@@ -280,7 +280,7 @@ LibsolvDependencyResolver::RunSolver() {
 // ============================================================================
 
 void
-LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, DependencyResolution& resolution) {
+LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, ResolutionReport& resolution) {
     Id problemCount = static_cast<Id>(solver_problem_count(solver));
 
     for (Id problemId = 1; problemId <= problemCount; problemId++) {
@@ -290,7 +290,7 @@ LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, DependencyResol
         SolverRuleinfo type = solver_ruleinfo(solver, probr, &source, &target, &dep);
 
         // Create issue for this problem
-        DependencyResolution::Issue issue;
+        DependencyIssue issue;
         issue.problem = std::format("Problem {}/{}", problemId, problemCount);
         issue.isBlocking = true; // All problems from solver are blocking
 
@@ -372,7 +372,7 @@ LibsolvDependencyResolver::ExtractSolutions(Solver* solver, Id problemId) {
 void
 LibsolvDependencyResolver::ComputeInstallationOrder(
     Transaction* trans,
-    DependencyResolution& resolution
+    ResolutionReport& resolution
 ) {
     // Get installation order from transaction
     transaction_order(trans, 0);

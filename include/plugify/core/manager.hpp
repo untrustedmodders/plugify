@@ -1,6 +1,9 @@
 #pragma once
 
 #include "plugify/core/types.hpp"
+#include "plugify/core/extension.hpp"
+
+#include "plugify_export.h"
 
 namespace plugify {
     struct Config;
@@ -32,9 +35,15 @@ namespace plugify {
         // Query operations
         [[nodiscard]] bool IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;
         [[nodiscard]] const Extension* FindExtension(std::string_view name) const noexcept;
-        [[nodiscard]] std::span<const Extension> GetExtensions() const;
+        [[nodiscard]] const Extension* FindExtension(UniqueId id) const noexcept;
+        [[nodiscard]] std::vector<const Extension*> GetExtensions() const;
         [[nodiscard]] std::vector<const Extension*> GetExtensionsByState(ExtensionState state) const;
         [[nodiscard]] std::vector<const Extension*> GetExtensionsByType(ExtensionType type) const;
+
+        // Dump operations
+        std::string GenerateLoadOrder() const;
+        std::string GenerateDependencyGraph() const;
+        std::string GenerateDependencyGraphDOT() const;
 
         [[nodiscard]] bool operator==(const Manager& other) const noexcept;
         [[nodiscard]] auto operator<=>(const Manager& other) const noexcept;

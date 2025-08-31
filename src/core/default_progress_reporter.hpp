@@ -4,7 +4,7 @@
 #include "plugify/core/progress_reporter.hpp"
 
 namespace plugify {
-    class DefaultProgressReporter final : public IProgressReporter {
+    /*class DefaultProgressReporter final : public IProgressReporter {
     public:
         DefaultProgressReporter(std::shared_ptr<ILogger> logger) : _logger(std::move(logger)) {}
 
@@ -22,5 +22,5 @@ namespace plugify {
 
     private:
         std::shared_ptr<ILogger> _logger;
-    };
+    };*/
 }

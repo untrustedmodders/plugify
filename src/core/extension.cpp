@@ -1,6 +1,7 @@
 #include "plugify/core/assembly.hpp"
-#include "plugify/core/language_module.hpp"
 #include "plugify/core/extension.hpp"
+#include "plugify/core/language_module.hpp"
+#include "plugify/core/registrar.hpp"
 
 using namespace plugify;
 
@@ -39,14 +40,15 @@ struct Extension::Impl {
             for (const auto& [s, t] : timepoints) {
                 std::format_to(it, "  {} {},\n", plg::enum_to_string(s), t);
             }
-            std::format_to(it, "  - Total {}\n", GetTotalTime());
+            std::format_to(it, "  - Total {}", GetTotalTime());
             return merged;
         }
     } timings;
 
     // Error tracking
-    std::deque<std::string> errors;
-    std::deque<std::string> warnings;
+    std::unique_ptr<Registrar> registrar;
+    std::vector<std::string> errors;
+    std::vector<std::string> warnings;
 
     // Plugin-specific data (only populated for plugins)
     struct PluginData {
@@ -59,12 +61,19 @@ struct Extension::Impl {
     } moduleData;
 
     void Cache() {
+        id.SetName(manifest.name);
         version = manifest.version.to_string();
         location = location.parent_path();
         if (type == ExtensionType::Module && !manifest.runtime) {
             // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
             manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, manifest.name);
         }
+        registrar = std::make_unique<Registrar>(id, Registrar::DebugInfo{
+            .name = manifest.name,
+            .type = type,
+            .version = version,
+            .location = location,
+        });
     }
 };
 
@@ -248,11 +257,11 @@ const Manifest& Extension::GetManifest() const noexcept {
 // State & Error Management Getters
 // ============================================================================
 
-const std::deque<std::string>& Extension::GetErrors() const noexcept {
+const std::vector<std::string>& Extension::GetErrors() const noexcept {
     return _impl->errors;
 }
 
-const std::deque<std::string>& Extension::GetWarnings() const noexcept {
+const std::vector<std::string>& Extension::GetWarnings() const noexcept {
     return _impl->warnings;
 }
 
@@ -321,11 +330,11 @@ void Extension::SetState(ExtensionState state) {
 // ============================================================================
 
 void Extension::AddError(std::string error) {
-    _impl->errors.emplace_back(std::move(error));
+    _impl->errors.push_back(std::move(error));
 }
 
 void Extension::AddWarning(std::string warning) {
-    _impl->warnings.emplace_back(std::move(warning));
+    _impl->warnings.push_back(std::move(warning));
 }
 
 void Extension::ClearErrors() {
@@ -431,7 +440,8 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 
         case ExtensionState::Parsed:
             return to == ExtensionState::Resolving ||
-                   to == ExtensionState::Failed;
+                   to == ExtensionState::Failed ||
+                   to == ExtensionState::Disabled;
 
         case ExtensionState::Resolving:
             return to == ExtensionState::Resolved ||
@@ -448,6 +458,16 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
                    to == ExtensionState::Failed;
 
         case ExtensionState::Loaded:
+            return to == ExtensionState::Exporting ||
+                   to == ExtensionState::Skipped ||
+                   to == ExtensionState::Failed;
+
+        case ExtensionState::Exporting:
+            return to == ExtensionState::Exported ||
+                   to == ExtensionState::Skipped ||
+                   to == ExtensionState::Failed;
+
+        case ExtensionState::Exported:
             return to == ExtensionState::Starting ||
                    to == ExtensionState::Skipped ||
                    to == ExtensionState::Failed;
@@ -458,6 +478,10 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
                    to == ExtensionState::Failed;
 
         case ExtensionState::Started:
+            return to == ExtensionState::Running ||
+                   to == ExtensionState::Failed;
+
+        case ExtensionState::Running:
             return to == ExtensionState::Ending ||
                    to == ExtensionState::Failed;
 
@@ -516,16 +540,17 @@ bool Extension::CanStop() const noexcept {
 }*/
 
 // Add dependency helper (for runtime dependency injection)
-void Extension::AddDependency(std::string dep) {
+void Extension::AddDependency(std::string_view dep) {
     if (!_impl->manifest.dependencies) {
         _impl->manifest.dependencies = std::vector<Dependency>{};
     }
-    _impl->manifest.dependencies->emplace_back().SetName(std::move(dep));
+    _impl->manifest.dependencies->emplace_back().SetName(std::string(dep));
 }
 
 // Reset extension to initial state (useful for reload scenarios)
 void Extension::Reset() {
     _impl->state = ExtensionState::Unknown;
+    _impl->registrar.reset();
     _impl->errors.clear();
     _impl->warnings.clear();
     _impl->timings.timepoints.clear();

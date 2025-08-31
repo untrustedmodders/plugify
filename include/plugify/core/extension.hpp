@@ -34,12 +34,13 @@ namespace plugify {
         Loading,
         Loaded,
 
+        Exporting,
+        Exported,
+
         Starting,
         Started,
 
-        //Updating,
-        //Updated,
-        /**/
+        Running,
 
         Ending,
         Ended,
@@ -101,8 +102,8 @@ namespace plugify {
         [[nodiscard]] const Manifest& GetManifest() const noexcept;
 
         // --- State & Error Management ---
-        [[nodiscard]] const std::deque<std::string>& GetErrors() const noexcept;
-        [[nodiscard]] const std::deque<std::string>& GetWarnings() const noexcept;
+        [[nodiscard]] const std::vector<std::string>& GetErrors() const noexcept;
+        [[nodiscard]] const std::vector<std::string>& GetWarnings() const noexcept;
         [[nodiscard]] bool HasErrors() const noexcept;
         //[[nodiscard]] bool IsLoaded() const noexcept;
         [[nodiscard]] bool IsPlugin() const noexcept { return GetType() == ExtensionType::Plugin; }
@@ -152,7 +153,7 @@ namespace plugify {
         //bool CanStart() const noexcept;
         //bool CanUpdate() const noexcept;
         //bool CanStop() const noexcept;
-        void AddDependency(std::string dep);
+        void AddDependency(std::string_view dep);
         void Reset();
 
     private:

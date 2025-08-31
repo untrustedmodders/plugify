@@ -1,16 +1,15 @@
-#include <utility>
-
 #include "plugify/asm/assembly_loader.hpp"
 #include "plugify/core/plugify.hpp"
 
 #include "core/console_logger.hpp"
+#include "core/default_progress_reporter.hpp"
 #include "core/glaze_config_provider.hpp"
 #include "core/glaze_manifest_parser.hpp"
 #include "core/glaze_metadata.hpp"
 #include "core/libsolv_dependency_resolver.hpp"
-#include "core/default_progress_reporter.hpp"
 #include "core/simple_event_bus.hpp"
 #include "core/standart_file_system.hpp"
+#include "core/basic_metrics_collector.hpp"
 
 using namespace plugify;
 
@@ -20,6 +19,10 @@ struct Plugify::Impl {
     Config config;
     Manager manager;
     Version version;
+
+    std::shared_ptr<ILogger> logger;
+    std::shared_ptr<IEventBus> eventBus;
+    std::shared_ptr<IFileSystem> fileSystem;
 
     std::thread::id ownerThreadId;
     std::jthread updateThread;
@@ -35,6 +38,10 @@ struct Plugify::Impl {
         , ownerThreadId(std::this_thread::get_id()) {
         // Get version
         plg::parse(PLUGIFY_VERSION, version);
+        // Create services
+        logger = services.Get<ILogger>();
+        eventBus = services.Get<IEventBus>();
+        fileSystem = services.Get<IFileSystem>();
     }
 
     ~Impl() {
@@ -53,7 +60,7 @@ struct Plugify::Impl {
         }
 
         // Initialize logging
-        LogInfo("Initializing Plugify...");
+        logger->Log("Initializing Plugify...", Severity::Info);
 
         // Load configuration
         /*if (auto configProvider = context->GetConfigProvider()) {
@@ -79,17 +86,15 @@ struct Plugify::Impl {
         // Start update thread if configured
         StartUpdateThread();
 
-        LogInfo("Plugify initialized successfully");
-        LogInfo(std::format("Version: {}", version));
-        LogInfo(std::format("Git: [{}]:({}) - {} on {} at '{}'", PLUGIFY_GIT_COMMIT_HASH, PLUGIFY_GIT_TAG, PLUGIFY_GIT_COMMIT_SUBJECT, PLUGIFY_GIT_BRANCH, PLUGIFY_GIT_COMMIT_DATE));
-        LogInfo(std::format("Compiled on: {} from: {} with: '{}'", PLUGIFY_COMPILED_SYSTEM, PLUGIFY_COMPILED_GENERATOR, PLUGIFY_COMPILED_COMPILER));
+        logger->Log("Plugify initialized successfully", Severity::Info);
+        logger->Log(std::format("Version: {}", version), Severity::Info);
+        logger->Log(std::format("Git: [{}]:({}) - {} on {} at '{}'", PLUGIFY_GIT_COMMIT_HASH, PLUGIFY_GIT_TAG, PLUGIFY_GIT_COMMIT_SUBJECT, PLUGIFY_GIT_BRANCH, PLUGIFY_GIT_COMMIT_DATE), Severity::Info);
+        logger->Log(std::format("Compiled on: {} from: {} with: '{}'", PLUGIFY_COMPILED_SYSTEM, PLUGIFY_COMPILED_GENERATOR, PLUGIFY_COMPILED_COMPILER), Severity::Info);
 
         initialized = true;
 
         // Publish initialization event
-        if (auto bus = services.Get<IEventBus>()) {
-            bus->Publish("plugify.initialized", std::any{});
-        }
+        eventBus->Publish("plugify.initialized", std::any{});
 
         return {};
     }
@@ -103,7 +108,7 @@ struct Plugify::Impl {
             return;
         }
 
-        LogInfo("Terminating Plugify...");
+        logger->Log("Terminating Plugify...", Severity::Info);;
 
         // Stop update thread
         StopUpdateThread();
@@ -122,15 +127,11 @@ struct Plugify::Impl {
         }*/
         
         // Publish termination event
-        if (auto bus = services.Get<IEventBus>()) {
-            bus->Publish("plugify.terminating", std::any{});
-        }
+        eventBus->Publish("plugify.terminating", std::any{});
         
         // Flush logs
-        if (auto logger = services.Get<ILogger>()) {
-            logger->Log("Plugify terminated", Severity::Info);
-            logger->Flush();
-        }
+        logger->Log("Plugify terminated", Severity::Info);
+        logger->Flush();
 
         initialized = false;
     }
@@ -158,22 +159,17 @@ private:
             return false;
         }
 
-        auto fileSystem = services.Get<IFileSystem>();
-        if (!fileSystem) {
-            return false;
-        }
-
         auto createDir = [&](const std::filesystem::path& dir) {
             if (!dir.empty() && !fileSystem->IsExists(dir)) {
                 if (auto result = fileSystem->CreateDirectories(dir); !result) {
-                    LogError(result.error());
+                    logger->Log(result.error(), Severity::Error);;
                 } else {
-                    LogInfo(std::format("Created directory: {}", dir.string()));
+                    logger->Log(std::format("Created directory: {}", dir.string()), Severity::Info);
                 }
             }
         };
 
-        createDir(config.paths.baseDir);
+        //createDir(config.paths.baseDir);
         createDir(config.paths.baseDir / config.paths.extensionsDir);
         createDir(config.paths.baseDir / config.paths.configsDir);
         createDir(config.paths.baseDir / config.paths.dataDir);
@@ -183,63 +179,108 @@ private:
     }
 
     bool CheckDirectories() {
-        auto checkPath = [](const std::filesystem::path& p) {
-            return !p.empty() && p.lexically_normal() == p;
+        struct PathValidation {
+            std::string_view name;
+            std::filesystem::path path;
+            bool requireExists;   // Optional: check if directory should exist
+            bool requireRelative; // Optional: check if path should be relative
+            bool canCreate;       // Optional: whether we can create it if missing
         };
 
-        std::vector<std::string> errors;
-
-        if (!checkPath(config.paths.baseDir)) {
-            errors.push_back(std::format("extensionsDir: {}", config.paths.extensionsDir.string()));
-        }
-        if (!checkPath(config.paths.extensionsDir)) {
-            errors.push_back(std::format("extensionsDir: {}", config.paths.extensionsDir.string()));
-        }
-        if (!checkPath(config.paths.configsDir)) {
-            errors.push_back(std::format("configsDir: {}", config.paths.configsDir.string()));
-        }
-        if (!checkPath(config.paths.dataDir)) {
-            errors.push_back(std::format("dataDir: {}", config.paths.dataDir.string()));
-        }
-        if (!checkPath(config.paths.logsDir)) {
-            errors.push_back(std::format("logsDir: {}", config.paths.logsDir.string()));
-        }
-        if (!checkPath(config.paths.cacheDir)) {
-            errors.push_back(std::format("cacheDir: {}", config.paths.cacheDir.string()));
-        }
-
-        if (!errors.empty()) {
-            LogError(std::format("{} path(s) must be relative", plg::join(errors, ", ")));
-            return false;
-        }
-
-        std::array<std::filesystem::path, 6> dirs = {
-                config.paths.extensionsDir,
-                config.paths.configsDir,
-                config.paths.dataDir,
-                config.paths.logsDir,
-                config.paths.cacheDir,
+        const std::array<PathValidation, 6> pathsToValidate = {
+            PathValidation{"baseDir", config.paths.baseDir, true, false, false},
+            PathValidation{"extensionsDir", config.paths.extensionsDir, false, false, true},
+            PathValidation{"configsDir", config.paths.configsDir, false, false, true},
+            PathValidation{"dataDir", config.paths.dataDir, false, false, true},
+            PathValidation{"logsDir", config.paths.logsDir, false, false, true},
+            PathValidation{"cacheDir", config.paths.cacheDir, false, false, true}
         };
 
-        auto pathCollides = [](const std::filesystem::path& first, const std::filesystem::path& second) {
-            auto [itFirst, itSecond] = std::mismatch(first.begin(), first.end(), second.begin(), second.end());
-            return itFirst == first.end() || itSecond == second.end();
-        };
+        // Validation result accumulator
+        struct ValidationResult {
+            bool success = true;
+            std::vector<std::string> errors;
+            std::vector<std::string> warnings;
 
-        for (auto first = dirs.begin(); first != dirs.end(); ++first) {
-            for (auto second = first + 1; second != dirs.end(); ++second) {
-                if (pathCollides(*first, *second)) {
-                    errors.push_back(std::format("'{}' - '{}'", first->string(), second->string()));
-                }
+            void AddError(std::string msg) {
+                errors.push_back(std::move(msg));
+                success = false;
+            }
+
+            void AddWarning(std::string msg) {
+                warnings.push_back(std::move(msg));
+            }
+        } result;
+
+        // Step 1: Validate path format and existence
+        for (const auto& [name, path, requireExists, requireRelative, canCreate] : pathsToValidate) {
+            // Check if path is empty
+            if (path.empty()) {
+                result.AddError(std::format("{} is not configured", name));
+                continue;
+            }
+
+            // Check if path is normalized
+            if (path.lexically_normal() != path) {
+                result.AddError(std::format("{} is not normalized: '{}'", name, path.string()));
+                continue;
+            }
+
+            // Check if path is relative (optional, depending on requirements)
+            if (requireRelative && path.is_absolute()) {
+                result.AddError(std::format("{} must be relative: '{}'", name, path.string()));
+                continue;
+            }
+
+            // Check existence if required
+            bool exists = fileSystem->IsExists(path);
+
+            if (requireExists && !exists) {
+                result.AddError(std::format("{} does not exist: '{}'", name, path.string()));
+            } else if (!exists && canCreate) {
+                result.AddWarning(std::format("{} will be created: '{}'", name, path.string()));
             }
         }
 
-        if (!errors.empty()) {
-            LogError(std::format("{} path(s) must be not collide between each other", plg::join(errors, ", ")));
-            return false;
+        // Step 2: Check for path collisions
+        auto checkCollisions = [&result](std::span<const PathValidation> paths, size_t startIdx = 0) {
+            for (size_t i = startIdx; i < paths.size(); ++i) {
+                if (paths[i].path.empty()) continue;
+
+                for (size_t j = i + 1; j < paths.size(); ++j) {
+                    if (paths[j].path.empty()) continue;
+
+                    const auto& path1 = paths[i].path;
+                    const auto& path2 = paths[j].path;
+
+                    // Check if one path is a parent of another
+                    auto [it1, it2] = std::mismatch(path1.begin(), path1.end(),
+                                                   path2.begin(), path2.end());
+
+                    if (it1 == path1.end() || it2 == path2.end()) {
+                        result.AddError(
+                            std::format("{} ('{}') conflicts with {} ('{}')",
+                                       paths[i].name, path1.string(),
+                                       paths[j].name, path2.string())
+                        );
+                    }
+                }
+            }
+        };
+
+        // Check collisions (skip baseDir at index 0)
+        checkCollisions(pathsToValidate, 1);
+
+        // Log results
+        if (!result.warnings.empty()) {
+            logger->Log(std::format("Warnings: {}", plg::join(result.warnings, "; ")), Severity::Warning);
         }
 
-        return true;
+        if (!result.errors.empty()) {
+            logger->Log(std::format("Validation failed: {}", plg::join(result.errors, "; ")), Severity::Error);
+        }
+
+        return result.success;
     }
 
     void StartUpdateThread() {
@@ -264,18 +305,6 @@ private:
         if (updateThread.joinable()) {
             updateThread.request_stop();
             updateThread.join();
-        }
-    }
-
-    void LogInfo(std::string_view msg) const {
-        if (auto logger = services.Get<ILogger>()) {
-            logger->Log(msg, Severity::Info);
-        }
-    }
-
-    void LogError(std::string_view msg) const {
-        if (auto logger = services.Get<ILogger>()) {
-            logger->Log(msg, Severity::Error);
         }
     }
 };
@@ -392,10 +421,15 @@ PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependen
     return *this;
 }*/
 
-PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
+/*PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
     _services.Register<IProgressReporter>(std::move(reporter));
     return *this;
-}
+}*/
+
+/*PlugifyBuilder& PlugifyBuilder::WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics) {
+    _services.Register<IMetricsCollector>(std::move(metrics));
+    return *this;
+}*/
 
 PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
     _services.Register<IEventBus>(std::move(bus));
@@ -430,9 +464,13 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
         _services.Register<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(logger));
     }
 
-    if (!_services.Has<IProgressReporter>()) {
+    /*if (!_services.Has<IProgressReporter>()) {
         _services.Register<IProgressReporter>(std::make_shared<DefaultProgressReporter>(logger));
-    }
+    }*/
+
+    /*if (!_services.Has<IMetricsCollector>()) {
+        _services.Register<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());
+    }*/
 
     if (!_services.Has<ILogger>()) {
         _services.Register<ILogger>(std::move(logger));
@@ -461,7 +499,7 @@ PlugifyBuilder Plugify::CreateBuilder() {
 }
 
 // Convenience factory
-Result<std::shared_ptr<Plugify>> MakePlugify(const std::filesystem::path& rootDir) {
+Result<std::shared_ptr<Plugify>> plugify::MakePlugify(const std::filesystem::path& rootDir) {
     return Plugify::CreateBuilder()
         .WithBaseDir(rootDir)
         .Build();

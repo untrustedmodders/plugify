@@ -3,6 +3,7 @@
 #include "plugify/core/types.hpp"
 
 namespace plugify {
+    class Extension;
     // Lifecycle interface
     class ILifecycle {
     public:

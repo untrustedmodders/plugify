@@ -29,7 +29,36 @@ namespace plugify {
 	 * @typedef UniqueId
 	 * @brief Represents a unique identifier for everything.
 	 */
-	using UniqueId = std::ptrdiff_t;
+    struct UniqueId {
+        using Value = std::ptrdiff_t;
+
+        constexpr UniqueId() noexcept = default;
+        constexpr explicit UniqueId(Value v) noexcept : value(v) {}
+
+        // conversion to underlying value
+        operator auto() const noexcept { return value; }
+
+        // prefix increment / decrement
+        constexpr UniqueId& operator++() noexcept { ++value; return *this; }
+        constexpr UniqueId& operator--() noexcept { --value; return *this; }
+
+        // postfix increment / decrement
+        constexpr UniqueId operator++(int) noexcept { UniqueId old{value}; ++value; return old; }
+        constexpr UniqueId operator--(int) noexcept { UniqueId old{value}; --value; return old; }
+
+        // compound assign helpers
+        constexpr UniqueId& operator+=(Value d) noexcept { value += d; return *this; }
+        constexpr UniqueId& operator-=(Value d) noexcept { value -= d; return *this; }
+
+        constexpr bool operator==(UniqueId other) const noexcept { return value == other.value; }
+        constexpr auto operator<=>(UniqueId other) const noexcept { return value <=> other.value; }
+
+        constexpr void SetName(const std::string& str) noexcept { name = str.c_str(); }
+
+    private:
+        Value value{-1};
+        const char* name{nullptr}; // Debug-only pointer.
+    };
 
     /**
      * TODO:
@@ -52,4 +81,30 @@ namespace plugify {
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
     using Duration = std::chrono::microseconds;
+}
+
+namespace std {
+    template<> struct hash<plugify::UniqueId> {
+        std::size_t operator()(plugify::UniqueId id) const noexcept {
+            return std::hash<plugify::UniqueId::Value>{}(id);
+        }
+    };
+}
+
+#ifdef FMT_HEADER_ONLY
+namespace fmt {
+#else
+namespace std {
+#endif
+    template<>
+    struct formatter<plugify::UniqueId> {
+        constexpr auto parse(std::format_parse_context& ctx) {
+            return ctx.begin();
+        }
+
+        template<class FormatContext>
+        auto format(const plugify::UniqueId& id, FormatContext& ctx) const {
+            return std::format_to(ctx.out(), "{}", plugify::UniqueId::Value{id});
+        }
+    };
 }

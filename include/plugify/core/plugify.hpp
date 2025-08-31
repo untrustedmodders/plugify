@@ -10,6 +10,7 @@
 #include "plugify/core/file_system.hpp"
 #include "plugify/core/manifest_parser.hpp"
 #include "plugify/core/progress_reporter.hpp"
+#include "plugify/core/metric_collector.hpp"
 //#include "plugify/core/plugin_lifecycle.hpp"
 #include "plugify/asm/assembly_loader.hpp"
 
@@ -31,7 +32,8 @@ namespace plugify {
         PlugifyBuilder& WithManifestParser(std::shared_ptr<IManifestParser> parser);
         PlugifyBuilder& WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver);
         //PlugifyBuilder& WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle);
-        PlugifyBuilder& WithProgressReporter(std::shared_ptr<IProgressReporter> reporter);
+        //PlugifyBuilder& WithProgressReporter(std::shared_ptr<IProgressReporter> reporter);
+        //PlugifyBuilder& WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics);
         PlugifyBuilder& WithEventBus(std::shared_ptr<IEventBus> bus);
 
         PlugifyBuilder& WithDefaults();

@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <unordered_set>
 
 #include "plugify/core/logger.hpp"
 #include "plugify/core/types.hpp"
@@ -28,6 +29,7 @@ namespace plugify {
             //bool parallelLoading = true;
             size_t maxConcurrentLoads = 4; // 0 for auto
             std::chrono::microseconds loadTimeout{5000};
+            std::chrono::microseconds exportTimeout{5000};
             std::chrono::microseconds startTimeout{10000};
         } loading;
 
@@ -53,8 +55,8 @@ namespace plugify {
             Severity severity{Severity::Error};
             bool printReport = true;
             bool printLoadOrder = true;
-            //bool printLoadStatistics = true;
             bool printDependencyGraph = true;
+            bool printDigraphDot = true;
             std::filesystem::path exportDigraphDot;
         } logging;
 

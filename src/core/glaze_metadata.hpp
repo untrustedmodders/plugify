@@ -13,35 +13,6 @@
 #include "core/method_impl.hpp"
 #include "core/property_impl.hpp"
 
-/*
-template <>
-struct glz::meta<plugify::Config> {
-    using T = plugify::Config;
-    static constexpr auto value = object(
-            "$schema", skip{},
-            "baseDir", &T::baseDir,
-            "configsDir", &T::configsDir,
-            "dataDir", &T::dataDir,
-            "logsDir", &T::logsDir,
-            "logSeverity", &T::logSeverity,
-            "preferOwnSymbols", &T::preferOwnSymbols
-    );
-};
-
-template<>
-struct glz::meta<plugify::Severity> {
-    using T = plugify::Severity;
-    static constexpr auto value = enumerate(
-            "none", T::None,
-            "fatal", T::Fatal,
-            "error", T::Error,
-            "warn", T::Warning,
-            "info", T::Info,
-            "debug", T::Debug,
-            "verbose", T::Verbose
-    );
-};*/
-
 template <>
 struct glz::meta<plugify::Method> {
 	static constexpr auto value = object(

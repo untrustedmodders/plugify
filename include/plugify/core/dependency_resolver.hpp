@@ -4,40 +4,40 @@
 
 namespace plugify {
     /**
+     * @brief Represents a specific issue found during dependency resolution
+     */
+    struct DependencyIssue {
+        UniqueId affectedExtension{-1};
+        UniqueId involvedExtension{-1};
+        std::string problem;
+        std::string description;
+        std::optional<std::vector<std::string>> suggestedFixes;
+        bool isBlocking{true}; // True if this issue prevents loading the extension
+
+        // Generate detailed description with constraint info
+        std::string GetDetailedDescription() const {
+            std::string buffer;
+            auto it = std::back_inserter(buffer);
+
+            std::format_to(it, "{}: {}", problem, description);
+
+            if (suggestedFixes && !suggestedFixes->empty()) {
+                std::format_to(it, "\n  Suggestions:");
+                for (const auto& fix : *suggestedFixes) {
+                    std::format_to(it, "\n    - ", fix);
+                }
+            }
+
+            return buffer;
+        }
+    };
+
+    /**
      * @brief Represents the result of a dependency resolution process
      */
-    struct DependencyResolution {
-        /**
-         * @brief Represents a specific issue found during dependency resolution
-         */
-        struct Issue {
-            UniqueId affectedExtension{-1};
-            UniqueId involvedExtension{-1};
-            std::string problem;
-            std::string description;
-            std::optional<std::vector<std::string>> suggestedFixes;
-            bool isBlocking{true}; // True if this issue prevents loading the extension
-
-            // Generate detailed description with constraint info
-            std::string GetDetailedDescription() const {
-                std::string buffer;
-                auto it = std::back_inserter(buffer);
-
-                std::format_to(it, "{}: {}", problem, description);
-
-                if (suggestedFixes && !suggestedFixes->empty()) {
-                    std::format_to(it, "\n  Suggestions:");
-                    for (const auto& fix : *suggestedFixes) {
-                       std::format_to(it, "\n    - ", fix);
-                    }
-                }
-
-                return buffer;
-            }
-        };
-
+    struct ResolutionReport {
         // Main report data
-        plg::flat_map<UniqueId, std::vector<Issue>> issues;
+        plg::flat_map<UniqueId, std::vector<DependencyIssue>> issues;
 
         // Dependency graph
         plg::flat_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
@@ -67,8 +67,8 @@ namespace plugify {
          * - Detecting conflicts
          * - Generating a load order
          *
-         * @return DependencyResolution containing the results of the resolution process
+         * @return ResolutionReport containing the results of the resolution process
          */
-        virtual DependencyResolution Resolve(std::span<const Extension> extensions) = 0;
+        virtual ResolutionReport Resolve(std::span<const Extension> extensions) = 0;
     };
 }  // namespace plugify

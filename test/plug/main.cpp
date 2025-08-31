@@ -24,18 +24,18 @@ using namespace plugify;
 
 namespace {
     UniqueId FormatId(std::string_view str) {
-        UniqueId result;
+        UniqueId::Value result;
         auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
 
         if (ec != std::errc{}) {
             PLG_CERR_FMT("Error: {}", std::make_error_code(ec).message());
-            return -1;
+            return {};
         } else if (ptr != str.data() + str.size()) {
             PLG_CERR("Invalid argument: trailing characters after the valid part");
-            return -1;
+            return {};
         }
 
-        return result;
+        return UniqueId{result};
     }
 
     // ANSI Color codes
@@ -223,7 +223,7 @@ namespace {
     // Convert extension to JSON
     glz::json_t ExtensionToJson(const Extension* ext) {
         glz::json_t j;
-        j["id"] = ext->GetId();
+        j["id"] = UniqueId::Value{ext->GetId()};
         j["name"] = ext->GetName();
         j["version"] = ext->GetVersionString();
         j["type"] = ext->IsPlugin() ? "plugin" : "module";
@@ -257,10 +257,7 @@ namespace {
         }
 
         // Performance
-        j["performance"]["total_time_ms"] = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                                ext->GetTotalTime()
-        )
-                                                .count();
+        j["performance"]["total_time_ms"] = std::chrono::duration_cast<std::chrono::milliseconds>(ext->GetTotalTime()).count();
 
         // Errors and warnings
         if (ext->HasErrors()) {
