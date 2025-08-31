@@ -6,37 +6,44 @@
 
 namespace plugify {
     class PLUGIFY_API ServiceLocator {
+        struct Impl;
     public:
-        // Register service with type safety
+        ServiceLocator();
+        ~ServiceLocator();
+        ServiceLocator(const ServiceLocator&) = delete;
+        ServiceLocator& operator=(const ServiceLocator&) = delete;
+        ServiceLocator(ServiceLocator&&) noexcept;
+        ServiceLocator& operator=(ServiceLocator&&) noexcept;
+
+        // Template methods must stay in header but delegate to non-template methods
         template<typename Interface, typename Implementation = Interface>
         void Register(std::shared_ptr<Implementation> service)
             requires(std::is_base_of_v<Interface, Implementation>) {
-            _services[std::type_index(typeid(Interface))] = std::move(service);
+            RegisterInternal(std::type_index(typeid(Interface)), std::move(service));
         }
 
-        // Get service with automatic casting
         template<typename Interface>
         [[nodiscard]] std::shared_ptr<Interface> Get() const {
-            auto it = _services.find(std::type_index(typeid(Interface)));
-            if (it != _services.end()) {
-                return std::static_pointer_cast<Interface>(it->second);
-            }
-            throw std::runtime_error(std::format("Service not found: {}", typeid(Interface).name()));
+            return std::static_pointer_cast<Interface>(
+                GetInternal(std::type_index(typeid(Interface)))
+            );
         }
 
-        // Check if service exists
         template<typename Interface>
         [[nodiscard]] bool Has() const {
-            return _services.contains(std::type_index(typeid(Interface)));
+            return HasInternal(std::type_index(typeid(Interface)));
         }
 
-        // Clear all services
-        void Clear() {
-            _services.clear();
-        }
+        void Clear();
 
     private:
-        std::unordered_map<std::type_index, std::shared_ptr<void>> _services;
+        // Non-template methods that can be implemented in .cpp
+        void RegisterInternal(std::type_index type, std::shared_ptr<void> service);
+        [[nodiscard]] std::shared_ptr<void> GetInternal(std::type_index type) const;
+        [[nodiscard]] bool HasInternal(std::type_index type) const;
+
+    PLUGIFY_ACCESS:
+        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 
     /*template<typename... Services>
