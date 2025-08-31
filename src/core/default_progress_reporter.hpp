@@ -13,11 +13,11 @@ namespace plugify {
         }
 
         void OnItemComplete(std::string_view stage, std::string_view itemId, bool success) override {
-            _logger->Log( std::format("[{}] {} {}", stage, success ? 'v' : 'x', itemId), Severity::Info);
+            _logger->Log( std::format("[{}] {} {}", stage, success ? "✓" : "✗", itemId), Severity::Info);
         }
 
         void OnStageComplete(std::string_view stage, size_t succeeded, size_t failed) override {
-            _logger->Log(std::format("[{}] Complete - v {}, x {}", stage, succeeded, failed), Severity::Info);
+            _logger->Log(std::format("[{}] Complete - ✓ {}, ✗ {}", stage, succeeded, failed), Severity::Info);
         }
 
     private:

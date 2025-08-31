@@ -68,12 +68,12 @@ namespace plugify {
          * conflicts, and load order.
          * @return DependencyReport containing the resolution results
          */
-        DependencyResolution Resolve(const ExtensionCollection& extensions) override;
+        DependencyResolution Resolve(std::span<const Extension> extensions) override;
 
     private:
         // Setup functions
         void InitializePool();
-        void AddExtensionsToPool(const ExtensionCollection& extensions);
+        void AddExtensionsToPool(std::span<const Extension> extensions);
         Id AddSolvable(const Manifest& manifest);
         void SetupDependencies(Id solvableId, const Manifest& manifest);
         void SetupConflicts(Id solvableId, const Manifest& manifest);

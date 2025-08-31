@@ -505,7 +505,7 @@ Result<void> ExtendedFileSystem::AppendBinaryFile(const std::filesystem::path& p
         return std::unexpected(GetStreamError(path, "Failed to open file for appending"));
     }
     
-    file.write(reinterpret_cast<const char*>(data.data()), data.size());
+    file.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
     file.flush();
     
     if (!file) {

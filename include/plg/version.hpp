@@ -849,6 +849,19 @@ namespace plg {
 
             constexpr range_operator get_operator() const noexcept { return op; }
 
+            constexpr std::string to_string() const {
+                std::string result;
+                switch (op) {
+                    case range_operator::less: result += "<"; break;
+                    case range_operator::less_or_equal: result += "<="; break;
+                    case range_operator::greater: result += ">"; break;
+                    case range_operator::greater_or_equal: result += ">="; break;
+                    case range_operator::equal: result += "="; break;
+                }
+                result += v.to_string();
+                return result;
+            }
+
         private:
             version<I1, I2, I3> v;
             range_operator op;
@@ -887,6 +900,10 @@ namespace plg {
 
             constexpr bool empty() const noexcept {
                 return ranges_comparators.empty();
+            }
+
+            constexpr std::string to_string() const {
+                return plg::join(ranges_comparators, " ");
             }
 
         private:
@@ -931,6 +948,10 @@ namespace plg {
 
         constexpr bool empty() const noexcept {
             return ranges.empty();
+        }
+
+        constexpr std::string to_string() const {
+            return plg::join(ranges, " ");
         }
 
     private:
@@ -1057,6 +1078,39 @@ namespace std {
 
 		template<class FormatContext>
 		auto format(const plg::version<I1, I2, I3>& ver, FormatContext& ctx) const {
+			return std::format_to(ctx.out(), "{}", ver.to_string());
+		}
+	};
+    template<typename I1, typename I2, typename I3>
+	struct formatter<plg::range_set<I1, I2, I3>> {
+		constexpr auto parse(std::format_parse_context& ctx) {
+			return ctx.begin();
+		}
+
+		template<class FormatContext>
+		auto format(const plg::range_set<I1, I2, I3>& ver, FormatContext& ctx) const {
+			return std::format_to(ctx.out(), "{}", ver.to_string());
+		}
+	};
+    template<typename I1, typename I2, typename I3>
+	struct formatter<plg::detail::range<I1, I2, I3>> {
+		constexpr auto parse(std::format_parse_context& ctx) {
+			return ctx.begin();
+		}
+
+		template<class FormatContext>
+		auto format(const plg::detail::range<I1, I2, I3>& ver, FormatContext& ctx) const {
+			return std::format_to(ctx.out(), "{}", ver.to_string());
+		}
+	};
+    template<typename I1, typename I2, typename I3>
+	struct formatter<plg::detail::range_comparator<I1, I2, I3>> {
+		constexpr auto parse(std::format_parse_context& ctx) {
+			return ctx.begin();
+		}
+
+		template<class FormatContext>
+		auto format(const plg::detail::range_comparator<I1, I2, I3>& ver, FormatContext& ctx) const {
 			return std::format_to(ctx.out(), "{}", ver.to_string());
 		}
 	};

@@ -4,11 +4,6 @@
 
 namespace plugify {
     /**
-     * @brief Represents a collection of extensions with their manifests
-     */
-    using ExtensionCollection = std::span<const Extension>;
-
-    /**
      * @brief Represents the result of a dependency resolution process
      */
     struct DependencyResolution {
@@ -74,6 +69,6 @@ namespace plugify {
          *
          * @return DependencyResolution containing the results of the resolution process
          */
-        virtual DependencyResolution Resolve(const ExtensionCollection& extensions) = 0;
+        virtual DependencyResolution Resolve(std::span<const Extension> extensions) = 0;
     };
 }  // namespace plugify

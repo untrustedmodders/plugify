@@ -29,8 +29,8 @@ namespace plugify {
 			 * @param sectionBase The base address of the section.
 			 * @param sectionSize The size of the section.
 			 */
-			Section(std::string_view sectionName, uintptr_t sectionBase, size_t sectionSize)
-				: name(sectionName), base{sectionBase}, size{sectionSize} {}
+			Section(std::string sectionName, uintptr_t sectionBase, size_t sectionSize)
+				: name(std::move(sectionName)), base{sectionBase}, size{sectionSize} {}
 
 			/**
 			 * @brief Checks if the section is valid.

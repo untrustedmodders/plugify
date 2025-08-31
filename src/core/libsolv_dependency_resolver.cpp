@@ -12,7 +12,7 @@ LibsolvDependencyResolver::LibsolvDependencyResolver(std::shared_ptr<ILogger> lo
     : _logger(std::move(logger)) {}
 
 DependencyResolution
-LibsolvDependencyResolver::Resolve(const ExtensionCollection& extensions) {
+LibsolvDependencyResolver::Resolve(std::span<const Extension> extensions) {
     // Step 1: Initialize libsolv pool
     InitializePool();
 
@@ -32,15 +32,19 @@ static void debug_callback([[maybe_unused]] Pool* pool, void* data, int type, co
     if (logger ==  nullptr)
         return;
 
-    std::string title = std::format("libsolv: {}", str);
+    std::string_view sv(str);
+    if (sv.ends_with('\n')) {
+        sv.remove_suffix(1);
+    }
+
     if (type & SOLV_FATAL)
-        logger->Log(title, Severity::Fatal);
+        logger->Log(sv, Severity::Fatal);
     else if (type & SOLV_ERROR)
-        logger->Log(title, Severity::Error);
+        logger->Log(sv, Severity::Error);
     else if (type & SOLV_WARN)
-        logger->Log(title, Severity::Warning);
+        logger->Log(sv, Severity::Warning);
     else
-        logger->Log(title, Severity::Info);
+        logger->Log(sv, Severity::Info);
 }
 
 void
@@ -57,7 +61,7 @@ LibsolvDependencyResolver::InitializePool() {
 }
 
 void
-LibsolvDependencyResolver::AddExtensionsToPool(const ExtensionCollection& extensions) {
+LibsolvDependencyResolver::AddExtensionsToPool(std::span<const Extension> extensions) {
     _extensionToSolvableId.reserve(extensions.size());
     _solvableIdToExtension.reserve(extensions.size());
 

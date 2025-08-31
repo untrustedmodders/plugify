@@ -69,11 +69,15 @@ bool Provider::IsExtensionLoaded(std::string_view name, std::optional<Constraint
     return _impl->manager.IsExtensionLoaded(name, std::move(constraint));
 }
 
-std::shared_ptr<Extension> Provider::FindExtension(std::string_view name) const {
+const Extension* Provider::FindExtension(std::string_view name) const {
     return _impl->manager.FindExtension(name);
 }
 
-std::vector<std::shared_ptr<Extension>> Provider::GetExtensions() const {
+const Extension* Provider::FindExtension(UniqueId id) const {
+    return _impl->manager.FindExtension(id);
+}
+
+std::vector<const Extension*> Provider::GetExtensions() const {
     return _impl->manager.GetExtensions();
 }
 

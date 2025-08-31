@@ -21,15 +21,7 @@ namespace plugify {
             if (it != _services.end()) {
                 return std::static_pointer_cast<Interface>(it->second);
             }
-            auto message = std::format("Service not found: {}", typeid(Interface).name());
-            if constexpr (std::is_base_of_v<ILogger, Interface>) {
-                throw std::runtime_error(message);
-            } else {
-                if (auto logger = Get<ILogger>()) {
-                    logger->Log(message, Severity::Warning);
-                }
-            }
-            return nullptr;
+            throw std::runtime_error(std::format("Service not found: {}", typeid(Interface).name()));
         }
 
         // Check if service exists

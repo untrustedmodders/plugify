@@ -7,7 +7,7 @@
 #include "plugify_export.h"
 
 namespace plugify {
-    class Config;
+    struct Config;
     class Manager;
     class Extension;
     // Provider acts as a facade to simplify access to common services
@@ -42,8 +42,9 @@ namespace plugify {
 
         // Manager
         [[nodiscard]] bool IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;
-        [[nodiscard]] std::shared_ptr<Extension> FindExtension(std::string_view name) const;
-        [[nodiscard]] std::vector<std::shared_ptr<Extension>> GetExtensions() const;
+        [[nodiscard]] const Extension* FindExtension(std::string_view name) const;
+        [[nodiscard]] const Extension* FindExtension(UniqueId id) const;
+        [[nodiscard]] std::vector<const Extension*> GetExtensions() const;
 
         // Service access helpers
         template<typename Service>
