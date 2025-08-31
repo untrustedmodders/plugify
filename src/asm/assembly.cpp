@@ -187,6 +187,8 @@ bool Assembly::IsExist(const std::filesystem::path& path) {
 	}
 
 #if PLUGIFY_PLATFORM_LINUX
+    namespace fs = std::filesystem;
+
 	// Check permissions - Unix needs both read AND execute
 	auto perms = fs::status(path, ec).permissions();
 

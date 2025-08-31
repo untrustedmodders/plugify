@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 namespace plugify {
-    class ServiceLocator {
+    class PLUGIFY_API ServiceLocator {
     public:
         // Register service with type safety
         template<typename Interface, typename Implementation = Interface>

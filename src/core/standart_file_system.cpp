@@ -650,7 +650,7 @@ Result<bool> ExtendedFileSystem::FilesEqual(const std::filesystem::path& path1, 
             return false;
         }
         
-        if (read1 < buffer_size) {
+        if (read1 < static_cast<std::streamsize>(buffer_size)) {
             break;  // Reached end of file
         }
     }

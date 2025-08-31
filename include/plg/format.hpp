@@ -26,6 +26,7 @@ namespace std {
 #endif // __cpp_lib_format
 
 #include <type_traits>
+#include <functional>
 #include <string>
 
 namespace plg {

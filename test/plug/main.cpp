@@ -136,7 +136,6 @@ namespace {
                      ec
                  )) {
                 if (fs::is_regular_file(entry, ec)) {
-                    std::error_code ec;
                     auto sz = fs::file_size(entry, ec);
                     if (!ec) {
                         totalSize += sz;

@@ -7,6 +7,8 @@ namespace fs = std::filesystem;
 
 #if PLUGIFY_PLATFORM_WINDOWS
 thread_local std::vector<fs::path> searchPaths;
+#else
+static std::vector<fs::path> searchPaths;
 #endif
 
 Result<std::shared_ptr<IAssembly>> AssemblyLoader::Load(const fs::path& path, LoadFlag flags) {

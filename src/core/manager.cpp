@@ -1,5 +1,3 @@
-#pragma once
-
 #include "plugify/core/manager.hpp"
 #include "plugify/asm/assembly_loader.hpp"
 #include "plugify/core/config.hpp"
