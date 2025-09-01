@@ -172,6 +172,8 @@ endif()
 include(PlugifySanitizer)
 include(PlugifyTools)
 
+target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify-assembly)
+
 # ------------------------------------------------------------------------------
 # Test
 if(PLUGIFY_BUILD_TESTS)
