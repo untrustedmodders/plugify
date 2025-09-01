@@ -87,7 +87,6 @@ static const std::vector<Conflict> kEmptyConflicts;
 static const std::vector<Obsolete> kEmptyObsoletes;
 static const std::vector<Method> kEmptyMethods;
 static const std::vector<MethodData> kEmptyMethodData;
-//static const std::deque<std::string> kEmptyErrors;
 
 // ============================================================================
 // Extension::Impl Definition
@@ -462,7 +461,8 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
                    to == ExtensionState::Failed;
 
         case ExtensionState::Loaded:
-            return to == ExtensionState::Exporting ||
+            return to == ExtensionState::Running ||
+                   to == ExtensionState::Exporting ||
                    to == ExtensionState::Skipped ||
                    to == ExtensionState::Failed;
 

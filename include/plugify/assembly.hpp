@@ -35,7 +35,7 @@ namespace plugify {
          * @brief Get the path of the loaded assembly
          * @return Filesystem path to the assembly
          */
-        virtual std::filesystem::path GetPath() const = 0;
+        virtual const std::filesystem::path& GetPath() const = 0;
 
         /**
          * @brief Get the base address of the assembly

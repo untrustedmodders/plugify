@@ -49,8 +49,8 @@ namespace plugify {
             return _handle && _handle->IsValid();
         }
 
-        std::filesystem::path GetPath() const override {
-            return _handle ? _handle->GetPath() : std::filesystem::path{};
+        const std::filesystem::path& GetPath() const override {
+            return _handle ? _handle->GetPath() : kEmptyPath;
         }
 
         MemAddr GetBase() const override {
@@ -60,5 +60,7 @@ namespace plugify {
         void* GetHandle() const override {
             return _handle ? _handle->GetHandle() : nullptr;
         }
+
+        static inline const std::filesystem::path kEmptyPath;
     };
 }
