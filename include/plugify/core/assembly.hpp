@@ -10,52 +10,45 @@
 #include "plugify/core/types.hpp"
 
 namespace plugify {
-	/**
-	 * @class IAssembly
-	 * @brief Interface for an assembly (module) within a process.
-	 *
-	 * This interface provides methods to retrieve the assembly ID and symbols.
-	 */
-	class IAssembly {
-	public:
-		virtual ~IAssembly() = default;
+    /**
+     * @interface IAssembly
+     * @brief Core interface for loaded assemblies
+     */
+    class IAssembly {
+    public:
+        virtual ~IAssembly() = default;
 
-		/**
-		 * @brief Retrieves a raw symbol pointer by name.
-		 * @param name The name of the symbol to retrieve.
-		 * @return The memory address of the symbol, or nullptr if not found.
-		 */
-		virtual MemAddr GetSymbol(std::string_view name) const = 0;
-	};
+        /**
+         * @brief Get a symbol by name
+         * @param name Symbol name to lookup
+         * @return Address of the symbol or error
+         */
+        virtual Result<MemAddr> GetSymbol(std::string_view name) const = 0;
 
-	/**
-	 * @class IAssemblyLoader
-	 * @brief Interface for loading assemblies.
-	 *
-	 * This interface provides methods to load assemblies and manage search paths.
-	 */
-	class IAssemblyLoader {
-	public:
-		virtual ~IAssemblyLoader() = default;
+        /**
+         * @brief Check if assembly is valid
+         * @return true if the assembly is loaded and valid
+         */
+        virtual bool IsValid() const = 0;
 
-		/**
-		 * @brief Loads an assembly from the specified path.
-		 * @param path The path to the assembly file.
-		 * @param flags Flags for loading the assembly.
-		 * @return A unique pointer to the loaded assembly.
-		 */
-		virtual Result<std::shared_ptr<IAssembly>> Load(const std::filesystem::path& path, LoadFlag flags) = 0;
+        /**
+         * @brief Get the path of the loaded assembly
+         * @return Filesystem path to the assembly
+         */
+        virtual std::filesystem::path GetPath() const = 0;
 
-		/**
-		 * @brief Adds a search path for loading assemblies.
-		 * @param path The path to add to the search paths.
-		 */
-		virtual bool AddSearchPath(const std::filesystem::path& path) = 0;
+        /**
+         * @brief Get the base address of the assembly
+         * @return Base memory address
+         */
+        virtual MemAddr GetBase() const = 0;
 
-		/**
-		 * @brief Checks if the implementation can link search paths for opening new shared libraries.
-		 * @return True if linking search paths is supported, false otherwise.
-		 */
-		 virtual bool CanLinkSearchPaths() const = 0;
-	};
+        /**
+         * @brief Get raw platform handle
+         * @return Platform-specific handle (HMODULE, void*, etc)
+         */
+        virtual void* GetHandle() const = 0;
+    };
+
+    using AssemblyPtr = std::shared_ptr<IAssembly>;
 } // namespace plugify

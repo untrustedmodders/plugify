@@ -80,7 +80,7 @@ namespace plugify {
             auto [filtered, excluded] = FilterByPolicy(items);
 
             if (filtered.empty()) {
-                return plg::unexpected(std::format(
+                return MakeError(
                     "No valid extensions to resolve: {} total, {} excluded by policy",
                     items.size(), excluded.size()
                 ));
@@ -95,7 +95,7 @@ namespace plugify {
             }
 
             if (report.loadOrder.empty()) {
-                return plg::unexpected(std::format(
+                return MakeError(
                     "No valid extensions to load: {} total, {} filtered by resolver",
                     items.size(), filtered.size()
                 ));
@@ -231,6 +231,45 @@ namespace plugify {
         }
     };
 
+    // Initialize Stage - Transform type
+    class InitializeStage : public ITransformStage<Extension> {
+        ExtensionLoader& _loader;
+    public:
+        InitializeStage(ExtensionLoader& loader) : _loader(loader) {}
+
+        std::string_view GetName() const override { return "Initialization"; }
+
+        bool ShouldProcess(const Extension& item) const override {
+            return item.GetState() == ExtensionState::Resolved;
+        }
+
+        Result<void> ProcessItem(
+            Extension& ext,
+            [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
+
+            ext.StartOperation(ExtensionState::Initializating);
+
+            Result<void> result;
+            switch (ext.GetType()) {
+                case ExtensionType::Module: {
+                    auto assemblyResult = _loader.PreloadAssembly(ext.GetRuntime(), ext.GetDirectories());
+                    break;
+                }
+
+                case ExtensionType::Plugin: {
+
+                    break;
+                }
+
+                default:
+                    result = plg::unexpected("Unknown extension type");
+            }
+
+            ext.EndOperation(ExtensionState::Initialized);
+            return {};
+        }
+    };
+
     // Uses CRTP (Curiously Recurring Template Pattern) for compile-time polymorphism
     // Derived classes must implement: DoProcessItem() [non-virtual]
     template<typename Derived>
@@ -290,7 +329,7 @@ namespace plugify {
             ext.AddError(std::format("Skipped: dependency '{}' failed", failedDep));
             _failureTracker.MarkFailed(ext.GetId());
 
-            return plg::unexpected(std::format("Dependency '{}' failed", failedDep));
+            return MakeError("Dependency '{}' failed", failedDep));
         }
 
         // Handle operation failure uniformly
@@ -336,7 +375,7 @@ namespace plugify {
         std::string_view GetName() const override { return "Loading"; }
 
         bool ShouldProcess(const Extension& item) const override {
-            return item.GetState() == ExtensionState::Resolved;
+            return item.GetState() == ExtensionState::Initialized;
         }
 
         // Non-virtual method called by base class via CRTP
@@ -361,7 +400,7 @@ namespace plugify {
                 case ExtensionType::Plugin: {
                     auto it = _loadedModules.find(ext.GetLanguage());
                     if (it == _loadedModules.end()) {
-                        result = plg::unexpected(std::format("Language module '{}' not found", ext.GetLanguage()));
+                        result = MakeError("Language module '{}' not found", ext.GetLanguage()));
                     } else {
                         result = _loader.LoadPlugin(*it->second, ext);
                     }

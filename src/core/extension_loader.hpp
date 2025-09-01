@@ -102,6 +102,8 @@ namespace plugify {
         std::shared_ptr<IAssemblyLoader> _assemblyLoader;
         LoadStatistics _stats;
 
+        std::unordered_map<std::filesystem::path, std::shared_ptr<IAssembly>, plg::path_hash> _assemblyCache;
+
     public:
         ExtensionLoader(
             const ServiceLocator& locator,
@@ -164,6 +166,7 @@ namespace plugify {
 
             // Clear assembly and remove from cache
             if (auto assembly = module.GetAssembly()) {
+                _assemblyCache.erase(module.GetRuntime());
                 module.SetAssembly(nullptr);
             }
 
@@ -258,9 +261,42 @@ namespace plugify {
             });
         }
 
+        // Preload support
+        Result<void> PreloadAssembly(
+            const std::filesystem::path& path,
+            const std::vector<std::filesystem::path>& searchPaths
+        ) {
+            auto absPath = _fileSystem->GetAbsolutePath(path);
+            if (!absPath) {
+                return plg::unexpected(absPath.error());
+            }
+
+            // Check if already cached
+            if (_assemblyCache.contains(*absPath)) {
+                return {};
+            }
+
+            if (_assemblyLoader->CanLinkSearchPaths()) {
+                for (const auto& searchPath : searchPaths) {
+                    _assemblyLoader->AddSearchPath(searchPath);
+                }
+            }
+
+            LoadFlag flags = GetLoadFlags();
+            auto assemblyResult = _assemblyLoader->Load(*absPath, flags);
+            if (!assemblyResult) {
+                return plg::unexpected(assemblyResult.error());
+            }
+
+            _assemblyCache[*absPath] = std::move(*assemblyResult);
+            return {};
+        }
+
         // Statistics
         const LoadStatistics& GetStatistics() const { return _stats; }
         void ResetStatistics() { _stats = {}; }
+
+        void Clear() { _assemblyCache.clear(); }
 
     private:
         // Helper to get or load assembly
@@ -271,6 +307,11 @@ namespace plugify {
             auto absPath = _fileSystem->GetAbsolutePath(path);
             if (!absPath) {
                 return plg::unexpected(std::move(absPath.error()));
+            }
+
+            // Check cache first
+            if (auto it = _assemblyCache.find(*absPath); it != _assemblyCache.end()) {
+                return it->second;
             }
 
             if (_assemblyLoader->CanLinkSearchPaths()) {
@@ -286,21 +327,18 @@ namespace plugify {
                 return plg::unexpected(std::move(assemblyResult.error()));
             }
 
-            return *assemblyResult;
+            // Cache for future use
+            _assemblyCache[*absPath] = *assemblyResult;
+            return std::move(*assemblyResult);
         }
 
-        LoadFlag GetLoadFlags() {
+        LoadFlag GetLoadFlags() const {
             LoadFlag flags = LoadFlag::Lazy | LoadFlag::Global | LoadFlag::SearchUserDirs | LoadFlag::SearchSystem32 | LoadFlag::SearchDllLoadDir;
             if (_config.loading.preferOwnSymbols) {
                 flags |= LoadFlag::Deepbind;
             }
             return flags;
         }
-
-        /*LoadFlag GetPreLoadFlags() {
-            LoadFlag flags = LoadFlag::Lazy | LoadFlag::DontResolveDllReferences;
-            return flags;
-        }*/
 
         Result<void> LoadLanguageModule(
             std::shared_ptr<IAssembly> assembly,
