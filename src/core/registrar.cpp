@@ -59,7 +59,7 @@ std::string plugify::ToDebugString(UniqueId id) noexcept {
 
 std::string_view plugify::ToShortString(UniqueId id) noexcept {
     if (auto info = LookupDebugInfo(id)) {
-        if (!info->name.empty()) return info->name;
+        return info->name;
     }
     return "";
 }

@@ -241,6 +241,7 @@ namespace plugify {
             // Clear all plugin data
             plugin.SetLanguageModule(nullptr);
             plugin.SetUserData(nullptr);
+            plugin.SetMethodTable({});
             plugin.SetMethodsData({});
             --_stats.pluginsLoaded;
             return {};

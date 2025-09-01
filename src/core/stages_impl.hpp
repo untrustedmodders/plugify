@@ -29,7 +29,6 @@ namespace plugify {
             Extension& ext,
             [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
 
-            auto startTime = Clock::now();
             ext.StartOperation(ExtensionState::Parsing);
 
             auto content = _fileSystem->ReadTextFile(ext.GetLocation());
@@ -140,8 +139,10 @@ namespace plugify {
                     ext.SetState(ExtensionState::Resolving);
                     filtered.push_back(std::move(ext));
                 } else {
-                    ext.SetState(ExtensionState::Disabled);
-                    ext.AddWarning("Excluded due to policy");
+                    if (ext.GetState() == ExtensionState::Parsed) {
+                        ext.SetState(ExtensionState::Disabled);
+                        ext.AddWarning("Excluded due to policy");
+                    }
                     excluded.push_back(std::move(ext));
                 }
             }
@@ -171,6 +172,7 @@ namespace plugify {
                 }
             }
         }
+
         std::vector<Extension> BuildResultInOrder(
             ResolutionReport& report,
             std::vector<Extension>& filtered,
@@ -259,7 +261,8 @@ namespace plugify {
             Extension& ext,
             size_t position,
             size_t total,
-            const ExecutionContext<Extension>& ctx) override {
+            const ExecutionContext<Extension>& ctx
+        ) override {
 
             // Common dependency failure check
             if (_failureTracker.HasAnyDependencyFailed(ext, _reverseDepGraph)) {
@@ -291,7 +294,11 @@ namespace plugify {
         }
 
         // Handle operation failure uniformly
-        void HandleOperationFailure(Extension& ext, const Result<void>& result, ExtensionState failedState) {
+        void HandleOperationFailure(
+            Extension& ext,
+            const Result<void>& result,
+            ExtensionState failedState
+        ) {
             ext.AddError(result.error());
             ext.EndOperation(failedState);
             _failureTracker.MarkFailed(ext.GetId());
@@ -337,8 +344,8 @@ namespace plugify {
             Extension& ext,
             [[maybe_unused]] size_t position,
             [[maybe_unused]] size_t total,
-            [[maybe_unused]] const ExecutionContext<Extension>& ctx) {
-
+            [[maybe_unused]] const ExecutionContext<Extension>& ctx
+        ) {
             ext.StartOperation(ExtensionState::Loading);
 
             Result<void> result;
@@ -411,8 +418,8 @@ namespace plugify {
             Extension& ext,
             [[maybe_unused]] size_t position,
             [[maybe_unused]] size_t total,
-            [[maybe_unused]] const ExecutionContext<Extension>& ctx) {
-
+            [[maybe_unused]] const ExecutionContext<Extension>& ctx
+        ) {
             ext.StartOperation(ExtensionState::Exporting);
 
             for (const auto& module : _runningModules) {
@@ -448,8 +455,8 @@ namespace plugify {
             Extension& ext,
             [[maybe_unused]] size_t position,
             [[maybe_unused]] size_t total,
-            [[maybe_unused]] const ExecutionContext<Extension>& ctx) {
-
+            [[maybe_unused]] const ExecutionContext<Extension>& ctx
+        ) {
             ext.StartOperation(ExtensionState::Starting);
 
             auto result = _loader.StartPlugin(ext);

@@ -12,7 +12,7 @@ namespace plugify {
         Transform,    // Parallel processing, no order changes
         Barrier,      // Can reorder/filter the container
         Sequential,   // Processes in container order
-        Batch        // Parallel processing in controlled batches
+        //Batch        // Parallel processing in controlled batches
     };
 
     // Execution context
@@ -55,7 +55,8 @@ namespace plugify {
         // Process single item
         virtual Result<void> ProcessItem(
             T& item,
-            const ExecutionContext<T>& ctx) = 0;
+            const ExecutionContext<T>& ctx
+        ) = 0;
 
         // Optional: filter predicate
         virtual bool ShouldProcess([[maybe_unused]] const T& item) const { return true; }
@@ -71,7 +72,8 @@ namespace plugify {
         // This allows the stage to reorder, filter, or even add items
         virtual Result<std::vector<T>> ProcessAll(
             std::vector<T> items,
-            const ExecutionContext<T>& ctx) = 0;
+            const ExecutionContext<T>& ctx
+        ) = 0;
     };
 
     // Sequential stage - processes in container order
@@ -85,7 +87,8 @@ namespace plugify {
             T& item,
             size_t position,
             size_t total,
-            const ExecutionContext<T>& ctx) = 0;
+            const ExecutionContext<T>& ctx
+        ) = 0;
 
         // Should we continue after an error?
         virtual bool ContinueOnError() const { return true; }
