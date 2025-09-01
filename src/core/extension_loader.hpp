@@ -1,11 +1,11 @@
 #pragma once
 
-#include "plugify/core/assembly.hpp"
-#include "plugify/core/config.hpp"
-#include "plugify/core/extension.hpp"
-#include "plugify/core/file_system.hpp"
-#include "plugify/core/language_module.hpp"
-#include "plugify/core/provider.hpp"
+#include "plugify/assembly.hpp"
+#include "plugify/config.hpp"
+#include "plugify/extension.hpp"
+#include "plugify/file_system.hpp"
+#include "plugify/language_module.hpp"
+#include "plugify/provider.hpp"
 
 namespace plugify {
     template<typename Callback>
@@ -112,8 +112,8 @@ namespace plugify {
         )
             : _config(config)
             , _provider(provider)
-            , _fileSystem(locator.Get<IFileSystem>())
-            , _assemblyLoader(locator.Get<IAssemblyLoader>())
+            , _fileSystem(locator.Resolve<IFileSystem>())
+            , _assemblyLoader(locator.Resolve<IAssemblyLoader>())
         {}
 
         // Module Operations
@@ -189,6 +189,8 @@ namespace plugify {
                 return plg::unexpected("Language module not available");
             }
 
+            plugin.SetLanguageModule(languageModule);
+
             // Load plugin through language module
             auto loadResult = SafeCall("OnPluginLoad", plugin.GetName()).Execute<LoadData>([&] {
                 return plugin.GetLanguageModule()->OnPluginLoad(plugin);
@@ -198,7 +200,7 @@ namespace plugify {
             }
 
             // Validate and set plugin data
-            auto validateResult = ValidateAndSetPluginData(plugin, languageModule, *loadResult);
+            auto validateResult = ValidateAndSetPluginData(plugin, *loadResult);
             if (!validateResult) {
                 return validateResult;
             }
@@ -276,14 +278,8 @@ namespace plugify {
                 return {};
             }
 
-            if (_assemblyLoader->CanLinkSearchPaths()) {
-                for (const auto& searchPath : searchPaths) {
-                    _assemblyLoader->AddSearchPath(searchPath);
-                }
-            }
-
             LoadFlag flags = GetLoadFlags();
-            auto assemblyResult = _assemblyLoader->Load(*absPath, flags);
+            auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
             if (!assemblyResult) {
                 return plg::unexpected(assemblyResult.error());
             }
@@ -314,15 +310,9 @@ namespace plugify {
                 return it->second;
             }
 
-            if (_assemblyLoader->CanLinkSearchPaths()) {
-                for (const auto& searchPath : searchPaths) {
-                    _assemblyLoader->AddSearchPath(searchPath);
-                }
-            }
-
             // Load assembly
             LoadFlag flags = GetLoadFlags();
-            auto assemblyResult = _assemblyLoader->Load(*absPath, flags);
+            auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
             if (!assemblyResult) {
                 return plg::unexpected(std::move(assemblyResult.error()));
             }
@@ -333,9 +323,9 @@ namespace plugify {
         }
 
         LoadFlag GetLoadFlags() const {
-            LoadFlag flags = LoadFlag::Lazy | LoadFlag::Global | LoadFlag::SearchUserDirs | LoadFlag::SearchSystem32 | LoadFlag::SearchDllLoadDir;
+            LoadFlag flags = LoadFlag::LazyBinding | LoadFlag::GlobalSymbols | LoadFlag::SecureSearch;
             if (_config.loading.preferOwnSymbols) {
-                flags |= LoadFlag::Deepbind;
+                flags |= LoadFlag::DeepBind;
             }
             return flags;
         }
@@ -346,12 +336,12 @@ namespace plugify {
         {
             constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
 
-            auto GetLanguageModuleFunc = assembly->GetSymbol(kGetLanguageModuleFn).RCast<ILanguageModule*(*)()>();
-            if (!GetLanguageModuleFunc) {
-                return MakeError("Function '{}' not found", kGetLanguageModuleFn);
+            auto entryFunc = assembly->GetSymbol(kGetLanguageModuleFn);
+            if (!entryFunc) {
+                return plg::unexpected(std::move(entryFunc.error()));
             }
 
-            auto* languageModule = GetLanguageModuleFunc();
+            auto* languageModule = entryFunc->RCast<ILanguageModule*(*)()>()();
             if (!languageModule) {
                 return MakeError("Invalid address from '{}'", kGetLanguageModuleFn);
             }
@@ -384,7 +374,6 @@ namespace plugify {
 
         Result<void> ValidateAndSetPluginData(
             Extension& plugin,
-            ILanguageModule* module,
             LoadData& result
         ) {
             auto& [methods, data, table] = result;
@@ -415,7 +404,6 @@ namespace plugify {
                 return MakeError("Invalid methods:\n{}", plg::join(errors, "\n"));
             }
 
-            plugin.SetLanguageModule(module);
             plugin.SetUserData(data);
             plugin.SetMethodTable(table);
             plugin.SetMethodsData(std::move(methods));

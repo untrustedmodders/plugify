@@ -1,8 +1,8 @@
-#include "plugify/core/plugify.hpp"
-#include "plugify/core/manager.hpp"
-#include "plugify/core/plugify.hpp"
-#include "plugify/core/extension.hpp"
-#include "plugify/core/logger.hpp"
+#include "plugify/plugify.hpp"
+#include "plugify/manager.hpp"
+#include "plugify/plugify.hpp"
+#include "plugify/extension.hpp"
+#include "plugify/logger.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -266,7 +266,7 @@ namespace {
             }
             j["errors"] = std::move(e);
         }
-        if (!ext->GetWarnings().empty()) {
+        if (ext->HasWarnings()) {
             glz::json_t w = glz::json_t::array_t();
             for (const auto& warning : ext->GetWarnings()) {
                 w.as<glz::json_t::array_t>().push_back(warning);
@@ -352,10 +352,7 @@ namespace {
                 report.issues.push_back(std::format("{} is in failed state", ext->GetName()));
             }
 
-            if (ext->HasErrors()) {
-                ++errorCount;
-            }
-
+            errorCount += ext->GetErrors().size();
             warningCount += ext->GetWarnings().size();
 
             // Check for slow loading (> 1 second)
@@ -590,8 +587,10 @@ public:
                     PLG_CERR_FMT("     └─ {}: {}", Colorize("Error", Colors::RED), error);
                 }
             }
-            for (const auto& warning : plugin->GetWarnings()) {
-                PLG_COUT_FMT("     └─ {}: {}", Colorize("Warning", Colors::YELLOW), warning);
+            if (plugin->HasWarnings()) {
+                for (const auto& warning : plugin->GetWarnings()) {
+                    PLG_COUT_FMT("     └─ {}: {}", Colorize("Warning", Colors::YELLOW), warning);
+                }
             }
         }
         PLG_COUT(std::string(80, '-'));
@@ -721,8 +720,10 @@ public:
                     PLG_CERR_FMT("     └─ {}: {}", Colorize("Error", Colors::RED), error);
                 }
             }
-            for (const auto& warning : module->GetWarnings()) {
-                PLG_COUT_FMT("     └─ {}: {}", Colorize("Warning", Colors::YELLOW), warning);
+            if (module->HasWarnings()) {
+                for (const auto& warning : module->GetWarnings()) {
+                    PLG_COUT_FMT("     └─ {}: {}", Colorize("Warning", Colors::YELLOW), warning);
+                }
             }
         }
         PLG_COUT(std::string(80, '-'));
@@ -972,7 +973,7 @@ public:
         }
 
         // Errors and Warnings
-        if (plugin->HasErrors() || !plugin->GetWarnings().empty()) {
+        if (plugin->HasErrors() || plugin->HasWarnings()) {
             PLG_COUT(Colorize("\n[Issues]", Colors::RED));
             for (const auto& error : plugin->GetErrors()) {
                 PLG_COUT_FMT("  {} {}", Colorize("ERROR:", Colors::RED), error);
@@ -1222,7 +1223,7 @@ public:
         }
 
         // Errors and Warnings
-        if (module->HasErrors() || !module->GetWarnings().empty()) {
+        if (module->HasErrors() || module->HasWarnings()) {
             PLG_COUT(Colorize("\n[Issues]", Colors::RED));
             for (const auto& error : module->GetErrors()) {
                 PLG_COUT_FMT("  {} {}", Colorize("ERROR:", Colors::RED), error);

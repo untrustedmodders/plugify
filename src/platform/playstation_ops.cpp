@@ -1,6 +1,4 @@
-#if PLUGIFY_PLATFORM_ORBIS || PLUGIFY_PLATFORM_PROSPERO
-
-#include "plugify/core/platform_ops.hpp"
+#include "plugify/platform_ops.hpp"
 
 #include <kernel.h>
 
@@ -87,8 +85,7 @@ namespace plugify {
         bool SupportsLazyBinding() const override { return false; }
     };
 
-    std::unique_ptr<IPlatformOps> CreatePlatformOps() {
-        return std::make_unique<PlayStationPlatformOps>();
+    std::shared_ptr<IPlatformOps> CreatePlatformOps() {
+        return std::make_shared<PlayStationPlatformOps>();
     }
 }
-#endif

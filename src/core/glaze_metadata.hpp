@@ -2,9 +2,9 @@
 
 #include <glaze/glaze.hpp>
 
-#include "plugify/core/config.hpp"
-#include "plugify/core/logger.hpp"
-#include "plugify/core/manifest.hpp"
+#include "plugify/config.hpp"
+#include "plugify/logger.hpp"
+#include "plugify/manifest.hpp"
 
 #include "core/conflict_impl.hpp"
 #include "core/dependency_impl.hpp"

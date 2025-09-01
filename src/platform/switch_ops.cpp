@@ -1,6 +1,4 @@
-#if PLUGIFY_PLATFORM_SWITCH
-
-#include "plugify/core/platform_ops.hpp"
+#include "plugify/platform_ops.hpp"
 
 #include <nn/ro.h>
 #include <nn/fs.h>
@@ -136,8 +134,7 @@ namespace plugify {
         bool SupportsLazyBinding() const override { return true; }
     };
 
-    std::unique_ptr<IPlatformOps> CreatePlatformOps() {
-        return std::make_unique<SwitchPlatformOps>();
+    std::shared_ptr<IPlatformOps> CreatePlatformOps() {
+        return std::make_shared<SwitchPlatformOps>();
     }
 }
-#endif

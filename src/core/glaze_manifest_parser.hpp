@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/manifest_parser.hpp"
+#include "plugify/manifest_parser.hpp"
 #include "core/glaze_metadata.hpp"
 
 namespace plugify {

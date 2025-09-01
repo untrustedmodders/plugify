@@ -1,7 +1,7 @@
 #pragma once
 
-#include "plugify/core/logger.hpp"
-#include "plugify/core/progress_reporter.hpp"
+#include "plugify/logger.hpp"
+#include "plugify/progress_reporter.hpp"
 
 namespace plugify {
     /*class DefaultProgressReporter final : public IProgressReporter {

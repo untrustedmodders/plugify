@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/conflict.hpp"
+#include "plugify/conflict.hpp"
 
 namespace plugify {
 	struct Conflict::Impl {

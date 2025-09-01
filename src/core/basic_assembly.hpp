@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/assembly.hpp"
+#include "plugify/assembly.hpp"
 #include "core/assembly_handle.hpp"
 
 namespace plugify {
@@ -16,12 +16,12 @@ namespace plugify {
         mutable std::unordered_map<std::string, MemAddr, plg::string_hash, std::equal_to<>> _symbolCache;
 
     public:
-        BasicAssembly(std::unique_ptr<AssemblyHandle> handle,
-                     std::shared_ptr<IPlatformOps> ops)
+        BasicAssembly() = default;
+
+        explicit BasicAssembly(std::unique_ptr<AssemblyHandle> handle, std::shared_ptr<IPlatformOps> ops)
             : _handle(std::move(handle))
-            , _ops(std::move(ops)) {}
-            //, _symbolResolver(CreateSymbolResolver(_ops))
-            //, _patternScanner(CreatePatternScanner())
+            , _ops(std::move(ops))
+            {}
 
         Result<MemAddr> GetSymbol(std::string_view name) const override {
             // Check cache first
@@ -34,9 +34,7 @@ namespace plugify {
             }
 
             // Resolve symbol
-            auto result = _ops->GetSymbol(
-                _handle->GetHandle(), name
-            );
+            auto result = _handle->GetSymbol(name);
 
             // Cache if successful
             if (result) {

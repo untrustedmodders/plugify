@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/dependency.hpp"
+#include "plugify/dependency.hpp"
 
 namespace plugify {
 	struct Dependency::Impl {

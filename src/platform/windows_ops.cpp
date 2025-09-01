@@ -1,6 +1,4 @@
-#if PLUGIFY_PLATFORM_WINDOWS
-
-#include "plugify/core/platform_ops.hpp"
+#include "plugify/platform_ops.hpp"
 
 #include <windows.h>
 #undef LoadLibrary
@@ -8,14 +6,15 @@
 namespace plugify {
     class WindowsPlatformOps : public IPlatformOps {
     private:
-        plg::flat_map<std::filesystem::path, DLL_DIRECTORY_COOKIE> _searchCookies;
+        std::unordered_map<std::filesystem::path, DLL_DIRECTORY_COOKIE, plg::path_hash> _searchCookies;
+        std::mutex _searchMutex;
 
         static int TranslateFlags(LoadFlag flags) {
             int winFlags = 0;
             if (flags & LoadFlag::DataOnly)
                 winFlags |= LOAD_LIBRARY_AS_DATAFILE;
-            if (flags & LoadFlag::SystemOnly)
-                winFlags |= LOAD_LIBRARY_SEARCH_SYSTEM32;
+            if (flags & LoadFlag::SecureSearch)
+                winFlags |= LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
             return winFlags;
         }
 
@@ -99,25 +98,27 @@ namespace plugify {
                 return MakeError("Failed to add search path '{}': {}",
                                  path.string(), GetLastErrorString());
             }
+            std::lock_guard lock(_searchMutex);
             _searchCookies[path] = cookie;
             return {};
         }
 
-        virtual Result<void> RemoveSearchPath(const std::filesystem::path& path) override {
+        Result<void> RemoveSearchPath(const std::filesystem::path& path) override {
             auto it = _searchCookies.find(path);
             if (it != _searchCookies.end()) {
                 if (!::RemoveDllDirectory(it->second)) {
                     return MakeError("Failed to remove search path '{}': {}",
                                      path.string(), GetLastErrorString());
                 }
+                std::lock_guard lock(_searchMutex);
+                _searchCookies.erase(it);
                 return {};
             }
             return MakeError("Failed to find search path '{}'", path.string());
         }
     };
 
-    std::unique_ptr<IPlatformOps> CreatePlatformOps() {
-        return std::make_unique<WindowsPlatformOps>();
+    std::shared_ptr<IPlatformOps> CreatePlatformOps() {
+        return std::make_shared<WindowsPlatformOps>();
     }
 }
-#endif

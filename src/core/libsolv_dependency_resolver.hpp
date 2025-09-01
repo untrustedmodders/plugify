@@ -1,7 +1,7 @@
 #pragma once
 
-#include "plugify/core/logger.hpp"
-#include "plugify/core/dependency_resolver.hpp"
+#include "plugify/logger.hpp"
+#include "plugify/dependency_resolver.hpp"
 
 extern "C" {
 #include <solv/evr.h>

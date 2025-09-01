@@ -1,7 +1,7 @@
 #pragma once
 
 #include "plg/enum.hpp"
-#include "plugify/core/logger.hpp"
+#include "plugify/logger.hpp"
 
 namespace plugify {
     class ConsoleLogger : public ILogger {

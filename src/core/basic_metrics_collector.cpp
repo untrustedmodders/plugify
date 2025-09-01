@@ -1,4 +1,4 @@
-#include "plugify/core/registrar.hpp"
+#include "plugify/registrar.hpp"
 
 #include "core/basic_metrics_collector.hpp"
 #include "core/glaze_metadata.hpp"

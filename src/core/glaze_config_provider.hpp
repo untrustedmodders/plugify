@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/config_provider.hpp"
+#include "plugify/config_provider.hpp"
 
 #include "core/glaze_metadata.hpp"
 

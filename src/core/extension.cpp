@@ -1,7 +1,7 @@
-#include "plugify/core/assembly.hpp"
-#include "plugify/core/extension.hpp"
-#include "plugify/core/language_module.hpp"
-#include "plugify/core/registrar.hpp"
+#include "plugify/assembly.hpp"
+#include "plugify/extension.hpp"
+#include "plugify/language_module.hpp"
+#include "plugify/registrar.hpp"
 
 using namespace plugify;
 
@@ -267,6 +267,10 @@ const std::vector<std::string>& Extension::GetWarnings() const noexcept {
 
 bool Extension::HasErrors() const noexcept {
     return !_impl->errors.empty();
+}
+
+bool Extension::HasWarnings() const noexcept {
+    return !_impl->warnings.empty();
 }
 
 /*bool Extension::IsLoaded() const noexcept {

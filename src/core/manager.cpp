@@ -1,11 +1,11 @@
-#include "plugify/core/manager.hpp"
-#include "plugify/asm/assembly_loader.hpp"
-#include "plugify/core/config.hpp"
-#include "plugify/core/dependency_resolver.hpp"
-#include "plugify/core/extension.hpp"
-#include "plugify/core/manifest.hpp"
-#include "plugify/core/manifest_parser.hpp"
-#include "plugify/core/progress_reporter.hpp"
+#include "plugify/manager.hpp"
+#include "plugify/assembly_loader.hpp"
+#include "plugify/config.hpp"
+#include "plugify/dependency_resolver.hpp"
+#include "plugify/extension.hpp"
+#include "plugify/manifest.hpp"
+#include "plugify/manifest_parser.hpp"
+#include "plugify/progress_reporter.hpp"
 
 // #include "asm/defer.hpp"
 #include "core/extension_loader.hpp"
@@ -20,13 +20,13 @@ struct Manager::Impl {
         , loader(services, config, provider)
     {
         // Create services
-        assemblyLoader = services.Get<IAssemblyLoader>();
-        fileSystem = services.Get<IFileSystem>();
-        logger = services.Get<ILogger>();
-        manifestParser = services.Get<IManifestParser>();
-        resolver = services.Get<IDependencyResolver>();
-        //progressReporter = services.Get<IProgressReporter>();
-        //metricsCollector = services.Get<IMetricsCollector>();
+        assemblyLoader = services.Resolve<IAssemblyLoader>();
+        fileSystem = services.Resolve<IFileSystem>();
+        logger = services.Resolve<ILogger>();
+        manifestParser = services.Resolve<IManifestParser>();
+        resolver = services.Resolve<IDependencyResolver>();
+        //progressReporter = services.Resolve<IProgressReporter>();
+        //metricsCollector = services.Resolve<IMetricsCollector>();
     }
     ~Impl() {
         if (initialized) {

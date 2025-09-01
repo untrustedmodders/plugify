@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/property.hpp"
+#include "plugify/property.hpp"
 
 namespace plugify {
 	struct Property::Impl {

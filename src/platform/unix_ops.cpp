@@ -1,6 +1,4 @@
-#if PLUGIFY_PLATFORM_LINUX || PLUGIFY_PLATFORM_APPLE || PLUGIFY_PLATFORM_UNIX
-
-#include "plugify/core/platform_ops.hpp"
+#include "plugify/platform_ops.hpp"
 
 #include <dlfcn.h>
 
@@ -8,26 +6,28 @@ namespace plugify {
     class UnixPlatformOps : public IPlatformOps {
     private:
         static int TranslateFlags(LoadFlag flags) {
-            int dlFlags = RTLD_NOW;  // Default to immediate binding for safety
-            
+            int dlFlags = 0;
+
             if (flags & LoadFlag::LazyBinding)
-                dlFlags = RTLD_LAZY;
+                dlFlags |= RTLD_LAZY;
+            else
+                dlFlags |= RTLD_NOW;
 
             if (flags & LoadFlag::GlobalSymbols)
                 dlFlags |= RTLD_GLOBAL;
             else
                 dlFlags |= RTLD_LOCAL;
-            
+
             #ifdef RTLD_NODELETE
             if (flags & LoadFlag::NoUnload)
                 dlFlags |= RTLD_NODELETE;
             #endif
-            
+
             #ifdef RTLD_DEEPBIND
             if (flags & LoadFlag::DeepBind)
                 dlFlags |= RTLD_DEEPBIND;
             #endif
-            
+
             return dlFlags;
         }
         
@@ -72,8 +72,7 @@ namespace plugify {
         bool SupportsLazyBinding() const override { return true; }
     };
     
-    std::unique_ptr<IPlatformOps> CreatePlatformOps() {
-        return std::make_unique<UnixPlatformOps>();
+    std::shared_ptr<IPlatformOps> CreatePlatformOps() {
+        return std::make_shared<UnixPlatformOps>();
     }
 }
-#endif

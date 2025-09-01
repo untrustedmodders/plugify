@@ -1,6 +1,7 @@
-#include "plugify/asm/assembly_loader.hpp"
-#include "plugify/core/plugify.hpp"
+#include "plugify/assembly_loader.hpp"
+#include "plugify/plugify.hpp"
 
+#include "core/basic_metrics_collector.hpp"
 #include "core/console_logger.hpp"
 #include "core/default_progress_reporter.hpp"
 #include "core/glaze_config_provider.hpp"
@@ -9,7 +10,8 @@
 #include "core/libsolv_dependency_resolver.hpp"
 #include "core/simple_event_bus.hpp"
 #include "core/standart_file_system.hpp"
-#include "core/basic_metrics_collector.hpp"
+
+#include "basic_assembly_loader.hpp"
 
 using namespace plugify;
 
@@ -39,9 +41,9 @@ struct Plugify::Impl {
         // Get version
         plg::parse(PLUGIFY_VERSION, version);
         // Create services
-        logger = services.Get<ILogger>();
-        eventBus = services.Get<IEventBus>();
-        fileSystem = services.Get<IFileSystem>();
+        logger = services.Resolve<ILogger>();
+        eventBus = services.Resolve<IEventBus>();
+        fileSystem = services.Resolve<IFileSystem>();
     }
 
     ~Impl() {
@@ -382,99 +384,101 @@ PlugifyBuilder& PlugifyBuilder::WithConfig(Config&& config) {
 }
 
 /*PlugifyBuilder& PlugifyBuilder::WithConfig(const std::filesystem::path& path) {
-    _config = *glz::read_jsonc<Config>(*_services.Get<IFileSystem>()->ReadTextFile(path));
+    _config = *glz::read_jsonc<Config>(*_services.Resolve<IFileSystem>()->ReadTextFile(path));
     return *this;
 }*/
 
 PlugifyBuilder& PlugifyBuilder::WithLogger(std::shared_ptr<ILogger> logger) {
-    _services.Register<ILogger>(std::move(logger));
+    _services.RegisterInstance<ILogger>(std::move(logger));
     return *this;
 }
 
 PlugifyBuilder& PlugifyBuilder::WithFileSystem(std::shared_ptr<IFileSystem> fs) {
-    _services.Register<IFileSystem>(std::move(fs));
+    _services.RegisterInstance<IFileSystem>(std::move(fs));
     return *this;
 }
 
 PlugifyBuilder& PlugifyBuilder::WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) {
-    _services.Register<IAssemblyLoader>(std::move(loader));
+    _services.RegisterInstance<IAssemblyLoader>(std::move(loader));
     return *this;
 }
 
 /*PlugifyBuilder& PlugifyBuilder::WithConfigProvider(std::shared_ptr<IConfigProvider> provider) {
-    _services.Register<IConfigProvider>(std::move(provider));
+    _services.RegisterInstance<IConfigProvider>(std::move(provider));
     return *this;
 }*/
 
 PlugifyBuilder& PlugifyBuilder::WithManifestParser(std::shared_ptr<IManifestParser> parser) {
-    _services.Register<IManifestParser>(std::move(parser));
+    _services.RegisterInstance<IManifestParser>(std::move(parser));
     return *this;
 }
 
 PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver) {
-    _services.Register<IDependencyResolver>(std::move(resolver));
+    _services.RegisterInstance<IDependencyResolver>(std::move(resolver));
     return *this;
 }
 
 /*PlugifyBuilder& PlugifyBuilder::WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle) {
-    _services.Register<IPluginLifecycle>(std::move(lifecycle));
+    _services.RegisterInstance<IPluginLifecycle>(std::move(lifecycle));
     return *this;
 }*/
 
 /*PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
-    _services.Register<IProgressReporter>(std::move(reporter));
+    _services.RegisterInstance<IProgressReporter>(std::move(reporter));
     return *this;
 }*/
 
 /*PlugifyBuilder& PlugifyBuilder::WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics) {
-    _services.Register<IMetricsCollector>(std::move(metrics));
+    _services.RegisterInstance<IMetricsCollector>(std::move(metrics));
     return *this;
 }*/
 
 PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
-    _services.Register<IEventBus>(std::move(bus));
+    _services.RegisterInstance<IEventBus>(std::move(bus));
     return *this;
 }
 
 PlugifyBuilder& PlugifyBuilder::WithDefaults() {
     // Provide default implementations if not specified
-    auto logger = std::make_shared<ConsoleLogger>();
-
-    if (!_services.Has<IEventBus>()) {
-        _services.Register<IEventBus>(std::make_shared<SimpleEventBus>());
+    if (!_services.IsRegistered<ILogger>()) {
+        _services.RegisterInstance<ILogger>(std::make_shared<ConsoleLogger>());
     }
 
-    if (!_services.Has<IFileSystem>()) {
-        _services.Register<IFileSystem>(std::make_shared<ExtendedFileSystem>());
+    if (!_services.IsRegistered<IPlatformOps>()) {
+        _services.RegisterInstance<IPlatformOps>(CreatePlatformOps());
     }
 
-    if (!_services.Has<IAssemblyLoader>()) {
-        _services.Register<IAssemblyLoader>(std::make_shared<AssemblyLoader>());
+    if (!_services.IsRegistered<IEventBus>()) {
+        _services.RegisterInstance<IEventBus>(std::make_shared<SimpleEventBus>());
     }
 
-    /*if (!_services.Has<IConfigProvider>()) {
-        _services.Register<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
+    if (!_services.IsRegistered<IFileSystem>()) {
+        _services.RegisterInstance<IFileSystem>(std::make_shared<ExtendedFileSystem>());
+    }
+
+    if (!_services.IsRegistered<IAssemblyLoader>()) {
+        _services.RegisterInstance<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(_services.Resolve<IPlatformOps>(), _services.Resolve<IFileSystem>()));
+    }
+
+    /*if (!_services.IsRegistered<IConfigProvider>()) {
+        _services.RegisterInstance<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
     }*/
 
-    if (!_services.Has<IManifestParser>()) {
-        _services.Register<IManifestParser>(std::make_shared<GlazeManifestParser>());
+    if (!_services.IsRegistered<IManifestParser>()) {
+        _services.RegisterInstance<IManifestParser>(std::make_shared<GlazeManifestParser>());
     }
 
-    if (!_services.Has<IDependencyResolver>()) {
-        _services.Register<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(logger));
+    if (!_services.IsRegistered<IDependencyResolver>()) {
+        _services.RegisterInstance<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_services.Resolve<ILogger>()));
     }
 
-    /*if (!_services.Has<IProgressReporter>()) {
-        _services.Register<IProgressReporter>(std::make_shared<DefaultProgressReporter>(logger));
+    /*if (!_services.IsRegistered<IProgressReporter>()) {
+        _services.RegisterInstance<IProgressReporter>(std::make_shared<DefaultProgressReporter>(_services.Resolve<ILogger>()));
     }*/
 
-    /*if (!_services.Has<IMetricsCollector>()) {
-        _services.Register<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());
+    /*if (!_services.IsRegistered<IMetricsCollector>()) {
+        _services.RegisterInstance<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());
     }*/
-
-    if (!_services.Has<ILogger>()) {
-        _services.Register<ILogger>(std::move(logger));
-    }
 
     // Validate configuration
     if (_config.paths.baseDir.empty()) {

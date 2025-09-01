@@ -1,4 +1,4 @@
-#include "plugify/core/registrar.hpp"
+#include "plugify/registrar.hpp"
 
 using namespace plugify;
 

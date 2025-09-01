@@ -229,16 +229,18 @@ namespace plugify {
             StageStatistics& stats,
             const ExecutionContext<T>& ctx) {
 
+            size_t originalSize = items.size();
+
             // Process all items together
             auto result = stage->ProcessAll(std::move(items), ctx);
             if (result) {
                 // Replace container with processed result
                 items = std::move(*result);
-                stats.succeeded = 1;  // The barrier operation succeeded
+                stats.succeeded = originalSize;
                 stats.failed = 0;
             } else {
                 stats.succeeded = 0;
-                stats.failed = 1;  // The barrier operation failed
+                stats.failed = originalSize;
                 stats.errors.emplace_back(stage->GetName(), std::move(result.error()));
             }
         }

@@ -83,7 +83,7 @@ namespace plugify {
                 return MakeError(
                     "No valid extensions to resolve: {} total, {} excluded by policy",
                     items.size(), excluded.size()
-                ));
+                );
             }
 
             AddLanguageDependencies(filtered);
@@ -98,7 +98,7 @@ namespace plugify {
                 return MakeError(
                     "No valid extensions to load: {} total, {} filtered by resolver",
                     items.size(), filtered.size()
-                ));
+                );
             }
 
             return BuildResultInOrder(report, filtered, excluded);
@@ -232,7 +232,7 @@ namespace plugify {
     };
 
     // Initialize Stage - Transform type
-    class InitializeStage : public ITransformStage<Extension> {
+    /*class InitializeStage : public ITransformStage<Extension> {
         ExtensionLoader& _loader;
     public:
         InitializeStage(ExtensionLoader& loader) : _loader(loader) {}
@@ -268,7 +268,7 @@ namespace plugify {
             ext.EndOperation(ExtensionState::Initialized);
             return {};
         }
-    };
+    };*/
 
     // Uses CRTP (Curiously Recurring Template Pattern) for compile-time polymorphism
     // Derived classes must implement: DoProcessItem() [non-virtual]
@@ -329,7 +329,7 @@ namespace plugify {
             ext.AddError(std::format("Skipped: dependency '{}' failed", failedDep));
             _failureTracker.MarkFailed(ext.GetId());
 
-            return MakeError("Dependency '{}' failed", failedDep));
+            return MakeError("Dependency '{}' failed", failedDep);
         }
 
         // Handle operation failure uniformly
@@ -375,7 +375,7 @@ namespace plugify {
         std::string_view GetName() const override { return "Loading"; }
 
         bool ShouldProcess(const Extension& item) const override {
-            return item.GetState() == ExtensionState::Initialized;
+            return item.GetState() == ExtensionState::Resolved;
         }
 
         // Non-virtual method called by base class via CRTP
@@ -400,7 +400,7 @@ namespace plugify {
                 case ExtensionType::Plugin: {
                     auto it = _loadedModules.find(ext.GetLanguage());
                     if (it == _loadedModules.end()) {
-                        result = MakeError("Language module '{}' not found", ext.GetLanguage()));
+                        result = MakeError("Language module '{}' not found", ext.GetLanguage());
                     } else {
                         result = _loader.LoadPlugin(*it->second, ext);
                     }
@@ -486,7 +486,7 @@ namespace plugify {
         std::string_view GetName() const override { return "Starting"; }
 
         bool ShouldProcess(const Extension& item) const override {
-            return item.GetState() == ExtensionState::Loaded &&
+            return item.GetState() == ExtensionState::Exported &&
                    item.GetType() == ExtensionType::Plugin;
         }
 

@@ -1,6 +1,5 @@
 if(PLUGIFY_BUILD_TESTS)
     set(PLUGIFY_BUILD_JIT ON)
-    set(PLUGIFY_BUILD_ASSEMBLY ON)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -40,21 +39,3 @@ if(PLUGIFY_BUILD_JIT)
         target_compile_options(${PROJECT_NAME}-jit PUBLIC -stdlib=libc++)
     endif()
 endif()
-
-# ------------------------------------------------------------------------------
-# Assembly
-if(PLUGIFY_BUILD_ASSEMBLY)
-    file(GLOB_RECURSE PLUGIFY_ASM_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/asm/*.cpp")
-    add_library(${PROJECT_NAME}-assembly OBJECT ${PLUGIFY_ASM_SOURCES})
-    add_library(${PROJECT_NAME}::${PROJECT_NAME}-assembly ALIAS ${PROJECT_NAME}-assembly)
-    target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_compile_definitions(${PROJECT_NAME}-assembly PRIVATE  ${PLUGIFY_COMPILE_DEFINITIONS})
-    target_include_directories(${PROJECT_NAME}-assembly PUBLIC ${CMAKE_BINARY_DIR}/exports)
-    if(LINUX)
-        target_compile_definitions(${PROJECT_NAME}-assembly PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
-    endif()
-    if(PLUGIFY_HAS_LIBCPP)
-        target_compile_options(${PROJECT_NAME}-assembly PUBLIC -stdlib=libc++)
-    endif()
-endif()
-

@@ -48,8 +48,17 @@ include(PlugifyRequirement)
 # ------------------------------------------------------------------------------
 # Plugify
 file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/core/*.cpp")
-file(GLOB_RECURSE PLUGIFY_INTERFACE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/interface/*.cpp")
-set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES})
+if(ORBIS OR PROSPERO)
+    set(PLUGIFY_PLATFORM_NAME "playstation")
+elseif(SWITCH)
+    set(PLUGIFY_PLATFORM_NAME "switch")
+elseif(WIN32)
+    set(PLUGIFY_PLATFORM_NAME "windows")
+else() #if(APPLE OR LINUX OR ANDROID OR UNIX)
+    set(PLUGIFY_PLATFORM_NAME "unix")
+endif()
+set(PLUGIFY_PLATFORM_SOURCES "src/platform/${PLUGIFY_PLATFORM_NAME}_ops.cpp")
+set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES})
 
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT BUILD_SHARED_LIBS)
     message(WARNING "PLUGIFY_BUILD_SHARED_LIB is ON, but plugify will be built as a static library")
@@ -172,21 +181,9 @@ endif()
 include(PlugifySanitizer)
 include(PlugifyTools)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify-assembly)
-
 # ------------------------------------------------------------------------------
 # Test
 if(PLUGIFY_BUILD_TESTS)
-    configure_file(
-            ${CMAKE_SOURCE_DIR}/plugify.pconfig
-            ${CMAKE_BINARY_DIR}/plugify.pconfig
-            COPYONLY
-    )
-    configure_file(
-            ${CMAKE_SOURCE_DIR}/crashpad.jsonc
-            ${CMAKE_BINARY_DIR}/crashpad.jsonc
-            COPYONLY
-    )
     add_subdirectory(test/plug)
     add_subdirectory(test/containers)
 endif()

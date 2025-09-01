@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/enum_value.hpp"
+#include "plugify/enum_value.hpp"
 
 namespace plugify {
 	struct EnumValue::Impl {

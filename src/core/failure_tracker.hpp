@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/registrar.hpp"
+#include "plugify/registrar.hpp"
 
 namespace plugify {
     // Shared failure tracker that can be passed between stages

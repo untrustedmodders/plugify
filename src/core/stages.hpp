@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/metric_collector.hpp"
+#include "plugify/metric_collector.hpp"
 
 #include "plg/thread_pool.hpp"
 

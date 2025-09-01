@@ -1,7 +1,7 @@
 #pragma once
 
-#include "plugify/core/method.hpp"
-#include "plugify/core/property.hpp"
+#include "plugify/method.hpp"
+#include "plugify/property.hpp"
 
 namespace plugify {
 	struct Method::Impl {

@@ -1,11 +1,10 @@
 #pragma once
 
-#include "plugify/core/platform_ops.hpp"
+#include "plugify/platform_ops.hpp"
 
 namespace plugify {
     // RAII wrapper for platform handles
     class AssemblyHandle {
-    private:
         void* _handle = nullptr;
         std::shared_ptr<IPlatformOps> _ops;
         std::filesystem::path _path;
@@ -14,8 +13,7 @@ namespace plugify {
     public:
         AssemblyHandle() = default;
         
-        AssemblyHandle(void* handle, std::shared_ptr<IPlatformOps> ops,
-                       std::filesystem::path path)
+        AssemblyHandle(void* handle, std::shared_ptr<IPlatformOps> ops, std::filesystem::path path)
             : _handle(handle), _ops(std::move(ops)), _path(std::move(path)) {}
         
         ~AssemblyHandle() {
@@ -47,13 +45,17 @@ namespace plugify {
             }
             return *this;
         }
-        
+
         void* GetHandle() const { return _handle; }
         const std::filesystem::path& GetPath() const { return _path; }
         bool IsValid() const { return _handle != nullptr; }
         
-        void AddRef() { _refCount.fetch_add(1); }
-        size_t ReleaseRef() { return _refCount.fetch_sub(1); }
+        void AddRef() { _refCount.fetch_add(1, std::memory_order_relaxed); }
+        size_t ReleaseRef() { return _refCount.fetch_sub(1, std::memory_order_relaxed); }
         size_t GetRefCount() const { return _refCount.load(); }
+
+        Result<MemAddr> GetSymbol(std::string_view name) const {
+            return _ops->GetSymbol(_handle, name);
+        }
     };
 }

@@ -29,6 +29,6 @@
 #include <print>
 #include <fstream>
 
-#include "plugify/core/global.h"
+#include "plugify/global.h"
 
 namespace fs = std::filesystem;

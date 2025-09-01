@@ -1,4 +1,4 @@
-#include "plugify/core/config.hpp"
+#include "plugify/config.hpp"
 
 #if 0
 using namespace plugify;

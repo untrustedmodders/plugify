@@ -294,7 +294,7 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
     std::span<const std::string_view> patterns,
     bool recursive = true) {
     if (!IsDirectory(directory)) {
-        return MakeError("Path is not a directory: {}", directory.string()));
+        return MakeError("Path is not a directory: {}", directory.string());
     }
 
     // Convert glob patterns to regex
@@ -662,7 +662,7 @@ Result<bool> ExtendedFileSystem::FilesEqual(const std::filesystem::path& path1, 
 Result<size_t> ExtendedFileSystem::ComputeSimpleHash(const std::filesystem::path& path) {
     auto content = ReadBinaryFile(path);
     if (!content) {
-        return MakeError("Failed to read file for hashing: {}", content.error()));
+        return MakeError("Failed to read file for hashing: {}", content.error());
     }
     
     std::hash<std::string_view> hasher;

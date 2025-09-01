@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plugify/core/event_bus.hpp"
+#include "plugify/event_bus.hpp"
 
 namespace plugify {
     // Simple event bus implementation
@@ -28,7 +28,7 @@ namespace plugify {
 
             {
                 std::lock_guard lock(_mutex);
-                auto it = _handlers.find(eventType);
+                auto it = _handlers.find(std::string(eventType));
                 if (it != _handlers.end()) {
                     for (const auto& [_, handler] : it->second) {
                         handlersToCall.push_back(handler);
@@ -44,7 +44,7 @@ namespace plugify {
 
     private:
         mutable std::mutex _mutex;
-        plg::flat_map<std::string, std::vector<std::pair<SubscriptionId, EventHandler>>, plg::string_hash, std::equal_to<>> _handlers;
+        plg::flat_map<std::string, std::vector<std::pair<SubscriptionId, EventHandler>>> _handlers;
         SubscriptionId _nextId = 1;
     };
 }
