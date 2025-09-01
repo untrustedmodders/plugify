@@ -75,6 +75,12 @@ namespace plugify {
 	template<typename T>
 	using Result = plg::expected<T, std::string>;
 
+    // Helper for creating errors with context
+    template<typename... Args>
+    plg::unexpected<std::string> MakeError(std::format_string<Args...> fmt, Args&&... args) {
+        return plg::unexpected(std::format(fmt, std::forward<Args>(args)...));
+    }
+
     /**
      *
      */

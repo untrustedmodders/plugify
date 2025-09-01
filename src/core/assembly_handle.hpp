@@ -9,12 +9,12 @@ namespace plugify {
         void* _handle = nullptr;
         std::shared_ptr<IPlatformOps> _ops;
         std::filesystem::path _path;
-        std::atomic<int> _refCount{1};
+        std::atomic<size_t> _refCount{1};
         
     public:
         AssemblyHandle() = default;
         
-        AssemblyHandle(void* handle, std::shared_ptr<IPlatformOps> ops, 
+        AssemblyHandle(void* handle, std::shared_ptr<IPlatformOps> ops,
                        std::filesystem::path path)
             : _handle(handle), _ops(std::move(ops)), _path(std::move(path)) {}
         
@@ -53,7 +53,7 @@ namespace plugify {
         bool IsValid() const { return _handle != nullptr; }
         
         void AddRef() { _refCount.fetch_add(1); }
-        int ReleaseRef() { return _refCount.fetch_sub(1); }
-        int GetRefCount() const { return _refCount.load(); }
+        size_t ReleaseRef() { return _refCount.fetch_sub(1); }
+        size_t GetRefCount() const { return _refCount.load(); }
     };
 }

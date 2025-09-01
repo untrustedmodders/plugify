@@ -92,7 +92,7 @@ Result<void> StandardFileSystem::WriteTextFile(const std::filesystem::path& path
         std::error_code ec;
         std::filesystem::create_directories(parent, ec);
         if (ec) {
-            return plg::unexpected(std::format("Failed to create parent directories: {}", ec.message()));
+            return MakeError("Failed to create parent directories: {}", ec.message());
         }
     }
 
@@ -119,7 +119,7 @@ Result<void> StandardFileSystem::WriteBinaryFile(const std::filesystem::path& pa
         std::error_code ec;
         std::filesystem::create_directories(parent, ec);
         if (ec) {
-            return plg::unexpected(std::format("Failed to create parent directories: {}", ec.message()));
+            return MakeError("Failed to create parent directories: {}", ec.message());
         }
     }
 
@@ -159,8 +159,8 @@ Result<FileInfo> StandardFileSystem::GetFileInfo(const std::filesystem::path& pa
     std::error_code ec;
     auto status = std::filesystem::status(path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to get file status: {} - {}",
-                                          path.string(), ec.message()));
+        return MakeError("Failed to get file status: {} - {}",
+                                          path.string(), ec.message());
     }
 
     FileInfo info;
@@ -187,7 +187,7 @@ Result<FileInfo> StandardFileSystem::GetFileInfo(const std::filesystem::path& pa
 
 Result<std::vector<FileInfo>> StandardFileSystem::ListDirectory(const std::filesystem::path& directory) {
     if (!IsDirectory(directory)) {
-        return plg::unexpected(std::format("Path is not a directory: {}", directory.string()));
+        return MakeError("Path is not a directory: {}", directory.string());
     }
 
     std::vector<FileInfo> files;
@@ -219,7 +219,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
     const std::filesystem::path& directory,
     const DirectoryIterationOptions& options = {}) {
     if (!IsDirectory(directory)) {
-        return plg::unexpected(std::format("Path is not a directory: {}", directory.string()));
+        return MakeError("Path is not a directory: {}", directory.string());
     }
 
     std::vector<FileInfo> files;
@@ -263,7 +263,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
                     ec.clear();
                     continue;
                 }
-                return plg::unexpected(std::format("Error iterating directory recursively: {}", ec.message()));
+                return MakeError("Error iterating directory recursively: {}", ec.message());
             }
 
             process_entry(*it);
@@ -278,7 +278,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
                     ec.clear();
                     continue;
                 }
-                return plg::unexpected(std::format("Error iterating directory: {}", ec.message()));
+                return MakeError("Error iterating directory: {}", ec.message());
             }
 
             process_entry(*it);
@@ -294,7 +294,7 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
     std::span<const std::string_view> patterns,
     bool recursive = true) {
     if (!IsDirectory(directory)) {
-        return plg::unexpected(std::format("Path is not a directory: {}", directory.string()));
+        return MakeError("Path is not a directory: {}", directory.string()));
     }
 
     // Convert glob patterns to regex
@@ -365,8 +365,8 @@ Result<void> StandardFileSystem::CreateDirectories(const std::filesystem::path& 
     std::error_code ec;
     std::filesystem::create_directories(path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to create directories: {} - {}",
-                                          path.string(), ec.message()));
+        return MakeError("Failed to create directories: {} - {}",
+                                          path.string(), ec.message());
     }
     return {};
 }
@@ -375,8 +375,8 @@ Result<void> StandardFileSystem::Remove(const std::filesystem::path& path) {
     std::error_code ec;
     std::filesystem::remove(path, ec);
     if (ec && ec != std::errc::no_such_file_or_directory) {
-        return plg::unexpected(std::format("Failed to remove: {} - {}",
-                                          path.string(), ec.message()));
+        return MakeError("Failed to remove: {} - {}",
+                                          path.string(), ec.message());
     }
     return {};
 }
@@ -385,8 +385,8 @@ Result<void> StandardFileSystem::RemoveAll(const std::filesystem::path& path) {
     std::error_code ec;
     std::filesystem::remove_all(path, ec);
     if (ec && ec != std::errc::no_such_file_or_directory) {
-        return plg::unexpected(std::format("Failed to remove all: {} - {}",
-                                          path.string(), ec.message()));
+        return MakeError("Failed to remove all: {} - {}",
+                                          path.string(), ec.message());
     }
     return {};
 }
@@ -398,7 +398,7 @@ Result<void> StandardFileSystem::Copy(const std::filesystem::path& from, const s
         std::error_code ec;
         std::filesystem::create_directories(parent, ec);
         if (ec) {
-            return plg::unexpected(std::format("Failed to create parent directories: {}", ec.message()));
+            return MakeError("Failed to create parent directories: {}", ec.message());
         }
     }
 
@@ -409,8 +409,8 @@ Result<void> StandardFileSystem::Copy(const std::filesystem::path& from, const s
         ec);
 
     if (ec) {
-        return plg::unexpected(std::format("Failed to copy from {} to {} - {}",
-                                          from.string(), to.string(), ec.message()));
+        return MakeError("Failed to copy from {} to {} - {}",
+                                          from.string(), to.string(), ec.message());
     }
     return {};
 }
@@ -422,7 +422,7 @@ Result<void> StandardFileSystem::Move(const std::filesystem::path& from, const s
         std::error_code ec;
         std::filesystem::create_directories(parent, ec);
         if (ec) {
-            return plg::unexpected(std::format("Failed to create parent directories: {}", ec.message()));
+            return MakeError("Failed to create parent directories: {}", ec.message());
         }
     }
 
@@ -436,15 +436,15 @@ Result<void> StandardFileSystem::Move(const std::filesystem::path& from, const s
             std::filesystem::copy_options::overwrite_existing,
             ec);
         if (ec) {
-            return plg::unexpected(std::format("Failed to move from {} to {} - {}",
-                                              from.string(), to.string(), ec.message()));
+            return MakeError("Failed to move from {} to {} - {}",
+                                              from.string(), to.string(), ec.message());
         }
 
         std::filesystem::remove_all(from, ec);
         if (ec) {
             // Copy succeeded but remove failed - file is moved but source remains
-            return plg::unexpected(std::format("Warning: moved file but failed to remove source: {}",
-                                              ec.message()));
+            return MakeError("Warning: moved file but failed to remove source: {}",
+                                              ec.message());
         }
     }
     return {};
@@ -455,7 +455,7 @@ Result<std::filesystem::path> StandardFileSystem::GetCanonicalPath(const std::fi
     std::error_code ec;
     auto canonical = std::filesystem::canonical(path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to get canonical path: {}", ec.message()));
+        return MakeError("Failed to get canonical path: {}", ec.message());
     }
     return canonical;
 }
@@ -465,7 +465,7 @@ Result<std::filesystem::path> StandardFileSystem::GetAbsolutePath(const std::fil
     std::error_code ec;
     auto absolute = std::filesystem::absolute(path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to get absolute path: {}", ec.message()));
+        return MakeError("Failed to get absolute path: {}", ec.message());
     }
     return absolute;
 }
@@ -475,7 +475,7 @@ Result<std::filesystem::path> StandardFileSystem::GetRelativePath(const std::fil
     std::error_code ec;
     auto relative = std::filesystem::relative(path, base, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to relative path to {} with {} - {}", path.string(), base.string(), ec.message()));
+        return MakeError("Failed to relative path to {} with {} - {}", path.string(), base.string(), ec.message());
     }
     return relative;
 }
@@ -533,7 +533,7 @@ Result<void> ExtendedFileSystem::WriteFileAtomic(const std::filesystem::path& pa
     if (ec) {
         // Clean up temp file
         std::filesystem::remove(temp_path, ec);
-        return plg::unexpected(std::format("Failed to atomically replace file: {}", ec.message()));
+        return MakeError("Failed to atomically replace file: {}", ec.message());
     }
     
     return {};
@@ -544,7 +544,7 @@ Result<std::filesystem::space_info> ExtendedFileSystem::GetSpaceInfo(const std::
     std::error_code ec;
     auto space = std::filesystem::space(path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to get space info: {}", ec.message()));
+        return MakeError("Failed to get space info: {}", ec.message());
     }
     return space;
 }
@@ -557,7 +557,7 @@ Result<std::filesystem::path> ExtendedFileSystem::CreateTempFile(const std::file
         std::filesystem::temp_directory_path(ec) : directory;
     
     if (ec) {
-        return plg::unexpected(std::format("Failed to get temp directory: {}", ec.message()));
+        return MakeError("Failed to get temp directory: {}", ec.message());
     }
     
     // Generate unique filename
@@ -583,7 +583,7 @@ Result<std::filesystem::path> ExtendedFileSystem::CreateTempDirectory(const std:
         std::filesystem::temp_directory_path(ec) : directory;
     
     if (ec) {
-        return plg::unexpected(std::format("Failed to get temp directory: {}", ec.message()));
+        return MakeError("Failed to get temp directory: {}", ec.message());
     }
     
     // Generate unique directory name
@@ -593,7 +593,7 @@ Result<std::filesystem::path> ExtendedFileSystem::CreateTempDirectory(const std:
     // Create directory
     std::filesystem::create_directories(temp_path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to create temp directory: {}", ec.message()));
+        return MakeError("Failed to create temp directory: {}", ec.message());
     }
     
     return temp_path;
@@ -605,12 +605,12 @@ Result<bool> ExtendedFileSystem::FilesEqual(const std::filesystem::path& path1, 
     std::error_code ec;
     auto size1 = std::filesystem::file_size(path1, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to get size of first file: {}", ec.message()));
+        return MakeError("Failed to get size of first file: {}", ec.message());
     }
     
     auto size2 = std::filesystem::file_size(path2, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to get size of second file: {}", ec.message()));
+        return MakeError("Failed to get size of second file: {}", ec.message());
     }
     
     if (size1 != size2) {
@@ -662,7 +662,7 @@ Result<bool> ExtendedFileSystem::FilesEqual(const std::filesystem::path& path1, 
 Result<size_t> ExtendedFileSystem::ComputeSimpleHash(const std::filesystem::path& path) {
     auto content = ReadBinaryFile(path);
     if (!content) {
-        return plg::unexpected(std::format("Failed to read file for hashing: {}", content.error()));
+        return MakeError("Failed to read file for hashing: {}", content.error()));
     }
     
     std::hash<std::string_view> hasher;
@@ -675,7 +675,7 @@ Result<std::filesystem::perms> ExtendedFileSystem::GetPermissions(const std::fil
     std::error_code ec;
     auto status = std::filesystem::status(path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to get file permissions: {}", ec.message()));
+        return MakeError("Failed to get file permissions: {}", ec.message());
     }
     return status.permissions();
 }
@@ -685,7 +685,7 @@ Result<void> ExtendedFileSystem::SetPermissions(const std::filesystem::path& pat
     std::error_code ec;
     std::filesystem::permissions(path, perms, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to set file permissions: {}", ec.message()));
+        return MakeError("Failed to set file permissions: {}", ec.message());
     }
     return {};
 }
@@ -715,7 +715,7 @@ Result<std::filesystem::file_time_type> ExtendedFileSystem::GetLastWriteTime(con
     std::error_code ec;
     auto time = std::filesystem::last_write_time(path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to get last write time: {}", ec.message()));
+        return MakeError("Failed to get last write time: {}", ec.message());
     }
     return time;
 }
@@ -726,7 +726,7 @@ Result<void> ExtendedFileSystem::SetLastWriteTime(const std::filesystem::path& p
     std::error_code ec;
     std::filesystem::last_write_time(path, time, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to set last write time: {}", ec.message()));
+        return MakeError("Failed to set last write time: {}", ec.message());
     }
     return {};
 }
@@ -742,7 +742,7 @@ Result<void> ExtendedFileSystem::CreateSymlink(const std::filesystem::path& targ
     std::error_code ec;
     std::filesystem::create_symlink(target, link, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to create symbolic link: {}", ec.message()));
+        return MakeError("Failed to create symbolic link: {}", ec.message());
     }
     return {};
 }
@@ -752,7 +752,7 @@ Result<std::filesystem::path> ExtendedFileSystem::ReadSymlink(const std::filesys
     std::error_code ec;
     auto target = std::filesystem::read_symlink(path, ec);
     if (ec) {
-        return plg::unexpected(std::format("Failed to read symbolic link: {}", ec.message()));
+        return MakeError("Failed to read symbolic link: {}", ec.message());
     }
     return target;
 }

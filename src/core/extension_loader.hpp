@@ -59,11 +59,11 @@ namespace plugify {
             try {
                 return func();
             } catch (const std::bad_alloc&) {
-                return plg::unexpected(std::format("{}: out of memory", operation));
+                return MakeError("{}: out of memory", operation);
             } catch (const std::exception& e) {
-                return plg::unexpected(std::format("{} failed for '{}': {}", operation, extensionName, e.what()));
+                return MakeError("{} failed for '{}': {}", operation, extensionName, e.what());
             } catch (...) {
-                return plg::unexpected(std::format("{} failed for '{}': unknown exception",  operation, extensionName));
+                return MakeError("{} failed for '{}': unknown exception",  operation, extensionName);
             }
         }
     };
@@ -348,22 +348,22 @@ namespace plugify {
 
             auto GetLanguageModuleFunc = assembly->GetSymbol(kGetLanguageModuleFn).RCast<ILanguageModule*(*)()>();
             if (!GetLanguageModuleFunc) {
-                return plg::unexpected(std::format("Function '{}' not found", kGetLanguageModuleFn));
+                return MakeError("Function '{}' not found", kGetLanguageModuleFn);
             }
 
             auto* languageModule = GetLanguageModuleFunc();
             if (!languageModule) {
-                return plg::unexpected(std::format("Invalid address from '{}'", kGetLanguageModuleFn));
+                return MakeError("Invalid address from '{}'", kGetLanguageModuleFn);
             }
 
     #if PLUGIFY_PLATFORM_WINDOWS
             constexpr bool plugifyBuildType = PLUGIFY_IS_DEBUG;
             bool moduleBuildType = languageModule->IsDebugBuild();
             if (moduleBuildType != plugifyBuildType) {
-                return plg::unexpected(std::format(
+                return MakeError(
                     "Build type mismatch: plugify={}, module={}",
                     plugifyBuildType ? "debug" : "release",
-                    moduleBuildType ? "debug" : "release"));
+                    moduleBuildType ? "debug" : "release");
             }
     #endif
 
@@ -391,9 +391,9 @@ namespace plugify {
             const auto& exportedMethods = plugin.GetMethods();
 
             if (methods.size() != exportedMethods.size()) {
-                return plg::unexpected(std::format(
+                return MakeError(
                     "Method count mismatch: expected {}, got {}",
-                    exportedMethods.size(), methods.size()));
+                    exportedMethods.size(), methods.size());
             }
 
             // Validate methods
@@ -412,7 +412,7 @@ namespace plugify {
             }
 
             if (!errors.empty()) {
-                return plg::unexpected(std::format("Invalid methods:\n{}", plg::join(errors, "\n")));
+                return MakeError("Invalid methods:\n{}", plg::join(errors, "\n"));
             }
 
             plugin.SetLanguageModule(module);

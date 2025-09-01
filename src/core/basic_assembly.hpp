@@ -13,7 +13,7 @@ namespace plugify {
 
         // Symbol cache
         mutable std::shared_mutex _cacheMutex;
-        mutable std::unordered_map<std::string, MemAddr> _symbolCache;
+        mutable std::unordered_map<std::string, MemAddr, plg::string_hash, std::equal_to<>> _symbolCache;
 
     public:
         BasicAssembly(std::unique_ptr<AssemblyHandle> handle,
@@ -27,7 +27,7 @@ namespace plugify {
             // Check cache first
             {
                 std::shared_lock lock(_cacheMutex);
-                auto it = _symbolCache.find(std::string(name));
+                auto it = _symbolCache.find(name);
                 if (it != _symbolCache.end()) {
                     return it->second;
                 }
@@ -41,7 +41,7 @@ namespace plugify {
             // Cache if successful
             if (result) {
                 std::unique_lock lock(_cacheMutex);
-                _symbolCache[std::string(name)] = *result;
+                _symbolCache.emplace(name, *result);
             }
 
             return result;
@@ -63,11 +63,4 @@ namespace plugify {
             return _handle ? _handle->GetHandle() : nullptr;
         }
     };
-
-    // Factory function
-    std::unique_ptr<IAssembly> CreateAssembly(
-        std::unique_ptr<AssemblyHandle> handle,
-        std::shared_ptr<IPlatformOps> ops) {
-        return std::make_unique<BasicAssembly>(std::move(handle), std::move(ops));
-    }
 }

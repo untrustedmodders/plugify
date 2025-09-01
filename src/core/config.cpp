@@ -8,7 +8,7 @@ Result<ConfigNode> JsonConfigReader::Read(const std::filesystem::path& path) {
     try {
         std::ifstream file(path);
         if (!file) {
-            return plg::unexpected(std::format("Failed to open file: {}", path.string()));
+            return MakeError("Failed to open file: {}", path.string());
         }
 
         nlohmann::json j;
@@ -47,7 +47,7 @@ Result<ConfigNode> JsonConfigReader::Read(const std::filesystem::path& path) {
         return convert(j);
         return {};
     } catch (const std::exception& e) {
-        return plg::unexpected(std::format("Failed to parse JSON: {}", e.what()));
+        return MakeError("Failed to parse JSON: {}", e.what());
     }
 }
 
@@ -88,7 +88,7 @@ Result<void> ConfigManager::LoadFromFile(const std::filesystem::path& path,
         }
     }
 
-    return plg::unexpected(std::format("No reader found for file: {}", path.string()));
+    return MakeError("No reader found for file: {}", path.string());
 }
 
 Result<void> ConfigManager::LoadConfigFiles(const std::vector<std::filesystem::path>& paths) {

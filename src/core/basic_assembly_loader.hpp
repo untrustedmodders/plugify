@@ -2,13 +2,16 @@
 
 #include "plugify/core/assembly.hpp"
 #include "plugify/core/assembly_loader.hpp"
-#include "core/basic_assembly.hpp"
+#include "plugify/core/file_system.hpp"
+
 #include "core/assembly_handle.hpp"
+#include "core/basic_assembly.hpp"
 
 namespace plugify {
     class BasicAssemblyLoader : public IAssemblyLoader {
     private:
         std::shared_ptr<IPlatformOps> _ops;
+        std::shared_ptr<IFileSystem> _fileSystem;
         std::vector<std::filesystem::path> _searchPaths;
 
         // Assembly cache
@@ -16,19 +19,25 @@ namespace plugify {
         std::unordered_map<std::filesystem::path, std::weak_ptr<IAssembly>> _cache;
 
         Result<std::filesystem::path> ResolvePath(
-            const std::filesystem::path& path) const {
-            // Implementation from previous artifact
-            // ... (same as before)
-            return path; // Simplified for brevity
+            const std::filesystem::path& path
+        ) const {
+            // If absolute path, just verify it exists
+            if (path.is_absolute()) {
+                if (_fileSystem->IsExists(path)) {
+                    return path;
+                }
+                return MakeError("File not found: {}", path.string());
+            }
+
+            return _fileSystem->GetAbsolutePath(path);
         }
 
     public:
-        BasicAssemblyLoader()
-            : _ops(CreatePlatformOps()) {
+        BasicAssemblyLoader(std::shared_ptr<IPlatformOps> ops)
+            : _ops(std::move(ops)) {
             // Initialize default search paths
             _searchPaths.push_back(std::filesystem::current_path());
         }
-
         Result<AssemblyPtr> Load(
             const std::filesystem::path& path,
             LoadFlag flags
@@ -36,7 +45,7 @@ namespace plugify {
             // Resolve path
             auto pathResult = ResolvePath(path);
             if (!pathResult) {
-                return MakeError("Failed to resolve path: {}", pathResult.error());
+                return plg::unexpected(std::move(pathResult.error()));
             }
 
             auto resolvedPath = *pathResult;
@@ -55,7 +64,7 @@ namespace plugify {
             // Load library
             auto handleResult = _ops->LoadLibrary(resolvedPath, flags);
             if (!handleResult) {
-                return MakeError("Failed to load: {}", handleResult.error());
+                return plg::unexpected(std::move(handleResult.error()));
             }
 
             // Create assembly
@@ -70,7 +79,7 @@ namespace plugify {
             // Update cache
             {
                 std::unique_lock lock(_cacheMutex);
-                _cache[resolvedPath] = assembly;
+                _cache[std::move(resolvedPath)] = assembly;
             }
 
             return assembly;
@@ -78,7 +87,7 @@ namespace plugify {
 
         Result<void> Unload(const AssemblyPtr& assembly) override {
             if (!assembly) {
-                return MakeError("Cannot unload null assembly");
+                return plg::unexpected("Cannot unload null assembly");
             }
 
             // Remove from cache
@@ -90,9 +99,4 @@ namespace plugify {
             return {};
         }
     };
-
-    // Factory function
-    std::unique_ptr<IAssemblyLoader> CreateAssemblyLoader() {
-        return std::make_unique<BasicAssemblyLoader>();
-    }
 }
