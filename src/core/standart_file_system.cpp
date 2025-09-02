@@ -129,7 +129,7 @@ Result<void> StandardFileSystem::WriteBinaryFile(const std::filesystem::path& pa
         return std::unexpected(GetStreamError(path, "Failed to open file for writing"));
     }
 
-    file.write(reinterpret_cast<const char*>(data.data()), data.size());
+    file.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
     file.flush();
 
     if (!file) {
@@ -217,7 +217,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::ListDirectory(const std::files
 
 Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
     const std::filesystem::path& directory,
-    const DirectoryIterationOptions& options = {}) {
+    const DirectoryIterationOptions& options) {
     if (!IsDirectory(directory)) {
         return MakeError("Path is not a directory: {}", directory.string());
     }
@@ -292,7 +292,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
     const std::filesystem::path& directory,
     std::span<const std::string_view> patterns,
-    bool recursive = true) {
+    bool recursive) {
     if (!IsDirectory(directory)) {
         return MakeError("Path is not a directory: {}", directory.string());
     }
@@ -488,7 +488,7 @@ Result<void> ExtendedFileSystem::AppendTextFile(const std::filesystem::path& pat
         return std::unexpected(GetStreamError(path, "Failed to open file for appending"));
     }
     
-    file.write(content.data(), content.size());
+    file.write(content.data(), static_cast<std::streamsize>(content.size()));
     file.flush();
     
     if (!file) {

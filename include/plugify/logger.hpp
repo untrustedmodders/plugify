@@ -33,8 +33,8 @@ namespace plugify {
 		 * @brief Log a message with the specified severity level.
 		 * @param message The log message.
 		 * @param severity The severity level of the log message.
-		 * @param loc
-		 */
+		 * @param loc The source location where the log message is generated. Defaults to the current location.
+         */
 	    virtual void Log(std::string_view message, Severity severity, std::source_location loc = std::source_location::current()) = 0;
 
 	    /**

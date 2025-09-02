@@ -1,5 +1,6 @@
 #pragma once
 
+#include "plugify/registrar.hpp"
 #include "plugify/assembly.hpp"
 #include "plugify/config.hpp"
 #include "plugify/extension.hpp"
@@ -75,22 +76,27 @@ namespace plugify {
             size_t modulesLoaded{0};
             size_t pluginsLoaded{0};
             Duration totalLoadTime{};
-            Duration slowestLoad{};
-            std::string slowestExtension;
+
+            Duration slowestModuleLoad{};
+            UniqueId slowestModule;
+            Duration slowestPluginLoad{};
+            UniqueId slowestPlugin;
 
             std::string ToString() const {
                 return std::format(
                     "=== Loader Report ===\n"
                     "  Modules loaded: {}\n"
                     "  Plugins loaded: {}\n"
-                    "  Total load time: {}\n"
-                    "  Slowest load: {}\n"
-                    "  Slowest extension: {}\n",
+                    "  Slowest module: {} - {}\n"
+                    "  Slowest plugin: {} - {}\n"
+                    "  Total load time: {}\n",
                     modulesLoaded,
                     pluginsLoaded,
-                    totalLoadTime,
-                    slowestLoad,
-                    slowestExtension.empty() ? "<none>" : slowestExtension
+                    slowestModuleLoad,
+                    ToShortString(slowestModule),
+                    slowestPluginLoad,
+                    ToShortString(slowestPlugin),
+                    totalLoadTime
                 );
             }
         };
@@ -120,9 +126,9 @@ namespace plugify {
         Result<void> LoadModule(Extension& module) {
             auto timer = ScopedTimer([&](Duration elapsed) {
                 _stats.totalLoadTime += elapsed;
-                if (elapsed > _stats.slowestLoad) {
-                    _stats.slowestLoad = elapsed;
-                    _stats.slowestExtension = module.GetName();
+                if (elapsed > _stats.slowestModuleLoad) {
+                    _stats.slowestModuleLoad = elapsed;
+                    _stats.slowestModule = module.GetId();
                 }
             });
 
@@ -178,9 +184,9 @@ namespace plugify {
         Result<void> LoadPlugin(const Extension& module, Extension& plugin) {
             auto timer = ScopedTimer([&](Duration elapsed) {
                 _stats.totalLoadTime += elapsed;
-                if (elapsed > _stats.slowestLoad) {
-                    _stats.slowestLoad = elapsed;
-                    _stats.slowestExtension = plugin.GetName();
+                if (elapsed > _stats.slowestPluginLoad) {
+                    _stats.slowestPluginLoad = elapsed;
+                    _stats.slowestPlugin = plugin.GetId();
                 }
             });
 
@@ -393,7 +399,7 @@ namespace plugify {
 
                 if (&method != &exportedMethod || !addr) {
                     errors.push_back(std::format("{:>3}. {}", i + 1, exportedMethod.GetName()));
-                    if (constexpr int kMaxDisplay = 10; errors.size() >= kMaxDisplay) {
+                    if (constexpr size_t kMaxDisplay = 10; errors.size() >= kMaxDisplay) {
                         errors.push_back(std::format("... and {} more", methods.size() - kMaxDisplay));
                         break;
                     }

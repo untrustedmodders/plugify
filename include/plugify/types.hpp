@@ -9,6 +9,7 @@
 #include "plg/expected.hpp"
 #include "plg/flat_map.hpp"
 #include "plg/enum.hpp"
+#include "plg/format.hpp"
 
 namespace plugify {
 	/**
@@ -61,19 +62,29 @@ namespace plugify {
     };
 
     /**
-     * TODO:
+     * @enum ExtensionType
+     * @brief Represents the type of an extension in the Plugify ecosystem.
+     *
+     * This enum is used to differentiate between various types of extensions,
+     * such as modules and plugins.
      */
     enum class ExtensionType {
-		Unknown,
-		Module,
-		Plugin
-	};
+        Unknown, ///< The type of the extension is unknown.
+        Module,  ///< The extension is a module.
+        Plugin   ///< The extension is a plugin.
+    };
 
-	/**
-	 * TODO:
-	 */
-	template<typename T>
-	using Result = plg::expected<T, std::string>;
+    /**
+     * @typedef Result
+     * @brief Represents the result of an operation, encapsulating either a value or an error message.
+     *
+     * This type is a template alias for `plg::expected`, which provides a way to handle
+     * operations that may succeed or fail with an error message.
+     *
+     * @tparam T The type of the value to be returned on success.
+     */
+    template<typename T>
+    using Result = plg::expected<T, std::string>;
 
     // Helper for creating errors with context
     template<typename... Args>
@@ -81,9 +92,7 @@ namespace plugify {
         return plg::unexpected(std::format(fmt, std::forward<Args>(args)...));
     }
 
-    /**
-     *
-     */
+    // Standart aliases
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
     using Duration = std::chrono::microseconds;

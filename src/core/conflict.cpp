@@ -20,8 +20,6 @@ Conflict& Conflict::operator=(const Conflict& other) {
 
 Conflict& Conflict::operator=(Conflict&& other) noexcept = default;
 
-static std::string emptyString;
-
 const std::string& Conflict::GetName() const noexcept { return _impl->name; }
 Constraint Conflict::GetConstraints() const noexcept {
 	return _impl->constraints.value_or(Constraint{});

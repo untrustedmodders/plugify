@@ -10,7 +10,7 @@ namespace {
     std::shared_mutex mutex;
 }
 
-// Register / unregister (used by Registrar)
+// Register / unregister
 Registrar::Registrar(UniqueId id, DebugInfo info) : _id(id) {
     std::unique_lock lock(mutex);
     registry.emplace(id, std::move(info));

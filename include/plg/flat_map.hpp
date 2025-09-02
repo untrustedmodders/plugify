@@ -5,8 +5,8 @@
 #ifdef __cpp_lib_flat_map
 #include <flat_map>
 namespace plg {
-    template<typename K, typename V>
-    using flat_map = std::flat_map<K, V>;
+    template<typename K, typename V, typename C = std::less<Key>>
+    using flat_map = std::flat_map<K, V, C>;
 }
 #else
 #include "plg/vector.hpp"
