@@ -43,7 +43,7 @@ namespace plugify {
             requires(std::is_base_of_v<Interface, Implementation>) {
             RegisterInstanceInternal(
                 std::type_index(typeid(Interface)),
-                std::static_pointer_cast<void>(instance)
+                instance
             );
         }
 
@@ -57,7 +57,7 @@ namespace plugify {
             RegisterFactoryInternal(
                 std::type_index(typeid(Interface)),
                 [factory]() -> std::shared_ptr<void> {
-                    return std::static_pointer_cast<void>(factory());
+                    return factory();
                 },
                 lifetime
             );
@@ -85,6 +85,70 @@ namespace plugify {
             ServiceLifetime lifetime = ServiceLifetime::Transient)
             requires(std::is_base_of_v<Interface, Implementation>) {
             RegisterFactory<Interface>(
+                [this, constructor]() -> std::shared_ptr<Interface> {
+                    return constructor(Resolve<Dependencies>()...);
+                },
+                lifetime
+            );
+        }
+
+        /**
+         * @brief Register a concrete instance if missing (singleton)
+         */
+        template<typename Interface, typename Implementation = Interface>
+        void RegisterInstanceIfMissing(std::shared_ptr<Implementation> instance)
+            requires(std::is_base_of_v<Interface, Implementation>) {
+            auto type = std::type_index(typeid(Interface));
+            if (!IsRegisteredInternal(type)) {
+                RegisterInstanceInternal(
+                type,
+                instance
+                );
+            }
+        }
+
+        /**
+         * @brief Register a factory function
+         */
+        template<typename Interface>
+        void RegisterFactoryIfMissing(
+            std::function<std::shared_ptr<Interface>()> factory,
+            ServiceLifetime lifetime = ServiceLifetime::Transient
+        ) {
+            auto type = std::type_index(typeid(Interface));
+            if (!IsRegisteredInternal(type)) {
+                RegisterFactoryInternal(
+                    type,
+                    [factory]() -> std::shared_ptr<void> {
+                        return factory();
+                    },
+                    lifetime
+                );
+            }
+        }
+
+        /**
+         * @brief Register a type with automatic construction
+         */
+        template<typename Interface, typename Implementation = Interface>
+        void RegisterTypeIfMissing(ServiceLifetime lifetime = ServiceLifetime::Transient)
+            requires(std::is_base_of_v<Interface, Implementation> &&
+                    std::is_default_constructible_v<Implementation>) {
+            RegisterFactoryIfMissing<Interface>(
+                []() { return std::make_shared<Implementation>(); },
+                lifetime
+            );
+        }
+
+        /**
+         * @brief Register with dependency injection
+         */
+        template<typename Interface, typename Implementation, typename... Dependencies>
+        void RegisterWithDependenciesIfMissing(
+            std::function<std::shared_ptr<Implementation>(Dependencies...)> constructor,
+            ServiceLifetime lifetime = ServiceLifetime::Transient)
+            requires(std::is_base_of_v<Interface, Implementation>) {
+            RegisterFactoryIfMissing<Interface>(
                 [this, constructor]() -> std::shared_ptr<Interface> {
                     return constructor(Resolve<Dependencies>()...);
                 },

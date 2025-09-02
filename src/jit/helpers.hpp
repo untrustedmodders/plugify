@@ -1,12 +1,14 @@
 #pragma once
 
-#include "plugify/value_type.hpp"
 #include <asmjit/core.h>
+
+#include "plugify/signarure.hpp"
+#include "plugify/value_type.hpp"
 
 /**
  * @brief Namespace containing utility functions of jit related things.
  */
-namespace plugify::JitUtils {
+namespace plugify {
 	template<typename T>
 	constexpr asmjit::TypeId GetTypeIdx() noexcept {
 		return static_cast<asmjit::TypeId>(asmjit::TypeUtils::TypeIdOfT<T>::kTypeId);
@@ -29,5 +31,19 @@ namespace plugify::JitUtils {
 			code = message;
 		}
 	};
+
+    inline asmjit::FuncSignature ConvertSignature(const Signature& sig) {
+        asmjit::FuncSignature asmSig(
+            GetCallConv(sig.callConv),
+            sig.varIndex,
+            GetRetTypeId(sig.retType)
+        );
+
+        for (const auto& arg : sig.argTypes) {
+            asmSig.addArg(GetValueTypeId(arg));
+        }
+
+        return asmSig;
+    }
 } // namespace plugify::JitUtils
 

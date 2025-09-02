@@ -439,46 +439,16 @@ PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
 }
 
 PlugifyBuilder& PlugifyBuilder::WithDefaults() {
-    // Provide default implementations if not specified
-    if (!_services.IsRegistered<ILogger>()) {
-        _services.RegisterInstance<ILogger>(std::make_shared<ConsoleLogger>());
-    }
-
-    if (!_services.IsRegistered<IPlatformOps>()) {
-        _services.RegisterInstance<IPlatformOps>(CreatePlatformOps());
-    }
-
-    if (!_services.IsRegistered<IEventBus>()) {
-        _services.RegisterInstance<IEventBus>(std::make_shared<SimpleEventBus>());
-    }
-
-    if (!_services.IsRegistered<IFileSystem>()) {
-        _services.RegisterInstance<IFileSystem>(std::make_shared<ExtendedFileSystem>());
-    }
-
-    if (!_services.IsRegistered<IAssemblyLoader>()) {
-        _services.RegisterInstance<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(_services.Resolve<IPlatformOps>(), _services.Resolve<IFileSystem>()));
-    }
-
-    /*if (!_services.IsRegistered<IConfigProvider>()) {
-        _services.RegisterInstance<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
-    }*/
-
-    if (!_services.IsRegistered<IManifestParser>()) {
-        _services.RegisterInstance<IManifestParser>(std::make_shared<GlazeManifestParser>());
-    }
-
-    if (!_services.IsRegistered<IDependencyResolver>()) {
-        _services.RegisterInstance<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_services.Resolve<ILogger>()));
-    }
-
-    /*if (!_services.IsRegistered<IProgressReporter>()) {
-        _services.RegisterInstance<IProgressReporter>(std::make_shared<DefaultProgressReporter>(_services.Resolve<ILogger>()));
-    }*/
-
-    /*if (!_services.IsRegistered<IMetricsCollector>()) {
-        _services.RegisterInstance<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());
-    }*/
+    _services.RegisterInstanceIfMissing<ILogger>(std::make_shared<ConsoleLogger>());
+    _services.RegisterInstanceIfMissing<IPlatformOps>(CreatePlatformOps());
+    _services.RegisterInstanceIfMissing<IEventBus>(std::make_shared<SimpleEventBus>());
+    _services.RegisterInstanceIfMissing<IFileSystem>(std::make_shared<ExtendedFileSystem>());
+    _services.RegisterInstanceIfMissing<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(_services.Resolve<IPlatformOps>(), _services.Resolve<IFileSystem>()));
+    //_services.RegisterInstanceIfMissing<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
+    _services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>());
+    _services.RegisterInstanceIfMissing<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_services.Resolve<ILogger>()));
+    //_services.RegisterInstanceIfMissing<IProgressReporter>(std::make_shared<DefaultProgressReporter>(_services.Resolve<ILogger>()));
+    //_services.RegisterInstanceIfMissing<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());
 
     // Validate configuration
     if (_config.paths.baseDir.empty()) {

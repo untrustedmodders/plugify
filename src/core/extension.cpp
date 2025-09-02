@@ -494,6 +494,9 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
                    to == ExtensionState::Failed;
 
         case ExtensionState::Ended:
+            return to == ExtensionState::Terminating;
+
+        case ExtensionState::Terminating:
             return to == ExtensionState::Terminated;
 
         case ExtensionState::Failed:

@@ -11,9 +11,11 @@ namespace plugify {
         //std::unique_ptr<ISymbolResolver> _symbolResolver;
         //std::unique_ptr<IPatternScanner> _patternScanner;
 
+#if PLUGIFY_CACHE_SYMBOLS
         // Symbol cache
         mutable std::shared_mutex _cacheMutex;
         mutable std::unordered_map<std::string, MemAddr, plg::string_hash, std::equal_to<>> _symbolCache;
+#endif
 
     public:
         BasicAssembly() = default;
@@ -24,6 +26,7 @@ namespace plugify {
             {}
 
         Result<MemAddr> GetSymbol(std::string_view name) const override {
+#if PLUGIFY_CACHE_SYMBOLS
             // Check cache first
             {
                 std::shared_lock lock(_cacheMutex);
@@ -32,15 +35,17 @@ namespace plugify {
                     return it->second;
                 }
             }
-
+#endif
             // Resolve symbol
             auto result = _handle->GetSymbol(name);
 
+#if PLUGIFY_CACHE_SYMBOLS
             // Cache if successful
             if (result) {
                 std::unique_lock lock(_cacheMutex);
                 _symbolCache.emplace(name, *result);
             }
+#endif
 
             return result;
         }

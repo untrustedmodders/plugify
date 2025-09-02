@@ -48,6 +48,7 @@ include(PlugifyRequirement)
 # ------------------------------------------------------------------------------
 # Plugify
 file(GLOB_RECURSE PLUGIFY_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/core/*.cpp")
+
 if(ORBIS OR PROSPERO)
     set(PLUGIFY_PLATFORM_NAME "playstation")
 elseif(SWITCH)
@@ -58,7 +59,17 @@ else() #if(APPLE OR LINUX OR ANDROID OR UNIX)
     set(PLUGIFY_PLATFORM_NAME "unix")
 endif()
 set(PLUGIFY_PLATFORM_SOURCES "src/platform/${PLUGIFY_PLATFORM_NAME}_ops.cpp")
-set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES})
+
+if(PLUGIFY_CPU_ARCH_ARM64)
+    set(PLUGIYFY_JIT_ARCH "a64")
+elseif(PLUGIFY_CPU_ARCH_ARM32)
+    set(PLUGIYFY_JIT_ARCH "a32")
+else()
+    set(PLUGIYFY_JIT_ARCH "x86")
+endif()
+file(GLOB_RECURSE PLUGIFY_JIT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/jit/${PLUGIYFY_JIT_ARCH}/*.cpp")
+
+set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES} ${PLUGIFY_JIT_SOURCES})
 
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT BUILD_SHARED_LIBS)
     message(WARNING "PLUGIFY_BUILD_SHARED_LIB is ON, but plugify will be built as a static library")
@@ -179,7 +190,6 @@ if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
 endif()
 
 include(PlugifySanitizer)
-include(PlugifyTools)
 
 # ------------------------------------------------------------------------------
 # Test

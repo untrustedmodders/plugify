@@ -1,6 +1,6 @@
-#include "plugify/jit/helpers.hpp"
+#include "../helpers.hpp"
 
-namespace plugify::JitUtils {
+namespace plugify {
 	bool HasHiArgSlot([[maybe_unused]] asmjit::TypeId typeId) noexcept {
 		return false;
 	}

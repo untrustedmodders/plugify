@@ -7,8 +7,20 @@ else()
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 
+# ------------------------------------------------------------------------------
+# libsolv
 include(FetchLibsolv)
 target_link_libraries(${PROJECT_NAME} PUBLIC solv::libsolvext)
+
+# ------------------------------------------------------------------------------
+# asmjit
+if(PLUGIFY_USE_EXTERNAL_ASMJIT)
+    find_package(asmjit REQUIRED)
+else()
+    include(FetchAsmjit)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ASMJIT_SRC})
+endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE asmjit::asmjit)
 
 # ------------------------------------------------------------------------------
 # Format

@@ -5,11 +5,12 @@
 #include <utility>
 #include <vector>
 
-#include <asmjit/core.h>
-
+#include "plugify/global.h"
 #include "plugify/mem_addr.hpp"
 #include "plugify/method.hpp"
 #include "plugify/property.hpp"
+#include "plugify/signarure.hpp"
+#include "plugify/value_type.hpp"
 
 namespace plugify {
 	/**
@@ -21,23 +22,23 @@ namespace plugify {
 	 * In other words, instead of calling a function directly, class
 	 * provides a mechanism to push the function parameters manually and to issue the call afterwards.
 	 */
-	class JitCall {
+	class PLUGIFY_API JitCall {
+		struct Impl;
 	public:
 		/**
 		 * @brief Constructor.
-		 * @param rt Weak pointer to the asmjit::JitRuntime.
 		 */
-		explicit JitCall(std::weak_ptr<asmjit::JitRuntime> rt);
+		JitCall();
 
 		/**
 		 * @brief Copy constructor.
-		 * @param other Another instance of Caller.
+		 * @param other Another instance of JitCall.
 		 */
 		JitCall(const JitCall& other) = delete;
 
 		/**
 		 * @brief Move constructor.
-		 * @param other Another instance of Caller.
+		 * @param other Another instance of JitCall.
 		 */
 		JitCall(JitCall&& other) noexcept;
 
@@ -52,7 +53,7 @@ namespace plugify {
 		 */
 		struct Parameters {
 			typedef const uint64_t* Data;
-			
+
 			/**
 			 * @brief Constructor.
 			 * @param count Parameters count.
@@ -80,11 +81,59 @@ namespace plugify {
 			Data GetDataPtr() const noexcept {
 				return arguments.data();
 			}
-			
+
 		private:
 			std::vector<uint64_t> arguments; ///< Raw storage for function arguments.
 		};
-		
+#if 0
+	    /**
+         * @struct Parameters
+         * @brief Structure to represent function parameters.
+         */
+	    struct Parameters {
+	        typedef const uint64_t* Data;
+
+	        /**
+             * @brief Constructor.
+             * @param count Parameters count.
+             */
+	        explicit Parameters(size_t count)
+                : arguments(std::make_unique<uint64_t[]>(count)), count(count), pos(0) {}
+
+	        /**
+             * @brief Set the value of the argument at next available position.
+             * @tparam T Type of the argument.
+             * @param val Value to set.
+             * @noreturn
+             */
+	        template<typename T>
+            void AddArgument(T val) {
+	            if (pos < count) {
+	                *(T*)(&arguments[pos]) = val;
+	                ++pos;
+	            }
+	            // else: ignore or throw, depending on desired behavior
+	        }
+
+	        /**
+             * @brief Get a pointer to the argument storage.
+             * @return Pointer to the arguments storage.
+             */
+	        Data GetDataPtr() const noexcept {
+	            return arguments.get();
+	        }
+
+	    private:
+	        std::unique_ptr<uint64_t[]> arguments; ///< Raw storage for function arguments.
+	        size_t count;
+	        size_t pos;
+	    };
+#endif
+
+	    /**
+         * @struct Return
+         * @brief Structure to represent return object.
+         */
 		struct Return {
 			/**
 			 * @brief Constructs an object of type `T` at the memory location.
@@ -127,7 +176,7 @@ namespace plugify {
 		private:
 			volatile uint64_t ret[2]{}; ///< Raw storage for the return value.
 		};
-		
+
 		enum class WaitType {
 			None,
 			Breakpoint,
@@ -145,7 +194,7 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(const asmjit::FuncSignature& sig, MemAddr target, WaitType waitType, bool hidden);
+		MemAddr GetJitFunc(const Signature& sig, MemAddr target, WaitType waitType, bool hidden);
 
 		/**
 		 * @brief Get a dynamically created function based on the method reference.
@@ -162,7 +211,7 @@ namespace plugify {
 		 * @return Pointer to the already generated function.
 		 * @note The returned pointer can be nullptr if function is not generate.
 		 */
-		MemAddr GetFunction() const noexcept { return _function; }
+		MemAddr GetFunction() const noexcept;
 
 		/**
 		 * @brief Get the target associated with the object.
@@ -170,13 +219,13 @@ namespace plugify {
 		 * @return A void pointer to the target function.
 		 * @note The returned pointer can be nullptr if no target is set.
 		 */
-		MemAddr GetTargetFunc() const noexcept { return _targetFunc; }
+		MemAddr GetTargetFunc() const noexcept;
 
 		/**
 		 * @brief Get the error message, if any.
 		 * @return Error message.
 		 */
-		std::string_view GetError() noexcept { return !_function && _errorCode ? _errorCode : ""; }
+		std::string_view GetError() noexcept;
 
 		/**
 		 * @brief Copy assignment operator for JitCall.
@@ -195,12 +244,18 @@ namespace plugify {
 		 */
 		JitCall& operator=(JitCall&& other) noexcept;
 
-	private:
-		std::weak_ptr<asmjit::JitRuntime> _rt;
-		MemAddr _function;
-		union {
-			MemAddr _targetFunc;
-			const char* _errorCode{};
-		};
+		/**
+		 * @brief Initialize the JIT runtime (call once at startup)
+		 * @return True if successful, false otherwise
+		 */
+		//static bool InitializeRuntime();
+
+		/**
+		 * @brief Shutdown the JIT runtime (call once at shutdown)
+		 */
+		//static void ShutdownRuntime();
+
+	PLUGIFY_ACCESS:
+	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 } // namespace plugify
