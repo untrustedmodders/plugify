@@ -13,17 +13,21 @@ namespace plugify {
      */
     struct Signature {
         std::string callConv;     ///< Calling convention
-        uint32_t varIndex;         ///< Variable index for variadic functions
         ValueType retType;         ///< Return type
+        uint8_t varIndex;         ///< Variable index for variadic functions
         std::vector<ValueType> argTypes; ///< Argument types
 
-        Signature() : varIndex(0), retType(ValueType::Void) {}
+        static constexpr uint8_t kNoVarIndex = 0xFFu;
 
-        Signature(std::string_view conv, uint32_t varIdx, ValueType ret)
-            : callConv(conv), varIndex(varIdx), retType(ret) {}
+        Signature() : varIndex(kNoVarIndex), retType(ValueType::Void) {}
 
-        void addArg(ValueType type) { argTypes.push_back(type); }
-        size_t argCount() const noexcept { return argTypes.size(); }
-        bool hasRet() const noexcept { return retType != ValueType::Void; }
+        Signature(std::string_view conv, ValueType ret, uint8_t varIdx = kNoVarIndex)
+            : callConv(conv), retType(ret), varIndex(varIdx) {}
+
+        void AddArg(ValueType type) { argTypes.push_back(type); }
+        size_t ArgCount() const noexcept { return argTypes.size(); }
+        bool HasRet() const noexcept { return retType != ValueType::Void; }
+
+        void SetRet(ValueType type) noexcept { retType = type; }
     };
 }

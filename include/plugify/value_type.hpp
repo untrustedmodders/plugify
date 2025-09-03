@@ -380,6 +380,71 @@ namespace plugify {
 		static constexpr bool IsHiddenParam(ValueType type) noexcept {
 			return IsObject(type) || IsBetween(type, ValueType::_HiddenParamStart, ValueType::_StructEnd);
 		}
+
+	    /**
+	     * @brief Returns the size in bytes of the given ValueType.
+	     *
+	     * Note: For arrays, this returns the size of the container (std::vector),
+	     * not the size of the elements inside.
+	     *
+	     * @param type The ValueType to check.
+	     * @return The size in bytes of the corresponding C++ type.
+	     */
+	    static constexpr size_t SizeOf(ValueType type) noexcept {
+		    switch (type) {
+		    case ValueType::Bool:    return sizeof(bool);
+		    case ValueType::Char8:   return sizeof(char);
+		    case ValueType::Char16:  return sizeof(char16_t);
+		    case ValueType::Int8:    return sizeof(int8_t);
+		    case ValueType::Int16:   return sizeof(int16_t);
+		    case ValueType::Int32:   return sizeof(int32_t);
+		    case ValueType::Int64:   return sizeof(int64_t);
+		    case ValueType::UInt8:   return sizeof(uint8_t);
+		    case ValueType::UInt16:  return sizeof(uint16_t);
+		    case ValueType::UInt32:  return sizeof(uint32_t);
+		    case ValueType::UInt64:  return sizeof(uint64_t);
+		    case ValueType::Pointer: return sizeof(void*);
+		    case ValueType::Float:   return sizeof(float);
+		    case ValueType::Double:  return sizeof(double);
+
+		    case ValueType::String:  return sizeof(std::string);
+		    case ValueType::Any:     return sizeof(plg::any);
+
+		    // Arrays -> std::vector overhead (not element size!)
+		    case ValueType::ArrayBool:     return sizeof(std::vector<bool>);
+		    case ValueType::ArrayChar8:    return sizeof(std::vector<char>);
+		    case ValueType::ArrayChar16:   return sizeof(std::vector<char16_t>);
+		    case ValueType::ArrayInt8:     return sizeof(std::vector<int8_t>);
+		    case ValueType::ArrayInt16:    return sizeof(std::vector<int16_t>);
+		    case ValueType::ArrayInt32:    return sizeof(std::vector<int32_t>);
+		    case ValueType::ArrayInt64:    return sizeof(std::vector<int64_t>);
+		    case ValueType::ArrayUInt8:    return sizeof(std::vector<uint8_t>);
+		    case ValueType::ArrayUInt16:   return sizeof(std::vector<uint16_t>);
+		    case ValueType::ArrayUInt32:   return sizeof(std::vector<uint32_t>);
+		    case ValueType::ArrayUInt64:   return sizeof(std::vector<uint64_t>);
+		    case ValueType::ArrayPointer:  return sizeof(std::vector<void*>);
+		    case ValueType::ArrayFloat:    return sizeof(std::vector<float>);
+		    case ValueType::ArrayDouble:   return sizeof(std::vector<double>);
+		    case ValueType::ArrayString:   return sizeof(std::vector<std::string>);
+		    case ValueType::ArrayAny:      return sizeof(std::vector<plg::any>);
+		    case ValueType::ArrayVector2:  return sizeof(std::vector<plg::vec2>);
+		    case ValueType::ArrayVector3:  return sizeof(std::vector<plg::vec3>);
+		    case ValueType::ArrayVector4:  return sizeof(std::vector<plg::vec4>);
+		    case ValueType::ArrayMatrix4x4:return sizeof(std::vector<plg::mat4x4>);
+
+		    // Structs
+		    case ValueType::Vector2:  return sizeof(plg::vec2);
+		    case ValueType::Vector3:  return sizeof(plg::vec3);
+		    case ValueType::Vector4:  return sizeof(plg::vec4);
+		    case ValueType::Matrix4x4:return sizeof(plg::mat4x4);
+
+		    // Special cases
+		    case ValueType::Function: return sizeof(plg::function);
+		    case ValueType::Void:     return 0;
+
+		    default: return 0; // Invalid / unsupported
+		    }
+	    }
 	};
 
 	// Test if ValueType enum values match the indices in plg::any
