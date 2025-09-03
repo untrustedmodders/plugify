@@ -42,7 +42,7 @@ namespace plugify {
 		[[nodiscard]] bool operator==(const Method& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Method& other) const noexcept;
 
-		static inline const uint8_t kNoVarArgs = 0xFFU;
+		static inline const uint8_t kNoVarArgs = 0xffU;
 
 		[[nodiscard]] std::shared_ptr<Method> FindPrototype(std::string_view name) const noexcept;
 

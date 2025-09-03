@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "plugify/value_type.hpp"
+#include "plugify/method.hpp"
 
 namespace plugify {
     /**
@@ -17,11 +18,9 @@ namespace plugify {
         uint8_t varIndex;         ///< Variable index for variadic functions
         std::vector<ValueType> argTypes; ///< Argument types
 
-        static constexpr uint8_t kNoVarIndex = 0xFFu;
+        Signature() : varIndex(Method::kNoVarArgs), retType(ValueType::Void) {}
 
-        Signature() : varIndex(kNoVarIndex), retType(ValueType::Void) {}
-
-        Signature(std::string_view conv, ValueType ret, uint8_t varIdx = kNoVarIndex)
+        Signature(std::string_view conv, ValueType ret, uint8_t varIdx = Method::kNoVarArgs)
             : callConv(conv), retType(ret), varIndex(varIdx) {}
 
         void AddArg(ValueType type) { argTypes.push_back(type); }

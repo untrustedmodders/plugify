@@ -201,12 +201,12 @@ MemAddr JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitT
     ValueType retType = method.GetRetType().GetType();
     bool retHidden = hidden(retType);
 
-    Signature signature(method.GetCallConv(), method.GetVarIndex(), retHidden ? ValueType::Pointer : retType);
+    Signature signature(method.GetCallConv(), retHidden ? ValueType::Pointer : retType, method.GetVarIndex());
     if (retHidden) {
-        signature.addArg(retType);
+        signature.AddArg(retType);
     }
     for (const auto& type : method.GetParamTypes()) {
-        signature.addArg(type.IsRef() ? ValueType::Pointer : type.GetType());
+        signature.AddArg(type.IsRef() ? ValueType::Pointer : type.GetType());
     }
 
     return GetJitFunc(signature, target, waitType, retHidden);
