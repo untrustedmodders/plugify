@@ -22,14 +22,15 @@ namespace plugify {
 
 	asmjit::CallConvId GetCallConv([[maybe_unused]] std::string_view conv) noexcept;
 
-	struct SimpleErrorHandler : asmjit::ErrorHandler {
-		asmjit::Error error{asmjit::kErrorOk};
-		const char* code{};
-
+	class SimpleErrorHandler : public asmjit::ErrorHandler {
+	public:
 		void handleError(asmjit::Error err, const char* message, asmjit::BaseEmitter* ) override {
 			error = err;
 			code = message;
 		}
+
+	    asmjit::Error error{asmjit::kErrorOk};
+	    const char* code{};
 	};
 
     inline asmjit::FuncSignature ConvertSignature(const Signature& sig) {

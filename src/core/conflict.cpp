@@ -24,6 +24,8 @@ const std::string& Conflict::GetName() const noexcept { return _impl->name; }
 Constraint Conflict::GetConstraints() const noexcept {
 	return _impl->constraints.value_or(Constraint{});
 }
+
+static const std::string emptyString;
 const std::string& Conflict::GetReason() const noexcept { return _impl->reason ? *_impl->reason : emptyString; }
 
 void Conflict::SetName(std::string name) { _impl->name = std::move(name); }

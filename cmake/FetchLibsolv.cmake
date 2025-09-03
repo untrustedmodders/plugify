@@ -21,7 +21,7 @@ add_library(solv::libsolv_static ALIAS libsolv)
 add_library(solv::libsolvext_static ALIAS libsolvext)
 
 file(COPY ${libsolv_SOURCE_DIR}/src/ DESTINATION ${libsolv_BINARY_DIR}/include/solv)
-file(COPY ${libsolv_SOURCE_DIR}/ext/ DESTINATION ${libsolv_BINARY_DIR}/ext/include/solv)
+file(COPY ${libsolv_SOURCE_DIR}/ext/ DESTINATION ${libsolv_BINARY_DIR}/ext/inlcude/solv)
 target_include_directories(libsolv PUBLIC ${libsolv_BINARY_DIR}/include ${libsolv_BINARY_DIR}/src)
 target_include_directories(libsolvext PUBLIC ${libsolv_SOURCE_DIR}/src ${libsolv_BINARY_DIR}/ext/include ${libsolv_BINARY_DIR}/src/ext)
 

@@ -78,15 +78,15 @@ struct Extension::Impl {
 };
 
 // Static empty defaults for returning const references to empty containers
-static const std::string kEmptyString;
-static const std::filesystem::path kEmptyPath;
-static const std::vector<std::string> kEmptyStrings;
-static const std::vector<std::filesystem::path> kEmptyPaths;
-static const std::vector<Dependency> kEmptyDependencies;
-static const std::vector<Conflict> kEmptyConflicts;
-static const std::vector<Obsolete> kEmptyObsoletes;
-static const std::vector<Method> kEmptyMethods;
-static const std::vector<MethodData> kEmptyMethodData;
+static const std::string emptyString;
+static const std::filesystem::path emptyPath;
+static const std::vector<std::string> emptyStrings;
+static const std::vector<std::filesystem::path> emptyPaths;
+static const std::vector<Dependency> emptyDependencies;
+static const std::vector<Conflict> emptyConflicts;
+static const std::vector<Obsolete> emptyObsoletes;
+static const std::vector<Method> emptyMethods;
+static const std::vector<MethodData> emptyMethodData;
 
 // ============================================================================
 // Extension::Impl Definition
@@ -147,19 +147,19 @@ const std::filesystem::path& Extension::GetLocation() const noexcept {
 // ============================================================================
 
 const std::string& Extension::GetDescription() const noexcept {
-    return _impl->manifest.description ? *_impl->manifest.description : kEmptyString;
+    return _impl->manifest.description ? *_impl->manifest.description : emptyString;
 }
 
 const std::string& Extension::GetAuthor() const noexcept {
-    return _impl->manifest.author ? *_impl->manifest.author : kEmptyString;
+    return _impl->manifest.author ? *_impl->manifest.author : emptyString;
 }
 
 const std::string& Extension::GetWebsite() const noexcept {
-    return _impl->manifest.website ? *_impl->manifest.website : kEmptyString;
+    return _impl->manifest.website ? *_impl->manifest.website : emptyString;
 }
 
 const std::string& Extension::GetLicense() const noexcept {
-    return _impl->manifest.license ? *_impl->manifest.license : kEmptyString;
+    return _impl->manifest.license ? *_impl->manifest.license : emptyString;
 }
 
 // ============================================================================
@@ -167,19 +167,19 @@ const std::string& Extension::GetLicense() const noexcept {
 // ============================================================================
 
 const std::vector<std::string>& Extension::GetPlatforms() const noexcept {
-    return _impl->manifest.platforms ? *_impl->manifest.platforms : kEmptyStrings;
+    return _impl->manifest.platforms ? *_impl->manifest.platforms : emptyStrings;
 }
 
 const std::vector<Dependency>& Extension::GetDependencies() const noexcept {
-    return _impl->manifest.dependencies ? *_impl->manifest.dependencies : kEmptyDependencies;
+    return _impl->manifest.dependencies ? *_impl->manifest.dependencies : emptyDependencies;
 }
 
 const std::vector<Conflict>& Extension::GetConflicts() const noexcept {
-    return _impl->manifest.conflicts ? *_impl->manifest.conflicts : kEmptyConflicts;
+    return _impl->manifest.conflicts ? *_impl->manifest.conflicts : emptyConflicts;
 }
 
 const std::vector<Obsolete>& Extension::GetObsoletes() const noexcept {
-    return _impl->manifest.obsoletes ? *_impl->manifest.obsoletes : kEmptyObsoletes;
+    return _impl->manifest.obsoletes ? *_impl->manifest.obsoletes : emptyObsoletes;
 }
 
 // ============================================================================
@@ -190,21 +190,21 @@ const std::string& Extension::GetEntry() const noexcept {
     if (_impl->type == ExtensionType::Plugin && _impl->manifest.entry) {
         return *_impl->manifest.entry;
     }
-    return kEmptyString;
+    return emptyString;
 }
 
 const std::vector<Method>& Extension::GetMethods() const noexcept {
     if (_impl->type == ExtensionType::Plugin && _impl->manifest.methods) {
         return *_impl->manifest.methods;
     }
-    return kEmptyMethods;
+    return emptyMethods;
 }
 
 const std::vector<MethodData>& Extension::GetMethodsData() const noexcept {
     if (_impl->type == ExtensionType::Plugin) {
         return _impl->pluginData.methodData;
     }
-    return kEmptyMethodData;
+    return emptyMethodData;
 }
 
 // ============================================================================
@@ -215,14 +215,14 @@ const std::filesystem::path& Extension::GetRuntime() const noexcept {
     if (_impl->type == ExtensionType::Module && _impl->manifest.runtime) {
         return *_impl->manifest.runtime;
     }
-    return kEmptyPath;
+    return emptyPath;
 }
 
 const std::vector<std::filesystem::path>& Extension::GetDirectories() const noexcept {
     if (_impl->type == ExtensionType::Module && _impl->manifest.directories) {
         return *_impl->manifest.directories;
     }
-    return kEmptyPaths;
+    return emptyPaths;
 }
 
 std::shared_ptr<IAssembly> Extension::GetAssembly() const noexcept {

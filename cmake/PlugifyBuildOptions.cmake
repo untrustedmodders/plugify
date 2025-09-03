@@ -20,6 +20,7 @@ option(PLUGIFY_BUILD_SHARED_ASMJIT "Build asmjit as shared library." OFF)
 
 option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library." OFF)
 option(PLUGIFY_USE_EXTERNAL_ASMJIT "Use external asmjit library." OFF)
+option(PLUGIFY_USE_EXTERNAL_LIBSOLV "Use external libsolv library." OFF)
 option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
 
 option(PLUGIFY_LOGGING "Enable logging system." ON)
