@@ -332,7 +332,7 @@ namespace plugify {
          */
         template<typename T, typename... Args>
             requires (sizeof(T) <= MaxSize && std::is_trivially_destructible_v<T>)
-        void ConstructAt(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...))) {
+        void Construct(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...))) {
             std::construct_at(GetAs<T>(), std::forward<Args>(args)...);
         }
 
