@@ -185,7 +185,7 @@ namespace plugify {
          * @throws std::out_of_range if no slots available.
          */
         template<SingleSlotType T>
-        Parameters& AddArgument(T value) {
+        Parameters& Add(T value) {
             if (_position >= _capacity) {
                 throw std::out_of_range("No more parameter slots available");
             }
@@ -205,7 +205,7 @@ namespace plugify {
          * @throws std::out_of_range if not enough slots available.
          */
         template<MultiSlotType T>
-        Parameters& AddLargeArgument(const T& value) {
+        Parameters& AddLarge(const T& value) {
             constexpr size_t slotsNeeded = (sizeof(T) + SlotSize - 1) / SlotSize;
 
             if (_position + slotsNeeded > _capacity) {
@@ -225,8 +225,8 @@ namespace plugify {
          * @return Reference to this builder for chaining.
          */
         template<typename... Args> requires (ParameterType<Args> && ...)
-        Parameters& AddArguments(Args... args) {
-            (AddArgument(args), ...);
+        Parameters& AddMultiple(Args... args) {
+            (Add(args), ...);
             return *this;
         }
 
@@ -239,7 +239,7 @@ namespace plugify {
          * @throws std::out_of_range if index is out of bounds.
          */
         template<SingleSlotType T>
-        Parameters& SetArgumentAt(size_t index, T value) {
+        Parameters& SetAt(size_t index, T value) {
             if (index >= _capacity) {
                 throw std::out_of_range("Parameter index out of range");
             }
@@ -343,7 +343,7 @@ namespace plugify {
          */
         template<typename T>
             requires (sizeof(T) <= MaxSize && std::is_trivially_copyable_v<T>)
-        void SetReturn(T value) noexcept {
+        void Set(T value) noexcept {
             // Clear storage first for smaller types
             _storage = {};
 
@@ -357,7 +357,7 @@ namespace plugify {
          */
         template<typename T>
             requires (sizeof(T) <= MaxSize && std::is_trivially_copyable_v<T>)
-        [[nodiscard]] T GetReturn() const noexcept {
+        [[nodiscard]] T Get() const noexcept {
             T result;
             std::memcpy(&result, _storage.data(), sizeof(T));
             return result;
@@ -384,11 +384,11 @@ namespace plugify {
          * @brief Get raw pointer to the return storage.
          * @return Pointer to the storage.
          */
-        [[nodiscard]] void* GetReturnPtr() noexcept {
+        [[nodiscard]] void* GetPtr() noexcept {
             return _storage.data();
         }
 
-        [[nodiscard]] const void* GetReturnPtr() const noexcept {
+        [[nodiscard]] const void* GetPtr() const noexcept {
             return _storage.data();
         }
 
