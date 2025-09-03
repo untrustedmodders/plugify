@@ -45,36 +45,44 @@ namespace plugify {
 		 */
 		~JitCallback();
 
-		using CallbackHandler = void(*)(const Method& method, MemAddr data, uint64_t* params, size_t count, void* ret);
-		using HiddenParam = bool(*)(ValueType);
+	    /**
+         * @brief CallbackHandler is a function pointer type for generic callback invocation.
+         *        The \p params argument can be accessed safely and conveniently using ParameterSpan,
+         *        and the \p ret argument (return value storage) can be managed using ReturnSlot.
+         *        These helper classes provide type-safe and ergonomic access to arguments and return values.
+         */
+	    using CallbackHandler = void(*)(const Method* method, MemAddr data, uint64_t* params, size_t count, /*uint128_t*/void* ret);
 
-		/**
-		 * @brief Get a dynamically created callback function based on the raw signature.
-		 * @param sig Function signature.
-		 * @param method Method description.
-		 * @param callback Callback function.
-		 * @param data User data.
-		 * @param hidden If true, return will be pass as hidden argument.
-		 * @return Pointer to the generated function.
-		 */
-		MemAddr GetJitFunc(const Signature& signature, const Method& method, CallbackHandler callback, MemAddr data, bool hidden);
+	    /**
+         * @brief HiddenParam is a predicate function pointer to determine if a ValueType should be passed as a hidden parameter. Use for return structs on x86 and arm arch.
+         */
+	    using HiddenParam = bool(*)(ValueType);
 
-		/**
-		 * @brief Get a dynamically created function based on the method.
-		 * @param method HMethod description.
-		 * @param callback Callback function.
-		 * @param data User data.
-		 * @param hidden If true, return will be pass as hidden argument.
-		 * @return Pointer to the generated function.
-		 *
-		 * @details Creates a new callback object, where method is a
-		 * signature describing the function to be called back, and callback is a pointer to a generic
-		 * callback handler (see below). The signature is needed in the generic
-		 * callback handler to correctly retrieve the arguments provided by the
-		 * caller of the callback. Note that the generic handler's function
-		 * type/declaration is always the same for any callback. userdata is a
-		 * pointer to arbitrary user data to be available in the generic callback handler.
-		 */
+	    /**
+         * @brief Generates a JIT-compiled callback function based on the provided raw signature.
+         * @param signature The function signature to use for the generated callback.
+         * @param method Optional pointer to a method descriptor for additional context. May be nullptr if not needed.
+         * @param callback Pointer to the callback handler to invoke.
+         * @param data User data to be passed to the callback handler.
+         * @param hidden If true, the return value will be passed as a hidden argument.
+         * @return Pointer to the generated function, or nullptr if generation fails.
+         * @details The \p method pointer can be nullptr and is provided for context in addition to user data, as it is common to access both in callback scenarios.
+         */
+		MemAddr GetJitFunc(const Signature& signature, const Method* method, CallbackHandler callback, MemAddr data, bool hidden);
+
+	    /**
+         * @brief Generates a callback function matching the specified method signature.
+         * @param method The method descriptor defining the function signature.
+         * @param callback Pointer to the generic callback handler to invoke.
+         * @param data Optional user data passed to the callback handler.
+         * @param hidden Predicate to determine if the return value should be passed as a hidden argument.
+         * @return Pointer to the generated function, or nullptr if generation fails.
+         *
+         * @details This function creates a JIT-compiled callback based on the provided method,
+         * allowing dynamic invocation with runtime argument handling. The callback handler
+         * receives arguments and user data as specified. If the hidden predicate returns true,
+         * the return value is passed as an additional hidden parameter.
+         */
 		MemAddr GetJitFunc(const Method& method, CallbackHandler callback, MemAddr data = nullptr, HiddenParam hidden = &ValueUtils::IsHiddenParam);
 
 		/**
@@ -119,8 +127,8 @@ namespace plugify {
 	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 
-        /**
-    * @brief Concept for types that can be stored directly in a register slot
+    /**
+     * @brief Concept for types that can be stored directly in a register slot
      */
     template<typename T>
     concept SlotStorable = std::is_trivially_copyable_v<T> && sizeof(T) <= sizeof(uint64_t);

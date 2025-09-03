@@ -60,8 +60,13 @@ namespace plugify {
 			Breakpoint,
 			Wait_Keypress
 		};
-	
+
+
 		using CallingFunc = void(*)(const uint64_t* params, const Return*); // Return can be null
+
+	    /**
+         * @brief HiddenParam is a predicate function pointer to determine if a ValueType should be passed as a hidden parameter. Use for return structs on x86 and arm arch.
+         */
 		using HiddenParam = bool(*)(ValueType);
 
 		/**
@@ -420,7 +425,7 @@ namespace plugify {
         }
 
     private:
-        alignas(16) std::array<std::byte, MaxSize> _storage;  ///< 128-bit storage for return value
+        alignas(alignof(std::max_align_t)) std::array<std::byte, MaxSize> _storage;  ///< 128-bit storage for return value
     };
 
     /**

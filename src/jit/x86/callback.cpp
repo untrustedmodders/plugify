@@ -1,6 +1,6 @@
 #include <asmjit/x86.h>
 
-#include "plugify/jit_callback.hpp"
+#include "plugify/callback.hpp"
 
 #include "../helpers.hpp"
 
@@ -18,7 +18,7 @@ struct JitCallback::Impl {
 		}
 	}
 
-	MemAddr GetJitFunc(const Signature& signature, const Method& method, CallbackHandler callback, MemAddr data, bool hidden) {
+	MemAddr GetJitFunc(const Signature& signature, const Method* method, CallbackHandler callback, MemAddr data, bool hidden) {
 		if (_function)
 			return _function;
 
@@ -143,7 +143,7 @@ struct JitCallback::Impl {
 
 	    // fill reg to pass method ptr to callback
 	    x86::Gp methodPtrParam = cc.newUIntPtr("methodPtrParam");
-	    cc.mov(methodPtrParam, &method);
+	    cc.mov(methodPtrParam, method);
 
 	    // fill reg to pass data ptr to callback
 	    x86::Gp dataPtrParam = cc.newUIntPtr("dataPtrParam");
@@ -306,7 +306,7 @@ JitCallback::~JitCallback() = default;
 
 JitCallback& JitCallback::operator=(JitCallback&& other) noexcept = default;
 
-MemAddr JitCallback::GetJitFunc(const Signature& signature, const Method& method, CallbackHandler callback, MemAddr data, bool hidden) {
+MemAddr JitCallback::GetJitFunc(const Signature& signature, const Method* method, CallbackHandler callback, MemAddr data, bool hidden) {
     return _impl->GetJitFunc(signature, method, callback, data, hidden);
 }
 
@@ -322,7 +322,7 @@ MemAddr JitCallback::GetJitFunc(const Method& method, CallbackHandler callback, 
         signature.addArg(type.IsRef() ? ValueType::Pointer : type.GetType());
     }
 
-    return GetJitFunc(signature, method, callback, data, hidden);
+    return GetJitFunc(signature, &method, callback, data, hidden);
 }
 
 MemAddr JitCallback::GetFunction() const noexcept {
