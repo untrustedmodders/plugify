@@ -200,17 +200,19 @@ private:
 
         // Validation result accumulator
         struct ValidationResult {
-            bool success = true;
             std::vector<std::string> errors;
             std::vector<std::string> warnings;
 
             void AddError(std::string msg) {
                 errors.push_back(std::move(msg));
-                success = false;
             }
 
             void AddWarning(std::string msg) {
                 warnings.push_back(std::move(msg));
+            }
+
+            bool IsSuccess() const {
+                return errors.empty();
             }
         } result;
 
@@ -282,7 +284,7 @@ private:
             logger->Log(std::format("Validation failed: {}", plg::join(result.errors, "; ")), Severity::Error);
         }
 
-        return result.success;
+        return result.IsSuccess();
     }
 
     void StartUpdateThread() {
@@ -333,18 +335,6 @@ bool Plugify::IsInitialized() const {
 void Plugify::Update(Duration deltaTime) const {
     _impl->Update(deltaTime);
 }
-
-/*std::future<Result<void>> Plugify::InitializeAsync() {
-    return std::async(std::launch::async, [this]() {
-        return Initialize();
-    });
-}
-
-std::future<void> Plugify::TerminateAsync() {
-    return std::async(std::launch::async, [this]() {
-        Terminate();
-    });
-}*/
 
 const Manager& Plugify::GetManager() const noexcept {
     return _impl->manager;

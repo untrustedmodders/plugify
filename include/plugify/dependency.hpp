@@ -24,7 +24,7 @@ namespace plugify {
 
 		// Getters
 		[[nodiscard]] const std::string& GetName() const noexcept;
-		[[nodiscard]] Constraint GetConstraints() const noexcept;
+		[[nodiscard]] const Constraint& GetConstraints() const noexcept;
 		[[nodiscard]] bool IsOptional() const noexcept;
 
 		// Setters (pass by value and move)

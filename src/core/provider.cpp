@@ -69,11 +69,11 @@ bool Provider::IsExtensionLoaded(std::string_view name, std::optional<Constraint
     return _impl->manager.IsExtensionLoaded(name, std::move(constraint));
 }
 
-const Extension* Provider::FindExtension(std::string_view name) const {
+const Extension* Provider::FindExtension(std::string_view name) const noexcept {
     return _impl->manager.FindExtension(name);
 }
 
-const Extension* Provider::FindExtension(UniqueId id) const {
+const Extension* Provider::FindExtension(UniqueId id) const noexcept {
     return _impl->manager.FindExtension(id);
 }
 

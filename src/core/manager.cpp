@@ -5,7 +5,7 @@
 #include "plugify/extension.hpp"
 #include "plugify/manifest.hpp"
 #include "plugify/manifest_parser.hpp"
-#include "plugify/progress_reporter.hpp"
+//#include "plugify/progress_reporter.hpp"
 
 // #include "asm/defer.hpp"
 #include "core/extension_loader.hpp"
@@ -38,6 +38,7 @@ struct Manager::Impl {
     Provider provider;
     ExtensionLoader loader;
     std::vector<Extension> extensions;
+    std::mutex lifecycleMutex;
     bool initialized{false};
 
     // Services
@@ -55,19 +56,19 @@ struct Manager::Impl {
     plg::flat_map<UniqueId, std::vector<UniqueId>> reverseDepGraph;
 
 public:
-    void Initialize() {
+    Result<void> Initialize() {
+        std::lock_guard lock(lifecycleMutex);
+
         if (initialized) {
-            logger->Log("Manager already initialized", Severity::Error);
-            return;
+            return plg::unexpected("Manager already initialized");
         }
 
         auto initialExtensions = DiscoverExtensions();
         if (!initialExtensions) {
-            logger->Log(initialExtensions.error(), Severity::Error);
-            return;
+            return plg::unexpected(std::move(initialExtensions.error()));
         } else if (initialExtensions->empty()) {
-            logger->Log("Extension did not found", Severity::Error);
-            return;
+            // depending on policy: return ok or error. I'll return ok but log a warning:
+            // return plg::unexpected("No extensions found");
         }
 
         FailureTracker failureTracker(initialExtensions->size());
@@ -85,6 +86,12 @@ public:
             .Build();
 
         auto [finalExtensions, report] = pipeline->Execute(std::move(*initialExtensions));
+
+        // compute total failed items across stages
+        size_t totalFailed = 0;
+        for (auto const& [name, stats] : report.stages) {
+            totalFailed += stats.failed;
+        }
 
         extensions = std::move(finalExtensions);
 
@@ -125,15 +132,22 @@ public:
             }
         }
 
+        if (totalFailed > 0) {
+            return plg::unexpected(report.ToString());
+        }
+
         initialized = true;
+        return Result<void>{};
     }
 
     void Update(Duration deltaTime) {
+        std::lock_guard lock(lifecycleMutex);
+
         if (!initialized) {
             return;
         }
 
-        for (const auto& ext : extensions) {
+        for (auto& ext : extensions) {
             if (ext.GetState() == ExtensionState::Running) {
                 Result<void> result;
                 switch (ext.GetType()) {
@@ -158,6 +172,8 @@ public:
     }
 
     void Terminate() {
+        std::lock_guard lock(lifecycleMutex);
+
         if (!initialized) {
             return;
         }
@@ -253,7 +269,7 @@ public:
 
         auto it = std::back_inserter(buffer);
 
-        std::format_to(it, "=== Load Order ===\n");
+        std::format_to(it, "\n=== Load Order ===\n");
 
         if (loadOrder.empty()) {
             std::format_to(it, "(empty)\n\n");
@@ -275,7 +291,7 @@ public:
 
         auto it = std::back_inserter(buffer);
 
-        std::format_to(it, "=== Dependency Graph (pkg -> [deps]) ===\n");
+        std::format_to(it, "\n=== Dependency Graph (pkg -> [deps]) ===\n");
 
         if (depGraph.empty()) {
             std::format_to(it, "(empty)\n\n");
@@ -339,7 +355,7 @@ Manager::Manager(const ServiceLocator& services, const Config& config)
 
 Manager::~Manager() = default;
 
-void Manager::Initialize() const {
+Result<void> Manager::Initialize() const {
     return _impl->Initialize();
 }
 
@@ -360,7 +376,7 @@ bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint>
     auto it = std::find_if(_impl->extensions.begin(), _impl->extensions.end(),
         [&](const Extension& e) { return e.GetName() == name; });
     if (it != _impl->extensions.end()) {
-        return constraint ? constraint->contains(it->GetVersion()) : true;
+        return !constraint || constraint->contains(it->GetVersion());
     }
     return false;
 }
@@ -385,7 +401,6 @@ const Extension* Manager::FindExtension(UniqueId id) const noexcept {
 
 std::vector<const Extension*> Manager::GetExtensions() const {
     std::vector<const Extension*> result;
-    result.reserve(_impl->extensions.size() / 2);
     for (auto& ext : _impl->extensions) {
         result.push_back(&ext);
     }
@@ -394,7 +409,6 @@ std::vector<const Extension*> Manager::GetExtensions() const {
 
 std::vector<const Extension*> Manager::GetExtensionsByState(ExtensionState state) const {
     std::vector<const Extension*> result;
-    result.reserve(_impl->extensions.size() / 2);
     for (auto& ext : _impl->extensions) {
         if (ext.GetState() == state) {
             result.push_back(&ext);
@@ -405,7 +419,6 @@ std::vector<const Extension*> Manager::GetExtensionsByState(ExtensionState state
 
 std::vector<const Extension*> Manager::GetExtensionsByType(ExtensionType type) const {
     std::vector<const Extension*> result;
-    result.reserve(_impl->extensions.size() / 2);
     for (auto& ext : _impl->extensions) {
         if (ext.GetType() == type) {
             result.push_back(&ext);
@@ -423,7 +436,7 @@ std::string Manager::GenerateDependencyGraph() const {
 }
 
 std::string Manager::GenerateDependencyGraphDOT() const {
-    return _impl->GenerateLoadOrder();
+    return _impl->GenerateDependencyGraphDOT();
 }
 
 bool Manager::operator==(const Manager& other) const noexcept = default;

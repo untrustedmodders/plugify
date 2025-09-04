@@ -12,7 +12,11 @@ namespace plugify {
 
         void Log(std::string_view message, Severity severity,
                  std::source_location loc = std::source_location::current()) override {
-            if (severity < _minSeverity) return;
+            if (severity == Severity::Unknown) {
+                std::cout << message << std::endl;
+                return;
+            }  else if (severity < _minSeverity)
+                return;
 
             auto output = FormatMessage(message, severity, loc);
 

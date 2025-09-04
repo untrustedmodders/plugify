@@ -13,7 +13,7 @@ namespace {
 // Register / unregister
 Registrar::Registrar(UniqueId id, DebugInfo info) : _id(id) {
     std::unique_lock lock(mutex);
-    registry.emplace(id, std::move(info));
+    registry[id] = std::move(info);
 }
 
 Registrar::~Registrar() {

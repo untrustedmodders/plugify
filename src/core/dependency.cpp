@@ -21,7 +21,7 @@ Dependency& Dependency::operator=(const Dependency& other) {
 Dependency& Dependency::operator=(Dependency&& other) noexcept = default;
 
 const std::string& Dependency::GetName() const noexcept { return _impl->name; }
-Constraint Dependency::GetConstraints() const noexcept {
+const Constraint& Dependency::GetConstraints() const noexcept {
 	return _impl->constraints.value_or(Constraint{});
 }
 bool Dependency::IsOptional() const noexcept { return _impl->optional.value_or(false); }

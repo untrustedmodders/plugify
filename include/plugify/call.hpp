@@ -440,22 +440,6 @@ namespace plugify {
         using ValueType = T;
 
         /**
-         * @brief Set the return value.
-         * @param value Value to set.
-         */
-        void Set(T value) noexcept {
-            SetReturn(value);
-        }
-
-        /**
-         * @brief Get the return value.
-         * @return The return value.
-         */
-        [[nodiscard]] T Get() const noexcept {
-            return GetReturn<T>();
-        }
-
-        /**
          * @brief Implicit conversion to the return type.
          */
         [[nodiscard]] operator T() const noexcept {

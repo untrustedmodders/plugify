@@ -1,12 +1,13 @@
 #pragma once
 
-#include "plugify/registrar.hpp"
 #include "plugify/assembly.hpp"
 #include "plugify/config.hpp"
 #include "plugify/extension.hpp"
 #include "plugify/file_system.hpp"
 #include "plugify/language_module.hpp"
 #include "plugify/provider.hpp"
+#include "plugify/lifecycle.hpp"
+#include "plugify/registrar.hpp"
 
 namespace plugify {
     template<typename Callback>
@@ -106,6 +107,7 @@ namespace plugify {
         const Provider& _provider;
         std::shared_ptr<IFileSystem> _fileSystem;
         std::shared_ptr<IAssemblyLoader> _assemblyLoader;
+        std::shared_ptr<ILifecycle> _lifecycle;
         LoadStatistics _stats;
 
         std::unordered_map<std::filesystem::path, std::shared_ptr<IAssembly>, plg::path_hash> _assemblyCache;
@@ -120,6 +122,7 @@ namespace plugify {
             , _provider(provider)
             , _fileSystem(locator.Resolve<IFileSystem>())
             , _assemblyLoader(locator.Resolve<IAssemblyLoader>())
+            , _lifecycle(locator.Resolve<ILifecycle>())
         {}
 
         // Module Operations
@@ -144,19 +147,22 @@ namespace plugify {
                 return langModuleResult;
             }
 
+            _lifecycle->OnLoad(module);
             ++_stats.modulesLoaded;
             return {};
         }
 
-        Result<void> UpdateModule(const Extension& module, Duration deltaTime) {
+        Result<void> UpdateModule(Extension& module, Duration deltaTime) {
             const auto& [hasUpdate, hasStart, hasEnd, hasExport] = module.GetMethodTable();
             if (!hasUpdate) {
                 return {};
             }
-            return SafeCall("OnUpdate", module.GetName()).Execute<void>([&] {
+            auto result = SafeCall("OnUpdate", module.GetName()).Execute<void>([&] {
                 module.GetLanguageModule()->OnUpdate(deltaTime);
                 return Result<void>{};
             });
+            _lifecycle->OnUpdate(module, deltaTime);
+            return result;
         }
 
         Result<void> UnloadModule(Extension& module) {
@@ -176,6 +182,7 @@ namespace plugify {
                 module.SetAssembly(nullptr);
             }
 
+            _lifecycle->OnUnload(module);
             --_stats.modulesLoaded;
             return result;
         }
@@ -212,40 +219,47 @@ namespace plugify {
             }
 
             ++_stats.pluginsLoaded;
+            _lifecycle->OnLoad(plugin);
             return {};
         }
 
-        Result<void> StartPlugin(const Extension& plugin) {
+        Result<void> StartPlugin(Extension& plugin) {
             const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
             if (!hasStart) {
                 return {};
             }
-            return SafeCall("OnPluginStart", plugin.GetName()).Execute<void>([&] {
+            auto result = SafeCall("OnPluginStart", plugin.GetName()).Execute<void>([&] {
                 plugin.GetLanguageModule()->OnPluginStart(plugin);
                 return Result<void>{};
             });
+            _lifecycle->OnStart(plugin);
+            return result;
         }
 
-        Result<void> EndPlugin(const Extension& plugin) {
+        Result<void> EndPlugin(Extension& plugin) {
             const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
             if (!hasEnd) {
                 return {};
             }
-            return SafeCall("OnPluginEnd", plugin.GetName()).Execute<void>([&] {
+            auto result = SafeCall("OnPluginEnd", plugin.GetName()).Execute<void>([&] {
                 plugin.GetLanguageModule()->OnPluginEnd(plugin);
                 return Result<void>{};
             });
+            _lifecycle->OnEnd(plugin);
+            return result;
         }
 
-        Result<void> UpdatePlugin(const Extension& plugin, Duration deltaTime) {
+        Result<void> UpdatePlugin(Extension& plugin, Duration deltaTime) {
             const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
             if (!hasUpdate) {
                 return {};
             }
-            return SafeCall("OnPluginUpdate", plugin.GetName()).Execute<void>([&] {
+            auto result = SafeCall("OnPluginUpdate", plugin.GetName()).Execute<void>([&] {
                 plugin.GetLanguageModule()->OnPluginUpdate(plugin, deltaTime);
                 return Result<void>{};
             });
+            _lifecycle->OnUpdate(plugin, deltaTime);
+            return result;
         }
 
         Result<void> UnloadPlugin(Extension& plugin) {
@@ -254,6 +268,7 @@ namespace plugify {
             plugin.SetUserData(nullptr);
             plugin.SetMethodTable({});
             plugin.SetMethodsData({});
+            _lifecycle->OnUnload(plugin);
             --_stats.pluginsLoaded;
             return {};
         }
@@ -263,14 +278,16 @@ namespace plugify {
             if (!hasExport) {
                 return {};
             }
-            return SafeCall("OnMethodExport", module.GetName()).Execute<void>([&] {
+            auto result = SafeCall("OnMethodExport", module.GetName()).Execute<void>([&] {
                 module.GetLanguageModule()->OnMethodExport(plugin);
                 return Result<void>{};
             });
+            //_lifecycle->OnExport(module, plugin);
+            return result;
         }
 
         // Preload support
-        Result<void> PreloadAssembly(
+        /*Result<void> PreloadAssembly(
             const std::filesystem::path& path,
             const std::vector<std::filesystem::path>& searchPaths
         ) {
@@ -290,9 +307,9 @@ namespace plugify {
                 return plg::unexpected(assemblyResult.error());
             }
 
-            _assemblyCache[*absPath] = std::move(*assemblyResult);
+            _assemblyCache.emplace(std::move(*absPath), std::move(*assemblyResult));
             return {};
-        }
+        }*/
 
         // Statistics
         const LoadStatistics& GetStatistics() const { return _stats; }
@@ -324,7 +341,7 @@ namespace plugify {
             }
 
             // Cache for future use
-            _assemblyCache[*absPath] = *assemblyResult;
+            _assemblyCache.emplace(std::move(*absPath), *assemblyResult);
             return std::move(*assemblyResult);
         }
 

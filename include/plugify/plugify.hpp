@@ -10,8 +10,8 @@
 #include "plugify/dependency_resolver.hpp"
 #include "plugify/file_system.hpp"
 #include "plugify/manifest_parser.hpp"
-#include "plugify/progress_reporter.hpp"
-#include "plugify/metric_collector.hpp"
+//#include "plugify/progress_reporter.hpp"
+//#include "plugify/metric_collector.hpp"
 //#include "plugify/plugin_lifecycle.hpp"
 #include "plugify/assembly_loader.hpp"
 
@@ -66,10 +66,6 @@ namespace plugify {
         void Terminate() const;
         [[nodiscard]] bool IsInitialized() const;
         void Update(Duration deltaTime = Duration{16}) const;
-
-        // Async operations with coroutines (C++20)
-        //std::future<Result<void>> InitializeAsync();
-        //std::future<void> TerminateAsync();
 
         // Component access
         [[nodiscard]] const Manager& GetManager() const noexcept;

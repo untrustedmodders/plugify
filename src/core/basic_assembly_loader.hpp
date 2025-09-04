@@ -42,17 +42,15 @@ namespace plugify {
             std::span<const std::filesystem::path> searchPaths
         ) override {
             // Resolve path
-            auto pathResult = ResolvePath(path);
-            if (!pathResult) {
-                return plg::unexpected(std::move(pathResult.error()));
+            auto resolvedPath = ResolvePath(path);
+            if (!resolvedPath) {
+                return plg::unexpected(std::move(resolvedPath.error()));
             }
-
-            auto resolvedPath = *pathResult;
 
             // Check cache
             {
                 std::shared_lock lock(_cacheMutex);
-                auto it = _cache.find(resolvedPath);
+                auto it = _cache.find(*resolvedPath);
                 if (it != _cache.end()) {
                     if (auto cached = it->second.lock()) {
                         return cached;
@@ -65,7 +63,7 @@ namespace plugify {
             defer {
                 if (supportRuntimePaths) {
                     for (const auto& searchPath : searchPaths) {
-                        [[maybe_unused]] auto it = _ops->RemoveSearchPath(searchPath);
+                        [[maybe_unused]] auto removeResult = _ops->RemoveSearchPath(searchPath);
                     }
                 }
             };
@@ -80,14 +78,14 @@ namespace plugify {
             }
 
             // Load library
-            auto handleResult = _ops->LoadLibrary(resolvedPath, flags);
+            auto handleResult = _ops->LoadLibrary(*resolvedPath, flags);
             if (!handleResult) {
                 return plg::unexpected(std::move(handleResult.error()));
             }
 
             // Create assembly
             auto handle = std::make_unique<AssemblyHandle>(
-                *handleResult, _ops, resolvedPath
+                *handleResult, _ops, *resolvedPath
             );
 
             auto assembly = std::make_shared<BasicAssembly>(std::move(handle), _ops);
@@ -95,7 +93,7 @@ namespace plugify {
             // Update cache
             {
                 std::unique_lock lock(_cacheMutex);
-                _cache[std::move(resolvedPath)] = assembly;
+                _cache.emplace(std::move(*resolvedPath), assembly);
             }
 
             return assembly;

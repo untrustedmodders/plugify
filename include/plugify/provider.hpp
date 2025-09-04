@@ -41,14 +41,18 @@ namespace plugify {
 
         // Manager
         [[nodiscard]] bool IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;
-        [[nodiscard]] const Extension* FindExtension(std::string_view name) const;
-        [[nodiscard]] const Extension* FindExtension(UniqueId id) const;
+        [[nodiscard]] const Extension* FindExtension(std::string_view name) const noexcept;
+        [[nodiscard]] const Extension* FindExtension(UniqueId id) const noexcept;
         [[nodiscard]] std::vector<const Extension*> GetExtensions() const;
 
         // Service access helpers
         template<typename Service>
         [[nodiscard]] std::shared_ptr<Service> Resolve() const {
             return GetServices().Resolve<Service>();
+        }
+        template<typename Service>
+        [[nodiscard]] std::shared_ptr<Service> TryResolve() const noexcept {
+            return GetServices().TryResolve<Service>();
         }
 
         [[nodiscard]] bool operator==(const Provider& other) const noexcept;
