@@ -156,7 +156,7 @@ namespace plugify {
 
 	/**
      * @class Parameters
-     * @brief Modern builder for function parameters to be passed to JIT code.
+     * @brief Builder for function parameters to be passed to JIT code.
      *
      * Supports various parameter types with automatic slot management.
      */
@@ -312,7 +312,7 @@ namespace plugify {
 
     /**
      * @class Return
-     * @brief Modern wrapper for function return values.
+     * @brief Wrapper for function return values.
      *
      * Supports return values up to 128 bits (2 slots).
      */
@@ -426,32 +426,5 @@ namespace plugify {
 
     private:
         alignas(alignof(std::max_align_t)) std::array<std::byte, MaxSize> _storage;  ///< 128-bit storage for return value
-    };
-
-    /**
-     * @class TypedReturn
-     * @brief Type-safe wrapper for specific return types.
-     * @tparam T The return type.
-     */
-    template<typename T>
-        requires (sizeof(T) <= Return::MaxSize && std::is_trivially_copyable_v<T>)
-    class TypedReturn : public Return {
-    public:
-        using ValueType = T;
-
-        /**
-         * @brief Implicit conversion to the return type.
-         */
-        [[nodiscard]] operator T() const noexcept {
-            return Get();
-        }
-
-        /**
-         * @brief Assignment operator.
-         */
-        TypedReturn& operator=(T value) noexcept {
-            Set(value);
-            return *this;
-        }
     };
 } // namespace plugify

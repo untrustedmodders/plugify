@@ -44,7 +44,7 @@ namespace plugify {
 
 		static inline const uint8_t kNoVarArgs = 0xffU;
 
-		[[nodiscard]] std::shared_ptr<Method> FindPrototype(std::string_view name) const noexcept;
+		[[nodiscard]] const Method* FindPrototype(std::string_view name) const noexcept;
 
 	PLUGIFY_ACCESS:
 	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)

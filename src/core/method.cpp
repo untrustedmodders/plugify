@@ -39,9 +39,9 @@ void Method::SetCallConv(std::string callConv) { _impl->callConv = std::move(cal
 bool Method::operator==(const Method& other) const noexcept = default;
 auto Method::operator<=>(const Method& other) const noexcept = default;
 
-std::shared_ptr<Method> Method::FindPrototype(std::string_view name) const noexcept {
+const Method* Method::FindPrototype(std::string_view name) const noexcept {
 	for (const auto& param : GetParamTypes()) {
-		if (auto method = param.GetPrototype()) {
+		if (const auto* method = param.GetPrototype()) {
 			if (method->GetName() == name) {
 				return method;
 			}
@@ -51,7 +51,7 @@ std::shared_ptr<Method> Method::FindPrototype(std::string_view name) const noexc
 		}
 	}
 
-	if (auto method = GetRetType().GetPrototype()) {
+	if (const auto* method = GetRetType().GetPrototype()) {
 		if (method->GetName() == name) {
 			return method;
 		}

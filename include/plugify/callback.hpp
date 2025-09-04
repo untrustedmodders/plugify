@@ -47,7 +47,7 @@ namespace plugify {
 
 	    /**
          * @brief CallbackHandler is a function pointer type for generic callback invocation.
-         *        The \p params argument can be accessed safely and conveniently using ParameterSpan,
+         *        The \p params argument can be accessed safely and conveniently using ParametersSpan,
          *        and the \p ret argument (return value storage) can be managed using ReturnSlot.
          *        These helper classes provide type-safe and ergonomic access to arguments and return values.
          */
@@ -134,23 +134,23 @@ namespace plugify {
     concept SlotStorable = std::is_trivially_copyable_v<T> && sizeof(T) <= sizeof(uint64_t);
 
     /**
-     * @class ParameterSpan
+     * @class ParametersSpan
      * @brief Provides access to a span of parameters stored in register-sized slots.
      *
      * This class allows reading and writing values of trivially copyable types
      * to a contiguous array of register-sized slots, typically used for passing
      * function arguments in JIT or ABI contexts.
      */
-    class ParameterSpan {
+    class ParametersSpan {
     public:
 	    using slot_type = uint64_t;
 
         /**
-         * @brief Constructs a ParameterSpan.
+         * @brief Constructs a ParametersSpan.
          * @param data Pointer to the slot data.
          * @param count Number of slots.
          */
-	    ParameterSpan(slot_type* data, size_t count) noexcept
+	    ParametersSpan(slot_type* data, size_t count) noexcept
 		    : _data(data), _count(count) {}
 
 	    /**
