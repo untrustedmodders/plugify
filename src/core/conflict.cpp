@@ -21,8 +21,9 @@ Conflict& Conflict::operator=(const Conflict& other) {
 Conflict& Conflict::operator=(Conflict&& other) noexcept = default;
 
 const std::string& Conflict::GetName() const noexcept { return _impl->name; }
+static const Constraint emptyConstraint;
 const Constraint& Conflict::GetConstraints() const noexcept {
-	return _impl->constraints.value_or(Constraint{});
+	return _impl->constraints ? *_impl->constraints : emptyConstraint;
 }
 
 static const std::string emptyString;

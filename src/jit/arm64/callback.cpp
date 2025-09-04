@@ -218,6 +218,8 @@ struct JitCallback::Impl {
 			    cc.ldr(tmp, retStackIdx0);
 			    cc.ret(tmp);
 		    }
+	    } else {
+	        cc.ret();
 	    }
 
 	    cc.endFunc();
@@ -273,7 +275,7 @@ MemAddr JitCallback::GetJitFunc(const Method& method, CallbackHandler callback, 
         signature.AddArg(type.IsRef() ? ValueType::Pointer : type.GetType());
     }
 
-    return GetJitFunc(signature, &method, callback, data, hidden);
+    return GetJitFunc(signature, &method, callback, data, retHidden);
 }
 
 MemAddr JitCallback::GetFunction() const noexcept {

@@ -16,9 +16,9 @@
 #include <plg/format.hpp>
 
 #define PLG_COUT(x) std::cout << x << std::endl
-#define PLG_CERR(x) std::cerr << x << std::endl
+#define PLG_CERR(x) std::cout << x << std::endl
 #define PLG_COUT_FMT(...) std::cout << std::format(__VA_ARGS__) << std::endl
-#define PLG_CERR_FMT(...) std::cerr << std::format(__VA_ARGS__) << std::endl
+#define PLG_CERR_FMT(...) std::cout << std::format(__VA_ARGS__) << std::endl
 
 using namespace plugify;
 
@@ -40,18 +40,18 @@ namespace {
 
     // ANSI Color codes
     struct Colors {
-        static constexpr const std::string_view RESET = "\033[0m";
-        static constexpr const std::string_view BOLD = "\033[1m";
-        static constexpr const std::string_view RED = "\033[31m";
-        static constexpr const std::string_view GREEN = "\033[32m";
-        static constexpr const std::string_view YELLOW = "\033[33m";
-        static constexpr const std::string_view BLUE = "\033[34m";
-        static constexpr const std::string_view MAGENTA = "\033[35m";
-        static constexpr const std::string_view CYAN = "\033[36m";
-        static constexpr const std::string_view GRAY = "\033[90m";
-        static constexpr const std::string_view BRIGHT_RED = "\033[91m";
-        static constexpr const std::string_view BRIGHT_GREEN = "\033[92m";
-        static constexpr const std::string_view BRIGHT_YELLOW = "\033[93m";
+        static constexpr std::string_view RESET = "\033[0m";
+        static constexpr std::string_view BOLD = "\033[1m";
+        static constexpr std::string_view RED = "\033[31m";
+        static constexpr std::string_view GREEN = "\033[32m";
+        static constexpr std::string_view YELLOW = "\033[33m";
+        static constexpr std::string_view BLUE = "\033[34m";
+        static constexpr std::string_view MAGENTA = "\033[35m";
+        static constexpr std::string_view CYAN = "\033[36m";
+        static constexpr std::string_view GRAY = "\033[90m";
+        static constexpr std::string_view BRIGHT_RED = "\033[91m";
+        static constexpr std::string_view BRIGHT_GREEN = "\033[92m";
+        static constexpr std::string_view BRIGHT_YELLOW = "\033[93m";
     };
 
     // Global flag for color output (can be set via command line)
@@ -87,26 +87,41 @@ namespace {
         std::string_view color;
     };
 
+    struct Icons {
+        static constexpr std::string_view Ok = "✓";
+        static constexpr std::string_view Fail = "✗";
+        static constexpr std::string_view Warning = "⚠";
+        static constexpr std::string_view Skipped = "○";
+        static constexpr std::string_view Valid = "●";
+        static constexpr std::string_view Resolving = "⋯";
+        static constexpr std::string_view Arrow = "→";
+        static constexpr std::string_view Number =  "#";
+        static constexpr std::string_view Unknown = "?";
+        static constexpr std::string_view Missing = "ℹ";
+        static constexpr std::string_view Equal = "=";
+        static constexpr std::string_view NotEqual = "≠";
+    };
+
     StateInfo GetStateInfo(ExtensionState state) {
         switch (state) {
             case ExtensionState::Started:
             case ExtensionState::Loaded:
-                return { "✓", Colors::GREEN };
+                return { Icons::Ok, Colors::GREEN };
             case ExtensionState::Failed:
             case ExtensionState::Corrupted:
-                return { "✗", Colors::RED };
+                return { Icons::Fail, Colors::RED };
             case ExtensionState::Unresolved:
-                return { "⚠", Colors::YELLOW };
+                return { Icons::Warning, Colors::YELLOW };
             case ExtensionState::Disabled:
             case ExtensionState::Skipped:
-                return { "○", Colors::GRAY };
+                return { Icons::Skipped, Colors::GRAY };
             case ExtensionState::Loading:
             case ExtensionState::Starting:
             case ExtensionState::Parsing:
             case ExtensionState::Resolving:
-                return { "⋯", Colors::CYAN };
+                return { Icons::Resolving, Colors::CYAN };
             default:
-                return { "?", Colors::GRAY };
+                return { Icons::Unknown, Colors::GRAY };
         }
     }
 
@@ -314,9 +329,10 @@ namespace {
                 std::string depConnector = lastDep ? "└─ " : "├─ ";
                 std::string status = dep.IsOptional() ? "[optional]" : "[required]";
                 PLG_COUT_FMT(
-                    "{}{}○ {} {} {} {}",
+                    "{}{}{} {} {} {} {}",
                     newPrefix,
                     depConnector,
+                    Icons::Skipped,
                     dep.GetName(),
                     dep.GetConstraints().to_string(),
                     Colorize(status, Colors::GRAY),
@@ -404,7 +420,11 @@ public:
             PLG_CERR("No feet, no sweets!");
             throw std::runtime_error("Failed to initialize Plugify");
         }
-        plug->GetManager().Initialize();
+        const auto& manager = plug->GetManager();
+        if (auto initResult = manager.Initialize(); !initResult) {
+            PLG_CERR(initResult.error());
+            throw std::runtime_error("Failed to initialize Manager");
+        }
         PLG_COUT("Plugin system initialized.");
     }
 
@@ -438,7 +458,10 @@ public:
         if (manager.IsInitialized()) {
             PLG_CERR("Plugin manager already loaded.");
         } else {
-            manager.Initialize();
+            if (auto initResult = manager.Initialize(); !initResult) {
+                PLG_CERR(initResult.error());
+                return;
+            }
             PLG_COUT("Plugin manager was loaded.");
         }
     }
@@ -467,7 +490,10 @@ public:
             PLG_CERR("Plugin manager not loaded.");
         } else {
             manager.Terminate();
-            manager.Initialize();
+            if (auto initResult = manager.Initialize(); !initResult) {
+                PLG_CERR(initResult.error());
+                return;
+            }
             PLG_COUT("Plugin manager was reloaded.");
         }
     }
@@ -546,7 +572,7 @@ public:
         // Header
         PLG_COUT_FMT(
             "{} {} {} {} {} {}",
-            Colorize(std::format("{:<3}", "#"), Colors::GRAY),
+            Colorize(std::format("{:<3}", Icons::Number), Colors::GRAY),
             Colorize(std::format("{:<25}", "Name"), Colors::GRAY),
             Colorize(std::format("{:<15}", "Version"), Colors::GRAY),
             Colorize(std::format("{:<12}", "State"), Colors::GRAY),
@@ -560,6 +586,7 @@ public:
             auto state = plugin->GetState();
             auto stateStr = plg::enum_to_string(state);
             auto [symbol, color] = GetStateInfo(state);
+            auto name = !plugin->GetName().empty() ? plugin->GetName() : plugin->GetLocation().filename().string();
 
             // Get load time if available
             std::string loadTime = "N/A";
@@ -573,7 +600,7 @@ public:
             PLG_COUT_FMT(
                 "{:<3} {:<25} {:<15} {} {:<11} {:<8} {:<12}",
                 index++,
-                Truncate(plugin->GetName(), 24),
+                Truncate(name, 24),
                 plugin->GetVersionString(),
                 Colorize(symbol, color),
                 Truncate(std::string(stateStr), 10),
@@ -678,7 +705,7 @@ public:
         // Header
         PLG_COUT_FMT(
             "{} {} {} {} {} {}",
-            Colorize(std::format("{:<3}", "#"), Colors::GRAY),
+            Colorize(std::format("{:<3}", Icons::Number), Colors::GRAY),
             Colorize(std::format("{:<25}", "Name"), Colors::GRAY),
             Colorize(std::format("{:<15}", "Version"), Colors::GRAY),
             Colorize(std::format("{:<12}", "State"), Colors::GRAY),
@@ -869,7 +896,7 @@ public:
                 const auto& method = methods[i];
                 PLG_COUT_FMT(
                     "  {}{:<2} {}",
-                    Colorize("#", Colors::GRAY),
+                    Colorize(Icons::Number, Colors::GRAY),
                     i + 1,
                     Colorize(method.GetName(), Colors::GREEN)
                 );
@@ -884,7 +911,7 @@ public:
             if (methods.size() > 10) {
                 PLG_COUT_FMT(
                     "  {} ... and {} more methods",
-                    Colorize("→", Colors::GRAY),
+                    Colorize(Icons::Arrow, Colors::GRAY),
                     methods.size() - 10
                 );
             }
@@ -905,8 +932,8 @@ public:
                 + Colorize(std::format(" ({} total)", deps.size()), Colors::GRAY)
             );
             for (const auto& dep : deps) {
-                std::string depIndicator = dep.IsOptional() ? Colorize("○", Colors::GRAY)
-                                                            : Colorize("●", Colors::GREEN);
+                std::string depIndicator = dep.IsOptional() ? Colorize(Icons::Skipped, Colors::GRAY)
+                                                            : Colorize(Icons::Valid, Colors::GREEN);
                 PLG_COUT_FMT(
                     "  {} {} {}",
                     depIndicator,
@@ -929,7 +956,7 @@ public:
             for (const auto& conflict : conflicts) {
                 PLG_COUT_FMT(
                     "  {} {} {}",
-                    Colorize("⚠", Colors::YELLOW),
+                    Colorize(Icons::Warning, Colors::YELLOW),
                     conflict.GetName(),
                     Colorize(conflict.GetConstraints().to_string(), Colors::GRAY)
                 );
@@ -984,7 +1011,7 @@ public:
         } else {
             PLG_COUT_FMT(
                 "\n{} {}",
-                Colorize("✓", Colors::GREEN),
+                Colorize(Icons::Ok, Colors::GREEN),
                 Colorize("No issues detected", Colors::GREEN)
             );
         }
@@ -1120,14 +1147,14 @@ public:
                 bool exists = std::filesystem::exists(dirs[i]);
                 PLG_COUT_FMT(
                     "  {} {}",
-                    exists ? Colorize("✓", Colors::GREEN) : Colorize("✗", Colors::RED),
+                    exists ? Colorize(Icons::Ok, Colors::GREEN) : Colorize(Icons::Fail, Colors::RED),
                     dirs[i].string()
                 );
             }
             if (dirs.size() > 5) {
                 PLG_COUT_FMT(
                     "  {} ... and {} more directories",
-                    Colorize("→", Colors::GRAY),
+                    Colorize(Icons::Arrow, Colors::GRAY),
                     dirs.size() - 5
                 );
             }
@@ -1136,7 +1163,7 @@ public:
         // Assembly Information
         if (auto assembly = module->GetAssembly()) {
             PLG_COUT(Colorize("\n[Assembly Information]", Colors::CYAN));
-            PLG_COUT_FMT("  {} Assembly loaded and active", Colorize("✓", Colors::GREEN));
+            PLG_COUT_FMT("  {} Assembly loaded and active", Colorize(Icons::Ok, Colors::GREEN));
             // Add more assembly details if available in your IAssembly interface
         }
 
@@ -1155,8 +1182,8 @@ public:
                 + Colorize(std::format(" ({} total)", deps.size()), Colors::GRAY)
             );
             for (const auto& dep : deps) {
-                std::string depIndicator = dep.IsOptional() ? Colorize("○", Colors::GRAY)
-                                                            : Colorize("●", Colors::GREEN);
+                std::string depIndicator = dep.IsOptional() ? Colorize(Icons::Skipped, Colors::GRAY)
+                                                            : Colorize(Icons::Valid, Colors::GREEN);
                 PLG_COUT_FMT(
                     "  {} {} {}",
                     depIndicator,
@@ -1179,7 +1206,7 @@ public:
             for (const auto& conflict : conflicts) {
                 PLG_COUT_FMT(
                     "  {} {} {}",
-                    Colorize("⚠", Colors::YELLOW),
+                    Colorize(Icons::Warning, Colors::YELLOW),
                     conflict.GetName(),
                     Colorize(conflict.GetConstraints().to_string(), Colors::GRAY)
                 );
@@ -1234,7 +1261,7 @@ public:
         } else {
             PLG_COUT_FMT(
                 "\n{} {}",
-                Colorize("✓", Colors::GREEN),
+                Colorize(Icons::Ok, Colors::GREEN),
                 Colorize("No issues detected", Colors::GREEN)
             );
         }
@@ -1279,14 +1306,14 @@ public:
         PLG_COUT_FMT(
             "  Failed Extensions:       {} {}",
             report.statistics["failed_extensions"],
-            report.statistics["failed_extensions"] > 0 ? Colorize("⚠", Colors::RED)
-                                                       : Colorize("✓", Colors::GREEN)
+            report.statistics["failed_extensions"] > 0 ? Colorize(Icons::Warning, Colors::RED)
+                                                       : Colorize(Icons::Ok, Colors::GREEN)
         );
         PLG_COUT_FMT(
             "  Extensions with Errors:  {} {}",
             report.statistics["extensions_with_errors"],
-            report.statistics["extensions_with_errors"] > 0 ? Colorize("⚠", Colors::YELLOW)
-                                                            : Colorize("✓", Colors::GREEN)
+            report.statistics["extensions_with_errors"] > 0 ? Colorize(Icons::Warning, Colors::YELLOW)
+                                                            : Colorize(Icons::Ok, Colors::GREEN)
         );
         PLG_COUT_FMT("  Total Warnings:          {}", report.statistics["total_warnings"]);
         PLG_COUT_FMT("  Slow Loading Extensions: {}", report.statistics["slow_loading_extensions"]);
@@ -1295,7 +1322,7 @@ public:
         if (!report.issues.empty()) {
             PLG_COUT(Colorize("\n[Critical Issues]", Colors::RED));
             for (const auto& issue : report.issues) {
-                PLG_COUT_FMT("  {} {}", Colorize("✗", Colors::RED), issue);
+                PLG_COUT_FMT("  {} {}", Colorize(Icons::Fail, Colors::RED), issue);
             }
         }
 
@@ -1303,14 +1330,14 @@ public:
         if (!report.warnings.empty()) {
             PLG_COUT(Colorize("\n[Warnings]", Colors::YELLOW));
             for (const auto& warning : report.warnings) {
-                PLG_COUT_FMT("  {} {}", Colorize("⚠", Colors::YELLOW), warning);
+                PLG_COUT_FMT("  {} {}", Colorize(Icons::Warning, Colors::YELLOW), warning);
             }
         }
 
         // Recommendations
         PLG_COUT(Colorize("\n[Recommendations]", Colors::CYAN));
         if (report.score == 100) {
-            PLG_COUT_FMT("  {} System is running optimally!", Colorize("✓", Colors::GREEN));
+            PLG_COUT_FMT("  {} System is running optimally!", Colorize(Icons::Ok, Colors::GREEN));
         } else {
             if (report.statistics["failed_extensions"] > 0) {
                 PLG_COUT("  • Fix or remove failed extensions");
@@ -1399,7 +1426,7 @@ public:
         }
 
         if (matches.empty()) {
-            PLG_COUT_FMT("{} No extensions found matching '{}'", Colorize("ℹ", Colors::YELLOW), query);
+            PLG_COUT_FMT("{} No extensions found matching '{}'", Colorize(Icons::Missing, Colors::YELLOW), query);
             return;
         }
 
@@ -1450,18 +1477,18 @@ public:
             return;
         }
 
-        PLG_COUT_FMT("{} File exists", Colorize("✓", Colors::GREEN));
+        PLG_COUT_FMT("{} File exists", Colorize(Icons::Ok, Colors::GREEN));
         PLG_COUT_FMT(
             "{} Valid extension type: {}",
-            Colorize("✓", Colors::GREEN),
+            Colorize(Icons::Ok, Colors::GREEN),
             isPlugin ? "Plugin" : "Module"
         );
-        PLG_COUT_FMT("{} File size: {}", Colorize("ℹ", Colors::CYAN), FormatFileSize(path));
+        PLG_COUT_FMT("{} File size: {}", Colorize(Icons::Missing, Colors::CYAN), FormatFileSize(path));
 
         // Try to parse manifest (you'd need to implement manifest parsing)
         // This is a placeholder for actual validation logic
         /*PLG_COUT_FMT("{} Manifest validation: {}",
-                    Colorize("ℹ", Colors::CYAN),
+                    Colorize(Icons::Missing, Colors::CYAN),
                     "Would parse and validate manifest here");*/
         // TODO
 
@@ -1494,7 +1521,7 @@ public:
         // Basic comparison table
         auto printRow = [](std::string_view label, std::string_view val1, std::string_view val2) {
             bool same = (val1 == val2);
-            PLG_COUT_FMT("{:<20} {:<25} {} {:<25}", label, val1, same ? "=" : "≠", val2);
+            PLG_COUT_FMT("{:<20} {:<25} {} {:<25}", label, val1, same ? Icons::Equal : Icons::NotEqual, val2);
         };
 
         PLG_COUT_FMT(
@@ -1670,9 +1697,15 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
         auto* reload = interactiveApp.add_subcommand("reload", "Reload manager");
         auto* plugins = interactiveApp.add_subcommand("plugins", "List plugins");
         auto* modules = interactiveApp.add_subcommand("modules", "List modules");
+        // Show plugin/module commands
+        auto* plugin = interactiveApp.add_subcommand("plugin", "Show plugin information");
+        auto* module = interactiveApp.add_subcommand("module", "Show module information");
         auto* health = interactiveApp.add_subcommand("health", "System health");
-        auto* search_cmd = interactiveApp.add_subcommand("search", "Search extensions");
+        auto* tree = interactiveApp.add_subcommand("tree", "Show dependency tree");
+        auto* search = interactiveApp.add_subcommand("search", "Search extensions");
         auto* help = interactiveApp.add_subcommand("help", "Show help");
+        auto* validate = interactiveApp.add_subcommand("validate", "Validate extension file");
+        auto* compare = interactiveApp.add_subcommand("compare", "Compare two extensions");
 
         // Add options for plugins/modules
         bool showFailed = false;
@@ -1682,8 +1715,32 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
         modules->add_flag("--failed", showFailed);
         modules->add_option("--sort", sortBy);
 
+        // Add options for plugin/module
+        std::string plugin_name;
+        bool plugin_use_id = false;
+        plugin->add_option("name", plugin_name, "Plugin name or ID")->required();
+        plugin->add_flag("-u,--uuid", plugin_use_id, "Use ID instead of name");
+        std::string module_name;
+        bool module_use_id = false;
+        module->add_option("name", module_name, "Module name or ID")->required();
+        module->add_flag("-u,--uuid", module_use_id, "Use ID instead of name");
+
+        std::string tree_name;
+        bool tree_use_id = false;
+        tree->add_option("name", tree_name, "Extension name or ID")->required();
+        tree->add_flag("-u,--uuid", tree_use_id, "Use ID instead of name");
+
         std::string searchQuery;
-        search_cmd->add_option("query", searchQuery);
+        search->add_option("query", searchQuery);
+
+        std::string validate_path;
+        validate->add_option("path", validate_path, "Path to extension file")->required();
+
+        std::string compare_ext1, compare_ext2;
+        bool compare_use_id = false;
+        compare->add_option("extension1", compare_ext1, "First extension")->required();
+        compare->add_option("extension2", compare_ext2, "Second extension")->required();
+        compare->add_flag("-u,--uuid", compare_use_id, "Use ID instead of name");
 
         // Set callbacks
         init->callback([&app]() { app.Initialize(); });
@@ -1713,14 +1770,32 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
             app.ListModules(filter, sort);
         });
 
+        plugin->callback([&app, &plugin_name, &plugin_use_id]() {
+            app.ShowPlugin(plugin_name, plugin_use_id);
+        });
+
+        module->callback([&app, &module_name, &module_use_id]() {
+            app.ShowModule(module_name, module_use_id);
+        });
+
         health->callback([&app]() { app.ShowHealth(); });
 
-        search_cmd->callback([&app, &searchQuery]() {
+        tree->callback([&app, &tree_name, &tree_use_id]() {
+            app.ShowDependencyTree(tree_name, tree_use_id);
+        });
+
+        search->callback([&app, &searchQuery]() {
             if (!searchQuery.empty()) {
                 app.SearchExtensions(searchQuery);
             } else {
                 PLG_CERR("Search query required");
             }
+        });
+
+        validate->callback([&app, &validate_path]() { app.ValidateExtension(validate_path); });
+
+        compare->callback([&app, &compare_ext1, &compare_ext2, &compare_use_id]() {
+            app.CompareExtensions(compare_ext1, compare_ext2, compare_use_id);
         });
 
         help->callback([]() {
@@ -1738,8 +1813,6 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
             PLG_COUT("  clear/cls           - Clear screen");
             PLG_COUT("  help                - Show this help");
             PLG_COUT("  exit/quit/q         - Exit interactive mode");
-            PLG_COUT("");
-            PLG_COUT("Advanced commands available in non-interactive mode:");
             PLG_COUT("  tree <name>         - Show dependency tree");
             PLG_COUT("  validate <path>     - Validate extension file");
             PLG_COUT("  compare <e1> <e2>   - Compare two extensions");
@@ -1762,6 +1835,10 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
 
 int
 main(int argc, char** argv) {
+    /*if (!std::setlocale(LC_ALL, "en_US.UTF-8")) {
+        PLG_CERR("Warning: Failed to set UTF-8 locale");
+    }*/
+
     auto plugify = MakePlugify();
     if (!plugify) {
         PLG_COUT(plugify.error());

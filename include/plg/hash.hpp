@@ -76,4 +76,12 @@ namespace plg {
 		(hash_combine(seed, args), ...); // fold expression
 		return seed;
 	}
+
+    template<typename T1, typename T2>
+    struct pair_hash {
+	    size_t operator()(std::pair<T1, T2> const& p) const {
+	        return hash_combine_all(p.first, p.second);
+	    }
+	};
+
 }

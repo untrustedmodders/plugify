@@ -1,9 +1,7 @@
 #include "plugify/assembly_loader.hpp"
 #include "plugify/plugify.hpp"
 
-#include "core/basic_metrics_collector.hpp"
 #include "core/console_logger.hpp"
-#include "core/default_progress_reporter.hpp"
 #include "core/glaze_config_provider.hpp"
 #include "core/glaze_manifest_parser.hpp"
 #include "core/glaze_metadata.hpp"

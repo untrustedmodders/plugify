@@ -19,6 +19,7 @@ namespace plugify {
      */
     class PLUGIFY_API ServiceLocator {
         struct Impl;
+
     public:
         ServiceLocator();
         ~ServiceLocator();
@@ -38,27 +39,24 @@ namespace plugify {
         /**
          * @brief Register a concrete instance (singleton)
          */
-        template<typename Interface, typename Implementation = Interface>
+        template <typename Interface, typename Implementation = Interface>
         void RegisterInstance(std::shared_ptr<Implementation> instance)
-            requires(std::is_base_of_v<Interface, Implementation>) {
-            RegisterInstanceInternal(
-                std::type_index(typeid(Interface)),
-                instance
-            );
+            requires(std::is_base_of_v<Interface, Implementation>)
+        {
+            RegisterInstanceInternal(std::type_index(typeid(Interface)), instance);
         }
 
         /**
          * @brief Register a factory function
          */
-        template<typename Interface>
+        template <typename Interface>
         void RegisterFactory(
             std::function<std::shared_ptr<Interface>()> factory,
-            ServiceLifetime lifetime = ServiceLifetime::Transient) {
+            ServiceLifetime lifetime = ServiceLifetime::Transient
+        ) {
             RegisterFactoryInternal(
                 std::type_index(typeid(Interface)),
-                [factory]() -> std::shared_ptr<void> {
-                    return factory();
-                },
+                [factory]() -> std::shared_ptr<void> { return factory(); },
                 lifetime
             );
         }
@@ -66,24 +64,23 @@ namespace plugify {
         /**
          * @brief Register a type with automatic construction
          */
-        template<typename Interface, typename Implementation = Interface>
+        template <typename Interface, typename Implementation = Interface>
         void RegisterType(ServiceLifetime lifetime = ServiceLifetime::Transient)
-            requires(std::is_base_of_v<Interface, Implementation> &&
-                    std::is_default_constructible_v<Implementation>) {
-            RegisterFactory<Interface>(
-                []() { return std::make_shared<Implementation>(); },
-                lifetime
-            );
+            requires(std::is_base_of_v<Interface, Implementation> && std::is_default_constructible_v<Implementation>)
+        {
+            RegisterFactory<Interface>([]() { return std::make_shared<Implementation>(); }, lifetime);
         }
 
         /**
          * @brief Register with dependency injection
          */
-        template<typename Interface, typename Implementation, typename... Dependencies>
+        template <typename Interface, typename Implementation, typename... Dependencies>
         void RegisterWithDependencies(
             std::function<std::shared_ptr<Implementation>(Dependencies...)> constructor,
-            ServiceLifetime lifetime = ServiceLifetime::Transient)
-            requires(std::is_base_of_v<Interface, Implementation>) {
+            ServiceLifetime lifetime = ServiceLifetime::Transient
+        )
+            requires(std::is_base_of_v<Interface, Implementation>)
+        {
             RegisterFactory<Interface>(
                 [this, constructor]() -> std::shared_ptr<Interface> {
                     return constructor(Resolve<Dependencies>()...);
@@ -95,22 +92,20 @@ namespace plugify {
         /**
          * @brief Register a concrete instance if missing (singleton)
          */
-        template<typename Interface, typename Implementation = Interface>
+        template <typename Interface, typename Implementation = Interface>
         void RegisterInstanceIfMissing(std::shared_ptr<Implementation> instance)
-            requires(std::is_base_of_v<Interface, Implementation>) {
+            requires(std::is_base_of_v<Interface, Implementation>)
+        {
             auto type = std::type_index(typeid(Interface));
             if (!IsRegisteredInternal(type)) {
-                RegisterInstanceInternal(
-                type,
-                instance
-                );
+                RegisterInstanceInternal(type, instance);
             }
         }
 
         /**
          * @brief Register a factory function
          */
-        template<typename Interface>
+        template <typename Interface>
         void RegisterFactoryIfMissing(
             std::function<std::shared_ptr<Interface>()> factory,
             ServiceLifetime lifetime = ServiceLifetime::Transient
@@ -119,9 +114,7 @@ namespace plugify {
             if (!IsRegisteredInternal(type)) {
                 RegisterFactoryInternal(
                     type,
-                    [factory]() -> std::shared_ptr<void> {
-                        return factory();
-                    },
+                    [factory]() -> std::shared_ptr<void> { return factory(); },
                     lifetime
                 );
             }
@@ -130,10 +123,10 @@ namespace plugify {
         /**
          * @brief Register a type with automatic construction
          */
-        template<typename Interface, typename Implementation = Interface>
+        template <typename Interface, typename Implementation = Interface>
         void RegisterTypeIfMissing(ServiceLifetime lifetime = ServiceLifetime::Transient)
-            requires(std::is_base_of_v<Interface, Implementation> &&
-                    std::is_default_constructible_v<Implementation>) {
+            requires(std::is_base_of_v<Interface, Implementation> && std::is_default_constructible_v<Implementation>)
+        {
             RegisterFactoryIfMissing<Interface>(
                 []() { return std::make_shared<Implementation>(); },
                 lifetime
@@ -143,11 +136,13 @@ namespace plugify {
         /**
          * @brief Register with dependency injection
          */
-        template<typename Interface, typename Implementation, typename... Dependencies>
+        template <typename Interface, typename Implementation, typename... Dependencies>
         void RegisterWithDependenciesIfMissing(
             std::function<std::shared_ptr<Implementation>(Dependencies...)> constructor,
-            ServiceLifetime lifetime = ServiceLifetime::Transient)
-            requires(std::is_base_of_v<Interface, Implementation>) {
+            ServiceLifetime lifetime = ServiceLifetime::Transient
+        )
+            requires(std::is_base_of_v<Interface, Implementation>)
+        {
             RegisterFactoryIfMissing<Interface>(
                 [this, constructor]() -> std::shared_ptr<Interface> {
                     return constructor(Resolve<Dependencies>()...);
@@ -163,7 +158,7 @@ namespace plugify {
         /**
          * @brief Resolve a service
          */
-        template<typename Interface>
+        template <typename Interface>
         [[nodiscard]] std::shared_ptr<Interface> Resolve() const {
             return std::static_pointer_cast<Interface>(
                 ResolveInternal(std::type_index(typeid(Interface)))
@@ -173,7 +168,7 @@ namespace plugify {
         /**
          * @brief Try to resolve a service (returns nullptr if not found)
          */
-        template<typename Interface>
+        template <typename Interface>
         [[nodiscard]] std::shared_ptr<Interface> TryResolve() const noexcept {
             auto result = TryResolveInternal(std::type_index(typeid(Interface)));
             return result ? std::static_pointer_cast<Interface>(result) : nullptr;
@@ -182,7 +177,7 @@ namespace plugify {
         /**
          * @brief Check if a service is registered
          */
-        template<typename Interface>
+        template <typename Interface>
         [[nodiscard]] bool IsRegistered() const {
             return IsRegisteredInternal(std::type_index(typeid(Interface)));
         }
@@ -219,25 +214,25 @@ namespace plugify {
             explicit ServiceBuilder(ServiceLocator& locator);
             ~ServiceBuilder();
 
-            template<typename Interface, typename Implementation = Interface>
+            template <typename Interface, typename Implementation = Interface>
             ServiceBuilder& AddSingleton() {
                 _locator.RegisterType<Interface, Implementation>(ServiceLifetime::Singleton);
                 return *this;
             }
 
-            template<typename Interface>
+            template <typename Interface>
             ServiceBuilder& AddSingleton(std::shared_ptr<Interface> instance) {
                 _locator.RegisterInstance<Interface>(std::move(instance));
                 return *this;
             }
 
-            template<typename Interface, typename Implementation = Interface>
+            template <typename Interface, typename Implementation = Interface>
             ServiceBuilder& AddTransient() {
                 _locator.RegisterType<Interface, Implementation>(ServiceLifetime::Transient);
                 return *this;
             }
 
-            template<typename Interface>
+            template <typename Interface>
             ServiceBuilder& AddFactory(std::function<std::shared_ptr<Interface>()> factory) {
                 _locator.RegisterFactory<Interface>(std::move(factory));
                 return *this;
@@ -252,16 +247,17 @@ namespace plugify {
     private:
         // Internal non-template methods (implemented in .cpp)
         void RegisterInstanceInternal(std::type_index type, std::shared_ptr<void> instance);
-        void RegisterFactoryInternal(std::type_index type,
-                                    std::function<std::shared_ptr<void>()> factory,
-                                    ServiceLifetime lifetime);
+        void RegisterFactoryInternal(
+            std::type_index type,
+            std::function<std::shared_ptr<void>()> factory,
+            ServiceLifetime lifetime
+        );
         [[nodiscard]] std::shared_ptr<void> ResolveInternal(std::type_index type) const;
         [[nodiscard]] std::shared_ptr<void> TryResolveInternal(std::type_index type) const noexcept;
         [[nodiscard]] bool IsRegisteredInternal(std::type_index type) const;
 
         // PIMPL
-    PLUGIFY_ACCESS:
-        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
+        PLUGIFY_ACCESS : PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 
     // ============================================

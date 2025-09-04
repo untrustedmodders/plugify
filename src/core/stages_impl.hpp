@@ -15,20 +15,21 @@ namespace plugify {
         std::shared_ptr<IFileSystem> _fileSystem;
 
     public:
-        ParsingStage(std::shared_ptr<IManifestParser> parser,
-                     std::shared_ptr<IFileSystem> fileSystem)
-            : _parser(std::move(parser)), _fileSystem(std::move(fileSystem)) {}
+        ParsingStage(std::shared_ptr<IManifestParser> parser, std::shared_ptr<IFileSystem> fileSystem)
+            : _parser(std::move(parser))
+            , _fileSystem(std::move(fileSystem)) {
+        }
 
-        std::string_view GetName() const override { return "Parsing"; }
+        std::string_view GetName() const override {
+            return "Parsing";
+        }
 
         bool ShouldProcess(const Extension& item) const override {
             return item.GetState() == ExtensionState::Discovered;
         }
 
-        Result<void> ProcessItem(
-            Extension& ext,
-            [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
-
+        Result<void>
+        ProcessItem(Extension& ext, [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
             ext.StartOperation(ExtensionState::Parsing);
 
             auto content = _fileSystem->ReadTextFile(ext.GetLocation());
@@ -60,18 +61,23 @@ namespace plugify {
         const Config& _config;
 
     public:
-        ResolutionStage(std::shared_ptr<IDependencyResolver> resolver,
-                        std::vector<UniqueId>* loadOrder,
-                        plg::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
-                        plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph,
-                        const Config& config)
+        ResolutionStage(
+            std::shared_ptr<IDependencyResolver> resolver,
+            std::vector<UniqueId>* loadOrder,
+            plg::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
+            plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph,
+            const Config& config
+        )
             : _resolver(std::move(resolver))
             , _loadOrder(loadOrder)
             , _depGraph(depGraph)
             , _reverseDepGraph(reverseDepGraph)
-            , _config(config)  {}
+            , _config(config) {
+        }
 
-        std::string_view GetName() const override { return "Resolution"; }
+        std::string_view GetName() const override {
+            return "Resolution";
+        }
 
         Result<std::vector<Extension>> ProcessAll(
             std::vector<Extension> items,
@@ -82,7 +88,8 @@ namespace plugify {
             if (filtered.empty()) {
                 return MakeError(
                     "No valid extensions to resolve: {} total, {} excluded by policy",
-                    items.size(), excluded.size()
+                    items.size(),
+                    excluded.size()
                 );
             }
 
@@ -97,7 +104,8 @@ namespace plugify {
             if (report.loadOrder.empty()) {
                 return MakeError(
                     "No valid extensions to load: {} total, {} filtered by resolver",
-                    items.size(), filtered.size()
+                    items.size(),
+                    filtered.size()
                 );
             }
 
@@ -106,12 +114,13 @@ namespace plugify {
 
     private:
         // Filter extensions based on whitelist/blacklist
-        std::pair<std::vector<Extension>, std::vector<Extension>> FilterByPolicy(std::vector<Extension>& items) const {
+        std::pair<std::vector<Extension>, std::vector<Extension>>
+        FilterByPolicy(std::vector<Extension>& items) const {
             std::vector<Extension> filtered;
             std::vector<Extension> excluded;
 
             filtered.reserve(items.size());
-            //excluded.reserve(items.size());
+            // excluded.reserve(items.size());
 
             for (auto&& ext : items) {
                 bool include = true;
@@ -122,16 +131,14 @@ namespace plugify {
                 }
 
                 // Check whitelist
-                if (include &&
-                    !_config.security.whitelistedExtensions.empty() &&
-                    !_config.security.whitelistedExtensions.contains(ext.GetName())) {
+                if (include && !_config.security.whitelistedExtensions.empty()
+                    && !_config.security.whitelistedExtensions.contains(ext.GetName())) {
                     include = false;
                 }
 
                 // Check blacklist
-                if (include &&
-                    !_config.security.blacklistedExtensions.empty() &&
-                    _config.security.blacklistedExtensions.contains(ext.GetName())) {
+                if (include && !_config.security.blacklistedExtensions.empty()
+                    && _config.security.blacklistedExtensions.contains(ext.GetName())) {
                     include = false;
                 }
 
@@ -147,7 +154,7 @@ namespace plugify {
                 }
             }
 
-            return {std::move(filtered), std::move(excluded)};
+            return { std::move(filtered), std::move(excluded) };
         }
 
         // Build language registry and add language dependencies
@@ -218,9 +225,11 @@ namespace plugify {
             }
 
             // Add excluded extensions at the very end
-            result.insert(result.end(),
-                         std::make_move_iterator(excluded.begin()),
-                         std::make_move_iterator(excluded.end()));
+            result.insert(
+                result.end(),
+                std::make_move_iterator(excluded.begin()),
+                std::make_move_iterator(excluded.end())
+            );
 
             // Store dependency graphs
             *_depGraph = std::move(report.dependencyGraph);
@@ -252,8 +261,8 @@ namespace plugify {
             Result<void> result;
             switch (ext.GetType()) {
                 case ExtensionType::Module: {
-                    auto assemblyResult = _loader.PreloadAssembly(ext.GetRuntime(), ext.GetDirectories());
-                    break;
+                    auto assemblyResult = _loader.PreloadAssembly(ext.GetRuntime(),
+    ext.GetDirectories()); break;
                 }
 
                 case ExtensionType::Plugin: {
@@ -272,7 +281,7 @@ namespace plugify {
 
     // Uses CRTP (Curiously Recurring Template Pattern) for compile-time polymorphism
     // Derived classes must implement: DoProcessItem() [non-virtual]
-    template<typename Derived>
+    template <typename Derived>
     class BaseFailurePropagatingStage : public ISequentialStage<Extension> {
     protected:
         ExtensionLoader& _loader;
@@ -287,14 +296,18 @@ namespace plugify {
             FailureTracker& failureTracker,
             const plg::flat_map<UniqueId, std::vector<UniqueId>>& depGraph,
             const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
-            Duration timeout)
+            Duration timeout
+        )
             : _loader(loader)
             , _failureTracker(failureTracker)
             , _depGraph(depGraph)
             , _reverseDepGraph(reverseDepGraph)
-            , _timeout(timeout) {}
+            , _timeout(timeout) {
+        }
 
-        bool ContinueOnError() const override { return true; }
+        bool ContinueOnError() const override {
+            return true;
+        }
 
         Result<void> ProcessItem(
             Extension& ext,
@@ -302,7 +315,6 @@ namespace plugify {
             size_t total,
             const ExecutionContext<Extension>& ctx
         ) override {
-
             // Common dependency failure check
             if (_failureTracker.HasAnyDependencyFailed(ext, _reverseDepGraph)) {
                 return HandleDependencyFailure(ext);
@@ -313,13 +325,15 @@ namespace plugify {
         }
 
         // Make timeout configurable per stage
-        Duration GetTimeout() const { return _timeout; }
+        Duration GetTimeout() const {
+            return _timeout;
+        }
 
     protected:
         // Add hook points for derived classes
-        //virtual void OnDependencyFailure(Extension& ext) {}
-        //virtual void OnProcessingStart(Extension& ext) {}
-        //virtual void OnProcessingComplete(Extension& ext, bool success) {}
+        // virtual void OnDependencyFailure(Extension& ext) {}
+        // virtual void OnProcessingStart(Extension& ext) {}
+        // virtual void OnProcessingComplete(Extension& ext, bool success) {}
 
         // Handle dependency failure uniformly
         Result<void> HandleDependencyFailure(Extension& ext) {
@@ -333,11 +347,8 @@ namespace plugify {
         }
 
         // Handle operation failure uniformly
-        void HandleOperationFailure(
-            Extension& ext,
-            const Result<void>& result,
-            ExtensionState failedState
-        ) {
+        void
+        HandleOperationFailure(Extension& ext, const Result<void>& result, ExtensionState failedState) {
             ext.AddError(result.error());
             ext.EndOperation(failedState);
             _failureTracker.MarkFailed(ext.GetId());
@@ -347,8 +358,9 @@ namespace plugify {
         // Check and add timeout warning
         void CheckTimeout(Extension& ext, ExtensionState state) {
             if (auto operationTime = ext.GetOperationTime(state); operationTime > _timeout) {
-                ext.AddWarning(std::format("{} took {} to complete",
-                    plg::enum_to_string(state), operationTime));
+                ext.AddWarning(
+                    std::format("{} took {} to complete", plg::enum_to_string(state), operationTime)
+                );
             }
         }
 
@@ -372,7 +384,9 @@ namespace plugify {
     public:
         using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
-        std::string_view GetName() const override { return "Loading"; }
+        std::string_view GetName() const override {
+            return "Loading";
+        }
 
         bool ShouldProcess(const Extension& item) const override {
             return item.GetState() == ExtensionState::Resolved;
@@ -434,20 +448,24 @@ namespace plugify {
 
     class ExportingStage : public BaseFailurePropagatingStage<ExportingStage> {
         std::vector<const Extension*> _runningModules;
+
     public:
         using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
-        std::string_view GetName() const override { return "Exporting"; }
-
-        bool ShouldProcess(const Extension& item) const override {
-            return item.GetState() == ExtensionState::Loaded &&
-                   item.GetType() == ExtensionType::Plugin;
+        std::string_view GetName() const override {
+            return "Exporting";
         }
 
-        void Setup(std::span<Extension> items, [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
+        bool ShouldProcess(const Extension& item) const override {
+            return item.GetState() == ExtensionState::Loaded
+                   && item.GetType() == ExtensionType::Plugin;
+        }
+
+        void
+        Setup(std::span<Extension> items, [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
             for (const auto& ext : items) {
-                if (ext.GetType() == ExtensionType::Module &&
-                    ext.GetState() == ExtensionState::Running) {
+                if (ext.GetType() == ExtensionType::Module
+                    && ext.GetState() == ExtensionState::Running) {
                     _runningModules.push_back(&ext);
                 }
             }
@@ -483,11 +501,13 @@ namespace plugify {
     public:
         using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
-        std::string_view GetName() const override { return "Starting"; }
+        std::string_view GetName() const override {
+            return "Starting";
+        }
 
         bool ShouldProcess(const Extension& item) const override {
-            return item.GetState() == ExtensionState::Exported &&
-                   item.GetType() == ExtensionType::Plugin;
+            return item.GetState() == ExtensionState::Exported
+                   && item.GetType() == ExtensionType::Plugin;
         }
 
         Result<void> DoProcessItem(

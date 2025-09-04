@@ -1,7 +1,5 @@
 #pragma once
 
-#include "plugify/metric_collector.hpp"
-
 #include "plg/thread_pool.hpp"
 
 namespace plugify {

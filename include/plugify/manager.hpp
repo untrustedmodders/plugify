@@ -19,7 +19,7 @@ namespace plugify {
         Manager& operator=(Manager&& other) noexcept = delete;
 
         // Lifecycle
-        void Initialize() const;
+        Result<void> Initialize() const;
         [[nodiscard]] bool IsInitialized() const;
         void Update(Duration deltaTime) const;
         void Terminate() const;

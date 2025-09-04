@@ -416,7 +416,7 @@ namespace plugify {
 
                 if (&method != &exportedMethod || !addr) {
                     errors.push_back(std::format("{:>3}. {}", i + 1, exportedMethod.GetName()));
-                    if (constexpr size_t kMaxDisplay = 10; errors.size() >= kMaxDisplay) {
+                    if (constexpr size_t kMaxDisplay = 100; errors.size() >= kMaxDisplay) {
                         errors.push_back(std::format("... and {} more", methods.size() - kMaxDisplay));
                         break;
                     }

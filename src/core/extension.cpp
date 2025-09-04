@@ -16,9 +16,10 @@ struct Extension::Impl {
     MethodTable methodTable;
     MemAddr userData;
     ILanguageModule* languageModule{nullptr};
-    Manifest manifest;
     std::filesystem::path location;
     std::string version;
+
+    Manifest manifest;
 
     // Timing
     struct Timings {
@@ -64,9 +65,17 @@ struct Extension::Impl {
         id.SetName(manifest.name);
         version = manifest.version.to_string();
         location = location.parent_path();
-        if (type == ExtensionType::Module && !manifest.runtime) {
-            // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
-            manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, manifest.name);
+        if (type == ExtensionType::Module) {
+            if (!manifest.runtime) {
+                // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
+                manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, manifest.name);
+            }
+            if (manifest.directories && !manifest.directories->empty()) {
+                // Set correct path to directories
+                for (auto& dir : *manifest.directories) {
+                    dir = location / dir;
+                }
+            }
         }
         registrar = std::make_unique<Registrar>(id, Registrar::DebugInfo{
             .name = manifest.name,
@@ -98,6 +107,8 @@ static const std::vector<MethodData> emptyMethodData;
 
 Extension::Extension(UniqueId id, std::filesystem::path location)
     : _impl(std::make_unique<Impl>()) {
+    _impl->manifest.name = location.filename().replace_extension().string(); // temp name
+
     _impl->id = id;
     _impl->state = ExtensionState::Discovered;
     _impl->type = GetExtensionType(location);

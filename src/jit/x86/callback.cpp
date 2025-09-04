@@ -267,6 +267,8 @@ struct JitCallback::Impl {
 			    _errorCode = "Return wider than 64bits not supported";
 			    return nullptr;
 		    }
+	    } else {
+	        cc.ret();
 	    }
 
 	    cc.endFunc();
@@ -322,7 +324,7 @@ MemAddr JitCallback::GetJitFunc(const Method& method, CallbackHandler callback, 
         signature.AddArg(type.IsRef() ? ValueType::Pointer : type.GetType());
     }
 
-    return GetJitFunc(signature, &method, callback, data, hidden);
+    return GetJitFunc(signature, &method, callback, data, retHidden);
 }
 
 MemAddr JitCallback::GetFunction() const noexcept {

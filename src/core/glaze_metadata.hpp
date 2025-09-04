@@ -80,7 +80,7 @@ struct glz::meta<plugify::Property> {
 		"type", [](auto&& self) -> auto& { return self._impl->type; },
 		"ref", [](auto&& self) -> auto& { return self._impl->ref; },
 		"prototype", [](auto&& self) -> auto& { return self._impl->prototype; },
-		"enumerate", [](auto&& self) -> auto& { return self._impl->enumerate; },
+		"enum", [](auto&& self) -> auto& { return self._impl->enumerate; },
 		"default", skip{}
 	);
 };

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/heads/main/schemas/language-module.schema.json",
+  "version": "1.2.4",
+  "name": "plugify-module-cpp",
+  "language": "cpp",
+  "description": "Adds support for C++ plugins",
+  "author": "untrustedmodders",
+  "website": "https://github.com/untrustedmodders/",
+  "license": "MIT",
+  "platforms": []
+}
