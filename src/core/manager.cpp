@@ -240,6 +240,10 @@ public:
 
     Result<std::vector<Extension>> DiscoverExtensions() const {
         auto dirs = fileSystem->IterateDirectory(config.paths.extensionsDir, {
+            .recursive = false,
+            .follow_symlinks = false,
+            .skip_permission_denied = true,
+            .filter_pattern = {},
             .filter_predicate = [](const FileInfo& f) { return f.is_directory(); },
         });
         if (!dirs) {

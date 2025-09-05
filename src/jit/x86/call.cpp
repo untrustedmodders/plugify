@@ -75,7 +75,7 @@ struct JitCall::Impl {
 
 	    std::vector<ArgRegSlot> argRegSlots;
 	    argRegSlots.reserve(sig.argCount());
-        uint32_t offsetNextSlot = sizeof(uint64_t);
+        size_t offsetNextSlot = sizeof(uint64_t);
 
 	    // map argument slots to registers, following abi. (We can have multiple register per arg slot such as high and low 32bits of a 64bit slot)
 	    for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {

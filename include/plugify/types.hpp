@@ -88,32 +88,14 @@ namespace plugify {
     using Result = plg::expected<T, std::string>;
 
     // Helper for creating errors with context
-#define MakeError(fmt, ...) MakeError3(std::source_location::current(), fmt, __VA_ARGS__)
-
-    inline auto MakeError2(
-        std::string error,
-        [[maybe_unused]] std::source_location loc = std::source_location::current()
-    ) {
-#if 0
-        return plg::unexpected(std::format("{} ({}:{})", error, loc.file_name(), loc.line()));
-#else
-        return plg::unexpected(std::move(error));
-#endif
-    }
 
     template<typename... Args>
-    inline auto MakeError3(
-        [[maybe_unused]] std::source_location loc,
-        std::format_string<Args...> fmt,
-        Args&&... args
-    ) {
-#if 0
-        auto msg = std::format(fmt, std::forward<Args>(args)...);
-        return plg::unexpected(std::format("{} ({}:{})", msg,
-            loc.file_name(), loc.line()));
-#else
+    inline auto MakeError(std::format_string<Args...> fmt, Args&&... args) {
         return plg::unexpected(std::format(fmt, std::forward<Args>(args)...));
-#endif
+    }
+
+    inline auto MakeError2(std::string error) {
+        return plg::unexpected(std::move(error));
     }
 
     // Standart aliases
