@@ -153,6 +153,29 @@ struct glz::meta<plugify::ValueType> {
 	);
 };
 
+template<>
+struct glz::meta<plugify::CallConv> {
+	using N = plugify::CallName;
+	using T = plugify::CallConv;
+	static constexpr auto value = enumerate(
+			N::CDecl, T::CDecl,
+			N::StdCall, T::StdCall,
+			N::FastCall, T::FastCall,
+			N::VectorCall, T::VectorCall,
+			N::ThisCall, T::ThisCall,
+			N::RegParm1, T::RegParm1,
+			N::RegParm2, T::RegParm2,
+			N::RegParm3, T::RegParm3,
+			N::LightCall2, T::LightCall2,
+			N::LightCall3, T::LightCall3,
+			N::LightCall4, T::LightCall4,
+			N::SoftFloat, T::SoftFloat,
+			N::HardFloat, T::HardFloat,
+			N::X64SystemV, T::X64SystemV,
+			N::X64Windows, T::X64Windows
+	);
+};
+
 namespace glz {
 #if PLUGIFY_CPP_VERSION > 202002L
     // std::chrono::duration
@@ -215,10 +238,13 @@ namespace glz {
 	template<>
 	struct from<JSON, plugify::Version> {
 		template <auto Opts>
-		static void op(plugify::Version& value, auto&&... args) {
+		static void op(plugify::Version& value, is_context auto&& ctx, auto&& it, auto&& end) {
 			std::string str;
-			parse<JSON>::op<Opts>(str, args...);
-            plg::parse(str, value);
+			parse<JSON>::op<Opts>(str, ctx, it, end);
+            if (auto result = plg::parse(str, value); !result) {
+                ctx.error = error_code::parse_error;
+                ctx.custom_error_message = plg::enum_to_string(result.ec);
+            }
         }
 	};
 
@@ -234,10 +260,13 @@ namespace glz {
 	template<>
 	struct from<JSON, plugify::Constraint> {
 	    template <auto Opts>
-	    static void op(plugify::Constraint& value, auto&&... args) {
+	    static void op(plugify::Constraint& value, is_context auto&& ctx, auto&& it, auto&& end) {
             std::string str;
-            parse<JSON>::op<Opts>(str, args...);
-            plg::parse(str, value);
+            parse<JSON>::op<Opts>(str, ctx, it, end);
+            if (auto result = plg::parse(str, value); !result) {
+                ctx.error = error_code::parse_error;
+	            ctx.custom_error_message = plg::enum_to_string(result.ec);
+	        }
 	    }
 	};
 
@@ -305,31 +334,37 @@ namespace glz {
 			}
 		};
 
-		template<>
-		struct from_json<plugify::Version> {
-			template<auto Opts>
-			static void op(plugify::Version& value, auto&&... args) {
-				std::string str;
-				read<json>::op<Opts>(str, args...);
-				value.from_string_noexcept(str);
-			}
-		};
+	    template<>
+        struct from_json<plugify::Version> {
+	        template <auto Opts>
+            static void op(plugify::Version& value, is_context auto&& ctx, auto&& it, auto&& end) {
+	            std::string str;
+	            parse<JSON>::op<Opts>(str, ctx, it, end);
+	            if (auto result = plg::parse(str, value); !result) {
+                    ctx.error = error_code::parse_error;
+	                ctx.custom_error_message = plg::enum_to_string(result.ec);
+	            }
+	        }
+	    };
 
-		template<>
-		struct to_json<plugify::Version> {
-			template<auto Opts>
-			static void op(const plugify::Version& value, auto&&... args) noexcept {
-				write<json>::op<Opts>(value.to_string_noexcept(), args...);
-			}
-		};
+	    template<>
+        struct to_json<plugify::Version> {
+	        template <auto Opts>
+            static void op(const plugify::Version& value, auto&&... args) noexcept {
+	            serialize<JSON>::op<Opts>(value.to_string(), args...);
+	        }
+	    };
 
 		template<>
 		struct from_json<plugify::Constraint> {
 		    template <auto Opts>
-		    static void op(plugify::Constraint& value, auto&&... args) {
+		    static void op(plugify::Constraint& value, is_context auto&& ctx, auto&& it, auto&& end) {
 		        std::string str;
-		        parse<JSON>::op<Opts>(str, args...);
-                plg::parse(str, value);
+		        parse<JSON>::op<Opts>(str, ctx, it, end);
+		        if (auto result = plg::parse(str, value); !result) {
+                    ctx.error = error_code::parse_error;
+		            ctx.custom_error_message = plg::enum_to_string(result.ec);
+		        }
 		    }
 		};
 

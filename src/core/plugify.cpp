@@ -10,6 +10,7 @@
 #include "core/standart_file_system.hpp"
 
 #include "basic_assembly_loader.hpp"
+#include "dummy_lifecycle.hpp"
 
 using namespace plugify;
 
@@ -164,7 +165,7 @@ private:
                 if (auto result = fileSystem->CreateDirectories(dir); !result) {
                     logger->Log(result.error(), Severity::Error);;
                 } else {
-                    logger->Log(std::format("Created directory: {}", dir.string()), Severity::Info);
+                    logger->Log(std::format("Created directory: {}", plg::as_string(dir)), Severity::Info);
                 }
             }
         };
@@ -224,13 +225,13 @@ private:
 
             // Check if path is normalized
             if (path.lexically_normal() != path) {
-                result.AddError(std::format("{} is not normalized: '{}'", name, path.string()));
+                result.AddError(std::format("{} is not normalized: '{}'", name, plg::as_string(path)));
                 continue;
             }
 
             // Check if path is relative (optional, depending on requirements)
             if (requireRelative && path.is_absolute()) {
-                result.AddError(std::format("{} must be relative: '{}'", name, path.string()));
+                result.AddError(std::format("{} must be relative: '{}'", name, plg::as_string(path)));
                 continue;
             }
 
@@ -238,9 +239,9 @@ private:
             bool exists = fileSystem->IsExists(path);
 
             if (requireExists && !exists) {
-                result.AddError(std::format("{} does not exist: '{}'", name, path.string()));
+                result.AddError(std::format("{} does not exist: '{}'", name, plg::as_string(path)));
             } else if (!exists && canCreate) {
-                result.AddWarning(std::format("{} will be created: '{}'", name, path.string()));
+                result.AddWarning(std::format("{} will be created: '{}'", name, plg::as_string(path)));
             }
         }
 
@@ -262,8 +263,8 @@ private:
                     if (it1 == path1.end() || it2 == path2.end()) {
                         result.AddError(
                             std::format("{} ('{}') conflicts with {} ('{}')",
-                                       paths[i].name, path1.string(),
-                                       paths[j].name, path2.string())
+                                       paths[i].name, plg::as_string(path1),
+                                       paths[j].name, plg::as_string(path2))
                         );
                     }
                 }
@@ -406,10 +407,10 @@ PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependen
     return *this;
 }
 
-/*PlugifyBuilder& PlugifyBuilder::WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle) {
-    _services.RegisterInstance<IPluginLifecycle>(std::move(lifecycle));
+PlugifyBuilder& PlugifyBuilder::WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> lifecycle) {
+    _services.RegisterInstance<IExtensionLifecycle>(std::move(lifecycle));
     return *this;
-}*/
+}
 
 /*PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
     _services.RegisterInstance<IProgressReporter>(std::move(reporter));
@@ -435,6 +436,7 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
     //_services.RegisterInstanceIfMissing<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
     _services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>());
     _services.RegisterInstanceIfMissing<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_services.Resolve<ILogger>()));
+    _services.RegisterInstanceIfMissing<IExtensionLifecycle>(std::make_shared<DummyLifecycle>());
     //_services.RegisterInstanceIfMissing<IProgressReporter>(std::make_shared<DefaultProgressReporter>(_services.Resolve<ILogger>()));
     //_services.RegisterInstanceIfMissing<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());
 

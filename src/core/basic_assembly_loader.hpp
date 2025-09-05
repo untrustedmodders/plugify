@@ -25,7 +25,7 @@ namespace plugify {
                 if (_fs->IsExists(path)) {
                     return path;
                 }
-                return MakeError("File not found: {}", path.string());
+                return MakeError("File not found: {}", plg::as_string(path));
             }
 
             return _fs->GetAbsolutePath(path);
@@ -44,7 +44,7 @@ namespace plugify {
             // Resolve path
             auto resolvedPath = ResolvePath(path);
             if (!resolvedPath) {
-                return plg::unexpected(std::move(resolvedPath.error()));
+                return MakeError2(std::move(resolvedPath.error()));
             }
 
             // Check cache
@@ -72,7 +72,7 @@ namespace plugify {
                 for (const auto& searchPath : searchPaths) {
                     auto addResult = _ops->AddSearchPath(searchPath);
                     if (!addResult) {
-                        return plg::unexpected(std::move(addResult.error()));
+                        return MakeError2(std::move(addResult.error()));
                     }
                 }
             }
@@ -80,7 +80,7 @@ namespace plugify {
             // Load library
             auto handleResult = _ops->LoadLibrary(*resolvedPath, flags);
             if (!handleResult) {
-                return plg::unexpected(std::move(handleResult.error()));
+                return MakeError2(std::move(handleResult.error()));
             }
 
             // Create assembly
@@ -101,7 +101,7 @@ namespace plugify {
 
         Result<void> Unload(const AssemblyPtr& assembly) override {
             if (!assembly) {
-                return plg::unexpected("Cannot unload null assembly");
+                return MakeError2("Cannot unload null assembly");
             }
 
             // Remove from cache

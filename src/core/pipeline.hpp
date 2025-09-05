@@ -106,7 +106,7 @@ namespace plugify {
 
     private:
         Pipeline(Builder&& builder)
-            : _threadPool(builder._threadPoolSize) {
+            : _pool(builder._threadPoolSize) {
             for (auto& [stage, required] : builder._stages) {
                 _stages.push_back({std::move(stage), required});
             }
@@ -123,7 +123,7 @@ namespace plugify {
 
             // Create execution context
             ExecutionContext<T> ctx{
-                .threadPool = _threadPool
+                .pool = _pool
             };
 
             // Execute each stage
@@ -200,24 +200,26 @@ namespace plugify {
             std::atomic<size_t> failed{0};
             std::mutex errorMutex;
 
-            _threadPool.submit_sequence(0, items.size(), [&](size_t i) {
-                auto& item = items[i];
-
-                if (!stage->ShouldProcess(item)) {
-                    return;
-                }
-
-                auto result = stage->ProcessItem(item, ctx);
-                if (result) {
-                    succeeded.fetch_add(1, std::memory_order_relaxed);
-                } else {
-                    failed.fetch_add(1, std::memory_order_relaxed);
-                    {
-                        std::lock_guard lock(errorMutex);
-                        stats.errors.emplace_back(GetItemName(item), std::move(result.error()));
+            for (auto& item : items) {
+                _pool.emplace_back([&] {
+                    if (!stage->ShouldProcess(item)) {
+                        return;
                     }
-                }
-            }).wait();
+
+                    auto result = stage->ProcessItem(item, ctx);
+                    if (result) {
+                        succeeded.fetch_add(1, std::memory_order_relaxed);
+                    } else {
+                        failed.fetch_add(1, std::memory_order_relaxed);
+                        {
+                            std::lock_guard lock(errorMutex);
+                            stats.errors.emplace_back(GetItemName(item), std::move(result.error()));
+                        }
+                    }
+                });
+            }
+
+            _pool.wait();
 
             stats.succeeded = succeeded.load();
             stats.failed = failed.load();
@@ -306,7 +308,7 @@ namespace plugify {
                     // If batch processing succeeded, optionally process items within batch
                     if (processInParallel) {
                         // Process items within batch in parallel
-                        _threadPool.submit_sequence(0, batch.size(), [&](size_t i) {
+                        _pool.submit_sequence(0, batch.size(), [&](size_t i) {
                             auto& item = batch[i];
 
                             if (!stage->ShouldProcess(item)) {
@@ -382,7 +384,7 @@ namespace plugify {
         };
 
         std::vector<StageEntry> _stages;
-        plg::thread_pool<> _threadPool;
+        glz::pool _pool;
         //std::shared_ptr<ILogger> _logger;
         //std::shared_ptr<IProgressReporter> _reporter;
         //std::shared_ptr<IMetricsCollector> _metrics;

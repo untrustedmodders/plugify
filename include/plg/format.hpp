@@ -27,6 +27,7 @@ namespace std {
 
 #include <type_traits>
 #include <functional>
+#include <filesystem>
 #include <string>
 
 namespace plg {
@@ -120,5 +121,14 @@ namespace plg {
 		}
 
 		return result;
+	}
+
+
+    inline auto as_string(const std::filesystem::path& p) {
+#if _WIN32
+	    return p.string(); // returns std::string by value
+#else
+	    return p.native(); // returns const std::string&
+#endif
 	}
 }

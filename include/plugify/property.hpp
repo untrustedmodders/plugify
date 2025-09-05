@@ -14,7 +14,6 @@ namespace plugify {
 
 	// Property Class
 	class PLUGIFY_API Property {
-	    struct Impl;
 	public:
 	    Property();
 	    ~Property();
@@ -39,6 +38,7 @@ namespace plugify {
 		[[nodiscard]] auto operator<=>(const Property& other) const noexcept;
 
 	PLUGIFY_ACCESS:
+	    struct Impl;
 	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 }

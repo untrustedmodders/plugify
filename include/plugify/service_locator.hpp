@@ -18,8 +18,6 @@ namespace plugify {
      * @brief DI Container / Service Locator with PIMPL
      */
     class PLUGIFY_API ServiceLocator {
-        struct Impl;
-
     public:
         ServiceLocator();
         ~ServiceLocator();
@@ -257,7 +255,9 @@ namespace plugify {
         [[nodiscard]] bool IsRegisteredInternal(std::type_index type) const;
 
         // PIMPL
-        PLUGIFY_ACCESS : PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
+    PLUGIFY_ACCESS:
+        struct Impl;
+        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 
     // ============================================

@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "plugify/global.h"
 #include "plugify/conflict.hpp"
 #include "plugify/dependency.hpp"
 #include "plugify/method.hpp"
@@ -33,6 +34,8 @@ namespace plugify {
         // Module-specific fields (only used when type == Module)
         std::optional<std::filesystem::path> runtime;
         std::optional<std::vector<std::filesystem::path>> directories;
+
+        [[nodiscard]] PLUGIFY_API std::optional<std::string> Validate() const;
     };
 
 }

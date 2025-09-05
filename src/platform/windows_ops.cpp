@@ -47,7 +47,7 @@ namespace plugify {
             HMODULE handle = ::LoadLibraryExW(path.c_str(), nullptr, TranslateFlags(flags));
             if (!handle) {
                 return MakeError("Failed to load library '{}': {}",
-                                 path.string(), GetLastErrorString());
+                                 plg::as_string(path), GetLastErrorString());
             }
 
             if (flags & LoadFlag::NoUnload) {
@@ -96,7 +96,7 @@ namespace plugify {
             DLL_DIRECTORY_COOKIE cookie = ::AddDllDirectory(path.c_str());
             if (!cookie) {
                 return MakeError("Failed to add search path '{}': {}",
-                                 path.string(), GetLastErrorString());
+                                 plg::as_string(path), GetLastErrorString());
             }
             std::lock_guard lock(_searchMutex);
             _searchCookies[path] = cookie;
@@ -108,13 +108,13 @@ namespace plugify {
             if (it != _searchCookies.end()) {
                 if (!::RemoveDllDirectory(it->second)) {
                     return MakeError("Failed to remove search path '{}': {}",
-                                     path.string(), GetLastErrorString());
+                                     plg::as_string(path), GetLastErrorString());
                 }
                 std::lock_guard lock(_searchMutex);
                 _searchCookies.erase(it);
                 return {};
             }
-            return MakeError("Failed to find search path '{}'", path.string());
+            return MakeError("Failed to find search path '{}'", plg::as_string(path));
         }
     };
 

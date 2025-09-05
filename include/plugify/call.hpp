@@ -31,7 +31,6 @@ namespace plugify {
 	 * provides a mechanism to push the function parameters manually and to issue the call afterwards.
 	 */
 	class PLUGIFY_API JitCall {
-		struct Impl;
 	public:
 		/**
 		 * @brief Constructor.
@@ -139,6 +138,7 @@ namespace plugify {
 		//static void ShutdownRuntime();
 
 	PLUGIFY_ACCESS:
+		struct Impl;
 	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 

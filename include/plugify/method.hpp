@@ -1,20 +1,20 @@
 #pragma once
 
+#include <memory>
 #include <span>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include "plugify/global.h"
-#include "plugify/value_type.hpp"
 #include "plugify/mem_addr.hpp"
+#include "plugify/value_type.hpp"
+#include "plugify/signarure.hpp"
 
 namespace plugify {
 	class Property;
 
 	// Method Class
 	class PLUGIFY_API Method {
-	    struct Impl;
 	public:
 	    Method();
 	    ~Method();
@@ -26,27 +26,26 @@ namespace plugify {
 	    // Getters
 	    [[nodiscard]] const std::vector<Property>& GetParamTypes() const noexcept;
 	    [[nodiscard]] const Property& GetRetType() const noexcept;
-	    [[nodiscard]] uint8_t GetVarIndex() const noexcept;
 	    [[nodiscard]] const std::string& GetName() const noexcept;
 	    [[nodiscard]] const std::string& GetFuncName() const noexcept;
-	    [[nodiscard]] const std::string& GetCallConv() const noexcept;
+	    [[nodiscard]] CallConv GetCallConv() const noexcept;
+	    [[nodiscard]] uint8_t GetVarIndex() const noexcept;
 
 	    // Setters (pass by value and move)
 	    void SetParamTypes(std::vector<Property> paramTypes);
 	    void SetRetType(Property retType);
-	    void SetVarIndex(uint8_t varIndex);
 	    void SetName(std::string name);
 	    void SetFuncName(std::string funcName);
-	    void SetCallConv(std::string callConv);
+	    void SetCallConv(CallConv callConv);
+	    void SetVarIndex(uint8_t varIndex);
 
 		[[nodiscard]] bool operator==(const Method& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Method& other) const noexcept;
 
-		static inline const uint8_t kNoVarArgs = 0xffU;
-
 		[[nodiscard]] const Method* FindPrototype(std::string_view name) const noexcept;
 
 	PLUGIFY_ACCESS:
+	    struct Impl;
 	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 

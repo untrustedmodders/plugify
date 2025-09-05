@@ -27,6 +27,7 @@
 #include <stack>
 #include <future>
 #include <print>
+#include <regex>
 #include <fstream>
 
 #include "plugify/global.h"

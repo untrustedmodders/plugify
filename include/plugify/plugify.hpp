@@ -10,6 +10,7 @@
 #include "plugify/dependency_resolver.hpp"
 #include "plugify/file_system.hpp"
 #include "plugify/manifest_parser.hpp"
+#include "plugify/lifecycle.hpp"
 //#include "plugify/progress_reporter.hpp"
 //#include "plugify/metric_collector.hpp"
 //#include "plugify/plugin_lifecycle.hpp"
@@ -30,7 +31,7 @@ namespace plugify {
         //PlugifyBuilder& WithConfigProvider(std::shared_ptr<IConfigProvider> provider);
         PlugifyBuilder& WithManifestParser(std::shared_ptr<IManifestParser> parser);
         PlugifyBuilder& WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver);
-        //PlugifyBuilder& WithPluginLifecycle(std::shared_ptr<IPluginLifecycle> lifecycle);
+        PlugifyBuilder& WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> lifecycle);
         //PlugifyBuilder& WithProgressReporter(std::shared_ptr<IProgressReporter> reporter);
         //PlugifyBuilder& WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics);
         PlugifyBuilder& WithEventBus(std::shared_ptr<IEventBus> bus);
@@ -53,7 +54,6 @@ namespace plugify {
     };
 
     class PLUGIFY_API Plugify {
-        struct Impl;
     public:
         ~Plugify();
         Plugify(const Plugify& other) = delete;
@@ -90,6 +90,7 @@ namespace plugify {
         explicit Plugify(ServiceLocator services, Config config);
 
     private:
+        struct Impl;
         PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 

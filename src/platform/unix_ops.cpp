@@ -36,7 +36,7 @@ namespace plugify {
             void* handle = ::dlopen(path.c_str(), TranslateFlags(flags));
             if (!handle) {
                 return MakeError("Failed to load library '{}': {}", 
-                                 path.string(), ::dlerror());
+                                 plg::as_string(path), ::dlerror());
             }
             return handle;
         }

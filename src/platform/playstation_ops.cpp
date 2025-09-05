@@ -41,7 +41,7 @@ namespace plugify {
 
             if (handle < 0) {
                 return MakeError("Failed to load module '{}': {}",
-                                 path.string(), TranslateError(handle));
+                                 plg::as_string(path), TranslateError(handle));
             }
 
             return reinterpret_cast<void*>(handle);

@@ -53,8 +53,6 @@ namespace plugify {
     };
     // Unified Extension class
     class PLUGIFY_API Extension {
-        struct Impl;
-
     public:
         Extension(UniqueId id, std::filesystem::path location);
         ~Extension();
@@ -159,6 +157,7 @@ namespace plugify {
         void Reset();
 
     private:
+        struct Impl;
         PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 }

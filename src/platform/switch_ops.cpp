@@ -55,7 +55,7 @@ namespace plugify {
             nn::Result ret = nn::fs::OpenFile(&file, path.c_str(), nn::fs::OpenMode_Read);
             if (ret.IsFailure()) {
                 return MakeError("Failed to open file '{}': {}",
-                                 path.string(), TranslateError(ret));
+                                 plg::as_string(path), TranslateError(ret));
             }
 
             // Get file size

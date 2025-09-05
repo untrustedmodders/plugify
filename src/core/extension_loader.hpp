@@ -107,7 +107,7 @@ namespace plugify {
         const Provider& _provider;
         std::shared_ptr<IFileSystem> _fileSystem;
         std::shared_ptr<IAssemblyLoader> _assemblyLoader;
-        std::shared_ptr<ILifecycle> _lifecycle;
+        std::shared_ptr<IExtensionLifecycle> _extensionLifecycle;
         LoadStatistics _stats;
 
         std::unordered_map<std::filesystem::path, std::shared_ptr<IAssembly>, plg::path_hash> _assemblyCache;
@@ -122,7 +122,7 @@ namespace plugify {
             , _provider(provider)
             , _fileSystem(locator.Resolve<IFileSystem>())
             , _assemblyLoader(locator.Resolve<IAssemblyLoader>())
-            , _lifecycle(locator.Resolve<ILifecycle>())
+            , _extensionLifecycle(locator.Resolve<IExtensionLifecycle>())
         {}
 
         // Module Operations
@@ -138,7 +138,7 @@ namespace plugify {
             // Try to use preloaded assembly if available
             auto assemblyResult = GetOrLoadAssembly(module.GetRuntime(), module.GetDirectories());
             if (!assemblyResult) {
-                return plg::unexpected(std::move(assemblyResult.error()));
+                return MakeError2(std::move(assemblyResult.error()));
             }
 
             // Load language module interface
@@ -147,7 +147,7 @@ namespace plugify {
                 return langModuleResult;
             }
 
-            _lifecycle->OnLoad(module);
+            _extensionLifecycle->OnLoad(module);
             ++_stats.modulesLoaded;
             return {};
         }
@@ -161,7 +161,7 @@ namespace plugify {
                 module.GetLanguageModule()->OnUpdate(deltaTime);
                 return Result<void>{};
             });
-            _lifecycle->OnUpdate(module, deltaTime);
+            _extensionLifecycle->OnUpdate(module, deltaTime);
             return result;
         }
 
@@ -182,7 +182,7 @@ namespace plugify {
                 module.SetAssembly(nullptr);
             }
 
-            _lifecycle->OnUnload(module);
+            _extensionLifecycle->OnUnload(module);
             --_stats.modulesLoaded;
             return result;
         }
@@ -199,7 +199,7 @@ namespace plugify {
 
             auto* languageModule = module.GetLanguageModule();
             if (!languageModule) {
-                return plg::unexpected("Language module not available");
+                return MakeError2("Language module not available");
             }
 
             plugin.SetLanguageModule(languageModule);
@@ -209,7 +209,7 @@ namespace plugify {
                 return plugin.GetLanguageModule()->OnPluginLoad(plugin);
             });
             if (!loadResult) {
-                return plg::unexpected(std::move(loadResult.error()));
+                return MakeError2(std::move(loadResult.error()));
             }
 
             // Validate and set plugin data
@@ -219,7 +219,7 @@ namespace plugify {
             }
 
             ++_stats.pluginsLoaded;
-            _lifecycle->OnLoad(plugin);
+            _extensionLifecycle->OnLoad(plugin);
             return {};
         }
 
@@ -232,7 +232,7 @@ namespace plugify {
                 plugin.GetLanguageModule()->OnPluginStart(plugin);
                 return Result<void>{};
             });
-            _lifecycle->OnStart(plugin);
+            _extensionLifecycle->OnStart(plugin);
             return result;
         }
 
@@ -245,7 +245,7 @@ namespace plugify {
                 plugin.GetLanguageModule()->OnPluginEnd(plugin);
                 return Result<void>{};
             });
-            _lifecycle->OnEnd(plugin);
+            _extensionLifecycle->OnEnd(plugin);
             return result;
         }
 
@@ -258,7 +258,7 @@ namespace plugify {
                 plugin.GetLanguageModule()->OnPluginUpdate(plugin, deltaTime);
                 return Result<void>{};
             });
-            _lifecycle->OnUpdate(plugin, deltaTime);
+            _extensionLifecycle->OnUpdate(plugin, deltaTime);
             return result;
         }
 
@@ -268,7 +268,7 @@ namespace plugify {
             plugin.SetUserData(nullptr);
             plugin.SetMethodTable({});
             plugin.SetMethodsData({});
-            _lifecycle->OnUnload(plugin);
+            _extensionLifecycle->OnUnload(plugin);
             --_stats.pluginsLoaded;
             return {};
         }
@@ -293,7 +293,7 @@ namespace plugify {
         ) {
             auto absPath = _fileSystem->GetAbsolutePath(path);
             if (!absPath) {
-                return plg::unexpected(absPath.error());
+                return MakeError2(absPath.error());
             }
 
             // Check if already cached
@@ -304,7 +304,7 @@ namespace plugify {
             LoadFlag flags = GetLoadFlags();
             auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
             if (!assemblyResult) {
-                return plg::unexpected(assemblyResult.error());
+                return MakeError2(assemblyResult.error());
             }
 
             _assemblyCache.emplace(std::move(*absPath), std::move(*assemblyResult));
@@ -325,7 +325,7 @@ namespace plugify {
         ) {
             auto absPath = _fileSystem->GetAbsolutePath(path);
             if (!absPath) {
-                return plg::unexpected(std::move(absPath.error()));
+                return MakeError2(std::move(absPath.error()));
             }
 
             // Check cache first
@@ -337,7 +337,7 @@ namespace plugify {
             LoadFlag flags = GetLoadFlags();
             auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
             if (!assemblyResult) {
-                return plg::unexpected(std::move(assemblyResult.error()));
+                return MakeError2(std::move(assemblyResult.error()));
             }
 
             // Cache for future use
@@ -361,7 +361,7 @@ namespace plugify {
 
             auto entryFunc = assembly->GetSymbol(kGetLanguageModuleFn);
             if (!entryFunc) {
-                return plg::unexpected(std::move(entryFunc.error()));
+                return MakeError2(std::move(entryFunc.error()));
             }
 
             auto* languageModule = entryFunc->RCast<ILanguageModule*(*)()>()();
@@ -385,7 +385,7 @@ namespace plugify {
             });
 
             if (!initResult) {
-                return plg::unexpected(std::move(initResult.error()));
+                return MakeError2(std::move(initResult.error()));
             }
 
             module.SetLanguageModule(languageModule);

@@ -36,14 +36,14 @@ namespace plugify {
             if (!content) {
                 ext.AddError(content.error());
                 ext.EndOperation(ExtensionState::Corrupted);
-                return plg::unexpected(std::move(content.error()));
+                return MakeError2(std::move(content.error()));
             }
 
             auto manifest = _parser->Parse(*content, ext.GetType());
             if (!manifest) {
                 ext.AddError(manifest.error());
                 ext.EndOperation(ExtensionState::Corrupted);
-                return plg::unexpected(std::move(manifest.error()));
+                return MakeError2(std::move(manifest.error()));
             }
 
             ext.SetManifest(std::move(*manifest));
@@ -98,7 +98,7 @@ namespace plugify {
             auto report = _resolver->Resolve(filtered);
 
             if (!report.isLoadOrderValid) {
-                return plg::unexpected("No valid loading order");
+                return MakeError2("No valid loading order");
             }
 
             if (report.loadOrder.empty()) {
@@ -139,6 +139,11 @@ namespace plugify {
                 // Check blacklist
                 if (include && !_config.security.blacklistedExtensions.empty()
                     && _config.security.blacklistedExtensions.contains(ext.GetName())) {
+                    include = false;
+                }
+
+                // Check platform
+                if (include && IsSupportsPlatform(ext.GetPlatforms())) {
                     include = false;
                 }
 
@@ -238,6 +243,23 @@ namespace plugify {
 
             return result;
         }
+
+        static bool IsSupportsPlatform(const std::vector<std::string>& supportedPlatforms) {
+            if (supportedPlatforms.empty())
+                return true;
+
+            constexpr std::string_view platform = PLUGIFY_PLATFORM;
+            static_assert(platform.find('_') != std::string_view::npos, "PLUGIFY_PLATFORM must be in the format 'name-arch'");
+            constexpr std::string_view name = platform.substr(0, platform.find('_'));
+
+            for (const auto& supported : supportedPlatforms) {
+                if (supported == platform || supported == name) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     };
 
     // Initialize Stage - Transform type
@@ -271,7 +293,7 @@ namespace plugify {
                 }
 
                 default:
-                    result = plg::unexpected("Unknown extension type");
+                    result = MakeError2("Unknown extension type");
             }
 
             ext.EndOperation(ExtensionState::Initialized);
@@ -422,7 +444,7 @@ namespace plugify {
                 }
 
                 default:
-                    result = plg::unexpected("Unknown extension type");
+                    result = MakeError2("Unknown extension type");
             }
 
             if (!result) {

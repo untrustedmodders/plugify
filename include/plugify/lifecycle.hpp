@@ -5,9 +5,9 @@
 namespace plugify {
     class Extension;
     // Lifecycle interface
-    class ILifecycle {
+    class IExtensionLifecycle {
     public:
-        virtual ~ILifecycle() = default;
+        virtual ~IExtensionLifecycle() = default;
         //virtual void OnReload(Extension& extension) = 0;
         virtual void OnLoad(Extension& extension) = 0;
         virtual void OnUnload(Extension& extension) = 0;

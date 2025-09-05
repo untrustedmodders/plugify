@@ -13,7 +13,6 @@ namespace plugify {
 
 	// Dependency Class
 	class PLUGIFY_API Dependency {
-		struct Impl;
 	public:
 		Dependency();
 		~Dependency();
@@ -36,6 +35,7 @@ namespace plugify {
 		[[nodiscard]] auto operator<=>(const Dependency& other) const noexcept;
 
 	PLUGIFY_ACCESS:
+		struct Impl;
 		PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 }

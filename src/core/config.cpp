@@ -8,7 +8,7 @@ Result<ConfigNode> JsonConfigReader::Read(const std::filesystem::path& path) {
     try {
         std::ifstream file(path);
         if (!file) {
-            return MakeError("Failed to open file: {}", path.string());
+            return MakeError("Failed to open file: {}", plg::as_string(path));
         }
 
         nlohmann::json j;
@@ -88,7 +88,7 @@ Result<void> ConfigManager::LoadFromFile(const std::filesystem::path& path,
         }
     }
 
-    return MakeError("No reader found for file: {}", path.string());
+    return MakeError("No reader found for file: {}", plg::as_string(path));
 }
 
 Result<void> ConfigManager::LoadConfigFiles(const std::vector<std::filesystem::path>& paths) {
@@ -146,7 +146,7 @@ ConfigSchema PlugifyConfig::GetSchema() {
         .name = "baseDir",
         .type = "string",
         .required = false,
-        .defaultValue = std::filesystem::current_path().string(),
+        .defaultValue = plg::as_string(std::filesystem::current_path()),
         .description = "Base directory for all Plugify operations"
     });
 

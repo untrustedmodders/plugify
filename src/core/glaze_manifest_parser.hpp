@@ -12,7 +12,10 @@ namespace plugify {
         Result<Manifest> Parse(const std::string& content, [[maybe_unused]] ExtensionType type) override  {
             auto parsed = glz::read_jsonc<Manifest>(content);
             if (!parsed) {
-                return plg::unexpected(glz::format_error(parsed.error(), content));
+                return MakeError2(glz::format_error(parsed.error(), content));
+            }
+            if (auto error = parsed->Validate()) {
+                return MakeError2(std::move(*error));
             }
             return *parsed;
         }

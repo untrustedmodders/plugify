@@ -21,7 +21,6 @@ namespace plugify {
 	 * iterating dynamically over the arguments once called back.
 	 */
 	class PLUGIFY_API JitCallback {
-		struct Impl;
 	public:
 		/**
 		 * @brief Constructor.
@@ -124,6 +123,7 @@ namespace plugify {
 		JitCallback& operator=(JitCallback&& other) noexcept;
 
 	PLUGIFY_ACCESS:
+		struct Impl;
 	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 

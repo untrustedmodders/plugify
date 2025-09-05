@@ -60,15 +60,15 @@ public:
         std::lock_guard lock(lifecycleMutex);
 
         if (initialized) {
-            return plg::unexpected("Manager already initialized");
+            return MakeError2("Manager already initialized");
         }
 
         auto initialExtensions = DiscoverExtensions();
         if (!initialExtensions) {
-            return plg::unexpected(std::move(initialExtensions.error()));
+            return MakeError2(std::move(initialExtensions.error()));
         } else if (initialExtensions->empty()) {
             // depending on policy: return ok or error. I'll return ok but log a warning:
-            // return plg::unexpected("No extensions found");
+            // return MakeError2("No extensions found");
         }
 
         FailureTracker failureTracker(initialExtensions->size());
@@ -126,14 +126,14 @@ public:
                     if (auto writeResult = fileSystem->WriteTextFile(exportPath, graph); !writeResult) {
                         logger->Log(std::format("Export DOT: {}", writeResult.error()), Severity::Error);
                     } else {
-                        logger->Log(std::format("Export DOT: {}", exportPath.string()), Severity::Info);
+                        logger->Log(std::format("Export DOT: {}", plg::as_string(exportPath)), Severity::Info);
                     }
                 }
             }
         }
 
         if (totalFailed > 0) {
-            return plg::unexpected(report.ToString());
+            return MakeError2(report.ToString());
         }
 
         initialized = true;
@@ -162,7 +162,7 @@ public:
                     }
 
                     default:
-                        result = plg::unexpected("Unknown extension type");
+                        result = MakeError2("Unknown extension type");
                 }
                 if (!result) {
                     logger->Log(result.error(), Severity::Error);
@@ -196,7 +196,7 @@ public:
                     }
 
                     default:
-                        result = plg::unexpected("Unknown extension type");
+                        result = MakeError2("Unknown extension type");
                 }
                 if (!result) {
                     logger->Log(result.error(), Severity::Error);
@@ -222,7 +222,7 @@ public:
                     }
 
                     default:
-                        result = plg::unexpected("Unknown extension type");
+                        result = MakeError2("Unknown extension type");
                 }
                 if (!result) {
                     logger->Log(result.error(), Severity::Error);
@@ -243,14 +243,14 @@ public:
             .filter_predicate = [](const FileInfo& f) { return f.is_directory(); },
         });
         if (!dirs) {
-            return plg::unexpected(std::move(dirs.error()));
+            return MakeError2(std::move(dirs.error()));
         }
 
         std::vector<std::filesystem::path> result;
         for (const auto& dir : *dirs) {
             auto paths = fileSystem->FindFiles(dir.path, MANIFEST_EXTENSIONS, false);
             if (!paths) {
-                return plg::unexpected(std::move(paths.error()));
+                return MakeError2(std::move(paths.error()));
             }
 
             if (paths->size() == 1) {
@@ -259,7 +259,7 @@ public:
         }
 
         if (result.empty()) {
-            return plg::unexpected("Did not find any extensions in the directory");
+            return MakeError2("Did not find any extensions in the directory");
         }
 
         UniqueId id{0};

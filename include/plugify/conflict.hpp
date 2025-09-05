@@ -13,7 +13,6 @@ namespace plugify {
 
 	// Conflict Class
 	class PLUGIFY_API Conflict {
-		struct Impl;
 	public:
 		Conflict();
 		~Conflict();
@@ -36,6 +35,7 @@ namespace plugify {
 		[[nodiscard]] auto operator<=>(const Conflict& other) const noexcept;
 
 	PLUGIFY_ACCESS:
+		struct Impl;
 		PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 

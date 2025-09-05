@@ -20,7 +20,7 @@ namespace plugify {
 
 	asmjit::TypeId GetRetTypeId(ValueType valueType) noexcept;
 
-	asmjit::CallConvId GetCallConv([[maybe_unused]] std::string_view conv) noexcept;
+	asmjit::CallConvId GetCallConvId(CallConv callConv) noexcept;
 
 	class SimpleErrorHandler : public asmjit::ErrorHandler {
 	public:
@@ -35,7 +35,7 @@ namespace plugify {
 
     inline asmjit::FuncSignature ConvertSignature(const Signature& sig) {
         asmjit::FuncSignature asmSig(
-            GetCallConv(sig.callConv),
+            GetCallConvId(sig.callConv),
             sig.varIndex,
             GetRetTypeId(sig.retType)
         );

@@ -9,7 +9,6 @@ namespace plugify {
     class Extension;
     class ServiceLocator;
     class PLUGIFY_API Manager {
-        struct Impl;
     public:
         explicit Manager(const ServiceLocator& services, const Config& config);
         ~Manager();
@@ -48,6 +47,7 @@ namespace plugify {
         [[nodiscard]] auto operator<=>(const Manager& other) const noexcept;
 
     private:
+        struct Impl;
         PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 }

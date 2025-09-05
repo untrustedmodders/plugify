@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plg/thread_pool.hpp"
+#include <glaze/thread/threadpool.hpp>
 
 namespace plugify {
     // ============================================================================
@@ -16,7 +16,7 @@ namespace plugify {
     // Execution context
     template<typename T>
     struct ExecutionContext {
-        plg::thread_pool<>& threadPool;
+        glz::pool& pool;
         //std::shared_ptr<ILogger> logger;
         //std::shared_ptr<IProgressReporter> reporter;
         //std::shared_ptr<IMetricsCollector> metrics;

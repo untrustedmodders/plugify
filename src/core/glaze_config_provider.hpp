@@ -27,7 +27,7 @@ namespace plugify {
                 if (buffer) {
                     auto error = glz::read_jsonc(json, buffer.value());
                     if (error) {
-                        return plg::unexpected(
+                        return MakeError2(
                             std::format("Configuration key '{}' could not be read: {}", key, glz::format_error(error, buffer))
                         );
                     }
@@ -35,7 +35,7 @@ namespace plugify {
                     // Navigate using JSON pointer
                     auto* value = glz::get_if<glz::json_t>(json, jsonPointer);
                     if (!value) {
-                        return plg::unexpected(
+                        return MakeError2(
                             std::format("Configuration key '{}' not found", key)
                         );
                     }
@@ -43,11 +43,11 @@ namespace plugify {
                     return ConvertGlazeValue(*value);
                 }
 
-                return plg::unexpected(
+                return MakeError2(
                     "Failed to serialize configuration"
                 );
             } catch (const std::exception& e) {
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to get config value: {}", e.what())
                 );
             }
@@ -58,7 +58,7 @@ namespace plugify {
 
             // For strongly typed config, this is more complex
             // You'd need to use runtime reflection or limit to specific paths
-            return plg::unexpected(
+            return MakeError2(
                 "Setting individual values not supported for typed configuration. "
                 "Use SetConfig() to update the entire configuration object."
             );
@@ -68,7 +68,7 @@ namespace plugify {
             std::unique_lock lock(_mutex);
 
             try {
-                auto file_result = glz::read_file_jsonc<ConfigType>(path.string());
+                auto file_result = plg::as_string(glz::read_file_jsonc<ConfigType>(path));
 
                 if (file_result) {
                     _config = std::move(file_result.value());
@@ -77,11 +77,11 @@ namespace plugify {
                     return {};
                 }
 
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to load configuration: {}", file_result.error())
                 );
             } catch (const std::exception& e) {
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to load configuration: {}", e.what())
                 );
             }
@@ -97,10 +97,10 @@ namespace plugify {
                     std::filesystem::create_directories(parent);
                 }
 
-                auto result = glz::write_file_json(_config, path.string(), std::string{});
+                auto result = glz::write_file_json(_config, plg::as_string(path), std::string{});
 
                 if (result) {
-                    return plg::unexpected(
+                    return MakeError2(
                         "Failed to save configuration file"
                     );
                 }
@@ -108,7 +108,7 @@ namespace plugify {
                 _isDirty = false;
                 return {};
             } catch (const std::exception& e) {
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to save configuration: {}", e.what())
                 );
             }
@@ -333,7 +333,7 @@ namespace plugify {
                 for (size_t i = 0; i < keys.size(); ++i) {
                     auto it = currentMap->find(keys[i]);
                     if (it == currentMap->end()) {
-                        return plg::unexpected(
+                        return MakeError2(
                             std::format("Configuration key '{}' not found", key)
                         );
                     }
@@ -344,7 +344,7 @@ namespace plugify {
                     if (i < keys.size() - 1) {
                         currentMap = std::any_cast<std::unordered_map<std::string, std::any>>(current);
                         if (!currentMap) {
-                            return plg::unexpected(
+                            return MakeError2(
                                 std::format("Configuration path '{}' is not an object",
                                            JoinKeys(keys, i))
                             );
@@ -354,7 +354,7 @@ namespace plugify {
 
                 return *current;
             } catch (const std::exception& e) {
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to get config value: {}", e.what())
                 );
             }
@@ -366,7 +366,7 @@ namespace plugify {
             try {
                 auto keys = SplitKey(key);
                 if (keys.empty()) {
-                    return plg::unexpected(
+                    return MakeError2(
                         "Empty configuration key"
                     );
                 }
@@ -386,13 +386,13 @@ namespace plugify {
                     try {
                         current = std::any_cast<std::unordered_map<std::string, std::any>>(&next);
                         if (!current) {
-                            return plg::unexpected(
+                            return MakeError2(
                                 std::format("Configuration path '{}' is not an object",
                                            JoinKeys(keys, i))
                             );
                         }
                     } catch (const std::bad_any_cast&) {
-                        return plg::unexpected(
+                        return MakeError2(
                             std::format("Configuration path '{}' is not an object",
                                        JoinKeys(keys, i))
                         );
@@ -405,7 +405,7 @@ namespace plugify {
 
                 return {};
             } catch (const std::exception& e) {
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to set config value: {}", e.what())
                 );
             }
@@ -416,16 +416,16 @@ namespace plugify {
 
             try {
                 if (!std::filesystem::exists(path)) {
-                    return plg::unexpected(
-                        std::format("Configuration file '{}' not found", path.string())
+                    return MakeError2(
+                        std::format("Configuration file '{}' not found", plg::as_string(path))
                     );
                 }
 
                 // Read file contents
                 std::ifstream file(path, std::ios::binary | std::ios::ate);
                 if (!file) {
-                    return plg::unexpected(
-                        std::format("Failed to open configuration file '{}'", path.string())
+                    return MakeError2(
+                        std::format("Failed to open configuration file '{}'", plg::as_string(path))
                     );
                 }
 
@@ -434,8 +434,8 @@ namespace plugify {
 
                 std::string buffer(size, '\0');
                 if (!file.read(buffer.data(), size)) {
-                    return plg::unexpected(
-                        std::format("Failed to read configuration file '{}'", path.string())
+                    return MakeError2(
+                        std::format("Failed to read configuration file '{}'", plg::as_string(path))
                     );
                 }
 
@@ -444,7 +444,7 @@ namespace plugify {
                 auto parse_result = glz::read_jsonc(json, buffer);
 
                 if (parse_result) {
-                    return plg::unexpected(
+                    return MakeError2(
                         std::format("Failed to parse JSON: {}",
                                    glz::format_error(parse_result, buffer))
                     );
@@ -459,7 +459,7 @@ namespace plugify {
 
                 return {};
             } catch (const std::exception& e) {
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to load configuration: {}", e.what())
                 );
             }
@@ -485,7 +485,7 @@ namespace plugify {
                 auto write_result = glz::write_json(json, buffer);
 
                 if (write_result) {
-                    return plg::unexpected(
+                    return MakeError2(
                         "Failed to serialize configuration to JSON"
                     );
                 }
@@ -502,16 +502,16 @@ namespace plugify {
                 // Write to file
                 std::ofstream file(path, std::ios::binary);
                 if (!file) {
-                    return plg::unexpected(
-                        std::format("Failed to create configuration file '{}'", path.string())
+                    return MakeError2(
+                        std::format("Failed to create configuration file '{}'", plg::as_string(path))
                     );
                 }
 
                 file.write(pretty_json.data(), pretty_json.size());
 
                 if (!file) {
-                    return plg::unexpected(
-                        std::format("Failed to write configuration file '{}'", path.string())
+                    return MakeError2(
+                        std::format("Failed to write configuration file '{}'", plg::as_string(path))
                     );
                 }
 
@@ -519,7 +519,7 @@ namespace plugify {
 
                 return {};
             } catch (const std::exception& e) {
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to save configuration: {}", e.what())
                 );
             }
@@ -561,7 +561,7 @@ namespace plugify {
         Result<T> GetTyped(std::string_view key) {
             auto result = GetValue(key);
             if (!result) {
-                return plg::unexpected(result.error());
+                return MakeError2(result.error());
             }
 
             try {
@@ -579,11 +579,11 @@ namespace plugify {
                     }
                 }
 
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Configuration value '{}' has incorrect type", key)
                 );
             } catch (const std::exception& e) {
-                return plg::unexpected(
+                return MakeError2(
                     std::format("Failed to convert configuration value: {}", e.what())
                 );
             }

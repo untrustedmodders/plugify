@@ -20,7 +20,7 @@ namespace plugify {
 
             _logFile.open(_logPath, std::ios::app);
             if (!_logFile) {
-                throw std::runtime_error("Failed to open log file: " + _logPath.string());
+                throw std::runtime_error("Failed to open log file: " + plg::as_string(_logPath));
             }
         }
 
@@ -86,9 +86,9 @@ namespace plugify {
             // Format as: stem.YYYYMMDD_HHMMSS.extension
             auto rotatedPath = _logPath.parent_path() /
                 std::format("{}.{:%Y%m%d_%H%M%S}{}",
-                            _logPath.stem().string(),
+                            plg::as_string(_logPath.stem()),
                             zt,                              // formatted using chrono spec
-                            _logPath.extension().string());
+                            plg::as_string(_logPath.extension()));
 
             std::filesystem::rename(_logPath, rotatedPath);
             _logFile.open(_logPath, std::ios::app);

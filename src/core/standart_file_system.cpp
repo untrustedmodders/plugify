@@ -27,9 +27,9 @@ std::string StandardFileSystem::GetSystemError(int err) {
 std::string StandardFileSystem::GetStreamError(const std::filesystem::path& path, const std::string& operation) {
     int err = errno;  // Capture errno immediately
     if (err != 0) {
-        return std::format("{} {}: {}", operation, path.string(), GetSystemError(err));
+        return std::format("{} {}: {}", operation, plg::as_string(path), GetSystemError(err));
     }
-    return std::format("{} {}: Unknown error", operation, path.string());
+    return std::format("{} {}: Unknown error", operation, plg::as_string(path));
 }
 
 // File Operations
@@ -160,7 +160,7 @@ Result<FileInfo> StandardFileSystem::GetFileInfo(const std::filesystem::path& pa
     auto status = std::filesystem::status(path, ec);
     if (ec) {
         return MakeError("Failed to get file status: {} - {}",
-                                          path.string(), ec.message());
+                                          plg::as_string(path), ec.message());
     }
 
     FileInfo info;
@@ -187,7 +187,7 @@ Result<FileInfo> StandardFileSystem::GetFileInfo(const std::filesystem::path& pa
 
 Result<std::vector<FileInfo>> StandardFileSystem::ListDirectory(const std::filesystem::path& directory) {
     if (!IsDirectory(directory)) {
-        return MakeError("Path is not a directory: {}", directory.string());
+        return MakeError("Path is not a directory: {}", plg::as_string(directory));
     }
 
     std::vector<FileInfo> files;
@@ -219,7 +219,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
     const std::filesystem::path& directory,
     const DirectoryIterationOptions& options) {
     if (!IsDirectory(directory)) {
-        return MakeError("Path is not a directory: {}", directory.string());
+        return MakeError("Path is not a directory: {}", plg::as_string(directory));
     }
 
     std::vector<FileInfo> files;
@@ -233,8 +233,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 
         // Apply filter pattern if specified
         if (options.filter_pattern.has_value()) {
-            if (!std::regex_match(info.path.filename().string(),
-                                options.filter_pattern.value())) {
+            if (!std::regex_match(plg::as_string(info.path.filename()), options.filter_pattern.value())) {
                 return;
             }
         }
@@ -294,7 +293,7 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
     std::span<const std::string_view> patterns,
     bool recursive) {
     if (!IsDirectory(directory)) {
-        return MakeError("Path is not a directory: {}", directory.string());
+        return MakeError("Path is not a directory: {}", plg::as_string(directory));
     }
 
     // Convert glob patterns to regex
@@ -329,7 +328,7 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
     auto check_file = [&](const std::filesystem::path& file_path) {
         if (!std::filesystem::is_regular_file(file_path, ec)) return;
 
-        std::string filename = file_path.filename().string();
+        std::string filename = plg::as_string(file_path.filename());
         for (const auto& regex : regexes) {
             if (std::regex_match(filename, regex)) {
                 matches.push_back(file_path);
@@ -366,7 +365,7 @@ Result<void> StandardFileSystem::CreateDirectories(const std::filesystem::path& 
     std::filesystem::create_directories(path, ec);
     if (ec) {
         return MakeError("Failed to create directories: {} - {}",
-                                          path.string(), ec.message());
+                                          plg::as_string(path), ec.message());
     }
     return {};
 }
@@ -376,7 +375,7 @@ Result<void> StandardFileSystem::Remove(const std::filesystem::path& path) {
     std::filesystem::remove(path, ec);
     if (ec && ec != std::errc::no_such_file_or_directory) {
         return MakeError("Failed to remove: {} - {}",
-                                          path.string(), ec.message());
+                                          plg::as_string(path), ec.message());
     }
     return {};
 }
@@ -386,7 +385,7 @@ Result<void> StandardFileSystem::RemoveAll(const std::filesystem::path& path) {
     std::filesystem::remove_all(path, ec);
     if (ec && ec != std::errc::no_such_file_or_directory) {
         return MakeError("Failed to remove all: {} - {}",
-                                          path.string(), ec.message());
+                                          plg::as_string(path), ec.message());
     }
     return {};
 }
@@ -410,7 +409,7 @@ Result<void> StandardFileSystem::Copy(const std::filesystem::path& from, const s
 
     if (ec) {
         return MakeError("Failed to copy from {} to {} - {}",
-                                          from.string(), to.string(), ec.message());
+                                          plg::as_string(from), plg::as_string(to), ec.message());
     }
     return {};
 }
@@ -437,7 +436,7 @@ Result<void> StandardFileSystem::Move(const std::filesystem::path& from, const s
             ec);
         if (ec) {
             return MakeError("Failed to move from {} to {} - {}",
-                                              from.string(), to.string(), ec.message());
+                                              plg::as_string(from), plg::as_string(to), ec.message());
         }
 
         std::filesystem::remove_all(from, ec);
@@ -475,7 +474,7 @@ Result<std::filesystem::path> StandardFileSystem::GetRelativePath(const std::fil
     std::error_code ec;
     auto relative = std::filesystem::relative(path, base, ec);
     if (ec) {
-        return MakeError("Failed to relative path to {} with {} - {}", path.string(), base.string(), ec.message());
+        return MakeError("Failed to relative path to {} with {} - {}", plg::as_string(path), plg::as_string(base), ec.message());
     }
     return relative;
 }

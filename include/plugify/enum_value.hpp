@@ -11,7 +11,6 @@ namespace plugify {
 
 	// EnumValue Class
 	class PLUGIFY_API EnumValue {
-	    struct Impl;
 	public:
 	    EnumValue();
 	    ~EnumValue();
@@ -32,6 +31,7 @@ namespace plugify {
 		[[nodiscard]] auto operator<=>(const EnumValue& other) const noexcept;
 
 	PLUGIFY_ACCESS:
+	    struct Impl;
 	    PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 }

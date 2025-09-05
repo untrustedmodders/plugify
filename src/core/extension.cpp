@@ -107,7 +107,7 @@ static const std::vector<MethodData> emptyMethodData;
 
 Extension::Extension(UniqueId id, std::filesystem::path location)
     : _impl(std::make_unique<Impl>()) {
-    _impl->manifest.name = location.filename().replace_extension().string(); // temp name
+    _impl->manifest.name = plg::as_string(location.filename().replace_extension()); // temp name
 
     _impl->id = id;
     _impl->state = ExtensionState::Discovered;
@@ -429,7 +429,7 @@ ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
         { ".pplugin", ExtensionType::Plugin },
         { ".pmodule", ExtensionType::Module }
     };
-    return manifests[path.extension().string()];
+    return manifests[plg::as_string(path.extension())];
 }
 
 // ============================================================================

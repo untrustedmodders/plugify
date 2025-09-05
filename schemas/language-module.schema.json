@@ -14,11 +14,6 @@
     "language"
   ],
   "properties": {
-    "fileVersion": {
-      "type": "number",
-      "description": "The schema version number. Used to ensure compatibility between the module configuration and the Plugify parser. Increment when breaking changes are made to the schema format.",
-      "minimum": 1
-    },
     "version": {
       "type": "string",
       "description": "The semantic version (SemVer) of the language module following the format MAJOR.MINOR.PATCH. Used for dependency resolution and compatibility checking.",
@@ -28,6 +23,7 @@
     "name": {
       "type": "string",
       "description": "The unique identifier for the language module. Should be lowercase, use hyphens for spaces, and clearly indicate the language (e.g., 'python3-module', 'cpp-language-support').",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
       "minLength": 1,
       "examples": ["python3-module", "cpp-language-support"]
     },
@@ -38,6 +34,7 @@
     "author": {
       "type": "string",
       "description": "The name or identifier of the module creator. Can be an individual name, username, or organization (e.g., 'John Doe', 'johndoe', 'Acme Corp').",
+      "minLength": 1,
       "examples": ["John Doe", "jane-doe", "Acme Corporation", "Community Contributors"]
     },
     "website": {
@@ -48,6 +45,7 @@
     "license": {
       "type": "string",
       "description": "The software license identifier for the module (e.g., 'MIT', 'Apache-2.0', 'GPL-3.0'). Should use SPDX license identifiers when possible. See https://spdx.org/licenses/",
+      "minLength": 1,
       "examples": ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause", "proprietary"]
     },
     "platforms": {
@@ -77,6 +75,7 @@
           "name": {
             "type": "string",
             "description": "The name of the module reference.",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
             "minLength": 1
           },
           "constraints": {
@@ -109,6 +108,7 @@
           "name": {
             "type": "string",
             "description": "The name of the conflicting module.",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
             "minLength": 1
           },
           "constraints": {
@@ -132,6 +132,7 @@
     "language": {
       "type": "string",
       "description": "The programming language identifier that this module provides support for. Should match the language's common abbreviation or file extension (e.g., 'cpp' for C++, 'py' for Python, 'js' for JavaScript).",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
       "minLength": 1,
       "examples": [
         "cpp",

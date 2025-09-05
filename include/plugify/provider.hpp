@@ -11,7 +11,6 @@ namespace plugify {
     class Extension;
     // Provider acts as a facade to simplify access to common services
     class PLUGIFY_API Provider {
-        struct Impl;
     public:
         explicit Provider(const ServiceLocator& services, const Config& config, const Manager& manager);
         ~Provider();
@@ -63,6 +62,7 @@ namespace plugify {
         [[nodiscard]] const ServiceLocator& GetServices() const noexcept;
 
     private:
+        struct Impl;
         PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 }

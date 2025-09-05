@@ -22,19 +22,19 @@ Method& Method::operator=(Method&& other) noexcept = default;
 
 const std::vector<Property>& Method::GetParamTypes() const noexcept { return _impl->paramTypes; }
 const Property& Method::GetRetType() const noexcept { return _impl->retType; }
-uint8_t Method::GetVarIndex() const noexcept { return _impl->varIndex; }
 const std::string& Method::GetName() const noexcept { return _impl->name; }
 const std::string& Method::GetFuncName() const noexcept { return _impl->funcName; }
-const std::string& Method::GetCallConv() const noexcept { return _impl->callConv; }
+CallConv Method::GetCallConv() const noexcept { return _impl->callConv.value_or(CallConv::CDecl); }
+uint8_t Method::GetVarIndex() const noexcept { return _impl->varIndex.value_or(Signature::kNoVarArgs); }
 
 void Method::SetParamTypes(std::vector<Property> paramTypes) {
     _impl->paramTypes = std::move(paramTypes);
 }
 void Method::SetRetType(Property retType) { _impl->retType = std::move(retType); }
-void Method::SetVarIndex(uint8_t varIndex) { _impl->varIndex = varIndex; }
 void Method::SetName(std::string name) { _impl->name = std::move(name); }
 void Method::SetFuncName(std::string funcName) { _impl->funcName = std::move(funcName); }
-void Method::SetCallConv(std::string callConv) { _impl->callConv = std::move(callConv); }
+void Method::SetCallConv(CallConv callConv) { _impl->callConv = callConv; }
+void Method::SetVarIndex(uint8_t varIndex) { _impl->varIndex = varIndex; }
 
 bool Method::operator==(const Method& other) const noexcept = default;
 auto Method::operator<=>(const Method& other) const noexcept = default;
