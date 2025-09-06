@@ -27,12 +27,12 @@ struct JitCall::Impl {
 
 	    SimpleErrorHandler eh;
 	    CodeHolder code;
-	    code.init(rt.environment(), rt.cpuFeatures());
-	    code.setErrorHandler(&eh);
+	    code.init(rt.environment(), rt.cpu_features());
+	    code.set_error_handler(&eh);
 
 	    // initialize function
 	    x86::Compiler cc(&code);
-	    FuncNode* func = cc.addFunc(FuncSignature::build<void, void*, void*>());
+	    FuncNode* func = cc.add_func(FuncSignature::build<void, void*, void*>());
 
     #if 0
 	    StringLogger log;
@@ -47,16 +47,16 @@ struct JitCall::Impl {
 	    func->frame().resetPreservedFP();
     #endif // PLUGIFY_IS_RELEASE
 
-	    x86::Gp paramImm = cc.newUIntPtr();
-	    func->setArg(0, paramImm);
+	    x86::Gp paramImm = cc.new_gpz();
+	    func->set_arg(0, paramImm);
 
-	    x86::Gp returnImm = cc.newUIntPtr();
-	    func->setArg(1, returnImm);
+	    x86::Gp returnImm = cc.new_gpz();
+	    func->set_arg(1, returnImm);
 
 	    // paramMem = ((char*)paramImm) + i (char* size walk, uint64_t size r/w)
-	    x86::Gp i = cc.newUIntPtr();
+	    x86::Gp i = cc.new_gpz();
 	    x86::Mem paramMem = ptr(paramImm, i);
-	    paramMem.setSize(sizeof(uint64_t));
+	    paramMem.set_size(sizeof(uint64_t));
 
 	    // i = 0
 	    cc.mov(i, 0);
@@ -67,36 +67,36 @@ struct JitCall::Impl {
 			    useHighReg = false;
 		    }
 
-		    x86::Reg low;
-		    x86::Reg high;
+		    Reg low;
+		    Reg high;
 		    uint32_t argIdx;
 		    bool useHighReg;
 	    };
 
 	    std::vector<ArgRegSlot> argRegSlots;
-	    argRegSlots.reserve(sig.argCount());
+	    argRegSlots.reserve(sig.arg_count());
         size_t offsetNextSlot = sizeof(uint64_t);
 
 	    // map argument slots to registers, following abi. (We can have multiple register per arg slot such as high and low 32bits of a 64bit slot)
-	    for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
+	    for (uint32_t argIdx = 0; argIdx < sig.arg_count(); ++argIdx) {
 		    const auto& argType = sig.args()[argIdx];
 
 		    ArgRegSlot argSlot(argIdx);
 
-		    if (TypeUtils::isInt(argType)) {
-			    argSlot.low = cc.newUIntPtr();
+		    if (TypeUtils::is_int(argType)) {
+			    argSlot.low = cc.new_gpz();
 			    cc.mov(argSlot.low.as<x86::Gp>(), paramMem);
 
 			    if (HasHiArgSlot(argType)) {
 				    cc.add(i, sizeof(uint32_t));
 				    offsetNextSlot -= sizeof(uint32_t);
 
-				    argSlot.high = cc.newUIntPtr();
+				    argSlot.high = cc.new_gpz();
 				    argSlot.useHighReg = true;
 				    cc.mov(argSlot.high.as<x86::Gp>(), paramMem);
 			    }
-		    } else if (TypeUtils::isFloat(argType)) {
-			    argSlot.low = cc.newXmm();
+		    } else if (TypeUtils::is_float(argType)) {
+			    argSlot.low = cc.new_xmm();
 			    cc.movq(argSlot.low.as<x86::Vec>(), paramMem);
 		    } else {
 			    // ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
@@ -116,7 +116,7 @@ struct JitCall::Impl {
 		    cc.int3();
 	    } else if (waitType == WaitType::Wait_Keypress) {
 		    InvokeNode* invokeNode;
-		    cc.invoke(&invokeNode,
+		    cc.invoke(Out(invokeNode),
 				    (uint64_t) &getchar,
 				    FuncSignature::build<int>()
 		    );
@@ -124,45 +124,45 @@ struct JitCall::Impl {
 
 	    // Gen the call
 	    InvokeNode* invokeNode;
-	    cc.invoke(&invokeNode,
+	    cc.invoke(Out(invokeNode),
 			    (uint64_t) target.GetPtr(),
 			    sig
 	    );
 
 	    // Map call params to the args
 	    for (const auto& argSlot : argRegSlots) {
-            invokeNode->setArg(argSlot.argIdx, 0, argSlot.low);
+            invokeNode->set_arg(argSlot.argIdx, 0, argSlot.low);
             if (argSlot.useHighReg) {
-                invokeNode->setArg(argSlot.argIdx, 1, argSlot.high);
+                invokeNode->set_arg(argSlot.argIdx, 1, argSlot.high);
             }
         }
 
-	    if (sig.hasRet()) {
+	    if (sig.has_ret()) {
     #if PLUGIFY_ARCH_BITS == 32
-		    if (TypeUtils::isBetween(sig.ret(), TypeId::kInt64, TypeId::kUInt64)) {
+		    if (TypeUtils::is_between(sig.ret(), TypeId::kInt64, TypeId::kUInt64)) {
 			    cc.mov(ptr(returnImm), x86::eax);
 			    cc.mov(ptr(returnImm, sizeof(uint32_t)), x86::edx);
 		    }
 		    else
     #endif // PLUGIFY_ARCH_BITS
-		    if (TypeUtils::isInt(sig.ret())) {
-			    x86::Gp tmp = cc.newUIntPtr();
-			    invokeNode->setRet(0, tmp);
+		    if (TypeUtils::is_int(sig.ret())) {
+			    x86::Gp tmp = cc.new_gpz();
+			    invokeNode->set_ret(0, tmp);
 			    cc.mov(ptr(returnImm), tmp);
 		    }
     #if !PLUGIFY_PLATFORM_WINDOWS && PLUGIFY_ARCH_BITS == 64
-		    else if (TypeUtils::isBetween(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
+		    else if (TypeUtils::is_between(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
 			    cc.mov(ptr(returnImm), x86::rax);
 			    cc.mov(ptr(returnImm, sizeof(uint64_t)), x86::rdx);
 		    }
-		    else if (TypeUtils::isBetween(sig.ret(), TypeId::kFloat32x4, TypeId::kFloat64x2)) {
+		    else if (TypeUtils::is_between(sig.ret(), TypeId::kFloat32x4, TypeId::kFloat64x2)) {
 			    cc.movq(ptr(returnImm), x86::xmm0);
 			    cc.movq(ptr(returnImm, sizeof(uint64_t)), x86::xmm1);
 		    }
     #endif // PLUGIFY_ARCH_BITS
-		    else if (TypeUtils::isFloat(sig.ret())) {
-			    x86::Vec ret = cc.newXmm();
-			    invokeNode->setRet(0, ret);
+		    else if (TypeUtils::is_float(sig.ret())) {
+			    x86::Vec ret = cc.new_xmm();
+			    invokeNode->set_ret(0, ret);
 			    cc.movq(ptr(returnImm), ret);
 		    }
 		    else {
@@ -175,14 +175,14 @@ struct JitCall::Impl {
 	    cc.ret();
 
 	    // end of the function body
-	    cc.endFunc();
+	    cc.end_func();
 
 	    // write to buffer
 	    cc.finalize();
 
 	    rt.add(&_function, &code);
 
-	    if (eh.error) {
+	    if (eh.error != Error::kOk) {
 		    _function = nullptr;
 		    _errorCode = eh.code;
 		    return nullptr;

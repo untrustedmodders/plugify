@@ -24,7 +24,7 @@ namespace plugify {
 
 	class SimpleErrorHandler : public asmjit::ErrorHandler {
 	public:
-		void handleError(asmjit::Error err, const char* message, asmjit::BaseEmitter* ) override {
+		void handle_error(asmjit::Error err, const char* message, asmjit::BaseEmitter* ) override {
 			error = err;
 			code = message;
 		}
@@ -41,7 +41,7 @@ namespace plugify {
         );
 
         for (const auto& arg : sig.argTypes) {
-            asmSig.addArg(GetValueTypeId(arg));
+            asmSig.add_arg(GetValueTypeId(arg));
         }
 
         return asmSig;

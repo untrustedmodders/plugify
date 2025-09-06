@@ -27,12 +27,12 @@ struct JitCallback::Impl {
 
 	    SimpleErrorHandler eh;
 	    CodeHolder code;
-	    code.init(rt.environment(), rt.cpuFeatures());
-	    code.setErrorHandler(&eh);
+	    code.init(rt.environment(), rt.cpu_features());
+	    code.set_error_handler(&eh);
 
 	    // initialize function
 	    a64::Compiler cc(&code);
-	    FuncNode* func = cc.addFunc(sig);
+	    FuncNode* func = cc.add_func(sig);
 
     #if 0
 	    StringLogger log;
@@ -48,27 +48,27 @@ struct JitCallback::Impl {
     #endif // PLUGIFY_IS_RELEASE
 
 	    // map argument slots to registers, following abi.
-	    std::vector<a64::Reg> argRegisters;
-	    argRegisters.reserve(sig.argCount());
+	    std::vector<Reg> argRegisters;
+	    argRegisters.reserve(sig.arg_count());
 
-	    for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
+	    for (uint32_t argIdx = 0; argIdx < sig.arg_count(); ++argIdx) {
 		    const auto& argType = sig.args()[argIdx];
 
-		    a64::Reg arg;
-		    if (TypeUtils::isInt(argType)) {
-			    arg = cc.newGp(argType);
-		    } else if (TypeUtils::isFloat(argType)) {
-			    arg = cc.newVec(argType);
+		    Reg arg;
+		    if (TypeUtils::is_int(argType)) {
+			    arg = cc.new_gp(argType);
+		    } else if (TypeUtils::is_float(argType)) {
+			    arg = cc.new_vec(argType);
 		    } else {
 			    _errorCode = "Parameters wider than 64bits not supported";
 			    return nullptr;
 		    }
 
-		    func->setArg(argIdx, arg);
+		    func->set_arg(argIdx, arg);
 		    argRegisters.push_back(std::move(arg));
 	    }
 
-	    a64::Gp retStruct = cc.newGpx("retStruct");
+	    a64::Gp retStruct = cc.new_gpz("retStruct");
 
 	    // store x8 in advance
 	    if (hidden) {
@@ -78,30 +78,30 @@ struct JitCallback::Impl {
 	    const uint32_t alignment = 16;
 
 	    // setup the stack structure to hold arguments for user callback
-	    const auto stackSize = static_cast<uint32_t>(sizeof(uint64_t) * sig.argCount());
+	    const auto stackSize = static_cast<uint32_t>(sizeof(uint64_t) * sig.arg_count());
 	    a64::Mem argsStack;
 	    if (stackSize > 0) {
-		    argsStack = cc.newStack(stackSize, alignment);
+		    argsStack = cc.new_stack(stackSize, alignment);
 	    }
 	    a64::Mem argsStackIdx(argsStack);
 
 	    // assigns some register as index reg
-	    a64::Gp i = cc.newGpx();
+	    a64::Gp i = cc.new_gpz();
 
 	    // stackIdx <- stack[i].
-	    argsStackIdx.setIndex(i);
+	    argsStackIdx.set_index(i);
 
 	    // set i = 0
 	    cc.mov(i, 0);
 
 	    //// mov from arguments registers into the stack structure
-	    for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
+	    for (uint32_t argIdx = 0; argIdx < sig.arg_count(); ++argIdx) {
 		    const auto& argType = sig.args()[argIdx];
 
 		    // have to cast back to explicit register types to gen right mov type
-		    if (TypeUtils::isInt(argType)) {
+		    if (TypeUtils::is_int(argType)) {
 			    cc.str(argRegisters.at(argIdx).as<a64::Gp>(), argsStackIdx);
-		    } else if (TypeUtils::isFloat(argType)) {
+		    } else if (TypeUtils::is_float(argType)) {
 			    cc.str(argRegisters.at(argIdx).as<a64::Vec>(), argsStackIdx);
 		    } else {
 			    _errorCode = "Parameters wider than 64bits not supported";
@@ -113,54 +113,54 @@ struct JitCallback::Impl {
 	    }
 
 	    // fill reg to pass method ptr to callback
-	    a64::Gp methodPtrParam = cc.newGpx("methodPtrParam");
+	    a64::Gp methodPtrParam = cc.new_gpz("methodPtrParam");
 	    cc.mov(methodPtrParam, method);
 
 	    // fill reg to pass data ptr to callback
-	    a64::Gp dataPtrParam = cc.newGpx("dataPtrParam");
+	    a64::Gp dataPtrParam = cc.new_gpz("dataPtrParam");
 	    cc.mov(dataPtrParam, static_cast<uintptr_t>(data));
 
 	    // get pointer to stack structure and pass it to the user callback
-	    a64::Gp argStruct = cc.newGpx("argStruct");
-	    cc.loadAddressOf(argStruct, argsStack);
+	    a64::Gp argStruct = cc.new_gpz("argStruct");
+	    cc.load_address_of(argStruct, argsStack);
 
 	    // fill reg to pass struct arg count to callback
-	    a64::Gp argCountParam = cc.newGpx("argCountParam");
-	    cc.mov(argCountParam, static_cast<size_t>(sig.argCount()));
+	    a64::Gp arg_countParam = cc.new_gpz("arg_countParam");
+	    cc.mov(arg_countParam, static_cast<size_t>(sig.arg_count()));
 
 	    // create buffer for ret val
 	    a64::Mem retStack;
 	    if (hidden) {
 		    // already cached
 	    } else {
-		    const auto retSize = static_cast<uint32_t>(sizeof(uint64_t) * (TypeUtils::isVec128(sig.ret()) ? 2 : 1));
-		    retStack = cc.newStack(retSize, alignment);
-		    cc.loadAddressOf(retStruct, retStack);
+		    const auto retSize = static_cast<uint32_t>(sizeof(uint64_t) * (TypeUtils::is_vec128(sig.ret()) ? 2 : 1));
+		    retStack = cc.new_stack(retSize, alignment);
+		    cc.load_address_of(retStruct, retStack);
 	    }
 
-	    a64::Gp dest = cc.newGpx();
+	    a64::Gp dest = cc.new_gpz();
 	    cc.mov(dest, (uint64_t) callback);
 
 	    InvokeNode* invokeNode;
-	    cc.invoke(&invokeNode,
+	    cc.invoke(Out(invokeNode),
 			      dest,
 			      FuncSignature::build<void, void*, void*, uint64_t*, size_t, void*>()
 	    );
 
 	    // call to user provided function (use ABI of host compiler)
-	    invokeNode->setArg(0, methodPtrParam);
-	    invokeNode->setArg(1, dataPtrParam);
-	    invokeNode->setArg(2, argStruct);
-	    invokeNode->setArg(3, argCountParam);
-	    invokeNode->setArg(4, retStruct);
+	    invokeNode->set_arg(0, methodPtrParam);
+	    invokeNode->set_arg(1, dataPtrParam);
+	    invokeNode->set_arg(2, argStruct);
+	    invokeNode->set_arg(3, arg_countParam);
+	    invokeNode->set_arg(4, retStruct);
 
 	    // mov from arguments stack structure into regs
 	    cc.mov(i, 0); // reset idx
-	    for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
+	    for (uint32_t argIdx = 0; argIdx < sig.arg_count(); ++argIdx) {
 		    const auto& argType = sig.args()[argIdx];
-		    if (TypeUtils::isInt(argType)) {
+		    if (TypeUtils::is_int(argType)) {
 			    cc.ldr(argRegisters.at(argIdx).as<a64::Gp>(), argsStackIdx);
-		    } else if (TypeUtils::isFloat(argType)) {
+		    } else if (TypeUtils::is_float(argType)) {
 			    cc.ldr(argRegisters.at(argIdx).as<a64::Vec>(), argsStackIdx);
 		    } else {
 			    _errorCode = "Parameters wider than 64bits not supported";
@@ -174,47 +174,47 @@ struct JitCallback::Impl {
 	    if (hidden) {
 		    cc.mov(a64::x8, retStruct);
 		    cc.ret();
-	    } else if (sig.hasRet()) {
+	    } else if (sig.has_ret()) {
 		    a64::Mem retStackIdx0(retStack);
-		    if (TypeUtils::isInt(sig.ret())) {
-			    a64::Gp tmp = cc.newGp(sig.ret());
+		    if (TypeUtils::is_int(sig.ret())) {
+			    a64::Gp tmp = cc.new_gp(sig.ret());
 			    cc.ldr(tmp, retStackIdx0);
 			    cc.ret(tmp);
-		    } else if (TypeUtils::isBetween(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
+		    } else if (TypeUtils::is_between(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
 			    a64::Mem retStackIdx1(retStack);
-			    retStackIdx1.addOffset(sizeof(uint64_t));
+			    retStackIdx1.add_offset(sizeof(uint64_t));
 			    cc.ldr(a64::x0, retStackIdx0);
 			    cc.ldr(a64::x1, retStackIdx1);
 			    cc.ret();
 		    } else if (sig.ret() == TypeId::kFloat32x2) { // Vector2
 			    a64::Mem retStackIdx1(retStack);
-			    retStackIdx1.addOffset(sizeof(float));
+			    retStackIdx1.add_offset(sizeof(float));
 			    cc.ldr(a64::s0, retStackIdx0);
 			    cc.ldr(a64::s1, retStackIdx1);
 			    cc.ret();
 		    } else if (sig.ret() == TypeId::kFloat64x2) { // Vector3
 			    a64::Mem retStackIdx1(retStack);
-			    retStackIdx1.addOffset(sizeof(float));
+			    retStackIdx1.add_offset(sizeof(float));
 			    a64::Mem retStackIdx2(retStack);
-			    retStackIdx2.addOffset(sizeof(float) * 2);
+			    retStackIdx2.add_offset(sizeof(float) * 2);
 			    cc.ldr(a64::s0, retStackIdx0);
 			    cc.ldr(a64::s1, retStackIdx1);
 			    cc.ldr(a64::s2, retStackIdx2);
 			    cc.ret();
 		    } else if (sig.ret() == TypeId::kFloat32x4) { // Vector4
 			    a64::Mem retStackIdx1(retStack);
-			    retStackIdx1.addOffset(sizeof(float));
+			    retStackIdx1.add_offset(sizeof(float));
 			    a64::Mem retStackIdx2(retStack);
-			    retStackIdx2.addOffset(sizeof(float) * 2);
+			    retStackIdx2.add_offset(sizeof(float) * 2);
 			    a64::Mem retStackIdx3(retStack);
-			    retStackIdx3.addOffset(sizeof(float) * 3);
+			    retStackIdx3.add_offset(sizeof(float) * 3);
 			    cc.ldr(a64::s0, retStackIdx0);
 			    cc.ldr(a64::s1, retStackIdx1);
 			    cc.ldr(a64::s2, retStackIdx2);
 			    cc.ldr(a64::s3, retStackIdx3);
 			    cc.ret();
 		    } else {
-			    a64::Vec tmp = cc.newVec(sig.ret());
+			    a64::Vec tmp = cc.new_vec(sig.ret());
 			    cc.ldr(tmp, retStackIdx0);
 			    cc.ret(tmp);
 		    }
@@ -222,14 +222,14 @@ struct JitCallback::Impl {
 	        cc.ret();
 	    }
 
-	    cc.endFunc();
+	    cc.end_func();
 
 	    // write to buffer
 	    cc.finalize();
 
 	    rt.add(&_function, &code);
 
-	    if (eh.error) {
+	    if (eh.error != Error::kOk) {
 		    _function = nullptr;
 		    _errorCode = eh.code;
 		    return nullptr;

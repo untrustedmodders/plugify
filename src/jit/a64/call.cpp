@@ -27,12 +27,12 @@ struct JitCall::Impl {
 
 	    SimpleErrorHandler eh;
 	    CodeHolder code;
-	    code.init(rt.environment(), rt.cpuFeatures());
-	    code.setErrorHandler(&eh);
+	    code.init(rt.environment(), rt.cpu_features());
+	    code.set_error_handler(&eh);
 
 	    // initialize function
 	    a64::Compiler cc(&code);
-	    FuncNode* func = cc.addFunc(FuncSignature::build<void, void*, void*>());
+	    FuncNode* func = cc.add_func(FuncSignature::build<void, void*, void*>());
 
     #if 0
 	    StringLogger log;
@@ -47,14 +47,14 @@ struct JitCall::Impl {
 	    func->frame().resetPreservedFP();
     #endif // PLUGIFY_IS_RELEASE
 
-	    a64::Gp paramImm = cc.newGpx();
-	    func->setArg(0, paramImm);
+	    a64::Gp paramImm = cc.new_gpz();
+	    func->set_arg(0, paramImm);
 
-	    a64::Gp returnImm = cc.newGpx();
-	    func->setArg(1, returnImm);
+	    a64::Gp returnImm = cc.new_gpz();
+	    func->set_arg(1, returnImm);
 
 	    // paramMem = ((char*)paramImm) + i (char* size walk, uint64_t size r/w)
-	    a64::Gp i = cc.newGpx();
+	    a64::Gp i = cc.new_gpz();
 	    a64::Mem paramMem = ptr(paramImm, i);
 
 	    // i = 0
@@ -62,7 +62,7 @@ struct JitCall::Impl {
 
 	    if (hidden) {
 		    // load first arg and store its address to ret struct
-		    a64::Gp tmp = cc.newGpx();
+		    a64::Gp tmp = cc.new_gpz();
 		    cc.ldr(tmp, paramMem);
 		    cc.str(tmp, ptr(returnImm));
 
@@ -70,19 +70,19 @@ struct JitCall::Impl {
 		    cc.add(i, i, sizeof(uint64_t));
 	    }
 
-	    std::vector<a64::Reg> argRegisters;
-	    argRegisters.reserve(sig.argCount());
+	    std::vector<Reg> argRegisters;
+	    argRegisters.reserve(sig.arg_count());
 
 	    // map argument slots to registers, following abi. (We can have multiple register per arg slot such as high and low 32bits of a 64bit slot)
-	    for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
+	    for (uint32_t argIdx = 0; argIdx < sig.arg_count(); ++argIdx) {
 		    const auto& argType = sig.args()[argIdx];
 
-		    a64::Reg arg;
-		    if (TypeUtils::isInt(argType)) {
-			    arg = cc.newGp(argType);
+		    Reg arg;
+		    if (TypeUtils::is_int(argType)) {
+			    arg = cc.new_gp(argType);
 			    cc.ldr(arg.as<a64::Gp>(), paramMem);
-		    } else if (TypeUtils::isFloat(argType)) {
-			    arg = cc.newVec(argType);
+		    } else if (TypeUtils::is_float(argType)) {
+			    arg = cc.new_vec(argType);
 			    cc.ldr(arg.as<a64::Vec>(), paramMem);
 		    } else {
 			    // ex: void example(__m128i xmmreg) is invalid: https://github.com/asmjit/asmjit/issues/83
@@ -100,38 +100,38 @@ struct JitCall::Impl {
 	    if (waitType == WaitType::Breakpoint) {
 		    cc.brk(0x1);
 	    } else if (waitType == WaitType::Wait_Keypress) {
-		    a64::Gp dest = cc.newGpx();
+		    a64::Gp dest = cc.new_gpz();
 		    cc.mov(dest, (uint64_t) &getchar);
 		    InvokeNode* invokeNode;
-		    cc.invoke(&invokeNode, dest, FuncSignature::build<int>());
+		    cc.invoke(Out(invokeNode), dest, FuncSignature::build<int>());
 	    }
 
-	    a64::Gp dest = cc.newGpx();
+	    a64::Gp dest = cc.new_gpz();
 	    cc.mov(dest, (uint64_t) target.GetPtr());
 
 	    if (hidden) {
-		    a64::Gp tmp = cc.newGpx();
+		    a64::Gp tmp = cc.new_gpz();
 		    cc.ldr(tmp, ptr(returnImm));
 		    cc.mov(a64::x8, tmp);
 
-		    func->frame().addUnavailableRegs(a64::x8);
+		    func->frame().add_unavailable_regs(a64::x8);
 	    }
 
 	    // Gen the call
 	    InvokeNode* invokeNode;
-	    cc.invoke(&invokeNode, dest, sig);
+	    cc.invoke(Out(invokeNode), dest, sig);
 
 	    // Map call params to the args
-	    for (uint32_t argIdx = 0; argIdx < sig.argCount(); ++argIdx) {
-		    invokeNode->setArg(argIdx, argRegisters.at(argIdx));
+	    for (uint32_t argIdx = 0; argIdx < sig.arg_count(); ++argIdx) {
+		    invokeNode->set_arg(argIdx, argRegisters.at(argIdx));
 	    }
 
-	    if (sig.hasRet()) {
-		    if (TypeUtils::isInt(sig.ret())) {
-			    a64::Gp tmp = cc.newGp(sig.ret());
-			    invokeNode->setRet(0, tmp);
+	    if (sig.has_ret()) {
+		    if (TypeUtils::is_int(sig.ret())) {
+			    a64::Gp tmp = cc.new_gp(sig.ret());
+			    invokeNode->set_ret(0, tmp);
 			    cc.str(tmp, ptr(returnImm));
-		    } else if (TypeUtils::isBetween(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
+		    } else if (TypeUtils::is_between(sig.ret(), TypeId::kInt8x16, TypeId::kUInt64x2)) {
 			    cc.str(a64::x0, ptr(returnImm));
 			    cc.str(a64::x1, ptr(returnImm, sizeof(uint64_t)));
 		    } else if (sig.ret() == TypeId::kFloat32x2) { // Vector2
@@ -147,8 +147,8 @@ struct JitCall::Impl {
 			    cc.str(a64::s2, ptr(returnImm, sizeof(float) * 2));
 			    cc.str(a64::s3, ptr(returnImm, sizeof(float) * 3));
 		    } else {
-			    a64::Vec ret = cc.newVec(sig.ret());
-			    invokeNode->setRet(0, ret);
+			    a64::Vec ret = cc.new_vec(sig.ret());
+			    invokeNode->set_ret(0, ret);
 			    cc.str(ret, ptr(returnImm));
 		    }
 	    }
@@ -156,14 +156,14 @@ struct JitCall::Impl {
 	    cc.ret();
 
 	    // end of the function body
-	    cc.endFunc();
+	    cc.end_func();
 
 	    // write to buffer
 	    cc.finalize();
 
 	    rt.add(&_function, &code);
 
-	    if (eh.error) {
+	    if (eh.error != Error::kOk) {
 		    _function = nullptr;
 		    _errorCode = eh.code;
 		    return nullptr;
@@ -222,17 +222,4 @@ MemAddr JitCall::GetTargetFunc() const noexcept {
 
 std::string_view JitCall::GetError() noexcept {
     return !_impl->_function && _impl->_errorCode ? _impl->_errorCode : "";
-}
-
-bool JitCall::InitializeRuntime() {
-    std::lock_guard<std::mutex> lock(g_runtimeMutex);
-    if (!g_jitRuntime) {
-        g_jitRuntime = std::make_shared<asmjit::JitRuntime>();
-    }
-    return g_jitRuntime != nullptr;
-}
-
-void JitCall::ShutdownRuntime() {
-    std::lock_guard<std::mutex> lock(g_runtimeMutex);
-    g_jitRuntime.reset();
 }
