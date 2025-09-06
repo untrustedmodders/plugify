@@ -244,21 +244,10 @@ namespace plugify {
             return result;
         }
 
-        static bool IsSupportsPlatform(const std::vector<std::string>& supportedPlatforms) {
-            if (supportedPlatforms.empty())
-                return true;
-
-            constexpr std::string_view platform = PLUGIFY_PLATFORM;
-            static_assert(platform.find('_') != std::string_view::npos, "PLUGIFY_PLATFORM must be in the format 'name-arch'");
-            constexpr std::string_view name = platform.substr(0, platform.find('_'));
-
-            for (const auto& supported : supportedPlatforms) {
-                if (supported == platform || supported == name) {
-                    return true;
-                }
-            }
-
-            return false;
+        static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
+            return supportedPlatforms.empty() || std::any_of(supportedPlatforms.begin(), supportedPlatforms.end(), [](const std::string& platform) {
+                return platform.contains(PLUGIFY_PLATFORM);
+            });
         }
     };
 

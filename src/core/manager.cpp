@@ -67,8 +67,7 @@ public:
         if (!initialExtensions) {
             return MakeError2(std::move(initialExtensions.error()));
         } else if (initialExtensions->empty()) {
-            // depending on policy: return ok or error. I'll return ok but log a warning:
-            // return MakeError2("No extensions found");
+            return MakeError2("No extensions found");
         }
 
         FailureTracker failureTracker(initialExtensions->size());

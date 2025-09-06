@@ -57,7 +57,7 @@ namespace plugify {
             : operation(op), extensionName(name) {}
 
         template<typename T, typename Func>
-        Result<T> Execute(Func&& func) noexcept {
+        PLUGIFY_FORCE_INLINE Result<T> Execute(Func&& func) noexcept {
             try {
                 return func();
             } catch (const std::bad_alloc&) {
@@ -355,8 +355,8 @@ namespace plugify {
 
         Result<void> LoadLanguageModule(
             std::shared_ptr<IAssembly> assembly,
-            Extension& module)
-        {
+            Extension& module
+        ) {
             constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
 
             auto entryFunc = assembly->GetSymbol(kGetLanguageModuleFn);

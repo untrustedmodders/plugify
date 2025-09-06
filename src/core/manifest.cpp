@@ -173,7 +173,7 @@ namespace {
         }
 
         if (!IsValidName(dep.name)) {
-            return "Invalid dependency name: " + dep.name;
+            return std::format("Invalid dependency name: ", dep.name);
         }
 
         // Validate constraints if present
@@ -194,7 +194,7 @@ namespace {
         }
 
         if (!IsValidName(conflict.name)) {
-            return "Invalid conflict name: " + conflict.name;
+            return std::format("Invalid conflict name: ", conflict.name);
         }
 
         // Validate constraints if present
@@ -214,7 +214,7 @@ namespace {
         }
 
         if (!IsValidName(obsolete.name)) {
-            return "Invalid obsolete name: " + obsolete.name;
+            return std::format("Invalid obsolete name: ", obsolete.name);
         }
 
         return std::nullopt;

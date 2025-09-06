@@ -11,8 +11,7 @@ using namespace plugify;
 LibsolvDependencyResolver::LibsolvDependencyResolver(std::shared_ptr<ILogger> logger)
     : _logger(std::move(logger)) {}
 
-ResolutionReport
-LibsolvDependencyResolver::Resolve(std::span<const Extension> extensions) {
+ResolutionReport LibsolvDependencyResolver::Resolve(std::span<const Extension> extensions) {
     // Step 1: Initialize libsolv pool
     InitializePool();
 
