@@ -36,14 +36,14 @@ namespace plugify {
             if (!content) {
                 ext.AddError(content.error());
                 ext.EndOperation(ExtensionState::Corrupted);
-                return MakeError2(std::move(content.error()));
+                return MakeError(std::move(content.error()));
             }
 
             auto manifest = _parser->Parse(*content, ext.GetType());
             if (!manifest) {
                 ext.AddError(manifest.error());
                 ext.EndOperation(ExtensionState::Corrupted);
-                return MakeError2(std::move(manifest.error()));
+                return MakeError(std::move(manifest.error()));
             }
 
             ext.SetManifest(std::move(*manifest));
@@ -93,7 +93,7 @@ namespace plugify {
 
             auto report = _resolver->Resolve(filtered);
 
-            if (report.isLoadOrderValid) {
+            if (!report.isLoadOrderValid) {
                 return RestoreResult("No valid loading order", items, filtered, excluded);
             }
 
@@ -298,7 +298,7 @@ namespace plugify {
                 }
 
                 default:
-                    result = MakeError2("Unknown extension type");
+                    result = MakeError("Unknown extension type");
             }
 
             ext.EndOperation(ExtensionState::Initialized);
@@ -449,7 +449,7 @@ namespace plugify {
                 }
 
                 default:
-                    result = MakeError2("Unknown extension type");
+                    result = MakeError("Unknown extension type");
             }
 
             if (!result) {

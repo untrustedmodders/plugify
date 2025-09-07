@@ -71,16 +71,16 @@ namespace plugify {
         struct Loading {
             bool preferOwnSymbols = true;
             size_t maxConcurrentLoads = 4;
-            std::chrono::milliseconds loadTimeout{50};
-            std::chrono::milliseconds exportTimeout{50};
-            std::chrono::milliseconds startTimeout{100};
+            std::chrono::milliseconds loadTimeout{500};
+            std::chrono::milliseconds exportTimeout{100};
+            std::chrono::milliseconds startTimeout{250};
             
             // Check if values are non-default
             bool HasCustomPreferOwnSymbols() const { return preferOwnSymbols != true; }
             bool HasCustomMaxConcurrentLoads() const { return maxConcurrentLoads != 4; }
-            bool HasCustomLoadTimeout() const { return loadTimeout != std::chrono::milliseconds{50}; }
-            bool HasCustomExportTimeout() const { return exportTimeout != std::chrono::milliseconds{50}; }
-            bool HasCustomStartTimeout() const { return startTimeout != std::chrono::milliseconds{100}; }
+            bool HasCustomLoadTimeout() const { return loadTimeout != std::chrono::milliseconds{500}; }
+            bool HasCustomExportTimeout() const { return exportTimeout != std::chrono::milliseconds{100}; }
+            bool HasCustomStartTimeout() const { return startTimeout != std::chrono::milliseconds{250}; }
         } loading;
 
         // Runtime configuration
@@ -109,14 +109,16 @@ namespace plugify {
 
         // Logging configuration
         struct Logging {
-            Severity severity{Severity::Error};
+            constexpr static auto kVerbosity = PLUGIFY_IS_DEBUG ? Severity::Debug : Severity::Error;
+
+            Severity severity{kVerbosity};
             bool printReport = true;
             bool printLoadOrder = true;
             bool printDependencyGraph = true;
             bool printDigraphDot = true;
             std::filesystem::path exportDigraphDot;
             
-            bool HasCustomSeverity() const { return severity != Severity::Error; }
+            bool HasCustomSeverity() const { return severity != kVerbosity; }
             bool HasCustomPrintReport() const { return printReport != true; }
             bool HasCustomPrintLoadOrder() const { return printLoadOrder != true; }
             bool HasCustomPrintDependencyGraph() const { return printDependencyGraph != true; }
@@ -353,7 +355,7 @@ namespace plugify {
         // Validation remains the same
         Result<void> Validate() const {
             if (paths.baseDir.empty()) {
-                return MakeError2("Base directory not set");
+                return MakeError("Base directory not set");
             }
             
             // Check for path collisions
@@ -381,11 +383,11 @@ namespace plugify {
             // Validate runtime config
             if (runtime.updateMode == UpdateMode::BackgroundThread && 
                 runtime.updateInterval <= std::chrono::milliseconds{0}) {
-                return MakeError2("Invalid update interval for background thread mode");
+                return MakeError("Invalid update interval for background thread mode");
             }
             
             if (runtime.updateMode == UpdateMode::Callback && !runtime.updateCallback) {
-                return MakeError2("Update callback not set for callback mode");
+                return MakeError("Update callback not set for callback mode");
             }
             
             return {};

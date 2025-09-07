@@ -60,15 +60,15 @@ public:
         std::lock_guard lock(lifecycleMutex);
 
         if (initialized) {
-            return MakeError2("Manager already initialized");
+            return MakeError("Manager already initialized");
         }
 
         auto initialExtensions = DiscoverExtensions();
         if (!initialExtensions) {
-            return MakeError2(std::move(initialExtensions.error()));
-        } else if (initialExtensions->empty()) {
-            return MakeError2("No extensions found");
-        }
+            return MakeError(std::move(initialExtensions.error()));
+        } /*else if (initialExtensions->empty()) {
+            return MakeError("No extensions found");
+        }*/
         extensions = std::move(*initialExtensions);
 
         FailureTracker failureTracker(extensions.size());
@@ -131,7 +131,7 @@ public:
         }
 
         if (totalFailed > 0) {
-            return MakeError2(report.ToString());
+            return MakeError(report.ToString());
         }
 
         initialized = true;
@@ -160,7 +160,7 @@ public:
                     }
 
                     default:
-                        result = MakeError2("Unknown extension type");
+                        result = MakeError("Unknown extension type");
                 }
                 if (!result) {
                     logger->Log(result.error(), Severity::Error);
@@ -194,7 +194,7 @@ public:
                     }
 
                     default:
-                        result = MakeError2("Unknown extension type");
+                        result = MakeError("Unknown extension type");
                 }
                 if (!result) {
                     logger->Log(result.error(), Severity::Error);
@@ -220,7 +220,7 @@ public:
                     }
 
                     default:
-                        result = MakeError2("Unknown extension type");
+                        result = MakeError("Unknown extension type");
                 }
                 if (!result) {
                     logger->Log(result.error(), Severity::Error);
@@ -245,23 +245,19 @@ public:
             .filter_predicate = [](const FileInfo& f) { return f.is_directory(); },
         });
         if (!dirs) {
-            return MakeError2(std::move(dirs.error()));
+            return MakeError(std::move(dirs.error()));
         }
 
         std::vector<std::filesystem::path> result;
         for (const auto& dir : *dirs) {
             auto paths = fileSystem->FindFiles(dir.path, MANIFEST_EXTENSIONS, false);
             if (!paths) {
-                return MakeError2(std::move(paths.error()));
+                return MakeError(std::move(paths.error()));
             }
 
             if (paths->size() == 1) {
                 result.emplace_back(std::move(paths->front()));
             }
-        }
-
-        if (result.empty()) {
-            return MakeError2("Did not find any extensions in the directory");
         }
 
         UniqueId id{0};

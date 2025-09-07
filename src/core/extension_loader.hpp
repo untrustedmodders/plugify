@@ -138,7 +138,7 @@ namespace plugify {
             // Try to use preloaded assembly if available
             auto assemblyResult = GetOrLoadAssembly(module.GetRuntime(), module.GetDirectories());
             if (!assemblyResult) {
-                return MakeError2(std::move(assemblyResult.error()));
+                return MakeError(std::move(assemblyResult.error()));
             }
 
             // Load language module interface
@@ -199,7 +199,7 @@ namespace plugify {
 
             auto* languageModule = module.GetLanguageModule();
             if (!languageModule) {
-                return MakeError2("Language module not available");
+                return MakeError("Language module not available");
             }
 
             plugin.SetLanguageModule(languageModule);
@@ -209,7 +209,7 @@ namespace plugify {
                 return plugin.GetLanguageModule()->OnPluginLoad(plugin);
             });
             if (!loadResult) {
-                return MakeError2(std::move(loadResult.error()));
+                return MakeError(std::move(loadResult.error()));
             }
 
             // Validate and set plugin data
@@ -293,7 +293,7 @@ namespace plugify {
         ) {
             auto absPath = _fileSystem->GetAbsolutePath(path);
             if (!absPath) {
-                return MakeError2(absPath.error());
+                return MakeError(absPath.error());
             }
 
             // Check if already cached
@@ -304,7 +304,7 @@ namespace plugify {
             LoadFlag flags = GetLoadFlags();
             auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
             if (!assemblyResult) {
-                return MakeError2(assemblyResult.error());
+                return MakeError(assemblyResult.error());
             }
 
             _assemblyCache.emplace(std::move(*absPath), std::move(*assemblyResult));
@@ -325,7 +325,7 @@ namespace plugify {
         ) {
             auto absPath = _fileSystem->GetAbsolutePath(path);
             if (!absPath) {
-                return MakeError2(std::move(absPath.error()));
+                return MakeError(std::move(absPath.error()));
             }
 
             // Check cache first
@@ -337,7 +337,7 @@ namespace plugify {
             LoadFlag flags = GetLoadFlags();
             auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
             if (!assemblyResult) {
-                return MakeError2(std::move(assemblyResult.error()));
+                return MakeError(std::move(assemblyResult.error()));
             }
 
             // Cache for future use
@@ -361,7 +361,7 @@ namespace plugify {
 
             auto entryFunc = assembly->GetSymbol(kGetLanguageModuleFn);
             if (!entryFunc) {
-                return MakeError2(std::move(entryFunc.error()));
+                return MakeError(std::move(entryFunc.error()));
             }
 
             auto* languageModule = entryFunc->RCast<ILanguageModule*(*)()>()();
@@ -385,7 +385,7 @@ namespace plugify {
             });
 
             if (!initResult) {
-                return MakeError2(std::move(initResult.error()));
+                return MakeError(std::move(initResult.error()));
             }
 
             module.SetLanguageModule(languageModule);

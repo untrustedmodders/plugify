@@ -69,11 +69,11 @@ struct Plugify::Impl {
         // Thread safety check based on config
         if (config.runtime.pinToMainThread &&
             std::this_thread::get_id() != ownerThreadId) {
-            return MakeError2("Initialization must be called from owner thread");
+            return MakeError("Initialization must be called from owner thread");
             }
 
         if (initialized) {
-            return MakeError2("Already initialized");
+            return MakeError("Already initialized");
         }
 
         logger->Log("Initializing Plugify...", Severity::Info);
@@ -83,7 +83,7 @@ struct Plugify::Impl {
 
         // Create necessary directories
         if (!CreateDirectories()) {
-            return MakeError2("Failed to create directories");
+            return MakeError("Failed to create directories");
         }
 
         // Initialize manager
@@ -336,14 +336,14 @@ private:
 
             case UpdateMode::BackgroundThread:
                 if (config.runtime.updateInterval <= 0ms) {
-                    return MakeError2("Invalid update interval for background thread");
+                    return MakeError("Invalid update interval for background thread");
                 }
                 StartBackgroundUpdateThread();
                 break;
 
             case UpdateMode::Callback:
                 if (!config.runtime.updateCallback) {
-                    return MakeError2("No update callback provided");
+                    return MakeError("No update callback provided");
                 }
                 logger->Log("Callback update mode configured", Severity::Info);
                 break;
@@ -636,12 +636,12 @@ Result<Config> PlugifyBuilder::LoadConfigFromFile(const std::filesystem::path& p
 
     auto text = fs->ReadTextFile(path);
     if (!text) {
-        return MakeError2("Failed to read config file");
+        return MakeError("Failed to read config file");
     }
 
     auto config = glz::read_jsonc<Config>(*text);
     if (!config) {
-        return MakeError2("Failed to parse config file");
+        return MakeError("Failed to parse config file");
     }
 
     return *config;

@@ -89,13 +89,14 @@ namespace plugify {
 
     // Helper for creating errors with context
 
+    template<plg::detail::is_string_like First>
+    PLUGIFY_FORCE_INLINE auto MakeError(First&& error) {
+        return plg::unexpected(std::forward<First>(error));
+    }
+
     template<typename... Args>
     PLUGIFY_FORCE_INLINE auto MakeError(std::format_string<Args...> fmt, Args&&... args) {
         return plg::unexpected(std::format(fmt, std::forward<Args>(args)...));
-    }
-
-    PLUGIFY_FORCE_INLINE auto MakeError2(std::string error) {
-        return plg::unexpected(std::move(error));
     }
 }
 

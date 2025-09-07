@@ -257,7 +257,7 @@
 #  define PLUGIFY_NOINLINE [[gnu::noinline]]
 #elif PLUGIFY_COMPILER_MSVC
 #  pragma warning(error: 4714)
-#  define PLUGIFY_FORCE_INLINE __forceinline
+#  define PLUGIFY_FORCE_INLINE [[msvc::forceinline]]
 #  define PLUGIFY_NOINLINE __declspec(noinline)
 #else
 #  define PLUGIFY_FORCE_INLINE inline
