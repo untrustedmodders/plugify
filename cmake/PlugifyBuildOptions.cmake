@@ -11,20 +11,16 @@ option(PLUGIFY_USE_ABI0 "Enable use of the older C++ ABI, which was the default 
 # ------------------------------------------------------------------------------
 # Compilation options
 option(PLUGIFY_BUILD_TESTS "Enable building tests." ON)
-option(PLUGIFY_BUILD_JIT "Build jit object library." OFF)
 option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
 
 option(PLUGIFY_BUILD_OBJECT_LIB "Build plugify as object library." OFF)
-option(PLUGIFY_BUILD_SHARED_LIB "Build plugify as shared library." OFF)
+option(PLUGIFY_BUILD_SHARED_LIB "Build plugify as shared library." ON)
 option(PLUGIFY_BUILD_SHARED_ASMJIT "Build asmjit as shared library." OFF)
 
 option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library." OFF)
 option(PLUGIFY_USE_EXTERNAL_ASMJIT "Use external asmjit library." OFF)
 option(PLUGIFY_USE_EXTERNAL_LIBSOLV "Use external libsolv library." OFF)
 option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
-
-option(PLUGIFY_LOGGING "Enable logging system." ON)
-option(PLUGIFY_DEBUG "Enable debuging mode (asserts)." ON)
 
 # ------------------------------------------------------------------------------
 # Dependencies

@@ -61,10 +61,3 @@ add_custom_command(TARGET plug POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:plugify> $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
-
-#add_custom_command(TARGET plug POST_BUILD
-#        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#        $<TARGET_FILE:crashpad_handler> $<TARGET_FILE_DIR:${PROJECT_NAME}>
-#)
-#
-#file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/crashpad)
