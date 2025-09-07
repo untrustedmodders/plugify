@@ -45,14 +45,13 @@ namespace plugify {
         PlugifyBuilder& operator=(PlugifyBuilder&& other) noexcept = delete;
 
         // Path configuration methods - these have clear precedence
-        PlugifyBuilder& WithBaseDir(const std::filesystem::path& dir);
-        PlugifyBuilder& WithPaths(const Config::Paths& paths);
+        PlugifyBuilder& WithBaseDir(std::filesystem::path dir);
+        PlugifyBuilder& WithPaths(Config::Paths paths);
 
         // Config methods with clear semantics
-        PlugifyBuilder& WithConfig(const Config& config);
-        PlugifyBuilder& WithConfig(Config&& config);
-        PlugifyBuilder& WithConfigFile(const std::filesystem::path& path);
-        //PlugifyBuilder& WithPartialConfig(const Config& config); // Merges with existing
+        PlugifyBuilder& WithConfig(Config config);
+        PlugifyBuilder& WithConfigFile(std::filesystem::path path);
+        //PlugifyBuilder& WithPartialConfig(Config config); // Merges with existing
 
         // Explicit runtime configuration
         PlugifyBuilder& WithManualUpdate(); // Default

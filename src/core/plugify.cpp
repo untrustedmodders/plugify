@@ -466,31 +466,25 @@ PlugifyBuilder::PlugifyBuilder() : _impl(std::make_unique<Impl>()) {
 PlugifyBuilder::~PlugifyBuilder() = default;
 
 // Path configuration methods
-PlugifyBuilder& PlugifyBuilder::WithBaseDir(const std::filesystem::path& dir) {
-    _impl->configOverrides.paths.baseDir = dir;
+PlugifyBuilder& PlugifyBuilder::WithBaseDir(std::filesystem::path dir) {
+    _impl->configOverrides.paths.baseDir = std::move(dir);
     _impl->hasBaseDirOverride = true;
     return *this;
 }
 
-PlugifyBuilder& PlugifyBuilder::WithPaths(const Config::Paths& paths) {
-    _impl->configOverrides.paths = paths;
+PlugifyBuilder& PlugifyBuilder::WithPaths(Config::Paths paths) {
+    _impl->configOverrides.paths = std::move(paths);
     _impl->hasPathsOverride = true;
     return *this;
 }
 
 // Config loading methods with clear priority
-PlugifyBuilder& PlugifyBuilder::WithConfigFile(const std::filesystem::path& path) {
-    _impl->configFilePath = path;
+PlugifyBuilder& PlugifyBuilder::WithConfigFile(std::filesystem::path path) {
+    _impl->configFilePath = std::move(path);
     return *this;
 }
 
-PlugifyBuilder& PlugifyBuilder::WithConfig(const Config& config) {
-    _impl->baseConfig = config;
-    _impl->hasBaseConfig = true;
-    return *this;
-}
-
-PlugifyBuilder& PlugifyBuilder::WithConfig(Config&& config) {
+PlugifyBuilder& PlugifyBuilder::WithConfig(Config config) {
     _impl->baseConfig = std::move(config);
     _impl->hasBaseConfig = true;
     return *this;

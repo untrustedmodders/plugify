@@ -109,16 +109,14 @@ namespace plugify {
 
         // Logging configuration
         struct Logging {
-            constexpr static auto kVerbosity = PLUGIFY_IS_DEBUG ? Severity::Debug : Severity::Error;
-
-            Severity severity{kVerbosity};
+            Severity severity{Severity::Error};
             bool printReport = true;
             bool printLoadOrder = true;
             bool printDependencyGraph = true;
             bool printDigraphDot = true;
             std::filesystem::path exportDigraphDot;
             
-            bool HasCustomSeverity() const { return severity != kVerbosity; }
+            bool HasCustomSeverity() const { return severity != Severity::Error; }
             bool HasCustomPrintReport() const { return printReport != true; }
             bool HasCustomPrintLoadOrder() const { return printLoadOrder != true; }
             bool HasCustomPrintDependencyGraph() const { return printDependencyGraph != true; }
