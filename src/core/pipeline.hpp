@@ -13,7 +13,7 @@ namespace plugify {
         size_t itemsOut = 0;
         size_t succeeded = 0;
         size_t failed = 0;
-        Duration elapsed{0};
+        std::chrono::milliseconds elapsed{0};
         std::vector<std::pair<std::string, std::string>> errors;
     };
 
@@ -22,7 +22,7 @@ namespace plugify {
     public:
         struct Report {
             std::vector<std::pair<std::string, StageStatistics>> stages;
-            Duration totalTime{0};
+            std::chrono::milliseconds totalTime{0};
             size_t initialItems = 0;
             size_t finalItems = 0;
 
@@ -119,7 +119,7 @@ namespace plugify {
             report.stages.reserve(_stages.size());
             report.initialItems = items.size();
 
-            auto pipelineStart = Clock::now();
+            auto pipelineStart = std::chrono::steady_clock::now();
 
             // Create execution context
             ExecutionContext<T> ctx{
@@ -140,8 +140,8 @@ namespace plugify {
             }
 
             report.finalItems = items.size();
-            report.totalTime = std::chrono::duration_cast<Duration>(
-                Clock::now() - pipelineStart
+            report.totalTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - pipelineStart
             );
 
             return report;
@@ -155,7 +155,7 @@ namespace plugify {
 
             StageStatistics stats;
             stats.itemsIn = items.size();
-            auto startTime = Clock::now();
+            auto startTime = std::chrono::steady_clock::now();
 
             // Setup
             stage->Setup(items, ctx);
@@ -184,7 +184,7 @@ namespace plugify {
             stage->Teardown(items, ctx);
 
             stats.itemsOut = items.size();
-            stats.elapsed = std::chrono::duration_cast<Duration>(Clock::now() - startTime);
+            stats.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
 
             return stats;
         }

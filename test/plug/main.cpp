@@ -15,10 +15,17 @@
 #include <glaze/glaze.hpp>
 #include <plg/format.hpp>
 
-#define PLG_COUT(x) std::cout << x << std::endl
-#define PLG_CERR(x) std::cout << x << std::endl
-#define PLG_COUT_FMT(...) std::cout << std::format(__VA_ARGS__) << std::endl
-#define PLG_CERR_FMT(...) std::cout << std::format(__VA_ARGS__) << std::endl
+namespace plg {
+    template<plg::detail::is_string_like First>
+    PLUGIFY_FORCE_INLINE void print(First&& first) {
+        std::cout << first << std::endl;
+    }
+
+    template<typename... Args>
+    PLUGIFY_FORCE_INLINE void print(std::format_string<Args...> fmt, Args&&... args) {
+        std::cout << std::format(fmt, std::forward<Args>(args)...) << std::endl;
+    }
+}
 
 using namespace plugify;
 
@@ -28,10 +35,10 @@ namespace {
         auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
 
         if (ec != std::errc{}) {
-            PLG_CERR_FMT("Error: {}", std::make_error_code(ec).message());
+            plg::print("Error: {}", std::make_error_code(ec).message());
             return {};
         } else if (ptr != str.data() + str.size()) {
-            PLG_CERR("Invalid argument: trailing characters after the valid part");
+            plg::print("Invalid argument: trailing characters after the valid part");
             return {};
         }
 
@@ -66,7 +73,7 @@ namespace {
     }
 
     // Helper to format duration
-    std::string FormatDuration(Duration duration) {
+    std::string FormatDuration(std::chrono::milliseconds duration) {
         using namespace std::chrono;
 
         auto ns = duration_cast<nanoseconds>(duration).count();
@@ -81,49 +88,77 @@ namespace {
         }
     }
 
+    struct Glyphs {
+        std::string_view Ok;
+        std::string_view Fail;
+        std::string_view Warning;
+        std::string_view Skipped;
+        std::string_view Valid;
+        std::string_view Resolving;
+        std::string_view Arrow;
+        std::string_view Number;
+        std::string_view Unknown;
+        std::string_view Missing;
+        std::string_view Equal;
+        std::string_view NotEqual;
+        std::string_view Running;
+    };
+
     // Helper to get state color/symbol
     struct StateInfo {
         std::string_view symbol;
         std::string_view color;
     };
 
-    struct Icons {
-        static constexpr std::string_view Ok = "✓";
-        static constexpr std::string_view Fail = "✗";
-        static constexpr std::string_view Warning = "⚠";
-        static constexpr std::string_view Skipped = "○";
-        static constexpr std::string_view Valid = "●";
-        static constexpr std::string_view Resolving = "⋯";
-        static constexpr std::string_view Arrow = "→";
-        static constexpr std::string_view Number =  "#";
-        static constexpr std::string_view Unknown = "?";
-        static constexpr std::string_view Missing = "ℹ";
-        static constexpr std::string_view Equal = "=";
-        static constexpr std::string_view NotEqual = "≠";
-    };
+    // Unicode (original)
+	inline constexpr Glyphs UnicodeGlyphs{
+		"✓", "✗", "⚠", "○", "●", "⋯", "→", "#", "?", "ℹ", "=", "≠", "⚙"
+	};
 
-    StateInfo GetStateInfo(ExtensionState state) {
-        switch (state) {
-            case ExtensionState::Started:
-            case ExtensionState::Loaded:
-                return { Icons::Ok, Colors::GREEN };
-            case ExtensionState::Failed:
-            case ExtensionState::Corrupted:
-                return { Icons::Fail, Colors::RED };
-            case ExtensionState::Unresolved:
-                return { Icons::Warning, Colors::YELLOW };
-            case ExtensionState::Disabled:
-            case ExtensionState::Skipped:
-                return { Icons::Skipped, Colors::GRAY };
-            case ExtensionState::Loading:
-            case ExtensionState::Starting:
-            case ExtensionState::Parsing:
-            case ExtensionState::Resolving:
-                return { Icons::Resolving, Colors::CYAN };
-            default:
-                return { Icons::Unknown, Colors::GRAY };
-        }
-    }
+	// Plain ASCII fallback
+	inline constexpr Glyphs AsciiGlyphs{
+		"v", "X", "!", "o", "*", "...", "->", "#", "?", "i", "=", "!=", ">>"
+	};
+
+	// selection strategy examples:
+
+	// 1) Compile-time: define USE_ASCII or USE_ASCII_ANSI in your build
+#if defined(USE_ASCII)
+	inline constexpr const Glyphs& Icons = AsciiGlyphs;
+#else
+	inline constexpr const Glyphs& Icons = UnicodeGlyphs;
+#endif
+
+	StateInfo GetStateInfo(ExtensionState state) {
+		switch (state) {
+			case ExtensionState::Parsed:
+			case ExtensionState::Resolved:
+			case ExtensionState::Started:
+			case ExtensionState::Loaded:
+			case ExtensionState::Exported:
+				return { Icons.Ok, Colors::MAGENTA };
+			case ExtensionState::Failed:
+			case ExtensionState::Corrupted:
+				return { Icons.Fail, Colors::RED };
+			case ExtensionState::Unresolved:
+				return { Icons.Warning, Colors::YELLOW };
+			case ExtensionState::Disabled:
+			case ExtensionState::Skipped:
+				return { Icons.Skipped, Colors::GRAY };
+			case ExtensionState::Loading:
+			case ExtensionState::Starting:
+			case ExtensionState::Parsing:
+			case ExtensionState::Resolving:
+			case ExtensionState::Exporting:
+			case ExtensionState::Ending:
+			case ExtensionState::Terminating:
+				return { Icons.Resolving, Colors::CYAN };
+			case ExtensionState::Running:
+				return { Icons.Running, Colors::GREEN };
+			default:
+				return { Icons.Unknown, Colors::GRAY };
+		}
+	}
 
     // Helper to truncate string with ellipsis
     std::string Truncate(const std::string& str, size_t maxLen) {
@@ -139,7 +174,7 @@ namespace {
         std::uintmax_t totalSize = 0;
 
         std::error_code ec;
-        if (fs::is_regular_file(path)) {
+        if (fs::is_regular_file(path, ec)) {
             auto sz = fs::file_size(path, ec);
             if (!ec) {
                 totalSize += sz;
@@ -209,7 +244,7 @@ namespace {
         }
 
         if (filter.languages.has_value()) {
-            auto lang = ext->GetLanguage();
+            auto& lang = ext->GetLanguage();
             if (std::find(filter.languages->begin(), filter.languages->end(), lang)
                 == filter.languages->end()) {
                 return false;
@@ -266,7 +301,7 @@ namespace {
                 depJson["name"] = dep.GetName();
                 depJson["constraints"] = dep.GetConstraints().to_string();
                 depJson["optional"] = dep.IsOptional();
-                j["dependencies"].as<glz::json_t::array_t>().push_back(std::move(depJson));
+                j["dependencies"].as<glz::json_t::array_t>().emplace_back(std::move(depJson));
             }
         }
 
@@ -277,14 +312,14 @@ namespace {
         if (ext->HasErrors()) {
             glz::json_t e = glz::json_t::array_t();
             for (const auto& error : ext->GetErrors()) {
-                e.as<glz::json_t::array_t>().push_back(error);
+                e.as<glz::json_t::array_t>().emplace_back(error);
             }
             j["errors"] = std::move(e);
         }
         if (ext->HasWarnings()) {
             glz::json_t w = glz::json_t::array_t();
             for (const auto& warning : ext->GetWarnings()) {
-                w.as<glz::json_t::array_t>().push_back(warning);
+                w.as<glz::json_t::array_t>().emplace_back(warning);
             }
             j["warnings"] = w;
         }
@@ -303,7 +338,7 @@ namespace {
         std::string connector = isLast ? "└─ " : "├─ ";
         auto [symbol, color] = GetStateInfo(ext->GetState());
 
-        PLG_COUT_FMT(
+        plg::print(
             "{}{}{} {} {} {}",
             prefix,
             connector,
@@ -328,11 +363,11 @@ namespace {
             } else {
                 std::string depConnector = lastDep ? "└─ " : "├─ ";
                 std::string status = dep.IsOptional() ? "[optional]" : "[required]";
-                PLG_COUT_FMT(
+                plg::print(
                     "{}{}{} {} {} {} {}",
                     newPrefix,
                     depConnector,
-                    Icons::Skipped,
+                    Icons.Skipped,
                     dep.GetName(),
                     dep.GetConstraints().to_string(),
                     Colorize(status, Colors::GRAY),
@@ -411,27 +446,27 @@ namespace {
 class PlugifyApp {
 public:
 
-    PlugifyApp(std::shared_ptr<Plugify> plugify)
+    explicit PlugifyApp(std::shared_ptr<Plugify> plugify)
         : plug(std::move(plugify)) {
     }
 
     void Initialize() {
         if (!plug->Initialize()) {
-            PLG_CERR("No feet, no sweets!");
+            plg::print("No feet, no sweets!");
             throw std::runtime_error("Failed to initialize Plugify");
         }
         const auto& manager = plug->GetManager();
         if (auto initResult = manager.Initialize()) {
-            PLG_COUT("Plugin system initialized.");
+            plg::print("Plugin system initialized.");
         } else {
-            PLG_CERR(initResult.error());
+            plg::print(initResult.error());
             throw std::runtime_error("Failed to initialize Manager");
         }
     }
 
     void Terminate() {
         plug->Terminate();
-        PLG_COUT("Plugin system terminated.");
+        plg::print("Plugin system terminated.");
     }
 
     void ShowVersion() {
@@ -442,59 +477,59 @@ public:
             __DATE__[9],
             __DATE__[10]
         );
-        PLG_COUT(R"(      ____)");
-        PLG_COUT(R"( ____|    \         Plugify )" << plug->GetVersion().to_string());
-        PLG_COUT(R"((____|     `._____  )" << copyright);
-        PLG_COUT(R"( ____|       _|___)");
-        PLG_COUT(R"((____|     .'       This program may be freely redistributed under)");
-        PLG_COUT(R"(     |____/         the terms of the MIT License.)");
+        plg::print(R"(      ____)");
+        plg::print(R"( ____|    \         Plugify )" + plug->GetVersion().to_string());
+        plg::print(R"((____|     `._____  )" + copyright);
+        plg::print(R"( ____|       _|___)");
+        plg::print(R"((____|     .'       This program may be freely redistributed under)");
+        plg::print(R"(     |____/         the terms of the MIT License.)");
     }
 
     void LoadManager() {
         if (!plug->IsInitialized()) {
-            PLG_CERR("Initialize system before use.");
+            plg::print("Initialize system before use.");
             return;
         }
         const auto& manager = plug->GetManager();
         if (manager.IsInitialized()) {
-            PLG_CERR("Plugin manager already loaded.");
+            plg::print("Plugin manager already loaded.");
         } else {
             if (auto initResult = manager.Initialize()) {
-                PLG_COUT("Plugin manager was loaded.");
+                plg::print("Plugin manager was loaded.");
             } else {
-                PLG_CERR(initResult.error());
+                plg::print(initResult.error());
             }
         }
     }
 
     void UnloadManager() {
         if (!plug->IsInitialized()) {
-            PLG_CERR("Initialize system before use.");
+            plg::print("Initialize system before use.");
             return;
         }
         const auto& manager = plug->GetManager();
         if (!manager.IsInitialized()) {
-            PLG_CERR("Plugin manager already unloaded.");
+            plg::print("Plugin manager already unloaded.");
         } else {
             manager.Terminate();
-            PLG_COUT("Plugin manager was unloaded.");
+            plg::print("Plugin manager was unloaded.");
         }
     }
 
     void ReloadManager() {
         if (!plug->IsInitialized()) {
-            PLG_CERR("Initialize system before use.");
+            plg::print("Initialize system before use.");
             return;
         }
         const auto& manager = plug->GetManager();
         if (!manager.IsInitialized()) {
-            PLG_CERR("Plugin manager not loaded.");
+            plg::print("Plugin manager not loaded.");
         } else {
             manager.Terminate();
             if (auto initResult = manager.Initialize()) {
-                PLG_COUT("Plugin manager was reloaded.");
+                plg::print("Plugin manager was reloaded.");
             } else {
-                PLG_CERR(initResult.error());
+                plg::print(initResult.error());
             }
         }
     }
@@ -554,33 +589,33 @@ public:
             for (const auto& plugin : filtered) {
                 j.as<glz::json_t::array_t>().push_back(ExtensionToJson(plugin));
             }
-            PLG_COUT(*j.dump());
+            plg::print(*j.dump());
             return;
         }
 
         auto count = filtered.size();
         if (!count) {
-            PLG_CERR(Colorize("No plugins found matching criteria.", Colors::YELLOW));
+            plg::print(Colorize("No plugins found matching criteria.", Colors::YELLOW));
             return;
         }
 
-        PLG_COUT_FMT(
+        plg::print(
             "{}:",
             Colorize(std::format("Listing {} plugin{}", count, (count > 1) ? "s" : ""), Colors::BOLD)
         );
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
 
         // Header
-        PLG_COUT_FMT(
+        plg::print(
             "{} {} {} {} {} {}",
-            Colorize(std::format("{:<3}", Icons::Number), Colors::GRAY),
+            Colorize(std::format("{:<3}", Icons.Number), Colors::GRAY),
             Colorize(std::format("{:<25}", "Name"), Colors::GRAY),
             Colorize(std::format("{:<15}", "Version"), Colors::GRAY),
             Colorize(std::format("{:<12}", "State"), Colors::GRAY),
             Colorize(std::format("{:<8}", "Lang"), Colors::GRAY),
             Colorize(std::format("{:<12}", "Load Time"), Colors::GRAY)
         );
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
 
         size_t index = 1;
         for (const auto& plugin : filtered) {
@@ -598,7 +633,7 @@ public:
                 }
             } catch (...) {}
 
-            PLG_COUT_FMT(
+            plg::print(
                 "{:<3} {:<25} {:<15} {} {:<11} {:<8} {:<12}",
                 index++,
                 Truncate(name, 24),
@@ -612,21 +647,21 @@ public:
             // Show errors/warnings if any
             if (plugin->HasErrors()) {
                 for (const auto& error : plugin->GetErrors()) {
-                    PLG_CERR_FMT("     └─ {}: {}", Colorize("Error", Colors::RED), error);
+                    plg::print("     └─ {}: {}", Colorize("Error", Colors::RED), error);
                 }
             }
             if (plugin->HasWarnings()) {
                 for (const auto& warning : plugin->GetWarnings()) {
-                    PLG_COUT_FMT("     └─ {}: {}", Colorize("Warning", Colors::YELLOW), warning);
+                    plg::print("     └─ {}: {}", Colorize("Warning", Colors::YELLOW), warning);
                 }
             }
         }
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
 
         // Summary
         if (filter.states.has_value() || filter.languages.has_value()
             || filter.searchQuery.has_value() || filter.showOnlyFailed) {
-            PLG_COUT_FMT(
+            plg::print(
                 "{}",
                 Colorize(
                     std::format("Filtered: {} of {} total plugins shown", filtered.size(), plugins.size()),
@@ -687,33 +722,33 @@ public:
             for (const auto& module : filtered) {
                 j.as<glz::json_t::array_t>().push_back(ExtensionToJson(module));
             }
-            PLG_COUT(*j.dump());
+            plg::print(*j.dump());
             return;
         }
 
         auto count = filtered.size();
         if (!count) {
-            PLG_CERR(Colorize("No modules found matching criteria.", Colors::YELLOW));
+            plg::print(Colorize("No modules found matching criteria.", Colors::YELLOW));
             return;
         }
 
-        PLG_COUT_FMT(
+        plg::print(
             "{}:",
             Colorize(std::format("Listing {} module{}", count, (count > 1) ? "s" : ""), Colors::BOLD)
         );
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
 
         // Header
-        PLG_COUT_FMT(
+        plg::print(
             "{} {} {} {} {} {}",
-            Colorize(std::format("{:<3}", Icons::Number), Colors::GRAY),
+            Colorize(std::format("{:<3}", Icons.Number), Colors::GRAY),
             Colorize(std::format("{:<25}", "Name"), Colors::GRAY),
             Colorize(std::format("{:<15}", "Version"), Colors::GRAY),
             Colorize(std::format("{:<12}", "State"), Colors::GRAY),
             Colorize(std::format("{:<8}", "Lang"), Colors::GRAY),
             Colorize(std::format("{:<12}", "Load Time"), Colors::GRAY)
         );
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
 
         size_t index = 1;
         for (const auto& module : filtered) {
@@ -731,7 +766,7 @@ public:
             } catch (...) {
             }
 
-            PLG_COUT_FMT(
+            plg::print(
                 "{:<3} {:<25} {:<15} {} {:<11} {:<8} {:<12}",
                 index++,
                 Truncate(module->GetName(), 24),
@@ -745,21 +780,21 @@ public:
             // Show errors/warnings if any
             if (module->HasErrors()) {
                 for (const auto& error : module->GetErrors()) {
-                    PLG_CERR_FMT("     └─ {}: {}", Colorize("Error", Colors::RED), error);
+                    plg::print("     └─ {}: {}", Colorize("Error", Colors::RED), error);
                 }
             }
             if (module->HasWarnings()) {
                 for (const auto& warning : module->GetWarnings()) {
-                    PLG_COUT_FMT("     └─ {}: {}", Colorize("Warning", Colors::YELLOW), warning);
+                    plg::print("     └─ {}: {}", Colorize("Warning", Colors::YELLOW), warning);
                 }
             }
         }
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
 
         // Summary
         if (filter.states.has_value() || filter.languages.has_value()
             || filter.searchQuery.has_value() || filter.showOnlyFailed) {
-            PLG_COUT_FMT(
+            plg::print(
                 "{}",
                 Colorize(
                     std::format("Filtered: {} of {} total modules shown", filtered.size(), modules.size()),
@@ -781,9 +816,9 @@ public:
             if (jsonOutput) {
                 glz::json_t error;
                 error["error"] = std::format("Plugin {} not found", name);
-                PLG_COUT(*error.dump());
+                plg::print(*error.dump());
             } else {
-                PLG_CERR_FMT("{}: Plugin {} not found.", Colorize("Error", Colors::RED), name);
+                plg::print("{}: Plugin {} not found.", Colorize("Error", Colors::RED), name);
             }
             return;
         }
@@ -792,9 +827,9 @@ public:
             if (jsonOutput) {
                 glz::json_t error;
                 error["error"] = std::format("'{}' is not a plugin (it's a module)", name);
-                PLG_COUT(*error.dump());
+                plg::print(*error.dump());
             } else {
-                PLG_CERR_FMT(
+                plg::print(
                     "{}: '{}' is not a plugin (it's a module).",
                     Colorize("Error", Colors::RED),
                     name
@@ -805,22 +840,22 @@ public:
 
         // JSON output
         if (jsonOutput) {
-            PLG_COUT(*ExtensionToJson(plugin).dump());
+            plg::print(*ExtensionToJson(plugin).dump());
             return;
         }
 
         // Display detailed plugin information with colors
-        PLG_COUT(std::string(80, '='));
-        PLG_COUT_FMT(
+        plg::print(std::string(80, '='));
+        plg::print(
             "{}: {}",
             Colorize("PLUGIN INFORMATION", Colors::BOLD),
             Colorize(plugin->GetName(), Colors::CYAN)
         );
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
 
         // Status indicator
         auto [symbol, stateColor] = GetStateInfo(plugin->GetState());
-        PLG_COUT_FMT(
+        plg::print(
             "\n{} {} {}",
             Colorize(symbol, stateColor),
             Colorize("Status:", Colors::BOLD),
@@ -828,17 +863,17 @@ public:
         );
 
         // Basic Information
-        PLG_COUT(Colorize("\n[Basic Information]", Colors::CYAN));
-        PLG_COUT_FMT("  {:<15} {}", Colorize("ID:", Colors::GRAY), plugin->GetId());
-        PLG_COUT_FMT("  {:<15} {}", Colorize("Name:", Colors::GRAY), plugin->GetName());
-        PLG_COUT_FMT(
+        plg::print(Colorize("\n[Basic Information]", Colors::CYAN));
+        plg::print("  {:<15} {}", Colorize("ID:", Colors::GRAY), plugin->GetId());
+        plg::print("  {:<15} {}", Colorize("Name:", Colors::GRAY), plugin->GetName());
+        plg::print(
             "  {:<15} {}",
             Colorize("Version:", Colors::GRAY),
             Colorize(plugin->GetVersionString(), Colors::GREEN)
         );
-        PLG_COUT_FMT("  {:<15} {}", Colorize("Language:", Colors::GRAY), plugin->GetLanguage());
-        PLG_COUT_FMT("  {:<15} {}", Colorize("Location:", Colors::GRAY), plugin->GetLocation().string());
-        PLG_COUT_FMT(
+        plg::print("  {:<15} {}", Colorize("Language:", Colors::GRAY), plugin->GetLanguage());
+        plg::print("  {:<15} {}", Colorize("Location:", Colors::GRAY), plugin->GetLocation().string());
+        plg::print(
             "  {:<15} {}",
             Colorize("File Size:", Colors::GRAY),
             FormatFileSize(plugin->GetLocation())
@@ -847,37 +882,37 @@ public:
         // Optional Information
         if (!plugin->GetDescription().empty() || !plugin->GetAuthor().empty()
             || !plugin->GetWebsite().empty() || !plugin->GetLicense().empty()) {
-            PLG_COUT(Colorize("\n[Additional Information]", Colors::CYAN));
+            plg::print(Colorize("\n[Additional Information]", Colors::CYAN));
             if (!plugin->GetDescription().empty()) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {:<15} {}",
                     Colorize("Description:", Colors::GRAY),
                     plugin->GetDescription()
                 );
             }
             if (!plugin->GetAuthor().empty()) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {:<15} {}",
                     Colorize("Author:", Colors::GRAY),
                     Colorize(plugin->GetAuthor(), Colors::MAGENTA)
                 );
             }
             if (!plugin->GetWebsite().empty()) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {:<15} {}",
                     Colorize("Website:", Colors::GRAY),
                     Colorize(plugin->GetWebsite(), Colors::BLUE)
                 );
             }
             if (!plugin->GetLicense().empty()) {
-                PLG_COUT_FMT("  {:<15} {}", Colorize("License:", Colors::GRAY), plugin->GetLicense());
+                plg::print("  {:<15} {}", Colorize("License:", Colors::GRAY), plugin->GetLicense());
             }
         }
 
         // Plugin-specific information
         if (!plugin->GetEntry().empty()) {
-            PLG_COUT(Colorize("\n[Plugin Details]", Colors::CYAN));
-            PLG_COUT_FMT(
+            plg::print(Colorize("\n[Plugin Details]", Colors::CYAN));
+            plg::print(
                 "  {:<15} {}",
                 Colorize("Entry Point:", Colors::GRAY),
                 Colorize(plugin->GetEntry(), Colors::YELLOW)
@@ -887,7 +922,7 @@ public:
         // Methods
         const auto& methods = plugin->GetMethods();
         if (!methods.empty()) {
-            PLG_COUT(
+            plg::print(
                 Colorize("\n[Exported Methods]", Colors::CYAN)
                 + Colorize(std::format(" ({} total)", methods.size()), Colors::GRAY)
             );
@@ -895,14 +930,14 @@ public:
             size_t displayCount = std::min<size_t>(methods.size(), 10);
             for (size_t i = 0; i < displayCount; ++i) {
                 const auto& method = methods[i];
-                PLG_COUT_FMT(
+                plg::print(
                     "  {}{:<2} {}",
-                    Colorize(Icons::Number, Colors::GRAY),
+                    Colorize(Icons.Number, Colors::GRAY),
                     i + 1,
                     Colorize(method.GetName(), Colors::GREEN)
                 );
                 if (!method.GetFuncName().empty()) {
-                    PLG_COUT_FMT(
+                    plg::print(
                         "      {} {}",
                         Colorize("Func Name:", Colors::GRAY),
                         method.GetFuncName()
@@ -910,9 +945,9 @@ public:
                 }
             }
             if (methods.size() > 10) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {} ... and {} more methods",
-                    Colorize(Icons::Arrow, Colors::GRAY),
+                    Colorize(Icons.Arrow, Colors::GRAY),
                     methods.size() - 10
                 );
             }
@@ -921,28 +956,28 @@ public:
         // Platforms
         const auto& platforms = plugin->GetPlatforms();
         if (!platforms.empty()) {
-            PLG_COUT(Colorize("\n[Supported Platforms]", Colors::CYAN));
-            PLG_COUT_FMT("  {}", Colorize(plg::join(platforms, ", "), Colors::GREEN));
+            plg::print(Colorize("\n[Supported Platforms]", Colors::CYAN));
+            plg::print("  {}", Colorize(plg::join(platforms, ", "), Colors::GREEN));
         }
 
         // Dependencies
         const auto& deps = plugin->GetDependencies();
         if (!deps.empty()) {
-            PLG_COUT(
+            plg::print(
                 Colorize("\n[Dependencies]", Colors::CYAN)
                 + Colorize(std::format(" ({} total)", deps.size()), Colors::GRAY)
             );
             for (const auto& dep : deps) {
-                std::string depIndicator = dep.IsOptional() ? Colorize(Icons::Skipped, Colors::GRAY)
-                                                            : Colorize(Icons::Valid, Colors::GREEN);
-                PLG_COUT_FMT(
+                std::string depIndicator = dep.IsOptional() ? Colorize(Icons.Skipped, Colors::GRAY)
+                                                            : Colorize(Icons.Valid, Colors::GREEN);
+                plg::print(
                     "  {} {} {}",
                     depIndicator,
                     Colorize(dep.GetName(), Colors::BOLD),
                     Colorize(dep.GetConstraints().to_string(), Colors::GRAY)
                 );
                 if (dep.IsOptional()) {
-                    PLG_COUT_FMT("    └─ {}", Colorize("Optional", Colors::GRAY));
+                    plg::print("    └─ {}", Colorize("Optional", Colors::GRAY));
                 }
             }
         }
@@ -950,27 +985,27 @@ public:
         // Conflicts
         const auto& conflicts = plugin->GetConflicts();
         if (!conflicts.empty()) {
-            PLG_COUT(
+            plg::print(
                 Colorize("\n[Conflicts]", Colors::YELLOW)
                 + Colorize(std::format(" ({} total)", conflicts.size()), Colors::GRAY)
             );
             for (const auto& conflict : conflicts) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {} {} {}",
-                    Colorize(Icons::Warning, Colors::YELLOW),
+                    Colorize(Icons.Warning, Colors::YELLOW),
                     conflict.GetName(),
                     Colorize(conflict.GetConstraints().to_string(), Colors::GRAY)
                 );
                 if (!conflict.GetReason().empty()) {
-                    PLG_COUT_FMT("    └─ {}", Colorize(conflict.GetReason(), Colors::RED));
+                    plg::print("    └─ {}", Colorize(conflict.GetReason(), Colors::RED));
                 }
             }
         }
 
         // Performance Information
-        PLG_COUT(Colorize("\n[Performance Metrics]", Colors::CYAN));
+        plg::print(Colorize("\n[Performance Metrics]", Colors::CYAN));
         auto totalTime = plugin->GetTotalTime();
-        PLG_COUT_FMT(
+        plg::print(
             "  {:<15} {}",
             Colorize("Total Time:", Colors::GRAY),
             Colorize(
@@ -990,7 +1025,7 @@ public:
                 auto duration = plugin->GetOperationTime(op);
                 if (duration.count() > 0) {
                     bool slow = duration > std::chrono::milliseconds(500);
-                    PLG_COUT_FMT(
+                    plg::print(
                         "  {:<15} {}",
                         Colorize(std::format("{}:", plg::enum_to_string(op)), Colors::GRAY),
                         Colorize(FormatDuration(duration), slow ? Colors::YELLOW : Colors::GREEN)
@@ -1002,22 +1037,22 @@ public:
 
         // Errors and Warnings
         if (plugin->HasErrors() || plugin->HasWarnings()) {
-            PLG_COUT(Colorize("\n[Issues]", Colors::RED));
+            plg::print(Colorize("\n[Issues]", Colors::RED));
             for (const auto& error : plugin->GetErrors()) {
-                PLG_COUT_FMT("  {} {}", Colorize("ERROR:", Colors::RED), error);
+                plg::print("  {} {}", Colorize("ERROR:", Colors::RED), error);
             }
             for (const auto& warning : plugin->GetWarnings()) {
-                PLG_COUT_FMT("  {} {}", Colorize("WARNING:", Colors::YELLOW), warning);
+                plg::print("  {} {}", Colorize("WARNING:", Colors::YELLOW), warning);
             }
         } else {
-            PLG_COUT_FMT(
+            plg::print(
                 "\n{} {}",
-                Colorize(Icons::Ok, Colors::GREEN),
+                Colorize(Icons.Ok, Colors::GREEN),
                 Colorize("No issues detected", Colors::GREEN)
             );
         }
 
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
     }
 
     void ShowModule(std::string_view name, bool useId = false, bool jsonOutput = false) {
@@ -1032,9 +1067,9 @@ public:
             if (jsonOutput) {
                 glz::json_t error;
                 error["error"] = std::format("Module {} not found", name);
-                PLG_COUT(*error.dump());
+                plg::print(*error.dump());
             } else {
-                PLG_CERR_FMT("{}: Module {} not found.", Colorize("Error", Colors::RED), name);
+                plg::print("{}: Module {} not found.", Colorize("Error", Colors::RED), name);
             }
             return;
         }
@@ -1043,9 +1078,9 @@ public:
             if (jsonOutput) {
                 glz::json_t error;
                 error["error"] = std::format("'{}' is not a module (it's a plugin)", name);
-                PLG_COUT(*error.dump());
+                plg::print(*error.dump());
             } else {
-                PLG_CERR_FMT(
+                plg::print(
                     "{}: '{}' is not a module (it's a plugin).",
                     Colorize("Error", Colors::RED),
                     name
@@ -1056,22 +1091,22 @@ public:
 
         // JSON output
         if (jsonOutput) {
-            PLG_COUT(*ExtensionToJson(module).dump());
+            plg::print(*ExtensionToJson(module).dump());
             return;
         }
 
         // Display detailed module information with colors
-        PLG_COUT(std::string(80, '='));
-        PLG_COUT_FMT(
+        plg::print(std::string(80, '='));
+        plg::print(
             "{}: {}",
             Colorize("MODULE INFORMATION", Colors::BOLD),
             Colorize(module->GetName(), Colors::MAGENTA)
         );
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
 
         // Status indicator
         auto [symbol, stateColor] = GetStateInfo(module->GetState());
-        PLG_COUT_FMT(
+        plg::print(
             "\n{} {} {}",
             Colorize(symbol, stateColor),
             Colorize("Status:", Colors::BOLD),
@@ -1079,17 +1114,17 @@ public:
         );
 
         // Basic Information
-        PLG_COUT(Colorize("\n[Basic Information]", Colors::CYAN));
-        PLG_COUT_FMT("  {:<15} {}", Colorize("ID:", Colors::GRAY), module->GetId());
-        PLG_COUT_FMT("  {:<15} {}", Colorize("Name:", Colors::GRAY), module->GetName());
-        PLG_COUT_FMT(
+        plg::print(Colorize("\n[Basic Information]", Colors::CYAN));
+        plg::print("  {:<15} {}", Colorize("ID:", Colors::GRAY), module->GetId());
+        plg::print("  {:<15} {}", Colorize("Name:", Colors::GRAY), module->GetName());
+        plg::print(
             "  {:<15} {}",
             Colorize("Version:", Colors::GRAY),
             Colorize(module->GetVersionString(), Colors::GREEN)
         );
-        PLG_COUT_FMT("  {:<15} {}", Colorize("Language:", Colors::GRAY), module->GetLanguage());
-        PLG_COUT_FMT("  {:<15} {}", Colorize("Location:", Colors::GRAY), module->GetLocation().string());
-        PLG_COUT_FMT(
+        plg::print("  {:<15} {}", Colorize("Language:", Colors::GRAY), module->GetLanguage());
+        plg::print("  {:<15} {}", Colorize("Location:", Colors::GRAY), module->GetLocation().string());
+        plg::print(
             "  {:<15} {}",
             Colorize("File Size:", Colors::GRAY),
             FormatFileSize(module->GetLocation())
@@ -1098,37 +1133,37 @@ public:
         // Optional Information
         if (!module->GetDescription().empty() || !module->GetAuthor().empty()
             || !module->GetWebsite().empty() || !module->GetLicense().empty()) {
-            PLG_COUT(Colorize("\n[Additional Information]", Colors::CYAN));
+            plg::print(Colorize("\n[Additional Information]", Colors::CYAN));
             if (!module->GetDescription().empty()) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {:<15} {}",
                     Colorize("Description:", Colors::GRAY),
                     module->GetDescription()
                 );
             }
             if (!module->GetAuthor().empty()) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {:<15} {}",
                     Colorize("Author:", Colors::GRAY),
                     Colorize(module->GetAuthor(), Colors::MAGENTA)
                 );
             }
             if (!module->GetWebsite().empty()) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {:<15} {}",
                     Colorize("Website:", Colors::GRAY),
                     Colorize(module->GetWebsite(), Colors::BLUE)
                 );
             }
             if (!module->GetLicense().empty()) {
-                PLG_COUT_FMT("  {:<15} {}", Colorize("License:", Colors::GRAY), module->GetLicense());
+                plg::print("  {:<15} {}", Colorize("License:", Colors::GRAY), module->GetLicense());
             }
         }
 
         // Module-specific information
         if (!module->GetRuntime().empty()) {
-            PLG_COUT(Colorize("\n[Module Details]", Colors::CYAN));
-            PLG_COUT_FMT(
+            plg::print(Colorize("\n[Module Details]", Colors::CYAN));
+            plg::print(
                 "  {:<15} {}",
                 Colorize("Runtime:", Colors::GRAY),
                 Colorize(module->GetRuntime().string(), Colors::YELLOW)
@@ -1138,7 +1173,7 @@ public:
         // Directories
         const auto& dirs = module->GetDirectories();
         if (!dirs.empty()) {
-            PLG_COUT(
+            plg::print(
                 Colorize("\n[Search Directories]", Colors::CYAN)
                 + Colorize(std::format(" ({} total)", dirs.size()), Colors::GRAY)
             );
@@ -1146,16 +1181,16 @@ public:
             size_t displayCount = std::min<size_t>(dirs.size(), 5);
             for (size_t i = 0; i < displayCount; ++i) {
                 bool exists = std::filesystem::exists(dirs[i]);
-                PLG_COUT_FMT(
+                plg::print(
                     "  {} {}",
-                    exists ? Colorize(Icons::Ok, Colors::GREEN) : Colorize(Icons::Fail, Colors::RED),
+                    exists ? Colorize(Icons.Ok, Colors::GREEN) : Colorize(Icons.Fail, Colors::RED),
                     dirs[i].string()
                 );
             }
             if (dirs.size() > 5) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {} ... and {} more directories",
-                    Colorize(Icons::Arrow, Colors::GRAY),
+                    Colorize(Icons.Arrow, Colors::GRAY),
                     dirs.size() - 5
                 );
             }
@@ -1163,36 +1198,36 @@ public:
 
         // Assembly Information
         if (auto assembly = module->GetAssembly()) {
-            PLG_COUT(Colorize("\n[Assembly Information]", Colors::CYAN));
-            PLG_COUT_FMT("  {} Assembly loaded and active", Colorize(Icons::Ok, Colors::GREEN));
+            plg::print(Colorize("\n[Assembly Information]", Colors::CYAN));
+            plg::print("  {} Assembly loaded and active", Colorize(Icons.Ok, Colors::GREEN));
             // Add more assembly details if available in your IAssembly interface
         }
 
         // Platforms
         const auto& platforms = module->GetPlatforms();
         if (!platforms.empty()) {
-            PLG_COUT(Colorize("\n[Supported Platforms]", Colors::CYAN));
-            PLG_COUT_FMT("  {}", Colorize(plg::join(platforms, ", "), Colors::GREEN));
+            plg::print(Colorize("\n[Supported Platforms]", Colors::CYAN));
+            plg::print("  {}", Colorize(plg::join(platforms, ", "), Colors::GREEN));
         }
 
         // Dependencies
         const auto& deps = module->GetDependencies();
         if (!deps.empty()) {
-            PLG_COUT(
+            plg::print(
                 Colorize("\n[Dependencies]", Colors::CYAN)
                 + Colorize(std::format(" ({} total)", deps.size()), Colors::GRAY)
             );
             for (const auto& dep : deps) {
-                std::string depIndicator = dep.IsOptional() ? Colorize(Icons::Skipped, Colors::GRAY)
-                                                            : Colorize(Icons::Valid, Colors::GREEN);
-                PLG_COUT_FMT(
+                std::string depIndicator = dep.IsOptional() ? Colorize(Icons.Skipped, Colors::GRAY)
+                                                            : Colorize(Icons.Valid, Colors::GREEN);
+                plg::print(
                     "  {} {} {}",
                     depIndicator,
                     Colorize(dep.GetName(), Colors::BOLD),
                     Colorize(dep.GetConstraints().to_string(), Colors::GRAY)
                 );
                 if (dep.IsOptional()) {
-                    PLG_COUT_FMT("    └─ {}", Colorize("Optional", Colors::GRAY));
+                    plg::print("    └─ {}", Colorize("Optional", Colors::GRAY));
                 }
             }
         }
@@ -1200,27 +1235,27 @@ public:
         // Conflicts
         const auto& conflicts = module->GetConflicts();
         if (!conflicts.empty()) {
-            PLG_COUT(
+            plg::print(
                 Colorize("\n[Conflicts]", Colors::YELLOW)
                 + Colorize(std::format(" ({} total)", conflicts.size()), Colors::GRAY)
             );
             for (const auto& conflict : conflicts) {
-                PLG_COUT_FMT(
+                plg::print(
                     "  {} {} {}",
-                    Colorize(Icons::Warning, Colors::YELLOW),
+                    Colorize(Icons.Warning, Colors::YELLOW),
                     conflict.GetName(),
                     Colorize(conflict.GetConstraints().to_string(), Colors::GRAY)
                 );
                 if (!conflict.GetReason().empty()) {
-                    PLG_COUT_FMT("    └─ {}", Colorize(conflict.GetReason(), Colors::RED));
+                    plg::print("    └─ {}", Colorize(conflict.GetReason(), Colors::RED));
                 }
             }
         }
 
         // Performance Information
-        PLG_COUT(Colorize("\n[Performance Metrics]", Colors::CYAN));
+        plg::print(Colorize("\n[Performance Metrics]", Colors::CYAN));
         auto totalTime = module->GetTotalTime();
-        PLG_COUT_FMT(
+        plg::print(
             "  {:<15} {}",
             Colorize("Total Time:", Colors::GRAY),
             Colorize(
@@ -1240,7 +1275,7 @@ public:
                 auto duration = module->GetOperationTime(op);
                 if (duration.count() > 0) {
                     bool slow = duration > std::chrono::milliseconds(500);
-                    PLG_COUT_FMT(
+                    plg::print(
                         "  {:<15} {}",
                         Colorize(std::format("{}:", plg::enum_to_string(op)), Colors::GRAY),
                         Colorize(FormatDuration(duration), slow ? Colors::YELLOW : Colors::GREEN)
@@ -1252,22 +1287,22 @@ public:
 
         // Errors and Warnings
         if (module->HasErrors() || module->HasWarnings()) {
-            PLG_COUT(Colorize("\n[Issues]", Colors::RED));
+            plg::print(Colorize("\n[Issues]", Colors::RED));
             for (const auto& error : module->GetErrors()) {
-                PLG_COUT_FMT("  {} {}", Colorize("ERROR:", Colors::RED), error);
+                plg::print("  {} {}", Colorize("ERROR:", Colors::RED), error);
             }
             for (const auto& warning : module->GetWarnings()) {
-                PLG_COUT_FMT("  {} {}", Colorize("WARNING:", Colors::YELLOW), warning);
+                plg::print("  {} {}", Colorize("WARNING:", Colors::YELLOW), warning);
             }
         } else {
-            PLG_COUT_FMT(
+            plg::print(
                 "\n{} {}",
-                Colorize(Icons::Ok, Colors::GREEN),
+                Colorize(Icons.Ok, Colors::GREEN),
                 Colorize("No issues detected", Colors::GREEN)
             );
         }
 
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
     }
 
     void ShowHealth() {
@@ -1289,12 +1324,12 @@ public:
             status = "WARNING";
         }
 
-        PLG_COUT(std::string(80, '='));
-        PLG_COUT(Colorize("SYSTEM HEALTH CHECK", Colors::BOLD));
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
+        plg::print(Colorize("SYSTEM HEALTH CHECK", Colors::BOLD));
+        plg::print(std::string(80, '='));
 
         // Overall score
-        PLG_COUT_FMT(
+        plg::print(
             "\n{}: {} {}",
             Colorize("Overall Health Score", Colors::BOLD),
             Colorize(std::format("{}/100", report.score), scoreColor),
@@ -1302,56 +1337,56 @@ public:
         );
 
         // Statistics
-        PLG_COUT(Colorize("\n[Statistics]", Colors::CYAN));
-        PLG_COUT_FMT("  Total Extensions:        {}", report.statistics["total_extensions"]);
-        PLG_COUT_FMT(
+        plg::print(Colorize("\n[Statistics]", Colors::CYAN));
+        plg::print("  Total Extensions:        {}", report.statistics["total_extensions"]);
+        plg::print(
             "  Failed Extensions:       {} {}",
             report.statistics["failed_extensions"],
-            report.statistics["failed_extensions"] > 0 ? Colorize(Icons::Warning, Colors::RED)
-                                                       : Colorize(Icons::Ok, Colors::GREEN)
+            report.statistics["failed_extensions"] > 0 ? Colorize(Icons.Warning, Colors::RED)
+                                                       : Colorize(Icons.Ok, Colors::GREEN)
         );
-        PLG_COUT_FMT(
+        plg::print(
             "  Extensions with Errors:  {} {}",
             report.statistics["extensions_with_errors"],
-            report.statistics["extensions_with_errors"] > 0 ? Colorize(Icons::Warning, Colors::YELLOW)
-                                                            : Colorize(Icons::Ok, Colors::GREEN)
+            report.statistics["extensions_with_errors"] > 0 ? Colorize(Icons.Warning, Colors::YELLOW)
+                                                            : Colorize(Icons.Ok, Colors::GREEN)
         );
-        PLG_COUT_FMT("  Total Warnings:          {}", report.statistics["total_warnings"]);
-        PLG_COUT_FMT("  Slow Loading Extensions: {}", report.statistics["slow_loading_extensions"]);
+        plg::print("  Total Warnings:          {}", report.statistics["total_warnings"]);
+        plg::print("  Slow Loading Extensions: {}", report.statistics["slow_loading_extensions"]);
 
         // Issues
         if (!report.issues.empty()) {
-            PLG_COUT(Colorize("\n[Critical Issues]", Colors::RED));
+            plg::print(Colorize("\n[Critical Issues]", Colors::RED));
             for (const auto& issue : report.issues) {
-                PLG_COUT_FMT("  {} {}", Colorize(Icons::Fail, Colors::RED), issue);
+                plg::print("  {} {}", Colorize(Icons.Fail, Colors::RED), issue);
             }
         }
 
         // Warnings
         if (!report.warnings.empty()) {
-            PLG_COUT(Colorize("\n[Warnings]", Colors::YELLOW));
+            plg::print(Colorize("\n[Warnings]", Colors::YELLOW));
             for (const auto& warning : report.warnings) {
-                PLG_COUT_FMT("  {} {}", Colorize(Icons::Warning, Colors::YELLOW), warning);
+                plg::print("  {} {}", Colorize(Icons.Warning, Colors::YELLOW), warning);
             }
         }
 
         // Recommendations
-        PLG_COUT(Colorize("\n[Recommendations]", Colors::CYAN));
+        plg::print(Colorize("\n[Recommendations]", Colors::CYAN));
         if (report.score == 100) {
-            PLG_COUT_FMT("  {} System is running optimally!", Colorize(Icons::Ok, Colors::GREEN));
+            plg::print("  {} System is running optimally!", Colorize(Icons.Ok, Colors::GREEN));
         } else {
             if (report.statistics["failed_extensions"] > 0) {
-                PLG_COUT("  • Fix or remove failed extensions");
+                plg::print("  • Fix or remove failed extensions");
             }
             if (report.statistics["extensions_with_errors"] > 0) {
-                PLG_COUT("  • Review and resolve extension errors");
+                plg::print("  • Review and resolve extension errors");
             }
             if (report.statistics["slow_loading_extensions"] > 0) {
-                PLG_COUT("  • Investigate slow-loading extensions for optimization");
+                plg::print("  • Investigate slow-loading extensions for optimization");
             }
         }
 
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
     }
 
     void ShowDependencyTree(std::string_view name, bool useId = false) {
@@ -1363,26 +1398,26 @@ public:
         auto ext = useId ? manager.FindExtension(FormatId(name)) : manager.FindExtension(name);
 
         if (!ext) {
-            PLG_CERR_FMT("{} {} not found.", Colorize("Error:", Colors::RED), name);
+            plg::print("{} {} not found.", Colorize("Error:", Colors::RED), name);
             return;
         }
 
-        PLG_COUT(std::string(80, '='));
-        PLG_COUT_FMT("{}: {}", Colorize("DEPENDENCY TREE", Colors::BOLD), ext->GetName());
-        PLG_COUT(std::string(80, '='));
-        PLG_COUT("");
+        plg::print(std::string(80, '='));
+        plg::print("{}: {}", Colorize("DEPENDENCY TREE", Colors::BOLD), ext->GetName());
+        plg::print(std::string(80, '='));
+        plg::print("");
 
         PrintDependencyTree(ext, manager);
 
         // Also show what depends on this extension
-        PLG_COUT(Colorize("\n[Reverse Dependencies]", Colors::CYAN));
-        PLG_COUT("Extensions that depend on this:");
+        plg::print(Colorize("\n[Reverse Dependencies]", Colors::CYAN));
+        plg::print("Extensions that depend on this:");
 
         bool found = false;
         for (const auto& other : manager.GetExtensions()) {
             for (const auto& dep : other->GetDependencies()) {
                 if (dep.GetName() == ext->GetName()) {
-                    PLG_COUT_FMT(
+                    plg::print(
                         "  • {} {}",
                         other->GetName(),
                         dep.IsOptional() ? Colorize("[optional]", Colors::GRAY) : ""
@@ -1393,10 +1428,10 @@ public:
         }
 
         if (!found) {
-            PLG_COUT_FMT("  {}", Colorize("None", Colors::GRAY));
+            plg::print("  {}", Colorize("None", Colors::GRAY));
         }
 
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
     }
 
     void SearchExtensions(std::string_view query) {
@@ -1427,22 +1462,22 @@ public:
         }
 
         if (matches.empty()) {
-            PLG_COUT_FMT("{} No extensions found matching '{}'", Colorize(Icons::Missing, Colors::YELLOW), query);
+            plg::print("{} No extensions found matching '{}'", Colorize(Icons.Missing, Colors::YELLOW), query);
             return;
         }
 
-        PLG_COUT_FMT(
+        plg::print(
             "{}: Found {} match{} for '{}'",
             Colorize("SEARCH RESULTS", Colors::BOLD),
             matches.size(),
             matches.size() > 1 ? "es" : "",
             query
         );
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
 
         for (const auto& ext : matches) {
             auto [symbol, color] = GetStateInfo(ext->GetState());
-            PLG_COUT_FMT(
+            plg::print(
                 "{} {} {} {} {}",
                 Colorize(symbol, color),
                 Colorize(ext->GetName(), Colors::BOLD),
@@ -1452,19 +1487,19 @@ public:
             );
 
             if (!ext->GetDescription().empty()) {
-                PLG_COUT_FMT("  {}", Truncate(ext->GetDescription(), 70));
+                plg::print("  {}", Truncate(ext->GetDescription(), 70));
             }
         }
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
     }
 
     void ValidateExtension(const std::filesystem::path& path) {
-        PLG_COUT_FMT("{}: {}", Colorize("VALIDATING", Colors::BOLD), path.string());
-        PLG_COUT(std::string(80, '-'));
+        plg::print("{}: {}", Colorize("VALIDATING", Colors::BOLD), path.string());
+        plg::print(std::string(80, '-'));
 
         // Check if file exists
         if (!std::filesystem::exists(path)) {
-            PLG_CERR_FMT("{} File does not exist", Colorize("✗", Colors::RED));
+            plg::print("{} File does not exist", Colorize("✗", Colors::RED));
             return;
         }
 
@@ -1474,27 +1509,27 @@ public:
         bool isModule = (fileExt == ".mod" || fileExt == ".pmodule");
 
         if (!isPlugin && !isModule) {
-            PLG_CERR_FMT("{} Invalid file extension: {}", Colorize("✗", Colors::RED), fileExt);
+            plg::print("{} Invalid file extension: {}", Colorize("✗", Colors::RED), fileExt);
             return;
         }
 
-        PLG_COUT_FMT("{} File exists", Colorize(Icons::Ok, Colors::GREEN));
-        PLG_COUT_FMT(
+        plg::print("{} File exists", Colorize(Icons.Ok, Colors::GREEN));
+        plg::print(
             "{} Valid extension type: {}",
-            Colorize(Icons::Ok, Colors::GREEN),
+            Colorize(Icons.Ok, Colors::GREEN),
             isPlugin ? "Plugin" : "Module"
         );
-        PLG_COUT_FMT("{} File size: {}", Colorize(Icons::Missing, Colors::CYAN), FormatFileSize(path));
+        plg::print("{} File size: {}", Colorize(Icons.Missing, Colors::CYAN), FormatFileSize(path));
 
         // Try to parse manifest (you'd need to implement manifest parsing)
         // This is a placeholder for actual validation logic
-        /*PLG_COUT_FMT("{} Manifest validation: {}",
-                    Colorize(Icons::Missing, Colors::CYAN),
+        /*plg::print("{} Manifest validation: {}",
+                    Colorize(Icons.Missing, Colors::CYAN),
                     "Would parse and validate manifest here");*/
         // TODO
 
-        PLG_COUT(std::string(80, '-'));
-        PLG_COUT_FMT("{}: Validation complete", Colorize("RESULT", Colors::BOLD));
+        plg::print(std::string(80, '-'));
+        plg::print("{}: Validation complete", Colorize("RESULT", Colors::BOLD));
     }
 
     void CompareExtensions(std::string_view name1, std::string_view name2, bool useId = false) {
@@ -1507,31 +1542,31 @@ public:
         auto ext2 = useId ? manager.FindExtension(FormatId(name2)) : manager.FindExtension(name2);
 
         if (!ext1) {
-            PLG_CERR_FMT("Extension {} not found.", name1);
+            plg::print("Extension {} not found.", name1);
             return;
         }
         if (!ext2) {
-            PLG_CERR_FMT("Extension {} not found.", name2);
+            plg::print("Extension {} not found.", name2);
             return;
         }
 
-        PLG_COUT(std::string(80, '='));
-        PLG_COUT(Colorize("EXTENSION COMPARISON", Colors::BOLD));
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
+        plg::print(Colorize("EXTENSION COMPARISON", Colors::BOLD));
+        plg::print(std::string(80, '='));
 
         // Basic comparison table
         auto printRow = [](std::string_view label, std::string_view val1, std::string_view val2) {
             bool same = (val1 == val2);
-            PLG_COUT_FMT("{:<20} {:<25} {} {:<25}", label, val1, same ? Icons::Equal : Icons::NotEqual, val2);
+            plg::print("{:<20} {:<25} {} {:<25}", label, val1, same ? Icons.Equal : Icons.NotEqual, val2);
         };
 
-        PLG_COUT_FMT(
+        plg::print(
             "\n{:<20} {:<25}   {:<25}",
             "",
             Colorize(ext1->GetName(), Colors::CYAN),
             Colorize(ext2->GetName(), Colors::MAGENTA)
         );
-        PLG_COUT(std::string(80, '-'));
+        plg::print(std::string(80, '-'));
 
         printRow("Type:", ext1->IsPlugin() ? "Plugin" : "Module", ext2->IsPlugin() ? "Plugin" : "Module");
         printRow("Version:", ext1->GetVersionString(), ext2->GetVersionString());
@@ -1541,7 +1576,7 @@ public:
         printRow("License:", ext1->GetLicense(), ext2->GetLicense());
 
         // Dependencies comparison
-        PLG_COUT(Colorize("\n[Dependencies]", Colors::BOLD));
+        plg::print(Colorize("\n[Dependencies]", Colors::BOLD));
         auto deps1 = ext1->GetDependencies();
         auto deps2 = ext2->GetDependencies();
 
@@ -1577,29 +1612,29 @@ public:
         );
 
         if (!common.empty()) {
-            PLG_COUT_FMT("  Common: {}", plg::join(common, ", "));
+            plg::print("  Common: {}", plg::join(common, ", "));
         }
         if (!onlyIn1.empty()) {
-            PLG_COUT_FMT("  Only in {}: {}", ext1->GetName(), plg::join(onlyIn1, ", "));
+            plg::print("  Only in {}: {}", ext1->GetName(), plg::join(onlyIn1, ", "));
         }
         if (!onlyIn2.empty()) {
-            PLG_COUT_FMT("  Only in {}: {}", ext2->GetName(), plg::join(onlyIn2, ", "));
+            plg::print("  Only in {}: {}", ext2->GetName(), plg::join(onlyIn2, ", "));
         }
 
         // Performance comparison
-        PLG_COUT(Colorize("\n[Performance]", Colors::BOLD));
-        PLG_COUT_FMT(
+        plg::print(Colorize("\n[Performance]", Colors::BOLD));
+        plg::print(
             "  Load Time:     {:<15} vs {:<15}",
             FormatDuration(ext1->GetOperationTime(ExtensionState::Loaded)),
             FormatDuration(ext2->GetOperationTime(ExtensionState::Loaded))
         );
-        PLG_COUT_FMT(
+        plg::print(
             "  Total Time:    {:<15} vs {:<15}",
             FormatDuration(ext1->GetTotalTime()),
             FormatDuration(ext2->GetTotalTime())
         );
 
-        PLG_COUT(std::string(80, '='));
+        plg::print(std::string(80, '='));
     }
 
     void Update() {
@@ -1616,12 +1651,12 @@ private:
 
     bool CheckManager() const {
         if (!plug->IsInitialized()) {
-            PLG_CERR("Initialize system before use.");
+            plg::print("Initialize system before use.");
             return false;
         }
         const auto& manager = plug->GetManager();
         if (!manager.IsInitialized()) {
-            PLG_CERR("You must load plugin manager before query any information from it.");
+            plg::print("You must load plugin manager before query any information from it.");
             return false;
         }
         return true;
@@ -1633,7 +1668,7 @@ private:
 // Enhanced interactive mode
 void
 RunEnhancedInteractiveMode(PlugifyApp& app) {
-    PLG_COUT(
+    plg::print(
         Colorize("Entering interactive mode. Type 'help' for commands or 'exit' to quit.", Colors::CYAN)
     );
 
@@ -1670,7 +1705,7 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
 
         // Handle exit commands
         if (args[0] == "exit" || args[0] == "quit" || args[0] == "q") {
-            PLG_COUT(Colorize("Goodbye!", Colors::CYAN));
+            plg::print(Colorize("Goodbye!", Colors::CYAN));
             break;
         }
 
@@ -1789,7 +1824,7 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
             if (!searchQuery.empty()) {
                 app.SearchExtensions(searchQuery);
             } else {
-                PLG_CERR("Search query required");
+                plg::print("Search query required");
             }
         });
 
@@ -1800,31 +1835,31 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
         });
 
         help->callback([]() {
-            PLG_COUT(Colorize("Plugify Interactive Mode Commands:", Colors::BOLD));
-            PLG_COUT("  init                - Initialize plugin system");
-            PLG_COUT("  term                - Terminate plugin system");
-            PLG_COUT("  version             - Show version information");
-            PLG_COUT("  load                - Load plugin manager");
-            PLG_COUT("  unload              - Unload plugin manager");
-            PLG_COUT("  reload              - Reload plugin manager");
-            PLG_COUT("  plugins [--failed]  - List plugins (optionally only failed)");
-            PLG_COUT("  modules [--failed]  - List modules (optionally only failed)");
-            PLG_COUT("  health              - Show system health report");
-            PLG_COUT("  search <query>      - Search extensions");
-            PLG_COUT("  clear/cls           - Clear screen");
-            PLG_COUT("  help                - Show this help");
-            PLG_COUT("  exit/quit/q         - Exit interactive mode");
-            PLG_COUT("  tree <name>         - Show dependency tree");
-            PLG_COUT("  validate <path>     - Validate extension file");
-            PLG_COUT("  compare <e1> <e2>   - Compare two extensions");
+            plg::print(Colorize("Plugify Interactive Mode Commands:", Colors::BOLD));
+            plg::print("  init                - Initialize plugin system");
+            plg::print("  term                - Terminate plugin system");
+            plg::print("  version             - Show version information");
+            plg::print("  load                - Load plugin manager");
+            plg::print("  unload              - Unload plugin manager");
+            plg::print("  reload              - Reload plugin manager");
+            plg::print("  plugins [--failed]  - List plugins (optionally only failed)");
+            plg::print("  modules [--failed]  - List modules (optionally only failed)");
+            plg::print("  health              - Show system health report");
+            plg::print("  search <query>      - Search extensions");
+            plg::print("  clear/cls           - Clear screen");
+            plg::print("  help                - Show this help");
+            plg::print("  exit/quit/q         - Exit interactive mode");
+            plg::print("  tree <name>         - Show dependency tree");
+            plg::print("  validate <path>     - Validate extension file");
+            plg::print("  compare <e1> <e2>   - Compare two extensions");
         });
 
         try {
             interactiveApp.parse(args);
         } catch (const CLI::ParseError& e) {
             if (e.get_exit_code() != 0) {
-                PLG_CERR_FMT("{}: {}", Colorize("Error", Colors::RED), e.what());
-                PLG_CERR("Type 'help' for available commands.");
+                plg::print("{}: {}", Colorize("Error", Colors::RED), e.what());
+                plg::print("Type 'help' for available commands.");
             }
         }
 
@@ -1837,12 +1872,12 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
 int
 main(int argc, char** argv) {
     /*if (!std::setlocale(LC_ALL, "en_US.UTF-8")) {
-        PLG_CERR("Warning: Failed to set UTF-8 locale");
+        plg::print("Warning: Failed to set UTF-8 locale");
     }*/
 
     auto plugify = MakePlugify();
     if (!plugify) {
-        PLG_COUT(plugify.error());
+        plg::print(plugify.error());
         return EXIT_FAILURE;
     }
 
@@ -2088,11 +2123,11 @@ main(int argc, char** argv) {
             auto plugin = plugin_use_id ? manager.FindExtension(FormatId(plugin_name))
                                         : manager.FindExtension(plugin_name);
             if (plugin) {
-                PLG_COUT(*ExtensionToJson(plugin).dump());
+                plg::print(*ExtensionToJson(plugin).dump());
             } else {
                 glz::json_t error;
                 error["error"] = "Plugin not found";
-                PLG_COUT(*error.dump());
+                plg::print(*error.dump());
             }
         } else {
             app.ShowPlugin(plugin_name, plugin_use_id);
@@ -2108,11 +2143,11 @@ main(int argc, char** argv) {
             auto module = module_use_id ? manager.FindExtension(FormatId(module_name))
                                         : manager.FindExtension(module_name);
             if (module) {
-                PLG_COUT(*ExtensionToJson(module).dump());
+                plg::print(*ExtensionToJson(module).dump());
             } else {
                 glz::json_t error;
                 error["error"] = "Module not found";
-                PLG_COUT(*error.dump());
+                plg::print(*error.dump());
             }
         } else {
             app.ShowModule(module_name, module_use_id);
@@ -2175,7 +2210,7 @@ main(int argc, char** argv) {
     } catch (const CLI::ParseError& e) {
         return cliApp.exit(e);
     } catch (const std::exception& e) {
-        PLG_CERR_FMT("{}: {}", Colorize("Error", Colors::RED), e.what());
+        plg::print("{}: {}", Colorize("Error", Colors::RED), e.what());
         return EXIT_FAILURE;
     }
 

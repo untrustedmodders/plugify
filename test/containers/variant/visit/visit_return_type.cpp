@@ -224,7 +224,7 @@ namespace {
 		{
 			using V = plg::variant<short, long, char>;
 			constexpr V v(42l);
-			static_assert((plg::visit<void>(obj, v), 42) == 42);
+			static_assert((plg::visit<void>(obj, v), 42l) == 42l);
 		}
 		{
 			using V1 = plg::variant<int>;

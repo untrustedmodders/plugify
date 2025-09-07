@@ -110,8 +110,8 @@ namespace plugify {
         [[nodiscard]] bool IsModule() const noexcept { return GetType() == ExtensionType::Module; }
 
         // --- Timing/Performance ---
-        [[nodiscard]] Duration GetOperationTime(ExtensionState state) const;
-        [[nodiscard]] Duration GetTotalTime() const;
+        [[nodiscard]] std::chrono::milliseconds GetOperationTime(ExtensionState state) const;
+        [[nodiscard]] std::chrono::milliseconds GetTotalTime() const;
         [[nodiscard]] std::string GetPerformanceReport() const;
 
         // --- State Management ---

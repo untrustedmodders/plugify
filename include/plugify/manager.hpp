@@ -20,7 +20,7 @@ namespace plugify {
         // Lifecycle
         Result<void> Initialize() const;
         [[nodiscard]] bool IsInitialized() const;
-        void Update(Duration deltaTime) const;
+        void Update(std::chrono::milliseconds deltaTime) const;
         void Terminate() const;
 
         // Extension operations

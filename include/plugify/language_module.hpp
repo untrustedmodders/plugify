@@ -62,7 +62,7 @@ namespace plugify {
 		 * @brief Handle actions to be performed on each frame.
 		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnUpdate(Duration deltaTime) = 0;
+		virtual void OnUpdate(std::chrono::milliseconds deltaTime) = 0;
 
         /**
 	     * @brief
@@ -87,7 +87,7 @@ namespace plugify {
 		 * @param plugin Ref to the started plugin.
 		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnPluginUpdate(const Extension& plugin, Duration deltaTime) = 0;
+		virtual void OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds deltaTime) = 0;
 
 		/**
 		 * @brief Handle plugin end event.

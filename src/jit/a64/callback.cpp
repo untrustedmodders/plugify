@@ -44,7 +44,7 @@ struct JitCallback::Impl {
 
     #if PLUGIFY_IS_RELEASE
 	    // too small to really need it
-	    func->frame().resetPreservedFP();
+	    //func->frame().reset_preserved_fp();
     #endif // PLUGIFY_IS_RELEASE
 
 	    // map argument slots to registers, following abi.

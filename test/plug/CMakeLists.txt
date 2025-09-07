@@ -11,22 +11,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-include(FetchContent)
-
-#
-# Catch2
-#
-message(STATUS "Pulling and configuring catch2")
-
-FetchContent_Declare(
-        cli
-        GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
-        GIT_TAG v2.5.0
-        GIT_PROGRESS TRUE
-        GIT_SHALLOW TRUE
-        OVERRIDE_FIND_PACKAGE
-)
-FetchContent_MakeAvailable(cli)
+include(FetchCLI)
 
 #
 # Plug
@@ -45,11 +30,9 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
 endif()
 
 if(MSVC)
-    #target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
     target_compile_definitions(${PROJECT_NAME} PRIVATE TEST_HAS_NO_EXCEPTIONS=1)
-else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
+target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})
 
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX=1)

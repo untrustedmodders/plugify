@@ -11,23 +11,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-include(FetchContent)
-
-#
-# Catch2
-#
-message(STATUS "Pulling and configuring cli")
-
-FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v3.4.0
-        GIT_PROGRESS TRUE
-        GIT_SHALLOW TRUE
-        OVERRIDE_FIND_PACKAGE
-)
-
-FetchContent_MakeAvailable(Catch2)
+include(FetchCatch2)
 
 enable_testing()
 
@@ -51,8 +35,4 @@ include(CTest)
 include(Catch)
 catch_discover_tests(${PROJECT_NAME})
 
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wshadow -Werror) #-Wconversion -Wpedantic
-endif()
+target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})

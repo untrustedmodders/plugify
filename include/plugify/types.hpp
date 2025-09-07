@@ -90,18 +90,13 @@ namespace plugify {
     // Helper for creating errors with context
 
     template<typename... Args>
-    inline auto MakeError(std::format_string<Args...> fmt, Args&&... args) {
+    PLUGIFY_FORCE_INLINE auto MakeError(std::format_string<Args...> fmt, Args&&... args) {
         return plg::unexpected(std::format(fmt, std::forward<Args>(args)...));
     }
 
-    inline auto MakeError2(std::string error) {
+    PLUGIFY_FORCE_INLINE auto MakeError2(std::string error) {
         return plg::unexpected(std::move(error));
     }
-
-    // Standart aliases
-    using Clock = std::chrono::steady_clock;
-    using TimePoint = Clock::time_point;
-    using Duration = std::chrono::microseconds;
 }
 
 namespace std {

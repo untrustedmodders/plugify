@@ -14,11 +14,11 @@ namespace plugify {
     class ScopedTimer {
     public:
         explicit ScopedTimer(Callback&& cb) noexcept(std::is_nothrow_move_constructible_v<Callback>)
-            : m_callback(std::forward<Callback>(cb)), m_start(Clock::now()) {}
+            : m_callback(std::forward<Callback>(cb)), m_start(std::chrono::steady_clock::now()) {}
 
         ~ScopedTimer() noexcept(std::is_nothrow_invocable_v<Callback>) {
-            auto end = Clock::now();
-            auto elapsed = std::chrono::duration_cast<Duration>(end - m_start);
+            auto end = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - m_start);
             m_callback(elapsed);
         }
 
@@ -40,7 +40,7 @@ namespace plugify {
 
     private:
         Callback m_callback;
-        TimePoint m_start;
+        std::chrono::steady_clock::time_point m_start;
     };
 
     // Deduction guide (important!)
@@ -57,7 +57,7 @@ namespace plugify {
             : operation(op), extensionName(name) {}
 
         template<typename T, typename Func>
-        PLUGIFY_FORCE_INLINE Result<T> Execute(Func&& func) noexcept {
+        Result<T> Execute(Func&& func) noexcept {
             try {
                 return func();
             } catch (const std::bad_alloc&) {
@@ -76,11 +76,11 @@ namespace plugify {
         struct LoadStatistics {
             size_t modulesLoaded{0};
             size_t pluginsLoaded{0};
-            Duration totalLoadTime{};
+            std::chrono::milliseconds totalLoadTime{};
 
-            Duration slowestModuleLoad{};
+            std::chrono::milliseconds slowestModuleLoad{};
             UniqueId slowestModule;
-            Duration slowestPluginLoad{};
+            std::chrono::milliseconds slowestPluginLoad{};
             UniqueId slowestPlugin;
 
             std::string ToString() const {
@@ -127,7 +127,7 @@ namespace plugify {
 
         // Module Operations
         Result<void> LoadModule(Extension& module) {
-            auto timer = ScopedTimer([&](Duration elapsed) {
+            auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
                 _stats.totalLoadTime += elapsed;
                 if (elapsed > _stats.slowestModuleLoad) {
                     _stats.slowestModuleLoad = elapsed;
@@ -152,7 +152,7 @@ namespace plugify {
             return {};
         }
 
-        Result<void> UpdateModule(Extension& module, Duration deltaTime) {
+        Result<void> UpdateModule(Extension& module, std::chrono::milliseconds deltaTime) {
             const auto& [hasUpdate, hasStart, hasEnd, hasExport] = module.GetMethodTable();
             if (!hasUpdate) {
                 return {};
@@ -189,7 +189,7 @@ namespace plugify {
 
         // Plugin Operations
         Result<void> LoadPlugin(const Extension& module, Extension& plugin) {
-            auto timer = ScopedTimer([&](Duration elapsed) {
+            auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
                 _stats.totalLoadTime += elapsed;
                 if (elapsed > _stats.slowestPluginLoad) {
                     _stats.slowestPluginLoad = elapsed;
@@ -249,7 +249,7 @@ namespace plugify {
             return result;
         }
 
-        Result<void> UpdatePlugin(Extension& plugin, Duration deltaTime) {
+        Result<void> UpdatePlugin(Extension& plugin, std::chrono::milliseconds deltaTime) {
             const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
             if (!hasUpdate) {
                 return {};

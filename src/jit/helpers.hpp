@@ -24,7 +24,7 @@ namespace plugify {
 
 	class SimpleErrorHandler : public asmjit::ErrorHandler {
 	public:
-		void handle_error(asmjit::Error err, const char* message, asmjit::BaseEmitter* ) override {
+		void handle_error(asmjit::Error err, const char* message, [[maybe_unused]] asmjit::BaseEmitter* origin) override {
 			error = err;
 			code = message;
 		}

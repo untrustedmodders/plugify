@@ -315,7 +315,7 @@ namespace plugify {
         FailureTracker& _failureTracker;
         const plg::flat_map<UniqueId, std::vector<UniqueId>>& _depGraph;
         const plg::flat_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
-        Duration _timeout;
+        std::chrono::milliseconds _timeout;
 
     public:
         BaseFailurePropagatingStage(
@@ -323,7 +323,7 @@ namespace plugify {
             FailureTracker& failureTracker,
             const plg::flat_map<UniqueId, std::vector<UniqueId>>& depGraph,
             const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
-            Duration timeout
+            std::chrono::milliseconds timeout
         )
             : _loader(loader)
             , _failureTracker(failureTracker)
@@ -352,7 +352,7 @@ namespace plugify {
         }
 
         // Make timeout configurable per stage
-        Duration GetTimeout() const {
+        std::chrono::milliseconds GetTimeout() const {
             return _timeout;
         }
 

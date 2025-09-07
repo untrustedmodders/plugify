@@ -44,7 +44,7 @@ struct JitCall::Impl {
 
     #if PLUGIFY_IS_RELEASE
 	    // too small to really need it
-	    func->frame().resetPreservedFP();
+	    //func->frame().reset_preserved_fp();
     #endif // PLUGIFY_IS_RELEASE
 
 	    x86::Gp paramImm = cc.new_gpz();

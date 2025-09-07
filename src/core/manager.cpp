@@ -138,7 +138,7 @@ public:
         return Result<void>{};
     }
 
-    void Update(Duration deltaTime) {
+    void Update(std::chrono::milliseconds deltaTime) {
         std::lock_guard lock(lifecycleMutex);
 
         if (!initialized) {
@@ -378,7 +378,7 @@ bool Manager::IsInitialized() const {
     return _impl->initialized;
 }
 
-void Manager::Update(Duration deltaTime) const {
+void Manager::Update(std::chrono::milliseconds deltaTime) const {
     return _impl->Update(deltaTime);
 }
 

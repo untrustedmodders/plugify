@@ -16,15 +16,50 @@
 //#include "plugify/plugin_lifecycle.hpp"
 #include "plugify/assembly_loader.hpp"
 
+namespace std {
+    class shared_ptr_access
+    {
+        template <typename _T, typename ... _Args>
+        static _T* __construct(void* __pv, _Args&& ... __args)
+        { return ::new(__pv) _T(forward<_Args>(__args)...); }
+
+        template <typename _T>
+        static void __destroy(_T* __ptr) { __ptr->~_T(); }
+
+        template <typename _T, typename _A>
+        friend class __shared_ptr_storage;
+    };
+}
+
 namespace plugify {
     class Plugify;
 
 	// Builder pattern for configuration
     class PLUGIFY_API PlugifyBuilder {
     public:
+        PlugifyBuilder();
+        ~PlugifyBuilder();
+        PlugifyBuilder(const PlugifyBuilder& other) = delete;
+        PlugifyBuilder(PlugifyBuilder&& other) noexcept = delete;
+        PlugifyBuilder& operator=(const PlugifyBuilder& other) = delete;
+        PlugifyBuilder& operator=(PlugifyBuilder&& other) noexcept = delete;
+
+        // Path configuration methods - these have clear precedence
         PlugifyBuilder& WithBaseDir(const std::filesystem::path& dir);
+        PlugifyBuilder& WithPaths(const Config::Paths& paths);
+
+        // Config methods with clear semantics
         PlugifyBuilder& WithConfig(const Config& config);
         PlugifyBuilder& WithConfig(Config&& config);
+        PlugifyBuilder& WithConfigFile(const std::filesystem::path& path);
+        //PlugifyBuilder& WithPartialConfig(const Config& config); // Merges with existing
+
+        // Explicit runtime configuration
+        PlugifyBuilder& WithManualUpdate(); // Default
+        PlugifyBuilder& WithBackgroundUpdate(std::chrono::milliseconds interval = std::chrono::milliseconds{16});
+        PlugifyBuilder& WithUpdateCallback(std::function<void(std::chrono::milliseconds)> callback);
+
+        // Service registration...
         PlugifyBuilder& WithLogger(std::shared_ptr<ILogger> logger);
         PlugifyBuilder& WithFileSystem(std::shared_ptr<IFileSystem> fs);
         PlugifyBuilder& WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
@@ -42,15 +77,17 @@ namespace plugify {
         template<typename Interface, typename Implementation>
             requires std::derived_from<Implementation, Interface>
         PlugifyBuilder& WithService(std::shared_ptr<Implementation> service) {
-            _services.RegisterInstance<Interface>(std::move(service));
+            GetServices().RegisterInstance<Interface>(std::move(service));
             return *this;
         }
 
-        std::shared_ptr<Plugify> Build();
+        Result<std::shared_ptr<Plugify>> Build();
 
-    private:
-        ServiceLocator _services;
-        Config _config;
+    PLUGIFY_ACCESS:
+        const ServiceLocator& GetServices() const noexcept;
+        Result<Config> LoadConfigFromFile(const std::filesystem::path& path) const;
+        struct Impl;
+        PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };
 
     class PLUGIFY_API Plugify {
@@ -65,7 +102,7 @@ namespace plugify {
         Result<void> Initialize() const;
         void Terminate() const;
         [[nodiscard]] bool IsInitialized() const;
-        void Update(Duration deltaTime = Duration{16}) const;
+        void Update(std::chrono::milliseconds deltaTime = std::chrono::milliseconds{16}) const;
 
         // Component access
         [[nodiscard]] const Manager& GetManager() const noexcept;
@@ -85,11 +122,8 @@ namespace plugify {
         // Factory method
         [[nodiscard]] static PlugifyBuilder CreateBuilder();
 
-    private:
-        friend class PlugifyBuilder;
+    PLUGIFY_ACCESS:
         explicit Plugify(ServiceLocator services, Config config);
-
-    private:
         struct Impl;
         PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
     };

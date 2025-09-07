@@ -8,9 +8,34 @@
 
 #include "plugify/logger.hpp"
 #include "plugify/types.hpp"
+#include "plugify/platform_ops.hpp"
 
 namespace plugify {
+    // Update mode for explicit control
+    enum class UpdateMode {
+        Manual,           // User calls Update() manually
+        BackgroundThread, // Automatic updates in background thread
+        Callback         // User provides update callback
+    };
+
+    // Configuration source priority
+    enum class ConfigSource {
+        Default,    // Default values
+        File,       // Loaded from file
+        Builder,    // Set via builder methods
+        Override    // Explicit overrides (highest priority)
+    };
+
     struct Config {
+        // Track source priority for each field group
+        struct SourceTracking {
+            ConfigSource paths = ConfigSource::Default;
+            ConfigSource loading = ConfigSource::Default;
+            ConfigSource runtime = ConfigSource::Default;
+            ConfigSource security = ConfigSource::Default;
+            ConfigSource logging = ConfigSource::Default;
+        } _sources;
+
         // Paths configuration
         struct Paths {
             std::filesystem::path baseDir;
@@ -19,35 +44,67 @@ namespace plugify {
             std::filesystem::path dataDir = "data";
             std::filesystem::path logsDir = "logs";
             std::filesystem::path cacheDir = "cache";
+            
+            // Check if paths have non-default values
+            bool HasCustomExtensionsDir() const { return extensionsDir != "extensions"; }
+            bool HasCustomConfigsDir() const { return configsDir != "configs"; }
+            bool HasCustomDataDir() const { return dataDir != "data"; }
+            bool HasCustomLogsDir() const { return logsDir != "logs"; }
+            bool HasCustomCacheDir() const { return cacheDir != "cache"; }
+            
+            void ResolveRelativePaths() {
+                auto makeAbsolute = [this](std::filesystem::path& path) {
+                    if (!path.empty() && path.is_relative() && !baseDir.empty()) {
+                        path = (baseDir / path).lexically_normal();
+                    }
+                };
+                
+                makeAbsolute(extensionsDir);
+                makeAbsolute(configsDir);
+                makeAbsolute(dataDir);
+                makeAbsolute(logsDir);
+                makeAbsolute(cacheDir);
+            }
         } paths;
 
         // Loading configuration
         struct Loading {
             bool preferOwnSymbols = true;
-            //bool enableHotReload = false;
-            //bool lazyLoading = false;
-            //bool parallelLoading = true;
-            size_t maxConcurrentLoads = 4; // 0 for auto
-            std::chrono::microseconds loadTimeout{5000};
-            std::chrono::microseconds exportTimeout{5000};
-            std::chrono::microseconds startTimeout{10000};
+            size_t maxConcurrentLoads = 4;
+            std::chrono::milliseconds loadTimeout{50};
+            std::chrono::milliseconds exportTimeout{50};
+            std::chrono::milliseconds startTimeout{100};
+            
+            // Check if values are non-default
+            bool HasCustomPreferOwnSymbols() const { return preferOwnSymbols != true; }
+            bool HasCustomMaxConcurrentLoads() const { return maxConcurrentLoads != 4; }
+            bool HasCustomLoadTimeout() const { return loadTimeout != std::chrono::milliseconds{50}; }
+            bool HasCustomExportTimeout() const { return exportTimeout != std::chrono::milliseconds{50}; }
+            bool HasCustomStartTimeout() const { return startTimeout != std::chrono::milliseconds{100}; }
         } loading;
 
         // Runtime configuration
         struct Runtime {
-            //bool enableSandboxing = false;
-            //bool enableProfiling = false;
-            //size_t maxMemoryPerPlugin = 0; // 0 = unlimited
-            std::chrono::milliseconds updateInterval{16}; // ~60 FPS
+            bool pinToMainThread = false;
+            UpdateMode updateMode = UpdateMode::Manual;
+            std::chrono::milliseconds updateInterval{16};
+            std::function<void(std::chrono::milliseconds)> updateCallback;
+            std::optional<size_t> threadPriority;
+            
+            // Check if values are non-default
+            bool HasCustomPinToMainThread() const { return pinToMainThread != false; }
+            bool HasCustomUpdateMode() const { return updateMode != UpdateMode::Manual; }
+            bool HasCustomUpdateInterval() const { return updateInterval != std::chrono::milliseconds{16}; }
+            bool HasThreadPriority() const { return threadPriority.has_value(); }
         } runtime;
 
         // Security configuration
         struct Security {
-            //bool verifySignatures = false;
-            //bool allowUnsignedPlugins = true;
-            //std::vector<std::string> trustedPublishers;
             std::unordered_set<std::string> whitelistedExtensions;
             std::unordered_set<std::string> blacklistedExtensions;
+            
+            bool HasWhitelist() const { return !whitelistedExtensions.empty(); }
+            bool HasBlacklist() const { return !blacklistedExtensions.empty(); }
         } security;
 
         // Logging configuration
@@ -58,394 +115,280 @@ namespace plugify {
             bool printDependencyGraph = true;
             bool printDigraphDot = true;
             std::filesystem::path exportDigraphDot;
+            
+            bool HasCustomSeverity() const { return severity != Severity::Error; }
+            bool HasCustomPrintReport() const { return printReport != true; }
+            bool HasCustomPrintLoadOrder() const { return printLoadOrder != true; }
+            bool HasCustomPrintDependencyGraph() const { return printDependencyGraph != true; }
+            bool HasCustomPrintDigraphDot() const { return printDigraphDot != true; }
+            bool HasExportPath() const { return !exportDigraphDot.empty(); }
         } logging;
 
-        // Retry configuration
-        /*struct RetryPolicy {
-            std::size_t maxAttempts = 3;
-            std::chrono::milliseconds baseDelay{100};
-            std::chrono::milliseconds maxDelay{5000};
-            bool exponentialBackoff = true;
-            bool retryOnlyTransient = true;
-        } retryPolicy;*/
-    };
-
-	/*struct Config {
-		// Initialization behavior
-		bool partialStartupMode = true;
-		bool failOnMissingDependencies = false;
-
-		//bool failOnModuleError = false;
-		//bool continueOnValidationWarnings = true;
-		bool respectDependencyOrder = true;  // Initialize in dependency order
-		bool skipDependentsOnFailure = true; // Skip extensions if their dependencies fail
-		bool printSummary = true;  // Print initialization summary to console
-
-		// Update behavior
-		//bool failOnUpdateError = false;      // Whether to fail if any extension update fails
-		//bool verboseUpdates = false;         // Log update errors to console
-		//bool trackUpdatePerformance = true;  // Track update timing statistics
-		//std::chrono::microseconds slowUpdateThreshold{16667}; // ~60 FPS threshold
-
-		// Timeouts
-		//std::chrono::milliseconds initializationTimeout{30000};
-		//std::chrono::milliseconds perExtensionTimeout{5000};
-	};*/
-#if 0
-    // TODO: Consider config system
-    // Configuration value types
-    using ConfigValue = std::variant<
-        std::monostate,  // null
-        bool,
-        int64_t,
-        double,
-        std::string,
-        std::vector<std::any>,  // array
-        std::unordered_map<std::string, std::any>  // object
-    >;
-
-    // Configuration source priority (higher value = higher priority)
-    enum class ConfigPriority {
-        Default = 0,      // Built-in defaults
-        File = 1,         // From config file
-        Environment = 2,  // Environment variables
-        CommandLine = 3,  // Command line args
-        Runtime = 4       // Set at runtime
-    };
-
-    // Configuration node for hierarchical config
-    class ConfigNode {
-    public:
-        ConfigNode() = default;
-        explicit ConfigNode(ConfigValue value) : _value(std::move(value)) {}
-
-        // Type-safe getters
-        template<typename T>
-        std::optional<T> Get() const {
-            if (auto* val = std::get_if<T>(&_value)) {
-                return *val;
+        // Comprehensive merge implementation
+        void MergeFrom(const Config& other, ConfigSource source = ConfigSource::Override) {
+            // Only merge if the new source has equal or higher priority
+            
+            // Merge Paths
+            if (source >= _sources.paths) {
+                bool pathsChanged = false;
+                
+                // Always take baseDir if provided
+                if (!other.paths.baseDir.empty()) {
+                    paths.baseDir = other.paths.baseDir;
+                    pathsChanged = true;
+                }
+                
+                // Take other paths if they're customized
+                if (other.paths.HasCustomExtensionsDir()) {
+                    paths.extensionsDir = other.paths.extensionsDir;
+                    pathsChanged = true;
+                }
+                if (other.paths.HasCustomConfigsDir()) {
+                    paths.configsDir = other.paths.configsDir;
+                    pathsChanged = true;
+                }
+                if (other.paths.HasCustomDataDir()) {
+                    paths.dataDir = other.paths.dataDir;
+                    pathsChanged = true;
+                }
+                if (other.paths.HasCustomLogsDir()) {
+                    paths.logsDir = other.paths.logsDir;
+                    pathsChanged = true;
+                }
+                if (other.paths.HasCustomCacheDir()) {
+                    paths.cacheDir = other.paths.cacheDir;
+                    pathsChanged = true;
+                }
+                
+                if (pathsChanged) {
+                    _sources.paths = source;
+                }
             }
-            return std::nullopt;
-        }
-
-        // Path-based access (e.g., "server.host.port")
-        std::optional<ConfigNode> GetNode(std::string_view path) const;
-        void SetNode(std::string_view path, ConfigNode node);
-
-        // Merge another node into this one
-        void Merge(const ConfigNode& other, ConfigPriority priority);
-
-        // Check if node exists
-        bool Has(std::string_view path) const;
-
-        // Get all keys at current level
-        std::vector<std::string> GetKeys() const;
-
-    private:
-        ConfigValue _value;
-        ConfigPriority _priority = ConfigPriority::Default;
-        std::unordered_map<std::string, ConfigNode> _children;
-    };
-
-    // Configuration schema for validation
-    class ConfigSchema {
-    public:
-        struct Field {
-            std::string name;
-            std::string type;  // "bool", "int", "double", "string", "array", "object"
-            bool required = false;
-            std::optional<ConfigValue> defaultValue;
-            std::optional<std::string> description;
-            std::optional<std::function<bool(const ConfigValue&)>> validator;
-            std::optional<std::vector<ConfigValue>> allowedValues;  // enum constraint
-            std::optional<std::pair<ConfigValue, ConfigValue>> range;  // min/max
-        };
-
-        ConfigSchema& AddField(Field field);
-        ConfigSchema& AddSubSchema(const std::string& path, const ConfigSchema& schema);
-
-        Result<void> Validate(const ConfigNode& config) const;
-        ConfigNode ApplyDefaults(const ConfigNode& config) const;
-        std::string GenerateDocumentation() const;
-
-    private:
-        std::vector<Field> _fields;
-        std::unordered_map<std::string, ConfigSchema> _subSchemas;
-    };
-
-    // Base config reader interface
-    class IConfigReader {
-    public:
-        virtual ~IConfigReader() = default;
-        virtual Result<ConfigNode> Read(const std::filesystem::path& path) = 0;
-        virtual bool CanRead(const std::filesystem::path& path) const = 0;
-    };
-
-    // JSON config reader
-    class JsonConfigReader : public IConfigReader {
-    public:
-        Result<ConfigNode> Read(const std::filesystem::path& path) override;
-        bool CanRead(const std::filesystem::path& path) const override {
-            auto ext = path.extension().string();
-            return ext == ".json" || ext == ".jsonc";
-        }
-    };
-
-    // YAML config reader
-    class YamlConfigReader : public IConfigReader {
-    public:
-        Result<ConfigNode> Read(const std::filesystem::path& path) override;
-        bool CanRead(const std::filesystem::path& path) const override {
-            auto ext = path.extension().string();
-            return ext == ".yaml" || ext == ".yml";
-        }
-    };
-
-    // TOML config reader
-    class TomlConfigReader : public IConfigReader {
-    public:
-        Result<ConfigNode> Read(const std::filesystem::path& path) override;
-        bool CanRead(const std::filesystem::path& path) const override {
-            return path.extension() == ".toml";
-        }
-    };
-
-    // INI config reader
-    class IniConfigReader : public IConfigReader {
-    public:
-        Result<ConfigNode> Read(const std::filesystem::path& path) override;
-        bool CanRead(const std::filesystem::path& path) const override {
-            auto ext = path.extension().string();
-            return ext == ".ini" || ext == ".cfg";
-        }
-    };
-
-    // Environment variable config source
-    class EnvironmentConfigSource {
-    public:
-        // Configure prefix for env vars (e.g., "PLUGIFY_")
-        explicit EnvironmentConfigSource(std::string prefix = "PLUGIFY_")
-            : _prefix(std::move(prefix)) {}
-
-        // Read all env vars with prefix and convert to config
-        ConfigNode Read() const;
-
-        // Map specific env vars to config paths
-        EnvironmentConfigSource& Map(std::string_view envVar, std::string_view configPath);
-
-    private:
-        std::string _prefix;
-        std::unordered_map<std::string, std::string> _mappings;
-    };
-
-    // Command line config source
-    class CommandLineConfigSource {
-    public:
-        CommandLineConfigSource(int argc, char* argv[]);
-
-        // Parse command line args to config
-        Result<ConfigNode> Parse();
-
-        // Define expected arguments
-        CommandLineConfigSource& AddOption(
-            std::string_view longName,
-            std::optional<char> shortName,
-            std::string_view configPath,
-            std::string_view description);
-
-        // Generate help text
-        std::string GetHelp() const;
-
-    private:
-        std::vector<std::string> _args;
-        struct Option {
-            std::string longName;
-            std::optional<char> shortName;
-            std::string configPath;
-            std::string description;
-            bool requiresValue = true;
-        };
-        std::vector<Option> _options;
-    };
-
-    // Main configuration manager
-    class ConfigManager {
-    public:
-        ConfigManager();
-
-        // Register config readers
-        void RegisterReader(std::unique_ptr<IConfigReader> reader);
-
-        // Set schema for validation
-        void SetSchema(ConfigSchema schema);
-
-        // Load configuration from various sources
-        Result<void> LoadFromFile(const std::filesystem::path& path,
-                                 ConfigPriority priority = ConfigPriority::File);
-        Result<void> LoadFromEnvironment(const EnvironmentConfigSource& source);
-        Result<void> LoadFromCommandLine(int argc, char* argv[]);
-        Result<void> LoadFromString(std::string_view content, std::string_view format);
-
-        // Multiple config files with override behavior
-        Result<void> LoadConfigFiles(const std::vector<std::filesystem::path>& paths);
-
-        // Watch config file for changes
-        Result<void> WatchFile(const std::filesystem::path& path,
-                              std::function<void(const ConfigNode&)> onChange);
-        void StopWatching(const std::filesystem::path& path);
-
-        // Access configuration
-        template<typename T>
-        std::optional<T> Get(std::string_view path) const {
-            if (auto node = _config.GetNode(path)) {
-                return node->Get<T>();
+            
+            // Merge Loading
+            if (source >= _sources.loading) {
+                bool loadingChanged = false;
+                
+                if (other.loading.HasCustomPreferOwnSymbols()) {
+                    loading.preferOwnSymbols = other.loading.preferOwnSymbols;
+                    loadingChanged = true;
+                }
+                if (other.loading.HasCustomMaxConcurrentLoads()) {
+                    loading.maxConcurrentLoads = other.loading.maxConcurrentLoads;
+                    loadingChanged = true;
+                }
+                if (other.loading.HasCustomLoadTimeout()) {
+                    loading.loadTimeout = other.loading.loadTimeout;
+                    loadingChanged = true;
+                }
+                if (other.loading.HasCustomExportTimeout()) {
+                    loading.exportTimeout = other.loading.exportTimeout;
+                    loadingChanged = true;
+                }
+                if (other.loading.HasCustomStartTimeout()) {
+                    loading.startTimeout = other.loading.startTimeout;
+                    loadingChanged = true;
+                }
+                
+                if (loadingChanged) {
+                    _sources.loading = source;
+                }
             }
-            return std::nullopt;
-        }
-
-        // Set configuration value
-        template<typename T>
-        void Set(std::string_view path, T value, ConfigPriority priority = ConfigPriority::Runtime) {
-            ConfigNode node(ConfigValue(std::move(value)));
-            _config.SetNode(path, std::move(node));
-        }
-
-        // Get with default
-        template<typename T>
-        T GetOr(std::string_view path, T defaultValue) const {
-            return Get<T>(path).value_or(std::move(defaultValue));
-        }
-
-        // Get required value (throws if not found)
-        template<typename T>
-        T GetRequired(std::string_view path) const {
-            auto value = Get<T>(path);
-            if (!value) {
-                throw std::runtime_error(
-                    std::format("Required config value not found: {}", path));
+            
+            // Merge Runtime
+            if (source >= _sources.runtime) {
+                bool runtimeChanged = false;
+                
+                if (other.runtime.HasCustomUpdateMode()) {
+                    runtime.updateMode = other.runtime.updateMode;
+                    runtimeChanged = true;
+                }
+                if (other.runtime.HasCustomUpdateInterval()) {
+                    runtime.updateInterval = other.runtime.updateInterval;
+                    runtimeChanged = true;
+                }
+                if (other.runtime.updateCallback) {
+                    runtime.updateCallback = other.runtime.updateCallback;
+                    runtimeChanged = true;
+                }
+                if (other.runtime.HasCustomPinToMainThread()) {
+                    runtime.pinToMainThread = other.runtime.pinToMainThread;
+                    runtimeChanged = true;
+                }
+                if (other.runtime.HasThreadPriority()) {
+                    runtime.threadPriority = other.runtime.threadPriority;
+                    runtimeChanged = true;
+                }
+                
+                if (runtimeChanged) {
+                    _sources.runtime = source;
+                }
             }
-            return *value;
+            
+            // Merge Security
+            if (source >= _sources.security) {
+                bool securityChanged = false;
+                
+                // For sets, we have different merge strategies
+                if (source == ConfigSource::Override) {
+                    // Override replaces entirely if non-empty
+                    if (other.security.HasWhitelist()) {
+                        security.whitelistedExtensions = other.security.whitelistedExtensions;
+                        securityChanged = true;
+                    }
+                    if (other.security.HasBlacklist()) {
+                        security.blacklistedExtensions = other.security.blacklistedExtensions;
+                        securityChanged = true;
+                    }
+                } else {
+                    // Other sources merge/append
+                    if (other.security.HasWhitelist()) {
+                        security.whitelistedExtensions.insert(
+                            other.security.whitelistedExtensions.begin(),
+                            other.security.whitelistedExtensions.end()
+                        );
+                        securityChanged = true;
+                    }
+                    if (other.security.HasBlacklist()) {
+                        security.blacklistedExtensions.insert(
+                            other.security.blacklistedExtensions.begin(),
+                            other.security.blacklistedExtensions.end()
+                        );
+                        securityChanged = true;
+                    }
+                }
+                
+                if (securityChanged) {
+                    _sources.security = source;
+                }
+            }
+            
+            // Merge Logging
+            if (source >= _sources.logging) {
+                bool loggingChanged = false;
+                
+                if (other.logging.HasCustomSeverity()) {
+                    logging.severity = other.logging.severity;
+                    loggingChanged = true;
+                }
+                if (other.logging.HasCustomPrintReport()) {
+                    logging.printReport = other.logging.printReport;
+                    loggingChanged = true;
+                }
+                if (other.logging.HasCustomPrintLoadOrder()) {
+                    logging.printLoadOrder = other.logging.printLoadOrder;
+                    loggingChanged = true;
+                }
+                if (other.logging.HasCustomPrintDependencyGraph()) {
+                    logging.printDependencyGraph = other.logging.printDependencyGraph;
+                    loggingChanged = true;
+                }
+                if (other.logging.HasCustomPrintDigraphDot()) {
+                    logging.printDigraphDot = other.logging.printDigraphDot;
+                    loggingChanged = true;
+                }
+                if (other.logging.HasExportPath()) {
+                    logging.exportDigraphDot = other.logging.exportDigraphDot;
+                    loggingChanged = true;
+                }
+                
+                if (loggingChanged) {
+                    _sources.logging = source;
+                }
+            }
+            
+            // Always resolve paths after merge
+            paths.ResolveRelativePaths();
         }
 
-        // Check if path exists
-        bool Has(std::string_view path) const {
-            return _config.Has(path);
-        }
-
-        // Export current config
-        Result<void> SaveToFile(const std::filesystem::path& path) const;
-        std::string ToString(std::string_view format = "json") const;
-
-        // Validate current config against schema
-        Result<void> Validate() const;
-
-        // Get interpolated value (resolve ${var} references)
-        template<typename T>
-        std::optional<T> GetInterpolated(std::string_view path) const {
-            auto value = Get<std::string>(path);
-            if (!value) return std::nullopt;
-
-            auto interpolated = InterpolateString(*value);
-            if constexpr (std::is_same_v<T, std::string>) {
-                return interpolated;
-            } else {
-                // Try to convert string to requested type
-                return ConvertString<T>(interpolated);
+        // Alternative merge for selective field updates
+        /*void MergeField(std::string_view fieldPath, const Config& other, ConfigSource source = ConfigSource::Override) {
+            // This allows merging specific fields only
+            if (fieldPath == "paths") {
+                if (source >= _sources.paths) {
+                    paths = other.paths;
+                    _sources.paths = source;
+                    paths.ResolveRelativePaths();
+                }
+            } else if (fieldPath == "loading") {
+                if (source >= _sources.loading) {
+                    loading = other.loading;
+                    _sources.loading = source;
+                }
+            } else if (fieldPath == "runtime") {
+                if (source >= _sources.runtime) {
+                    runtime = other.runtime;
+                    _sources.runtime = source;
+                }
+            } else if (fieldPath == "security") {
+                if (source >= _sources.security) {
+                    security = other.security;
+                    _sources.security = source;
+                }
+            } else if (fieldPath == "logging") {
+                if (source >= _sources.logging) {
+                    logging = other.logging;
+                    _sources.logging = source;
+                }
             }
         }
 
-        // Reload all config files
-        Result<void> Reload();
+        // Get effective source for debugging
+        std::string GetSourceInfo() const {
+            return std::format(
+                "Config sources - Paths: {}, Loading: {}, Runtime: {}, Security: {}, Logging: {}",
+                plg::enum_to_string(_sources.paths),
+                plg::enum_to_string(_sources.loading),
+                plg::enum_to_string(_sources.runtime),
+                plg::enum_to_string(_sources.security),
+                plg::enum_to_string(_sources.logging)
+            );
+        }*/
 
-        // Get config metadata
-        struct Metadata {
-            std::vector<std::filesystem::path> loadedFiles;
-            std::chrono::system_clock::time_point lastReload;
-            bool hasSchema;
-            size_t configNodeCount;
-        };
-        Metadata GetMetadata() const { return _metadata; }
+        // Reset to defaults
+        void Reset() {
+            *this = Config{};
+        }
 
-    private:
-        ConfigNode _config;
-        ConfigSchema _schema;
-        std::vector<std::unique_ptr<IConfigReader>> _readers;
-        std::vector<std::filesystem::path> _loadedFiles;
-        Metadata _metadata;
-
-        std::string InterpolateString(std::string_view str) const;
-
-        template<typename T>
-        std::optional<T> ConvertString(const std::string& str) const;
-
-        // File watching implementation
-        //struct FileWatcher;
-       // std::unique_ptr<FileWatcher> _fileWatcher;
+        // Validation remains the same
+        Result<void> Validate() const {
+            if (paths.baseDir.empty()) {
+                return MakeError2("Base directory not set");
+            }
+            
+            // Check for path collisions
+            using pair = std::pair<std::string_view, const std::filesystem::path*>;
+            std::array pathList = {
+                pair{"extensions", &paths.extensionsDir},
+                pair{"configs", &paths.configsDir},
+                pair{"data", &paths.dataDir},
+                pair{"logs", &paths.logsDir},
+                pair{"cache", &paths.cacheDir}
+            };
+            
+            for (size_t i = 0; i < pathList.size(); ++i) {
+                for (size_t j = i + 1; j < pathList.size(); ++j) {
+                    if (*pathList[i].second == *pathList[j].second) {
+                        return MakeError("{} and {} directories are the same: {}",
+                                      pathList[i].first, 
+                                      pathList[j].first,
+                                      plg::as_string(*pathList[i].second)
+                        );
+                    }
+                }
+            }
+            
+            // Validate runtime config
+            if (runtime.updateMode == UpdateMode::BackgroundThread && 
+                runtime.updateInterval <= std::chrono::milliseconds{0}) {
+                return MakeError2("Invalid update interval for background thread mode");
+            }
+            
+            if (runtime.updateMode == UpdateMode::Callback && !runtime.updateCallback) {
+                return MakeError2("Update callback not set for callback mode");
+            }
+            
+            return {};
+        }
     };
-
-    // Specialized config for Plugify
-    struct PlugifyConfig {
-        // Core settings
-        std::filesystem::path baseDir = std::filesystem::current_path();
-        std::filesystem::path pluginsDir = baseDir / "plugins";
-        std::filesystem::path configsDir = baseDir / "configs";
-        std::filesystem::path dataDir = baseDir / "data";
-        std::filesystem::path logsDir = baseDir / "logs";
-        std::filesystem::path cacheDir = baseDir / "cache";
-
-        // Feature flags
-        bool enableHotReload = false;
-        bool enableSandbox = true;
-        bool enableMetrics = false;
-        bool enableProfiling = false;
-        bool enableAutoUpdate = false;
-
-        // Performance settings
-        size_t maxConcurrentLoads = 4;
-        size_t updateIntervalMs = 16;
-        size_t maxMemoryMB = 512;
-        size_t maxPlugins = 100;
-
-        // Logging settings
-        struct Logging {
-            std::string level = "info";  // verbose, debug, info, warning, error, fatal
-            bool enableConsole = true;
-            bool enableFile = true;
-            std::string fileFormat = "plugify_%Y%m%d.log";
-            size_t maxFileSize = 10 * 1024 * 1024;  // 10MB
-            size_t maxFiles = 5;
-        } logging;
-
-        // Network settings
-        struct Network {
-            bool enableRemotePlugins = false;
-            std::vector<std::string> trustedRepositories;
-            std::string proxyUrl;
-            size_t downloadTimeoutSec = 30;
-        } network;
-
-        // Security settings
-        struct Security {
-            bool requireSignedPlugins = false;
-            std::vector<std::string> allowedPluginPaths;
-            std::vector<std::string> blockedPlugins;
-            size_t maxPluginMemoryMB = 100;
-        } security;
-
-        // Create from ConfigNode
-        static Result<PlugifyConfig> FromConfigNode(const ConfigNode& node);
-
-        // Convert to ConfigNode
-        ConfigNode ToConfigNode() const;
-
-        // Load from file with schema validation
-        static Result<PlugifyConfig> LoadFromFile(const std::filesystem::path& path);
-
-        // Get default schema
-        static ConfigSchema GetSchema();
-
-        // Merge with another config (other takes precedence)
-        void Merge(const PlugifyConfig& other);
-    };
-#endif
 } // namespace plugify

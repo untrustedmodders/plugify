@@ -183,7 +183,7 @@ namespace glz {
     struct from<JSON, std::chrono::duration<R, P>> {
         template <auto Opts>
         static void op(auto&& value, auto&&... args) {
-            R rep;
+            R rep{};
             parse<JSON>::op<Opts>(rep, args...);
             value = std::chrono::duration<R, P>(rep);
         }
@@ -201,7 +201,7 @@ namespace glz {
     struct from<JSON, std::chrono::time_point<C, D>> {
         template <auto Opts>
         static void op(auto&& value, auto&&... args) {
-            D duration;
+            D duration{};
             parse<JSON>::op<Opts>(duration, args...);
             value = std::chrono::time_point<C, D>(duration);
         }
@@ -283,7 +283,7 @@ namespace glz {
         struct from_json<std::chrono::duration<R, P>> {
 	        template <auto Opts>
             static void op(auto&& value, auto&&... args) {
-	            R rep;
+	            R rep{};
 	            parse<JSON>::op<Opts>(rep, args...);
 	            value = std::chrono::duration<R, P>(rep);
 	        }
@@ -301,7 +301,7 @@ namespace glz {
         struct from_json<std::chrono::time_point<C, D>> {
 	        template <auto Opts>
             static void op(auto&& value, auto&&... args) {
-	            D duration;
+	            D duration{};
 	            parse<JSON>::op<Opts>(duration, args...);
 	            value = std::chrono::time_point<C, D>(duration);
 	        }

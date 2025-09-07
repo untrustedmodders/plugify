@@ -23,11 +23,11 @@ struct Extension::Impl {
 
     // Timing
     struct Timings {
-        plg::flat_map<ExtensionState, Duration> timepoints;
-        TimePoint lastOperationStart;
+        plg::flat_map<ExtensionState, std::chrono::milliseconds> timepoints;
+        std::chrono::steady_clock::time_point lastOperationStart;
 
-        Duration GetTotalTime() const {
-            Duration total{};
+        std::chrono::milliseconds GetTotalTime() const {
+            std::chrono::milliseconds total{};
             for (const auto& [_, t] : timepoints) {
                 total += t;
             }
@@ -297,15 +297,15 @@ bool Extension::HasWarnings() const noexcept {
 // Timing/Performance Getters
 // ============================================================================
 
-Duration Extension::GetOperationTime(ExtensionState state) const {
+std::chrono::milliseconds Extension::GetOperationTime(ExtensionState state) const {
     auto it = _impl->timings.timepoints.find(state);
     if (it != _impl->timings.timepoints.end()) {
         return it->second;
     }
-    return Duration{};
+    return std::chrono::milliseconds{};
 }
 
-Duration Extension::GetTotalTime() const {
+std::chrono::milliseconds Extension::GetTotalTime() const {
     return _impl->timings.GetTotalTime();
 }
 
@@ -318,13 +318,13 @@ std::string Extension::GetPerformanceReport() const {
 // ============================================================================
 
 void Extension::StartOperation(ExtensionState newState) {
-    _impl->timings.lastOperationStart = Clock::now();
+    _impl->timings.lastOperationStart = std::chrono::steady_clock::now();
     SetState(newState);
 }
 
 void Extension::EndOperation(ExtensionState newState) {
-    auto duration = std::chrono::duration_cast<Duration>(
-        Clock::now() - _impl->timings.lastOperationStart
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - _impl->timings.lastOperationStart
     );
 
     // Store the time for the operation that just ended (current state)

@@ -101,16 +101,38 @@ if(PLUGIFY_BUILD_OBJECT_LIB)
 endif()
 
 if(PLUGIFY_COMPILER_MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /MP)
+    set(PLUGIFY_COMPILE_OPTIONS /W4 /WX /MP)
 elseif(PLUGIFY_COMPILER_CLANG_CL)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+    set(PLUGIFY_COMPILE_OPTIONS /W4 /WX)
 else(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wshadow -Wconversion)# -Wpedantic -Werror)
+    set(PLUGIFY_COMPILE_OPTIONS -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
 if(LINUX)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
+                -g3 -gdwarf-4 -fno-omit-frame-pointer -fno-inline
+        )
+        if(PLUGIFY_COMPILER_CLANG)
+            set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
+                    -fstandalone-debug -glldb
+            )
+        elseif(PLUGIFY_COMPILER_GCC)
+            set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
+                    -ggdb3
+                    -fno-eliminate-unused-debug-types
+                    -femit-class-debug-always
+                    -fvar-tracking
+                    -fvar-tracking-assignments
+                    -grecord-gcc-switches
+            )
+        endif()
+    endif()
+
     target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
 endif()
+
+target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})
 
 if(PLUGIFY_HAS_LIBCPP)
     target_compile_options(${PROJECT_NAME} PUBLIC -stdlib=libc++)

@@ -15,18 +15,6 @@
 #include <stdexcept>
 #include <vector>
 
-template<typename T>
-std::string join(const T& vec) {
-	std::string result;
-	if (!vec.empty()) {
-		result = std::format("{}", vec[0]);
-		for (auto it = std::next(vec.begin()); it != vec.end(); ++it) {
-			std::format_to(std::back_inserter(result), ", {}", *it);
-		}
-	}
-	return std::format("{{{}}}", result);
-}
-
 template <typename VecA, typename VecB>
 void assert_eq(VecA const& a, VecB const& b) {
 	 if (a.size() != b.size()) {
@@ -34,7 +22,7 @@ void assert_eq(VecA const& a, VecB const& b) {
 	 }
 	 if (!std::equal(a.begin(), a.end(), b.begin(), b.end())) {
 		  throw std::runtime_error(
-				std::format("std::vec content != plg::vec content:\n[{}]\n[{}]", join(a), join(b)));
+				std::format("std::vec content != plg::vec content:\n[{{{}}}]\n[{{{}}}]", /*plg::join(a, ", "), plg::join(b, ", ")*/ "array1", "array2"));
 	 }
 }
 

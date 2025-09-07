@@ -15,6 +15,6 @@ namespace plugify {
         //virtual void OnDisable(Extension& extension) = 0;
         virtual void OnStart(Extension& extension) = 0;
         virtual void OnEnd(Extension& extension) = 0;
-        virtual void OnUpdate(Extension& extension, Duration deltaTime) = 0;
+        virtual void OnUpdate(Extension& extension, std::chrono::milliseconds deltaTime) = 0;
     };
 }

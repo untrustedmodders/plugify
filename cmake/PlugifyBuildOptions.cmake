@@ -11,6 +11,7 @@ option(PLUGIFY_USE_ABI0 "Enable use of the older C++ ABI, which was the default 
 # ------------------------------------------------------------------------------
 # Compilation options
 option(PLUGIFY_BUILD_TESTS "Enable building tests." ON)
+option(PLUGIFY_BUILD_CRASHPAD "Build with crashpad library." OFF)
 option(PLUGIFY_BUILD_DOCS "Enable building with documentation." OFF)
 
 option(PLUGIFY_BUILD_OBJECT_LIB "Build plugify as object library." OFF)
@@ -30,6 +31,14 @@ set(PLUGIFY_ASMJIT_REPO "https://github.com/asmjit/asmjit.git" CACHE STRING "")
 set(PLUGIFY_ASMJIT_TAG "7596c6d035c27c9e5faad445f3214f2c971b2f2b" CACHE STRING "")
 set(PLUGIFY_FMT_REPO "https://github.com/fmtlib/fmt.git" CACHE STRING "")
 set(PLUGIFY_FMT_TAG "10.2.1" CACHE STRING "")
+set(PLUGIFY_CRASHPAD_REPO "https://github.com/TheAssemblyArmada/crashpad-cmake.git" CACHE STRING "")
+set(PLUGIFY_CRASHPAD_TAG "80573adcc845071401c73c99eaec7fd9847d45fb" CACHE STRING "")
+set(PLUGIFY_CATCH2_REPO "https://github.com/catchorg/Catch2.git" CACHE STRING "")
+set(PLUGIFY_CATCH2_TAG "v3.4.0" CACHE STRING "")
+set(PLUGIFY_CATCH2_REPO "https://github.com/catchorg/Catch2.git" CACHE STRING "")
+set(PLUGIFY_CATCH2_TAG "v3.4.0" CACHE STRING "")
+set(PLUGIFY_CLI_REPO "https://github.com/CLIUtils/CLI11.git" CACHE STRING "")
+set(PLUGIFY_CLI_TAG "v2.5.0" CACHE STRING "")
 set(PLUGIFY_GLAZE_REPO "https://github.com/stephenberry/glaze.git" CACHE STRING "")
 if (PLUGIFY_DEFAULT_CXX_STANDARD GREATER 20)
     set(PLUGIFY_GLAZE_TAG "v5.5.5" CACHE STRING "")
