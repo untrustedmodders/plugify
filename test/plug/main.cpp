@@ -421,11 +421,12 @@ public:
             throw std::runtime_error("Failed to initialize Plugify");
         }
         const auto& manager = plug->GetManager();
-        if (auto initResult = manager.Initialize(); !initResult) {
+        if (auto initResult = manager.Initialize()) {
+            PLG_COUT("Plugin system initialized.");
+        } else {
             PLG_CERR(initResult.error());
             throw std::runtime_error("Failed to initialize Manager");
         }
-        PLG_COUT("Plugin system initialized.");
     }
 
     void Terminate() {
@@ -458,11 +459,11 @@ public:
         if (manager.IsInitialized()) {
             PLG_CERR("Plugin manager already loaded.");
         } else {
-            if (auto initResult = manager.Initialize(); !initResult) {
+            if (auto initResult = manager.Initialize()) {
+                PLG_COUT("Plugin manager was loaded.");
+            } else {
                 PLG_CERR(initResult.error());
-                return;
             }
-            PLG_COUT("Plugin manager was loaded.");
         }
     }
 
@@ -490,11 +491,11 @@ public:
             PLG_CERR("Plugin manager not loaded.");
         } else {
             manager.Terminate();
-            if (auto initResult = manager.Initialize(); !initResult) {
+            if (auto initResult = manager.Initialize()) {
+                PLG_COUT("Plugin manager was reloaded.");
+            } else {
                 PLG_CERR(initResult.error());
-                return;
             }
-            PLG_COUT("Plugin manager was reloaded.");
         }
     }
 

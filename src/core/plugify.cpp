@@ -43,6 +43,9 @@ struct Plugify::Impl {
         logger = services.Resolve<ILogger>();
         eventBus = services.Resolve<IEventBus>();
         fileSystem = services.Resolve<IFileSystem>();
+
+        // Set default logging level
+        logger->SetLogLevel(config.logging.severity);
     }
 
     ~Impl() {

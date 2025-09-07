@@ -51,7 +51,9 @@ namespace {
         }
 
         if (enumObj.values.empty()) {
-            return std::format("Enum '{}' must have at least one value", enumObj.name);
+            // TODO: add ref system to enum and prototype to allow easy dublication similar to schema $ref
+            return std::nullopt;
+            //return std::format("Enum '{}' must have at least one value", enumObj.name);
         }
 
         std::unordered_set<std::string> valueNames;
@@ -135,12 +137,14 @@ namespace {
             return std::format("{}: invalid name '{}'", prefix, method.name);
         }
 
-        if (method.funcName.empty()) {
-            return std::format("{} '{}': funcName cannot be empty", prefix, method.name);
-        }
+        if (context.empty()) {
+            if (method.funcName.empty()) {
+                return std::format("{} '{}': funcName cannot be empty", prefix, method.name);
+            }
 
-        if (!IsValidName(method.funcName)) {
-            return std::format("{} '{}': invalid funcName '{}'", prefix, method.name, method.funcName);
+            if (!IsValidName(method.funcName)) {
+                return std::format("{} '{}': invalid funcName '{}'", prefix, method.name, method.funcName);
+            }
         }
 
         // Validate varIndex

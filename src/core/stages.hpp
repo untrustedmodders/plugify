@@ -66,10 +66,10 @@ namespace plugify {
     public:
         StageType GetType() const override { return StageType::Barrier; }
 
-        // Process all items, return new container
-        // This allows the stage to reorder, filter, or even add items
-        virtual Result<std::vector<T>> ProcessAll(
-            std::vector<T> items,
+        // Process all items
+        // This allows the stage to reorder, filter, or add/remove items
+        virtual Result<void> ProcessAll(
+            std::vector<T>& items,
             const ExecutionContext<T>& ctx
         ) = 0;
     };

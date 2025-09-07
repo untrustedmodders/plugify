@@ -69,8 +69,9 @@ public:
         } else if (initialExtensions->empty()) {
             return MakeError2("No extensions found");
         }
+        extensions = std::move(*initialExtensions);
 
-        FailureTracker failureTracker(initialExtensions->size());
+        FailureTracker failureTracker(extensions.size());
         
         auto pipeline = Pipeline<Extension>::Create()
             .AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
@@ -84,15 +85,13 @@ public:
             .WithThreadPoolSize(config.loading.maxConcurrentLoads)
             .Build();
 
-        auto [finalExtensions, report] = pipeline->Execute(std::move(*initialExtensions));
+        auto report = pipeline->Execute(extensions);
 
         // compute total failed items across stages
         size_t totalFailed = 0;
         for (auto const& [name, stats] : report.stages) {
             totalFailed += stats.failed;
         }
-
-        extensions = std::move(finalExtensions);
 
         // Print reports if configured
         if (config.logging.printReport) {

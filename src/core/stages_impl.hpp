@@ -79,37 +79,36 @@ namespace plugify {
             return "Resolution";
         }
 
-        Result<std::vector<Extension>> ProcessAll(
-            std::vector<Extension> items,
+        Result<void> ProcessAll(
+            std::vector<Extension>& items,
             [[maybe_unused]] const ExecutionContext<Extension>& ctx
         ) override {
             auto [filtered, excluded] = FilterByPolicy(items);
 
             if (filtered.empty()) {
-                return MakeError(
-                    "No valid extensions to resolve: {} total, {} excluded by policy",
-                    items.size(),
-                    excluded.size()
-                );
+                return RestoreResult("No valid extensions to resolve", items, filtered, excluded);
             }
 
             AddLanguageDependencies(filtered);
 
             auto report = _resolver->Resolve(filtered);
 
-            if (!report.isLoadOrderValid) {
-                return MakeError2("No valid loading order");
+            if (report.isLoadOrderValid) {
+                return RestoreResult("No valid loading order", items, filtered, excluded);
             }
 
             if (report.loadOrder.empty()) {
-                return MakeError(
-                    "No valid extensions to load: {} total, {} filtered by resolver",
-                    items.size(),
-                    filtered.size()
-                );
+                return RestoreResult("No valid extensions to load", items, filtered, excluded);
             }
 
-            return BuildResultInOrder(report, filtered, excluded);
+            BuildResultInOrder(items, filtered, excluded, report);
+
+            // Store dependency graphs
+            *_depGraph = std::move(report.dependencyGraph);
+            *_reverseDepGraph = std::move(report.reverseDependencyGraph);
+            *_loadOrder = std::move(report.loadOrder);
+
+            return {};
         }
 
     private:
@@ -143,7 +142,7 @@ namespace plugify {
                 }
 
                 // Check platform
-                if (include && IsSupportsPlatform(ext.GetPlatforms())) {
+                if (include && !IsSupportsPlatform(ext.GetPlatforms())) {
                     include = false;
                 }
 
@@ -159,11 +158,13 @@ namespace plugify {
                 }
             }
 
+            items.clear();
+
             return { std::move(filtered), std::move(excluded) };
         }
 
         // Build language registry and add language dependencies
-        void AddLanguageDependencies(std::vector<Extension>& items) const {
+        static void AddLanguageDependencies(std::vector<Extension>& items) {
             plg::flat_map<std::string_view, UniqueId> languages;
 
             for (const auto& ext : items) {
@@ -185,23 +186,45 @@ namespace plugify {
             }
         }
 
-        std::vector<Extension> BuildResultInOrder(
-            ResolutionReport& report,
+        static Result<void> RestoreResult(
+            std::string_view error,
+            std::vector<Extension>& items,
             std::vector<Extension>& filtered,
             std::vector<Extension>& excluded
-        ) const {
+        ) {
+            items.insert(
+                items.end(),
+                std::make_move_iterator(filtered.begin()),
+                std::make_move_iterator(filtered.end())
+            );
+            items.insert(
+                items.end(),
+                std::make_move_iterator(excluded.begin()),
+                std::make_move_iterator(excluded.end())
+            );
+            return MakeError(
+                "{}: {} filtered, {} excluded by resolver",
+                error,
+                filtered.size(),
+                excluded.size()
+            );
+        }
+
+         static void BuildResultInOrder(
+            std::vector<Extension>& result,
+            std::vector<Extension>& filtered,
+            std::vector<Extension>& excluded,
+            const ResolutionReport& report
+        ) {
             std::unordered_map<UniqueId, Extension> idToExtension;
-            idToExtension.reserve(idToExtension.size());
+            idToExtension.reserve(filtered.size());
 
             for (auto&& ext : filtered) {
                 idToExtension.emplace(ext.GetId(), std::move(ext));
             }
 
-            std::vector<Extension> result;
-            result.reserve(report.loadOrder.size() + excluded.size());
-
             // Add resolved extensions in load order
-            for (auto id : report.loadOrder) {
+            for (const auto& id : report.loadOrder) {
                 if (auto it = idToExtension.find(id); it != idToExtension.end()) {
                     auto& ext = it->second;
                     ext.SetState(ExtensionState::Resolved);
@@ -235,13 +258,6 @@ namespace plugify {
                 std::make_move_iterator(excluded.begin()),
                 std::make_move_iterator(excluded.end())
             );
-
-            // Store dependency graphs
-            *_depGraph = std::move(report.dependencyGraph);
-            *_reverseDepGraph = std::move(report.reverseDependencyGraph);
-            *_loadOrder = std::move(report.loadOrder);
-
-            return result;
         }
 
         static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {

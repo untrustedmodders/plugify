@@ -114,7 +114,7 @@ namespace plugify {
 
     public:
         // Execute pipeline - container is modified in place
-        std::pair<std::vector<T>, Report> Execute(std::vector<T> items) {
+        Report Execute(std::vector<T>& items) {
             Report report;
             report.stages.reserve(_stages.size());
             report.initialItems = items.size();
@@ -144,7 +144,7 @@ namespace plugify {
                 Clock::now() - pipelineStart
             );
 
-            return {std::move(items), std::move(report)};
+            return report;
         }
 
     private:
@@ -206,8 +206,7 @@ namespace plugify {
                         return;
                     }
 
-                    auto result = stage->ProcessItem(item, ctx);
-                    if (result) {
+                    if (auto result = stage->ProcessItem(item, ctx)) {
                         succeeded.fetch_add(1, std::memory_order_relaxed);
                     } else {
                         failed.fetch_add(1, std::memory_order_relaxed);
@@ -234,10 +233,7 @@ namespace plugify {
             size_t originalSize = items.size();
 
             // Process all items together
-            auto result = stage->ProcessAll(std::move(items), ctx);
-            if (result) {
-                // Replace container with processed result
-                items = std::move(*result);
+            if (auto result = stage->ProcessAll(items, ctx)) {
                 stats.succeeded = originalSize;
                 stats.failed = 0;
             } else {
@@ -268,8 +264,7 @@ namespace plugify {
                     break;
                 }
 
-                auto result = stage->ProcessItem(item, i, total, ctx);
-                if (result) {
+                if (auto result = stage->ProcessItem(item, i, total, ctx)) {
                     ++stats.succeeded;
                 } else {
                     ++stats.failed;
