@@ -242,8 +242,9 @@ namespace glz {
 			std::string str;
 			parse<JSON>::op<Opts>(str, ctx, it, end);
             if (auto result = plg::parse(str, value); !result) {
-                ctx.error = error_code::parse_error;
-                ctx.custom_error_message = plg::enum_to_string(result.ec);
+                ctx.error = error_code::includer_error;
+                ctx.includer_error = plg::enum_to_string(result.ec);
+                ctx.custom_error_message = "Failed to parse semver string";
             }
         }
 	};
@@ -264,8 +265,9 @@ namespace glz {
             std::string str;
             parse<JSON>::op<Opts>(str, ctx, it, end);
             if (auto result = plg::parse(str, value); !result) {
-                ctx.error = error_code::parse_error;
-	            ctx.custom_error_message = plg::enum_to_string(result.ec);
+                ctx.error = error_code::includer_error;
+	            ctx.includer_error = plg::enum_to_string(result.ec);
+                ctx.custom_error_message = "Failed to parse semver string";
 	        }
 	    }
 	};
@@ -284,15 +286,15 @@ namespace glz {
 	        template <auto Opts>
             static void op(auto&& value, auto&&... args) {
 	            R rep{};
-	            parse<JSON>::op<Opts>(rep, args...);
+                read<json>::op<Opts>(rep, args...);
 	            value = std::chrono::duration<R, P>(rep);
 	        }
 	    };
 	    template <class R, class P>
-        struct from_json<std::chrono::duration<R, P>> {
+        struct to_json<std::chrono::duration<R, P>> {
 	        template <auto Opts>
             static void op(auto&& value, auto&&... args) noexcept {
-	            serialize<JSON>::op<Opts>(value.count(), args...);
+	            write<json>::op<Opts>(value.count(), args...);
 	        }
 	    };
 
@@ -302,15 +304,15 @@ namespace glz {
 	        template <auto Opts>
             static void op(auto&& value, auto&&... args) {
 	            D duration{};
-	            parse<JSON>::op<Opts>(duration, args...);
+                read<json>::op<Opts>(duration, args...);
 	            value = std::chrono::time_point<C, D>(duration);
 	        }
 	    };
 	    template <class C, class D>
-        struct from_json<std::chrono::time_point<C, D>> {
+        struct to_json<std::chrono::time_point<C, D>> {
 	        template <auto Opts>
             static void op(auto&& value, auto&&... args) noexcept {
-	            serialize<JSON>::op<Opts>(value.time_since_epoch(), args...);
+	            write<json>::op<Opts>(value.time_since_epoch(), args...);
 	        }
 	    };
 
@@ -339,10 +341,10 @@ namespace glz {
 	        template <auto Opts>
             static void op(plugify::Version& value, is_context auto&& ctx, auto&& it, auto&& end) {
 	            std::string str;
-	            parse<JSON>::op<Opts>(str, ctx, it, end);
+	            read<json>::op<Opts>(str, ctx, it, end);
 	            if (auto result = plg::parse(str, value); !result) {
-                    ctx.error = error_code::parse_error;
-	                ctx.custom_error_message = plg::enum_to_string(result.ec);
+                    ctx.error = error_code::includer_error;
+	                ctx.includer_error = plg::enum_to_string(result.ec);
 	            }
 	        }
 	    };
@@ -351,7 +353,7 @@ namespace glz {
         struct to_json<plugify::Version> {
 	        template <auto Opts>
             static void op(const plugify::Version& value, auto&&... args) noexcept {
-	            serialize<JSON>::op<Opts>(value.to_string(), args...);
+                write<json>::op<Opts>(value.to_string(), args...);
 	        }
 	    };
 
@@ -360,10 +362,10 @@ namespace glz {
 		    template <auto Opts>
 		    static void op(plugify::Constraint& value, is_context auto&& ctx, auto&& it, auto&& end) {
 		        std::string str;
-		        parse<JSON>::op<Opts>(str, ctx, it, end);
+                read<json>::op<Opts>(str, ctx, it, end);
 		        if (auto result = plg::parse(str, value); !result) {
-                    ctx.error = error_code::parse_error;
-		            ctx.custom_error_message = plg::enum_to_string(result.ec);
+                    ctx.error = error_code::includer_error;
+		            ctx.includer_error = plg::enum_to_string(result.ec);
 		        }
 		    }
 		};

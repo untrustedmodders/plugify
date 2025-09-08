@@ -262,7 +262,7 @@ namespace plugify {
 
         static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
             return supportedPlatforms.empty() || std::any_of(supportedPlatforms.begin(), supportedPlatforms.end(), [](const std::string& platform) {
-                return platform.contains(PLUGIFY_PLATFORM);
+                return platform == PLUGIFY_PLATFORM;
             });
         }
     };

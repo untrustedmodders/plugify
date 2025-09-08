@@ -30,20 +30,11 @@ namespace plg {
 using namespace plugify;
 
 namespace {
-    UniqueId FormatId(std::string_view str) {
-        UniqueId::Value result;
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+    constexpr std::string_view SEPARATOR_LINE = "--------------------------------------------------------------------------------";
+    constexpr std::string_view DOUBLE_LINE = "================================================================================";
 
-        if (ec != std::errc{}) {
-            plg::print("Error: {}", std::make_error_code(ec).message());
-            return {};
-        } else if (ptr != str.data() + str.size()) {
-            plg::print("Invalid argument: trailing characters after the valid part");
-            return {};
-        }
-
-        return UniqueId{result};
-    }
+    enum class LookupMethod { ByName, ById };
+    enum class OutputFormat { Console, Json };
 
     // ANSI Color codes
     struct Colors {
@@ -225,6 +216,83 @@ namespace {
     // Sort options
     enum class SortBy { Name, Version, State, Language, LoadTime };
 
+    // Helper function to parse comma-separated values
+    std::vector<std::string> ParseCsv(const std::string& str)  {
+        std::vector<std::string> result;
+        std::stringstream ss(str);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            // Trim whitespace
+            item.erase(0, item.find_first_not_of(" \t"));
+            item.erase(item.find_last_not_of(" \t") + 1);
+            if (!item.empty()) {
+                result.push_back(item);
+            }
+        }
+        return result;
+    };
+    
+    // Helper to parse sort option
+    SortBy ParseSortBy(std::string_view str) {
+        if (str == "name") {
+            return SortBy::Name;
+        }
+        if (str == "version") {
+            return SortBy::Version;
+        }
+        if (str == "state") {
+            return SortBy::State;
+        }
+        if (str == "language") {
+            return SortBy::Language;
+        }
+        if (str == "loadtime") {
+            return SortBy::LoadTime;
+        }
+        return SortBy::Name;
+    };
+    
+    // Helper to parse state filter
+    std::vector<ExtensionState> ParseStates(const std::vector<std::string>& strs)  {
+        std::vector<ExtensionState> states;
+        states.reserve(strs.size());
+        for (const auto& str : strs) {
+            std::string lower = str;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+            if (lower == "loaded") {
+                states.push_back(ExtensionState::Loaded);
+            } else if (lower == "started") {
+                states.push_back(ExtensionState::Started);
+            } else if (lower == "failed") {
+                states.push_back(ExtensionState::Failed);
+            } else if (lower == "disabled") {
+                states.push_back(ExtensionState::Disabled);
+            } else if (lower == "corrupted") {
+                states.push_back(ExtensionState::Corrupted);
+            } else if (lower == "unresolved") {
+                states.push_back(ExtensionState::Unresolved);
+            }
+            // Add more as needed
+        }
+        return states;
+    };
+
+    UniqueId FormatId(std::string_view str) {
+        UniqueId::Value result;
+        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+
+        if (ec != std::errc{}) {
+            plg::print("Error: {}", std::make_error_code(ec).message());
+            return {};
+        } else if (ptr != str.data() + str.size()) {
+            plg::print("Invalid argument: trailing characters after the valid part");
+            return {};
+        }
+
+        return UniqueId{result};
+    }
+
     // Helper to check if extension matches filter
     bool MatchesFilter(const Extension* ext, const FilterOptions& filter) {
         if (filter.showOnlyFailed && ext->GetState() != ExtensionState::Failed) {
@@ -278,7 +346,7 @@ namespace {
         j["type"] = ext->IsPlugin() ? "plugin" : "module";
         j["state"] = plg::enum_to_string(ext->GetState());
         j["language"] = ext->GetLanguage();
-        j["location"] = ext->GetLocation().string();
+        j["location"] = plg::as_string(ext->GetLocation());
 
         if (!ext->GetDescription().empty()) {
             j["description"] = ext->GetDescription();
@@ -325,6 +393,48 @@ namespace {
         }
 
         return j;
+    }
+
+    // Filter extensions based on criteria
+    static std::vector<const Extension*> FilterExtensions(const std::vector<const Extension*>& extensions, const FilterOptions& filter)
+    {
+        std::vector<const Extension*> result;
+
+        for (const auto& ext : extensions) {
+            if (!MatchesFilter(ext, filter)) {
+                continue;
+            }
+            result.push_back(ext);
+        }
+
+        return result;
+    }
+
+    // Sort extensions
+    void SortExtensions(std::vector<const Extension*>& extensions, SortBy sortBy, bool reverse = false)
+    {
+        std::sort(extensions.begin(), extensions.end(), [sortBy, reverse](const Extension* a, const Extension* b) {
+            bool result = false;
+            switch (sortBy) {
+                case SortBy::Name:
+                    result = a->GetName() < b->GetName();
+                    break;
+                case SortBy::Version:
+                    result = a->GetVersion() < b->GetVersion();
+                    break;
+                case SortBy::State:
+                    result = a->GetState() < b->GetState();
+                    break;
+                case SortBy::Language:
+                    result = a->GetLanguage() < b->GetLanguage();
+                    break;
+                case SortBy::LoadTime:
+                    result = a->GetOperationTime(ExtensionState::Loaded)
+                             < b->GetOperationTime(ExtensionState::Loaded);
+                    break;
+            }
+            return reverse ? !result : result;
+        });
     }
 
     // Dependency tree builder
@@ -552,36 +662,8 @@ public:
         auto plugins = manager.GetExtensionsByType(ExtensionType::Plugin);
 
         // Apply filters
-        std::vector<const Extension*> filtered;
-        for (const auto& plugin : plugins) {
-            if (MatchesFilter(plugin, filter)) {
-                filtered.push_back(plugin);
-            }
-        }
-
-        // Sort
-        std::ranges::sort(filtered, [sortBy, reverseSort](const Extension* a, const Extension* b) {
-            bool result = false;
-            switch (sortBy) {
-                case SortBy::Name:
-                    result = a->GetName() < b->GetName();
-                    break;
-                case SortBy::Version:
-                    result = a->GetVersion() < b->GetVersion();
-                    break;
-                case SortBy::State:
-                    result = a->GetState() < b->GetState();
-                    break;
-                case SortBy::Language:
-                    result = a->GetLanguage() < b->GetLanguage();
-                    break;
-                case SortBy::LoadTime:
-                    result = a->GetOperationTime(ExtensionState::Loaded)
-                             < b->GetOperationTime(ExtensionState::Loaded);
-                    break;
-            }
-            return reverseSort ? !result : result;
-        });
+        auto filtered = FilterExtensions(plugins, filter);
+        SortExtensions(filtered, sortBy, reverseSort);
 
         // Output
         if (jsonOutput) {
@@ -603,7 +685,7 @@ public:
             "{}:",
             Colorize(std::format("Listing {} plugin{}", count, (count > 1) ? "s" : ""), Colors::BOLD)
         );
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
 
         // Header
         plg::print(
@@ -615,14 +697,14 @@ public:
             Colorize(std::format("{:<8}", "Lang"), Colors::GRAY),
             Colorize(std::format("{:<12}", "Load Time"), Colors::GRAY)
         );
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
 
         size_t index = 1;
         for (const auto& plugin : filtered) {
             auto state = plugin->GetState();
             auto stateStr = plg::enum_to_string(state);
             auto [symbol, color] = GetStateInfo(state);
-            auto name = !plugin->GetName().empty() ? plugin->GetName() : plugin->GetLocation().filename().string();
+            const auto& name = !plugin->GetName().empty() ? plugin->GetName() : plg::as_string(plugin->GetLocation().filename());
 
             // Get load time if available
             std::string loadTime = "N/A";
@@ -656,7 +738,7 @@ public:
                 }
             }
         }
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
 
         // Summary
         if (filter.states.has_value() || filter.languages.has_value()
@@ -685,36 +767,8 @@ public:
         auto modules = manager.GetExtensionsByType(ExtensionType::Module);
 
         // Apply filters
-        std::vector<const Extension*> filtered;
-        for (const auto& module : modules) {
-            if (MatchesFilter(module, filter)) {
-                filtered.push_back(module);
-            }
-        }
-
-        // Sort
-        std::ranges::sort(filtered, [sortBy, reverseSort](const Extension* a, const Extension* b) {
-            bool result = false;
-            switch (sortBy) {
-                case SortBy::Name:
-                    result = a->GetName() < b->GetName();
-                    break;
-                case SortBy::Version:
-                    result = a->GetVersion() < b->GetVersion();
-                    break;
-                case SortBy::State:
-                    result = a->GetState() < b->GetState();
-                    break;
-                case SortBy::Language:
-                    result = a->GetLanguage() < b->GetLanguage();
-                    break;
-                case SortBy::LoadTime:
-                    result = a->GetOperationTime(ExtensionState::Loaded)
-                             < b->GetOperationTime(ExtensionState::Loaded);
-                    break;
-            }
-            return reverseSort ? !result : result;
-        });
+        auto filtered = FilterExtensions(modules, filter);
+        SortExtensions(filtered, sortBy, reverseSort);
 
         // Output
         if (jsonOutput) {
@@ -736,7 +790,7 @@ public:
             "{}:",
             Colorize(std::format("Listing {} module{}", count, (count > 1) ? "s" : ""), Colors::BOLD)
         );
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
 
         // Header
         plg::print(
@@ -748,7 +802,7 @@ public:
             Colorize(std::format("{:<8}", "Lang"), Colors::GRAY),
             Colorize(std::format("{:<12}", "Load Time"), Colors::GRAY)
         );
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
 
         size_t index = 1;
         for (const auto& module : filtered) {
@@ -789,7 +843,7 @@ public:
                 }
             }
         }
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
 
         // Summary
         if (filter.states.has_value() || filter.languages.has_value()
@@ -804,54 +858,57 @@ public:
         }
     }
 
-    void ShowPlugin(std::string_view name, bool useId = false, bool jsonOutput = false) {
+    void ShowPlugin(std::string_view identifier,
+                    LookupMethod method = LookupMethod::ByName,
+                    OutputFormat format = OutputFormat::Console
+    ) {
         if (!CheckManager()) {
             return;
         }
 
         const auto& manager = plug->GetManager();
-        auto plugin = useId ? manager.FindExtension(FormatId(name)) : manager.FindExtension(name);
+        auto plugin = method == LookupMethod::ById ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
 
         if (!plugin) {
-            if (jsonOutput) {
+            if (format == OutputFormat::Json) {
                 glz::json_t error;
-                error["error"] = std::format("Plugin {} not found", name);
+                error["error"] = std::format("Plugin {} not found", identifier);
                 plg::print(*error.dump());
             } else {
-                plg::print("{}: Plugin {} not found.", Colorize("Error", Colors::RED), name);
+                plg::print("{}: Plugin {} not found.", Colorize("Error", Colors::RED), identifier);
             }
             return;
         }
 
         if (!plugin->IsPlugin()) {
-            if (jsonOutput) {
+            if (format == OutputFormat::Json) {
                 glz::json_t error;
-                error["error"] = std::format("'{}' is not a plugin (it's a module)", name);
+                error["error"] = std::format("'{}' is not a plugin (it's a module)", identifier);
                 plg::print(*error.dump());
             } else {
                 plg::print(
                     "{}: '{}' is not a plugin (it's a module).",
                     Colorize("Error", Colors::RED),
-                    name
+                    identifier
                 );
             }
             return;
         }
 
         // JSON output
-        if (jsonOutput) {
+        if (format == OutputFormat::Json) {
             plg::print(*ExtensionToJson(plugin).dump());
             return;
         }
 
         // Display detailed plugin information with colors
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
         plg::print(
             "{}: {}",
             Colorize("PLUGIN INFORMATION", Colors::BOLD),
             Colorize(plugin->GetName(), Colors::CYAN)
         );
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
 
         // Status indicator
         auto [symbol, stateColor] = GetStateInfo(plugin->GetState());
@@ -872,7 +929,7 @@ public:
             Colorize(plugin->GetVersionString(), Colors::GREEN)
         );
         plg::print("  {:<15} {}", Colorize("Language:", Colors::GRAY), plugin->GetLanguage());
-        plg::print("  {:<15} {}", Colorize("Location:", Colors::GRAY), plugin->GetLocation().string());
+        plg::print("  {:<15} {}", Colorize("Location:", Colors::GRAY), plg::as_string(plugin->GetLocation()));
         plg::print(
             "  {:<15} {}",
             Colorize("File Size:", Colors::GRAY),
@@ -1052,57 +1109,60 @@ public:
             );
         }
 
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
     }
 
-    void ShowModule(std::string_view name, bool useId = false, bool jsonOutput = false) {
+    void ShowModule(std::string_view identifier,
+                    LookupMethod method = LookupMethod::ByName,
+                    OutputFormat format = OutputFormat::Console
+    ) {
         if (!CheckManager()) {
             return;
         }
 
         const auto& manager = plug->GetManager();
-        auto module = useId ? manager.FindExtension(FormatId(name)) : manager.FindExtension(name);
+        auto module = method == LookupMethod::ById ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
 
         if (!module) {
-            if (jsonOutput) {
+            if (format == OutputFormat::Json) {
                 glz::json_t error;
-                error["error"] = std::format("Module {} not found", name);
+                error["error"] = std::format("Module {} not found", identifier);
                 plg::print(*error.dump());
             } else {
-                plg::print("{}: Module {} not found.", Colorize("Error", Colors::RED), name);
+                plg::print("{}: Module {} not found.", Colorize("Error", Colors::RED), identifier);
             }
             return;
         }
 
         if (!module->IsModule()) {
-            if (jsonOutput) {
+            if (format == OutputFormat::Json) {
                 glz::json_t error;
-                error["error"] = std::format("'{}' is not a module (it's a plugin)", name);
+                error["error"] = std::format("'{}' is not a module (it's a plugin)", identifier);
                 plg::print(*error.dump());
             } else {
                 plg::print(
                     "{}: '{}' is not a module (it's a plugin).",
                     Colorize("Error", Colors::RED),
-                    name
+                    identifier
                 );
             }
             return;
         }
 
         // JSON output
-        if (jsonOutput) {
+        if (format == OutputFormat::Json) {
             plg::print(*ExtensionToJson(module).dump());
             return;
         }
 
         // Display detailed module information with colors
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
         plg::print(
             "{}: {}",
             Colorize("MODULE INFORMATION", Colors::BOLD),
             Colorize(module->GetName(), Colors::MAGENTA)
         );
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
 
         // Status indicator
         auto [symbol, stateColor] = GetStateInfo(module->GetState());
@@ -1123,7 +1183,7 @@ public:
             Colorize(module->GetVersionString(), Colors::GREEN)
         );
         plg::print("  {:<15} {}", Colorize("Language:", Colors::GRAY), module->GetLanguage());
-        plg::print("  {:<15} {}", Colorize("Location:", Colors::GRAY), module->GetLocation().string());
+        plg::print("  {:<15} {}", Colorize("Location:", Colors::GRAY), plg::as_string(module->GetLocation()));
         plg::print(
             "  {:<15} {}",
             Colorize("File Size:", Colors::GRAY),
@@ -1166,7 +1226,7 @@ public:
             plg::print(
                 "  {:<15} {}",
                 Colorize("Runtime:", Colors::GRAY),
-                Colorize(module->GetRuntime().string(), Colors::YELLOW)
+                Colorize(plg::as_string(module->GetRuntime()), Colors::YELLOW)
             );
         }
 
@@ -1184,7 +1244,7 @@ public:
                 plg::print(
                     "  {} {}",
                     exists ? Colorize(Icons.Ok, Colors::GREEN) : Colorize(Icons.Fail, Colors::RED),
-                    dirs[i].string()
+                    plg::as_string(dirs[i])
                 );
             }
             if (dirs.size() > 5) {
@@ -1302,7 +1362,7 @@ public:
             );
         }
 
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
     }
 
     void ShowHealth() {
@@ -1324,9 +1384,9 @@ public:
             status = "WARNING";
         }
 
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
         plg::print(Colorize("SYSTEM HEALTH CHECK", Colors::BOLD));
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
 
         // Overall score
         plg::print(
@@ -1386,7 +1446,7 @@ public:
             }
         }
 
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
     }
 
     void ShowDependencyTree(std::string_view name, bool useId = false) {
@@ -1402,9 +1462,9 @@ public:
             return;
         }
 
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
         plg::print("{}: {}", Colorize("DEPENDENCY TREE", Colors::BOLD), ext->GetName());
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
         plg::print("");
 
         PrintDependencyTree(ext, manager);
@@ -1431,7 +1491,7 @@ public:
             plg::print("  {}", Colorize("None", Colors::GRAY));
         }
 
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
     }
 
     void SearchExtensions(std::string_view query) {
@@ -1473,7 +1533,7 @@ public:
             matches.size() > 1 ? "es" : "",
             query
         );
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
 
         for (const auto& ext : matches) {
             auto [symbol, color] = GetStateInfo(ext->GetState());
@@ -1490,12 +1550,12 @@ public:
                 plg::print("  {}", Truncate(ext->GetDescription(), 70));
             }
         }
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
     }
 
     void ValidateExtension(const std::filesystem::path& path) {
-        plg::print("{}: {}", Colorize("VALIDATING", Colors::BOLD), path.string());
-        plg::print(std::string(80, '-'));
+        plg::print("{}: {}", Colorize("VALIDATING", Colors::BOLD), plg::as_string(path));
+        plg::print(SEPARATOR_LINE);
 
         // Check if file exists
         if (!std::filesystem::exists(path)) {
@@ -1504,7 +1564,7 @@ public:
         }
 
         // Check file extension
-        auto fileExt = path.extension().string();
+        const auto& fileExt = plg::as_string(path.extension());
         bool isPlugin = (fileExt == ".plg" || fileExt == ".pplugin");
         bool isModule = (fileExt == ".mod" || fileExt == ".pmodule");
 
@@ -1528,7 +1588,7 @@ public:
                     "Would parse and validate manifest here");*/
         // TODO
 
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
         plg::print("{}: Validation complete", Colorize("RESULT", Colors::BOLD));
     }
 
@@ -1550,9 +1610,9 @@ public:
             return;
         }
 
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
         plg::print(Colorize("EXTENSION COMPARISON", Colors::BOLD));
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
 
         // Basic comparison table
         auto printRow = [](std::string_view label, std::string_view val1, std::string_view val2) {
@@ -1566,7 +1626,7 @@ public:
             Colorize(ext1->GetName(), Colors::CYAN),
             Colorize(ext2->GetName(), Colors::MAGENTA)
         );
-        plg::print(std::string(80, '-'));
+        plg::print(SEPARATOR_LINE);
 
         printRow("Type:", ext1->IsPlugin() ? "Plugin" : "Module", ext2->IsPlugin() ? "Plugin" : "Module");
         printRow("Version:", ext1->GetVersionString(), ext2->GetVersionString());
@@ -1634,7 +1694,7 @@ public:
             FormatDuration(ext2->GetTotalTime())
         );
 
-        plg::print(std::string(80, '='));
+        plg::print(DOUBLE_LINE);
     }
 
     void Update() {
@@ -1743,13 +1803,42 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
         auto* validate = interactiveApp.add_subcommand("validate", "Validate extension file");
         auto* compare = interactiveApp.add_subcommand("compare", "Compare two extensions");
 
-        // Add options for plugins/modules
-        bool showFailed = false;
-        std::string sortBy = "name";
-        plugins->add_flag("--failed", showFailed);
-        plugins->add_option("--sort", sortBy);
-        modules->add_flag("--failed", showFailed);
-        modules->add_option("--sort", sortBy);
+        // Enhanced list commands with filters and sorting
+        std::string pluginFilterState;
+        std::string pluginFilterLang;
+        std::string pluginSortBy = "name";
+        bool pluginReverse = false;
+        bool pluginShowFailed = false;
+        
+        plugins->add_option(
+            "--filter-state",
+            pluginFilterState,
+            "Filter by state (comma-separated: loaded,failed,disabled)"
+        );
+        plugins->add_option(
+            "--filter-lang",
+            pluginFilterLang,
+            "Filter by language (comma-separated: cpp,python,rust)"
+        );
+        plugins
+            ->add_option("--sort", pluginSortBy, "Sort by: name, version, state, language, loadtime")
+            ->check(CLI::IsMember({ "name", "version", "state", "language", "loadtime" }));
+        plugins->add_flag("--reverse,-r", pluginReverse, "Reverse sort order");
+        plugins->add_flag("--failed", pluginShowFailed, "Show only failed plugins");
+        
+        std::string moduleFilterState;
+        std::string moduleFilterLang;
+        std::string moduleSortBy = "name";
+        bool moduleReverse = false;
+        bool moduleShowFailed = false;
+        
+        modules->add_option("--filter-state", moduleFilterState, "Filter by state (comma-separated)");
+        modules->add_option("--filter-lang", moduleFilterLang, "Filter by language (comma-separated)");
+        modules
+            ->add_option("--sort", moduleSortBy, "Sort by: name, version, state, language, loadtime")
+            ->check(CLI::IsMember({ "name", "version", "state", "language", "loadtime" }));
+        modules->add_flag("--reverse,-r", moduleReverse, "Reverse sort order");
+        modules->add_flag("--failed", moduleShowFailed, "Show only failed modules");
 
         // Add options for plugin/module
         std::string plugin_name;
@@ -1786,32 +1875,38 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
         unload->callback([&app]() { app.UnloadManager(); });
         reload->callback([&app]() { app.ReloadManager(); });
 
-        plugins->callback([&app, &showFailed, &sortBy]() {
+        plugins->callback([&]() {
             FilterOptions filter;
-            filter.showOnlyFailed = showFailed;
-            auto sort = sortBy == "name"      ? SortBy::Name
-                        : sortBy == "state"   ? SortBy::State
-                        : sortBy == "version" ? SortBy::Version
-                                              : SortBy::Name;
-            app.ListPlugins(filter, sort);
+            if (!pluginFilterState.empty()) {
+                filter.states = ParseStates(ParseCsv(pluginFilterState));
+            }
+            if (!pluginFilterLang.empty()) {
+                filter.languages = ParseCsv(pluginFilterLang);
+            }
+            filter.showOnlyFailed = pluginShowFailed;
+
+            app.ListPlugins(filter, ParseSortBy(pluginSortBy), pluginReverse);
         });
 
-        modules->callback([&app, &showFailed, &sortBy]() {
+        modules->callback([&]() {
             FilterOptions filter;
-            filter.showOnlyFailed = showFailed;
-            auto sort = sortBy == "name"      ? SortBy::Name
-                        : sortBy == "state"   ? SortBy::State
-                        : sortBy == "version" ? SortBy::Version
-                                              : SortBy::Name;
-            app.ListModules(filter, sort);
+            if (!moduleFilterState.empty()) {
+                filter.states = ParseStates(ParseCsv(moduleFilterState));
+            }
+            if (!moduleFilterLang.empty()) {
+                filter.languages = ParseCsv(moduleFilterLang);
+            }
+            filter.showOnlyFailed = moduleShowFailed;
+
+            app.ListModules(filter, ParseSortBy(moduleSortBy), moduleReverse);
         });
 
         plugin->callback([&app, &plugin_name, &plugin_use_id]() {
-            app.ShowPlugin(plugin_name, plugin_use_id);
+            app.ShowPlugin(plugin_name, static_cast<LookupMethod>(plugin_use_id));
         });
 
         module->callback([&app, &module_name, &module_use_id]() {
-            app.ShowModule(module_name, module_use_id);
+            app.ShowModule(module_name, static_cast<LookupMethod>(module_use_id));
         });
 
         health->callback([&app]() { app.ShowHealth(); });
@@ -1859,7 +1954,7 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
         } catch (const CLI::ParseError& e) {
             if (e.get_exit_code() != 0) {
                 plg::print("{}: {}", Colorize("Error", Colors::RED), e.what());
-                plg::print("Type 'help' for available commands.");
+                plg::print("Type '{}' for available commands.", Colorize("help", Colors::YELLOW));
             }
         }
 
@@ -1914,20 +2009,20 @@ main(int argc, char** argv) {
     bool pluginShowFailed = false;
 
     plugins_cmd->add_option(
-        "--filter-state",
+        "--filter-state,-s",
         pluginFilterState,
         "Filter by state (comma-separated: loaded,failed,disabled)"
     );
     plugins_cmd->add_option(
-        "--filter-lang",
+        "--filter-lang,-l",
         pluginFilterLang,
         "Filter by language (comma-separated: cpp,python,rust)"
     );
     plugins_cmd
-        ->add_option("--sort", pluginSortBy, "Sort by: name, version, state, language, loadtime")
+        ->add_option("--sort,-s", pluginSortBy, "Sort by: name, version, state, language, loadtime")
         ->check(CLI::IsMember({ "name", "version", "state", "language", "loadtime" }));
     plugins_cmd->add_flag("--reverse,-r", pluginReverse, "Reverse sort order");
-    plugins_cmd->add_flag("--failed", pluginShowFailed, "Show only failed plugins");
+    plugins_cmd->add_flag("--failed,-f", pluginShowFailed, "Show only failed plugins");
 
     auto* modules_cmd = cliApp.add_subcommand("modules", "List all modules");
     std::string moduleFilterState;
@@ -1939,22 +2034,22 @@ main(int argc, char** argv) {
     modules_cmd->add_option("--filter-state", moduleFilterState, "Filter by state (comma-separated)");
     modules_cmd->add_option("--filter-lang", moduleFilterLang, "Filter by language (comma-separated)");
     modules_cmd
-        ->add_option("--sort", moduleSortBy, "Sort by: name, version, state, language, loadtime")
+        ->add_option("--sort,-s", moduleSortBy, "Sort by: name, version, state, language, loadtime")
         ->check(CLI::IsMember({ "name", "version", "state", "language", "loadtime" }));
     modules_cmd->add_flag("--reverse,-r", moduleReverse, "Reverse sort order");
-    modules_cmd->add_flag("--failed", moduleShowFailed, "Show only failed modules");
+    modules_cmd->add_flag("--failed,-f", moduleShowFailed, "Show only failed modules");
 
     // Show plugin/module commands
     auto* plugin_cmd = cliApp.add_subcommand("plugin", "Show plugin information");
     std::string plugin_name;
     bool plugin_use_id = false;
-    plugin_cmd->add_option("name", plugin_name, "Plugin name or ID")->required();
+    plugin_cmd->add_option("-n,--name", plugin_name, "Plugin name or ID")->required();
     plugin_cmd->add_flag("-u,--uuid", plugin_use_id, "Use ID instead of name");
 
     auto* module_cmd = cliApp.add_subcommand("module", "Show module information");
     std::string module_name;
     bool module_use_id = false;
-    module_cmd->add_option("name", module_name, "Module name or ID")->required();
+    module_cmd->add_option("-n,--name", module_name, "Module name or ID")->required();
     module_cmd->add_flag("-u,--uuid", module_use_id, "Use ID instead of name");
 
     // New commands
@@ -1963,85 +2058,23 @@ main(int argc, char** argv) {
     auto* tree_cmd = cliApp.add_subcommand("tree", "Show dependency tree");
     std::string tree_name;
     bool tree_use_id = false;
-    tree_cmd->add_option("name", tree_name, "Extension name or ID")->required();
+    tree_cmd->add_option("-n,--name", tree_name, "Extension name or ID")->required();
     tree_cmd->add_flag("-u,--uuid", tree_use_id, "Use ID instead of name");
 
     auto* search_cmd = cliApp.add_subcommand("search", "Search extensions");
     std::string search_query;
-    search_cmd->add_option("query", search_query, "Search query")->required();
+    search_cmd->add_option("-q,--query", search_query, "Search query")->required();
 
     auto* validate_cmd = cliApp.add_subcommand("validate", "Validate extension file");
     std::string validate_path;
-    validate_cmd->add_option("path", validate_path, "Path to extension file")->required();
+    validate_cmd->add_option("-p, --path", validate_path, "Path to extension file")->required();
 
     auto* compare_cmd = cliApp.add_subcommand("compare", "Compare two extensions");
     std::string compare_ext1, compare_ext2;
     bool compare_use_id = false;
-    compare_cmd->add_option("extension1", compare_ext1, "First extension")->required();
-    compare_cmd->add_option("extension2", compare_ext2, "Second extension")->required();
+    compare_cmd->add_option("--extension1", compare_ext1, "First extension")->required();
+    compare_cmd->add_option("--extension2", compare_ext2, "Second extension")->required();
     compare_cmd->add_flag("-u,--uuid", compare_use_id, "Use ID instead of name");
-
-    // Helper function to parse comma-separated values
-    auto parseCsv = [](const std::string& str) -> std::vector<std::string> {
-        std::vector<std::string> result;
-        std::stringstream ss(str);
-        std::string item;
-        while (std::getline(ss, item, ',')) {
-            // Trim whitespace
-            item.erase(0, item.find_first_not_of(" \t"));
-            item.erase(item.find_last_not_of(" \t") + 1);
-            if (!item.empty()) {
-                result.push_back(item);
-            }
-        }
-        return result;
-    };
-
-    // Helper to parse sort option
-    auto parseSortBy = [](std::string_view str) -> SortBy {
-        if (str == "name") {
-            return SortBy::Name;
-        }
-        if (str == "version") {
-            return SortBy::Version;
-        }
-        if (str == "state") {
-            return SortBy::State;
-        }
-        if (str == "language") {
-            return SortBy::Language;
-        }
-        if (str == "loadtime") {
-            return SortBy::LoadTime;
-        }
-        return SortBy::Name;
-    };
-
-    // Helper to parse state filter
-    auto parseStates = [](const std::vector<std::string>& strs) -> std::vector<ExtensionState> {
-        std::vector<ExtensionState> states;
-        states.reserve(strs.size());
-        for (const auto& str : strs) {
-            std::string lower = str;
-            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-
-            if (lower == "loaded") {
-                states.push_back(ExtensionState::Loaded);
-            } else if (lower == "started") {
-                states.push_back(ExtensionState::Started);
-            } else if (lower == "failed") {
-                states.push_back(ExtensionState::Failed);
-            } else if (lower == "disabled") {
-                states.push_back(ExtensionState::Disabled);
-            } else if (lower == "corrupted") {
-                states.push_back(ExtensionState::Corrupted);
-            } else if (lower == "unresolved") {
-                states.push_back(ExtensionState::Unresolved);
-            }
-            // Add more as needed
-        }
-        return states;
-    };
 
     // Set callbacks for commands
     init_cmd->callback([&app]() {
@@ -2087,14 +2120,14 @@ main(int argc, char** argv) {
 
         FilterOptions filter;
         if (!pluginFilterState.empty()) {
-            filter.states = parseStates(parseCsv(pluginFilterState));
+            filter.states = ParseStates(ParseCsv(pluginFilterState));
         }
         if (!pluginFilterLang.empty()) {
-            filter.languages = parseCsv(pluginFilterLang);
+            filter.languages = ParseCsv(pluginFilterLang);
         }
         filter.showOnlyFailed = pluginShowFailed;
 
-        app.ListPlugins(filter, parseSortBy(pluginSortBy), pluginReverse, jsonOutput);
+        app.ListPlugins(filter, ParseSortBy(pluginSortBy), pluginReverse, jsonOutput);
     });
 
     modules_cmd->callback([&]() {
@@ -2104,54 +2137,28 @@ main(int argc, char** argv) {
 
         FilterOptions filter;
         if (!moduleFilterState.empty()) {
-            filter.states = parseStates(parseCsv(moduleFilterState));
+            filter.states = ParseStates(ParseCsv(moduleFilterState));
         }
         if (!moduleFilterLang.empty()) {
-            filter.languages = parseCsv(moduleFilterLang);
+            filter.languages = ParseCsv(moduleFilterLang);
         }
         filter.showOnlyFailed = moduleShowFailed;
 
-        app.ListModules(filter, parseSortBy(moduleSortBy), moduleReverse, jsonOutput);
+        app.ListModules(filter, ParseSortBy(moduleSortBy), moduleReverse, jsonOutput);
     });
 
     plugin_cmd->callback([&app, &plugin_name, &plugin_use_id, &jsonOutput]() {
         if (!app.IsInitialized()) {
             app.Initialize();
         }
-        if (jsonOutput) {
-            const auto& manager = app.GetManager();
-            auto plugin = plugin_use_id ? manager.FindExtension(FormatId(plugin_name))
-                                        : manager.FindExtension(plugin_name);
-            if (plugin) {
-                plg::print(*ExtensionToJson(plugin).dump());
-            } else {
-                glz::json_t error;
-                error["error"] = "Plugin not found";
-                plg::print(*error.dump());
-            }
-        } else {
-            app.ShowPlugin(plugin_name, plugin_use_id);
-        }
+        app.ShowPlugin(plugin_name, static_cast<LookupMethod>(plugin_use_id), static_cast<OutputFormat>(jsonOutput));
     });
 
     module_cmd->callback([&app, &module_name, &module_use_id, &jsonOutput]() {
         if (!app.IsInitialized()) {
             app.Initialize();
         }
-        if (jsonOutput) {
-            const auto& manager = app.GetManager();
-            auto module = module_use_id ? manager.FindExtension(FormatId(module_name))
-                                        : manager.FindExtension(module_name);
-            if (module) {
-                plg::print(*ExtensionToJson(module).dump());
-            } else {
-                glz::json_t error;
-                error["error"] = "Module not found";
-                plg::print(*error.dump());
-            }
-        } else {
-            app.ShowModule(module_name, module_use_id);
-        }
+        app.ShowModule(module_name, static_cast<LookupMethod>(module_use_id), static_cast<OutputFormat>(jsonOutput));
     });
 
     health_cmd->callback([&app]() {

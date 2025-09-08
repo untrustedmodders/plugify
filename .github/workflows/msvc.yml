@@ -10,11 +10,13 @@ on:
       - LICENSE
       - README.md
       - 'docs/**'
+      - 'schemas/**'
   pull_request:
     paths-ignore:
       - LICENSE
       - README.md
       - 'docs/**'
+      - 'schemas/**'
 
 jobs:
   build:

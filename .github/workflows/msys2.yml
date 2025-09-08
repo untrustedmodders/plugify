@@ -10,14 +10,13 @@ on:
       - LICENSE
       - README.md
       - 'docs/**'
+      - 'schemas/**'
   pull_request:
     paths-ignore:
       - LICENSE
       - README.md
       - 'docs/**'
-
-env:
-  CMAKE_GENERATOR: Ninja
+      - 'schemas/**'
 
 jobs:
   build:
@@ -39,7 +38,7 @@ jobs:
       with:
         update: true
         msystem: UCRT64
-        install: git base-devel mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-curl mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-headers-git
+        install: git base-devel mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-headers-git
 
     - uses: actions/checkout@v4
       

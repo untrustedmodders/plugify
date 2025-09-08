@@ -10,11 +10,13 @@ on:
       - LICENSE
       - README.md
       - 'docs/**'
+      - 'schemas/**'
   pull_request:
     paths-ignore:
       - LICENSE
       - README.md
       - 'docs/**'
+      - 'schemas/**'
 
 jobs:
   build:
@@ -36,10 +38,6 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-
-    - name: Install curl (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt update && sudo apt install -y libcurl4-openssl-dev libssl-dev
 
     - name: Configure CMake
       run: >
