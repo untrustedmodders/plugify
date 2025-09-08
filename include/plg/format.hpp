@@ -2,7 +2,7 @@
 
 #include "plg/macro.hpp"
 
-#ifdef __cpp_lib_format
+#if defined(__cpp_lib_format) || PLUGIFY_FORMAT_SUPPORT
 
 #include <format>
 

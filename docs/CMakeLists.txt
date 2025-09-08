@@ -32,8 +32,4 @@ add_custom_target(
         doxy.in
         # add more here
 		basic-types.md
-		language-modules.md
-		package-manager.md
-		plugin-manager.md
-		plugins.md
 )

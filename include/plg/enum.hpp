@@ -55,7 +55,7 @@ namespace plg {
 
     template<typename E>
     constexpr auto value(std::size_t v) {
-        return static_cast<E>(ENUM_MIN_VALUE + v);
+        return static_cast<E>(ENUM_MIN_VALUE + static_cast<int>(v));
     }
 
     template<std::size_t N>

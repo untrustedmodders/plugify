@@ -5,7 +5,7 @@
 #ifdef __cpp_lib_flat_map
 #include <flat_map>
 namespace plg {
-    template<typename K, typename V, typename C = std::less<Key>>
+    template<typename K, typename V, typename C = std::less<K>>
     using flat_map = std::flat_map<K, V, C>;
 }
 #else
