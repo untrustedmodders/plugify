@@ -684,7 +684,7 @@ namespace plg {
                     return false;
                 }
 
-                int k = 0;
+                size_t k = 0;
                 int alpha_numerics = 0;
                 int digits = 0;
 
@@ -886,11 +886,11 @@ namespace plg {
                 });
             }
 
-            constexpr const auto begin() const noexcept {
+            constexpr auto begin() const noexcept {
                 return ranges_comparators_.begin();
             }
 
-            constexpr const auto end() const noexcept {
+            constexpr auto end() const noexcept {
                 return ranges_comparators_.end();
             }
 
@@ -934,11 +934,11 @@ namespace plg {
             });
         }
 
-        constexpr const auto begin() const noexcept {
+        constexpr auto begin() const noexcept {
             return ranges_.begin();
         }
 
-        constexpr const auto end() const noexcept {
+        constexpr auto end() const noexcept {
             return ranges_.end();
         }
 

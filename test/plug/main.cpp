@@ -1,9 +1,3 @@
-#include "plugify/plugify.hpp"
-#include "plugify/manager.hpp"
-#include "plugify/plugify.hpp"
-#include "plugify/extension.hpp"
-#include "plugify/logger.hpp"
-
 #include <atomic>
 #include <chrono>
 #include <fstream>
@@ -14,6 +8,12 @@
 #include <CLI/CLI.hpp>
 #include <glaze/glaze.hpp>
 #include <plg/format.hpp>
+#include <unistd.h>
+
+#include "plugify/extension.hpp"
+#include "plugify/logger.hpp"
+#include "plugify/manager.hpp"
+#include "plugify/plugify.hpp"
 
 namespace plg {
     template<plg::detail::is_string_like First>

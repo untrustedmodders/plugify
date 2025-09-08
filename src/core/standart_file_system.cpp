@@ -645,7 +645,7 @@ Result<bool> ExtendedFileSystem::FilesEqual(const std::filesystem::path& path1, 
             return false;
         }
         
-        if (std::memcmp(buffer1.data(), buffer2.data(), read1) != 0) {
+        if (std::memcmp(buffer1.data(), buffer2.data(), static_cast<size_t>(read1)) != 0) {
             return false;
         }
         
