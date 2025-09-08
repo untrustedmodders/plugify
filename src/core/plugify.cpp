@@ -28,7 +28,7 @@ struct Plugify::Impl {
     std::shared_ptr<IPlatformOps> ops;
 
     bool initialized{false};
-    bool shouldStop{false};
+
     std::thread::id ownerThreadId;
     std::thread updateThread;
     std::mutex cvMutex;
