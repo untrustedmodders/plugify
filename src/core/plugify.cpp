@@ -30,8 +30,10 @@ struct Plugify::Impl {
     bool initialized{false};
     bool shouldStop{false};
     std::thread::id ownerThreadId;
-    std::jthread updateThread;
-
+    std::thread updateThread;
+    std::mutex cvMutex;
+    std::condition_variable cv;
+    std::atomic<bool> stopRequested{false};
     std::chrono::steady_clock::time_point lastUpdateTime;
     std::chrono::milliseconds accumulatedTime{0};
 
@@ -364,51 +366,52 @@ private:
     }
 
     void StartBackgroundUpdateThread() {
-        updateThread = std::jthread([this](std::stop_token token) {
-            UpdateThread(std::move(token));
+        stopRequested = false;
+
+        updateThread = std::thread([this]() {
+            // Set thread priority if specified
+            /*if (config.runtime.threadPriority) {
+                ops->SetThreadPriority(*config.runtime.threadPriority);
+            }*/
+
+            auto lastTime = std::chrono::steady_clock::now();
+            const auto& interval = config.runtime.updateInterval;
+
+            logger->Log(std::format("Background update thread started (interval: {})", interval),  Severity::Info);
+
+            while (!stopRequested.load(std::memory_order_relaxed)) {
+                auto now = std::chrono::steady_clock::now();
+                auto deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime);
+                lastTime = now;
+
+                // Perform update
+                manager.Update(deltaTime);
+
+                // Sleep for remaining time
+                auto updateDuration = std::chrono::steady_clock::now() - now;
+                auto sleepTime = interval - std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration);
+
+                if (sleepTime > 0ms) {
+                    // Use interruptible sleep
+                    std::unique_lock lock(cvMutex);
+                    cv.wait_for(lock, sleepTime, [this] { return stopRequested.load(std::memory_order_relaxed); });
+                } else {
+                    logger->Log(std::format("Update took longer than interval: {} > {}",
+                        std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration), interval),
+                        Severity::Warning);
+                }
+            }
+
+            logger->Log("Background update thread stopped", Severity::Info);
         });
     }
 
-    void UpdateThread(std::stop_token token) const {
-        // Set thread priority if specified
-        /*if (config.runtime.threadPriority) {
-            ops->SetThreadPriority(*config.runtime.threadPriority);
-        }*/
-
-        auto lastTime = std::chrono::steady_clock::now();
-        const auto& interval = config.runtime.updateInterval;
-
-        logger->Log(std::format("Background update thread started (interval: {})", interval), Severity::Info);
-
-        while (!token.stop_requested()) {
-            auto now = std::chrono::steady_clock::now();
-            auto deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime);
-            lastTime = now;
-
-            // Perform update
-            manager.Update(deltaTime);
-
-            // Sleep for remaining time
-            auto updateDuration = std::chrono::steady_clock::now() - now;
-            auto sleepTime = interval - std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration);
-
-            if (sleepTime > 0ms) {
-                std::this_thread::sleep_for(sleepTime);
-            } else {
-                logger->Log(std::format("Update took longer than interval: {} > {}",
-                                      std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration),
-                                      interval),
-                          Severity::Warning);
-            }
-        }
-
-        logger->Log("Background update thread stopped", Severity::Info);
-    }
-
     void StopBackgroundUpdateThread() {
+        stopRequested.store(true, std::memory_order_relaxed);
+        cv.notify_all(); // Wake up the thread if it's sleeping
+
         if (updateThread.joinable()) {
             logger->Log("Stopping background update thread...", Severity::Info);
-            updateThread.request_stop();
             updateThread.join();
         }
     }
