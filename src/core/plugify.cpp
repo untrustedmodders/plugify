@@ -365,40 +365,44 @@ private:
 
     void StartBackgroundUpdateThread() {
         updateThread = std::jthread([this](std::stop_token token) {
-            // Set thread priority if specified
-            /*if (config.runtime.threadPriority) {
-                ops->SetThreadPriority(*config.runtime.threadPriority);
-            }*/
-
-            auto lastTime = std::chrono::steady_clock::now();
-            const auto interval = config.runtime.updateInterval;
-
-            logger->Log(std::format("Background update thread started (interval: {})", interval), Severity::Info);
-
-            while (!token.stop_requested()) {
-                auto now = std::chrono::steady_clock::now();
-                auto deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime);
-                lastTime = now;
-
-                // Perform update
-                manager.Update(deltaTime);
-
-                // Sleep for remaining time
-                auto updateDuration = std::chrono::steady_clock::now() - now;
-                auto sleepTime = interval - std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration);
-
-                if (sleepTime > 0ms) {
-                    std::this_thread::sleep_for(sleepTime);
-                } else {
-                    logger->Log(std::format("Update took longer than interval: {} > {}",
-                                          std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration),
-                                          interval),
-                              Severity::Warning);
-                }
-            }
-
-            logger->Log("Background update thread stopped", Severity::Info);
+            UpdateThread(std::move(token));
         });
+    }
+
+    void UpdateThread(std::stop_token token) const {
+        // Set thread priority if specified
+        /*if (config.runtime.threadPriority) {
+            ops->SetThreadPriority(*config.runtime.threadPriority);
+        }*/
+
+        auto lastTime = std::chrono::steady_clock::now();
+        const auto& interval = config.runtime.updateInterval;
+
+        logger->Log(std::format("Background update thread started (interval: {})", interval), Severity::Info);
+
+        while (!token.stop_requested()) {
+            auto now = std::chrono::steady_clock::now();
+            auto deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime);
+            lastTime = now;
+
+            // Perform update
+            manager.Update(deltaTime);
+
+            // Sleep for remaining time
+            auto updateDuration = std::chrono::steady_clock::now() - now;
+            auto sleepTime = interval - std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration);
+
+            if (sleepTime > 0ms) {
+                std::this_thread::sleep_for(sleepTime);
+            } else {
+                logger->Log(std::format("Update took longer than interval: {} > {}",
+                                      std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration),
+                                      interval),
+                          Severity::Warning);
+            }
+        }
+
+        logger->Log("Background update thread stopped", Severity::Info);
     }
 
     void StopBackgroundUpdateThread() {
