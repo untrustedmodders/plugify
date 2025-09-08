@@ -70,7 +70,7 @@ struct Plugify::Impl {
         if (config.runtime.pinToMainThread &&
             std::this_thread::get_id() != ownerThreadId) {
             return MakeError("Initialization must be called from owner thread");
-            }
+        }
 
         if (initialized) {
             return MakeError("Already initialized");

@@ -108,11 +108,12 @@ namespace {
 
 	// Plain ASCII fallback
 	inline constexpr Glyphs AsciiGlyphs{
-		"v", "X", "!", "o", "*", "...", "->", "#", "?", "i", "=", "!=", ">>"
+		"v", "x", "!", "o", "*", "...", "->", "#", "?", "i", "=", "!=", ">>"
 	};
 
 	// selection strategy examples:
 
+#define USE_ASCII
 	// 1) Compile-time: define USE_ASCII or USE_ASCII_ANSI in your build
 #if defined(USE_ASCII)
 	inline constexpr const Glyphs& Icons = AsciiGlyphs;
@@ -231,7 +232,7 @@ namespace {
         }
         return result;
     };
-    
+
     // Helper to parse sort option
     SortBy ParseSortBy(std::string_view str) {
         if (str == "name") {
@@ -251,7 +252,7 @@ namespace {
         }
         return SortBy::Name;
     };
-    
+
     // Helper to parse state filter
     std::vector<ExtensionState> ParseStates(const std::vector<std::string>& strs)  {
         std::vector<ExtensionState> states;
@@ -396,7 +397,7 @@ namespace {
     }
 
     // Filter extensions based on criteria
-    static std::vector<const Extension*> FilterExtensions(const std::vector<const Extension*>& extensions, const FilterOptions& filter)
+    std::vector<const Extension*> FilterExtensions(const std::vector<const Extension*>& extensions, const FilterOptions& filter)
     {
         std::vector<const Extension*> result;
 
@@ -467,8 +468,7 @@ namespace {
             bool lastDep = (i == deps.size() - 1);
 
             // Try to find the actual dependency
-            auto depExt = manager.FindExtension(dep.GetName());
-            if (depExt) {
+            if (auto depExt = manager.FindExtension(dep.GetName())) {
                 PrintDependencyTree(depExt, manager, newPrefix, lastDep);
             } else {
                 std::string depConnector = lastDep ? "└─ " : "├─ ";
@@ -562,14 +562,14 @@ public:
 
     void Initialize() {
         if (!plug->Initialize()) {
-            plg::print("No feet, no sweets!");
+            plg::print("{}: No feet, no sweets!.", Colorize("Error", Colors::RED));
             throw std::runtime_error("Failed to initialize Plugify");
         }
         const auto& manager = plug->GetManager();
         if (auto initResult = manager.Initialize()) {
             plg::print("Plugin system initialized.");
         } else {
-            plg::print(initResult.error());
+            plg::print("{}: {}.", Colorize("Error", Colors::RED), initResult.error());
             throw std::runtime_error("Failed to initialize Manager");
         }
     }
@@ -597,29 +597,29 @@ public:
 
     void LoadManager() {
         if (!plug->IsInitialized()) {
-            plg::print("Initialize system before use.");
+            plg::print("{}: Initialize system before use.", Colorize("Error", Colors::RED));
             return;
         }
         const auto& manager = plug->GetManager();
         if (manager.IsInitialized()) {
-            plg::print("Plugin manager already loaded.");
+            plg::print("{}: Plugin manager already loaded.", Colorize("Error", Colors::RED));
         } else {
             if (auto initResult = manager.Initialize()) {
                 plg::print("Plugin manager was loaded.");
             } else {
-                plg::print(initResult.error());
+                plg::print("{}: {}.", Colorize("Error", Colors::RED), initResult.error());
             }
         }
     }
 
     void UnloadManager() {
         if (!plug->IsInitialized()) {
-            plg::print("Initialize system before use.");
+            plg::print("{}: Initialize system before use.", Colorize("Error", Colors::RED));
             return;
         }
         const auto& manager = plug->GetManager();
         if (!manager.IsInitialized()) {
-            plg::print("Plugin manager already unloaded.");
+            plg::print("{}: Plugin manager already unloaded.", Colorize("Error", Colors::RED));
         } else {
             manager.Terminate();
             plg::print("Plugin manager was unloaded.");
@@ -628,7 +628,7 @@ public:
 
     void ReloadManager() {
         if (!plug->IsInitialized()) {
-            plg::print("Initialize system before use.");
+            plg::print("{}: Initialize system before use.", Colorize("Error", Colors::RED));
             return;
         }
         const auto& manager = plug->GetManager();
@@ -639,7 +639,7 @@ public:
             if (auto initResult = manager.Initialize()) {
                 plg::print("Plugin manager was reloaded.");
             } else {
-                plg::print(initResult.error());
+                plg::print("{}: {}.", Colorize("Error", Colors::RED), initResult.error());
             }
         }
     }
@@ -859,7 +859,7 @@ public:
     }
 
     void ShowPlugin(std::string_view identifier,
-                    LookupMethod method = LookupMethod::ByName,
+                    LookupMethod lookup = LookupMethod::ByName,
                     OutputFormat format = OutputFormat::Console
     ) {
         if (!CheckManager()) {
@@ -867,7 +867,7 @@ public:
         }
 
         const auto& manager = plug->GetManager();
-        auto plugin = method == LookupMethod::ById ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
+        auto plugin = lookup == LookupMethod::ById ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
 
         if (!plugin) {
             if (format == OutputFormat::Json) {
@@ -1113,7 +1113,7 @@ public:
     }
 
     void ShowModule(std::string_view identifier,
-                    LookupMethod method = LookupMethod::ByName,
+                    LookupMethod lookup = LookupMethod::ByName,
                     OutputFormat format = OutputFormat::Console
     ) {
         if (!CheckManager()) {
@@ -1121,7 +1121,7 @@ public:
         }
 
         const auto& manager = plug->GetManager();
-        auto module = method == LookupMethod::ById ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
+        auto module = lookup == LookupMethod::ById ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
 
         if (!module) {
             if (format == OutputFormat::Json) {
@@ -1602,11 +1602,11 @@ public:
         auto ext2 = useId ? manager.FindExtension(FormatId(name2)) : manager.FindExtension(name2);
 
         if (!ext1) {
-            plg::print("Extension {} not found.", name1);
+            plg::print("{}: Extension {} not found.", Colorize("Error", Colors::RED), name1);
             return;
         }
         if (!ext2) {
-            plg::print("Extension {} not found.", name2);
+            plg::print("{}: Extension {} not found.", Colorize("Error", Colors::RED), name2);
             return;
         }
 
@@ -1711,12 +1711,12 @@ private:
 
     bool CheckManager() const {
         if (!plug->IsInitialized()) {
-            plg::print("Initialize system before use.");
+            plg::print("{}: Initialize system before use.", Colorize("Error", Colors::RED));
             return false;
         }
         const auto& manager = plug->GetManager();
         if (!manager.IsInitialized()) {
-            plg::print("You must load plugin manager before query any information from it.");
+            plg::print("{}: You must load plugin manager before query any information from it.", Colorize("Error", Colors::RED));
             return false;
         }
         return true;
@@ -1781,8 +1781,13 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
 
         // Create a temporary CLI app for parsing
         CLI::App interactiveApp{ "Interactive command" };
-        interactiveApp.allow_extras();
-        interactiveApp.prefix_command();
+	    interactiveApp.require_subcommand(); // 1 or more
+        //interactiveApp.allow_extras();
+        //interactiveApp.prefix_command();
+        interactiveApp.set_version_flag("-v,--version", [&app]() {
+            app.ShowVersion();
+            return "";
+        });
 
         // Add all commands (similar to main but simplified)
         auto* init = interactiveApp.add_subcommand("init", "Initialize");
@@ -1809,63 +1814,60 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
         std::string pluginSortBy = "name";
         bool pluginReverse = false;
         bool pluginShowFailed = false;
-        
-        plugins->add_option(
-            "--filter-state",
-            pluginFilterState,
-            "Filter by state (comma-separated: loaded,failed,disabled)"
-        );
-        plugins->add_option(
-            "--filter-lang",
-            pluginFilterLang,
-            "Filter by language (comma-separated: cpp,python,rust)"
-        );
-        plugins
-            ->add_option("--sort", pluginSortBy, "Sort by: name, version, state, language, loadtime")
+
+        plugins->add_option("--filter-state", pluginFilterState, "Filter by state (comma-separated: loaded,failed,disabled)");
+        plugins->add_option("--filter-lang", pluginFilterLang, "Filter by language (comma-separated: cpp,python,rust)");
+        plugins->add_option("-s,--sort", pluginSortBy, "Sort by: name, version, state, language, loadtime")
             ->check(CLI::IsMember({ "name", "version", "state", "language", "loadtime" }));
-        plugins->add_flag("--reverse,-r", pluginReverse, "Reverse sort order");
-        plugins->add_flag("--failed", pluginShowFailed, "Show only failed plugins");
-        
+        plugins->add_flag("-r,--reverse", pluginReverse, "Reverse sort order");
+        plugins->add_flag("-f,--failed", pluginShowFailed, "Show only failed plugins");
+
         std::string moduleFilterState;
         std::string moduleFilterLang;
         std::string moduleSortBy = "name";
         bool moduleReverse = false;
         bool moduleShowFailed = false;
-        
+
         modules->add_option("--filter-state", moduleFilterState, "Filter by state (comma-separated)");
         modules->add_option("--filter-lang", moduleFilterLang, "Filter by language (comma-separated)");
-        modules
-            ->add_option("--sort", moduleSortBy, "Sort by: name, version, state, language, loadtime")
+        modules->add_option("-s,--sort", moduleSortBy, "Sort by: name, version, state, language, loadtime")
             ->check(CLI::IsMember({ "name", "version", "state", "language", "loadtime" }));
-        modules->add_flag("--reverse,-r", moduleReverse, "Reverse sort order");
-        modules->add_flag("--failed", moduleShowFailed, "Show only failed modules");
+        modules->add_flag("-r,--reverse", moduleReverse, "Reverse sort order");
+        modules->add_flag("-f,--failed", moduleShowFailed, "Show only failed modules");
 
         // Add options for plugin/module
         std::string plugin_name;
         bool plugin_use_id = false;
         plugin->add_option("name", plugin_name, "Plugin name or ID")->required();
         plugin->add_flag("-u,--uuid", plugin_use_id, "Use ID instead of name");
+	    plugin->validate_positionals();
+
         std::string module_name;
         bool module_use_id = false;
         module->add_option("name", module_name, "Module name or ID")->required();
         module->add_flag("-u,--uuid", module_use_id, "Use ID instead of name");
+	    module->validate_positionals();
 
         std::string tree_name;
         bool tree_use_id = false;
         tree->add_option("name", tree_name, "Extension name or ID")->required();
         tree->add_flag("-u,--uuid", tree_use_id, "Use ID instead of name");
+	    tree->validate_positionals();
 
-        std::string searchQuery;
-        search->add_option("query", searchQuery);
+        std::string search_query;
+        search->add_option("query", search_query, "Search query")->required();
+	    search->validate_positionals();
 
         std::string validate_path;
         validate->add_option("path", validate_path, "Path to extension file")->required();
+	    validate->validate_positionals();
 
         std::string compare_ext1, compare_ext2;
         bool compare_use_id = false;
-        compare->add_option("extension1", compare_ext1, "First extension")->required();
-        compare->add_option("extension2", compare_ext2, "Second extension")->required();
+        compare->add_option("e1", compare_ext1, "First extension")->required();
+        compare->add_option("e2", compare_ext2, "Second extension")->required();
         compare->add_flag("-u,--uuid", compare_use_id, "Use ID instead of name");
+	    compare->validate_positionals();
 
         // Set callbacks
         init->callback([&app]() { app.Initialize(); });
@@ -1915,9 +1917,9 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
             app.ShowDependencyTree(tree_name, tree_use_id);
         });
 
-        search->callback([&app, &searchQuery]() {
-            if (!searchQuery.empty()) {
-                app.SearchExtensions(searchQuery);
+        search->callback([&app, &search_query]() {
+            if (!search_query.empty()) {
+                app.SearchExtensions(search_query);
             } else {
                 plg::print("Search query required");
             }
@@ -1967,18 +1969,19 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
 int
 main(int argc, char** argv) {
     /*if (!std::setlocale(LC_ALL, "en_US.UTF-8")) {
-        plg::print("Warning: Failed to set UTF-8 locale");
+        plg::error("Warning: Failed to set UTF-8 locale");
     }*/
 
     auto plugify = MakePlugify();
     if (!plugify) {
-        plg::print(plugify.error());
+        plg::print("{}: {}", Colorize("Error", Colors::RED), plugify.error());
         return EXIT_FAILURE;
     }
 
     PlugifyApp app(std::move(*plugify));
 
     CLI::App cliApp{ "Plugify - Plugin Management System" };
+	cliApp.require_subcommand(); // 1 or more
     cliApp.set_version_flag("-v,--version", [&app]() {
         app.ShowVersion();
         return "";
@@ -1990,7 +1993,7 @@ main(int argc, char** argv) {
     bool jsonOutput = false;
 
     cliApp.add_flag("-i,--interactive", interactive, "Run in interactive mode");
-    cliApp.add_flag("--no-color", noColor, "Disable colored output");
+    cliApp.add_flag("-p,--no-color", noColor, "Disable colored output");
     cliApp.add_flag("-j,--json", jsonOutput, "Output in JSON format");
 
     // Define subcommands
@@ -2008,21 +2011,12 @@ main(int argc, char** argv) {
     bool pluginReverse = false;
     bool pluginShowFailed = false;
 
-    plugins_cmd->add_option(
-        "--filter-state,-s",
-        pluginFilterState,
-        "Filter by state (comma-separated: loaded,failed,disabled)"
-    );
-    plugins_cmd->add_option(
-        "--filter-lang,-l",
-        pluginFilterLang,
-        "Filter by language (comma-separated: cpp,python,rust)"
-    );
-    plugins_cmd
-        ->add_option("--sort,-s", pluginSortBy, "Sort by: name, version, state, language, loadtime")
+    plugins_cmd->add_option("--filter-state", pluginFilterState, "Filter by state (comma-separated: loaded,failed,disabled)");
+    plugins_cmd->add_option("--filter-lang", pluginFilterLang, "Filter by language (comma-separated: cpp,python,rust)");
+    plugins_cmd->add_option("-s,--sort", pluginSortBy, "Sort by: name, version, state, language, loadtime")
         ->check(CLI::IsMember({ "name", "version", "state", "language", "loadtime" }));
-    plugins_cmd->add_flag("--reverse,-r", pluginReverse, "Reverse sort order");
-    plugins_cmd->add_flag("--failed,-f", pluginShowFailed, "Show only failed plugins");
+    plugins_cmd->add_flag("-r,--reverse", pluginReverse, "Reverse sort order");
+    plugins_cmd->add_flag("-f,--failed", pluginShowFailed, "Show only failed plugins");
 
     auto* modules_cmd = cliApp.add_subcommand("modules", "List all modules");
     std::string moduleFilterState;
@@ -2033,24 +2027,25 @@ main(int argc, char** argv) {
 
     modules_cmd->add_option("--filter-state", moduleFilterState, "Filter by state (comma-separated)");
     modules_cmd->add_option("--filter-lang", moduleFilterLang, "Filter by language (comma-separated)");
-    modules_cmd
-        ->add_option("--sort,-s", moduleSortBy, "Sort by: name, version, state, language, loadtime")
+    modules_cmd->add_option("-s,--sort", moduleSortBy, "Sort by: name, version, state, language, loadtime")
         ->check(CLI::IsMember({ "name", "version", "state", "language", "loadtime" }));
-    modules_cmd->add_flag("--reverse,-r", moduleReverse, "Reverse sort order");
-    modules_cmd->add_flag("--failed,-f", moduleShowFailed, "Show only failed modules");
+    modules_cmd->add_flag("-r,--reverse", moduleReverse, "Reverse sort order");
+    modules_cmd->add_flag("-f,--failed", moduleShowFailed, "Show only failed modules");
 
     // Show plugin/module commands
     auto* plugin_cmd = cliApp.add_subcommand("plugin", "Show plugin information");
     std::string plugin_name;
     bool plugin_use_id = false;
-    plugin_cmd->add_option("-n,--name", plugin_name, "Plugin name or ID")->required();
+    plugin_cmd->add_option("name", plugin_name, "Plugin name or ID")->required();
     plugin_cmd->add_flag("-u,--uuid", plugin_use_id, "Use ID instead of name");
+    plugin_cmd->validate_positionals();
 
     auto* module_cmd = cliApp.add_subcommand("module", "Show module information");
     std::string module_name;
     bool module_use_id = false;
-    module_cmd->add_option("-n,--name", module_name, "Module name or ID")->required();
+    module_cmd->add_option("name", module_name, "Module name or ID")->required();
     module_cmd->add_flag("-u,--uuid", module_use_id, "Use ID instead of name");
+    module_cmd->validate_positionals();
 
     // New commands
     auto* health_cmd = cliApp.add_subcommand("health", "Show system health report");
@@ -2058,22 +2053,26 @@ main(int argc, char** argv) {
     auto* tree_cmd = cliApp.add_subcommand("tree", "Show dependency tree");
     std::string tree_name;
     bool tree_use_id = false;
-    tree_cmd->add_option("-n,--name", tree_name, "Extension name or ID")->required();
+    tree_cmd->add_option("name", tree_name, "Extension name or ID")->required();
     tree_cmd->add_flag("-u,--uuid", tree_use_id, "Use ID instead of name");
+    tree_cmd->validate_positionals();
 
     auto* search_cmd = cliApp.add_subcommand("search", "Search extensions");
     std::string search_query;
-    search_cmd->add_option("-q,--query", search_query, "Search query")->required();
+    search_cmd->add_option("query", search_query, "Search query")->required();
+    search_cmd->validate_positionals();
 
     auto* validate_cmd = cliApp.add_subcommand("validate", "Validate extension file");
     std::string validate_path;
-    validate_cmd->add_option("-p, --path", validate_path, "Path to extension file")->required();
+    validate_cmd->add_option("path", validate_path, "Path to extension file")->required();
+    validate_cmd->validate_positionals();
 
     auto* compare_cmd = cliApp.add_subcommand("compare", "Compare two extensions");
     std::string compare_ext1, compare_ext2;
     bool compare_use_id = false;
-    compare_cmd->add_option("--extension1", compare_ext1, "First extension")->required();
-    compare_cmd->add_option("--extension2", compare_ext2, "Second extension")->required();
+    compare_cmd->add_option("ex1", compare_ext1, "First extension")->required();
+    compare_cmd->add_option("ex2", compare_ext2, "Second extension")->required();
+    compare_cmd->validate_positionals();
     compare_cmd->add_flag("-u,--uuid", compare_use_id, "Use ID instead of name");
 
     // Set callbacks for commands
