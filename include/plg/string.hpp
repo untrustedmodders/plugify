@@ -44,20 +44,63 @@
 
 namespace plg {
 	namespace detail {
-		template<typename Allocator, typename = void>
-		struct is_allocator : std::false_type {};
+        template<typename Alloc>
+        concept is_allocator = requires(Alloc& a, std::size_t n) {
+            typename std::allocator_traits<Alloc>::value_type;
+            typename std::allocator_traits<Alloc>::pointer;
+            typename std::allocator_traits<Alloc>::const_pointer;
+            typename std::allocator_traits<Alloc>::size_type;
+            typename std::allocator_traits<Alloc>::difference_type;
 
-		template<typename Allocator>
-		struct is_allocator<Allocator, std::void_t<typename Allocator::value_type, decltype(std::declval<Allocator&>().allocate(std::size_t{}))>> : std::true_type {};
+            { std::allocator_traits<Alloc>::allocate(a, n) }
+            -> std::convertible_to<typename std::allocator_traits<Alloc>::pointer>;
 
-		template<typename Allocator>
-		constexpr bool is_allocator_v = is_allocator<Allocator>::value;
+            requires requires(typename std::allocator_traits<Alloc>::pointer p) {
+                std::allocator_traits<Alloc>::deallocate(a, p, n);
+            };
+        };
 
-		template<typename Traits>
-		using is_traits = std::conjunction<std::is_integral<typename Traits::char_type>, std::is_integral<typename Traits::char_traits::char_type>>;
+        template<typename Traits>
+        concept is_char_traits = requires {
+            // Required type definitions
+            typename Traits::char_type;
+            typename Traits::int_type;
+            typename Traits::off_type;
+            typename Traits::pos_type;
+            typename Traits::state_type;
+        } && requires(
+            typename Traits::char_type c1,
+            typename Traits::char_type c2,
+            typename Traits::char_type& cr,
+            const typename Traits::char_type& ccr,
+            typename Traits::char_type* p,
+            const typename Traits::char_type* cp,
+            typename Traits::int_type i1,
+            typename Traits::int_type i2,
+            std::size_t n
+        ) {
+            // Character operations
+            { Traits::assign(cr, ccr) } -> std::same_as<void>;
+            { Traits::eq(ccr, ccr) } -> std::convertible_to<bool>;
+            { Traits::lt(ccr, ccr) } -> std::convertible_to<bool>;
 
-		template<typename Traits>
-		constexpr bool is_traits_v = is_traits<Traits>::value;
+            // String operations
+            { Traits::compare(cp, cp, n) } -> std::convertible_to<int>;
+            { Traits::length(cp) } -> std::convertible_to<std::size_t>;
+            { Traits::find(cp, n, ccr) } -> std::convertible_to<const typename Traits::char_type*>;
+
+            // Memory operations
+            { Traits::move(p, cp, n) } -> std::same_as<typename Traits::char_type*>;
+            { Traits::copy(p, cp, n) } -> std::same_as<typename Traits::char_type*>;
+            { Traits::assign(p, n, c1) } -> std::same_as<typename Traits::char_type*>;
+
+            // int_type operations
+            { Traits::not_eof(i1) } -> std::same_as<typename Traits::int_type>;
+            { Traits::to_char_type(i1) } -> std::same_as<typename Traits::char_type>;
+            { Traits::to_int_type(c1) } -> std::same_as<typename Traits::int_type>;
+            { Traits::eq_int_type(i1, i2) } -> std::convertible_to<bool>;
+            { Traits::eof() } -> std::same_as<typename Traits::int_type>;
+        };
 
 		struct uninitialized_size_tag {};
 
@@ -68,11 +111,12 @@ namespace plg {
 		template<typename Range, typename Type>
 		concept string_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
 #endif // PLUGIFY_STRING_CONTAINERS_RANGES
-	}// namespace detail
+
+	} // namespace detail
 
 	// basic_string
 	// based on implementations from libc++, libstdc++ and Microsoft STL
-	template<typename Char, typename Traits = std::char_traits<Char>, typename Allocator = plg::allocator<Char>> requires (detail::is_traits_v<Traits> && detail::is_allocator_v<Allocator>)
+	template<typename Char, detail::is_char_traits Traits = std::char_traits<Char>, detail::is_allocator Allocator = plg::allocator<Char>>
 	class basic_string {
 	private:
 		using allocator_traits = std::allocator_traits<Allocator>;
@@ -1925,4 +1969,108 @@ namespace std {
 	template<typename Allocator>
 	struct formatter<plg::basic_string<wchar_t, std::char_traits<wchar_t>, Allocator>> : plg::detail::string_formatter_base<wchar_t, Allocator> {};
 }// namespace std
+#endif // PLUGIFY_STRING_NO_STD_FORMAT
+
+template<typename Char, typename Traits, typename Alloc>
+std::ostream& operator<<(std::ostream& os, const plg::basic_string<Char, Traits, Alloc>& str) {
+    os << str.c_str();
+    return os;
+}
+
+#ifndef PLUGIFY_STRING_NO_STD_FORMAT
+#include <functional>
+
+namespace plg {
+    namespace detail {
+        // Concept to match string-like types including char* and const char*
+        template<typename T>
+        concept is_string_like = requires(T v) {
+            { std::string_view(v) };
+        };
+    }
+
+	template<typename Range>
+	constexpr string join(const Range& range, std::string_view separator) {
+		string result;
+
+		auto it = range.cbegin();
+		auto end = range.cend();
+
+		if (it == end) return result;
+
+		// First pass: compute total size
+		size_t total_size = 0;
+		size_t count = 0;
+
+		for (auto tmp = it; tmp != end; ++tmp) {
+			using Elem = std::decay_t<decltype(*tmp)>;
+			if constexpr (detail::is_string_like<Elem>) {
+				total_size += std::string_view(*tmp).size();
+			} else {
+				total_size += std::formatted_size("{}", *tmp);
+			}
+			++count;
+		}
+		if (count > 1) {
+			total_size += (count - 1) * separator.size();
+		}
+		result.reserve(total_size);
+
+		auto in = std::back_inserter(result);
+
+		// Second pass: actual formatting
+		/*if (it != end)*/ {
+			std::format_to(in, "{}", *it++);
+		}
+		while (it != end) {
+			std::format_to(in, "{}{}", separator, *it++);
+		}
+
+		return result;
+	}
+
+	template<typename Range, typename Proj>
+	constexpr string join(const Range& range, Proj&& proj, std::string_view separator) {
+		string result;
+
+		auto it = range.cbegin();
+		auto end = range.cend();
+
+		if (it == end) return result;
+
+		// First pass: compute total size
+		size_t total_size = 0;
+		size_t count = 0;
+
+		for (auto tmp = it; tmp != end; ++tmp) {
+			auto&& projected = std::invoke(std::forward<Proj>(proj), *tmp);
+			using Elem = std::decay_t<decltype(projected)>;
+
+			if constexpr (detail::is_string_like<Elem>) {
+				total_size += std::string_view(*projected).size();
+			} else {
+				total_size += std::formatted_size("{}", projected);
+			}
+			++count;
+		}
+		if (count > 1) {
+			total_size += (count - 1) * separator.size();
+		}
+		result.reserve(total_size);
+
+		auto out = std::back_inserter(result);
+
+		// Second pass: actual formatting
+		{
+			auto&& projected = std::invoke(std::forward<Proj>(proj), *it++);
+			std::format_to(out, "{}", projected);
+		}
+		while (it != end) {
+			auto&& projected = std::invoke(std::forward<Proj>(proj), *it++);
+			std::format_to(out, "{}{}", separator, projected);
+		}
+
+		return result;
+	}
+} // namespace plugify
 #endif // PLUGIFY_STRING_NO_STD_FORMAT

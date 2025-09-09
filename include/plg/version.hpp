@@ -6,10 +6,7 @@
 #include <iosfwd>
 #include <limits>
 #include <optional>
-#include <string>
-#include <string_view>
 #include <variant>
-#include <vector>
 #if __has_include(<charconv>)
 #include <charconv>
 #else
@@ -22,11 +19,12 @@
 
 #include "plg/hash.hpp"
 #include "plg/macro.hpp"
+#include "plg/string.hpp"
+#include "plg/vector.hpp"
 
 // from https://github.com/Neargye/semver
 namespace plg {
     namespace detail {
-
         template <typename T, typename = void>
         struct resize_uninitialized {
             constexpr static auto resize(T& str, std::size_t size) -> std::void_t<decltype(str.resize(size))> {
@@ -67,7 +65,7 @@ namespace plg {
 
         struct prerelease_identifier {
             prerelease_identifier_type type;
-            std::string identifier;
+            string identifier;
         };
 
         class version_parser;
@@ -92,19 +90,19 @@ namespace plg {
         constexpr I2 minor() const noexcept { return minor_; }
         constexpr I3 patch() const noexcept { return patch_; }
 
-        constexpr const std::string& prerelease_tag() const { return prerelease_tag_; }
-        constexpr const std::string& build_metadata() const { return build_metadata_; }
+        constexpr const string& prerelease_tag() const { return prerelease_tag_; }
+        constexpr const string& build_metadata() const { return build_metadata_; }
 
-        constexpr std::string to_string() const;
+        constexpr string to_string() const;
 
     private:
         I1 major_ = 0;
         I2 minor_ = 1;
         I3 patch_ = 0;
-        std::string prerelease_tag_;
-        std::string build_metadata_;
+        string prerelease_tag_;
+        string build_metadata_;
 
-        std::vector<detail::prerelease_identifier> prerelease_identifiers;
+        vector<detail::prerelease_identifier> prerelease_identifiers;
 
         constexpr std::size_t length() const noexcept {
             return detail::length(major_) + detail::length(minor_) + detail::length(patch_) + 2
@@ -124,9 +122,9 @@ namespace plg {
     };
 
     template <typename I1, typename I2, typename I3>
-    constexpr std::string version<I1, I2, I3>::to_string() const {
-        std::string result;
-        detail::resize_uninitialized<std::string>{}.resize(result, length());
+    constexpr string version<I1, I2, I3>::to_string() const {
+        string result;
+        detail::resize_uninitialized<string>{}.resize(result, length());
 
         auto it = result.end();
         if (!build_metadata_.empty()) {
@@ -169,7 +167,6 @@ namespace plg {
     };
 
     namespace detail {
-
         constexpr from_chars_result success(const char* ptr) noexcept {
             return from_chars_result{ ptr, std::errc{} };
         }
@@ -295,7 +292,7 @@ namespace plg {
         class token_stream {
         public:
             constexpr token_stream() = default;
-            constexpr explicit token_stream(std::vector<token> tokens) noexcept : tokens_(std::move(tokens)) {}
+            constexpr explicit token_stream(vector<token> tokens) noexcept : tokens_(std::move(tokens)) {}
 
             constexpr void push(const token& token) noexcept {
                 tokens_.push_back(token);
@@ -339,7 +336,7 @@ namespace plg {
 
         private:
             std::size_t current_ = 0;
-            std::vector<token> tokens_;
+            vector<token> tokens_;
 
             constexpr token get(std::size_t i) const noexcept {
                 return tokens_[i];
@@ -560,15 +557,15 @@ namespace plg {
                 return failure(token.lexeme, std::errc::result_out_of_range);
             }
 
-            constexpr from_chars_result parse_prerelease_tag(std::string& out, std::vector<detail::prerelease_identifier>& out_identifiers) {
-                std::string result;
+            constexpr from_chars_result parse_prerelease_tag(string& out, vector<detail::prerelease_identifier>& out_identifiers) {
+                string result;
 
                 do {
                     if (!result.empty()) {
                         result.push_back('.');
                     }
 
-                    std::string identifier;
+                    string identifier;
                     if (const auto res = parse_prerelease_identifier(identifier); !res) {
                         return res;
                     }
@@ -582,15 +579,15 @@ namespace plg {
                 return success(stream_.peek().lexeme);
             }
 
-            constexpr from_chars_result parse_build_metadata(std::string& out) {
-                std::string result;
+            constexpr from_chars_result parse_build_metadata(string& out) {
+                string result;
 
                 do {
                     if (!result.empty()) {
                         result.push_back('.');
                     }
 
-                    std::string identifier;
+                    string identifier;
                     if (const auto res = parse_build_identifier(identifier); !res) {
                         return res;
                     }
@@ -602,8 +599,8 @@ namespace plg {
                 return success(stream_.peek().lexeme);
             }
 
-            constexpr from_chars_result parse_prerelease_identifier(std::string& out) {
-                std::string result;
+            constexpr from_chars_result parse_prerelease_identifier(string& out) {
+                string result;
                 token token = stream_.advance();
 
                 do {
@@ -641,7 +638,7 @@ namespace plg {
                 return success(stream_.peek().lexeme);
             }
 
-            constexpr detail::prerelease_identifier make_prerelease_identifier(const std::string& identifier) {
+            constexpr detail::prerelease_identifier make_prerelease_identifier(const string& identifier) {
                 auto type = detail::prerelease_identifier_type::numeric;
                 for (char c : identifier) {
                     if (c == '-' || detail::is_letter(c)) {
@@ -652,8 +649,8 @@ namespace plg {
                 return detail::prerelease_identifier{ type, identifier };
             }
 
-            constexpr from_chars_result parse_build_identifier(std::string& out) {
-                std::string result;
+            constexpr from_chars_result parse_build_identifier(string& out) {
+                string result;
                 token token = stream_.advance();
 
                 do {
@@ -849,8 +846,8 @@ namespace plg {
 
             constexpr range_operator get_operator() const noexcept { return op_; }
 
-            constexpr std::string to_string() const {
-                std::string result;
+            constexpr string to_string() const {
+                string result;
                 switch (op_) {
                     case range_operator::less: result += "<"; break;
                     case range_operator::less_or_equal: result += "<="; break;
@@ -902,12 +899,12 @@ namespace plg {
                 return ranges_comparators_.empty();
             }
 
-            constexpr std::string to_string() const {
-                return plg::join(ranges_comparators_, " ");
+            constexpr string to_string() const {
+                return join(ranges_comparators_, " ");
             }
 
         private:
-            std::vector<range_comparator<I1, I2, I3>> ranges_comparators_;
+            vector<range_comparator<I1, I2, I3>> ranges_comparators_;
 
             constexpr bool match_at_least_one_comparator_with_prerelease(const version<I1, I2, I3>& v) const noexcept {
                 if (v.prerelease_tag().empty()) {
@@ -950,12 +947,12 @@ namespace plg {
             return ranges_.empty();
         }
 
-        constexpr std::string to_string() const {
-            return plg::join(ranges_, " ");
+        constexpr string to_string() const {
+            return join(ranges_, " ");
         }
 
     private:
-        std::vector<detail::range<I1, I2, I3>> ranges_;
+        vector<detail::range<I1, I2, I3>> ranges_;
     };
 
     namespace detail {
@@ -965,7 +962,7 @@ namespace plg {
 
             template <typename I1, typename I2, typename I3>
             constexpr from_chars_result parse(range_set<I1, I2, I3>& out) noexcept {
-                std::vector<range<I1, I2, I3>> ranges;
+                vector<range<I1, I2, I3>> ranges;
 
                 do {
 
@@ -1004,7 +1001,7 @@ namespace plg {
             }
 
             template <typename I1, typename I2, typename I3>
-            constexpr from_chars_result parse_range_comparator(std::vector<detail::range_comparator<I1, I2, I3>>& out) noexcept {
+            constexpr from_chars_result parse_range_comparator(vector<detail::range_comparator<I1, I2, I3>>& out) noexcept {
                 range_operator op = range_operator::equal;
                 token token;
                 if (stream_.advanceIfMatch(token, token_type::range_operator)) {

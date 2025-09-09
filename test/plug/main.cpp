@@ -8,12 +8,15 @@
 #include <CLI/CLI.hpp>
 #include <glaze/glaze.hpp>
 #include <plg/format.hpp>
-#include <unistd.h>
 
 #include "plugify/extension.hpp"
 #include "plugify/logger.hpp"
 #include "plugify/manager.hpp"
 #include "plugify/plugify.hpp"
+
+#if PLUGIFY_PLATFORM_APPLE
+#include <unistd.h>
+#endif
 
 namespace plg {
     template<plg::detail::is_string_like First>

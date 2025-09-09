@@ -91,7 +91,7 @@ LibsolvDependencyResolver::AddSolvable(const Manifest& manifest) {
     s->name = pool_str2id(_pool.get(), manifest.name.c_str(), 1);
 
     // Set version
-    std::string versionStr = manifest.version.to_string();
+    auto versionStr = manifest.version.to_string();
     s->evr = pool_str2id(_pool.get(), versionStr.c_str(), 1);
 
     // Set vendor
@@ -188,7 +188,7 @@ LibsolvDependencyResolver::MakeDepConstraint(
         Id innerDep = 0;
 
         for (const auto& comparator : constraint) {
-            std::string versionStr = comparator.get_version().to_string();
+            auto versionStr = comparator.get_version().to_string();
             Id evr = pool_str2id(_pool.get(), versionStr.c_str(), 1);
 
             int flags = ConvertComparison(comparator.get_operator());

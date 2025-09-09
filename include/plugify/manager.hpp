@@ -39,9 +39,9 @@ namespace plugify {
         [[nodiscard]] std::vector<const Extension*> GetExtensionsByType(ExtensionType type) const;
 
         // Dump operations
-        std::string GenerateLoadOrder() const;
-        std::string GenerateDependencyGraph() const;
-        std::string GenerateDependencyGraphDOT() const;
+        [[nodiscard]] std::string GenerateLoadOrder() const;
+        [[nodiscard]] std::string GenerateDependencyGraph() const;
+        [[nodiscard]] std::string GenerateDependencyGraphDOT() const;
 
         [[nodiscard]] bool operator==(const Manager& other) const noexcept;
         [[nodiscard]] auto operator<=>(const Manager& other) const noexcept;

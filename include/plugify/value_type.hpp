@@ -407,30 +407,30 @@ namespace plugify {
                 case ValueType::Float:   return sizeof(float);
                 case ValueType::Double:  return sizeof(double);
 
-                case ValueType::String:  return sizeof(std::string);
+                case ValueType::String:  return sizeof(plg::string);
                 case ValueType::Any:     return sizeof(plg::any);
 
-                // Arrays -> std::vector overhead (not element size!)
-                case ValueType::ArrayBool:     return sizeof(std::vector<bool>);
-                case ValueType::ArrayChar8:    return sizeof(std::vector<char>);
-                case ValueType::ArrayChar16:   return sizeof(std::vector<char16_t>);
-                case ValueType::ArrayInt8:     return sizeof(std::vector<int8_t>);
-                case ValueType::ArrayInt16:    return sizeof(std::vector<int16_t>);
-                case ValueType::ArrayInt32:    return sizeof(std::vector<int32_t>);
-                case ValueType::ArrayInt64:    return sizeof(std::vector<int64_t>);
-                case ValueType::ArrayUInt8:    return sizeof(std::vector<uint8_t>);
-                case ValueType::ArrayUInt16:   return sizeof(std::vector<uint16_t>);
-                case ValueType::ArrayUInt32:   return sizeof(std::vector<uint32_t>);
-                case ValueType::ArrayUInt64:   return sizeof(std::vector<uint64_t>);
-                case ValueType::ArrayPointer:  return sizeof(std::vector<void*>);
-                case ValueType::ArrayFloat:    return sizeof(std::vector<float>);
-                case ValueType::ArrayDouble:   return sizeof(std::vector<double>);
-                case ValueType::ArrayString:   return sizeof(std::vector<std::string>);
-                case ValueType::ArrayAny:      return sizeof(std::vector<plg::any>);
-                case ValueType::ArrayVector2:  return sizeof(std::vector<plg::vec2>);
-                case ValueType::ArrayVector3:  return sizeof(std::vector<plg::vec3>);
-                case ValueType::ArrayVector4:  return sizeof(std::vector<plg::vec4>);
-                case ValueType::ArrayMatrix4x4:return sizeof(std::vector<plg::mat4x4>);
+                // Arrays -> plg::vector overhead (not element size!)
+                case ValueType::ArrayBool:     return sizeof(plg::vector<bool>);
+                case ValueType::ArrayChar8:    return sizeof(plg::vector<char>);
+                case ValueType::ArrayChar16:   return sizeof(plg::vector<char16_t>);
+                case ValueType::ArrayInt8:     return sizeof(plg::vector<int8_t>);
+                case ValueType::ArrayInt16:    return sizeof(plg::vector<int16_t>);
+                case ValueType::ArrayInt32:    return sizeof(plg::vector<int32_t>);
+                case ValueType::ArrayInt64:    return sizeof(plg::vector<int64_t>);
+                case ValueType::ArrayUInt8:    return sizeof(plg::vector<uint8_t>);
+                case ValueType::ArrayUInt16:   return sizeof(plg::vector<uint16_t>);
+                case ValueType::ArrayUInt32:   return sizeof(plg::vector<uint32_t>);
+                case ValueType::ArrayUInt64:   return sizeof(plg::vector<uint64_t>);
+                case ValueType::ArrayPointer:  return sizeof(plg::vector<void*>);
+                case ValueType::ArrayFloat:    return sizeof(plg::vector<float>);
+                case ValueType::ArrayDouble:   return sizeof(plg::vector<double>);
+                case ValueType::ArrayString:   return sizeof(plg::vector<plg::string>);
+                case ValueType::ArrayAny:      return sizeof(plg::vector<plg::any>);
+                case ValueType::ArrayVector2:  return sizeof(plg::vector<plg::vec2>);
+                case ValueType::ArrayVector3:  return sizeof(plg::vector<plg::vec3>);
+                case ValueType::ArrayVector4:  return sizeof(plg::vector<plg::vec4>);
+                case ValueType::ArrayMatrix4x4:return sizeof(plg::vector<plg::mat4x4>);
 
                 // Structs
                 case ValueType::Vector2:  return sizeof(plg::vec2);

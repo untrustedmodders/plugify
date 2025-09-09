@@ -27,7 +27,32 @@
 #include "plg/allocator.hpp"
 
 namespace plg {
-	template<typename Allocator>
+    namespace detail {
+        template<typename Alloc>
+        concept is_alloc = requires(Alloc& a, std::size_t n) {
+            typename std::allocator_traits<Alloc>::value_type;
+            typename std::allocator_traits<Alloc>::pointer;
+            typename std::allocator_traits<Alloc>::const_pointer;
+            typename std::allocator_traits<Alloc>::size_type;
+            typename std::allocator_traits<Alloc>::difference_type;
+
+            { std::allocator_traits<Alloc>::allocate(a, n) }
+            -> std::convertible_to<typename std::allocator_traits<Alloc>::pointer>;
+
+            requires requires(typename std::allocator_traits<Alloc>::pointer p) {
+                std::allocator_traits<Alloc>::deallocate(a, p, n);
+            };
+        };
+
+        struct initialized_value_tag {};
+
+#if PLUGIFY_VECTOR_CONTAINERS_RANGES
+        template<typename Range, typename Type>
+        concept vector_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
+#endif
+    } // namespace detail
+
+	template<detail::is_alloc Allocator>
 	struct vector_iterator {
 		using allocator_traits = std::allocator_traits<Allocator>;
 	public:
@@ -119,7 +144,7 @@ namespace plg {
 	}
 #endif // __cpp_impl_three_way_comparison
 
-	template<typename Allocator>
+	template<detail::is_alloc Allocator>
 	struct vector_const_iterator {
 		using allocator_traits = std::allocator_traits<Allocator>;
 	public:
@@ -152,14 +177,14 @@ namespace plg {
 			++_current;
 			return *this;
 		}
-		constexpr vector_const_iterator operator++(int) const noexcept {
+		constexpr vector_const_iterator operator++(int) noexcept {
 			return vector_const_iterator(_current++);
 		}
 		constexpr vector_const_iterator& operator--() noexcept {
 			--_current;
 			return *this;
 		}
-		constexpr vector_const_iterator operator--(int) const noexcept {
+		constexpr vector_const_iterator operator--(int) noexcept {
 			return vector_const_iterator(_current--);
 		}
 		constexpr vector_const_iterator& operator+=(const difference_type n) noexcept {
@@ -232,18 +257,9 @@ namespace plg {
 		return lhs.base() <=> rhs.base();
 	}
 
-	namespace detail {
-		struct initialized_value_tag {};
-
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES
-		template<typename Range, typename Type>
-		concept vector_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
-#endif
-	} // namespace detail
-
 	// vector
 	// based on implementations from libc++, libstdc++ and Microsoft STL
-	template<typename T, typename Allocator = plg::allocator<T>>
+	template<typename T, detail::is_alloc Allocator = plg::allocator<T>>
 	class vector {
 		using allocator_traits = std::allocator_traits<Allocator>;
 	public:

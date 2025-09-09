@@ -10,6 +10,7 @@
 #include "plg/expected.hpp"
 #include "plg/flat_map.hpp"
 #include "plg/enum.hpp"
+#include "plg/path.hpp"
 #include "plg/format.hpp"
 
 namespace plugify {
