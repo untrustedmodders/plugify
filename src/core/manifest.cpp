@@ -10,21 +10,21 @@
 using namespace plugify;
 
 namespace {
-    // Helper function to validate a name (alphanumeric, underscore, dash, dot)
+    // Helper function to validate a name (alphanumeric, underscore)
     bool IsValidName(const std::string& name) {
         if (name.empty()) return false;
-        static const std::regex nameRegex(
-            "^[a-zA-Z][a-zA-Z0-9_.-]*$"
+        static const re2::RE2 nameRegex(
+            "^[a-zA-Z][a-zA-Z0-9_]*$"
         );
-        return std::regex_match(name, nameRegex);
+        return re2::RE2::FullMatch(name, nameRegex);
     }
 
     // Helper function to validate URL
     bool IsValidURL(const std::string& url) {
-        static const std::regex urlRegex(
+        static const re2::RE2 urlRegex(
             R"(^(https?://)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(/.*)?$)"
         );
-        return std::regex_match(url, urlRegex);
+        return re2::RE2::FullMatch(url, urlRegex);
     }
 
     // Helper function to validate platform
@@ -34,10 +34,10 @@ namespace {
             "unix", "posix", "win32", "win64", "x86", "x64", "arm", "arm64"
         };*/
         if (platform.empty()) return true;
-        static const std::regex platformRegex(
+        static const re2::RE2 platformRegex(
             "^[a-z0-9]+(_(x64|arm64|x86|arm32|riscv32|riscv64))$"
         );
-        return std::regex_match(platform, platformRegex);
+        return re2::RE2::FullMatch(platform, platformRegex);
     }
 
     // Validate EnumObject

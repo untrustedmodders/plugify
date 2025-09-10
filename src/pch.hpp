@@ -22,8 +22,9 @@
 #include <thread>
 #include <condition_variable>
 #include <numeric>
-#include <regex>
 #include <fstream>
+//#include <regex>
+#include <re2/re2.h>
 
 #include "plugify/global.h"
 

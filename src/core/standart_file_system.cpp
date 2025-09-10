@@ -297,29 +297,30 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
     }
 
     // Convert glob patterns to regex
-    std::vector<std::regex> regexes;
+    std::vector<std::string> regexes;
+    regexes.reserve(patterns.size());
     for (const auto& pattern : patterns) {
-        std::string regex_str;
+        std::string regex = "(?i)";
         for (char c : pattern) {
             switch (c) {
-                case '*': regex_str += ".*"; break;
-                case '?': regex_str += "."; break;
-                case '.': regex_str += "\\."; break;
-                case '\\': regex_str += "\\\\"; break;
-                case '[': regex_str += "["; break;
-                case ']': regex_str += "]"; break;
-                case '^': regex_str += "\\^"; break;
-                case '$': regex_str += "\\$"; break;
-                case '+': regex_str += "\\+"; break;
-                case '|': regex_str += "\\|"; break;
-                case '(': regex_str += "\\("; break;
-                case ')': regex_str += "\\)"; break;
-                case '{': regex_str += "\\{"; break;
-                case '}': regex_str += "\\}"; break;
-                default: regex_str += c; break;
+                case '*': regex += ".*"; break;
+                case '?': regex += "."; break;
+                case '.': regex += "\\."; break;
+                case '\\': regex += "\\\\"; break;
+                case '[': regex += "\\["; break;  // Escape properly for RE2
+                case ']': regex += "\\]"; break;
+                case '^': regex += "\\^"; break;
+                case '$': regex += "\\$"; break;
+                case '+': regex += "\\+"; break;
+                case '|': regex += "\\|"; break;
+                case '(': regex += "\\("; break;
+                case ')': regex += "\\)"; break;
+                case '{': regex += "\\{"; break;
+                case '}': regex += "\\}"; break;
+                default: regex += c; break;
             }
         }
-        regexes.emplace_back(regex_str, std::regex_constants::icase);
+        regexes.push_back(std::move(regex));
     }
 
     std::vector<std::filesystem::path> matches;
@@ -330,7 +331,7 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
 
         std::string filename = plg::as_string(file_path.filename());
         for (const auto& regex : regexes) {
-            if (std::regex_match(filename, regex)) {
+            if (re2::RE2::FullMatch(filename, regex)) {
                 matches.push_back(file_path);
                 break;
             }
