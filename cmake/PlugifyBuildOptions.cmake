@@ -20,7 +20,6 @@ option(PLUGIFY_BUILD_SHARED_ASMJIT "Build asmjit as shared library." OFF)
 
 option(PLUGIFY_USE_EXTERNAL_GLAZE "Use external glaze library." OFF)
 option(PLUGIFY_USE_EXTERNAL_ASMJIT "Use external asmjit library." OFF)
-option(PLUGIFY_USE_EXTERNAL_RE2 "Use external re2 library." OFF)
 option(PLUGIFY_USE_EXTERNAL_LIBSOLV "Use external libsolv library." OFF)
 option(PLUGIFY_USE_EXTERNAL_FMT "Use external fmt library." OFF)
 
@@ -40,10 +39,6 @@ set(PLUGIFY_CATCH2_REPO "https://github.com/catchorg/Catch2.git" CACHE STRING ""
 set(PLUGIFY_CATCH2_TAG "v3.4.0" CACHE STRING "")
 set(PLUGIFY_CLI_REPO "https://github.com/CLIUtils/CLI11.git" CACHE STRING "")
 set(PLUGIFY_CLI_TAG "v2.5.0" CACHE STRING "")
-set(PLUGIFY_RE2_REPO "https://github.com/google/re2.git" CACHE STRING "")
-set(PLUGIFY_RE2_TAG "2024-07-02" CACHE STRING "")
-set(PLUGIFY_ABSL_REPO "https://github.com/abseil/abseil-cpp.git" CACHE STRING "")
-set(PLUGIFY_ABSL_TAG "20250127.1" CACHE STRING "")
 set(PLUGIFY_GLAZE_REPO "https://github.com/stephenberry/glaze.git" CACHE STRING "")
 if (PLUGIFY_DEFAULT_CXX_STANDARD GREATER 20)
     set(PLUGIFY_GLAZE_TAG "v5.5.5" CACHE STRING "")

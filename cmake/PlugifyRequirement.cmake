@@ -61,3 +61,4 @@ if(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
         endif()
     endif()
 endif()
+

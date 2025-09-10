@@ -27,15 +27,6 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE asmjit::asmjit)
 
 # ------------------------------------------------------------------------------
-# re2
-if(PLUGIFY_USE_EXTERNAL_RE2)
-    find_package(re2 REQUIRED)
-else()
-    include(FetchRe2)
-endif()
-target_link_libraries(${PROJECT_NAME} PRIVATE re2::re2)
-
-# ------------------------------------------------------------------------------
 # Format
 cmake_push_check_state()
 
