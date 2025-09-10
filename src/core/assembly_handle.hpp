@@ -35,9 +35,6 @@ namespace plugify {
         
         AssemblyHandle& operator=(AssemblyHandle&& other) noexcept {
             if (this != &other) {
-                if (_handle && _ops) {
-                    [[maybe_unused]] auto _ = _ops->UnloadLibrary(_handle);
-                }
                 _handle = std::exchange(other._handle, nullptr);
                 _ops = std::move(other._ops);
                 _path = std::move(other._path);

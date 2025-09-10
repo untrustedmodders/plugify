@@ -61,13 +61,13 @@ endif()
 set(PLUGIFY_PLATFORM_SOURCES "src/platform/${PLUGIFY_PLATFORM_NAME}_ops.cpp")
 
 if(PLUGIFY_CPU_ARCH_ARM64)
-    set(PLUGIYFY_JIT_ARCH "a64")
+    set(PLUGIFY_JIT_ARCH "a64")
 elseif(PLUGIFY_CPU_ARCH_ARM32)
-    set(PLUGIYFY_JIT_ARCH "a32")
+    set(PLUGIFY_JIT_ARCH "a32")
 else()
-    set(PLUGIYFY_JIT_ARCH "x86")
+    set(PLUGIFY_JIT_ARCH "x86")
 endif()
-file(GLOB_RECURSE PLUGIFY_JIT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/jit/${PLUGIYFY_JIT_ARCH}/*.cpp")
+file(GLOB_RECURSE PLUGIFY_JIT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/jit/${PLUGIFY_JIT_ARCH}/*.cpp")
 
 set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES} ${PLUGIFY_JIT_SOURCES})
 
@@ -109,26 +109,6 @@ else(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
 endif()
 
 if(LINUX)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
-                -g3 -gdwarf-4 -fno-omit-frame-pointer -fno-inline
-        )
-        if(PLUGIFY_COMPILER_CLANG)
-            set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
-                    -fstandalone-debug -glldb
-            )
-        elseif(PLUGIFY_COMPILER_GCC)
-            set(PLUGIFY_COMPILE_OPTIONS ${PLUGIFY_COMPILE_OPTIONS}
-                    -ggdb3
-                    -fno-eliminate-unused-debug-types
-                    -femit-class-debug-always
-                    -fvar-tracking
-                    -fvar-tracking-assignments
-                    -grecord-gcc-switches
-            )
-        endif()
-    endif()
-
     target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
 endif()
 

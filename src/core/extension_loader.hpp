@@ -85,7 +85,7 @@ namespace plugify {
 
             std::string ToString() const {
                 return std::format(
-                    "=== Loader Report ===\n"
+                    "\n=== Loader Report ===\n"
                     "  Modules loaded: {}\n"
                     "  Plugins loaded: {}\n"
                     "  Slowest module: {} - {}\n"

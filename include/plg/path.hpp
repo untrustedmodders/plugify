@@ -42,7 +42,7 @@ namespace plg {
         return insensitive_equals(extension_view(path), extension);
     }
 
-    inline std::string as_string(const std::filesystem::path& p) {
+    inline auto as_string(const std::filesystem::path& p) {
 #if _WIN32
         return p.string(); // returns std::string by value
 #else

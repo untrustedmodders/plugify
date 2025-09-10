@@ -101,7 +101,7 @@ public:
 
         if (!extensions.empty()) {
             if (config.logging.printReport) {
-                logger->Log("=== Extensions Report ===", Severity::Info);
+                logger->Log("\n=== Extensions Report ===", Severity::Info);
                 for (auto& ext : extensions) {
                     logger->Log(ext.GetPerformanceReport(), Severity::Info);
                 }

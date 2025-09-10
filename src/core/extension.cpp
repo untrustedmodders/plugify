@@ -326,11 +326,7 @@ void Extension::EndOperation(ExtensionState newState) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - _impl->timings.lastOperationStart
     );
-
-    // Store the time for the operation that just ended (current state)
     _impl->timings.timepoints[_impl->state] = duration;
-
-    // Transition to the new state
     SetState(newState);
 }
 

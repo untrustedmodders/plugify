@@ -55,7 +55,7 @@ namespace plugify {
         }
 
         const std::filesystem::path& GetPath() const override {
-            return _handle ? _handle->GetPath() : kEmptyPath;
+            return _handle ? _handle->GetPath() : emptyPath;
         }
 
         MemAddr GetBase() const override {
@@ -66,6 +66,6 @@ namespace plugify {
             return _handle ? _handle->GetHandle() : nullptr;
         }
 
-        static inline const std::filesystem::path kEmptyPath;
+        static inline const std::filesystem::path emptyPath;
     };
 }

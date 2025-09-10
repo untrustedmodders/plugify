@@ -31,7 +31,7 @@ namespace plugify {
                 buffer.reserve(256);
                 
                 auto it = std::back_inserter(buffer);
-                std::format_to(it, "=== Pipeline Report ===\n");
+                std::format_to(it, "\n=== Pipeline Report ===\n");
                 std::format_to(it, "Items: {} -> {} ({} total)\n",
                            initialItems, finalItems, totalTime);
 
