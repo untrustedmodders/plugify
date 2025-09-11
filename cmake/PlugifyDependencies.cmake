@@ -52,12 +52,6 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
 endif()
 
 # ------------------------------------------------------------------------------
-# Crashpad
-if(PLUGIFY_BUILD_CRASHPAD)
-    include(FetchCrashPad)
-endif()
-
-# ------------------------------------------------------------------------------
 # Git
 include(FetchGit)
 
