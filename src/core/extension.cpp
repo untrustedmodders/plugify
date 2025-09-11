@@ -62,14 +62,14 @@ struct Extension::Impl {
     } moduleData;
 
     void Cache() {
-        const auto& filename = location.filename().replace_extension();
-        location = location.parent_path();
+        fs::path path = std::move(location);
+        location = path.parent_path();
         if (type == ExtensionType::Module) {
             // Language module library must be named 'lib${name}(.dylib|.so|.dll)'.
             if (manifest.runtime) {
                 manifest.runtime = location / manifest.runtime->parent_path() / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, plg::as_string(manifest.runtime->filename()));
             } else {
-                manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,  plg::as_string(filename));
+                manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,  plg::as_string(path.filename().replace_extension()));
             }
             // Set correct path to directories
             if (manifest.directories && !manifest.directories->empty()) {
@@ -84,7 +84,7 @@ struct Extension::Impl {
             .name = manifest.name,
             .type = type,
             .version = version,
-            .location = location,
+            .location = std::move(path),
         });
     }
 };
@@ -110,8 +110,7 @@ static const std::vector<MethodData> emptyMethodData;
 
 Extension::Extension(UniqueId id, std::filesystem::path location)
     : _impl(std::make_unique<Impl>()) {
-     const auto& filename = location.filename().replace_extension();
-    _impl->manifest.name = plg::as_string(filename);
+    _impl->manifest.name = plg::as_string(location.filename().replace_extension());
 
     _impl->id = id;
     _impl->state = ExtensionState::Discovered;
