@@ -2267,7 +2267,7 @@ int main() {
     );
 
     // Configure plugin manager
-    plugify::PluginManagerConfig config;
+    plugify::Config config;
     config.paths.baseDir = "./app";
     config.paths.extensionsDir = "extensions";
     config.loading.enableHotReload = true;
@@ -2299,9 +2299,9 @@ int main() {
         return 1;
     }
 
-    // Access provider for convenient operations
-    auto provider = plugify->GetProvider();
-    provider->LogInfo("Application started");
+    // Access service locator for convenient operations
+    auto logger = plugify->GetServices().Resolve<ILogger>();
+    logger->Log("Application started", Severity::Info);
 
     // Main loop
     bool running = true;

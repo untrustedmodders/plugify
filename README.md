@@ -192,38 +192,92 @@ endif()
 
 ### Example
 
-This code creates an instance of the object implementing the plugify::IPlugify interface. It sets up logging, initializes the instance, and then interacts with a package manager and a plugin manager if they are available. Error handling is included for initialization failures.
+This code creates an instance of the plugify::Plugify object. It sets up services, initializes the instance, and then interacts with a plugin manager. Error handling is included for initialization failures.
 
 ```c++
-std::shared_ptr<plugify::IPlugify> instance = plugify::MakePlugify();
-if (instance) {
-	auto logger = std::make_shared<StdLogger>();
-	instance->SetLogger(logger);
-	logger->SetSeverity(plugify::Severity::Debug);
-	
-	if (!instance->Initialize()) {
-		std::cout << "No feet, no sweets!");
-		return EXIT_FAILURE;
-	}
+// Example 1: Simple usage with defaults
+int main() {
+    auto result = plugify::MakePlugify("./app");
+    if (!result) {
+        std::cerr << "Failed to create Plugify: " << result.error().message << std::endl;
+        return 1;
+    }
 
-	if (auto packageManager = instance->GetPackageManager().lock()) {
-		packageManager->Initialize();
+    auto plugify = result.value();
+    if (auto initResult = plugify->Initialize(); !initResult) {
+        std::cerr << "Failed to initialize: " << initResult.error().message << std::endl;
+        return 1;
+    }
 
-		if (packageManager->HasMissedPackages()) {
-			std::cerr << "Plugin manager has missing packages." << std::endl;
-			packageManager->InstallMissedPackages();
-			continue;
-		}
-		if (packageManager->HasConflictedPackages()) {
-			std::cerr << "Plugin manager has conflicted packages." << std::endl;
-			packageManager->UninstallConflictedPackages();
-			continue;
-		}
-	}
+    // Load extensions
+    const auto& manager = plugify->GetManager();
+    manager->Initialize();
 
-	if (auto pluginManager = instance->GetPluginManager().lock()) {
-		pluginManager->Initialize();
-	}
+    // Main loop
+    bool running = true;
+    while (running) {
+        plugify->Update();
+        // Your application logic here
+    }
+
+    plugify->Terminate();
+    return 0;
+}
+```
+
+```c++
+// Example 2: Advanced configuration
+int main() {
+    // Create custom logger
+    auto logger = std::make_shared<plugify::impl::AsyncLogger>(
+        std::make_shared<plugify::impl::FileLogger>("./logs/app.log")
+    );
+
+    // Configure plugin manager
+    plugify::Config config;
+    config.paths.baseDir = "./app";
+    config.paths.extensionsDir = "extensions";
+    config.loading.enableHotReload = true;
+    config.loading.parallelLoading = true;
+    config.runtime.updateInterval = std::chrono::milliseconds(16);
+
+    // Build Plugify instance
+    auto result = plugify::Plugify::CreateBuilder()
+        .WithConfig(config)
+        .WithLogger(logger)
+        .WithService<MyCustomService>(std::make_shared<MyCustomServiceImpl>())
+        .Build();
+
+    if (!result) {
+        std::cerr << "Failed: " << result.error().message << std::endl;
+        return 1;
+    }
+
+    auto plugify = result.value();
+
+    // Initialize asynchronously
+    auto initFuture = plugify->InitializeAsync();
+
+    // Do other initialization...
+
+    // Wait for initialization
+    if (auto initResult = initFuture.get(); !initResult) {
+        std::cerr << "Failed to initialize: " << initResult.error().message << std::endl;
+        return 1;
+    }
+
+    // Access service locator for convenient operations
+    auto logger = plugify->GetServices().Resolve<ILogger>();
+    logger->Log("Application started", Severity::Info);
+
+    // Main loop
+    bool running = true;
+    while (running) {
+        plugify->Update();
+    }
+
+    plugify->Terminate();
+    return 0;
 }
 ```
 
@@ -301,10 +355,11 @@ To build the basic testing app:
 Here is a list of all already implemented language modules:
 - [C++ Language Module](https://github.com/untrustedmodders/plugify-module-cpp)
 - [C# (.NET) Language Module](https://github.com/untrustedmodders/plugify-module-dotnet)
-- [C# (Mono) Language Module](https://github.com/untrustedmodders/plugify-module-mono)
 - [Go Language Module](https://github.com/untrustedmodders/plugify-module-golang)
-- [Python Language Module](https://github.com/untrustedmodders/plugify-module-python3.12)
+- [Python Language Module](https://github.com/untrustedmodders/plugify-module-python3)
 - [JavaScript Language Module](https://github.com/untrustedmodders/plugify-module-v8)
+- [Lua Language Module](https://github.com/untrustedmodders/plugify-module-lua)
+- [C# (Mono) Language Module](https://github.com/untrustedmodders/plugify-module-mono)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -312,7 +367,7 @@ Here is a list of all already implemented language modules:
 
 While Plugify is a relatively new project, it is making waves in the realm of server-side modding, 
 particularly in the Counter-Strike 2 community. As of now, Plugify is primarily utilized in the 
-ance of a new project known as [MM2-Plugify](https://github.com/untrustedmodders/mms2-plugify), which is also being developed by our team.
+ance of a new project known as [S2-Plugify](https://github.com/untrustedmodders/s2-plugify), which is also being developed by our team.
 
 If you know of other resources out there that are about `Plugify`, feel free to open an issue or a PR and we will be glad to add them here.
 
