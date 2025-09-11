@@ -10,11 +10,11 @@
 using namespace plugify;
 
 namespace {
-    // Helper function to validate a name (alphanumeric, underscore, dash, dot)
+    // Helper function to validate a name (alphanumeric, underscore)
     bool IsValidName(const std::string& name) {
         if (name.empty()) return false;
         static const std::regex nameRegex(
-            "^[a-zA-Z][a-zA-Z0-9_.-]*$"
+            "^[a-zA-Z][a-zA-Z0-9_]*$"
         );
         return std::regex_match(name, nameRegex);
     }
@@ -312,9 +312,9 @@ Result<void> Manifest::Validate() const {
             return MakeError("Plugin entry point cannot be empty");
         }
 
-        if (entry && !IsValidName(*entry)) {
+        /*if (entry && !IsValidName(*entry)) {
             return MakeError("Invalid plugin entry point: {}", *entry);
-        }
+        }*/
 
         if (methods) {
             if (methods->empty()) {
