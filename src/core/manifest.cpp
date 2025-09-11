@@ -317,9 +317,9 @@ Result<void> Manifest::Validate() const {
         }*/
 
         if (methods) {
-            if (methods->empty()) {
+            /*if (methods->empty()) {
                 return MakeError("Methods list cannot be empty if specified");
-            }
+            }*/
 
             std::unordered_set<std::string> methodNames;
             std::unordered_set<std::string> functionNames;
@@ -346,9 +346,9 @@ Result<void> Manifest::Validate() const {
     // Validate module-specific fields
     if (hasModuleFields) {
         if (runtime) {
-            if (runtime->empty()) {
+            /*if (runtime->empty()) {
                 return MakeError("Module runtime path cannot be empty");
-            }
+            }*/
 
             // Check if runtime file exists (optional, might want to make this configurable)
             /*if (!fs->IsExists(*runtime)) {
