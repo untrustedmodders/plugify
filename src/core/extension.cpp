@@ -62,21 +62,24 @@ struct Extension::Impl {
     } moduleData;
 
     void Cache() {
-        id.SetName(manifest.name);
-        version = manifest.version.to_string();
+        const auto& filename = location.filename().replace_extension();
         location = location.parent_path();
         if (type == ExtensionType::Module) {
-            if (!manifest.runtime) {
-                // Language module library must be named 'lib${module name}(.dylib|.so|.dll)'.
-                manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, manifest.name);
+            // Language module library must be named 'lib${name}(.dylib|.so|.dll)'.
+            if (manifest.runtime) {
+                manifest.runtime = location / manifest.runtime->parent_path() / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX, plg::as_string(manifest.runtime->filename()));
+            } else {
+                manifest.runtime = location / "bin" / std::format(PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,  plg::as_string(filename));
             }
+            // Set correct path to directories
             if (manifest.directories && !manifest.directories->empty()) {
-                // Set correct path to directories
                 for (auto& dir : *manifest.directories) {
                     dir = location / dir;
                 }
             }
         }
+        id.SetName(manifest.name);
+        version = manifest.version.to_string();
         registrar = std::make_unique<Registrar>(id, Registrar::DebugInfo{
             .name = manifest.name,
             .type = type,
@@ -107,7 +110,8 @@ static const std::vector<MethodData> emptyMethodData;
 
 Extension::Extension(UniqueId id, std::filesystem::path location)
     : _impl(std::make_unique<Impl>()) {
-    _impl->manifest.name = plg::as_string(location.filename().replace_extension()); // temp name
+     const auto& filename = location.filename().replace_extension();
+    _impl->manifest.name = plg::as_string(filename);
 
     _impl->id = id;
     _impl->state = ExtensionState::Discovered;
