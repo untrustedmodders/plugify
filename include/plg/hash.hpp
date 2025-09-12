@@ -1,8 +1,10 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
-#include <filesystem>
+
+#include "plg/string.hpp"
 
 namespace plg {
 	// std::hash<std::filesystem::path> not in the C++20 standard by default
@@ -15,7 +17,7 @@ namespace plg {
 	struct string_hash {
 		using is_transparent = void; // Enables heterogeneous lookup
 
-		auto operator()(const char *txt) const {
+		auto operator()(const char* txt) const {
 			return std::hash<std::string_view>{}(txt);
 		}
 		auto operator()(std::string_view txt) const {
@@ -23,6 +25,9 @@ namespace plg {
 		}
 		auto operator()(const std::string& txt) const {
 			return std::hash<std::string>{}(txt);
+		}
+        auto operator()(const plg::string& txt) const {
+			return std::hash<plg::string>{}(txt);
 		}
 	};
 
