@@ -14,7 +14,7 @@ namespace {
     bool IsValidName(const std::string& name) {
         if (name.empty()) return false;
         static const std::regex nameRegex(
-            "^[a-zA-Z][a-zA-Z0-9_]*$"
+            "^[A-Za-z0-9_]+$"
         );
         return std::regex_match(name, nameRegex);
     }
