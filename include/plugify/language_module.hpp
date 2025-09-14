@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "plugify/mem_addr.hpp"
-#include "plugify/types.hpp"
 #include "plugify/method.hpp"
+#include "plugify/types.hpp"
 
 namespace plugify {
 	class Extension;
@@ -26,19 +26,21 @@ namespace plugify {
 	 * @struct LoadData
 	 * @brief Holds information about the load result.
 	 *
-	 * The LoadResult structure is used to represent the result of loading a plugin in a language module.
+	 * The LoadResult structure is used to represent the result of loading a plugin in a language
+	 * module.
 	 */
 	struct LoadData {
-		std::vector<MethodData> methods; ///< Methods exported by the loaded plugin.
-		MemAddr data; ///< Data associated with the loaded plugin.
-		MethodTable table; ///< Method table for the loaded plugin.
+		std::vector<MethodData> methods;  ///< Methods exported by the loaded plugin.
+		MemAddr data;                     ///< Data associated with the loaded plugin.
+		MethodTable table;                ///< Method table for the loaded plugin.
 	};
 
 	/**
 	 * @class ILanguageModule
 	 * @brief Interface for user-implemented language modules.
 	 *
-	 * The ILanguageModule interface defines methods that should be implemented by user-written language modules.
+	 * The ILanguageModule interface defines methods that should be implemented by user-written
+	 * language modules.
 	 */
 	class ILanguageModule {
 	protected:
@@ -64,10 +66,10 @@ namespace plugify {
 		 */
 		virtual void OnUpdate(std::chrono::milliseconds deltaTime) = 0;
 
-        /**
-	     * @brief
-	     */
-        //virtual void OnPluginInitialize(const Extension& plugin) = 0;
+		/**
+		 * @brief
+		 */
+		// virtual void OnPluginInitialize(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin load event.
@@ -102,9 +104,9 @@ namespace plugify {
 		virtual void OnMethodExport(const Extension& plugin) = 0;
 
 		/**
-		* @brief Determine if language module is build with debugging mode.
-		* @return True if the assembly is build with debugging, false otherwise.
-		*/
+		 * @brief Determine if language module is build with debugging mode.
+		 * @return True if the assembly is build with debugging, false otherwise.
+		 */
 		virtual bool IsDebugBuild() = 0;
 	};
-} // namespace plugify
+}  // namespace plugify

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <span>
-#include <vector>
 #include <optional>
+#include <span>
 #include <string>
+#include <vector>
 
 #include "plugify/global.h"
 #include "plugify/types.hpp"
@@ -34,10 +34,9 @@ namespace plugify {
 		[[nodiscard]] bool operator==(const Conflict& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Conflict& other) const noexcept;
 
-	PLUGIFY_ACCESS:
-		struct Impl;
+		PLUGIFY_ACCESS : struct Impl;
 		PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 
-    using Obsolete = Conflict;
+	using Obsolete = Conflict;
 }

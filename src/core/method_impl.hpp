@@ -9,8 +9,8 @@ namespace plugify {
 		std::vector<Property> paramTypes;
 		Property retType;
 		std::string name;
-	    std::string funcName;
-	    std::optional<CallConv> callConv;
-	    std::optional<uint8_t> varIndex;
+		std::string funcName;
+		std::optional<CallConv> callConv;
+		std::optional<uint8_t> varIndex;
 	};
 }

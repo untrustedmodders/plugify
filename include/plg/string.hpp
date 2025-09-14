@@ -19,6 +19,7 @@
 #include <limits>            // for std::numeric_limits
 #include <charconv>          // for std::to_chars
 
+
 #include <cstdint>
 #include <cstddef>
 #include <cstdarg>
@@ -44,63 +45,63 @@
 
 namespace plg {
 	namespace detail {
-        template<typename Alloc>
-        concept is_allocator = requires(Alloc& a, std::size_t n) {
-            typename std::allocator_traits<Alloc>::value_type;
-            typename std::allocator_traits<Alloc>::pointer;
-            typename std::allocator_traits<Alloc>::const_pointer;
-            typename std::allocator_traits<Alloc>::size_type;
-            typename std::allocator_traits<Alloc>::difference_type;
+		template<typename Alloc>
+		concept is_allocator = requires(Alloc& a, std::size_t n) {
+			typename std::allocator_traits<Alloc>::value_type;
+			typename std::allocator_traits<Alloc>::pointer;
+			typename std::allocator_traits<Alloc>::const_pointer;
+			typename std::allocator_traits<Alloc>::size_type;
+			typename std::allocator_traits<Alloc>::difference_type;
 
-            { std::allocator_traits<Alloc>::allocate(a, n) }
-            -> std::convertible_to<typename std::allocator_traits<Alloc>::pointer>;
+			{ std::allocator_traits<Alloc>::allocate(a, n) }
+			-> std::convertible_to<typename std::allocator_traits<Alloc>::pointer>;
 
-            requires requires(typename std::allocator_traits<Alloc>::pointer p) {
-                std::allocator_traits<Alloc>::deallocate(a, p, n);
-            };
-        };
+			requires requires(typename std::allocator_traits<Alloc>::pointer p) {
+				std::allocator_traits<Alloc>::deallocate(a, p, n);
+			};
+		};
 
-        template<typename Traits>
-        concept is_char_traits = requires {
-            // Required type definitions
-            typename Traits::char_type;
-            typename Traits::int_type;
-            typename Traits::off_type;
-            typename Traits::pos_type;
-            typename Traits::state_type;
-        } && requires(
-            typename Traits::char_type c1,
-            typename Traits::char_type c2,
-            typename Traits::char_type& cr,
-            const typename Traits::char_type& ccr,
-            typename Traits::char_type* p,
-            const typename Traits::char_type* cp,
-            typename Traits::int_type i1,
-            typename Traits::int_type i2,
-            std::size_t n
-        ) {
-            // Character operations
-            { Traits::assign(cr, ccr) } -> std::same_as<void>;
-            { Traits::eq(ccr, ccr) } -> std::convertible_to<bool>;
-            { Traits::lt(ccr, ccr) } -> std::convertible_to<bool>;
+		template<typename Traits>
+		concept is_char_traits = requires {
+			// Required type definitions
+			typename Traits::char_type;
+			typename Traits::int_type;
+			typename Traits::off_type;
+			typename Traits::pos_type;
+			typename Traits::state_type;
+		} && requires(
+			typename Traits::char_type c1,
+			typename Traits::char_type c2,
+			typename Traits::char_type& cr,
+			const typename Traits::char_type& ccr,
+			typename Traits::char_type* p,
+			const typename Traits::char_type* cp,
+			typename Traits::int_type i1,
+			typename Traits::int_type i2,
+			std::size_t n
+		) {
+			// Character operations
+			{ Traits::assign(cr, ccr) } -> std::same_as<void>;
+			{ Traits::eq(ccr, ccr) } -> std::convertible_to<bool>;
+			{ Traits::lt(ccr, ccr) } -> std::convertible_to<bool>;
 
-            // String operations
-            { Traits::compare(cp, cp, n) } -> std::convertible_to<int>;
-            { Traits::length(cp) } -> std::convertible_to<std::size_t>;
-            { Traits::find(cp, n, ccr) } -> std::convertible_to<const typename Traits::char_type*>;
+			// String operations
+			{ Traits::compare(cp, cp, n) } -> std::convertible_to<int>;
+			{ Traits::length(cp) } -> std::convertible_to<std::size_t>;
+			{ Traits::find(cp, n, ccr) } -> std::convertible_to<const typename Traits::char_type*>;
 
-            // Memory operations
-            { Traits::move(p, cp, n) } -> std::same_as<typename Traits::char_type*>;
-            { Traits::copy(p, cp, n) } -> std::same_as<typename Traits::char_type*>;
-            { Traits::assign(p, n, c1) } -> std::same_as<typename Traits::char_type*>;
+			// Memory operations
+			{ Traits::move(p, cp, n) } -> std::same_as<typename Traits::char_type*>;
+			{ Traits::copy(p, cp, n) } -> std::same_as<typename Traits::char_type*>;
+			{ Traits::assign(p, n, c1) } -> std::same_as<typename Traits::char_type*>;
 
-            // int_type operations
-            { Traits::not_eof(i1) } -> std::same_as<typename Traits::int_type>;
-            { Traits::to_char_type(i1) } -> std::same_as<typename Traits::char_type>;
-            { Traits::to_int_type(c1) } -> std::same_as<typename Traits::int_type>;
-            { Traits::eq_int_type(i1, i2) } -> std::convertible_to<bool>;
-            { Traits::eof() } -> std::same_as<typename Traits::int_type>;
-        };
+			// int_type operations
+			{ Traits::not_eof(i1) } -> std::same_as<typename Traits::int_type>;
+			{ Traits::to_char_type(i1) } -> std::same_as<typename Traits::char_type>;
+			{ Traits::to_int_type(c1) } -> std::same_as<typename Traits::int_type>;
+			{ Traits::eq_int_type(i1, i2) } -> std::convertible_to<bool>;
+			{ Traits::eof() } -> std::same_as<typename Traits::int_type>;
+		};
 
 		struct uninitialized_size_tag {};
 
@@ -909,9 +910,9 @@ namespace plg {
 			// const size_type alignment = 16;
 			// size_type m = allocator_traits::max_size(_allocator);
 			// if (m <= std::numeric_limits<size_type>::max() / 2)
-			//     return m - alignment;
+			//	 return m - alignment;
 			// else
-			//=     return (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) ? m - alignment : (m / 2) - alignment;
+			//=	 return (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) ? m - alignment : (m / 2) - alignment;
 			return (allocator_traits::max_size(_allocator) - 1) / 2;
 		}
 
@@ -1973,21 +1974,21 @@ namespace std {
 
 template<typename Char, typename Traits, typename Alloc>
 std::ostream& operator<<(std::ostream& os, const plg::basic_string<Char, Traits, Alloc>& str) {
-    os << str.c_str();
-    return os;
+	os << str.c_str();
+	return os;
 }
 
 #ifndef PLUGIFY_STRING_NO_STD_FORMAT
 #include <functional>
 
 namespace plg {
-    namespace detail {
-        // Concept to match string-like types including char* and const char*
-        template<typename T>
-        concept is_string_like = requires(T v) {
-            { std::string_view(v) };
-        };
-    }
+	namespace detail {
+		// Concept to match string-like types including char* and const char*
+		template<typename T>
+		concept is_string_like = requires(T v) {
+			{ std::string_view(v) };
+		};
+	}
 
 	template<typename Range>
 	constexpr string join(const Range& range, std::string_view separator) {

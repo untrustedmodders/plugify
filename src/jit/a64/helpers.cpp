@@ -138,26 +138,41 @@ namespace plugify {
 	}
 
 	asmjit::CallConvId GetCallConvId(CallConv callConv) noexcept {
-	    switch (callConv) {
-	        case CallConv::CDecl:        return asmjit::CallConvId::kCDecl;
-	        case CallConv::StdCall:      return asmjit::CallConvId::kStdCall;
-	        case CallConv::FastCall:     return asmjit::CallConvId::kFastCall;
-	        case CallConv::VectorCall:   return asmjit::CallConvId::kVectorCall;
-	        case CallConv::ThisCall:     return asmjit::CallConvId::kThisCall;
-	        case CallConv::RegParm1:     return asmjit::CallConvId::kRegParm1;
-	        case CallConv::RegParm2:     return asmjit::CallConvId::kRegParm2;
-	        case CallConv::RegParm3:     return asmjit::CallConvId::kRegParm3;
-	        case CallConv::LightCall2:   return asmjit::CallConvId::kLightCall2;
-	        case CallConv::LightCall3:   return asmjit::CallConvId::kLightCall3;
-	        case CallConv::LightCall4:   return asmjit::CallConvId::kLightCall4;
-	        case CallConv::SoftFloat:    return asmjit::CallConvId::kSoftFloat;
-	        case CallConv::HardFloat:    return asmjit::CallConvId::kHardFloat;
-	        case CallConv::X64SystemV:   return asmjit::CallConvId::kX64SystemV;
-	        case CallConv::X64Windows:   return asmjit::CallConvId::kX64Windows;
-	        default:
-	            // Fallback for unknown values
-	            return asmjit::CallConvId::kCDecl;
-	    }
+		switch (callConv) {
+			case CallConv::CDecl:
+				return asmjit::CallConvId::kCDecl;
+			case CallConv::StdCall:
+				return asmjit::CallConvId::kStdCall;
+			case CallConv::FastCall:
+				return asmjit::CallConvId::kFastCall;
+			case CallConv::VectorCall:
+				return asmjit::CallConvId::kVectorCall;
+			case CallConv::ThisCall:
+				return asmjit::CallConvId::kThisCall;
+			case CallConv::RegParm1:
+				return asmjit::CallConvId::kRegParm1;
+			case CallConv::RegParm2:
+				return asmjit::CallConvId::kRegParm2;
+			case CallConv::RegParm3:
+				return asmjit::CallConvId::kRegParm3;
+			case CallConv::LightCall2:
+				return asmjit::CallConvId::kLightCall2;
+			case CallConv::LightCall3:
+				return asmjit::CallConvId::kLightCall3;
+			case CallConv::LightCall4:
+				return asmjit::CallConvId::kLightCall4;
+			case CallConv::SoftFloat:
+				return asmjit::CallConvId::kSoftFloat;
+			case CallConv::HardFloat:
+				return asmjit::CallConvId::kHardFloat;
+			case CallConv::X64SystemV:
+				return asmjit::CallConvId::kX64SystemV;
+			case CallConv::X64Windows:
+				return asmjit::CallConvId::kX64Windows;
+			default:
+				// Fallback for unknown values
+				return asmjit::CallConvId::kCDecl;
+		}
 	}
 
-} // namespace plugify
+}  // namespace plugify

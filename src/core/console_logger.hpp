@@ -1,64 +1,73 @@
 #pragma once
 
-#include "plg/enum.hpp"
 #include "plugify/logger.hpp"
 
+#include "plg/enum.hpp"
+
 namespace plugify {
-    class ConsoleLogger : public ILogger {
-    public:
-        ConsoleLogger(Severity minSeverity = Severity::Info)
-            : _minSeverity(minSeverity) {}
-        ~ConsoleLogger() override = default;
+	class ConsoleLogger : public ILogger {
+	public:
+		ConsoleLogger(Severity minSeverity = Severity::Info)
+		    : _minSeverity(minSeverity) {
+		}
 
-        void Log(std::string_view message, Severity severity,
-                 std::source_location loc = std::source_location::current()) override {
-            if (severity == Severity::Unknown) {
-                std::cout << message << std::endl;
-                return;
-            }  else if (severity < _minSeverity)
-                return;
+		~ConsoleLogger() override = default;
 
-            auto output = FormatMessage(message, severity, loc);
+		void Log(
+		    std::string_view message,
+		    Severity severity,
+		    std::source_location loc = std::source_location::current()
+		) override {
+			if (severity == Severity::Unknown) {
+				std::cout << message << std::endl;
+				return;
+			} else if (severity < _minSeverity) {
+				return;
+			}
 
-            std::lock_guard lock(_mutex);
-            if (severity >= Severity::Error) {
-                std::cerr << output << std::endl;
-            } else {
-                std::cout << output << std::endl;
-            }
-        }
+			auto output = FormatMessage(message, severity, loc);
 
-        void SetLogLevel(Severity minSeverity) override {
-            _minSeverity = minSeverity;
-        }
+			std::lock_guard lock(_mutex);
+			if (severity >= Severity::Error) {
+				std::cerr << output << std::endl;
+			} else {
+				std::cout << output << std::endl;
+			}
+		}
 
-        void Flush() override {
-            std::cout.flush();
-            std::cerr.flush();
-        }
+		void SetLogLevel(Severity minSeverity) override {
+			_minSeverity = minSeverity;
+		}
 
-    protected:
-        std::string FormatMessage(std::string_view message, Severity severity,
-                                  const std::source_location& loc) {
-            using namespace std::chrono;
+		void Flush() override {
+			std::cout.flush();
+			std::cerr.flush();
+		}
 
-            auto now = system_clock::now();
+	protected:
+		std::string
+		FormatMessage(std::string_view message, Severity severity, const std::source_location& loc) {
+			using namespace std::chrono;
 
-            // Split into seconds + milliseconds
-            auto seconds = floor<std::chrono::seconds>(now);
-            auto ms = duration_cast<milliseconds>(now - seconds);
+			auto now = system_clock::now();
 
-            return std::format("[{:%F %T}.{:03d}] [{}] [{}:{}] {}",
-                               seconds, // %F = YYYY-MM-DD, %T = HH:MM:SS
-                               static_cast<int>(ms.count()),
-                               plg::enum_to_string(severity),
-                               loc.file_name(),
-                               loc.line(),
-                               message);
-        }
+			// Split into seconds + milliseconds
+			auto seconds = floor<std::chrono::seconds>(now);
+			auto ms = duration_cast<milliseconds>(now - seconds);
 
-    protected:
-        std::mutex _mutex;
-        std::atomic<Severity> _minSeverity;
-    };
+			return std::format(
+			    "[{:%F %T}.{:03d}] [{}] [{}:{}] {}",
+			    seconds,  // %F = YYYY-MM-DD, %T = HH:MM:SS
+			    static_cast<int>(ms.count()),
+			    plg::enum_to_string(severity),
+			    loc.file_name(),
+			    loc.line(),
+			    message
+			);
+		}
+
+	protected:
+		std::mutex _mutex;
+		std::atomic<Severity> _minSeverity;
+	};
 }

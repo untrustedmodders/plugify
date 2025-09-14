@@ -1,8 +1,8 @@
 #pragma once
 
-#include "plugify/property.hpp"
-#include "plugify/method.hpp"
 #include "plugify/enum_object.hpp"
+#include "plugify/method.hpp"
+#include "plugify/property.hpp"
 
 namespace plugify {
 	struct Property::Impl {

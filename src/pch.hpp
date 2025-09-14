@@ -1,29 +1,29 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <chrono>
-#include <vector>
-#include <string>
+#include <cmath>
+#include <condition_variable>
 #include <cstring>
 #include <filesystem>
-#include <optional>
-#include <utility>
-#include <algorithm>
-#include <span>
-#include <unordered_map>
-#include <unordered_set>
-#include <set>
-#include <map>
+#include <fstream>
 #include <functional>
 #include <iterator>
-#include <array>
-#include <cmath>
+#include <map>
 #include <mutex>
-#include <shared_mutex>
-#include <thread>
-#include <condition_variable>
 #include <numeric>
+#include <optional>
 #include <regex>
-#include <fstream>
+#include <set>
+#include <shared_mutex>
+#include <span>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "plugify/global.h"
 

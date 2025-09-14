@@ -5,6 +5,6 @@
 namespace plugify {
 	struct EnumValue::Impl {
 		std::string name;
-		int64_t value{0};
+		int64_t value{ 0 };
 	};
 }

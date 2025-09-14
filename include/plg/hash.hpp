@@ -15,29 +15,32 @@ namespace plg {
 	};
 
 	struct string_hash {
-		using is_transparent = void; // Enables heterogeneous lookup
+		using is_transparent = void;  // Enables heterogeneous lookup
 
 		auto operator()(const char* txt) const {
 			return std::hash<std::string_view>{}(txt);
 		}
+
 		auto operator()(std::string_view txt) const {
 			return std::hash<std::string_view>{}(txt);
 		}
+
 		auto operator()(const std::string& txt) const {
 			return std::hash<std::string>{}(txt);
 		}
-        auto operator()(const plg::string& txt) const {
+
+		auto operator()(const plg::string& txt) const {
 			return std::hash<plg::string>{}(txt);
 		}
 	};
 
 	struct case_insensitive_hash {
-		using is_transparent = void; // Enables heterogeneous lookup
+		using is_transparent = void;  // Enables heterogeneous lookup
 
-		template<typename T>
+		template <typename T>
 		auto operator()(const T& str_like) const noexcept {
 			std::string_view str = str_like;
-			std::size_t hash = 0xcbf29ce484222325; // FNV-1a 64-bit basis
+			std::size_t hash = 0xcbf29ce484222325;  // FNV-1a 64-bit basis
 			for (char c : str) {
 				hash ^= static_cast<unsigned char>(std::tolower(static_cast<unsigned char>(c)));
 				hash *= 0x100000001b3;
@@ -47,26 +50,29 @@ namespace plg {
 	};
 
 	struct case_insensitive_equal {
-		using is_transparent = void; // Enables heterogeneous lookup
+		using is_transparent = void;  // Enables heterogeneous lookup
 
-		template<typename T1, typename T2>
+		template <typename T1, typename T2>
 		bool operator()(const T1& lhs_like, const T2& rhs_like) const noexcept {
 			std::string_view lhs = lhs_like;
 			std::string_view rhs = rhs_like;
 
-			if (lhs.size() != rhs.size())
+			if (lhs.size() != rhs.size()) {
 				return false;
+			}
 
 			for (size_t i = 0; i < lhs.size(); ++i) {
-				if (std::tolower(static_cast<unsigned char>(lhs[i])) !=
-					std::tolower(static_cast<unsigned char>(rhs[i])))
+				if (std::tolower(static_cast<unsigned char>(lhs[i]))
+				    != std::tolower(static_cast<unsigned char>(rhs[i]))) {
 					return false;
+				}
 			}
 			return true;
 		}
 	};
 
-	inline void hash_combine(size_t&) { }
+	inline void hash_combine(size_t&) {
+	}
 
 	template <class T>
 	inline void hash_combine(std::size_t& seed, const T& v) {
@@ -78,15 +84,15 @@ namespace plg {
 	template <class... Ts>
 	inline std::size_t hash_combine_all(const Ts&... args) {
 		std::size_t seed = 0;
-		(hash_combine(seed, args), ...); // fold expression
+		(hash_combine(seed, args), ...);  // fold expression
 		return seed;
 	}
 
-    template<typename T1, typename T2>
-    struct pair_hash {
-	    size_t operator()(std::pair<T1, T2> const& p) const {
-	        return hash_combine_all(p.first, p.second);
-	    }
+	template <typename T1, typename T2>
+	struct pair_hash {
+		size_t operator()(const std::pair<T1, T2>& p) const {
+			return hash_combine_all(p.first, p.second);
+		}
 	};
 
 }

@@ -27,30 +27,30 @@
 #include "plg/allocator.hpp"
 
 namespace plg {
-    namespace detail {
-        template<typename Alloc>
-        concept is_alloc = requires(Alloc& a, std::size_t n) {
-            typename std::allocator_traits<Alloc>::value_type;
-            typename std::allocator_traits<Alloc>::pointer;
-            typename std::allocator_traits<Alloc>::const_pointer;
-            typename std::allocator_traits<Alloc>::size_type;
-            typename std::allocator_traits<Alloc>::difference_type;
+	namespace detail {
+		template<typename Alloc>
+		concept is_alloc = requires(Alloc& a, std::size_t n) {
+			typename std::allocator_traits<Alloc>::value_type;
+			typename std::allocator_traits<Alloc>::pointer;
+			typename std::allocator_traits<Alloc>::const_pointer;
+			typename std::allocator_traits<Alloc>::size_type;
+			typename std::allocator_traits<Alloc>::difference_type;
 
-            { std::allocator_traits<Alloc>::allocate(a, n) }
-            -> std::convertible_to<typename std::allocator_traits<Alloc>::pointer>;
+			{ std::allocator_traits<Alloc>::allocate(a, n) }
+			-> std::convertible_to<typename std::allocator_traits<Alloc>::pointer>;
 
-            requires requires(typename std::allocator_traits<Alloc>::pointer p) {
-                std::allocator_traits<Alloc>::deallocate(a, p, n);
-            };
-        };
+			requires requires(typename std::allocator_traits<Alloc>::pointer p) {
+				std::allocator_traits<Alloc>::deallocate(a, p, n);
+			};
+		};
 
-        struct initialized_value_tag {};
+		struct initialized_value_tag {};
 
 #if PLUGIFY_VECTOR_CONTAINERS_RANGES
-        template<typename Range, typename Type>
-        concept vector_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
+		template<typename Range, typename Type>
+		concept vector_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
 #endif
-    } // namespace detail
+	} // namespace detail
 
 	template<detail::is_alloc Allocator>
 	struct vector_iterator {
