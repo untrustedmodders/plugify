@@ -69,6 +69,7 @@ PenaltyExcessCharacter: 10
 PenaltyIndentedWhitespace: 0
 PenaltyReturnTypeOnItsOwnLine: 10
 PointerAlignment: Left
+ReferenceAlignment: Left
 QualifierAlignment: Custom # Experimental
 QualifierOrder: [inline, static, constexpr, const, volatile, type]
 ReflowComments: "true"
