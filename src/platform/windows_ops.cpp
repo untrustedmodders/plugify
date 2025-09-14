@@ -1,6 +1,6 @@
-#include <windows.h>
-
 #include "plugify/platform_ops.hpp"
+
+#include <windows.h>
 #undef LoadLibrary
 
 namespace plugify {
