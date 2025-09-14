@@ -16,23 +16,6 @@
 // #include "plugify/plugin_lifecycle.hpp"
 #include "plugify/assembly_loader.hpp"
 
-namespace std {
-	class shared_ptr_access {
-		template <typename _T, typename... _Args>
-		static _T* __construct(void* __pv, _Args&&... __args) {
-			return ::new (__pv) _T(forward<_Args>(__args)...);
-		}
-
-		template <typename _T>
-		static void __destroy(_T* __ptr) {
-			__ptr->~_T();
-		}
-
-		template <typename _T, typename _A>
-		friend class __shared_ptr_storage;
-	};
-}
-
 namespace plugify {
 	class Plugify;
 
