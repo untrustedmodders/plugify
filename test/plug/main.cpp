@@ -19,7 +19,7 @@
 #endif
 
 namespace plg {
-    template<plg::detail::is_string_like First>
+    template<detail::is_string_like First>
     PLUGIFY_FORCE_INLINE void print(First&& first) {
         std::cout << first << std::endl;
     }
@@ -35,9 +35,6 @@ using namespace plugify;
 namespace {
     constexpr std::string_view SEPARATOR_LINE = "--------------------------------------------------------------------------------";
     constexpr std::string_view DOUBLE_LINE = "================================================================================";
-
-    enum class LookupMethod { ByName, ById };
-    enum class OutputFormat { Console, Json };
 
     // ANSI Color codes
     struct Colors {
@@ -341,6 +338,7 @@ namespace {
         return true;
     }
 
+
     // Convert extension to JSON
     glz::json_t ExtensionToJson(const Extension* ext) {
         glz::json_t j;
@@ -367,14 +365,15 @@ namespace {
 
         // Dependencies
         if (!ext->GetDependencies().empty()) {
-            j["dependencies"] = glz::json_t::array_t();
+            glz::json_t::array_t dependencies;
             for (const auto& dep : ext->GetDependencies()) {
                 glz::json_t::object_t depJson;
                 depJson["name"] = dep.GetName();
                 depJson["constraints"] = dep.GetConstraints().to_string();
                 depJson["optional"] = dep.IsOptional();
-                j["dependencies"].as<glz::json_t::array_t>().emplace_back(std::move(depJson));
+                dependencies.emplace_back(std::move(depJson));
             }
+        	j["dependencies"] = glz::json_t::array_t{std::move(dependencies)};
         }
 
         // Performance
@@ -382,18 +381,20 @@ namespace {
 
         // Errors and warnings
         if (ext->HasErrors()) {
-            glz::json_t e = glz::json_t::array_t();
+            glz::json_t::array_t errors;
+        	errors.reserve(ext->GetErrors().size());
             for (const auto& error : ext->GetErrors()) {
-                e.as<glz::json_t::array_t>().emplace_back(error);
+                errors.emplace_back(error);
             }
-            j["errors"] = std::move(e);
+            j["errors"] = glz::json_t::array_t{std::move(errors)};
         }
         if (ext->HasWarnings()) {
-            glz::json_t w = glz::json_t::array_t();
+            glz::json_t::array_t warnings;
+        	warnings.reserve(ext->GetWarnings().size());
             for (const auto& warning : ext->GetWarnings()) {
-                w.as<glz::json_t::array_t>().emplace_back(warning);
+                warnings.emplace_back(warning);
             }
-            j["warnings"] = w;
+            j["warnings"] = glz::json_t::array_t{std::move(warnings)};
         }
 
         return j;
@@ -582,21 +583,20 @@ public:
         plg::print("Plugin system terminated.");
     }
 
-    void ShowVersion() {
-        static std::string copyright = std::format(
-            "Copyright (C) 2023-{}{}{}{} Untrusted Modders Team",
-            __DATE__[7],
-            __DATE__[8],
-            __DATE__[9],
-            __DATE__[10]
-        );
-        plg::print(R"(      ____)");
-        plg::print(R"( ____|    \         Plugify )" + plug->GetVersion().to_string());
-        plg::print(R"((____|     `._____  )" + copyright);
-        plg::print(R"( ____|       _|___)");
-        plg::print(R"((____|     .'       This program may be freely redistributed under)");
-        plg::print(R"(     |____/         the terms of the MIT License.)");
-    }
+    std::string GetVersionString() {
+		constexpr auto year = std::string_view(__DATE__).substr(7, 4);
+		return std::format(
+			""
+			R"(      ____)" "\n"
+			R"( ____|    \         Plugify {})" "\n"
+			R"((____|     `._____  Copyright (C) 2023-{} Untrusted Modders Team)" "\n"
+			R"( ____|       _|___)" "\n"
+			R"((____|     .'       This program may be freely redistributed under)" "\n"
+			R"(     |____/         the terms of the MIT License.)",
+			plug->GetVersion(),
+			year
+		);
+	}
 
     void LoadManager() {
         if (!plug->IsInitialized()) {
@@ -670,11 +670,12 @@ public:
 
         // Output
         if (jsonOutput) {
-            glz::json_t j = glz::json_t::array_t();
+            glz::json_t::array_t objects;
+        	objects.reserve(filtered.size());
             for (const auto& plugin : filtered) {
-                j.as<glz::json_t::array_t>().push_back(ExtensionToJson(plugin));
+                objects.emplace_back(ExtensionToJson(plugin));
             }
-            plg::print(*j.dump());
+            plg::print(*glz::json_t{std::move(objects)}.dump());
             return;
         }
 
@@ -775,11 +776,12 @@ public:
 
         // Output
         if (jsonOutput) {
-            glz::json_t j = glz::json_t::array_t();
+            glz::json_t::array_t objects;
+        	objects.reserve(filtered.size());
             for (const auto& module : filtered) {
-                j.as<glz::json_t::array_t>().push_back(ExtensionToJson(module));
+                objects.emplace_back(ExtensionToJson(module));
             }
-            plg::print(*j.dump());
+            plg::print(*glz::json_t{std::move(objects)}.dump());
             return;
         }
 
@@ -861,19 +863,20 @@ public:
         }
     }
 
-    void ShowPlugin(std::string_view identifier,
-                    LookupMethod lookup = LookupMethod::ByName,
-                    OutputFormat format = OutputFormat::Console
+    void ShowPlugin(
+        std::string_view identifier,
+        bool plugin_use_id,
+        bool jsonOutput
     ) {
         if (!CheckManager()) {
             return;
         }
 
         const auto& manager = plug->GetManager();
-        auto plugin = lookup == LookupMethod::ById ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
+        auto plugin = plugin_use_id ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
 
         if (!plugin) {
-            if (format == OutputFormat::Json) {
+            if (jsonOutput) {
                 glz::json_t error;
                 error["error"] = std::format("Plugin {} not found", identifier);
                 plg::print(*error.dump());
@@ -884,7 +887,7 @@ public:
         }
 
         if (!plugin->IsPlugin()) {
-            if (format == OutputFormat::Json) {
+            if (jsonOutput) {
                 glz::json_t error;
                 error["error"] = std::format("'{}' is not a plugin (it's a module)", identifier);
                 plg::print(*error.dump());
@@ -899,7 +902,7 @@ public:
         }
 
         // JSON output
-        if (format == OutputFormat::Json) {
+        if (jsonOutput) {
             plg::print(*ExtensionToJson(plugin).dump());
             return;
         }
@@ -1116,18 +1119,18 @@ public:
     }
 
     void ShowModule(std::string_view identifier,
-                    LookupMethod lookup = LookupMethod::ByName,
-                    OutputFormat format = OutputFormat::Console
+        bool module_use_id,
+        bool jsonOutput
     ) {
         if (!CheckManager()) {
             return;
         }
 
         const auto& manager = plug->GetManager();
-        auto module = lookup == LookupMethod::ById ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
+        auto module = module_use_id ? manager.FindExtension(FormatId(identifier)) : manager.FindExtension(identifier);
 
         if (!module) {
-            if (format == OutputFormat::Json) {
+            if (jsonOutput) {
                 glz::json_t error;
                 error["error"] = std::format("Module {} not found", identifier);
                 plg::print(*error.dump());
@@ -1138,7 +1141,7 @@ public:
         }
 
         if (!module->IsModule()) {
-            if (format == OutputFormat::Json) {
+            if (jsonOutput) {
                 glz::json_t error;
                 error["error"] = std::format("'{}' is not a module (it's a plugin)", identifier);
                 plg::print(*error.dump());
@@ -1153,7 +1156,7 @@ public:
         }
 
         // JSON output
-        if (format == OutputFormat::Json) {
+        if (jsonOutput) {
             plg::print(*ExtensionToJson(module).dump());
             return;
         }
@@ -1787,15 +1790,15 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
 	    interactiveApp.require_subcommand(); // 1 or more
         //interactiveApp.allow_extras();
         //interactiveApp.prefix_command();
-        interactiveApp.set_version_flag("-v,--version", [&app]() {
-            app.ShowVersion();
-            return "";
-        });
+        interactiveApp.set_version_flag("-v,--version", app.GetVersionString());
+        interactiveApp.usage("Usage: plugify <command> [options]");
+        // flag to display full help at once
+        interactiveApp.set_help_flag();
+        interactiveApp.set_help_all_flag("-h, --help", "Print this help message and exit");
 
         // Add all commands (similar to main but simplified)
         auto* init = interactiveApp.add_subcommand("init", "Initialize");
         auto* term = interactiveApp.add_subcommand("term", "Terminate");
-        auto* version = interactiveApp.add_subcommand("version", "Show version");
         auto* load = interactiveApp.add_subcommand("load", "Load manager");
         auto* unload = interactiveApp.add_subcommand("unload", "Unload manager");
         auto* reload = interactiveApp.add_subcommand("reload", "Reload manager");
@@ -1807,7 +1810,6 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
         auto* health = interactiveApp.add_subcommand("health", "System health");
         auto* tree = interactiveApp.add_subcommand("tree", "Show dependency tree");
         auto* search = interactiveApp.add_subcommand("search", "Search extensions");
-        auto* help = interactiveApp.add_subcommand("help", "Show help");
         auto* validate = interactiveApp.add_subcommand("validate", "Validate extension file");
         auto* compare = interactiveApp.add_subcommand("compare", "Compare two extensions");
 
@@ -1867,15 +1869,14 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
 
         std::string compare_ext1, compare_ext2;
         bool compare_use_id = false;
-        compare->add_option("e1", compare_ext1, "First extension")->required();
-        compare->add_option("e2", compare_ext2, "Second extension")->required();
+        compare->add_option("extension1", compare_ext1, "First extension")->required();
+        compare->add_option("extension2", compare_ext2, "Second extension")->required();
         compare->add_flag("-u,--uuid", compare_use_id, "Use ID instead of name");
 	    compare->validate_positionals();
 
         // Set callbacks
         init->callback([&app]() { app.Initialize(); });
         term->callback([&app]() { app.Terminate(); });
-        version->callback([&app]() { app.ShowVersion(); });
         load->callback([&app]() { app.LoadManager(); });
         unload->callback([&app]() { app.UnloadManager(); });
         reload->callback([&app]() { app.ReloadManager(); });
@@ -1890,7 +1891,7 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
             }
             filter.showOnlyFailed = pluginShowFailed;
 
-            app.ListPlugins(filter, ParseSortBy(pluginSortBy), pluginReverse);
+            app.ListPlugins(filter, ParseSortBy(pluginSortBy), pluginReverse, false);
         });
 
         modules->callback([&]() {
@@ -1903,15 +1904,15 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
             }
             filter.showOnlyFailed = moduleShowFailed;
 
-            app.ListModules(filter, ParseSortBy(moduleSortBy), moduleReverse);
+            app.ListModules(filter, ParseSortBy(moduleSortBy), moduleReverse, false);
         });
 
         plugin->callback([&app, &plugin_name, &plugin_use_id]() {
-            app.ShowPlugin(plugin_name, static_cast<LookupMethod>(plugin_use_id));
+            app.ShowPlugin(plugin_name, plugin_use_id, false);
         });
 
         module->callback([&app, &module_name, &module_use_id]() {
-            app.ShowModule(module_name, static_cast<LookupMethod>(module_use_id));
+            app.ShowModule(module_name, module_use_id, false);
         });
 
         health->callback([&app]() { app.ShowHealth(); });
@@ -1934,33 +1935,10 @@ RunEnhancedInteractiveMode(PlugifyApp& app) {
             app.CompareExtensions(compare_ext1, compare_ext2, compare_use_id);
         });
 
-        help->callback([]() {
-            plg::print(Colorize("Plugify Interactive Mode Commands:", Colors::BOLD));
-            plg::print("  init                - Initialize plugin system");
-            plg::print("  term                - Terminate plugin system");
-            plg::print("  version             - Show version information");
-            plg::print("  load                - Load plugin manager");
-            plg::print("  unload              - Unload plugin manager");
-            plg::print("  reload              - Reload plugin manager");
-            plg::print("  plugins [--failed]  - List plugins (optionally only failed)");
-            plg::print("  modules [--failed]  - List modules (optionally only failed)");
-            plg::print("  health              - Show system health report");
-            plg::print("  search <query>      - Search extensions");
-            plg::print("  clear/cls           - Clear screen");
-            plg::print("  help                - Show this help");
-            plg::print("  exit/quit/q         - Exit interactive mode");
-            plg::print("  tree <name>         - Show dependency tree");
-            plg::print("  validate <path>     - Validate extension file");
-            plg::print("  compare <e1> <e2>   - Compare two extensions");
-        });
-
         try {
             interactiveApp.parse(args);
         } catch (const CLI::ParseError& e) {
-            if (e.get_exit_code() != 0) {
-                plg::print("{}: {}", Colorize("Error", Colors::RED), e.what());
-                plg::print("Type '{}' for available commands.", Colorize("help", Colors::YELLOW));
-            }
+            interactiveApp.exit(e);
         }
 
         app.Update();
@@ -1985,10 +1963,11 @@ main(int argc, char** argv) {
 
     CLI::App cliApp{ "Plugify - Plugin Management System" };
 	cliApp.require_subcommand(); // 1 or more
-    cliApp.set_version_flag("-v,--version", [&app]() {
-        app.ShowVersion();
-        return "";
-    });
+    cliApp.set_version_flag("-v,--version", app.GetVersionString());
+    cliApp.usage("Usage: plugify <command> [options]");
+    // flag to display full help at once
+    cliApp.set_help_flag("");
+    cliApp.set_help_all_flag("-h, --help");
 
     // Global options
     bool interactive = false;
@@ -2153,14 +2132,14 @@ main(int argc, char** argv) {
         if (!app.IsInitialized()) {
             app.Initialize();
         }
-        app.ShowPlugin(plugin_name, static_cast<LookupMethod>(plugin_use_id), static_cast<OutputFormat>(jsonOutput));
+        app.ShowPlugin(plugin_name, plugin_use_id, jsonOutput);
     });
 
     module_cmd->callback([&app, &module_name, &module_use_id, &jsonOutput]() {
         if (!app.IsInitialized()) {
             app.Initialize();
         }
-        app.ShowModule(module_name, static_cast<LookupMethod>(module_use_id), static_cast<OutputFormat>(jsonOutput));
+        app.ShowModule(module_name, module_use_id, jsonOutput);
     });
 
     health_cmd->callback([&app]() {
