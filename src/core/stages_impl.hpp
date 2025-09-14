@@ -20,7 +20,7 @@ namespace plugify {
             , _fileSystem(std::move(fileSystem)) {
         }
 
-        std::string_view GetName() const override {
+        std::string GetName() const override {
             return "Parsing";
         }
 
@@ -75,7 +75,7 @@ namespace plugify {
             , _config(config) {
         }
 
-        std::string_view GetName() const override {
+        std::string GetName() const override {
             return "Resolution";
         }
 
@@ -273,7 +273,7 @@ namespace plugify {
     public:
         InitializeStage(ExtensionLoader& loader) : _loader(loader) {}
 
-        std::string_view GetName() const override { return "Initialization"; }
+        std::string GetName() const override { return "Initialization"; }
 
         bool ShouldProcess(const Extension& item) const override {
             return item.GetState() == ExtensionState::Resolved;
@@ -364,7 +364,7 @@ namespace plugify {
 
         // Handle dependency failure uniformly
         Result<void> HandleDependencyFailure(Extension& ext) {
-            std::string_view failedDep = _failureTracker.GetFailedDependencyName(ext, _reverseDepGraph);
+            std::string failedDep = _failureTracker.GetFailedDependencyName(ext, _reverseDepGraph);
 
             ext.SetState(ExtensionState::Skipped);
             ext.AddError(std::format("Skipped: dependency '{}' failed", failedDep));
@@ -411,7 +411,7 @@ namespace plugify {
     public:
         using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
-        std::string_view GetName() const override {
+        std::string GetName() const override {
             return "Loading";
         }
 
@@ -479,7 +479,7 @@ namespace plugify {
     public:
         using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
-        std::string_view GetName() const override {
+        std::string GetName() const override {
             return "Exporting";
         }
 
@@ -528,7 +528,7 @@ namespace plugify {
     public:
         using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
-        std::string_view GetName() const override {
+        std::string GetName() const override {
             return "Starting";
         }
 

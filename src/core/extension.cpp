@@ -415,20 +415,32 @@ auto Extension::operator<=>(const Extension& other) const noexcept {
 // Static Helper Methods
 // ============================================================================
 
-std::string_view Extension::GetFileExtension(ExtensionType type) {
-    switch(type) {
+plg::path_view Extension::GetFileExtension(ExtensionType type) {
+    /*switch(type) {
         case ExtensionType::Plugin: return ".pplugin";
         case ExtensionType::Module: return ".pmodule";
         default: return "";
+    }*/
+    switch (type) {
+        case ExtensionType::Plugin: return PLUGIFY_PATH_LITERAL(".pplugin");
+        case ExtensionType::Module: return PLUGIFY_PATH_LITERAL(".pmodule");
+        default: return PLUGIFY_PATH_LITERAL("");
     }
 }
 
 ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
-    static std::unordered_map<std::string, ExtensionType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
+    /*static std::unordered_map<std::string, ExtensionType, plg::case_insensitive_hash, plg::case_insensitive_equal> manifests = {
         { ".pplugin", ExtensionType::Plugin },
         { ".pmodule", ExtensionType::Module }
     };
-    return manifests[plg::as_string(path.extension())];
+    return manifests[plg::as_string(path.extension())];*/
+    std::array extensions = { ExtensionType::Module, ExtensionType::Plugin };
+    for (const auto& extension : extensions) {
+        if (plg::has_extension(path, GetFileExtension(extension))) {
+            return extension;
+        }
+    }
+    return ExtensionType::Unknown;
 }
 
 // ============================================================================
@@ -557,11 +569,11 @@ bool Extension::CanStop() const noexcept {
 }*/
 
 // Add dependency helper (for runtime dependency injection)
-void Extension::AddDependency(std::string_view dep) {
+void Extension::AddDependency(std::string dep) {
     if (!_impl->manifest.dependencies) {
         _impl->manifest.dependencies = std::vector<Dependency>{};
     }
-    _impl->manifest.dependencies->emplace_back().SetName(std::string(dep));
+    _impl->manifest.dependencies->emplace_back().SetName(std::move(dep));
 }
 
 // Reset extension to initial state (useful for reload scenarios)

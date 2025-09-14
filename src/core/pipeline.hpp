@@ -363,7 +363,7 @@ namespace plugify {
         }
     #endif
 
-        static std::string_view GetItemName(const T& item) {
+        static std::string GetItemName(const T& item) {
             if constexpr (requires { item.GetName(); }) {
                 return item.GetName();
             } else if constexpr (requires { item.name; }) {

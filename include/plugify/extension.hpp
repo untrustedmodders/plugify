@@ -142,7 +142,7 @@ namespace plugify {
         [[nodiscard]] auto operator<=>(const Extension& other) const noexcept;
 
         // --- File extensions ---
-        [[nodiscard]] static std::string_view GetFileExtension(ExtensionType type);
+        [[nodiscard]] static plg::path_view GetFileExtension(ExtensionType type);
         [[nodiscard]] static ExtensionType GetExtensionType(const std::filesystem::path& path);
 
         // --- Helpers ---
@@ -153,7 +153,7 @@ namespace plugify {
         //bool CanStart() const noexcept;
         //bool CanUpdate() const noexcept;
         //bool CanStop() const noexcept;
-        void AddDependency(std::string_view dep);
+        void AddDependency(std::string dep);
         void Reset();
 
     private:

@@ -40,7 +40,7 @@ namespace plugify {
             return false;
         }
 
-        std::string_view GetFailedDependencyName(
+        std::string GetFailedDependencyName(
             const Extension& ext,
             const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps) const {
 
@@ -54,7 +54,7 @@ namespace plugify {
                     }
                 }
             }
-            return "";
+            return {};
         }
     };
 }

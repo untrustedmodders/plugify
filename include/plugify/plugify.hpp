@@ -101,7 +101,7 @@ namespace plugify {
         Result<void> Initialize() const;
         void Terminate() const;
         [[nodiscard]] bool IsInitialized() const;
-        void Update(std::chrono::milliseconds deltaTime = std::chrono::milliseconds{16}) const;
+        void Update(std::chrono::milliseconds deltaTime = std::chrono::milliseconds{0}) const;
 
         // Component access
         [[nodiscard]] const Manager& GetManager() const noexcept;

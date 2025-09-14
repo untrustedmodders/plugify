@@ -29,17 +29,16 @@ namespace plg {
         return lhs.size() == rhs.size() && std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin(), insensitive_equals<path_char>);
     }
 
-    inline path_view extension_view(const std::filesystem::path& path) {
-        constexpr path_diff_t extension_size = 4;
+    inline path_view extension_view(const std::filesystem::path& path, size_t extension_size) {
         if (!path.has_extension()) { return {}; }
         const path_string& path_str = path.native();
-        const auto offset = static_cast<path_diff_t>(path_str.size()) - extension_size;
+        const auto offset = static_cast<path_diff_t>(path_str.size() - extension_size);
         if (offset <= 0) { return {}; }
-        return { path_str.cbegin() + offset, path_str.cend() };
+        return { path_str.cbegin() + offset, path_str.cend() }; // NOLINT(*-dangling-handle)
     }
 
     inline bool has_extension(const std::filesystem::path& path, const path_view extension) {
-        return insensitive_equals(extension_view(path), extension);
+        return insensitive_equals(extension_view(path, extension.size()), extension);
     }
 
     inline auto as_string(const std::filesystem::path& p) {

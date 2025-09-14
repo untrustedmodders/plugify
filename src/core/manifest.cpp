@@ -19,6 +19,15 @@ namespace {
         return std::regex_match(name, nameRegex);
     }
 
+    // Helper function to validate a name (alphanumeric, underscore, dot, dash)
+    bool IsValidName2(const std::string& name) {
+        if (name.empty()) return false;
+        static const std::regex nameRegex(
+            "^[A-Za-z0-9_.-]+$"
+        );
+        return std::regex_match(name, nameRegex);
+    }
+
     // Helper function to validate URL
     bool IsValidURL(const std::string& url) {
         static const std::regex urlRegex(
@@ -142,7 +151,7 @@ namespace {
                 return MakeError("{} '{}': funcName cannot be empty", prefix, method.name);
             }
 
-            if (!IsValidName(method.funcName)) {
+            if (!IsValidName2(method.funcName)) {
                 return MakeError("{} '{}': invalid funcName '{}'", prefix, method.name, method.funcName);
             }
         }
@@ -232,7 +241,7 @@ Result<void> Manifest::Validate() const {
         return MakeError("Manifest name is required");
     }
 
-    if (!IsValidName(name)) {
+    if (!IsValidName2(name)) {
         return MakeError("Invalid manifest name: {}", name);
     }
 

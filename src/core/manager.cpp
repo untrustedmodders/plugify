@@ -237,34 +237,16 @@ public:
     };
 
     Result<std::vector<Extension>> DiscoverExtensions() const {
-        auto dirs = fileSystem->IterateDirectory(config.paths.extensionsDir, {
-            .recursive = false,
-            .follow_symlinks = false,
-            .skip_permission_denied = true,
-            .filter_pattern = {},
-            .filter_predicate = [](const FileInfo& f) { return f.is_directory(); },
-        });
-        if (!dirs) {
-            return MakeError(std::move(dirs.error()));
-        }
-
-        std::vector<std::filesystem::path> result;
-        for (const auto& dir : *dirs) {
-            auto paths = fileSystem->FindFiles(dir.path, MANIFEST_EXTENSIONS, false);
-            if (!paths) {
-                return MakeError(std::move(paths.error()));
-            }
-
-            if (paths->size() == 1) {
-                result.emplace_back(std::move(paths->front()));
-            }
+        auto paths = fileSystem->FindFiles(config.paths.extensionsDir, MANIFEST_EXTENSIONS, true);
+        if (!paths) {
+            return MakeError(std::move(paths.error()));
         }
 
         UniqueId id{0};
 
         std::vector<Extension> exts;
-        exts.reserve(result.size());
-        for (auto&& path : result) {
+        exts.reserve(paths->size());
+        for (auto&& path : *paths) {
             exts.emplace_back(id++, std::move(path));
         }
         return exts;

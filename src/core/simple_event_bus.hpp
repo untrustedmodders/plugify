@@ -28,7 +28,7 @@ namespace plugify {
 
             {
                 std::lock_guard lock(_mutex);
-                auto it = _handlers.find(std::string(eventType));
+                auto it = _handlers.find(eventType);
                 if (it != _handlers.end()) {
                     for (const auto& [_, handler] : it->second) {
                         handlersToCall.push_back(handler);

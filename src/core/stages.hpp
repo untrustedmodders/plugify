@@ -28,7 +28,7 @@ namespace plugify {
     public:
         virtual ~IStage() = default;
 
-        virtual std::string_view GetName() const = 0;
+        virtual std::string GetName() const = 0;
 
         virtual StageType GetType() const = 0;
 

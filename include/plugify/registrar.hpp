@@ -5,7 +5,7 @@
 
 namespace plugify {
     PLUGIFY_API std::string ToDebugString(UniqueId id) noexcept;
-    PLUGIFY_API std::string_view ToShortString(UniqueId id) noexcept; // returns either registered name or ""
+    PLUGIFY_API std::string ToShortString(UniqueId id) noexcept;
 
     // RAII registrar helper: registers in ctor, unregisters in dtor
     class Registrar {
