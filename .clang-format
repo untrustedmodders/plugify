@@ -13,7 +13,6 @@ AllowShortFunctionsOnASingleLine: "false"
 AllowShortIfStatementsOnASingleLine: "false"
 AllowShortLoopsOnASingleLine: "false"
 AlwaysBreakTemplateDeclarations: "true"
-BreakAfterReturnType: ExceptShortType
 BinPackArguments: false
 BinPackParameters: false
 BreakAfterAttributes: Leave

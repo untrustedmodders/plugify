@@ -2,11 +2,18 @@
 
 #include "plg/macro.hpp"
 
-#ifdef __cpp_lib_format
-
+#if __has_include(<format>)
 #include <format>
+#if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
+#define PLUGIFY_HAS_STD_FORMAT 1
+#else
+#define PLUGIFY_HAS_STD_FORMAT 0
+#endif
+#else
+#define PLUGIFY_HAS_STD_FORMAT 0
+#endif
 
-#else // __cpp_lib_format
+#if !PLUGIFY_HAS_STD_FORMAT
 
 // Define FMT_FORMAT_H externally to force a difference location for {fmt}
 #ifndef FMT_FORMAT_H
@@ -23,4 +30,4 @@ namespace std {
 	using namespace fmt::detail;
 }
 
-#endif // __cpp_lib_format
+#endif // !PLUGIFY_HAS_STD_FORMAT
