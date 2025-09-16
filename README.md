@@ -150,7 +150,7 @@ Example:
 ```cmake
 include(FetchContent)
 
-FetchContent_Declare(plugify URL https://github.com/untrustedmodders/plugify/releases/download/v1.0.0/plugify.tar.xz)
+FetchContent_Declare(plugify GIT_REPOSITORY https://github.com/untrustedmodders/plugify.git)
 FetchContent_MakeAvailable(plugify)
 
 target_link_libraries(foo PRIVATE plugify::plugify)
