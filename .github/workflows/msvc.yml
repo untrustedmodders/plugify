@@ -38,12 +38,21 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Cache build dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          build/_deps
+          ~/.vcpkg
+          ~/.cache
+        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+
     - name: Configure CMake
       shell: bash -el {0}
       run: >
         cmake -S . -B build -G Ninja 
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
 
     - name: Build
       shell: bash -el {0}

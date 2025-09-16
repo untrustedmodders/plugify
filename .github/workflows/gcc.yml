@@ -37,6 +37,25 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Setup Visual Studio environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Cache build dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          build/_deps
+          ~/.vcpkg
+          ~/.cache
+        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+
     - name: Configure CMake
       shell: bash -el {0}
       run: >
@@ -46,7 +65,7 @@ jobs:
 
     - name: Build
       shell: bash -el {0}
-      run: cmake --build build --target plugify --config ${{ matrix.build_type }} -- -j
+      run: cmake --build build --target plugify --config ${{ matrix.build_type }} --parallel
 
 #    - name: Test
 #      shell: bash -el {0}

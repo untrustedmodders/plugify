@@ -52,6 +52,17 @@ jobs:
       run: echo "C:/msys64/usr/bin" >> $GITHUB_PATH
       shell: pwsh
 
+    - name: Cache build dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          build/_deps
+          ~/.vcpkg
+          ~/.cache
+        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+
     - name: Configure CMake
       shell: bash -el {0}
       run: >
