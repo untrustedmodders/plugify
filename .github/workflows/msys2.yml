@@ -31,31 +31,39 @@ jobs:
 
       matrix:
         os: [windows-latest]
-        build_type: [Debug]
+        build_type: [Release]
+        c_compiler: [gcc]
+        cpp_compiler: [g++]
 
     steps:
-    - uses: msys2/setup-msys2@v2
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
       with:
         update: true
         msystem: UCRT64
         install: git base-devel mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-headers-git
 
-    - uses: actions/checkout@v4
-      
     - name: Add MSYS2 to PATH
       run: echo "C:/msys64/usr/bin" >> $GITHUB_PATH
       shell: pwsh
 
     - name: Configure CMake
+      shell: bash -el {0}
       run: >
-        cmake -G Ninja -B build
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-        -DPLUGIFY_BUILD_TESTS=OFF
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake -S . -B build -G Ninja 
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
 
     - name: Build
-      run: cmake --build build --target plugify --config ${{ matrix.build_type }}
+      shell: bash -el {0}
+      run: cmake --build build --target plugify --config ${{ matrix.build_type }} --parallel
 
-    - name: Test
-      working-directory: build
-      run: ctest --build-config ${{ matrix.build_type }}
+#    - name: Test
+#      shell: bash -el {0}
+#      working-directory: build
+#      run: ctest --build-config ${{ matrix.build_type }}
