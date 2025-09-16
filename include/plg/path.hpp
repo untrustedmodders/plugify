@@ -19,9 +19,9 @@ namespace plg {
 	template <typename char_type>
 	bool insensitive_equals(const path_char lhs, const path_char rhs) {
 		if constexpr (std::is_same_v<char_type, wchar_t>) {
-			return std::towlower(lhs) == rhs;  // NOLINT
+			return std::towlower(static_cast<std::wint_t>(lhs)) == std::towlower(static_cast<std::wint_t>(rhs));
 		} else {
-			return std::tolower(lhs) == rhs;
+			return std::tolower(static_cast<unsigned char>(lhs)) == std::tolower(static_cast<unsigned char>(rhs));
 		}
 	}
 
