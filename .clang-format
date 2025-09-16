@@ -67,7 +67,9 @@ PenaltyBreakOpenParenthesis: 0
 PenaltyBreakTemplateDeclaration: 0
 PenaltyExcessCharacter: 10
 PenaltyIndentedWhitespace: 0
-PenaltyReturnTypeOnItsOwnLine: 10
+AlwaysBreakAfterReturnType: None
+#BreakAfterReturnType: ExceptShortType
+#PenaltyReturnTypeOnItsOwnLine: 10
 PointerAlignment: Left
 ReferenceAlignment: Left
 QualifierAlignment: Custom # Experimental
