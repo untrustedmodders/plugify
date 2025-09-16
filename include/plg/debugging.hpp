@@ -5,12 +5,6 @@
 #if __has_include(<debugging>)
 #include <debugging>
 #if defined(__cpp_lib_debugging) && __cpp_lib_debugging >= 202403L
-namespace plg {
-	using std::breakpoint;
-	using std::breakpoint_if_debugging;
-	using std::is_debugger_present;
-}
-
 #define PLUGIFY_HAS_STD_DEBUGGING 1
 #else
 #define PLUGIFY_HAS_STD_DEBUGGING 0
@@ -211,4 +205,10 @@ namespace plg {
 		}
 	}
 } // namespace plg
+
+namespace plg {
+	using plg::breakpoint;
+	using plg::breakpoint_if_debugging;
+	using plg::is_debugger_present;
+}
 #endif // !PLUGIFY_HAS_STD_DEBUGGING
