@@ -93,7 +93,7 @@ namespace plugify {
 		std::shared_ptr<ILogger> _logger;
 		std::unique_ptr<Pool, PoolDeleter> _pool;
 		Repo* _repo = nullptr;
-		plg::flat_map<UniqueId, Id> _extensionToSolvableId;
-		plg::flat_map<Id, UniqueId> _solvableIdToExtension;
+		std::flat_map<UniqueId, Id> _extensionToSolvableId;
+		std::flat_map<Id, UniqueId> _solvableIdToExtension;
 	};
 }  // namespace plugify

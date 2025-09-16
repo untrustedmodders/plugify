@@ -116,24 +116,24 @@ namespace plugify {
 	 * @brief Represents the result of an operation, encapsulating either a value or an error
 	 * message.
 	 *
-	 * This type is a template alias for `plg::expected`, which provides a way to handle
+	 * This type is a template alias for `std::expected`, which provides a way to handle
 	 * operations that may succeed or fail with an error message.
 	 *
 	 * @tparam T The type of the value to be returned on success.
 	 */
 	template <typename T>
-	using Result = plg::expected<T, std::string>;
+	using Result = std::expected<T, std::string>;
 
 	// Helper for creating errors with context
 
 	template <plg::detail::is_string_like First>
 	PLUGIFY_FORCE_INLINE auto MakeError(First&& error) {
-		return plg::unexpected(std::forward<First>(error));
+		return std::unexpected(std::forward<First>(error));
 	}
 
 	template <typename... Args>
 	PLUGIFY_FORCE_INLINE auto MakeError(std::format_string<Args...> fmt, Args&&... args) {
-		return plg::unexpected(std::format(fmt, std::forward<Args>(args)...));
+		return std::unexpected(std::format(fmt, std::forward<Args>(args)...));
 	}
 }
 

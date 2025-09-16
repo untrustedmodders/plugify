@@ -21,12 +21,12 @@ namespace plugify {
 	    template<typename T>
 	    Result<T> GetAs(std::string_view key) {
 	        auto result = GetValue(key);
-	        if (!result) return plg::unexpected(result.error());
+	        if (!result) return std::unexpected(result.error());
 
 	        try {
 	            return std::any_cast<T>(*result);
 	        } catch (const std::bad_any_cast&) {
-	            return plg::unexpected("Type mismatch for config key");
+	            return std::unexpected("Type mismatch for config key");
 	        }
 	    }
 	};*/

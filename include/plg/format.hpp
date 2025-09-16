@@ -28,6 +28,6 @@
 namespace std {
 	using namespace fmt;
 	using namespace fmt::detail;
-}
+} // namespace std
 
 #endif // !PLUGIFY_HAS_STD_FORMAT

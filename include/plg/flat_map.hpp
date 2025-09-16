@@ -5,10 +5,6 @@
 #if __has_include(<flat_map>)
 #include <flat_map>
 #if defined(__cpp_lib_flat_map) && __cpp_lib_flat_map >= 202207L
-namespace plg {
-	template<typename K, typename V, typename C = std::less<K>>
-	using flat_map = std::flat_map<K, V, C>;
-}
 #define PLUGIFY_HAS_STD_FLAT_MAP 1
 #else
 #define PLUGIFY_HAS_STD_FLAT_MAP 0
@@ -786,4 +782,10 @@ namespace plg {
 	using map = flat_map<Key, Value, Compare, Container>;
 
 }// namespace plg
+
+namespace std {
+	using namespace plg;
+	using namespace plg::detail;
+} // namespace std
+
 #endif // !PLUGIFY_HAS_STD_FLAT_MAP

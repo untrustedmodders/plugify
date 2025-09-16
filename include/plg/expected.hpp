@@ -5,13 +5,6 @@
 #if __has_include(<expected>)
 #include <expected>
 #if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202211L
-namespace plg {
-	using std::expected;
-	using std::unexpected;
-	using unexpect_t = std::unexpect_t;
-	inline constexpr unexpect_t unexpect{};
-}
-
 #define PLUGIFY_HAS_STD_EXPECTED 1
 #else
 #define PLUGIFY_HAS_STD_EXPECTED 0
@@ -1438,5 +1431,11 @@ namespace plg {
 		};
 	};
 
-}// namespace plg
+} // namespace plg
+
+namespace std {
+	using namespace plg;
+	using namespace plg::detail;
+} // namespace std
+
 #endif // !PLUGIFY_HAS_STD_EXPECTED

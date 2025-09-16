@@ -56,16 +56,16 @@ namespace plugify {
 	class ResolutionStage : public IBarrierStage<Extension> {
 		std::shared_ptr<IDependencyResolver> _resolver;
 		std::vector<UniqueId>* _loadOrder;
-		plg::flat_map<UniqueId, std::vector<UniqueId>>* _depGraph;
-		plg::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDepGraph;
+		std::flat_map<UniqueId, std::vector<UniqueId>>* _depGraph;
+		std::flat_map<UniqueId, std::vector<UniqueId>>* _reverseDepGraph;
 		const Config& _config;
 
 	public:
 		ResolutionStage(
 		    std::shared_ptr<IDependencyResolver> resolver,
 		    std::vector<UniqueId>* loadOrder,
-		    plg::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
-		    plg::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph,
+		    std::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
+		    std::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph,
 		    const Config& config
 		)
 		    : _resolver(std::move(resolver))
@@ -165,7 +165,7 @@ namespace plugify {
 
 		// Build language registry and add language dependencies
 		static void AddLanguageDependencies(std::vector<Extension>& items) {
-			plg::flat_map<std::string_view, UniqueId> languages;
+			std::flat_map<std::string_view, UniqueId> languages;
 
 			for (const auto& ext : items) {
 				if (ext.GetType() == ExtensionType::Module) {
@@ -316,16 +316,16 @@ namespace plugify {
 	protected:
 		ExtensionLoader& _loader;
 		FailureTracker& _failureTracker;
-		const plg::flat_map<UniqueId, std::vector<UniqueId>>& _depGraph;
-		const plg::flat_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
+		const std::flat_map<UniqueId, std::vector<UniqueId>>& _depGraph;
+		const std::flat_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
 		std::chrono::milliseconds _timeout;
 
 	public:
 		BaseFailurePropagatingStage(
 		    ExtensionLoader& loader,
 		    FailureTracker& failureTracker,
-		    const plg::flat_map<UniqueId, std::vector<UniqueId>>& depGraph,
-		    const plg::flat_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
+		    const std::flat_map<UniqueId, std::vector<UniqueId>>& depGraph,
+		    const std::flat_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
 		    std::chrono::milliseconds timeout
 		)
 		    : _loader(loader)
@@ -408,7 +408,7 @@ namespace plugify {
 	// ============================================================================
 
 	class LoadingStage : public BaseFailurePropagatingStage<LoadingStage> {
-		plg::flat_map<std::string_view, Extension*> _loadedModules;
+		std::flat_map<std::string_view, Extension*> _loadedModules;
 
 	public:
 		using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
