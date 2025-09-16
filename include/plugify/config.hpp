@@ -113,7 +113,7 @@ namespace plugify {
 
 		// Runtime configuration
 		struct Runtime {
-			bool pinToMainThread = false;
+			bool pinToMainThread = true;
 			UpdateMode updateMode = UpdateMode::Manual;
 			std::chrono::milliseconds updateInterval{ 16 };
 			std::function<void(std::chrono::milliseconds)> updateCallback;
@@ -121,7 +121,7 @@ namespace plugify {
 
 			// Check if values are non-default
 			bool HasCustomPinToMainThread() const {
-				return pinToMainThread != false;
+				return pinToMainThread != true;
 			}
 
 			bool HasCustomUpdateMode() const {
@@ -154,10 +154,10 @@ namespace plugify {
 		// Logging configuration
 		struct Logging {
 			Severity severity{ Severity::Error };
-			bool printReport = true;
-			bool printLoadOrder = true;
-			bool printDependencyGraph = true;
-			bool printDigraphDot = true;
+			bool printReport = false;
+			bool printLoadOrder = false;
+			bool printDependencyGraph = false;
+			bool printDigraphDot = false;
 			std::filesystem::path exportDigraphDot;
 
 			bool HasCustomSeverity() const {
@@ -165,19 +165,19 @@ namespace plugify {
 			}
 
 			bool HasCustomPrintReport() const {
-				return printReport != true;
+				return printReport != false;
 			}
 
 			bool HasCustomPrintLoadOrder() const {
-				return printLoadOrder != true;
+				return printLoadOrder != false;
 			}
 
 			bool HasCustomPrintDependencyGraph() const {
-				return printDependencyGraph != true;
+				return printDependencyGraph != false;
 			}
 
 			bool HasCustomPrintDigraphDot() const {
-				return printDigraphDot != true;
+				return printDigraphDot != false;
 			}
 
 			bool HasExportPath() const {
