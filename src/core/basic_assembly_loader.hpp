@@ -14,8 +14,8 @@ namespace plugify {
 		std::shared_ptr<IFileSystem> _fs;
 
 		// Assembly cache
-		mutable std::shared_mutex _cacheMutex;
 		std::unordered_map<std::filesystem::path, std::weak_ptr<IAssembly>, plg::path_hash> _cache;
+		mutable std::shared_mutex _cacheMutex;
 
 		Result<std::filesystem::path> ResolvePath(const std::filesystem::path& path) const {
 			// If absolute path, just verify it exists

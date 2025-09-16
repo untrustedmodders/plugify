@@ -12,8 +12,8 @@ struct ServiceLocator::Impl {
 		std::shared_ptr<void> singleton;  // Cached for singleton lifetime
 	};
 
-	mutable std::shared_mutex mutex;
 	std::unordered_map<std::type_index, ServiceDescriptor> services;
+	mutable std::shared_mutex mutex;
 
 	// Scoped instances (for scoped lifetime)
 	mutable std::unordered_map<std::type_index, std::shared_ptr<void>> scopedInstances;
@@ -21,9 +21,11 @@ struct ServiceLocator::Impl {
 	// Methods
 	void RegisterInstance(std::type_index type, std::shared_ptr<void> instance) {
 		std::unique_lock lock(mutex);
-		services[type] = { .factory = [instance]() { return instance; },
-			               .lifetime = ServiceLifetime::Singleton,
-			               .singleton = instance };
+		services[type] = {
+			.factory = [instance]() { return instance; },
+			.lifetime = ServiceLifetime::Singleton,
+			.singleton = instance,
+		};
 	}
 
 	void RegisterFactory(
@@ -33,9 +35,11 @@ struct ServiceLocator::Impl {
 	) {
 		std::unique_lock lock(mutex);
 
-		ServiceDescriptor descriptor{ .factory = std::move(factory),
-			                          .lifetime = lifetime,
-			                          .singleton = nullptr };
+		ServiceDescriptor descriptor{
+			.factory = std::move(factory),
+			.lifetime = lifetime,
+			.singleton = nullptr,
+		};
 
 		// For singleton, create immediately
 		if (lifetime == ServiceLifetime::Singleton) {
@@ -134,11 +138,13 @@ ServiceLocator::~ServiceLocator() = default;
 ServiceLocator::ServiceLocator(ServiceLocator&&) noexcept = default;
 ServiceLocator& ServiceLocator::operator=(ServiceLocator&&) noexcept = default;
 
-void ServiceLocator::RegisterInstanceInternal(std::type_index type, std::shared_ptr<void> instance) {
+void
+ServiceLocator::RegisterInstanceInternal(std::type_index type, std::shared_ptr<void> instance) {
 	_impl->RegisterInstance(type, std::move(instance));
 }
 
-void ServiceLocator::RegisterFactoryInternal(
+void
+ServiceLocator::RegisterFactoryInternal(
     std::type_index type,
     std::function<std::shared_ptr<void>()> factory,
     ServiceLifetime lifetime
@@ -146,35 +152,43 @@ void ServiceLocator::RegisterFactoryInternal(
 	_impl->RegisterFactory(type, std::move(factory), lifetime);
 }
 
-std::shared_ptr<void> ServiceLocator::ResolveInternal(std::type_index type) const {
+std::shared_ptr<void>
+ServiceLocator::ResolveInternal(std::type_index type) const {
 	return _impl->Resolve(type);
 }
 
-std::shared_ptr<void> ServiceLocator::TryResolveInternal(std::type_index type) const noexcept {
+std::shared_ptr<void>
+ServiceLocator::TryResolveInternal(std::type_index type) const noexcept {
 	return _impl->TryResolve(type);
 }
 
-bool ServiceLocator::IsRegisteredInternal(std::type_index type) const {
+bool
+ServiceLocator::IsRegisteredInternal(std::type_index type) const {
 	return _impl->IsRegistered(type);
 }
 
-void ServiceLocator::BeginScope() {
+void
+ServiceLocator::BeginScope() {
 	_impl->BeginScope();
 }
 
-void ServiceLocator::EndScope() {
+void
+ServiceLocator::EndScope() {
 	_impl->EndScope();
 }
 
-void ServiceLocator::Clear() {
+void
+ServiceLocator::Clear() {
 	_impl->Clear();
 }
 
-size_t ServiceLocator::Count() const {
+size_t
+ServiceLocator::Count() const {
 	return _impl->Count();
 }
 
-ServiceLocator::ServiceBuilder ServiceLocator::Services() {
+ServiceLocator::ServiceBuilder
+ServiceLocator::Services() {
 	return ServiceBuilder(*this);
 }
 

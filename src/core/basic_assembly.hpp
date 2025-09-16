@@ -14,8 +14,8 @@ namespace plugify {
 
 #if PLUGIFY_CACHE_SYMBOLS
 		// Symbol cache
-		mutable std::shared_mutex _cacheMutex;
 		mutable std::unordered_map<std::string, MemAddr, plg::string_hash, std::equal_to<>> _symbolCache;
+		mutable std::shared_mutex _cacheMutex;
 #endif
 
 	public:

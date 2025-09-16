@@ -14,12 +14,12 @@ namespace plugify {
 		}
 
 		void MarkFailed(UniqueId id) {
-			std::unique_lock<std::shared_mutex> lock(_mutex);
+			std::unique_lock lock(_mutex);
 			_failedExtensions.insert(id);
 		}
 
 		bool HasFailed(UniqueId id) const {
-			std::shared_lock<std::shared_mutex> lock(_mutex);
+			std::shared_lock lock(_mutex);
 			return _failedExtensions.contains(id);
 		}
 
@@ -27,7 +27,7 @@ namespace plugify {
 		    const Extension& ext,
 		    const std::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps
 		) const {
-			std::shared_lock<std::shared_mutex> lock(_mutex);
+			std::shared_lock lock(_mutex);
 
 			// Check if any of this extension's dependencies have failed
 			if (auto it = reverseDeps.find(ext.GetId()); it != reverseDeps.end()) {
@@ -44,7 +44,7 @@ namespace plugify {
 		    const Extension& ext,
 		    const std::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps
 		) const {
-			std::shared_lock<std::shared_mutex> lock(_mutex);
+			std::shared_lock lock(_mutex);
 
 			if (auto it = reverseDeps.find(ext.GetId()); it != reverseDeps.end()) {
 				for (const auto& depId : it->second) {

@@ -30,14 +30,12 @@ struct Plugify::Impl {
 	bool initialized{ false };
 
 	std::thread::id ownerThreadId;
+	std::chrono::steady_clock::time_point lastUpdateTime;
+	// TODO: replace by jthread when it will be available on mac
 	std::thread updateThread;
 	std::mutex cvMutex;
 	std::condition_variable cv;
 	std::atomic<bool> stopRequested{ false };
-	std::chrono::steady_clock::time_point lastUpdateTime;
-	std::chrono::milliseconds accumulatedTime{ 0 };
-
-	inline static const std::thread::id mainThreadId = std::this_thread::get_id();
 
 	Impl(ServiceLocator srv, Config cfg)
 	    : services(std::move(srv))

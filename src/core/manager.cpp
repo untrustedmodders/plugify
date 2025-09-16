@@ -268,7 +268,7 @@ public:
 		initialized = false;
 	}
 
-	const std::array<std::string_view, 2> MANIFEST_EXTENSIONS = { "*.pplugin", "*.pmodule" };
+	const static inline std::array<std::string_view, 2> MANIFEST_EXTENSIONS = { "*.pplugin", "*.pmodule" };
 
 	Result<std::vector<Extension>> DiscoverExtensions() const {
 		auto paths = fileSystem->FindFiles(config.paths.extensionsDir, MANIFEST_EXTENSIONS, true);

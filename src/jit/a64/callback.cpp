@@ -11,13 +11,13 @@ static JitRuntime rt;
 
 struct JitCallback::Impl {
 	Impl()
-	    : _function(nullptr)
-	    , _userData(nullptr) {
+	    : function(nullptr)
+	    , userData(nullptr) {
 	}
 
 	~Impl() {
-		if (_function) {
-			rt.release(_function);
+		if (function) {
+			rt.release(function);
 		}
 	}
 
@@ -28,11 +28,11 @@ struct JitCallback::Impl {
 	    MemAddr data,
 	    bool hidden
 	) {
-		if (_function) {
-			return _function;
+		if (function) {
+			return function;
 		}
 
-		_userData = data;
+		userData = data;
 
 		auto sig = ConvertSignature(signature);
 
@@ -71,7 +71,7 @@ struct JitCallback::Impl {
 			} else if (TypeUtils::is_float(argType)) {
 				arg = cc.new_vec(argType);
 			} else {
-				_errorCode = "Parameters wider than 64bits not supported";
+				errorCode = "Parameters wider than 64bits not supported";
 				return nullptr;
 			}
 
@@ -115,7 +115,7 @@ struct JitCallback::Impl {
 			} else if (TypeUtils::is_float(argType)) {
 				cc.str(argRegisters.at(argIdx).as<a64::Vec>(), argsStackIdx);
 			} else {
-				_errorCode = "Parameters wider than 64bits not supported";
+				errorCode = "Parameters wider than 64bits not supported";
 				return nullptr;
 			}
 
@@ -177,7 +177,7 @@ struct JitCallback::Impl {
 			} else if (TypeUtils::is_float(argType)) {
 				cc.ldr(argRegisters.at(argIdx).as<a64::Vec>(), argsStackIdx);
 			} else {
-				_errorCode = "Parameters wider than 64bits not supported";
+				errorCode = "Parameters wider than 64bits not supported";
 				return nullptr;
 			}
 
@@ -241,26 +241,26 @@ struct JitCallback::Impl {
 		// write to buffer
 		cc.finalize();
 
-		rt.add(&_function, &code);
+		rt.add(&function, &code);
 
 		if (eh.error != Error::kOk) {
-			_function = nullptr;
-			_errorCode = eh.code;
+			function = nullptr;
+			errorCode = eh.code;
 			return nullptr;
 		}
 
 #if 0
-	    std::printf("JIT Stub[%p]:\n%s\n", (void*)_function, log.data());
+	    std::printf("JIT Stub[%p]:\n%s\n", (void*)function, log.data());
 #endif
 
-		return _function;
+		return function;
 	}
 
-	MemAddr _function;
+	MemAddr function;
 
 	union {
-		MemAddr _userData;
-		const char* _errorCode{};
+		MemAddr userData;
+		const char* errorCode{};
 	};
 };
 
@@ -307,13 +307,13 @@ JitCallback::GetJitFunc(const Method& method, CallbackHandler callback, MemAddr 
 }
 
 MemAddr JitCallback::GetFunction() const noexcept {
-	return _impl->_function;
+	return _impl->function;
 }
 
 MemAddr JitCallback::GetUserData() const noexcept {
-	return _impl->_userData;
+	return _impl->userData;
 }
 
 std::string_view JitCallback::GetError() noexcept {
-	return !_impl->_function && _impl->_errorCode ? _impl->_errorCode : "";
+	return !_impl->function && _impl->errorCode ? _impl->errorCode : "";
 }

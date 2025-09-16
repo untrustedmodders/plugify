@@ -305,6 +305,7 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
 
 	// Convert glob patterns to regex
 	std::vector<std::regex> regexes;
+	regexes.reserve(patterns.size());
 	for (const auto& pattern : patterns) {
 		std::string regex_str;
 		for (char c : pattern) {
@@ -480,8 +481,7 @@ StandardFileSystem::Move(const std::filesystem::path& from, const std::filesyste
 		std::filesystem::copy(
 		    from,
 		    to,
-		    std::filesystem::copy_options::recursive
-		        | std::filesystem::copy_options::overwrite_existing,
+		    std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing,
 		    ec
 		);
 		if (ec) {

@@ -11,22 +11,22 @@ static JitRuntime rt;
 
 struct JitCall::Impl {
 	Impl()
-	    : _function(nullptr)
-	    , _targetFunc(nullptr) {
+	    : function(nullptr)
+	    , targetFunc(nullptr) {
 	}
 
 	~Impl() {
-		if (_function) {
-			rt.release(_function);
+		if (function) {
+			rt.release(function);
 		}
 	}
 
 	MemAddr GetJitFunc(const Signature& signature, MemAddr target, WaitType waitType, bool hidden) {
-		if (_function) {
-			return _function;
+		if (function) {
+			return function;
 		}
 
-		_targetFunc = target;
+		targetFunc = target;
 
 		auto sig = ConvertSignature(signature);
 
@@ -93,7 +93,7 @@ struct JitCall::Impl {
 			} else {
 				// ex: void example(__m128i xmmreg) is invalid:
 				// https://github.com/asmjit/asmjit/issues/83
-				_errorCode = "Parameters wider than 64bits not supported";
+				errorCode = "Parameters wider than 64bits not supported";
 				return nullptr;
 			}
 
@@ -168,26 +168,26 @@ struct JitCall::Impl {
 		// write to buffer
 		cc.finalize();
 
-		rt.add(&_function, &code);
+		rt.add(&function, &code);
 
 		if (eh.error != Error::kOk) {
-			_function = nullptr;
-			_errorCode = eh.code;
+			function = nullptr;
+			errorCode = eh.code;
 			return nullptr;
 		}
 
 #if 0
-	    std::printf("JIT Stub[%p]:\n%s\n", (void*)_function, log.data());
+	    std::printf("JIT Stub[%p]:\n%s\n", (void*)function, log.data());
 #endif
 
-		return _function;
+		return function;
 	}
 
-	MemAddr _function;
+	MemAddr function;
 
 	union {
-		MemAddr _targetFunc;
-		const char* _errorCode{};
+		MemAddr targetFunc;
+		const char* errorCode{};
 	};
 };
 
@@ -229,13 +229,13 @@ JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitType, Hid
 }
 
 MemAddr JitCall::GetFunction() const noexcept {
-	return _impl->_function;
+	return _impl->function;
 }
 
 MemAddr JitCall::GetTargetFunc() const noexcept {
-	return _impl->_targetFunc;
+	return _impl->targetFunc;
 }
 
 std::string_view JitCall::GetError() noexcept {
-	return !_impl->_function && _impl->_errorCode ? _impl->_errorCode : "";
+	return !_impl->function && _impl->errorCode ? _impl->errorCode : "";
 }

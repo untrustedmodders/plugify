@@ -29,11 +29,6 @@ Registrar::Registrar(Registrar&& o) noexcept
 
 Registrar& Registrar::operator=(Registrar&& o) noexcept {
 	if (this != &o) {
-		// unregister previous if any
-		{
-			std::unique_lock lock(mutex);
-			registry.erase(_id);
-		}
 		_id = o._id;
 		o._id = UniqueId{};
 	}
