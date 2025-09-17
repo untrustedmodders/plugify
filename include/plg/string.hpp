@@ -1397,7 +1397,7 @@ namespace plg {
 
 		template<typename Operation>
 		constexpr void resize_and_overwrite(size_type, Operation) {
-			static_assert(detail::dependent_false<Char>, "op) not implemented!");
+			static_assert(detail::dependent_false<Char>, "not implemented!");
 		}
 
 		constexpr void swap(basic_string& other) noexcept(allocator_traits::propagate_on_container_swap::value || allocator_traits::is_always_equal::value) {
