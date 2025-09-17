@@ -175,7 +175,7 @@ namespace plg {
 		} // namespace debugging
 	} // namespace detail
 
-	PLUGIFY_NOINLINE inline bool is_debugger_present() noexcept {
+	inline bool is_debugger_present() noexcept {
 		return plg::detail::debugging::parse_proc_status();
 	}
 
@@ -187,7 +187,7 @@ namespace plg {
 
 #endif
 
-	PLUGIFY_FORCE_INLINE void breakpoint() noexcept {
+	inline void breakpoint() noexcept {
 #if PLUGIFY_COMPILER_MSVC
 		__debugbreak();
 #elif PLUGIFY_COMPILER_CLANG
@@ -199,16 +199,17 @@ namespace plg {
 #endif
 	}
 
-	PLUGIFY_FORCE_INLINE void breakpoint_if_debugging() noexcept {
+	inline void breakpoint_if_debugging() noexcept {
 		if (plg::is_debugger_present()) {
 			plg::breakpoint();
 		}
 	}
 } // namespace plg
 
-namespace plg {
+namespace std {
 	using plg::breakpoint;
 	using plg::breakpoint_if_debugging;
 	using plg::is_debugger_present;
-}
+} // namespace std
+
 #endif // !PLUGIFY_HAS_STD_DEBUGGING

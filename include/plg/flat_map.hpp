@@ -419,13 +419,13 @@ namespace plg {
 
 		mapped_type& at(const key_type& key) {
 			const iterator iter = find(key);
-			PLUGIFY_ASSERT(iter != end(), "plg::flat_map::at(): key not found", std::out_of_range);
+			PLUGIFY_ASSERT(iter != end(), "key not found", std::out_of_range);
 			return iter->second;
 		}
 
 		const mapped_type& at(const key_type& key) const {
 			const const_iterator iter = find(key);
-			PLUGIFY_ASSERT(iter != end(), "plg::flat_map::at(): key not found", std::out_of_range);
+			PLUGIFY_ASSERT(iter != end(), "key not found", std::out_of_range);
 			return iter->second;
 		}
 
@@ -433,7 +433,7 @@ namespace plg {
 			requires (detail::is_transparent_v<Compare, K>)
 		mapped_type& at(const K& key) {
 			const iterator iter = find(key);
-			PLUGIFY_ASSERT(iter != end(), "plg::flat_map::at(): key not found", std::out_of_range);
+			PLUGIFY_ASSERT(iter != end(), "key not found", std::out_of_range);
 			return iter->second;
 		}
 
@@ -441,7 +441,7 @@ namespace plg {
 			requires (detail::is_transparent_v<Compare, K>)
 		const mapped_type& at(const K& key) const {
 			const const_iterator iter = find(key);
-			PLUGIFY_ASSERT(iter != end(), "plg::flat_map::at(): key not found", std::out_of_range);
+			PLUGIFY_ASSERT(iter != end(), "key not found", std::out_of_range);
 			return iter->second;
 		}
 

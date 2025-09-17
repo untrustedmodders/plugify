@@ -16,7 +16,9 @@
 #  define __has_builtin(x) 0
 #endif
 
-#include <version>
+#if __has_include(<version>)
+#  include <version>
+#endif
 
 #define PLUGIFY_HAS_EXCEPTIONS (__cpp_exceptions || __EXCEPTIONS || _HAS_EXCEPTIONS)
 
@@ -31,6 +33,10 @@
 #if PLUGIFY_EXCEPTIONS && (!PLUGIFY_HAS_EXCEPTIONS || !__has_include(<stdexcept>))
 #  undef PLUGIFY_EXCEPTIONS
 #  define PLUGIFY_EXCEPTIONS 0
+#endif
+
+#ifdef PLUGIFY_CUSTOM_ASSERT_HANDLER
+#  define PLUGIFY_FALLBACK_CUSTOM 1
 #endif
 
 #ifndef PLUGIFY_FALLBACK_ASSERT
@@ -58,13 +64,17 @@
 #if PLUGIFY_EXCEPTIONS
 #  include <stdexcept>
 #  include <type_traits>
-#  define PLUGIFY_ASSERT(x, str, e) do { if (!(x)) [[unlikely]] plugify_throw<e>(str); } while (0)
-#elif PLUGIFY_FALLBACK_ASSERT
+#  define PLUGIFY_ASSERT(x, str, e, ...) do { if (!(x)) [[unlikely]] ::plg::throw_<e>(str __VA_OPT__(,) __VA_ARGS__); } while (0)
+#elif PLUGIFY_FALLBACK_CUSTOM
+#  include <source_location>
+#  define PLUGIFY_ASSERT(x, str, ...) do { if (!(x)) [[unlikely]] { PLUGIFY_CUSTOM_ASSERT_HANDLER((x), (str), std::source_location::current()); } } while (0)
+#elif PLUGIFY_FALLBACK_ASSERT && !NDEBUG
 #  include <cassert>
 #  define PLUGIFY_ASSERT(x, str, ...) assert((x) && (str))
 #elif PLUGIFY_FALLBACK_ABORT
 #  include <cstdlib>
-#  define PLUGIFY_ASSERT(x, ...) do { if (!(x)) [[unlikely]] { std::abort(); } } while (0)
+#  include <cstdio>
+#  define PLUGIFY_ASSERT(x, str, ...) do { if (!(x)) [[unlikely]] { std::puts((str), stderr); std::abort(); } } while (0)
 #else
 #  define PLUGIFY_ASSERT(x, str, ...) do { if (!(x)) [[unlikely]] { PLUGIFY_FALLBACK_ABORT_FUNCTION (str); { while (true) { [] { } (); } } } } while (0)
 #endif
@@ -273,12 +283,80 @@
 #endif
 
 #if PLUGIFY_EXCEPTIONS
-template<typename E>
-[[noreturn]] PLUGIFY_FORCE_INLINE constexpr void plugify_throw(const char* msg) {
-	if constexpr (std::is_constructible_v<E, const char*>) {
-		throw E(msg);
-	} else {
-		throw E();
+namespace plg {
+	template<typename E, typename... Args>
+	[[noreturn]] PLUGIFY_FORCE_INLINE constexpr void throw_(const char* msg, Args...args) {
+		if constexpr (std::is_constructible_v<E, const char*>) {
+			throw E(msg);
+		} else {
+			throw E(std::forward<Args>(args)...);
+		}
 	}
 }
+#endif
+
+#ifndef PLUGIFY_PLATFORM_WINDOWS
+#  if defined(_WIN32) || defined(_WIN64)
+#    define PLUGIFY_PLATFORM_WINDOWS 1
+#  endif
+#endif
+
+#ifndef PLUGIFY_PLATFORM_APPLE
+#  if defined(__APPLE__) && defined(__MACH__)
+#    define PLUGIFY_PLATFORM_APPLE 1
+#  endif
+#endif
+
+#ifndef PLUGIFY_PLATFORM_LINUX
+#  if defined(__linux__)
+#    define PLUGIFY_PLATFORM_LINUX 1
+#  endif
+#endif
+
+#ifndef PLUGIFY_PLATFORM_ANDROID
+#  if defined(__ANDROID__)
+#    define PLUGIFY_PLATFORM_ANDROID 1
+#  endif
+#endif
+
+#ifndef PLUGIFY_PLATFORM_ORBIS
+#  if defined(__ORBIS__)
+#    define PLUGIFY_PLATFORM_ORBIS 1
+#  endif
+#endif
+
+#ifndef PLUGIFY_PLATFORM_PROSPERO
+#  if defined(__PROSPERO__)
+#    define PLUGIFY_PLATFORM_PROSPERO 1
+#  endif
+#endif
+
+#ifndef PLUGIFY_PLATFORM_SWITCH
+#  if defined(__NX__)
+#    define PLUGIFY_PLATFORM_SWITCH 1
+#  endif
+#endif
+
+#ifndef PLUGIFY_PLATFORM_BSD
+#  if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+#    define PLUGIFY_PLATFORM_BSD 1
+#  endif
+#endif
+
+#ifndef PLUGIFY_PLATFORM_UNIX
+#  if defined(__unix__) || defined(__unix) || defined(unix) || defined(__APPLE__)
+#    define PLUGIFY_PLATFORM_UNIX 1
+#  endif
+#endif
+
+#if !defined(PLUGIFY_PLATFORM_WINDOWS)  && \
+	!defined(PLUGIFY_PLATFORM_APPLE)   && \
+	!defined(PLUGIFY_PLATFORM_LINUX)   && \
+	!defined(PLUGIFY_PLATFORM_ANDROID) && \
+	!defined(PLUGIFY_PLATFORM_ORBIS)   && \
+	!defined(PLUGIFY_PLATFORM_PROSPERO)&& \
+	!defined(PLUGIFY_PLATFORM_SWITCH)  && \
+	!defined(PLUGIFY_PLATFORM_BSD)     && \
+	!defined(PLUGIFY_PLATFORM_UNIX)
+#  error "Unsupported platform! Please extend macro.hpp"
 #endif

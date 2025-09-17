@@ -324,7 +324,7 @@ namespace plg {
 		constexpr void reallocate(size_type new_capacity, const F& construct) {
 			const size_type old_size = size();
 			const size_type old_capacity = capacity();
-			PLUGIFY_ASSERT(new_capacity >= old_size, "plg::vector::reallocate(): resulted vector size would exceed size()", std::length_error);
+			PLUGIFY_ASSERT(new_capacity >= old_size, "resulted vector size would exceed size()", std::length_error);
 			if (new_capacity == old_capacity)
 				return;
 
@@ -389,7 +389,7 @@ namespace plg {
 
 		constexpr vector(size_type count, const T& value, const Allocator& allocator = Allocator())
 			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			PLUGIFY_ASSERT(count <= max_size(), "plg::vector::vector(): constructed vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "constructed vector size would exceed max_size()", std::length_error);
 			_begin = allocator_traits::allocate(_allocator, count);
 			std::uninitialized_fill_n(_begin, count, value);
 			_capacity = _begin + count;
@@ -398,7 +398,7 @@ namespace plg {
 
 		constexpr explicit vector(size_type count, const Allocator& allocator = Allocator())
 			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			PLUGIFY_ASSERT(count <= max_size(), "plg::vector::vector(): constructed vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "constructed vector size would exceed max_size()", std::length_error);
 			_begin = allocator_traits::allocate(_allocator, count);
 			std::uninitialized_value_construct_n(_begin, count);
 			_capacity = _begin + count;
@@ -408,7 +408,7 @@ namespace plg {
 		template<std::input_iterator InputIterator>
 		constexpr vector(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
 			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			PLUGIFY_ASSERT(static_cast<size_type>(std::distance(first, last)) <= max_size(), "plg::vector::vector(): constructed vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(static_cast<size_type>(std::distance(first, last)) <= max_size(), "constructed vector size would exceed max_size()", std::length_error);
 			range_constructor(first, last);
 		}
 
@@ -446,7 +446,7 @@ namespace plg {
 
 		constexpr vector(std::initializer_list<T> list, const Allocator& allocator = Allocator())
 			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			PLUGIFY_ASSERT(list.size() <= max_size(), "plg::vector::vector(): constructed vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(list.size() <= max_size(), "constructed vector size would exceed max_size()", std::length_error);
 			range_constructor(list.begin(), list.end());
 		}
 
@@ -519,7 +519,7 @@ namespace plg {
 
 		// assign
 		constexpr void assign(size_type count, const T& value) {
-			PLUGIFY_ASSERT(count <= max_size(), "plg::vector::assign(): resulted vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "resulted vector size would exceed max_size()", std::length_error);
 			if (count > capacity()) {
 				pointer const new_begin = allocator_traits::allocate(_allocator, count);
 				std::uninitialized_fill_n(new_begin, count, value);
@@ -540,7 +540,7 @@ namespace plg {
 		template<std::input_iterator InputIterator>
 		constexpr void assign(InputIterator first, InputIterator last) {
 			const size_type count = static_cast<size_type>(std::distance(first, last));
-			PLUGIFY_ASSERT(count <= max_size(), "plg::vector::assign(): resulted vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "resulted vector size would exceed max_size()", std::length_error);
 			if (count > capacity()) {
 				pointer const new_begin = allocator_traits::allocate(_allocator, count);
 				std::uninitialized_copy(first, last, new_begin);
@@ -576,12 +576,12 @@ namespace plg {
 
 		// element access
 		constexpr reference at(size_type position) {
-			PLUGIFY_ASSERT(position < size(), "plg::vector::at(): input index is out of bounds", std::out_of_range);
+			PLUGIFY_ASSERT(position < size(), "input index is out of bounds", std::out_of_range);
 			return *(_begin + position);
 		}
 
 		constexpr const_reference at(size_type position) const {
-			PLUGIFY_ASSERT(position < size(), "plg::vector::at(): input index is out of bounds", std::out_of_range);
+			PLUGIFY_ASSERT(position < size(), "input index is out of bounds", std::out_of_range);
 			return *(_begin + position);
 		}
 
@@ -594,22 +594,22 @@ namespace plg {
 		}
 
 		constexpr reference front() {
-			PLUGIFY_ASSERT(!empty(), "plg::vector::front(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "vector is empty", std::length_error);
 			return *_begin;
 		}
 
 		constexpr const_reference front() const {
-			PLUGIFY_ASSERT(!empty(), "plg::vector::front(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "vector is empty", std::length_error);
 			return *_begin;
 		}
 
 		constexpr reference back() {
-			PLUGIFY_ASSERT(!empty(), "plg::vector::back(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "vector is empty", std::length_error);
 			return *(_end - 1);
 		}
 
 		constexpr const_reference back() const {
-			PLUGIFY_ASSERT(!empty(), "plg::vector::back(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "vector is empty", std::length_error);
 			return *(_end - 1);
 		}
 
@@ -684,7 +684,7 @@ namespace plg {
 		}
 
 		constexpr void reserve(size_type new_capacity) {
-			PLUGIFY_ASSERT(new_capacity <= max_size(), "plg::vector::reserve(): allocated memory size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(new_capacity <= max_size(), "allocated memory size would exceed max_size()", std::length_error);
 			if (new_capacity > capacity()) {
 				reallocate(new_capacity);
 			}
@@ -715,9 +715,9 @@ namespace plg {
 		constexpr iterator insert(const_iterator position, size_type count, const T& value) {
 			const size_type sz = size();
 			const size_type new_size = sz + count;
-			PLUGIFY_ASSERT(new_size <= max_size(), "plg::vector::insert(): resulted vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(new_size <= max_size(), "resulted vector size would exceed max_size()", std::length_error);
 			const size_type position_distance = static_cast<size_type>(position - cbegin());
-			PLUGIFY_ASSERT(position_distance <= sz, "plg::vector::insert(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(position_distance <= sz, "pos out of range", std::out_of_range);
 			if (count != 0) {
 				if (new_size > capacity()) {
 					pointer const new_begin = allocator_traits::allocate(_allocator, new_size);
@@ -746,9 +746,9 @@ namespace plg {
 			const size_type sz = size();
 			const size_type count = static_cast<size_type>(std::distance(first, last));
 			const size_type new_size = sz + count;
-			PLUGIFY_ASSERT(new_size <= max_size(), "plg::vector::insert(): resulted vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(new_size <= max_size(), "resulted vector size would exceed max_size()", std::length_error);
 			const size_type position_distance = static_cast<size_type>(position - cbegin());
-			PLUGIFY_ASSERT(position_distance <= sz, "plg::vector::insert(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(position_distance <= sz, "pos out of range", std::out_of_range);
 			if (count != 0) {
 				if (new_size > capacity()) {
 					pointer const new_begin = allocator_traits::allocate(_allocator, new_size);
@@ -787,9 +787,9 @@ namespace plg {
 		iterator emplace(const_iterator position, Args&&... args) {
 			const size_type sz = size();
 			const size_type new_size = sz + 1;
-			PLUGIFY_ASSERT(new_size <= max_size(), "plg::vector::emplace(): resulted vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(new_size <= max_size(), "resulted vector size would exceed max_size()", std::length_error);
 			const size_type position_distance = static_cast<size_type>(position - cbegin());
-			PLUGIFY_ASSERT(position_distance <= sz, "plg::vector::emplace(): pos out of range", std::out_of_range);
+			PLUGIFY_ASSERT(position_distance <= sz, "pos out of range", std::out_of_range);
 			if (position == cend()) {
 				emplace_back(std::forward<Args>(args)...);
 			} else {
@@ -827,7 +827,7 @@ namespace plg {
 		}
 
 		constexpr iterator erase(const_iterator first, const_iterator last) {
-			PLUGIFY_ASSERT(first <= last, "plg::vector::erase(): called with invalid range", std::out_of_range);
+			PLUGIFY_ASSERT(first <= last, "called with invalid range", std::out_of_range);
 			iterator nonconst_first = const_iterator_cast(first);
 			iterator nonconst_last = const_iterator_cast(last);
 			if (nonconst_first != nonconst_last) {
@@ -842,7 +842,7 @@ namespace plg {
 
 		constexpr void push_back(const T& value) {
 			const size_type sz = size();
-			PLUGIFY_ASSERT(sz + 1 <= max_size(), "plg::vector::push_back(): resulted vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(sz + 1 <= max_size(), "resulted vector size would exceed max_size()", std::length_error);
 			emplace_at_end([&](pointer const data) {
 				std::construct_at(data + sz, value);
 			});
@@ -851,7 +851,7 @@ namespace plg {
 
 		constexpr void push_back(T&& value) {
 			const size_type sz = size();
-			PLUGIFY_ASSERT(sz + 1 <= max_size(), "plg::vector::push_back(): resulted vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(sz + 1 <= max_size(), "resulted vector size would exceed max_size()", std::length_error);
 			emplace_at_end([&](pointer const data) {
 				std::construct_at(data + sz, std::move(value));
 			});
@@ -861,7 +861,7 @@ namespace plg {
 		template<typename... Args>
 		constexpr reference emplace_back(Args&&... args) {
 			const size_type sz = size();
-			PLUGIFY_ASSERT(sz + 1 <= max_size(), "plg::vector::emplace_back(): resulted vector size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(sz + 1 <= max_size(), "resulted vector size would exceed max_size()", std::length_error);
 			emplace_at_end([&](pointer const data) {
 				std::construct_at(data + sz, std::forward<Args>(args)...);
 			});
@@ -870,18 +870,18 @@ namespace plg {
 		}
 
 		constexpr void pop_back() {
-			PLUGIFY_ASSERT(!empty(), "plg::vector::pop_back(): vector is empty", std::length_error);
+			PLUGIFY_ASSERT(!empty(), "vector is empty", std::length_error);
 			--_end;
 			std::destroy_at(_end);
 		}
 
 		constexpr void resize(size_type count) {
-			PLUGIFY_ASSERT(count <= max_size(), "plg::vector::resize(): allocated memory size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "allocated memory size would exceed max_size()", std::length_error);
 			resize_to(count, detail::initialized_value_tag{});
 		}
 
 		constexpr void resize(size_type count, const T& value) {
-			PLUGIFY_ASSERT(count <= max_size(), "plg::vector::resize(): allocated memory size would exceed max_size()", std::length_error);
+			PLUGIFY_ASSERT(count <= max_size(), "allocated memory size would exceed max_size()", std::length_error);
 			resize_to(count, value);
 		}
 
@@ -944,13 +944,13 @@ namespace plg {
 
 		template<size_type Size>
 		constexpr std::span<T, Size> span_size() {
-			PLUGIFY_ASSERT(size() == Size, "plg::vector::span_size(): const_span_size argument does not match size of vector", std::length_error);
+			PLUGIFY_ASSERT(size() == Size, "const_span_size argument does not match size of vector", std::length_error);
 			return std::span<T, Size>(data(), size());
 		}
 
 		template<size_type Size>
 		constexpr std::span<const T, Size> const_span_size() const {
-			PLUGIFY_ASSERT(size() == Size, "plg::vector::const_span_size(): const_span_size argument does not match size of vector", std::length_error);
+			PLUGIFY_ASSERT(size() == Size, "const_span_size argument does not match size of vector", std::length_error);
 			return std::span<const T, Size>(data(), size());
 		}
 

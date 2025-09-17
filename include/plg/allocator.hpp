@@ -52,10 +52,8 @@ namespace plg {
 			static_assert((alignof(T) & (alignof(T) - 1)) == 0, "alignof(T) must be a power of 2");
 
 			if (n > max_size()) [[unlikely]] {
-				if (n > static_cast<size_type>(-1) / sizeof(T)) {
-					PLUGIFY_ASSERT(false, "plg::allocator::allocate(): bad array new length", std::bad_array_new_length);
-				}
-				PLUGIFY_ASSERT(false, "plg::allocator::allocate(): too big", std::bad_alloc);
+				PLUGIFY_ASSERT(n <= static_cast<size_type>(-1) / sizeof(T), "bad array new length", std::bad_array_new_length);
+				PLUGIFY_ASSERT(n <= max_size(), "too big", std::bad_alloc);
 			}
 
 			pointer ret;
@@ -70,9 +68,7 @@ namespace plg {
 					ret = static_cast<T*>(std::malloc(size));
 				}
 
-				if (!ret) {
-					PLUGIFY_ASSERT(false, "plg::allocator::allocate(): bad allocation", std::bad_alloc);
-				}
+				PLUGIFY_ASSERT(ret, "bad allocation", std::bad_alloc);
 			}
 
 			return ret;
@@ -97,7 +93,7 @@ namespace plg {
 		}
 
 		void* aligned_allocate(size_type alignment, size_type size) {
-#if _WIN32
+#if PLUGIFY_PLATFORM_WINDOWS
 			return _aligned_malloc(size, alignment);
 #else
 			return std::aligned_alloc(alignment, size);
