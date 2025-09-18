@@ -22,8 +22,8 @@ namespace plugify {
 		BasicAssembly() = default;
 
 		explicit BasicAssembly(std::unique_ptr<AssemblyHandle> handle, std::shared_ptr<IPlatformOps> ops)
-		    : _handle(std::move(handle))
-		    , _ops(std::move(ops)) {
+			: _handle(std::move(handle))
+			, _ops(std::move(ops)) {
 		}
 
 		Result<MemAddr> GetSymbol(std::string_view name) const override {

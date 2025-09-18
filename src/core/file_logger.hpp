@@ -6,13 +6,13 @@ namespace plugify {
 	class FileLogger : public ConsoleLogger {
 	public:
 		FileLogger(
-		    const std::filesystem::path& logFile,
-		    Severity minSeverity = Severity::Info,
-		    size_t maxFileSize = 10 * 1024 * 1024
+			const std::filesystem::path& logFile,
+			Severity minSeverity = Severity::Info,
+			size_t maxFileSize = 10 * 1024 * 1024
 		)  // 10MB default
-		    : ConsoleLogger(minSeverity)
-		    , _logPath(logFile)
-		    , _maxFileSize(maxFileSize) {
+			: ConsoleLogger(minSeverity)
+			, _logPath(logFile)
+			, _maxFileSize(maxFileSize) {
 			// Create log directory if needed
 			auto parent = _logPath.parent_path();
 			if (!parent.empty() && !std::filesystem::exists(parent)) {
@@ -32,9 +32,9 @@ namespace plugify {
 		}
 
 		void Log(
-		    std::string_view message,
-		    Severity severity,
-		    std::source_location loc = std::source_location::current()
+			std::string_view message,
+			Severity severity,
+			std::source_location loc = std::source_location::current()
 		) override {
 			if (severity < _minSeverity) {
 				return;
@@ -91,12 +91,12 @@ namespace plugify {
 
 			// Format as: stem.YYYYMMDD_HHMMSS.extension
 			auto rotatedPath = _logPath.parent_path()
-			                   / std::format(
-			                       "{}.{:%Y%m%d_%H%M%S}{}",
-			                       plg::as_string(_logPath.stem()),
-			                       zt,  // formatted using chrono spec
-			                       plg::as_string(_logPath.extension())
-			                   );
+							   / std::format(
+								   "{}.{:%Y%m%d_%H%M%S}{}",
+								   plg::as_string(_logPath.stem()),
+								   zt,	// formatted using chrono spec
+								   plg::as_string(_logPath.extension())
+							   );
 
 			std::filesystem::rename(_logPath, rotatedPath);
 			_logFile.open(_logPath, std::ios::app);

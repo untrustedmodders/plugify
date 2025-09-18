@@ -11,8 +11,8 @@ static JitRuntime rt;
 
 struct JitCall::Impl {
 	Impl()
-	    : function(nullptr)
-	    , targetFunc(nullptr) {
+		: function(nullptr)
+		, targetFunc(nullptr) {
 	}
 
 	~Impl() {
@@ -21,8 +21,12 @@ struct JitCall::Impl {
 		}
 	}
 
-	MemAddr
-	GetJitFunc(const Signature& signature, MemAddr target, WaitType waitType, [[maybe_unused]] bool hidden) {
+	MemAddr GetJitFunc(
+		const Signature& signature,
+		MemAddr target,
+		WaitType waitType,
+		[[maybe_unused]] bool hidden
+	) {
 		if (function) {
 			return function;
 		}
@@ -41,17 +45,17 @@ struct JitCall::Impl {
 		FuncNode* func = cc.add_func(FuncSignature::build<void, void*, void*>());
 
 #if 0
-	    StringLogger log;
-	    auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
+		StringLogger log;
+		auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
 
-	    log.addFlags(kFormatFlags);
-	    code.setLogger(&log);
+		log.addFlags(kFormatFlags);
+		code.setLogger(&log);
 #endif
 
 #if PLUGIFY_IS_RELEASE
 		// too small to really need it
 		// func->frame().reset_preserved_fp();
-#endif  // PLUGIFY_IS_RELEASE
+#endif	// PLUGIFY_IS_RELEASE
 
 		x86::Gp paramImm = cc.new_gpz();
 		func->set_arg(0, paramImm);
@@ -145,7 +149,7 @@ struct JitCall::Impl {
 				cc.mov(ptr(returnImm), x86::eax);
 				cc.mov(ptr(returnImm, sizeof(uint32_t)), x86::edx);
 			} else
-#endif  // PLUGIFY_ARCH_BITS
+#endif	// PLUGIFY_ARCH_BITS
 				if (TypeUtils::is_int(sig.ret())) {
 					x86::Gp tmp = cc.new_gpz();
 					invokeNode->set_ret(0, tmp);
@@ -159,7 +163,7 @@ struct JitCall::Impl {
 					cc.movq(ptr(returnImm), x86::xmm0);
 					cc.movq(ptr(returnImm, sizeof(uint64_t)), x86::xmm1);
 				}
-#endif  // PLUGIFY_ARCH_BITS
+#endif	// PLUGIFY_ARCH_BITS
 				else if (TypeUtils::is_float(sig.ret())) {
 					x86::Vec ret = cc.new_xmm();
 					invokeNode->set_ret(0, ret);
@@ -189,7 +193,7 @@ struct JitCall::Impl {
 		}
 
 #if 0
-	    std::printf("JIT Stub[%p]:\n%s\n", (void*)function, log.data());
+		std::printf("JIT Stub[%p]:\n%s\n", (void*)function, log.data());
 #endif
 
 		return function;
@@ -206,7 +210,7 @@ struct JitCall::Impl {
 using namespace plugify;
 
 JitCall::JitCall()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 JitCall::JitCall(JitCall&& other) noexcept = default;
@@ -215,20 +219,18 @@ JitCall::~JitCall() = default;
 
 JitCall& JitCall::operator=(JitCall&& other) noexcept = default;
 
-MemAddr
-JitCall::GetJitFunc(const Signature& signature, MemAddr target, WaitType waitType, bool hidden) {
+MemAddr JitCall::GetJitFunc(const Signature& signature, MemAddr target, WaitType waitType, bool hidden) {
 	return _impl->GetJitFunc(signature, target, waitType, hidden);
 }
 
-MemAddr
-JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitType, HiddenParam hidden) {
+MemAddr JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitType, HiddenParam hidden) {
 	ValueType retType = method.GetRetType().GetType();
 	bool retHidden = hidden(retType);
 
 	Signature signature(
-	    method.GetCallConv(),
-	    retHidden ? ValueType::Pointer : retType,
-	    method.GetVarIndex()
+		method.GetCallConv(),
+		retHidden ? ValueType::Pointer : retType,
+		method.GetVarIndex()
 	);
 	if (retHidden) {
 		signature.AddArg(retType);

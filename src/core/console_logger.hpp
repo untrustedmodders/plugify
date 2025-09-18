@@ -8,15 +8,15 @@ namespace plugify {
 	class ConsoleLogger : public ILogger {
 	public:
 		ConsoleLogger(Severity minSeverity = Severity::Info)
-		    : _minSeverity(minSeverity) {
+			: _minSeverity(minSeverity) {
 		}
 
 		~ConsoleLogger() override = default;
 
 		void Log(
-		    std::string_view message,
-		    Severity severity,
-		    std::source_location loc = std::source_location::current()
+			std::string_view message,
+			Severity severity,
+			std::source_location loc = std::source_location::current()
 		) override {
 			if (severity == Severity::Unknown) {
 				std::cout << message << std::endl;
@@ -56,13 +56,13 @@ namespace plugify {
 			auto ms = duration_cast<milliseconds>(now - seconds);
 
 			return std::format(
-			    "[{:%F %T}.{:03d}] [{}] [{}:{}] {}",
-			    seconds,  // %F = YYYY-MM-DD, %T = HH:MM:SS
-			    static_cast<int>(ms.count()),
-			    plg::enum_to_string(severity),
-			    loc.file_name(),
-			    loc.line(),
-			    message
+				"[{:%F %T}.{:03d}] [{}] [{}:{}] {}",
+				seconds,  // %F = YYYY-MM-DD, %T = HH:MM:SS
+				static_cast<int>(ms.count()),
+				plg::enum_to_string(severity),
+				loc.file_name(),
+				loc.line(),
+				message
 			);
 		}
 

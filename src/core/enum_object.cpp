@@ -4,13 +4,13 @@ using namespace plugify;
 
 // Enum Implementation
 EnumObject::EnumObject()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 EnumObject::~EnumObject() = default;
 
 EnumObject::EnumObject(const EnumObject& other)
-    : _impl(std::make_unique<Impl>(*other._impl)) {
+	: _impl(std::make_unique<Impl>(*other._impl)) {
 }
 
 EnumObject::EnumObject(EnumObject&& other) noexcept = default;

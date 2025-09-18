@@ -68,16 +68,16 @@ struct Extension::Impl {
 			// Language module library must be named 'lib${name}(.dylib|.so|.dll)'.
 			if (manifest.runtime) {
 				manifest.runtime = location / manifest.runtime->parent_path()
-				                   / std::format(
-				                       PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,
-				                       plg::as_string(manifest.runtime->filename())
-				                   );
+								   / std::format(
+									   PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,
+									   plg::as_string(manifest.runtime->filename())
+								   );
 			} else {
 				manifest.runtime = location / "bin"
-				                   / std::format(
-				                       PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,
-				                       plg::as_string(path.filename().replace_extension())
-				                   );
+								   / std::format(
+									   PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,
+									   plg::as_string(path.filename().replace_extension())
+								   );
 			}
 			// Set correct path to directories
 			if (manifest.directories && !manifest.directories->empty()) {
@@ -89,13 +89,13 @@ struct Extension::Impl {
 		id.SetName(manifest.name);
 		version = manifest.version.to_string();
 		registrar = std::make_unique<Registrar>(
-		    id,
-		    Registrar::DebugInfo{
-		        .name = manifest.name,
-		        .type = type,
-		        .version = version,
-		        .location = std::move(path),
-		    }
+			id,
+			Registrar::DebugInfo{
+				.name = manifest.name,
+				.type = type,
+				.version = version,
+				.location = std::move(path),
+			}
 		);
 	}
 };
@@ -120,7 +120,7 @@ static const std::vector<MethodData> emptyMethodData;
 // ============================================================================
 
 Extension::Extension(UniqueId id, std::filesystem::path location)
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 	_impl->manifest.name = plg::as_string(location.filename().replace_extension());
 
 	_impl->id = id;
@@ -298,13 +298,13 @@ bool Extension::HasWarnings() const noexcept {
 }
 
 /*bool Extension::IsLoaded() const noexcept {
-    switch (_impl->state) {
-        case ExtensionState::Loaded:
-        case ExtensionState::Started:
-            return true;
-        default:
-            return false;
-    }
+	switch (_impl->state) {
+		case ExtensionState::Loaded:
+		case ExtensionState::Started:
+			return true;
+		default:
+			return false;
+	}
 }*/
 
 // ============================================================================
@@ -338,7 +338,7 @@ void Extension::StartOperation(ExtensionState newState) {
 
 void Extension::EndOperation(ExtensionState newState) {
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-	    std::chrono::steady_clock::now() - _impl->timings.lastOperationStart
+		std::chrono::steady_clock::now() - _impl->timings.lastOperationStart
 	);
 	_impl->timings.timepoints[_impl->state] = duration;
 	SetState(newState);
@@ -428,9 +428,9 @@ auto Extension::operator<=>(const Extension& other) const noexcept {
 
 plg::path_view Extension::GetFileExtension(ExtensionType type) {
 	/*switch(type) {
-	    case ExtensionType::Plugin: return ".pplugin";
-	    case ExtensionType::Module: return ".pmodule";
-	    default: return "";
+		case ExtensionType::Plugin: return ".pplugin";
+		case ExtensionType::Module: return ".pmodule";
+		default: return "";
 	}*/
 	switch (type) {
 		case ExtensionType::Plugin:
@@ -477,34 +477,34 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 
 		case ExtensionState::Parsed:
 			return to == ExtensionState::Resolving || to == ExtensionState::Failed
-			       || to == ExtensionState::Disabled;
+				   || to == ExtensionState::Disabled;
 
 		case ExtensionState::Resolving:
 			return to == ExtensionState::Resolved || to == ExtensionState::Unresolved
-			       || to == ExtensionState::Disabled;
+				   || to == ExtensionState::Disabled;
 
 		case ExtensionState::Resolved:
 			return to == ExtensionState::Loading || to == ExtensionState::Skipped
-			       || to == ExtensionState::Failed;
+				   || to == ExtensionState::Failed;
 
 		case ExtensionState::Loading:
 			return to == ExtensionState::Loaded || to == ExtensionState::Failed;
 
 		case ExtensionState::Loaded:
 			return to == ExtensionState::Running || to == ExtensionState::Exporting
-			       || to == ExtensionState::Skipped || to == ExtensionState::Failed;
+				   || to == ExtensionState::Skipped || to == ExtensionState::Failed;
 
 		case ExtensionState::Exporting:
 			return to == ExtensionState::Exported || to == ExtensionState::Skipped
-			       || to == ExtensionState::Failed;
+				   || to == ExtensionState::Failed;
 
 		case ExtensionState::Exported:
 			return to == ExtensionState::Starting || to == ExtensionState::Skipped
-			       || to == ExtensionState::Failed;
+				   || to == ExtensionState::Failed;
 
 		case ExtensionState::Starting:
 			return to == ExtensionState::Started || to == ExtensionState::Skipped
-			       || to == ExtensionState::Failed;
+				   || to == ExtensionState::Failed;
 
 		case ExtensionState::Started:
 			return to == ExtensionState::Running || to == ExtensionState::Failed;
@@ -537,13 +537,13 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 // Debug/logging helper
 std::string Extension::ToString() const {
 	return std::format(
-	    "Extension[id={}, name={}, type={}, state={}, errors={}, warnings={}]",
-	    _impl->id,
-	    GetName(),
-	    plg::enum_to_string(_impl->type),
-	    plg::enum_to_string(_impl->state),
-	    _impl->errors.size(),
-	    _impl->warnings.size()
+		"Extension[id={}, name={}, type={}, state={}, errors={}, warnings={}]",
+		_impl->id,
+		GetName(),
+		plg::enum_to_string(_impl->type),
+		plg::enum_to_string(_impl->state),
+		_impl->errors.size(),
+		_impl->warnings.size()
 	);
 }
 
@@ -553,22 +553,22 @@ const std::string& Extension::GetVersionString() const noexcept {
 
 // Helper to check if extension can be loaded
 /*bool Extension::CanLoad() const noexcept {
-    return (_impl->state == ExtensionState::Loading) && !HasErrors();
+	return (_impl->state == ExtensionState::Loading) && !HasErrors();
 }
 
 // Helper to check if extension can be started
 bool Extension::CanStart() const noexcept {
-    return _impl->state == ExtensionState::Loaded && !HasErrors();
+	return _impl->state == ExtensionState::Loaded && !HasErrors();
 }
 
 // Helper to check if extension can be updated
 bool Extension::CanUpdate() const noexcept {
-    return _impl->state == ExtensionState::Started && !HasErrors();
+	return _impl->state == ExtensionState::Started && !HasErrors();
 }
 
 // Helper to check if extension can be stopped
 bool Extension::CanStop() const noexcept {
-    return _impl->state == ExtensionState::Started && !HasErrors();
+	return _impl->state == ExtensionState::Started && !HasErrors();
 }*/
 
 // Add dependency helper (for runtime dependency injection)

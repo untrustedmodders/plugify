@@ -4,13 +4,13 @@ using namespace plugify;
 
 // Method Implementation
 Method::Method()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 Method::~Method() = default;
 
 Method::Method(const Method& other)
-    : _impl(std::make_unique<Impl>(*other._impl)) {
+	: _impl(std::make_unique<Impl>(*other._impl)) {
 }
 
 Method::Method(Method&& other) noexcept = default;

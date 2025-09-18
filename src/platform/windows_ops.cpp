@@ -1,6 +1,6 @@
-#include "plugify/platform_ops.hpp"
-
 #include <windows.h>
+
+#include "plugify/platform_ops.hpp"
 #undef LoadLibrary
 
 namespace plugify {
@@ -16,7 +16,7 @@ namespace plugify {
 			}
 			if (flags & LoadFlag::SecureSearch) {
 				winFlags |= LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS
-				            | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
+							| LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
 			}
 			return winFlags;
 		}
@@ -29,13 +29,13 @@ namespace plugify {
 
 			LPSTR buffer = nullptr;
 			size_t size = ::FormatMessageA(
-			    FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-			    nullptr,
-			    error,
-			    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			    reinterpret_cast<LPSTR>(&buffer),
-			    0,
-			    nullptr
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+				nullptr,
+				error,
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				reinterpret_cast<LPSTR>(&buffer),
+				0,
+				nullptr
 			);
 
 			if (size == 0) {
@@ -58,18 +58,18 @@ namespace plugify {
 			HMODULE handle = ::LoadLibraryExW(path.c_str(), nullptr, TranslateFlags(flags));
 			if (!handle) {
 				return MakeError(
-				    "Failed to load library '{}': {}",
-				    plg::as_string(path),
-				    GetLastErrorString()
+					"Failed to load library '{}': {}",
+					plg::as_string(path),
+					GetLastErrorString()
 				);
 			}
 
 			if (flags & LoadFlag::NoUnload) {
 				HMODULE pinned = nullptr;
 				::GetModuleHandleExW(
-				    GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
-				    reinterpret_cast<LPCWSTR>(handle),
-				    &pinned
+					GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+					reinterpret_cast<LPCWSTR>(handle),
+					&pinned
 				);
 			}
 
@@ -94,9 +94,9 @@ namespace plugify {
 		Result<std::filesystem::path> GetLibraryPath(void* handle) override {
 			std::wstring path(MAX_PATH, L'\0');
 			DWORD size = ::GetModuleFileNameW(
-			    static_cast<HMODULE>(handle),
-			    path.data(),
-			    static_cast<DWORD>(path.size())
+				static_cast<HMODULE>(handle),
+				path.data(),
+				static_cast<DWORD>(path.size())
 			);
 
 			if (size == 0) {
@@ -119,9 +119,9 @@ namespace plugify {
 			DLL_DIRECTORY_COOKIE cookie = ::AddDllDirectory(path.c_str());
 			if (!cookie) {
 				return MakeError(
-				    "Failed to add search path '{}': {}",
-				    plg::as_string(path),
-				    GetLastErrorString()
+					"Failed to add search path '{}': {}",
+					plg::as_string(path),
+					GetLastErrorString()
 				);
 			}
 			std::lock_guard lock(_searchMutex);
@@ -134,9 +134,9 @@ namespace plugify {
 			if (it != _searchCookies.end()) {
 				if (!::RemoveDllDirectory(it->second)) {
 					return MakeError(
-					    "Failed to remove search path '{}': {}",
-					    plg::as_string(path),
-					    GetLastErrorString()
+						"Failed to remove search path '{}': {}",
+						plg::as_string(path),
+						GetLastErrorString()
 					);
 				}
 				std::lock_guard lock(_searchMutex);

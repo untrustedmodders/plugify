@@ -35,7 +35,7 @@ StandardFileSystem::GetStreamError(const std::filesystem::path& path, const std:
 
 // File Operations
 Result<std::string> StandardFileSystem::ReadTextFile(const std::filesystem::path& path) {
-	errno = 0;  // Clear errno before operation
+	errno = 0;	// Clear errno before operation
 	std::ifstream file(path, std::ios::in | std::ios::binary);
 	if (!file) {
 		return MakeError(GetStreamError(path, "Failed to open file for reading"));
@@ -61,7 +61,7 @@ Result<std::string> StandardFileSystem::ReadTextFile(const std::filesystem::path
 }
 
 Result<std::vector<uint8_t>> StandardFileSystem::ReadBinaryFile(const std::filesystem::path& path) {
-	errno = 0;  // Clear errno before operation
+	errno = 0;	// Clear errno before operation
 	std::ifstream file(path, std::ios::in | std::ios::binary);
 	if (!file) {
 		return MakeError(GetStreamError(path, "Failed to open file for reading"));
@@ -86,8 +86,7 @@ Result<std::vector<uint8_t>> StandardFileSystem::ReadBinaryFile(const std::files
 	return content;
 }
 
-Result<void>
-StandardFileSystem::WriteTextFile(const std::filesystem::path& path, std::string_view content) {
+Result<void> StandardFileSystem::WriteTextFile(const std::filesystem::path& path, std::string_view content) {
 	// Create parent directories if they don't exist
 	auto parent = path.parent_path();
 	if (!parent.empty()) {
@@ -98,7 +97,7 @@ StandardFileSystem::WriteTextFile(const std::filesystem::path& path, std::string
 		}
 	}
 
-	errno = 0;  // Clear errno before operation
+	errno = 0;	// Clear errno before operation
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
 	if (!file) {
 		return MakeError(GetStreamError(path, "Failed to open file for writing"));
@@ -114,8 +113,10 @@ StandardFileSystem::WriteTextFile(const std::filesystem::path& path, std::string
 	return {};
 }
 
-Result<void>
-StandardFileSystem::WriteBinaryFile(const std::filesystem::path& path, std::span<const uint8_t> data) {
+Result<void> StandardFileSystem::WriteBinaryFile(
+	const std::filesystem::path& path,
+	std::span<const uint8_t> data
+) {
 	// Create parent directories if they don't exist
 	auto parent = path.parent_path();
 	if (!parent.empty()) {
@@ -126,7 +127,7 @@ StandardFileSystem::WriteBinaryFile(const std::filesystem::path& path, std::span
 		}
 	}
 
-	errno = 0;  // Clear errno before operation
+	errno = 0;	// Clear errno before operation
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
 	if (!file) {
 		return MakeError(GetStreamError(path, "Failed to open file for writing"));
@@ -173,7 +174,7 @@ Result<FileInfo> StandardFileSystem::GetFileInfo(const std::filesystem::path& pa
 	if (is_regular_file(status)) {
 		info.size = std::filesystem::file_size(path, ec);
 		if (ec) {
-			info.size = 0;  // Set to 0 if we can't get size
+			info.size = 0;	// Set to 0 if we can't get size
 		}
 	} else {
 		info.size = 0;
@@ -187,8 +188,7 @@ Result<FileInfo> StandardFileSystem::GetFileInfo(const std::filesystem::path& pa
 	return info;
 }
 
-Result<std::vector<FileInfo>>
-StandardFileSystem::ListDirectory(const std::filesystem::path& directory) {
+Result<std::vector<FileInfo>> StandardFileSystem::ListDirectory(const std::filesystem::path& directory) {
 	if (!IsDirectory(directory)) {
 		return MakeError("Path is not a directory: {}", plg::as_string(directory));
 	}
@@ -197,7 +197,7 @@ StandardFileSystem::ListDirectory(const std::filesystem::path& directory) {
 	std::error_code ec;
 
 	for (auto it = std::filesystem::directory_iterator(directory, ec);
-	     it != std::filesystem::directory_iterator();) {
+		 it != std::filesystem::directory_iterator();) {
 		if (ec) {
 			if (ec == std::errc::permission_denied) {
 				++it;  // Skip permission denied entries
@@ -219,8 +219,8 @@ StandardFileSystem::ListDirectory(const std::filesystem::path& directory) {
 }
 
 Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
-    const std::filesystem::path& directory,
-    const DirectoryIterationOptions& options
+	const std::filesystem::path& directory,
+	const DirectoryIterationOptions& options
 ) {
 	if (!IsDirectory(directory)) {
 		return MakeError("Path is not a directory: {}", plg::as_string(directory));
@@ -256,11 +256,11 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 
 	if (options.recursive) {
 		auto dir_options = options.follow_symlinks
-		                       ? std::filesystem::directory_options::follow_directory_symlink
-		                       : std::filesystem::directory_options::none;
+							   ? std::filesystem::directory_options::follow_directory_symlink
+							   : std::filesystem::directory_options::none;
 
 		for (auto it = std::filesystem::recursive_directory_iterator(directory, dir_options, ec);
-		     it != std::filesystem::recursive_directory_iterator();) {
+			 it != std::filesystem::recursive_directory_iterator();) {
 			if (ec) {
 				if (options.skip_permission_denied && ec == std::errc::permission_denied) {
 					it.disable_recursion_pending();
@@ -276,7 +276,7 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 		}
 	} else {
 		for (auto it = std::filesystem::directory_iterator(directory, ec);
-		     it != std::filesystem::directory_iterator();) {
+			 it != std::filesystem::directory_iterator();) {
 			if (ec) {
 				if (options.skip_permission_denied && ec == std::errc::permission_denied) {
 					++it;
@@ -295,9 +295,9 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 }
 
 Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
-    const std::filesystem::path& directory,
-    std::span<const std::string_view> patterns,
-    bool recursive
+	const std::filesystem::path& directory,
+	std::span<const std::string_view> patterns,
+	bool recursive
 ) {
 	if (!IsDirectory(directory)) {
 		return MakeError("Path is not a directory: {}", plg::as_string(directory));
@@ -379,11 +379,11 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
 
 	if (recursive) {
 		for (auto it = std::filesystem::recursive_directory_iterator(
-		         directory,
-		         std::filesystem::directory_options::skip_permission_denied,
-		         ec
-		     );
-		     it != std::filesystem::recursive_directory_iterator();) {
+				 directory,
+				 std::filesystem::directory_options::skip_permission_denied,
+				 ec
+			 );
+			 it != std::filesystem::recursive_directory_iterator();) {
 			if (!ec) {
 				check_file(it->path());
 			}
@@ -391,7 +391,7 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
 		}
 	} else {
 		for (auto it = std::filesystem::directory_iterator(directory, ec);
-		     it != std::filesystem::directory_iterator();) {
+			 it != std::filesystem::directory_iterator();) {
 			if (!ec) {
 				check_file(it->path());
 			}
@@ -430,8 +430,7 @@ Result<void> StandardFileSystem::RemoveAll(const std::filesystem::path& path) {
 	return {};
 }
 
-Result<void>
-StandardFileSystem::Copy(const std::filesystem::path& from, const std::filesystem::path& to) {
+Result<void> StandardFileSystem::Copy(const std::filesystem::path& from, const std::filesystem::path& to) {
 	// Create parent directory if it doesn't exist
 	auto parent = to.parent_path();
 	if (!parent.empty()) {
@@ -444,25 +443,24 @@ StandardFileSystem::Copy(const std::filesystem::path& from, const std::filesyste
 
 	std::error_code ec;
 	std::filesystem::copy(
-	    from,
-	    to,
-	    std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing,
-	    ec
+		from,
+		to,
+		std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing,
+		ec
 	);
 
 	if (ec) {
 		return MakeError(
-		    "Failed to copy from {} to {} - {}",
-		    plg::as_string(from),
-		    plg::as_string(to),
-		    ec.message()
+			"Failed to copy from {} to {} - {}",
+			plg::as_string(from),
+			plg::as_string(to),
+			ec.message()
 		);
 	}
 	return {};
 }
 
-Result<void>
-StandardFileSystem::Move(const std::filesystem::path& from, const std::filesystem::path& to) {
+Result<void> StandardFileSystem::Move(const std::filesystem::path& from, const std::filesystem::path& to) {
 	// Create parent directory if it doesn't exist
 	auto parent = to.parent_path();
 	if (!parent.empty()) {
@@ -479,17 +477,18 @@ StandardFileSystem::Move(const std::filesystem::path& from, const std::filesyste
 		// If rename fails (e.g., across filesystems), try copy and remove
 		ec.clear();
 		std::filesystem::copy(
-		    from,
-		    to,
-		    std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing,
-		    ec
+			from,
+			to,
+			std::filesystem::copy_options::recursive
+				| std::filesystem::copy_options::overwrite_existing,
+			ec
 		);
 		if (ec) {
 			return MakeError(
-			    "Failed to move from {} to {} - {}",
-			    plg::as_string(from),
-			    plg::as_string(to),
-			    ec.message()
+				"Failed to move from {} to {} - {}",
+				plg::as_string(from),
+				plg::as_string(to),
+				ec.message()
 			);
 		}
 
@@ -523,16 +522,18 @@ Result<std::filesystem::path> StandardFileSystem::GetAbsolutePath(const std::fil
 }
 
 // Get relative path
-Result<std::filesystem::path>
-StandardFileSystem::GetRelativePath(const std::filesystem::path& path, const std::filesystem::path& base) {
+Result<std::filesystem::path> StandardFileSystem::GetRelativePath(
+	const std::filesystem::path& path,
+	const std::filesystem::path& base
+) {
 	std::error_code ec;
 	auto relative = std::filesystem::relative(path, base, ec);
 	if (ec) {
 		return MakeError(
-		    "Failed to relative path to {} with {} - {}",
-		    plg::as_string(path),
-		    plg::as_string(base),
-		    ec.message()
+			"Failed to relative path to {} with {} - {}",
+			plg::as_string(path),
+			plg::as_string(base),
+			ec.message()
 		);
 	}
 	return relative;
@@ -541,7 +542,7 @@ StandardFileSystem::GetRelativePath(const std::filesystem::path& path, const std
 // Append operations
 Result<void>
 ExtendedFileSystem::AppendTextFile(const std::filesystem::path& path, std::string_view content) {
-	errno = 0;  // Clear errno before operation
+	errno = 0;	// Clear errno before operation
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::app);
 	if (!file) {
 		return MakeError(GetStreamError(path, "Failed to open file for appending"));
@@ -557,9 +558,11 @@ ExtendedFileSystem::AppendTextFile(const std::filesystem::path& path, std::strin
 	return {};
 }
 
-Result<void>
-ExtendedFileSystem::AppendBinaryFile(const std::filesystem::path& path, std::span<const uint8_t> data) {
-	errno = 0;  // Clear errno before operation
+Result<void> ExtendedFileSystem::AppendBinaryFile(
+	const std::filesystem::path& path,
+	std::span<const uint8_t> data
+) {
+	errno = 0;	// Clear errno before operation
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::app);
 	if (!file) {
 		return MakeError(GetStreamError(path, "Failed to open file for appending"));
@@ -601,8 +604,7 @@ ExtendedFileSystem::WriteFileAtomic(const std::filesystem::path& path, std::stri
 }
 
 // Get available space
-Result<std::filesystem::space_info>
-ExtendedFileSystem::GetSpaceInfo(const std::filesystem::path& path) {
+Result<std::filesystem::space_info> ExtendedFileSystem::GetSpaceInfo(const std::filesystem::path& path) {
 	std::error_code ec;
 	auto space = std::filesystem::space(path, ec);
 	if (ec) {
@@ -612,11 +614,13 @@ ExtendedFileSystem::GetSpaceInfo(const std::filesystem::path& path) {
 }
 
 // Create temporary file
-Result<std::filesystem::path>
-ExtendedFileSystem::CreateTempFile(const std::filesystem::path& directory, const std::string& prefix) {
+Result<std::filesystem::path> ExtendedFileSystem::CreateTempFile(
+	const std::filesystem::path& directory,
+	const std::string& prefix
+) {
 	std::error_code ec;
 	std::filesystem::path dir = directory.empty() ? std::filesystem::temp_directory_path(ec)
-	                                              : directory;
+												  : directory;
 
 	if (ec) {
 		return MakeError("Failed to get temp directory: {}", ec.message());
@@ -627,7 +631,7 @@ ExtendedFileSystem::CreateTempFile(const std::filesystem::path& directory, const
 	std::filesystem::path temp_path = dir / std::format("{}_{}", prefix, timestamp);
 
 	// Create empty file
-	errno = 0;  // Clear errno before operation
+	errno = 0;	// Clear errno before operation
 	std::ofstream file(temp_path);
 	if (!file) {
 		return MakeError(GetStreamError(temp_path, "Failed to create temp file"));
@@ -638,11 +642,13 @@ ExtendedFileSystem::CreateTempFile(const std::filesystem::path& directory, const
 }
 
 // Create temporary directory
-Result<std::filesystem::path>
-ExtendedFileSystem::CreateTempDirectory(const std::filesystem::path& directory, const std::string& prefix) {
+Result<std::filesystem::path> ExtendedFileSystem::CreateTempDirectory(
+	const std::filesystem::path& directory,
+	const std::string& prefix
+) {
 	std::error_code ec;
 	std::filesystem::path dir = directory.empty() ? std::filesystem::temp_directory_path(ec)
-	                                              : directory;
+												  : directory;
 
 	if (ec) {
 		return MakeError("Failed to get temp directory: {}", ec.message());
@@ -662,8 +668,10 @@ ExtendedFileSystem::CreateTempDirectory(const std::filesystem::path& directory, 
 }
 
 // Check if files are equal
-Result<bool>
-ExtendedFileSystem::FilesEqual(const std::filesystem::path& path1, const std::filesystem::path& path2) {
+Result<bool> ExtendedFileSystem::FilesEqual(
+	const std::filesystem::path& path1,
+	const std::filesystem::path& path2
+) {
 	// Quick check: file sizes
 	std::error_code ec;
 	auto size1 = std::filesystem::file_size(path1, ec);
@@ -714,7 +722,7 @@ ExtendedFileSystem::FilesEqual(const std::filesystem::path& path1, const std::fi
 		}
 
 		if (read1 < static_cast<std::streamsize>(buffer_size)) {
-			break;  // Reached end of file
+			break;	// Reached end of file
 		}
 	}
 
@@ -779,8 +787,9 @@ bool ExtendedFileSystem::IsReadable(const std::filesystem::path& path) {
 }
 
 // Get last write time
-Result<std::filesystem::file_time_type>
-ExtendedFileSystem::GetLastWriteTime(const std::filesystem::path& path) {
+Result<std::filesystem::file_time_type> ExtendedFileSystem::GetLastWriteTime(
+	const std::filesystem::path& path
+) {
 	std::error_code ec;
 	auto time = std::filesystem::last_write_time(path, ec);
 	if (ec) {
@@ -791,8 +800,8 @@ ExtendedFileSystem::GetLastWriteTime(const std::filesystem::path& path) {
 
 // Set last write time
 Result<void> ExtendedFileSystem::SetLastWriteTime(
-    const std::filesystem::path& path,
-    std::filesystem::file_time_type time
+	const std::filesystem::path& path,
+	std::filesystem::file_time_type time
 ) {
 	std::error_code ec;
 	std::filesystem::last_write_time(path, time, ec);
@@ -809,8 +818,10 @@ bool ExtendedFileSystem::IsSymlink(const std::filesystem::path& path) {
 }
 
 // Create symbolic link
-Result<void>
-ExtendedFileSystem::CreateSymlink(const std::filesystem::path& target, const std::filesystem::path& link) {
+Result<void> ExtendedFileSystem::CreateSymlink(
+	const std::filesystem::path& target,
+	const std::filesystem::path& link
+) {
 	std::error_code ec;
 	std::filesystem::create_symlink(target, link, ec);
 	if (ec) {

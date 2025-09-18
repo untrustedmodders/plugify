@@ -1089,10 +1089,12 @@ public:
 		);
 
 		// Show timing for different operations
-		ExtensionState operations[] = { ExtensionState::Parsing,
-			                            ExtensionState::Resolving,
-			                            ExtensionState::Loading,
-			                            ExtensionState::Starting };
+		ExtensionState operations[] = {
+			ExtensionState::Parsing,
+			ExtensionState::Resolving,
+			ExtensionState::Loading,
+			ExtensionState::Starting,
+		};
 
 		for (const auto& op : operations) {
 			try {
@@ -1344,10 +1346,12 @@ public:
 		);
 
 		// Show timing for different operations
-		ExtensionState operations[] = { ExtensionState::Parsing,
-			                            ExtensionState::Resolving,
-			                            ExtensionState::Loading,
-			                            ExtensionState::Starting };
+		ExtensionState operations[] = {
+			ExtensionState::Parsing,
+			ExtensionState::Resolving,
+			ExtensionState::Loading,
+			ExtensionState::Starting,
+		};
 
 		for (const auto& op : operations) {
 			try {

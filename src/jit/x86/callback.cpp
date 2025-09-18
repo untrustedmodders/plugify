@@ -11,8 +11,8 @@ static JitRuntime rt;
 
 struct JitCallback::Impl {
 	Impl()
-	    : function(nullptr)
-	    , userData(nullptr) {
+		: function(nullptr)
+		, userData(nullptr) {
 	}
 
 	~Impl() {
@@ -22,11 +22,11 @@ struct JitCallback::Impl {
 	}
 
 	MemAddr GetJitFunc(
-	    const Signature& signature,
-	    const Method* method,
-	    CallbackHandler callback,
-	    MemAddr data,
-	    bool hidden
+		const Signature& signature,
+		const Method* method,
+		CallbackHandler callback,
+		MemAddr data,
+		bool hidden
 	) {
 		if (function) {
 			return function;
@@ -46,11 +46,11 @@ struct JitCallback::Impl {
 		FuncNode* func = cc.add_func(sig);
 
 #if 0
-	    StringLogger log;
-	    auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
+		StringLogger log;
+		auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
 
-	    log.addFlags(kFormatFlags);
-	    code.setLogger(&log);
+		log.addFlags(kFormatFlags);
+		code.setLogger(&log);
 #endif
 
 #if PLUGIFY_IS_RELEASE
@@ -185,7 +185,7 @@ struct JitCallback::Impl {
 			cc.mov(retStruct, argsStack);
 		} else {
 			const auto retSize = static_cast<uint32_t>(
-			    sizeof(uint64_t) * (TypeUtils::is_vec128(sig.ret()) ? 2 : 1)
+				sizeof(uint64_t) * (TypeUtils::is_vec128(sig.ret()) ? 2 : 1)
 			);
 			retStack = cc.new_stack(retSize, alignment);
 			cc.lea(retStruct, retStack);
@@ -193,9 +193,9 @@ struct JitCallback::Impl {
 
 		InvokeNode* invokeNode;
 		cc.invoke(
-		    Out(invokeNode),
-		    (uint64_t) callback,
-		    FuncSignature::build<void, void*, void*, uint64_t*, size_t, void*>()
+			Out(invokeNode),
+			(uint64_t) callback,
+			FuncSignature::build<void, void*, void*, uint64_t*, size_t, void*>()
 		);
 
 		// call to user provided function (use ABI of host compiler)
@@ -245,7 +245,7 @@ struct JitCallback::Impl {
 				cc.mov(x86::edx, retStackIdx1);
 				cc.ret();
 			} else
-#endif  // PLUGIFY_ARCH_BITS
+#endif	// PLUGIFY_ARCH_BITS
 				if (TypeUtils::is_int(sig.ret())) {
 					x86::Gp tmp = cc.new_gpz();
 					cc.mov(tmp, retStackIdx0);
@@ -269,7 +269,7 @@ struct JitCallback::Impl {
 					cc.movq(x86::xmm1, retStackIdx1);
 					cc.ret();
 				}
-#endif  // PLUGIFY_ARCH_BITS
+#endif	// PLUGIFY_ARCH_BITS
 				else if (TypeUtils::is_float(sig.ret())) {
 					x86::Vec tmp = cc.new_xmm();
 					cc.movq(tmp, retStackIdx0);
@@ -298,7 +298,7 @@ struct JitCallback::Impl {
 		}
 
 #if 0
-	    std::printf("JIT Stub[%p]:\n%s\n", (void*)function, log.data());
+		std::printf("JIT Stub[%p]:\n%s\n", (void*)function, log.data());
 #endif
 
 		return function;
@@ -315,7 +315,7 @@ struct JitCallback::Impl {
 using namespace plugify;
 
 JitCallback::JitCallback()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 JitCallback::JitCallback(JitCallback&& other) noexcept = default;
@@ -325,24 +325,28 @@ JitCallback::~JitCallback() = default;
 JitCallback& JitCallback::operator=(JitCallback&& other) noexcept = default;
 
 MemAddr JitCallback::GetJitFunc(
-    const Signature& signature,
-    const Method* method,
-    CallbackHandler callback,
-    MemAddr data,
-    bool hidden
+	const Signature& signature,
+	const Method* method,
+	CallbackHandler callback,
+	MemAddr data,
+	bool hidden
 ) {
 	return _impl->GetJitFunc(signature, method, callback, data, hidden);
 }
 
-MemAddr
-JitCallback::GetJitFunc(const Method& method, CallbackHandler callback, MemAddr data, HiddenParam hidden) {
+MemAddr JitCallback::GetJitFunc(
+	const Method& method,
+	CallbackHandler callback,
+	MemAddr data,
+	HiddenParam hidden
+) {
 	ValueType retType = method.GetRetType().GetType();
 	bool retHidden = hidden(retType);
 
 	Signature signature(
-	    method.GetCallConv(),
-	    retHidden ? ValueType::Pointer : retType,
-	    method.GetVarIndex()
+		method.GetCallConv(),
+		retHidden ? ValueType::Pointer : retType,
+		method.GetVarIndex()
 	);
 	if (retHidden) {
 		signature.AddArg(retType);

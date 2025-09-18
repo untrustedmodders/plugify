@@ -13,13 +13,13 @@ struct Provider::Impl {
 };
 
 Provider::Provider(const ServiceLocator& services, const Config& config, const Manager& manager)
-    : _impl(std::make_unique<Impl>(services, config, manager)) {
+	: _impl(std::make_unique<Impl>(services, config, manager)) {
 }
 
 Provider::~Provider() = default;
 
 Provider::Provider(const Provider& other)
-    : _impl(std::make_unique<Impl>(*other._impl)) {
+	: _impl(std::make_unique<Impl>(*other._impl)) {
 }
 
 Provider::Provider(Provider&& other) noexcept = default;

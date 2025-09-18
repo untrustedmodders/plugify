@@ -4,13 +4,13 @@ using namespace plugify;
 
 // Property Implementation
 Property::Property()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 Property::~Property() = default;
 
 Property::Property(const Property& other)
-    : _impl(std::make_unique<Impl>(*other._impl)) {
+	: _impl(std::make_unique<Impl>(*other._impl)) {
 }
 
 Property::Property(Property&& other) noexcept = default;

@@ -12,7 +12,7 @@ namespace {
 
 // Register / unregister
 Registrar::Registrar(UniqueId id, DebugInfo info)
-    : _id(id) {
+	: _id(id) {
 	std::unique_lock lock(mutex);
 	registry[id] = std::move(info);
 }
@@ -23,7 +23,7 @@ Registrar::~Registrar() {
 }
 
 Registrar::Registrar(Registrar&& o) noexcept
-    : _id(o._id) {
+	: _id(o._id) {
 	o._id = UniqueId{};
 }
 

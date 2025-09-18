@@ -25,9 +25,9 @@ namespace plugify {
 	class SimpleErrorHandler : public asmjit::ErrorHandler {
 	public:
 		void handle_error(
-		    asmjit::Error err,
-		    const char* message,
-		    [[maybe_unused]] asmjit::BaseEmitter* origin
+			asmjit::Error err,
+			const char* message,
+			[[maybe_unused]] asmjit::BaseEmitter* origin
 		) override {
 			error = err;
 			code = message;
@@ -39,9 +39,9 @@ namespace plugify {
 
 	inline asmjit::FuncSignature ConvertSignature(const Signature& sig) {
 		asmjit::FuncSignature asmSig(
-		    GetCallConvId(sig.callConv),
-		    sig.varIndex,
-		    GetRetTypeId(sig.retType)
+			GetCallConvId(sig.callConv),
+			sig.varIndex,
+			GetRetTypeId(sig.retType)
 		);
 
 		for (const auto& arg : sig.argTypes) {

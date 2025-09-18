@@ -38,10 +38,10 @@ struct Plugify::Impl {
 	std::atomic<bool> stopRequested{ false };
 
 	Impl(ServiceLocator srv, Config cfg)
-	    : services(std::move(srv))
-	    , config(std::move(cfg))
-	    , manager(services, config)
-	    , ownerThreadId(std::this_thread::get_id()) {
+		: services(std::move(srv))
+		, config(std::move(cfg))
+		, manager(services, config)
+		, ownerThreadId(std::this_thread::get_id()) {
 		// Get version
 		plg::parse(PLUGIFY_VERSION, version);
 
@@ -76,8 +76,8 @@ struct Plugify::Impl {
 
 		logger->Log("Initializing Plugify...", Severity::Info);
 		logger->Log(
-		    std::format("Update mode: {}", plg::enum_to_string(config.runtime.updateMode)),
-		    Severity::Info
+			std::format("Update mode: {}", plg::enum_to_string(config.runtime.updateMode)),
+			Severity::Info
 		);
 
 		// Create necessary directories
@@ -172,21 +172,21 @@ struct Plugify::Impl {
 
 	// Get current update statistics
 	/*struct UpdateStats {
-	    UpdateMode mode;
-	    size_t updateCount;
-	    std::chrono::milliseconds averageUpdateTime;
-	    std::chrono::milliseconds lastUpdateDuration;
-	    bool isBackgroundThreadRunning;
+		UpdateMode mode;
+		size_t updateCount;
+		std::chrono::milliseconds averageUpdateTime;
+		std::chrono::milliseconds lastUpdateDuration;
+		bool isBackgroundThreadRunning;
 	};
 
 	UpdateStats GetUpdateStats() const {
-	    return {
-	        .mode = config.runtime.updateMode,
-	        .updateCount = manager.GetUpdateCount(),
-	        .averageUpdateTime = manager.GetAverageUpdateTime(),
-	        .lastUpdateDuration = manager.GetLastUpdateDuration(),
-	        .isBackgroundThreadRunning = updateThread.joinable()
-	    };
+		return {
+			.mode = config.runtime.updateMode,
+			.updateCount = manager.GetUpdateCount(),
+			.averageUpdateTime = manager.GetAverageUpdateTime(),
+			.lastUpdateDuration = manager.GetLastUpdateDuration(),
+			.isBackgroundThreadRunning = updateThread.joinable()
+		};
 	}*/
 
 private:
@@ -202,8 +202,8 @@ private:
 					;
 				} else {
 					logger->Log(
-					    std::format("Created directory: {}", plg::as_string(dir)),
-					    Severity::Info
+						std::format("Created directory: {}", plg::as_string(dir)),
+						Severity::Info
 					);
 				}
 			}
@@ -222,9 +222,9 @@ private:
 		struct PathValidation {
 			std::string_view name;
 			const std::filesystem::path* path;
-			bool requireExists;    // Optional: check if directory should exist
+			bool requireExists;	   // Optional: check if directory should exist
 			bool requireRelative;  // Optional: check if path should be relative
-			bool canCreate;        // Optional: whether we can create it if missing
+			bool canCreate;		   // Optional: whether we can create it if missing
 		};
 
 		const std::array<PathValidation, 6> pathsToValidate = {
@@ -301,21 +301,21 @@ private:
 
 					// Check if one path is a parent of another
 					auto [it1, it2] = std::mismatch(
-					    path1.begin(),
-					    path1.end(),
-					    path2.begin(),
-					    path2.end()
+						path1.begin(),
+						path1.end(),
+						path2.begin(),
+						path2.end()
 					);
 
 					if (it1 == path1.end() || it2 == path2.end()) {
 						result.AddError(
-						    std::format(
-						        "{} ('{}') conflicts with {} ('{}')",
-						        paths[i].name,
-						        plg::as_string(path1),
-						        paths[j].name,
-						        plg::as_string(path2)
-						    )
+							std::format(
+								"{} ('{}') conflicts with {} ('{}')",
+								paths[i].name,
+								plg::as_string(path1),
+								paths[j].name,
+								plg::as_string(path2)
+							)
 						);
 					}
 				}
@@ -332,8 +332,8 @@ private:
 
 		if (!result.errors.empty()) {
 			logger->Log(
-			    std::format("Validation failed: {}", plg::join(result.errors, "; ")),
-			    Severity::Error
+				std::format("Validation failed: {}", plg::join(result.errors, "; ")),
+				Severity::Error
 			);
 		}
 
@@ -382,15 +382,15 @@ private:
 		updateThread = std::thread([this]() {
 			// Set thread priority if specified
 			/*if (config.runtime.threadPriority) {
-			    ops->SetThreadPriority(*config.runtime.threadPriority);
+				ops->SetThreadPriority(*config.runtime.threadPriority);
 			}*/
 
 			auto lastTime = std::chrono::steady_clock::now();
 			const auto& interval = config.runtime.updateInterval;
 
 			logger->Log(
-			    std::format("Background update thread started (interval: {})", interval),
-			    Severity::Info
+				std::format("Background update thread started (interval: {})", interval),
+				Severity::Info
 			);
 
 			while (!stopRequested.load(std::memory_order_relaxed)) {
@@ -404,8 +404,8 @@ private:
 				// Sleep for remaining time
 				auto updateDuration = std::chrono::steady_clock::now() - now;
 				auto sleepTime = interval
-				                 - std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration
-				                 );
+								 - std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration
+								 );
 
 				if (sleepTime > 0ms) {
 					// Use interruptible sleep
@@ -415,12 +415,12 @@ private:
 					});
 				} else {
 					logger->Log(
-					    std::format(
-					        "Update took longer than interval: {} > {}",
-					        std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration),
-					        interval
-					    ),
-					    Severity::Warning
+						std::format(
+							"Update took longer than interval: {} > {}",
+							std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration),
+							interval
+						),
+						Severity::Warning
 					);
 				}
 			}
@@ -442,7 +442,7 @@ private:
 
 // Plugify implementation
 Plugify::Plugify(ServiceLocator services, Config config)
-    : _impl(std::make_unique<Impl>(std::move(services), std::move(config))) {
+	: _impl(std::make_unique<Impl>(std::move(services), std::move(config))) {
 }
 
 Plugify::~Plugify() = default;
@@ -491,7 +491,7 @@ struct PlugifyBuilder::Impl {
 
 // Plugify implementation
 PlugifyBuilder::PlugifyBuilder()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 PlugifyBuilder::~PlugifyBuilder() = default;
@@ -533,8 +533,9 @@ PlugifyBuilder& PlugifyBuilder::WithBackgroundUpdate(std::chrono::milliseconds i
 	return *this;
 }
 
-PlugifyBuilder&
-PlugifyBuilder::WithUpdateCallback(std::function<void(std::chrono::milliseconds)> callback) {
+PlugifyBuilder& PlugifyBuilder::WithUpdateCallback(
+	std::function<void(std::chrono::milliseconds)> callback
+) {
 	_impl->configOverrides.runtime.updateMode = UpdateMode::Callback;
 	_impl->configOverrides.runtime.updateCallback = std::move(callback);
 	return *this;
@@ -557,8 +558,8 @@ PlugifyBuilder& PlugifyBuilder::WithAssemblyLoader(std::shared_ptr<IAssemblyLoad
 }
 
 /*PlugifyBuilder& PlugifyBuilder::WithConfigProvider(std::shared_ptr<IConfigProvider> provider) {
-    _impl->services.RegisterInstance<IConfigProvider>(std::move(provider));
-    return *this;
+	_impl->services.RegisterInstance<IConfigProvider>(std::move(provider));
+	return *this;
 }*/
 
 PlugifyBuilder& PlugifyBuilder::WithManifestParser(std::shared_ptr<IManifestParser> parser) {
@@ -571,8 +572,7 @@ PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependen
 	return *this;
 }
 
-PlugifyBuilder&
-PlugifyBuilder::WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> lifecycle) {
+PlugifyBuilder& PlugifyBuilder::WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> lifecycle) {
 	_impl->services.RegisterInstance<IExtensionLifecycle>(std::move(lifecycle));
 	return *this;
 }
@@ -582,8 +582,8 @@ PlugifyBuilder::WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> life
 }*/
 
 /*PlugifyBuilder& PlugifyBuilder::WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics) {
-    _impl->services.RegisterInstance<IMetricsCollector>(std::move(metrics));
-    return *this;
+	_impl->services.RegisterInstance<IMetricsCollector>(std::move(metrics));
+	return *this;
 }*/
 
 PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
@@ -597,14 +597,14 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
 	_impl->services.RegisterInstanceIfMissing<IEventBus>(std::make_shared<SimpleEventBus>());
 	_impl->services.RegisterInstanceIfMissing<IFileSystem>(std::make_shared<ExtendedFileSystem>());
 	_impl->services.RegisterInstanceIfMissing<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(
-	    _impl->services.Resolve<IPlatformOps>(),
-	    _impl->services.Resolve<IFileSystem>()
+		_impl->services.Resolve<IPlatformOps>(),
+		_impl->services.Resolve<IFileSystem>()
 	));
 	//_impl->services.RegisterInstanceIfMissing<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
 	_impl->services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>()
 	);
 	_impl->services.RegisterInstanceIfMissing<IDependencyResolver>(
-	    std::make_shared<LibsolvDependencyResolver>(_impl->services.Resolve<ILogger>())
+		std::make_shared<LibsolvDependencyResolver>(_impl->services.Resolve<ILogger>())
 	);
 	_impl->services.RegisterInstanceIfMissing<IExtensionLifecycle>(std::make_shared<DummyLifecycle>());
 	//_impl->services.RegisterInstanceIfMissing<IProgressReporter>(std::make_shared<DefaultProgressReporter>(_impl->services.Resolve<ILogger>()));

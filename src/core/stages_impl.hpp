@@ -16,8 +16,8 @@ namespace plugify {
 
 	public:
 		ParsingStage(std::shared_ptr<IManifestParser> parser, std::shared_ptr<IFileSystem> fileSystem)
-		    : _parser(std::move(parser))
-		    , _fileSystem(std::move(fileSystem)) {
+			: _parser(std::move(parser))
+			, _fileSystem(std::move(fileSystem)) {
 		}
 
 		std::string GetName() const override {
@@ -28,8 +28,10 @@ namespace plugify {
 			return item.GetState() == ExtensionState::Discovered;
 		}
 
-		Result<void>
-		ProcessItem(Extension& ext, [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
+		Result<void> ProcessItem(
+			Extension& ext,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
+		) override {
 			ext.StartOperation(ExtensionState::Parsing);
 
 			auto content = _fileSystem->ReadTextFile(ext.GetLocation());
@@ -62,17 +64,17 @@ namespace plugify {
 
 	public:
 		ResolutionStage(
-		    std::shared_ptr<IDependencyResolver> resolver,
-		    std::vector<UniqueId>* loadOrder,
-		    std::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
-		    std::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph,
-		    const Config& config
+			std::shared_ptr<IDependencyResolver> resolver,
+			std::vector<UniqueId>* loadOrder,
+			std::flat_map<UniqueId, std::vector<UniqueId>>* depGraph,
+			std::flat_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph,
+			const Config& config
 		)
-		    : _resolver(std::move(resolver))
-		    , _loadOrder(loadOrder)
-		    , _depGraph(depGraph)
-		    , _reverseDepGraph(reverseDepGraph)
-		    , _config(config) {
+			: _resolver(std::move(resolver))
+			, _loadOrder(loadOrder)
+			, _depGraph(depGraph)
+			, _reverseDepGraph(reverseDepGraph)
+			, _config(config) {
 		}
 
 		std::string GetName() const override {
@@ -80,8 +82,8 @@ namespace plugify {
 		}
 
 		Result<void> ProcessAll(
-		    std::vector<Extension>& items,
-		    [[maybe_unused]] const ExecutionContext<Extension>& ctx
+			std::vector<Extension>& items,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
 			auto [filtered, excluded] = FilterByPolicy(items);
 
@@ -113,8 +115,9 @@ namespace plugify {
 
 	private:
 		// Filter extensions based on whitelist/blacklist
-		std::pair<std::vector<Extension>, std::vector<Extension>>
-		FilterByPolicy(std::vector<Extension>& items) const {
+		std::pair<std::vector<Extension>, std::vector<Extension>> FilterByPolicy(
+			std::vector<Extension>& items
+		) const {
 			std::vector<Extension> filtered;
 			std::vector<Extension> excluded;
 
@@ -131,13 +134,13 @@ namespace plugify {
 
 				// Check whitelist
 				if (include && !_config.security.whitelistedExtensions.empty()
-				    && !_config.security.whitelistedExtensions.contains(ext.GetName())) {
+					&& !_config.security.whitelistedExtensions.contains(ext.GetName())) {
 					include = false;
 				}
 
 				// Check blacklist
 				if (include && !_config.security.blacklistedExtensions.empty()
-				    && _config.security.blacklistedExtensions.contains(ext.GetName())) {
+					&& _config.security.blacklistedExtensions.contains(ext.GetName())) {
 					include = false;
 				}
 
@@ -187,34 +190,34 @@ namespace plugify {
 		}
 
 		static Result<void> RestoreResult(
-		    std::string_view error,
-		    std::vector<Extension>& items,
-		    std::vector<Extension>& filtered,
-		    std::vector<Extension>& excluded
+			std::string_view error,
+			std::vector<Extension>& items,
+			std::vector<Extension>& filtered,
+			std::vector<Extension>& excluded
 		) {
 			items.insert(
-			    items.end(),
-			    std::make_move_iterator(filtered.begin()),
-			    std::make_move_iterator(filtered.end())
+				items.end(),
+				std::make_move_iterator(filtered.begin()),
+				std::make_move_iterator(filtered.end())
 			);
 			items.insert(
-			    items.end(),
-			    std::make_move_iterator(excluded.begin()),
-			    std::make_move_iterator(excluded.end())
+				items.end(),
+				std::make_move_iterator(excluded.begin()),
+				std::make_move_iterator(excluded.end())
 			);
 			return MakeError(
-			    "{}: {} filtered, {} excluded by resolver",
-			    error,
-			    filtered.size(),
-			    excluded.size()
+				"{}: {} filtered, {} excluded by resolver",
+				error,
+				filtered.size(),
+				excluded.size()
 			);
 		}
 
 		static void BuildResultInOrder(
-		    std::vector<Extension>& result,
-		    std::vector<Extension>& filtered,
-		    std::vector<Extension>& excluded,
-		    const ResolutionReport& report
+			std::vector<Extension>& result,
+			std::vector<Extension>& filtered,
+			std::vector<Extension>& excluded,
+			const ResolutionReport& report
 		) {
 			std::unordered_map<UniqueId, Extension> idToExtension;
 			idToExtension.reserve(filtered.size());
@@ -254,59 +257,59 @@ namespace plugify {
 
 			// Add excluded extensions at the very end
 			result.insert(
-			    result.end(),
-			    std::make_move_iterator(excluded.begin()),
-			    std::make_move_iterator(excluded.end())
+				result.end(),
+				std::make_move_iterator(excluded.begin()),
+				std::make_move_iterator(excluded.end())
 			);
 		}
 
 		static bool IsSupportsPlatform(std::span<const std::string> supportedPlatforms) {
 			return supportedPlatforms.empty()
-			       || std::any_of(
-			           supportedPlatforms.begin(),
-			           supportedPlatforms.end(),
-			           [](const std::string& platform) { return platform == PLUGIFY_PLATFORM; }
-			       );
+				   || std::any_of(
+					   supportedPlatforms.begin(),
+					   supportedPlatforms.end(),
+					   [](const std::string& platform) { return platform == PLUGIFY_PLATFORM; }
+				   );
 		}
 	};
 
 	// Initialize Stage - Transform type
 	/*class InitializeStage : public ITransformStage<Extension> {
-	    ExtensionLoader& _loader;
+		ExtensionLoader& _loader;
 	public:
-	    InitializeStage(ExtensionLoader& loader) : _loader(loader) {}
+		InitializeStage(ExtensionLoader& loader) : _loader(loader) {}
 
-	    std::string GetName() const override { return "Initialization"; }
+		std::string GetName() const override { return "Initialization"; }
 
-	    bool ShouldProcess(const Extension& item) const override {
-	        return item.GetState() == ExtensionState::Resolved;
-	    }
+		bool ShouldProcess(const Extension& item) const override {
+			return item.GetState() == ExtensionState::Resolved;
+		}
 
-	    Result<void> ProcessItem(
-	        Extension& ext,
-	        [[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
+		Result<void> ProcessItem(
+			Extension& ext,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
 
-	        ext.StartOperation(ExtensionState::Initializating);
+			ext.StartOperation(ExtensionState::Initializating);
 
-	        Result<void> result;
-	        switch (ext.GetType()) {
-	            case ExtensionType::Module: {
-	                auto assemblyResult = _loader.PreloadAssembly(ext.GetRuntime(),
+			Result<void> result;
+			switch (ext.GetType()) {
+				case ExtensionType::Module: {
+					auto assemblyResult = _loader.PreloadAssembly(ext.GetRuntime(),
 	ext.GetDirectories()); break;
-	            }
+				}
 
-	            case ExtensionType::Plugin: {
+				case ExtensionType::Plugin: {
 
-	                break;
-	            }
+					break;
+				}
 
-	            default:
-	                result = MakeError("Unknown extension type");
-	        }
+				default:
+					result = MakeError("Unknown extension type");
+			}
 
-	        ext.EndOperation(ExtensionState::Initialized);
-	        return {};
-	    }
+			ext.EndOperation(ExtensionState::Initialized);
+			return {};
+		}
 	};*/
 
 	// Uses CRTP (Curiously Recurring Template Pattern) for compile-time polymorphism
@@ -322,17 +325,17 @@ namespace plugify {
 
 	public:
 		BaseFailurePropagatingStage(
-		    ExtensionLoader& loader,
-		    FailureTracker& failureTracker,
-		    const std::flat_map<UniqueId, std::vector<UniqueId>>& depGraph,
-		    const std::flat_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
-		    std::chrono::milliseconds timeout
+			ExtensionLoader& loader,
+			FailureTracker& failureTracker,
+			const std::flat_map<UniqueId, std::vector<UniqueId>>& depGraph,
+			const std::flat_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
+			std::chrono::milliseconds timeout
 		)
-		    : _loader(loader)
-		    , _failureTracker(failureTracker)
-		    , _depGraph(depGraph)
-		    , _reverseDepGraph(reverseDepGraph)
-		    , _timeout(timeout) {
+			: _loader(loader)
+			, _failureTracker(failureTracker)
+			, _depGraph(depGraph)
+			, _reverseDepGraph(reverseDepGraph)
+			, _timeout(timeout) {
 		}
 
 		bool ContinueOnError() const override {
@@ -340,10 +343,10 @@ namespace plugify {
 		}
 
 		Result<void> ProcessItem(
-		    Extension& ext,
-		    size_t position,
-		    size_t total,
-		    const ExecutionContext<Extension>& ctx
+			Extension& ext,
+			size_t position,
+			size_t total,
+			const ExecutionContext<Extension>& ctx
 		) override {
 			// Common dependency failure check
 			if (_failureTracker.HasAnyDependencyFailed(ext, _reverseDepGraph)) {
@@ -388,7 +391,7 @@ namespace plugify {
 		void CheckTimeout(Extension& ext, ExtensionState state) {
 			if (auto operationTime = ext.GetOperationTime(state); operationTime > _timeout) {
 				ext.AddWarning(
-				    std::format("{} took {} to complete", plg::enum_to_string(state), operationTime)
+					std::format("{} took {} to complete", plg::enum_to_string(state), operationTime)
 				);
 			}
 		}
@@ -423,10 +426,10 @@ namespace plugify {
 
 		// Non-virtual method called by base class via CRTP
 		Result<void> DoProcessItem(
-		    Extension& ext,
-		    [[maybe_unused]] size_t position,
-		    [[maybe_unused]] size_t total,
-		    [[maybe_unused]] const ExecutionContext<Extension>& ctx
+			Extension& ext,
+			[[maybe_unused]] size_t position,
+			[[maybe_unused]] size_t total,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) {
 			ext.StartOperation(ExtensionState::Loading);
 
@@ -487,26 +490,26 @@ namespace plugify {
 
 		bool ShouldProcess(const Extension& item) const override {
 			return item.GetState() == ExtensionState::Loaded
-			       && item.GetType() == ExtensionType::Plugin;
+				   && item.GetType() == ExtensionType::Plugin;
 		}
 
 		void Setup(
-		    std::span<Extension> items,
-		    [[maybe_unused]] const ExecutionContext<Extension>& ctx
+			std::span<Extension> items,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
 			for (const auto& ext : items) {
 				if (ext.GetType() == ExtensionType::Module
-				    && ext.GetState() == ExtensionState::Running) {
+					&& ext.GetState() == ExtensionState::Running) {
 					_runningModules.push_back(&ext);
 				}
 			}
 		}
 
 		Result<void> DoProcessItem(
-		    Extension& ext,
-		    [[maybe_unused]] size_t position,
-		    [[maybe_unused]] size_t total,
-		    [[maybe_unused]] const ExecutionContext<Extension>& ctx
+			Extension& ext,
+			[[maybe_unused]] size_t position,
+			[[maybe_unused]] size_t total,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) {
 			ext.StartOperation(ExtensionState::Exporting);
 
@@ -538,14 +541,14 @@ namespace plugify {
 
 		bool ShouldProcess(const Extension& item) const override {
 			return item.GetState() == ExtensionState::Exported
-			       && item.GetType() == ExtensionType::Plugin;
+				   && item.GetType() == ExtensionType::Plugin;
 		}
 
 		Result<void> DoProcessItem(
-		    Extension& ext,
-		    [[maybe_unused]] size_t position,
-		    [[maybe_unused]] size_t total,
-		    [[maybe_unused]] const ExecutionContext<Extension>& ctx
+			Extension& ext,
+			[[maybe_unused]] size_t position,
+			[[maybe_unused]] size_t total,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) {
 			ext.StartOperation(ExtensionState::Starting);
 

@@ -14,8 +14,8 @@ namespace plugify {
 	class ScopedTimer {
 	public:
 		explicit ScopedTimer(Callback&& cb) noexcept(std::is_nothrow_move_constructible_v<Callback>)
-		    : m_callback(std::forward<Callback>(cb))
-		    , m_start(std::chrono::steady_clock::now()) {
+			: m_callback(std::forward<Callback>(cb))
+			, m_start(std::chrono::steady_clock::now()) {
 		}
 
 		~ScopedTimer() noexcept(std::is_nothrow_invocable_v<Callback>) {
@@ -30,8 +30,8 @@ namespace plugify {
 
 		// Movable
 		ScopedTimer(ScopedTimer&& other) noexcept
-		    : m_callback(std::move(other.m_callback))
-		    , m_start(other.m_start) {
+			: m_callback(std::move(other.m_callback))
+			, m_start(other.m_start) {
 		}
 
 		ScopedTimer& operator=(ScopedTimer&& other) noexcept {
@@ -58,8 +58,8 @@ namespace plugify {
 
 	public:
 		SafeCall(std::string_view op, std::string_view name)
-		    : operation(op)
-		    , extensionName(name) {
+			: operation(op)
+			, extensionName(name) {
 		}
 
 		template <typename T, typename Func>
@@ -91,19 +91,19 @@ namespace plugify {
 
 			std::string ToString() const {
 				return std::format(
-				    "\n=== Loader Report ===\n"
-				    "  Modules loaded: {}\n"
-				    "  Plugins loaded: {}\n"
-				    "  Slowest module: {} - {}\n"
-				    "  Slowest plugin: {} - {}\n"
-				    "  Total load time: {}\n",
-				    modulesLoaded,
-				    pluginsLoaded,
-				    slowestModuleLoad,
-				    ToShortString(slowestModule),
-				    slowestPluginLoad,
-				    ToShortString(slowestPlugin),
-				    totalLoadTime
+					"\n=== Loader Report ===\n"
+					"  Modules loaded: {}\n"
+					"  Plugins loaded: {}\n"
+					"  Slowest module: {} - {}\n"
+					"  Slowest plugin: {} - {}\n"
+					"  Total load time: {}\n",
+					modulesLoaded,
+					pluginsLoaded,
+					slowestModuleLoad,
+					ToShortString(slowestModule),
+					slowestPluginLoad,
+					ToShortString(slowestPlugin),
+					totalLoadTime
 				);
 			}
 		};
@@ -120,11 +120,11 @@ namespace plugify {
 
 	public:
 		ExtensionLoader(const ServiceLocator& locator, const Config& config, const Provider& provider)
-		    : _config(config)
-		    , _provider(provider)
-		    , _fileSystem(locator.Resolve<IFileSystem>())
-		    , _assemblyLoader(locator.Resolve<IAssemblyLoader>())
-		    , _extensionLifecycle(locator.Resolve<IExtensionLifecycle>()) {
+			: _config(config)
+			, _provider(provider)
+			, _fileSystem(locator.Resolve<IFileSystem>())
+			, _assemblyLoader(locator.Resolve<IAssemblyLoader>())
+			, _extensionLifecycle(locator.Resolve<IExtensionLifecycle>()) {
 		}
 
 		// Module Operations
@@ -290,27 +290,27 @@ namespace plugify {
 
 		// Preload support
 		/*Result<void> PreloadAssembly(
-		    const std::filesystem::path& path,
-		    const std::vector<std::filesystem::path>& searchPaths
+			const std::filesystem::path& path,
+			const std::vector<std::filesystem::path>& searchPaths
 		) {
-		    auto absPath = _fileSystem->GetAbsolutePath(path);
-		    if (!absPath) {
-		        return MakeError(absPath.error());
-		    }
+			auto absPath = _fileSystem->GetAbsolutePath(path);
+			if (!absPath) {
+				return MakeError(absPath.error());
+			}
 
-		    // Check if already cached
-		    if (_assemblyCache.contains(*absPath)) {
-		        return {};
-		    }
+			// Check if already cached
+			if (_assemblyCache.contains(*absPath)) {
+				return {};
+			}
 
-		    LoadFlag flags = GetLoadFlags();
-		    auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
-		    if (!assemblyResult) {
-		        return MakeError(assemblyResult.error());
-		    }
+			LoadFlag flags = GetLoadFlags();
+			auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
+			if (!assemblyResult) {
+				return MakeError(assemblyResult.error());
+			}
 
-		    _assemblyCache.emplace(std::move(*absPath), std::move(*assemblyResult));
-		    return {};
+			_assemblyCache.emplace(std::move(*absPath), std::move(*assemblyResult));
+			return {};
 		}*/
 
 		// Statistics
@@ -329,8 +329,8 @@ namespace plugify {
 	private:
 		// Helper to get or load assembly
 		Result<std::shared_ptr<IAssembly>> GetOrLoadAssembly(
-		    const std::filesystem::path& path,
-		    const std::vector<std::filesystem::path>& searchPaths
+			const std::filesystem::path& path,
+			const std::vector<std::filesystem::path>& searchPaths
 		) {
 			auto absPath = _fileSystem->GetAbsolutePath(path);
 			if (!absPath) {
@@ -380,9 +380,9 @@ namespace plugify {
 			bool moduleBuildType = languageModule->IsDebugBuild();
 			if (moduleBuildType != plugifyBuildType) {
 				return MakeError(
-				    "Build type mismatch: plugify={}, module={}",
-				    plugifyBuildType ? "debug" : "release",
-				    moduleBuildType ? "debug" : "release"
+					"Build type mismatch: plugify={}, module={}",
+					plugifyBuildType ? "debug" : "release",
+					moduleBuildType ? "debug" : "release"
 				);
 			}
 #endif
@@ -408,9 +408,9 @@ namespace plugify {
 
 			if (methods.size() != exportedMethods.size()) {
 				return MakeError(
-				    "Method count mismatch: expected {}, got {}",
-				    exportedMethods.size(),
-				    methods.size()
+					"Method count mismatch: expected {}, got {}",
+					exportedMethods.size(),
+					methods.size()
 				);
 			}
 

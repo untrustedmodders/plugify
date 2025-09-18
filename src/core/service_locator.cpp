@@ -29,9 +29,9 @@ struct ServiceLocator::Impl {
 	}
 
 	void RegisterFactory(
-	    std::type_index type,
-	    std::function<std::shared_ptr<void>()> factory,
-	    ServiceLifetime lifetime
+		std::type_index type,
+		std::function<std::shared_ptr<void>()> factory,
+		ServiceLifetime lifetime
 	) {
 		std::unique_lock lock(mutex);
 
@@ -130,7 +130,7 @@ struct ServiceLocator::Impl {
 // ServiceLocator implementation
 // ============================================
 ServiceLocator::ServiceLocator()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 ServiceLocator::~ServiceLocator() = default;
@@ -138,57 +138,47 @@ ServiceLocator::~ServiceLocator() = default;
 ServiceLocator::ServiceLocator(ServiceLocator&&) noexcept = default;
 ServiceLocator& ServiceLocator::operator=(ServiceLocator&&) noexcept = default;
 
-void
-ServiceLocator::RegisterInstanceInternal(std::type_index type, std::shared_ptr<void> instance) {
+void ServiceLocator::RegisterInstanceInternal(std::type_index type, std::shared_ptr<void> instance) {
 	_impl->RegisterInstance(type, std::move(instance));
 }
 
-void
-ServiceLocator::RegisterFactoryInternal(
-    std::type_index type,
-    std::function<std::shared_ptr<void>()> factory,
-    ServiceLifetime lifetime
+void ServiceLocator::RegisterFactoryInternal(
+	std::type_index type,
+	std::function<std::shared_ptr<void>()> factory,
+	ServiceLifetime lifetime
 ) {
 	_impl->RegisterFactory(type, std::move(factory), lifetime);
 }
 
-std::shared_ptr<void>
-ServiceLocator::ResolveInternal(std::type_index type) const {
+std::shared_ptr<void> ServiceLocator::ResolveInternal(std::type_index type) const {
 	return _impl->Resolve(type);
 }
 
-std::shared_ptr<void>
-ServiceLocator::TryResolveInternal(std::type_index type) const noexcept {
+std::shared_ptr<void> ServiceLocator::TryResolveInternal(std::type_index type) const noexcept {
 	return _impl->TryResolve(type);
 }
 
-bool
-ServiceLocator::IsRegisteredInternal(std::type_index type) const {
+bool ServiceLocator::IsRegisteredInternal(std::type_index type) const {
 	return _impl->IsRegistered(type);
 }
 
-void
-ServiceLocator::BeginScope() {
+void ServiceLocator::BeginScope() {
 	_impl->BeginScope();
 }
 
-void
-ServiceLocator::EndScope() {
+void ServiceLocator::EndScope() {
 	_impl->EndScope();
 }
 
-void
-ServiceLocator::Clear() {
+void ServiceLocator::Clear() {
 	_impl->Clear();
 }
 
-size_t
-ServiceLocator::Count() const {
+size_t ServiceLocator::Count() const {
 	return _impl->Count();
 }
 
-ServiceLocator::ServiceBuilder
-ServiceLocator::Services() {
+ServiceLocator::ServiceBuilder ServiceLocator::Services() {
 	return ServiceBuilder(*this);
 }
 
@@ -196,7 +186,7 @@ ServiceLocator::Services() {
 // ServiceBuilder implementation
 // ============================================
 ServiceLocator::ServiceBuilder::ServiceBuilder(ServiceLocator& locator)
-    : _locator(locator) {
+	: _locator(locator) {
 }
 
 ServiceLocator::ServiceBuilder::~ServiceBuilder() = default;
@@ -205,7 +195,7 @@ ServiceLocator::ServiceBuilder::~ServiceBuilder() = default;
 // ScopedServiceLocator implementation
 // ============================================
 ScopedServiceLocator::ScopedServiceLocator(ServiceLocator& locator)
-    : _locator(locator) {
+	: _locator(locator) {
 	_locator.BeginScope();
 }
 

@@ -11,8 +11,8 @@ static JitRuntime rt;
 
 struct JitCall::Impl {
 	Impl()
-	    : function(nullptr)
-	    , targetFunc(nullptr) {
+		: function(nullptr)
+		, targetFunc(nullptr) {
 	}
 
 	~Impl() {
@@ -40,17 +40,17 @@ struct JitCall::Impl {
 		FuncNode* func = cc.add_func(FuncSignature::build<void, void*, void*>());
 
 #if 0
-	    StringLogger log;
-	    auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
+		StringLogger log;
+		auto kFormatFlags = FormatFlags::kMachineCode | FormatFlags::kExplainImms | FormatFlags::kRegCasts | FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kPositions;
 
-	    log.addFlags(kFormatFlags);
-	    code.setLogger(&log);
+		log.addFlags(kFormatFlags);
+		code.setLogger(&log);
 #endif
 
 #if PLUGIFY_IS_RELEASE
 		// too small to really need it
 		// func->frame().reset_preserved_fp();
-#endif  // PLUGIFY_IS_RELEASE
+#endif	// PLUGIFY_IS_RELEASE
 
 		a64::Gp paramImm = cc.new_gpz();
 		func->set_arg(0, paramImm);
@@ -177,7 +177,7 @@ struct JitCall::Impl {
 		}
 
 #if 0
-	    std::printf("JIT Stub[%p]:\n%s\n", (void*)function, log.data());
+		std::printf("JIT Stub[%p]:\n%s\n", (void*)function, log.data());
 #endif
 
 		return function;
@@ -194,7 +194,7 @@ struct JitCall::Impl {
 using namespace plugify;
 
 JitCall::JitCall()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 JitCall::JitCall(JitCall&& other) noexcept = default;
@@ -203,20 +203,18 @@ JitCall::~JitCall() = default;
 
 JitCall& JitCall::operator=(JitCall&& other) noexcept = default;
 
-MemAddr
-JitCall::GetJitFunc(const Signature& signature, MemAddr target, WaitType waitType, bool hidden) {
+MemAddr JitCall::GetJitFunc(const Signature& signature, MemAddr target, WaitType waitType, bool hidden) {
 	return _impl->GetJitFunc(signature, target, waitType, hidden);
 }
 
-MemAddr
-JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitType, HiddenParam hidden) {
+MemAddr JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitType, HiddenParam hidden) {
 	ValueType retType = method.GetRetType().GetType();
 	bool retHidden = hidden(retType);
 
 	Signature signature(
-	    method.GetCallConv(),
-	    retHidden ? ValueType::Pointer : retType,
-	    method.GetVarIndex()
+		method.GetCallConv(),
+		retHidden ? ValueType::Pointer : retType,
+		method.GetVarIndex()
 	);
 	if (retHidden) {
 		signature.AddArg(retType);

@@ -143,14 +143,14 @@ namespace plugify {
 				return asmjit::TypeId::kInt64;
 #else
 				return asmjit::TypeId::kFloat64;
-#endif  // PLUGIFY_PLATFORM_WINDOWS
+#endif	// PLUGIFY_PLATFORM_WINDOWS
 			case ValueType::Vector3:
 			case ValueType::Vector4:
 #if PLUGIFY_PLATFORM_WINDOWS
 				return asmjit::TypeId::kUIntPtr;
 #else
 				return asmjit::TypeId::kFloat32x4;
-#endif  // PLUGIFY_PLATFORM_WINDOWS
+#endif	// PLUGIFY_PLATFORM_WINDOWS
 		}
 #elif PLUGIFY_ARCH_BITS == 32
 		switch (valueType) {
@@ -214,7 +214,7 @@ namespace plugify {
 			case ValueType::Vector2:
 				return asmjit::TypeId::kInt64;
 		}
-#endif  // PLUGIFY_ARCH_BITS
+#endif	// PLUGIFY_ARCH_BITS
 		return asmjit::TypeId::kVoid;
 	}
 

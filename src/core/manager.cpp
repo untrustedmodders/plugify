@@ -15,9 +15,9 @@ using namespace plugify;
 
 struct Manager::Impl {
 	Impl(const ServiceLocator& services, const Config& cfg, const Manager& manager)
-	    : config{ cfg }
-	    , provider(services, config, manager)
-	    , loader(services, config, provider) {
+		: config{ cfg }
+		, provider(services, config, manager)
+		, loader(services, config, provider) {
 		// Create services
 		assemblyLoader = services.Resolve<IAssemblyLoader>();
 		fileSystem = services.Resolve<IFileSystem>();
@@ -67,55 +67,55 @@ public:
 		if (!initialExtensions) {
 			return MakeError(std::move(initialExtensions.error()));
 		} /*else if (initialExtensions->empty()) {
-		    return MakeError("No extensions found");
+			return MakeError("No extensions found");
 		}*/
 		extensions = std::move(*initialExtensions);
 
 		FailureTracker failureTracker(extensions.size());
 
 		auto pipeline = Pipeline<Extension>::Create()
-		                    .AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
-		                    .AddStage(
-		                        std::make_unique<ResolutionStage>(
-		                            resolver,
-		                            &loadOrder,
-		                            &depGraph,
-		                            &reverseDepGraph,
-		                            config
-		                        )
-		                    )
-		                    .AddStage(
-		                        std::make_unique<LoadingStage>(
-		                            loader,
-		                            failureTracker,
-		                            depGraph,
-		                            reverseDepGraph,
-		                            config.loading.loadTimeout
-		                        )
-		                    )
-		                    .AddStage(
-		                        std::make_unique<ExportingStage>(
-		                            loader,
-		                            failureTracker,
-		                            depGraph,
-		                            reverseDepGraph,
-		                            config.loading.exportTimeout
-		                        )
-		                    )
-		                    .AddStage(
-		                        std::make_unique<StartingStage>(
-		                            loader,
-		                            failureTracker,
-		                            depGraph,
-		                            reverseDepGraph,
-		                            config.loading.startTimeout
-		                        )
-		                    )
-		                    //.WithConfig(config)
-		                    //.WithReporter(progressReporter)
-		                    //.WithMetrics(metricsCollector)
-		                    .WithThreadPoolSize(config.loading.maxConcurrentLoads)
-		                    .Build();
+							.AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
+							.AddStage(
+								std::make_unique<ResolutionStage>(
+									resolver,
+									&loadOrder,
+									&depGraph,
+									&reverseDepGraph,
+									config
+								)
+							)
+							.AddStage(
+								std::make_unique<LoadingStage>(
+									loader,
+									failureTracker,
+									depGraph,
+									reverseDepGraph,
+									config.loading.loadTimeout
+								)
+							)
+							.AddStage(
+								std::make_unique<ExportingStage>(
+									loader,
+									failureTracker,
+									depGraph,
+									reverseDepGraph,
+									config.loading.exportTimeout
+								)
+							)
+							.AddStage(
+								std::make_unique<StartingStage>(
+									loader,
+									failureTracker,
+									depGraph,
+									reverseDepGraph,
+									config.loading.startTimeout
+								)
+							)
+							//.WithConfig(config)
+							//.WithReporter(progressReporter)
+							//.WithMetrics(metricsCollector)
+							.WithThreadPoolSize(config.loading.maxConcurrentLoads)
+							.Build();
 
 		auto report = pipeline->Execute(extensions);
 
@@ -154,12 +154,12 @@ public:
 				const auto& exportPath = config.logging.exportDigraphDot;
 				if (!exportPath.empty()) {
 					if (auto writeResult = fileSystem->WriteTextFile(exportPath, graph);
-					    !writeResult) {
+						!writeResult) {
 						logger->Log(std::format("Export DOT: {}", writeResult.error()), Severity::Error);
 					} else {
 						logger->Log(
-						    std::format("Export DOT: {}", plg::as_string(exportPath)),
-						    Severity::Info
+							std::format("Export DOT: {}", plg::as_string(exportPath)),
+							Severity::Info
 						);
 					}
 				}
@@ -268,7 +268,8 @@ public:
 		initialized = false;
 	}
 
-	const static inline std::array<std::string_view, 2> MANIFEST_EXTENSIONS = { "*.pplugin", "*.pmodule" };
+	inline static const std::array<std::string_view, 2> MANIFEST_EXTENSIONS = { "*.pplugin",
+																				"*.pmodule" };
 
 	Result<std::vector<Extension>> DiscoverExtensions() const {
 		auto paths = fileSystem->FindFiles(config.paths.extensionsDir, MANIFEST_EXTENSIONS, true);
@@ -376,7 +377,7 @@ public:
 };
 
 Manager::Manager(const ServiceLocator& services, const Config& config)
-    : _impl(std::make_unique<Impl>(services, config, *this)) {
+	: _impl(std::make_unique<Impl>(services, config, *this)) {
 }
 
 Manager::~Manager() = default;

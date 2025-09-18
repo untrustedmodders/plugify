@@ -10,7 +10,7 @@ using namespace plugify;
 // ============================================================================
 
 LibsolvDependencyResolver::LibsolvDependencyResolver(std::shared_ptr<ILogger> logger)
-    : _logger(std::move(logger)) {
+	: _logger(std::move(logger)) {
 }
 
 ResolutionReport LibsolvDependencyResolver::Resolve(std::span<const Extension> extensions) {
@@ -168,13 +168,13 @@ void LibsolvDependencyResolver::SetupObsoletes(Id solvableId, const Manifest& ma
 }
 
 Id LibsolvDependencyResolver::MakeDepConstraint(
-    const std::string& name,
-    const std::optional<Constraint>& constraints
+	const std::string& name,
+	const std::optional<Constraint>& constraints
 ) {
 	Id nameId = pool_str2id(_pool.get(), name.c_str(), 1);
 
 	if (!constraints || constraints->empty()) {
-		return nameId;  // No version constraint
+		return nameId;	// No version constraint
 	}
 
 	// Handle multiple constraints (OR logic)
@@ -335,7 +335,7 @@ std::vector<std::string> LibsolvDependencyResolver::ExtractSolutions(Solver* sol
 		Id p, rp;
 
 		while ((element = solver_next_solutionelement(solver, problemId, solutionId, element, &p, &rp))
-		       != 0) {
+			   != 0) {
 			solutionSteps.emplace_back(solver_solutionelement2str(solver, p, rp));
 		}
 
@@ -379,8 +379,8 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 		/*Id type = transaction_type(trans, p, SOLVER_TRANSACTION_SHOW_ALL);
 		std::cout << "Transaction step: " << i << " - Solvable ID: " << p << " - Type: " << type <<
 		std::endl; if (type == SOLVER_TRANSACTION_INSTALL || type == SOLVER_TRANSACTION_REINSTALL ||
-		    type == SOLVER_TRANSACTION_DOWNGRADE ||
-		    type == SOLVER_TRANSACTION_UPGRADE)*/
+			type == SOLVER_TRANSACTION_DOWNGRADE ||
+			type == SOLVER_TRANSACTION_UPGRADE)*/
 		{
 			auto extIt = _solvableIdToExtension.find(p);
 			if (extIt != _solvableIdToExtension.end()) {
@@ -415,5 +415,5 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 		}
 	}
 
-	resolution.isLoadOrderValid = true;  // Since libsolv provides a valid transaction order
+	resolution.isLoadOrderValid = true;	 // Since libsolv provides a valid transaction order
 }

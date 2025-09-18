@@ -17,12 +17,12 @@ namespace plugify {
 			std::lock_guard lock(_mutex);
 			for (auto& [_, handlers] : _handlers) {
 				handlers.erase(
-				    std::remove_if(
-				        handlers.begin(),
-				        handlers.end(),
-				        [id](const auto& pair) { return pair.first == id; }
-				    ),
-				    handlers.end()
+					std::remove_if(
+						handlers.begin(),
+						handlers.end(),
+						[id](const auto& pair) { return pair.first == id; }
+					),
+					handlers.end()
 				);
 			}
 		}
@@ -49,11 +49,11 @@ namespace plugify {
 	private:
 		mutable std::mutex _mutex;
 		std::unordered_map<
-		    std::string,
-		    std::vector<std::pair<SubscriptionId, EventHandler>>,
-		    plg::case_insensitive_hash,
-		    plg::case_insensitive_equal
-		> _handlers;
+			std::string,
+			std::vector<std::pair<SubscriptionId, EventHandler>>,
+			plg::case_insensitive_hash,
+			plg::case_insensitive_equal>
+			_handlers;
 		SubscriptionId _nextId = 1;
 	};
 }

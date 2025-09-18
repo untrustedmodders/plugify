@@ -4,13 +4,13 @@ using namespace plugify;
 
 // Dependency Implementation
 Dependency::Dependency()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 Dependency::~Dependency() = default;
 
 Dependency::Dependency(const Dependency& other)
-    : _impl(std::make_unique<Impl>(*other._impl)) {
+	: _impl(std::make_unique<Impl>(*other._impl)) {
 }
 
 Dependency::Dependency(Dependency&& other) noexcept = default;

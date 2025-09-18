@@ -10,8 +10,7 @@ namespace plugify {
 	 */
 	class GlazeManifestParser : public IManifestParser {
 	public:
-		Result<Manifest>
-		Parse(const std::string& content, [[maybe_unused]] ExtensionType type) override {
+		Result<Manifest> Parse(const std::string& content, [[maybe_unused]] ExtensionType type) override {
 			auto parsed = glz::read_jsonc<Manifest>(content);
 			if (!parsed) {
 				return MakeError(glz::format_error(parsed.error(), content));

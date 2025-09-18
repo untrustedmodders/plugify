@@ -426,8 +426,7 @@ namespace plugify {
 		 * objects and large structs.
 		 */
 		static constexpr bool IsHiddenParam(ValueType type) noexcept {
-			return IsObject(type)
-			       || IsBetween(type, ValueType::_HiddenParamStart, ValueType::_StructEnd);
+			return IsObject(type) || IsBetween(type, ValueType::_HiddenParamStart, ValueType::_StructEnd);
 		}
 
 		/**

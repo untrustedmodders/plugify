@@ -28,8 +28,7 @@ namespace plg {
 	}
 
 	inline bool insensitive_equals(const path_view lhs, const path_view rhs) {
-		return lhs.size() == rhs.size()
-		       && std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin(), insensitive_equals<path_char>);
+		return lhs.size() == rhs.size() && std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin(), insensitive_equals<path_char>);
 	}
 
 	inline path_view extension_view(const std::filesystem::path& path, size_t extension_size) {

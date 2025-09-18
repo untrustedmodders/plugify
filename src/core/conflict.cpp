@@ -4,13 +4,13 @@ using namespace plugify;
 
 // Conflict Implementation
 Conflict::Conflict()
-    : _impl(std::make_unique<Impl>()) {
+	: _impl(std::make_unique<Impl>()) {
 }
 
 Conflict::~Conflict() = default;
 
 Conflict::Conflict(const Conflict& other)
-    : _impl(std::make_unique<Impl>(*other._impl)) {
+	: _impl(std::make_unique<Impl>(*other._impl)) {
 }
 
 Conflict::Conflict(Conflict&& other) noexcept = default;

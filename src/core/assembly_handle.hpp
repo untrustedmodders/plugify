@@ -14,9 +14,9 @@ namespace plugify {
 		AssemblyHandle() = default;
 
 		AssemblyHandle(void* handle, std::shared_ptr<IPlatformOps> ops, std::filesystem::path path)
-		    : _handle(handle)
-		    , _ops(std::move(ops))
-		    , _path(std::move(path)) {
+			: _handle(handle)
+			, _ops(std::move(ops))
+			, _path(std::move(path)) {
 		}
 
 		~AssemblyHandle() {
@@ -31,10 +31,10 @@ namespace plugify {
 
 		// Move operations
 		AssemblyHandle(AssemblyHandle&& other) noexcept
-		    : _handle(std::exchange(other._handle, nullptr))
-		    , _ops(std::move(other._ops))
-		    , _path(std::move(other._path))
-		    , _refCount(other._refCount.load()) {
+			: _handle(std::exchange(other._handle, nullptr))
+			, _ops(std::move(other._ops))
+			, _path(std::move(other._path))
+			, _refCount(other._refCount.load()) {
 		}
 
 		AssemblyHandle& operator=(AssemblyHandle&& other) noexcept {

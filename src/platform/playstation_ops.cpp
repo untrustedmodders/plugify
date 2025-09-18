@@ -39,9 +39,9 @@ namespace plugify {
 
 			if (handle < 0) {
 				return MakeError(
-				    "Failed to load module '{}': {}",
-				    plg::as_string(path),
-				    TranslateError(handle)
+					"Failed to load module '{}': {}",
+					plg::as_string(path),
+					TranslateError(handle)
 				);
 			}
 
@@ -50,12 +50,12 @@ namespace plugify {
 
 		Result<void> UnloadLibrary(void* handle) override {
 			int ret = sceKernelStopUnloadModule(
-			    reinterpret_cast<SceKernelModule>(handle),
-			    0,
-			    nullptr,
-			    0,
-			    nullptr,
-			    nullptr
+				reinterpret_cast<SceKernelModule>(handle),
+				0,
+				nullptr,
+				0,
+				nullptr,
+				nullptr
 			);
 
 			if (ret < 0) {

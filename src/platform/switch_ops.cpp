@@ -46,10 +46,10 @@ namespace plugify {
 				return "Authentication failed";
 			}
 			return std::format(
-			    "Unknown error: module={} desc={} value=0x{:08X}",
-			    result.GetModule(),
-			    result.GetDescription(),
-			    result.GetInnerValueForDebug()
+				"Unknown error: module={} desc={} value=0x{:08X}",
+				result.GetModule(),
+				result.GetDescription(),
+				result.GetInnerValueForDebug()
 			);
 		}
 
@@ -60,9 +60,9 @@ namespace plugify {
 			nn::Result ret = nn::fs::OpenFile(&file, path.c_str(), nn::fs::OpenMode_Read);
 			if (ret.IsFailure()) {
 				return MakeError(
-				    "Failed to open file '{}': {}",
-				    plg::as_string(path),
-				    TranslateError(ret)
+					"Failed to open file '{}': {}",
+					plg::as_string(path),
+					TranslateError(ret)
 				);
 			}
 
@@ -78,7 +78,7 @@ namespace plugify {
 			auto handle = std::make_unique<NroHandle>();
 			handle->dataSize = fileSize;
 			handle->data.reset(
-			    static_cast<uint8_t*>(std::aligned_alloc(nn::os::MemoryPageSize, fileSize))
+				static_cast<uint8_t*>(std::aligned_alloc(nn::os::MemoryPageSize, fileSize))
 			);
 
 			// Read file
@@ -98,16 +98,16 @@ namespace plugify {
 
 			// Allocate BSS
 			handle->bssData.reset(
-			    static_cast<uint8_t*>(std::aligned_alloc(nn::os::MemoryPageSize, handle->bssSize))
+				static_cast<uint8_t*>(std::aligned_alloc(nn::os::MemoryPageSize, handle->bssSize))
 			);
 
 			// Load the module
 			ret = nn::ro::LoadModule(
-			    &handle->module,
-			    handle->data.get(),
-			    handle->bssData.get(),
-			    handle->bssSize,
-			    TranslateFlags(flags)
+				&handle->module,
+				handle->data.get(),
+				handle->bssData.get(),
+				handle->bssSize,
+				TranslateFlags(flags)
 			);
 
 			if (ret.IsFailure()) {

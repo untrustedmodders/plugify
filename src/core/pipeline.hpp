@@ -37,15 +37,15 @@ namespace plugify {
 				for (size_t i = 0; i < stages.size(); ++i) {
 					const auto& [n, s] = stages[i];
 					std::format_to(
-					    it,
-					    "  Stage {} ({}): {} -> {} items, {} succeeded, {} failed ({})\n",
-					    i,
-					    n,
-					    s.itemsIn,
-					    s.itemsOut,
-					    s.succeeded,
-					    s.failed,
-					    s.elapsed
+						it,
+						"  Stage {} ({}): {} -> {} items, {} succeeded, {} failed ({})\n",
+						i,
+						n,
+						s.itemsIn,
+						s.itemsOut,
+						s.succeeded,
+						s.failed,
+						s.elapsed
 					);
 
 					size_t maxWidth = 0;
@@ -86,18 +86,18 @@ namespace plugify {
 			}
 
 			/*Builder& WithLogger(std::shared_ptr<ILogger> logger) {
-			    _logger = std::move(logger);
-			    return *this;
+				_logger = std::move(logger);
+				return *this;
 			}
 
 			Builder& WithReporter(std::shared_ptr<IProgressReporter> reporter) {
-			    _reporter = std::move(reporter);
-			    return *this;
+				_reporter = std::move(reporter);
+				return *this;
 			}
 
 			Builder& WithMetrics(std::shared_ptr<IMetricsCollector> metrics) {
-			    _metrics = std::move(metrics);
-			    return *this;
+				_metrics = std::move(metrics);
+				return *this;
 			}*/
 
 			Builder& WithThreadPoolSize(size_t size) {
@@ -116,7 +116,7 @@ namespace plugify {
 
 	private:
 		Pipeline(Builder&& builder)
-		    : _pool(builder._threadPoolSize) {
+			: _pool(builder._threadPoolSize) {
 			for (auto& [stage, required] : builder._stages) {
 				_stages.push_back({ std::move(stage), required });
 			}
@@ -137,9 +137,9 @@ namespace plugify {
 			// Execute each stage
 			for (const auto& [stage, required] : _stages) {
 				auto title = std::format(
-				    "{} [{}]",
-				    stage->GetName(),
-				    plg::enum_to_string(stage->GetType())
+					"{} [{}]",
+					stage->GetName(),
+					plg::enum_to_string(stage->GetType())
 				);
 				auto stats = ExecuteStage(stage.get(), items, ctx);
 
@@ -154,7 +154,7 @@ namespace plugify {
 
 			report.finalItems = items.size();
 			report.totalTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-			    std::chrono::steady_clock::now() - pipelineStart
+				std::chrono::steady_clock::now() - pipelineStart
 			);
 
 			return report;
@@ -195,17 +195,17 @@ namespace plugify {
 
 			stats.itemsOut = items.size();
 			stats.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-			    std::chrono::steady_clock::now() - startTime
+				std::chrono::steady_clock::now() - startTime
 			);
 
 			return stats;
 		}
 
 		void ExecuteTransform(
-		    ITransformStage<T>* stage,
-		    std::vector<T>& items,
-		    StageStatistics& stats,
-		    const ExecutionContext<T>& ctx
+			ITransformStage<T>* stage,
+			std::vector<T>& items,
+			StageStatistics& stats,
+			const ExecutionContext<T>& ctx
 		) {
 			// Process items in parallel
 			std::atomic<size_t> succeeded{ 0 };
@@ -237,10 +237,10 @@ namespace plugify {
 		}
 
 		void ExecuteBarrier(
-		    IBarrierStage<T>* stage,
-		    std::vector<T>& items,
-		    StageStatistics& stats,
-		    const ExecutionContext<T>& ctx
+			IBarrierStage<T>* stage,
+			std::vector<T>& items,
+			StageStatistics& stats,
+			const ExecutionContext<T>& ctx
 		) {
 			size_t originalSize = items.size();
 
@@ -256,10 +256,10 @@ namespace plugify {
 		}
 
 		void ExecuteSequential(
-		    ISequentialStage<T>* stage,
-		    std::vector<T>& items,
-		    StageStatistics& stats,
-		    const ExecutionContext<T>& ctx
+			ISequentialStage<T>* stage,
+			std::vector<T>& items,
+			StageStatistics& stats,
+			const ExecutionContext<T>& ctx
 		) {
 			bool continueOnError = stage->ContinueOnError();
 			size_t total = items.size();

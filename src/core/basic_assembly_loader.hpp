@@ -31,14 +31,14 @@ namespace plugify {
 
 	public:
 		BasicAssemblyLoader(std::shared_ptr<IPlatformOps> ops, std::shared_ptr<IFileSystem> fs)
-		    : _ops(std::move(ops))
-		    , _fs(std::move(fs)) {
+			: _ops(std::move(ops))
+			, _fs(std::move(fs)) {
 		}
 
 		Result<AssemblyPtr> Load(
-		    const std::filesystem::path& path,
-		    LoadFlag flags,
-		    std::span<const std::filesystem::path> searchPaths
+			const std::filesystem::path& path,
+			LoadFlag flags,
+			std::span<const std::filesystem::path> searchPaths
 		) override {
 			// Resolve path
 			auto resolvedPath = ResolvePath(path);
@@ -58,7 +58,7 @@ namespace plugify {
 			}
 
 			bool supportRuntimePaths = _ops->SupportsRuntimePathModification()
-			                           && !searchPaths.empty();
+									   && !searchPaths.empty();
 
 			defer {
 				if (supportRuntimePaths) {

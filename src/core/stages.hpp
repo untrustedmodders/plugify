@@ -7,10 +7,10 @@ namespace plugify {
 	// Stage Interfaces
 	// ============================================================================
 	enum class StageType {
-		Transform,   // Parallel processing, no order changes
-		Barrier,     // Can reorder/filter the container
-		Sequential,  // Processes in container order
-		             // Batch        // Parallel processing in controlled batches
+		Transform,	 // Parallel processing, no order changes
+		Barrier,	 // Can reorder/filter the container
+		Sequential,	 // Processes in container order
+					 // Batch        // Parallel processing in controlled batches
 	};
 
 	// Execution context
@@ -33,12 +33,13 @@ namespace plugify {
 		virtual StageType GetType() const = 0;
 
 		// Optional: setup/teardown
-		virtual void Setup([[maybe_unused]] std::span<T> items, [[maybe_unused]] const ExecutionContext<T>& ctx) {
+		virtual void
+		Setup([[maybe_unused]] std::span<T> items, [[maybe_unused]] const ExecutionContext<T>& ctx) {
 		}
 
 		virtual void Teardown(
-		    [[maybe_unused]] std::span<T> items,
-		    [[maybe_unused]] const ExecutionContext<T>& ctx
+			[[maybe_unused]] std::span<T> items,
+			[[maybe_unused]] const ExecutionContext<T>& ctx
 		) {
 		}
 	};

@@ -18,8 +18,8 @@ namespace plugify {
 		}
 
 		void OnUpdate(
-		    [[maybe_unused]] Extension& extension,
-		    [[maybe_unused]] std::chrono::milliseconds deltaTime
+			[[maybe_unused]] Extension& extension,
+			[[maybe_unused]] std::chrono::milliseconds deltaTime
 		) override {
 		}
 	};

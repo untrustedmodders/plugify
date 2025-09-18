@@ -37,8 +37,8 @@ namespace {
 	// Helper function to validate platform
 	bool IsValidPlatform(const std::string& platform) {
 		/*static const std::unordered_set<std::string> validPlatforms = {
-		    "windows", "linux", "macos", "android", "ios",
-		    "unix", "posix", "win32", "win64", "x86", "x64", "arm", "arm64"
+			"windows", "linux", "macos", "android", "ios",
+			"unix", "posix", "win32", "win64", "x86", "x64", "arm", "arm64"
 		};*/
 		if (platform.empty()) {
 			return true;
@@ -87,10 +87,10 @@ namespace {
 
 			if (!valueNumbers.insert(value.value).second) {
 				return MakeError(
-				    "Duplicate enum value: {} for '{}' in enum '{}'",
-				    value.value,
-				    value.name,
-				    enumObj.name
+					"Duplicate enum value: {} for '{}' in enum '{}'",
+					value.value,
+					value.name,
+					enumObj.name
 				);
 			}
 		}
@@ -130,10 +130,10 @@ namespace {
 		// Validate prototype if present (recursive validation)
 		if (prop.prototype) {
 			if (auto result = ValidateMethod(
-			        *prop.prototype->_impl,
-			        std::format("{}{}", context, ".prototype")
-			    );
-			    !result) {
+					*prop.prototype->_impl,
+					std::format("{}{}", context, ".prototype")
+				);
+				!result) {
 				return result;
 			}
 		}
@@ -164,7 +164,7 @@ namespace {
 		}
 
 		// Validate varIndex
-		constexpr uint8_t kNoVarArgs = 255;  // Assuming this constant
+		constexpr uint8_t kNoVarArgs = 255;	 // Assuming this constant
 		if (method.varIndex != kNoVarArgs && method.varIndex >= method.paramTypes.size()) {
 			return MakeError("{} '{}': varIndex out of range", prefix, method.name);
 		}
@@ -172,22 +172,22 @@ namespace {
 		// Validate parameter types
 		for (size_t i = 0; i < method.paramTypes.size(); ++i) {
 			if (auto result = ValidateProperty(
-			        *method.paramTypes[i]._impl,
-			        std::format("{} '{}' param[{}]", prefix, method.name, i),
-			        true
-			    );
-			    !result) {
+					*method.paramTypes[i]._impl,
+					std::format("{} '{}' param[{}]", prefix, method.name, i),
+					true
+				);
+				!result) {
 				return result;
 			}
 		}
 
 		// Validate return type
 		if (auto result = ValidateProperty(
-		        *method.retType._impl,
-		        std::format("{} '{}' return type", prefix, method.name),
-		        false
-		    );
-		    !result) {
+				*method.retType._impl,
+				std::format("{} '{}' return type", prefix, method.name),
+				false
+			);
+			!result) {
 			return result;
 		}
 
@@ -337,12 +337,12 @@ Result<void> Manifest::Validate() const {
 		}
 
 		/*if (entry && !IsValidName(*entry)) {
-		    return MakeError("Invalid plugin entry point: {}", *entry);
+			return MakeError("Invalid plugin entry point: {}", *entry);
 		}*/
 
 		if (methods) {
 			/*if (methods->empty()) {
-			    return MakeError("Methods list cannot be empty if specified");
+				return MakeError("Methods list cannot be empty if specified");
 			}*/
 
 			std::unordered_set<std::string> methodNames;
@@ -371,17 +371,17 @@ Result<void> Manifest::Validate() const {
 	if (hasModuleFields) {
 		if (runtime) {
 			/*if (runtime->empty()) {
-			    return MakeError("Module runtime path cannot be empty");
+				return MakeError("Module runtime path cannot be empty");
 			}*/
 
 			// Check if runtime file exists (optional, might want to make this configurable)
 			/*if (!fs->IsExists(*runtime)) {
-			    return MakeError("Runtime file does not exist: {}", plg::as_string(*runtime));
+				return MakeError("Runtime file does not exist: {}", plg::as_string(*runtime));
 			}
 
 			// Check if it's a regular file
 			if (!fs->IsRegularFile(*runtime)) {
-			    return MakeError("Runtime path is not a file: {}", plg::as_string(*runtime));
+				return MakeError("Runtime path is not a file: {}", plg::as_string(*runtime));
 			}*/
 		}
 
@@ -397,11 +397,11 @@ Result<void> Manifest::Validate() const {
 
 				// Check if directory exists (optional)
 				/*if (!fs->IsExists(dir)) {
-				    return MakeError("Directory does not exist: {}", plg::as_string(dir));
+					return MakeError("Directory does not exist: {}", plg::as_string(dir));
 				}
 
 				if (!fs->IsDirectory(dir)) {
-				    return MakeError("Path is not a directory: {}", plg::as_string(dir));
+					return MakeError("Path is not a directory: {}", plg::as_string(dir));
 				}*/
 			}
 		}
