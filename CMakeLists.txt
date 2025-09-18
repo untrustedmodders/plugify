@@ -108,10 +108,6 @@ else(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
     set(PLUGIFY_COMPILE_OPTIONS -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
 endif()
 
-if(LINUX)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
-endif()
-
 target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})
 
 if(PLUGIFY_HAS_LIBCPP)
@@ -178,6 +174,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         WITHOUT_COOKIEOPEN
         LIBSOLV_SOLVABLE_PREPEND_DEP
 )
+
+if(LINUX)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
+endif()
 
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
     if(APPLE)
