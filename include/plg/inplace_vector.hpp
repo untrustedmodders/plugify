@@ -34,7 +34,6 @@
 
 // from https://github.com/TedLyngmo/inplace_vector
 namespace plg {
-
 	template<class, std::size_t>
 	class inplace_vector;
 
@@ -47,36 +46,36 @@ namespace plg {
 		template<class T, std::size_t N>
 		struct constexpr_compat :
 			std::integral_constant<bool,
-								   N == 0 || (std::is_trivially_default_constructible<T>::value && std::is_trivially_copyable<T>::value
+								   N == 0 || (std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T>
 											  /* the four biggest implementations agree that the combination of the two above implies:
-											  && std::is_trivially_copy_constructible<T>::value
-											  && std::is_trivially_move_constructible<T>::value
-											  && std::is_trivially_copy_assignable<T>::value
-											  && std::is_trivially_move_assignable<T>::value
-											  && std::is_trivially_destructible<T>::value */
+											  && std::is_trivially_copy_constructible_v<T>
+											  && std::is_trivially_move_constructible_v<T>
+											  && std::is_trivially_copy_assignable_v<T>
+											  && std::is_trivially_move_assignable_v<T>
+											  && std::is_trivially_destructible_v<T> */
 											  )> {};
 
 		template<class T, std::size_t N>
-		struct trivial_copy_ctor : std::integral_constant<bool, N == 0 || std::is_trivially_copy_constructible<T>::value> {};
+		struct trivial_copy_ctor : std::integral_constant<bool, N == 0 || std::is_trivially_copy_constructible_v<T>> {};
 
 		template<class T, std::size_t N>
-		struct trivial_move_ctor : std::integral_constant<bool, N == 0 || std::is_trivially_move_constructible<T>::value> {};
+		struct trivial_move_ctor : std::integral_constant<bool, N == 0 || std::is_trivially_move_constructible_v<T>> {};
 
 		template<class T, std::size_t N>
 		struct trivial_copy_ass :
-			std::integral_constant<bool, N == 0 || (std::is_trivially_destructible<T>::value &&
-													std::is_trivially_copy_constructible<T>::value &&
-													std::is_trivially_copy_assignable<T>::value)> {};
+			std::integral_constant<bool, N == 0 || (std::is_trivially_destructible_v<T> &&
+													std::is_trivially_copy_constructible_v<T> &&
+													std::is_trivially_copy_assignable_v<T>)> {};
 
 		template<class T, std::size_t N>
 		struct trivial_move_ass :
-			std::integral_constant<bool, N == 0 || (std::is_trivially_destructible<T>::value &&
-													std::is_trivially_move_constructible<T>::value &&
-													std::is_trivially_move_assignable<T>::value)> {};
+			std::integral_constant<bool, N == 0 || (std::is_trivially_destructible_v<T> &&
+													std::is_trivially_move_constructible_v<T> &&
+													std::is_trivially_move_assignable_v<T>)> {};
 
 		template<class T>
 		struct aligned_storage_empty { // specialization for 0 elements
-			using value_type = typename std::remove_const<T>::type;
+			using value_type = std::remove_const_t<T>;
 			using size_type = std::size_t;
 			using reference = value_type&;
 			using const_reference = value_type const&;
@@ -107,9 +106,9 @@ namespace plg {
 
 		template<class T, std::size_t N>
 		struct aligned_storage_trivial {
-			static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
+			static_assert(std::is_trivially_destructible_v<T>, "T must be trivially destructible");
 
-			using value_type = typename std::remove_const<T>::type;
+			using value_type = std::remove_const_t<T>;
 			using size_type = std::size_t;
 			using reference = value_type&;
 			using const_reference = value_type const&;
@@ -146,7 +145,7 @@ namespace plg {
 
 		template<class T, std::size_t N>
 		struct aligned_storage_non_trivial {
-			using value_type = typename std::remove_const<T>::type;
+			using value_type = std::remove_const_t<T>;
 			using size_type = std::size_t;
 			using reference = value_type&;
 			using const_reference = value_type const&;
@@ -174,7 +173,7 @@ namespace plg {
 
 			[[maybe_unused]] constexpr size_type inc() noexcept { return ++m_size; }
 			[[maybe_unused]] constexpr size_type dec(size_type count = 1) noexcept { return m_size -= count; }
-			constexpr void clear() noexcept(std::is_nothrow_destructible<T>::value) {
+			constexpr void clear() noexcept(std::is_nothrow_destructible_v<T>) {
 				while (m_size) {
 					destroy(--m_size);
 				}
@@ -194,7 +193,7 @@ namespace plg {
 
 		template<class T, std::size_t N>
 		struct storage_selector :
-			std::conditional<constexpr_compat<T, N>::value, aligned_storage_trivial<T, N>, aligned_storage_non_trivial<T, N>>::type {};
+			std::conditional_t<constexpr_compat<T, N>::value, aligned_storage_trivial<T, N>, aligned_storage_non_trivial<T, N>> {};
 
 		template<class T, std::size_t N>
 		struct non_trivial_destructor : storage_selector<T, N> {
@@ -203,13 +202,13 @@ namespace plg {
 			constexpr non_trivial_destructor(non_trivial_destructor&&) noexcept = default;
 			constexpr non_trivial_destructor& operator=(const non_trivial_destructor&) = default;
 			constexpr non_trivial_destructor& operator=(non_trivial_destructor&&) noexcept = default;
-			constexpr ~non_trivial_destructor() noexcept(std::is_nothrow_destructible<T>::value) {
+			constexpr ~non_trivial_destructor() noexcept(std::is_nothrow_destructible_v<T>) {
 				this->clear();
 			}
 		};
 		template<class T, std::size_t N>
 		struct dtor_selector :
-			std::conditional<std::is_trivially_destructible<T>::value, storage_selector<T, N>, non_trivial_destructor<T, N>>::type {};
+			std::conditional_t<std::is_trivially_destructible_v<T>, storage_selector<T, N>, non_trivial_destructor<T, N>> {};
 
 		template<class T, std::size_t N>
 		struct non_trivial_copy_ass : dtor_selector<T, N> {
@@ -228,7 +227,7 @@ namespace plg {
 		};
 		template<class T, std::size_t N>
 		struct copy_ass_selector :
-			std::conditional<trivial_copy_ass<T, N>::value, dtor_selector<T, N>, non_trivial_copy_ass<T, N>>::type {};
+			std::conditional_t<trivial_copy_ass<T, N>::value, dtor_selector<T, N>, non_trivial_copy_ass<T, N>> {};
 
 		template<class T, std::size_t N>
 		struct non_trivial_move_ass : copy_ass_selector<T, N> {
@@ -237,7 +236,7 @@ namespace plg {
 			constexpr non_trivial_move_ass(non_trivial_move_ass&&) noexcept = default;
 			constexpr non_trivial_move_ass& operator=(const non_trivial_move_ass&) = default;
 			constexpr non_trivial_move_ass& operator=(non_trivial_move_ass&& other) noexcept(
-				std::is_nothrow_move_assignable<T>::value && std::is_nothrow_move_constructible<T>::value) {
+				std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<T>) {
 				this->clear(); // may move assign std::min(size(), other.size()) elements
 				for (decltype(this->size()) idx = 0; idx != other.size(); ++idx) {
 					this->construct_back(std::move(other.ref(idx)));
@@ -248,7 +247,7 @@ namespace plg {
 		};
 		template<class T, std::size_t N>
 		struct move_ass_selector :
-			std::conditional<trivial_move_ass<T, N>::value, copy_ass_selector<T, N>, non_trivial_move_ass<T, N>>::type {};
+			std::conditional_t<trivial_move_ass<T, N>::value, copy_ass_selector<T, N>, non_trivial_move_ass<T, N>> {};
 
 		template<class T, std::size_t N>
 		struct non_trivial_copy_ctor : move_ass_selector<T, N> {
@@ -265,14 +264,14 @@ namespace plg {
 		};
 		template<class T, std::size_t N>
 		struct copy_ctor_selector :
-			std::conditional<trivial_copy_ctor<T, N>::value, move_ass_selector<T, N>, non_trivial_copy_ctor<T, N>>::type {};
+			std::conditional_t<trivial_copy_ctor<T, N>::value, move_ass_selector<T, N>, non_trivial_copy_ctor<T, N>> {};
 
 		template<class T, std::size_t N>
 		struct non_trivial_move_ctor : copy_ctor_selector<T, N> {
 			constexpr non_trivial_move_ctor() = default;
 			constexpr non_trivial_move_ctor(const non_trivial_move_ctor&) = default;
 			constexpr non_trivial_move_ctor(non_trivial_move_ctor&& other) noexcept(
-				std::is_nothrow_move_constructible<T>::value) {
+				std::is_nothrow_move_constructible_v<T>) {
 				for (decltype(this->size()) idx = 0; idx != other.size(); ++idx) {
 					this->construct_back(std::move(other.ref(idx)));
 				}
@@ -284,15 +283,15 @@ namespace plg {
 		};
 		template<class T, std::size_t N>
 		struct move_ctor_selector :
-			std::conditional<trivial_move_ctor<T, N>::value, copy_ctor_selector<T, N>, non_trivial_move_ctor<T, N>>::type {};
+			std::conditional_t<trivial_move_ctor<T, N>::value, copy_ctor_selector<T, N>, non_trivial_move_ctor<T, N>> {};
 
 		template<class T, std::size_t N>
-		struct base_selector : std::conditional<N == 0, aligned_storage_empty<T>, move_ctor_selector<T, N>>::type {};
+		struct base_selector : std::conditional_t<N == 0, aligned_storage_empty<T>, move_ctor_selector<T, N>> {};
 	} // namespace detail
 
 	template<class T, std::size_t N>
 	class inplace_vector : public detail::base_selector<T, N> {
-		static_assert(std::is_nothrow_destructible<T>::value,
+		static_assert(std::is_nothrow_destructible_v<T>,
 					  "inplace_vector: classes with potentially throwing destructors are prohibited");
 		using base = detail::base_selector<T, N>;
 		using base::construct_back;
@@ -326,76 +325,79 @@ namespace plg {
 		}
 
 	public:
-		// constructors - copy/move (if any) are defined in the base classes
+		// Constructors with concepts
 		constexpr inplace_vector() noexcept = default;
 
-		template<bool D = std::is_default_constructible<T>::value, typename std::enable_if<D, int>::type = 0>
-		constexpr explicit inplace_vector(size_type count) {
-			if (count > N) throw std::bad_alloc();
+		// Instead of: explicit inplace_vector(size_type count) requires std::default_initializable<T>
+		constexpr explicit inplace_vector(size_type count)
+			requires std::default_initializable<T>
+		{
+			PLUGIFY_ASSERT(count <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
 			while (count != size()) unchecked_emplace_back();
 		}
 
-		template<bool C = std::is_copy_constructible<T>::value, typename std::enable_if<C, int>::type = 0>
-		constexpr inplace_vector(size_type count, const T& value) {
-			if (count > N) throw std::bad_alloc();
+		constexpr inplace_vector(size_type count, const T& value)
+			requires std::copy_constructible<T>
+		{
+			PLUGIFY_ASSERT(count <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
 			while (count != size()) unchecked_push_back(value);
 		}
 
-		template<
-			class InputIt, class U = T,
-			typename std::enable_if<std::is_constructible<U, typename std::iterator_traits<InputIt>::value_type>::value, int>::type = 0>
+		template<class InputIt>
+			requires std::constructible_from<T, typename std::iterator_traits<InputIt>::value_type>
 		constexpr inplace_vector(InputIt first, InputIt last) {
 			std::copy(first, last, std::back_inserter(*this));
 		}
 
-		template<bool C = std::is_copy_constructible<T>::value, typename std::enable_if<C, int>::type = 0>
-		constexpr inplace_vector(std::initializer_list<T> init) : inplace_vector(init.begin(), init.end()) {}
+		constexpr inplace_vector(std::initializer_list<T> init)
+			requires std::copy_constructible<T>
+		: inplace_vector(init.begin(), init.end()) {}
 
-	#if PLUGIFY_INPLACE_VECTOR_CONTAINERS_RANGES
+#if PLUGIFY_INPLACE_VECTOR_CONTAINERS_RANGES
 		template<detail::container_compatiblel_range<T> R>
 		constexpr inplace_vector(std::from_range_t, R&& rg) {
 			if constexpr(std::ranges::sized_range<R>) {
-				if (std::ranges::size(rg) > N) throw std::bad_alloc();
+				PLUGIFY_ASSERT(std::ranges::size(rg) <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
 				for (auto&& val : rg) unchecked_emplace_back(std::forward<decltype(val)>(val));
 			} else {
 				for (auto&& val : rg) emplace_back(std::forward<decltype(val)>(val));
 			}
 		}
-	#endif
+#endif
 
-		// assignment - copy/move (if any) are defined in the base classes
-		template<class U = T>
-		constexpr auto operator=(std::initializer_list<T> init) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value, inplace_vector&>::type {
-			if (init.size() > capacity()) throw std::bad_alloc();
+		// Assignment operators with concepts
+		constexpr inplace_vector& operator=(std::initializer_list<T> init)
+			requires std::is_copy_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(init.size() <= capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 			assign(init.begin(), init.end());
 			return *this;
 		}
 
-		template<class U = T>
-		constexpr auto assign(size_type count, const T& value) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value>::type {
-			if (count > capacity()) throw std::bad_alloc();
+		constexpr void assign(size_type count, const T& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(count <= capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 			clear();
 			while (count != size()) push_back(value);
 		}
 
-		template<class InputIt, class U = T>
-		constexpr auto assign(InputIt first, InputIt last) ->
-			typename std::enable_if<std::is_constructible<U, typename std::iterator_traits<InputIt>::value_type>::value>::type {
+		template<class InputIt>
+			requires std::is_constructible_v<T, typename std::iterator_traits<InputIt>::value_type>
+		constexpr void assign(InputIt first, InputIt last) {
 			clear();
 			std::copy(first, last, std::back_inserter(*this));
 		}
 
-		template<class U = T>
-		constexpr auto assign(std::initializer_list<T> ilist) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value>::type {
-			if (ilist.size() > capacity()) throw std::bad_alloc();
+		constexpr void assign(std::initializer_list<T> ilist)
+			requires std::is_copy_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(ilist.size() <= capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 			clear();
 			std::copy(ilist.begin(), ilist.end(), std::back_inserter(*this));
 		}
 
-	#if PLUGIFY_INPLACE_VECTOR_CONTAINERS_RANGES
+#if PLUGIFY_INPLACE_VECTOR_CONTAINERS_RANGES
 		template<detail::container_compatiblel_range<T> R>
 		constexpr void assign_range(R&& rg)
 			requires std::constructible_from<T&, std::ranges::range_reference_t<R>>
@@ -409,7 +411,7 @@ namespace plg {
 			requires std::constructible_from<T&, std::ranges::range_reference_t<R>>
 		{
 			if constexpr(std::ranges::sized_range<R>) {
-				if (size() + std::ranges::size(rg) > capacity()) throw std::bad_alloc();
+				PLUGIFY_ASSERT(size() + std::ranges::size(rg) <= capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 				for (auto&& val : rg) {
 					unchecked_emplace_back(std::forward<decltype(val)>(val));
 				}
@@ -431,15 +433,15 @@ namespace plg {
 			}
 			return it;
 		}
-	#endif
+#endif
 
-		// element access
+		// Element access (no changes needed)
 		constexpr reference at(size_type idx) {
-			if (idx >= size()) throw std::out_of_range("");
+			PLUGIFY_ASSERT(idx < size(), "input index is out of bounds", std::out_of_range);
 			return ref(idx);
 		}
 		constexpr const_reference at(size_type idx) const {
-			if (idx >= size()) throw std::out_of_range("");
+			PLUGIFY_ASSERT(idx < size(), "input index is out of bounds", std::out_of_range);
 			return ref(idx);
 		}
 		constexpr reference front() noexcept { return ref(0); }
@@ -450,7 +452,7 @@ namespace plg {
 		constexpr pointer data() noexcept { return ptr(0); }
 		constexpr const_pointer data() const noexcept { return ptr(0); }
 
-		// iterators
+		// Iterators (no changes needed)
 		constexpr const_iterator cbegin() const noexcept { return data(); }
 		constexpr const_iterator cend() const noexcept { return std::next(cbegin(), static_cast<difference_type>(size())); }
 		constexpr const_iterator begin() const noexcept { return cbegin(); }
@@ -465,15 +467,15 @@ namespace plg {
 		constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
 		constexpr reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
 
-		// size and capacity
+		// Size and capacity (no changes needed)
 		constexpr bool empty() const noexcept { return size() == 0; }
 		static constexpr size_type max_size() noexcept { return N; }
 		static constexpr size_type capacity() noexcept { return N; }
 
 	private:
-		template<class U = T>
-		constexpr auto unchecked_resize(size_type count) ->
-			typename std::enable_if<std::is_default_constructible<U>::value>::type {
+		constexpr void unchecked_resize(size_type count)
+			requires std::is_default_constructible_v<T>
+		{
 			if (count < size()) {
 				shrink_to(count);
 			} else {
@@ -483,9 +485,9 @@ namespace plg {
 			}
 		}
 
-		template<class U = T>
-		constexpr auto unchecked_resize(size_type count, const value_type& value) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value>::type {
+		constexpr void unchecked_resize(size_type count, const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
 			if (count < size()) {
 				shrink_to(count);
 			} else {
@@ -496,69 +498,50 @@ namespace plg {
 		}
 
 	public:
-		template<class U = T>
-		constexpr auto resize(size_type count) -> typename std::enable_if<std::is_default_constructible<U>::value>::type {
-			if (count > capacity()) throw std::bad_alloc();
+		constexpr void resize(size_type count)
+			requires std::is_default_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(count <= capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 			unchecked_resize(count);
 		}
 
-		template<class U = T>
-		constexpr auto resize(size_type count, const value_type& value) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value>::type {
-			if (count > capacity()) throw std::bad_alloc();
+		constexpr void resize(size_type count, const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(count <= capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 			unchecked_resize(count, value);
 		}
 
 		static constexpr void reserve(size_type new_cap) {
-			if (new_cap > capacity()) throw std::bad_alloc();
+			PLUGIFY_ASSERT(new_cap <= capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 		}
 		static constexpr void shrink_to_fit() noexcept {}
 
-		// modifiers
-	private:
-		/*
-		// optimization idea for all insert() functions to get away from constructing and rotating:
-		constexpr size_type make_room_at(const_iterator pos, size_type count) {
-			// - move construct some T's at current end().
-			// - move assign some T's before current end().
-			// - destroy the old host for those "moved from" but not "moved to".
-			//
-			// This should leave a nice gap to construct the new range in without the need for move assigning via rotate afterwards.
-			//
-			// I don't know what to do about exception guarantees with that implementation though so I'll leave it to something to think
-			// about. Perhaps it can be used for T's with a non-throwing move assignment operator and move constructor.
-			// It will at least be ok for trivial types.
-		}
-		*/
-
-	public:
-		template<class U = T>
-		constexpr auto insert(const_iterator pos, const T& value) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value, iterator>::type {
-			// static_assert(std::is_nothrow_move_assignable<T>::value, "only nothrow move assignable types may be used for now");
-			if (size() == capacity()) throw std::bad_alloc();
+		// Modifiers with concepts
+		constexpr iterator insert(const_iterator pos, const T& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(size() != capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 			const auto ncpos = const_cast<iterator>(pos);
 			unchecked_push_back(value);
 			std::rotate(ncpos, std::prev(end()), end());
 			return ncpos;
 		}
 
-		template<class U = T>
-		constexpr auto insert(const_iterator pos, T&& value) ->
-			typename std::enable_if<std::is_move_constructible<U>::value, iterator>::type {
-			// static_assert(std::is_nothrow_move_assignable<T>::value, "only nothrow move assignable types may be used for now");
-			if (size() == capacity()) throw std::bad_alloc();
+		constexpr iterator insert(const_iterator pos, T&& value)
+			requires std::is_move_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(size() != capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 			const auto ncpos = const_cast<iterator>(pos);
 			unchecked_push_back(std::move(value));
 			std::rotate(ncpos, std::prev(end()), end());
 			return ncpos;
 		}
 
-		template<class U = T>
-		constexpr auto insert(const_iterator pos, size_type count, const T& value) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value, iterator>::type {
-			// static_assert(std::is_nothrow_move_assignable<T>::value, "only nothrow move assignable types may be used for now");
-			if (size() + count > capacity()) throw std::bad_alloc();
+		constexpr iterator insert(const_iterator pos, size_type count, const T& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(size() + count <= capacity(), "resulted vector size would exceed capacity()", std::bad_alloc);
 			const auto ncpos = const_cast<iterator>(pos);
 			auto oldsize = size();
 			auto first_inserted = end();
@@ -573,12 +556,11 @@ namespace plg {
 			std::rotate(ncpos, first_inserted, end());
 			return ncpos;
 		}
-		template<class InputIt, class U = T>
-		constexpr auto insert(const_iterator pos, InputIt first, InputIt last) ->
-			typename std::enable_if<std::is_constructible<U, typename std::iterator_traits<InputIt>::value_type>::value &&
-										!std::is_const<U>::value,
-									iterator>::type {
-			// static_assert(std::is_nothrow_move_assignable<T>::value, "only nothrow move assignable types may be used for now");
+
+		template<class InputIt>
+			requires (std::is_constructible_v<T, typename std::iterator_traits<InputIt>::value_type> &&
+					 !std::is_const_v<T>)
+		constexpr iterator insert(const_iterator pos, InputIt first, InputIt last) {
 			const auto ncpos = const_cast<iterator>(pos);
 			auto oldsize = size();
 			auto first_inserted = end();
@@ -593,16 +575,16 @@ namespace plg {
 			std::rotate(ncpos, first_inserted, end());
 			return ncpos;
 		}
-		template<class U = T>
-		constexpr auto insert(const_iterator pos, std::initializer_list<T> ilist) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value && !std::is_const<U>::value, iterator>::type {
+
+		constexpr iterator insert(const_iterator pos, std::initializer_list<T> ilist)
+			requires (std::is_copy_constructible_v<T> && !std::is_const_v<T>)
+		{
 			return insert(pos, ilist.begin(), ilist.end());
 		}
 
 		template<class... Args>
-		constexpr auto emplace(const_iterator pos, Args&&... args) ->
-			typename std::enable_if<std::is_constructible<T, Args...>::value, iterator>::type {
-			// static_assert(std::is_nothrow_move_assignable<T>::value, "only nothrow move assignable types may be used for now");
+			requires std::is_constructible_v<T, Args...>
+		constexpr iterator emplace(const_iterator pos, Args&&... args) {
 			const auto ncpos = const_cast<iterator>(pos);
 			emplace_back(std::forward<Args>(args)...);
 			std::rotate(ncpos, std::prev(end()), end());
@@ -610,70 +592,70 @@ namespace plg {
 		}
 
 		template<class... Args>
-		constexpr auto unchecked_emplace_back(Args&&... args) ->
-			typename std::enable_if<std::is_constructible<T, Args...>::value, reference>::type {
+			requires std::is_constructible_v<T, Args...>
+		constexpr reference unchecked_emplace_back(Args&&... args) {
 			return construct_back(std::forward<Args>(args)...);
 		}
 
-		template<class U = T>
-		constexpr auto unchecked_push_back(T const& value) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value, reference>::type {
+		constexpr reference unchecked_push_back(T const& value)
+			requires std::is_copy_constructible_v<T>
+		{
 			return construct_back(value);
 		}
 
-		template<class U = T>
-		constexpr auto unchecked_push_back(T&& value) ->
-			typename std::enable_if<std::is_move_constructible<U>::value, reference>::type {
+		constexpr reference unchecked_push_back(T&& value)
+			requires std::is_move_constructible_v<T>
+		{
 			return construct_back(std::move(value));
 		}
 
 		template<class... Args>
-		constexpr auto emplace_back(Args&&... args) ->
-			typename std::enable_if<std::is_constructible<T, Args...>::value, reference>::type {
-			if (size() == N) throw std::bad_alloc();
+			requires std::is_constructible_v<T, Args...>
+		constexpr reference emplace_back(Args&&... args) {
+			PLUGIFY_ASSERT(size() != N, "resulted vector size would exceed capacity()", std::bad_alloc);
 			return unchecked_emplace_back(std::forward<Args>(args)...);
 		}
 
 		template<class... Args>
-		constexpr auto try_emplace_back(Args&&... args) ->
-			typename std::enable_if<std::is_constructible<T, Args...>::value, pointer>::type {
+			requires std::is_constructible_v<T, Args...>
+		constexpr pointer try_emplace_back(Args&&... args) {
 			if (size() == N) return nullptr;
 			return std::addressof(unchecked_emplace_back(std::forward<Args>(args)...));
 		}
 
-		template<class U = T>
-		constexpr auto push_back(T const& value) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value, reference>::type {
-			if (size() == N) throw std::bad_alloc();
+		constexpr reference push_back(T const& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(size() != N, "resulted vector size would exceed capacity()", std::bad_alloc);
 			return unchecked_push_back(value);
 		}
 
-		template<class U = T>
-		constexpr auto push_back(T&& value) ->
-			typename std::enable_if<std::is_move_constructible<U>::value, reference>::type {
-			if (size() == N) throw std::bad_alloc();
+		constexpr reference push_back(T&& value)
+			requires std::is_move_constructible_v<T>
+		{
+			PLUGIFY_ASSERT(size() != N, "resulted vector size would exceed capacity()", std::bad_alloc);
 			return unchecked_push_back(std::move(value));
 		}
 
-		template<class U = T>
-		constexpr auto try_push_back(T const& value) ->
-			typename std::enable_if<std::is_copy_constructible<U>::value, pointer>::type {
+		constexpr pointer try_push_back(T const& value)
+			requires std::is_copy_constructible_v<T>
+		{
 			if (size() == N) return nullptr;
 			return std::addressof(unchecked_push_back(value));
 		}
 
-		template<class U = T>
-		constexpr auto try_push_back(T&& value) ->
-			typename std::enable_if<std::is_move_constructible<U>::value, pointer>::type {
+		constexpr pointer try_push_back(T&& value)
+			requires std::is_move_constructible_v<T>
+		{
 			if (size() == N) return nullptr;
 			return std::addressof(unchecked_push_back(std::move(value)));
 		}
 
 		constexpr void pop_back() noexcept { destroy(dec()); }
 
-		template<class U = T>
-		constexpr auto erase(const_iterator first, const_iterator last) ->
-			typename std::enable_if<!std::is_const<U>::value, iterator>::type {
+		constexpr iterator erase(const_iterator first, const_iterator last)
+			requires (!std::is_const_v<T>)
+		{
 			auto ncfirst = const_cast<iterator>(first);
 			auto nclast = const_cast<iterator>(last);
 			auto removed = static_cast<std::size_t>(std::distance(ncfirst, nclast));
@@ -685,18 +667,19 @@ namespace plg {
 			return ncfirst;
 		}
 
-		template<class U = T>
-		constexpr auto erase(const_iterator pos) -> typename std::enable_if<!std::is_const<U>::value, iterator>::type {
+		constexpr iterator erase(const_iterator pos)
+			requires (!std::is_const_v<T>)
+		{
 			return erase(pos, std::next(pos));
 		}
 
-		template<class U = T>
-		constexpr auto swap(inplace_vector& other) noexcept(N == 0 ||
-																		 (detail::is_nothrow_swappable<T>::value &&
-																		  std::is_nothrow_move_constructible<T>::value)) ->
-			typename std::enable_if<not std::is_const<U>::value>::type {
+		constexpr void swap(inplace_vector& other) noexcept(N == 0 ||
+															(std::is_nothrow_swappable_v<T> &&
+															 std::is_nothrow_move_constructible_v<T>))
+			requires (!std::is_const_v<T>)
+		{
 			auto&& p = (size() < other.size()) ? std::pair<inplace_vector&, inplace_vector&>(*this, other)
-											   : std::pair<inplace_vector&, inplace_vector&>(other, *this);
+												: std::pair<inplace_vector&, inplace_vector&>(other, *this);
 			auto& small = p.first;
 			auto& large = p.second;
 			size_type idx = 0, small_size = small.size();
@@ -711,7 +694,7 @@ namespace plg {
 		}
 
 		constexpr friend void swap(inplace_vector& lhs, inplace_vector& rhs) noexcept(
-			N == 0 || (detail::is_nothrow_swappable<T>::value && std::is_nothrow_move_constructible<T>::value)) {
+			N == 0 || (std::is_nothrow_swappable_v<T> && std::is_nothrow_move_constructible_v<T>)) {
 			lhs.swap(rhs);
 		}
 

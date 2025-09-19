@@ -42,6 +42,7 @@
 #  include <cstdlib>
 #endif
 
+// from https://github.com/ilobilo/string/
 namespace plg {
 	namespace detail {
 		template<typename Alloc>
