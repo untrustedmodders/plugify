@@ -798,17 +798,15 @@ namespace plg {
 		return detail::compare_parsed(lhs, rhs, version_compare_option::include_prerelease) <= 0;
 	}
 
-#if __cpp_impl_three_way_comparison >= 201907L
 	template <typename I1, typename I2, typename I3>
 	[[nodiscard]] constexpr std::strong_ordering operator<=>(const version<I1, I2, I3>& lhs, const version<I1, I2, I3>& rhs) {
 		int compare = detail::compare_parsed(lhs, rhs, version_compare_option::include_prerelease);
 		if (compare == 0)
-	return std::strong_ordering::equal;
-  if (compare > 0)
-	return std::strong_ordering::greater;
-  return std::strong_ordering::less;
+			return std::strong_ordering::equal;
+  		if (compare > 0)
+			return std::strong_ordering::greater;
+  		return std::strong_ordering::less;
 	}
-#endif
 
 	template<typename I1, typename I2, typename I3>
 	constexpr from_chars_result parse(std::string_view str, version<I1, I2, I3>& output) {

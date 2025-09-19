@@ -10,6 +10,7 @@
 #include "plugify/property.hpp"
 #include "plugify/signarure.hpp"
 #include "plugify/value_type.hpp"
+#include "plg/inplace_vector.hpp"
 
 namespace plugify {
 	/**

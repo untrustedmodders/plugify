@@ -60,8 +60,7 @@ namespace plg {
 		template <typename T>
 		auto operator()(const T& str_like) const noexcept {
 			std::string_view str = str_like;
-			constexpr std::size_t active_hash_traits::fnv_basis;
-			std::size_t hash = basis; // FNV-1a
+			std::size_t hash = active_hash_traits::fnv_basis; // FNV-1a
 			for (char c : str) {
 				hash ^= static_cast<unsigned char>(std::tolower(static_cast<unsigned char>(c)));
 				hash *= active_hash_traits::fnv_prime;

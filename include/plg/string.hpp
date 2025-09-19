@@ -19,7 +19,6 @@
 #include <limits>            // for std::numeric_limits
 #include <charconv>          // for std::to_chars
 
-
 #include <cstdint>
 #include <cstddef>
 #include <cstdarg>

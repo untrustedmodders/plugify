@@ -5,7 +5,7 @@
 #if __has_include(<expected>)
 #include <expected>
 #if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202211L
-#define PLUGIFY_HAS_STD_EXPECTED 0
+#define PLUGIFY_HAS_STD_EXPECTED 1
 #else
 #define PLUGIFY_HAS_STD_EXPECTED 0
 #endif

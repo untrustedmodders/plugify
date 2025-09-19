@@ -17,6 +17,7 @@
 #include "plugify/property.hpp"
 #include "plugify/signarure.hpp"
 #include "plugify/value_type.hpp"
+#include "plg/inplace_vector.hpp"
 
 namespace plugify {
 	class Return;
@@ -168,17 +169,18 @@ namespace plugify {
 	public:
 		using SlotType = uint64_t;
 		static constexpr size_t SlotSize = sizeof(SlotType);
+		static constexpr size_t MaxSize = 32 * sizeof(uint64_t);
 
 		/**
 		 * @brief Constructor.
 		 * @param slotCount Number of parameter slots to allocate.
 		 */
 		explicit Parameters(size_t slotCount)
-		    : _storage(std::make_unique<SlotType[]>(slotCount))
-		    , _capacity(slotCount)
+		    : /*_storage(std::make_unique<SlotType[]>(slotCount))
+		    ,*/ _capacity(slotCount)
 		    , _position(0) {
 			// Zero-initialize all slots
-			std::memset(_storage.get(), 0, slotCount * SlotSize);
+			std::memset(_storage.data(), 0, slotCount * SlotSize);
 		}
 
 		/**
@@ -265,7 +267,7 @@ namespace plugify {
 		 * @return Const pointer to the parameter storage.
 		 */
 		[[nodiscard]] const SlotType* Get() const noexcept {
-			return _storage.get();
+			return _storage.data();
 		}
 
 		/**
@@ -273,7 +275,7 @@ namespace plugify {
 		 * @return Span of parameter slots.
 		 */
 		[[nodiscard]] std::span<const SlotType> GetSpan() const noexcept {
-			return { _storage.get(), _position };
+			return { _storage.data(), _position };
 		}
 
 		/**
@@ -297,7 +299,7 @@ namespace plugify {
 		 */
 		void Reset() noexcept {
 			_position = 0;
-			std::memset(_storage.get(), 0, _capacity * SlotSize);
+			std::memset(_storage.data(), 0, _capacity * SlotSize);
 		}
 
 		/**
@@ -310,9 +312,10 @@ namespace plugify {
 		}
 
 	private:
-		std::unique_ptr<SlotType[]> _storage;  ///< Dynamic storage for parameters
-		size_t _capacity;                      ///< Total number of slots
-		size_t _position;                      ///< Current write position
+		//std::unique_ptr<SlotType[]> _storage;  ///< Dynamic storage for parameters
+		std::array<SlotType, MaxSize> _storage;  ///< Static storage for parameters
+		size_t _capacity;                        ///< Total number of slots
+		size_t _position;                        ///< Current write position
 	};
 
 	/**

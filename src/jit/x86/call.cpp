@@ -83,8 +83,7 @@ struct JitCall::Impl {
 			bool useHighReg;
 		};
 
-		std::vector<ArgRegSlot> argRegSlots;
-		argRegSlots.reserve(sig.arg_count());
+		std::inplace_vector<ArgRegSlot, asmjit::Globals::kMaxFuncArgs> argRegSlots;
 		size_t offsetNextSlot = sizeof(uint64_t);
 
 		// map argument slots to registers, following abi. (We can have multiple register per arg

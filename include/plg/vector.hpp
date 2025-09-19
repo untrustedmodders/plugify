@@ -10,6 +10,7 @@
 #include <span>
 #include <limits>
 #include <optional>
+#include <compare>
 
 #include <cstdint>
 #include <cstddef>
@@ -116,13 +117,11 @@ namespace plg {
 		constexpr friend typename vector_iterator<Alloc>::difference_type operator-(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
 		template<typename Alloc>
 		constexpr friend bool operator==(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
-#if __cpp_impl_three_way_comparison
 		template<typename Alloc>
 		constexpr friend auto operator<=>(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
 		operator const pointer() const noexcept {
 			return _current;
 		}
-#endif // __cpp_impl_three_way_comparison
 		pointer base() const noexcept {
 			return _current;
 		}
@@ -137,12 +136,10 @@ namespace plg {
 	constexpr bool operator==(const vector_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
 		return lhs.base() == rhs.base();
 	}
-#if __cpp_impl_three_way_comparison
 	template<typename Allocator>
 	constexpr auto operator<=>(const vector_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
 		return lhs.base() <=> rhs.base();
 	}
-#endif // __cpp_impl_three_way_comparison
 
 	template<detail::is_alloc Allocator>
 	struct vector_const_iterator {
@@ -210,21 +207,17 @@ namespace plg {
 		constexpr friend typename vector_const_iterator<Alloc>::difference_type operator-(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
 		template<typename Alloc>
 		constexpr friend bool operator==(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
-#if __cpp_impl_three_way_comparison
 		template<typename Alloc>
 		constexpr friend auto operator<=>(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
-#endif // __cpp_impl_three_way_comparison
 		template<typename Alloc>
 		constexpr friend typename vector_const_iterator<Alloc>::difference_type operator-(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
 		template<typename Alloc>
 		constexpr friend bool operator==(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
-#if __cpp_impl_three_way_comparison
 		template<typename Alloc>
 		constexpr friend auto operator<=>(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
 		operator const pointer() const noexcept {
 			return _current;
 		}
-#endif // __cpp_impl_three_way_comparison
 		pointer base() const noexcept {
 			return _current;
 		}
