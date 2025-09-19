@@ -33,6 +33,26 @@ namespace plg {
 			return std::hash<plg::string>{}(txt);
 		}
 	};
+	
+	// --- Hash traits depending on pointer size ---
+	template <std::size_t Size>
+	struct hash_traits;
+
+	template <>
+	struct hash_traits<4> { // 32-bit
+		static constexpr std::size_t fnv_basis = 0x811C9DC5u;
+		static constexpr std::size_t fnv_prime = 0x01000193u;
+		static constexpr std::size_t golden_ratio = 0x9e3779b9u;
+	};
+
+	template <>
+	struct hash_traits<8> { // 64-bit
+		static constexpr std::size_t fnv_basis = 0xcbf29ce484222325ULL;
+		static constexpr std::size_t fnv_prime = 0x100000001b3ULL;
+		static constexpr std::size_t golden_ratio = 0x9e3779b97f4a7c15ULL;
+	};
+
+	using active_hash_traits = hash_traits<sizeof(std::size_t)>;
 
 	struct case_insensitive_hash {
 		using is_transparent = void;  // Enables heterogeneous lookup
@@ -40,10 +60,11 @@ namespace plg {
 		template <typename T>
 		auto operator()(const T& str_like) const noexcept {
 			std::string_view str = str_like;
-			std::size_t hash = 0xcbf29ce484222325;  // FNV-1a 64-bit basis
+			constexpr std::size_t active_hash_traits::fnv_basis;
+			std::size_t hash = basis; // FNV-1a
 			for (char c : str) {
 				hash ^= static_cast<unsigned char>(std::tolower(static_cast<unsigned char>(c)));
-				hash *= 0x100000001b3;
+				hash *= active_hash_traits::fnv_prime;
 			}
 			return hash;
 		}
@@ -77,8 +98,7 @@ namespace plg {
 	template <class T>
 	inline void hash_combine(std::size_t& seed, const T& v) {
 		std::hash<T> hasher;
-		// 0x9e3779b97f4a7c15 is 64-bit golden ratio constant
-		seed ^= hasher(v) + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+		seed ^= hasher(v) + active_hash_traits::golden_ratio + (seed << 6) + (seed >> 2);
 	}
 
 	template <class... Ts>
