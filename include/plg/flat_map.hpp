@@ -691,7 +691,7 @@ namespace plg {
 	private:
 		template<typename Iter>
 		void from_range(Iter first, Iter last) {
-			assert(_data.empty());
+			PLUGIFY_ASSERT(_data.empty(), "container already initialized", std::length_error);
 			_data.insert(_data.end(), first, last);
 			std::sort(_data.begin(), _data.end(), value_comp());
 			_data.erase(
@@ -702,8 +702,8 @@ namespace plg {
 
 		template<typename Iter>
 		void from_range(sorted_range_t, Iter first, Iter last) {
-			assert(_data.empty());
-			assert(detail::is_sorted(first, last, value_comp()));
+			PLUGIFY_ASSERT(_data.empty(), "container already initialized", std::length_error);
+			PLUGIFY_ASSERT(detail::is_sorted(first, last, value_comp()), "container not sorted", std::logic_error);
 			_data.insert(_data.end(), first, last);
 			_data.erase(
 					std::unique(_data.begin(), _data.end(),
@@ -713,8 +713,8 @@ namespace plg {
 
 		template<typename Iter>
 		void from_range(sorted_unique_range_t, Iter first, Iter last) {
-			assert(_data.empty());
-			assert(detail::is_sorted_unique(first, last, value_comp()));
+			PLUGIFY_ASSERT(_data.empty(), "container already initialized", std::length_error);
+			PLUGIFY_ASSERT(detail::is_sorted_unique(first, last, value_comp()), "container not sorted", std::logic_error);
 			_data.insert(_data.end(), first, last);
 		}
 
@@ -732,7 +732,7 @@ namespace plg {
 
 		template<typename Iter>
 		void insert_range(sorted_range_t, Iter first, Iter last) {
-			assert(detail::is_sorted(first, last, value_comp()));
+			PLUGIFY_ASSERT(detail::is_sorted(first, last, value_comp()), "container not sorted", std::logic_error);
 			const auto mid_iter = _data.insert(_data.end(), first, last);
 			std::inplace_merge(_data.begin(), mid_iter, _data.end(), value_comp());
 			_data.erase(

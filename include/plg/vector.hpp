@@ -15,7 +15,9 @@
 #include <cstddef>
 #include <cstring>
 
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES && (__cplusplus <= 202002L || !__has_include(<ranges>) || !defined(__cpp_lib_containers_ranges))
+#include "plg/allocator.hpp"
+
+#if PLUGIFY_VECTOR_CONTAINERS_RANGES && (PLUGIFY_CPP_VERSION <= 202002L || !__has_include(<ranges>) || !defined(__cpp_lib_containers_ranges))
 #  undef PLUGIFY_VECTOR_CONTAINERS_RANGES
 #  define PLUGIFY_VECTOR_CONTAINERS_RANGES 0
 #endif
@@ -23,8 +25,6 @@
 #if PLUGIFY_VECTOR_CONTAINERS_RANGES
 #  include <ranges>
 #endif
-
-#include "plg/allocator.hpp"
 
 namespace plg {
 	namespace detail {

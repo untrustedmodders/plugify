@@ -24,7 +24,13 @@
 #include <cstddef>
 #include <cstdarg>
 
-#if PLUGIFY_STRING_CONTAINERS_RANGES && (__cplusplus <= 202002L || !__has_include(<ranges>) || !defined(__cpp_lib_containers_ranges))
+#include "plg/allocator.hpp"
+
+#ifndef PLUGIFY_STRING_NO_STD_FORMAT
+#include "plg/format.hpp"
+#endif
+
+#if PLUGIFY_STRING_CONTAINERS_RANGES && (PLUGIFY_CPP_VERSION <= 202002L || !__has_include(<ranges>) || !defined(__cpp_lib_containers_ranges))
 #  undef PLUGIFY_STRING_CONTAINERS_RANGES
 #  define PLUGIFY_STRING_CONTAINERS_RANGES 0
 #endif
@@ -36,12 +42,6 @@
 #ifndef PLUGIFY_STRING_NO_NUMERIC_CONVERSIONS
 #  include <cstdlib>
 #endif
-
-#ifndef PLUGIFY_STRING_NO_STD_FORMAT
-#include "plg/format.hpp"
-#endif
-
-#include "plg/allocator.hpp"
 
 namespace plg {
 	namespace detail {
@@ -614,7 +614,7 @@ namespace plg {
 		constexpr basic_string(basic_string&& str, size_type pos, const Allocator& allocator = Allocator())
 			: basic_string(std::move(str), pos, npos, allocator) {}
 
-#if __cplusplus > 202002L
+#if PLUGIFY_CPP_VERSION > 202002L
 		basic_string(std::nullptr_t) = delete;
 #endif
 
@@ -658,7 +658,7 @@ namespace plg {
 			return assign(sv);
 		}
 
-#if __cplusplus > 202002L
+#if PLUGIFY_CPP_VERSION > 202002L
 		constexpr basic_string& operator=(std::nullptr_t) = delete;
 #endif
 
