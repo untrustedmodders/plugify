@@ -131,17 +131,6 @@ namespace plugify {
 		 */
 		JitCall& operator=(JitCall&& other) noexcept;
 
-		/**
-		 * @brief Initialize the JIT runtime (call once at startup)
-		 * @return True if successful, false otherwise
-		 */
-		// static bool InitializeRuntime();
-
-		/**
-		 * @brief Shutdown the JIT runtime (call once at shutdown)
-		 */
-		// static void ShutdownRuntime();
-
 		PLUGIFY_ACCESS : struct Impl;
 		PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
@@ -169,18 +158,13 @@ namespace plugify {
 	public:
 		using SlotType = uint64_t;
 		static constexpr size_t SlotSize = sizeof(SlotType);
-		static constexpr size_t MaxSize = 32 * sizeof(uint64_t);
 
 		/**
 		 * @brief Constructor.
 		 * @param slotCount Number of parameter slots to allocate.
 		 */
-		explicit Parameters(size_t slotCount)
-		    : /*_storage(std::make_unique<SlotType[]>(slotCount))
-		    ,*/ _capacity(slotCount)
-		    , _position(0) {
-			// Zero-initialize all slots
-			std::memset(_storage.data(), 0, slotCount * SlotSize);
+		explicit Parameters(size_t slotCount) {
+			_storage.reserve(slotCount);
 		}
 
 		/**
@@ -188,18 +172,11 @@ namespace plugify {
 		 * @tparam T Type of the argument.
 		 * @param value Value to add.
 		 * @return Reference to this builder for chaining.
-		 * @throws std::out_of_range if no slots available.
 		 */
 		template <SingleSlotType T>
 		Parameters& Add(T value) {
-			if (_position >= _capacity) {
-				throw std::out_of_range("No more parameter slots available");
-			}
-
-			_storage[_position] = 0;
-			std::memcpy(&_storage[_position], &value, sizeof(T));
-
-			++_position;
+			SlotType& slot = _storage.emplace_back();
+			std::memcpy(&slot, &value, sizeof(T));
 			return *this;
 		}
 
@@ -208,19 +185,13 @@ namespace plugify {
 		 * @tparam T Type of the argument (must be trivially copyable).
 		 * @param value Value to add.
 		 * @return Reference to this builder for chaining.
-		 * @throws std::out_of_range if not enough slots available.
 		 */
 		template <MultiSlotType T>
 		Parameters& AddLarge(const T& value) {
 			constexpr size_t slotsNeeded = (sizeof(T) + SlotSize - 1) / SlotSize;
-
-			if (_position + slotsNeeded > _capacity) {
-				throw std::out_of_range("Not enough parameter slots for large argument");
-			}
-
-			std::memcpy(&_storage[_position], &value, sizeof(T));
-			_position += slotsNeeded;
-
+			size_t oldSize = _storage.size();
+			_storage.resize(oldSize + slotsNeeded);
+			std::memcpy(&_storage[oldSize], &value, sizeof(T));
 			return *this;
 		}
 
@@ -243,22 +214,12 @@ namespace plugify {
 		 * @param index Slot index.
 		 * @param value Value to set.
 		 * @return Reference to this builder for chaining.
-		 * @throws std::out_of_range if index is out of bounds.
 		 */
 		template <SingleSlotType T>
 		Parameters& SetAt(size_t index, T value) {
-			if (index >= _capacity) {
-				throw std::out_of_range("Parameter index out of range");
-			}
-
-			_storage[index] = 0;
-			std::memcpy(&_storage[index], &value, sizeof(T));
-
-			// Update position if we're writing beyond current position
-			if (index >= _position) {
-				_position = index + 1;
-			}
-
+			SlotType& slot = _storage.at(index);
+			slot = {};
+			std::memcpy(&slot, &value, sizeof(T));
 			return *this;
 		}
 
@@ -275,7 +236,7 @@ namespace plugify {
 		 * @return Span of parameter slots.
 		 */
 		[[nodiscard]] std::span<const SlotType> GetSpan() const noexcept {
-			return { _storage.data(), _position };
+			return { _storage.data(), _storage.size() };
 		}
 
 		/**
@@ -283,7 +244,7 @@ namespace plugify {
 		 * @return Number of slots currently in use.
 		 */
 		[[nodiscard]] size_t GetUsedSlots() const noexcept {
-			return _position;
+			return _storage.size();
 		}
 
 		/**
@@ -291,15 +252,14 @@ namespace plugify {
 		 * @return Total number of slots allocated.
 		 */
 		[[nodiscard]] size_t GetCapacity() const noexcept {
-			return _capacity;
+			return _storage.capacity();
 		}
 
 		/**
 		 * @brief Reset the builder to reuse it.
 		 */
 		void Reset() noexcept {
-			_position = 0;
-			std::memset(_storage.data(), 0, _capacity * SlotSize);
+			_storage.clear();
 		}
 
 		/**
@@ -308,14 +268,11 @@ namespace plugify {
 		 * @return True if there's enough space.
 		 */
 		[[nodiscard]] bool HasSpace(size_t slotsNeeded = 1) const noexcept {
-			return _position + slotsNeeded <= _capacity;
+			return _storage.size() + slotsNeeded < _storage.capacity();
 		}
 
 	private:
-		//std::unique_ptr<SlotType[]> _storage;  ///< Dynamic storage for parameters
-		std::array<SlotType, MaxSize> _storage;  ///< Static storage for parameters
-		size_t _capacity;                        ///< Total number of slots
-		size_t _position;                        ///< Current write position
+		std::inplace_vector<SlotType, Signature::kMaxFuncArgs> _storage{};  ///< Fixed-capacity vector storage
 	};
 
 	/**
@@ -326,14 +283,8 @@ namespace plugify {
 	 */
 	class Return {
 	public:
-		static constexpr size_t MaxSize = 2 * sizeof(uint64_t);
-
-		/**
-		 * @brief Default constructor - zero-initializes storage.
-		 */
-		Return() noexcept
-		    : _storage{} {
-		}
+		using SlotType = uint64_t;
+		static constexpr size_t MaxSize = 2 * sizeof(SlotType);
 
 		/**
 		 * @brief Construct an object of type T in the return storage.
@@ -343,7 +294,7 @@ namespace plugify {
 		template <typename T, typename... Args>
 		    requires(sizeof(T) <= MaxSize && std::is_trivially_destructible_v<T>)
 		void Construct(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...))) {
-			std::construct_at(GetAs<T>(), std::forward<Args>(args)...);
+			std::construct_at(reinterpret_cast<T*>(_storage.data()), std::forward<Args>(args)...);
 		}
 
 		/**
@@ -354,9 +305,7 @@ namespace plugify {
 		template <typename T>
 		    requires(sizeof(T) <= MaxSize && std::is_trivially_copyable_v<T>)
 		void Set(T value) noexcept {
-			// Clear storage first for smaller types
 			_storage = {};
-
 			std::memcpy(_storage.data(), &value, sizeof(T));
 		}
 
@@ -374,70 +323,14 @@ namespace plugify {
 		}
 
 		/**
-		 * @brief Get a reference to the return value.
-		 * @tparam T Type of the return value.
-		 * @return Reference to the return value.
-		 */
-		template <typename T>
-		    requires(sizeof(T) <= MaxSize)
-		[[nodiscard]] T& GetRef() noexcept {
-			return *GetAs<T>();
-		}
-
-		template <typename T>
-		    requires(sizeof(T) <= MaxSize)
-		[[nodiscard]] const T& GetRef() const noexcept {
-			return *GetAs<T>();
-		}
-
-		/**
-		 * @brief Get raw pointer to the return storage.
-		 * @return Pointer to the storage.
-		 */
-		[[nodiscard]] void* GetPtr() noexcept {
-			return _storage.data();
-		}
-
-		[[nodiscard]] const void* GetPtr() const noexcept {
-			return _storage.data();
-		}
-
-		/**
-		 * @brief Get the storage as a span of bytes.
-		 * @return Span view of the storage.
-		 */
-		[[nodiscard]] std::span<std::byte> GetBytes() noexcept {
-			return { _storage.data(), MaxSize };
-		}
-
-		[[nodiscard]] std::span<const std::byte> GetBytes() const noexcept {
-			return { _storage.data(), MaxSize };
-		}
-
-		/**
 		 * @brief Clear the return value storage.
 		 */
 		void Clear() noexcept {
 			_storage = {};
 		}
 
-	protected:
-		template <typename T>
-		[[nodiscard]] T* GetAs() noexcept {
-			static_assert(sizeof(T) <= MaxSize, "Type too large for return storage");
-			return reinterpret_cast<T*>(_storage.data());
-		}
-
-		template <typename T>
-		[[nodiscard]] const T* GetAs() const noexcept {
-			static_assert(sizeof(T) <= MaxSize, "Type too large for return storage");
-			return reinterpret_cast<const T*>(_storage.data());
-		}
-
 	private:
-		alignas(alignof(std::max_align_t)) std::array<std::byte, MaxSize> _storage;  ///< 128-bit
-		                                                                             ///< storage
-		                                                                             ///< for return
-		                                                                             ///< value
+		alignas(alignof(std::max_align_t))
+		std::array<std::byte, MaxSize> _storage{};  ///< 128-bit storage
 	};
 }  // namespace plugify

@@ -228,8 +228,8 @@ namespace plugify {
 		 * @param size Size in bytes
 		 */
 		explicit ReturnSlot(type* data, size_t size) noexcept
-		    : _data{ data }
-		    , _size{ size } {
+		    : _data(data)
+		    , _size(size) {
 		}
 
 		/**
@@ -265,7 +265,7 @@ namespace plugify {
 		 * @param args Constructor arguments
 		 */
 		template <typename T, typename... Args>
-		// requires std::is_trivially_destructible_v<T>
+			// requires std::is_trivially_destructible_v<T>
 		void Construct(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...))) {
 			assert(sizeof(T) <= _size && "Type too large");
 			std::construct_at(reinterpret_cast<T*>(_data), std::forward<Args>(args)...);

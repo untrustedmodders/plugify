@@ -45,22 +45,10 @@ namespace plugify {
 		inline static const size_t kMaxFuncArgs = 32;
 		inline static const uint8_t kNoVarArgs = 0xffU;
 
-		CallConv callConv; ///< Calling convention
-		ValueType retType; ///< Return type
-		uint8_t varIndex;  ///< Variable index for variadic functions
-		std::inplace_vector<ValueType, kMaxFuncArgs> argTypes; ///< Argument types
-
-		Signature()
-		    : callConv(CallConv::CDecl)
-		    , retType(ValueType::Void)
-		    , varIndex(kNoVarArgs) {
-		}
-
-		Signature(CallConv conv, ValueType ret, uint8_t varIdx = kNoVarArgs)
-		    : callConv(conv)
-		    , retType(ret)
-		    , varIndex(varIdx) {
-		}
+		CallConv callConv{CallConv::CDecl}; ///< Calling convention
+		ValueType retType{ValueType::Void}; ///< Return type
+		uint8_t varIndex{kNoVarArgs};  ///< Variable index for variadic functions
+		std::inplace_vector<ValueType, kMaxFuncArgs> argTypes{}; ///< Argument types
 
 		void AddArg(ValueType type) {
 			argTypes.push_back(type);
