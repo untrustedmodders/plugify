@@ -784,8 +784,8 @@ namespace plg {
 }// namespace plg
 
 namespace std {
-	using namespace plg;
-	using namespace plg::detail;
+	template<typename Key, typename Value, typename Compare = std::less<Key>, typename Container = plg::vector<std::pair<Key, Value>>>
+	using flat_map = plg::flat_map<Key, Value, Compare, Container>;
 } // namespace std
 
 #endif // !PLUGIFY_HAS_STD_FLAT_MAP

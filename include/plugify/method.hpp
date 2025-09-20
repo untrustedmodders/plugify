@@ -24,7 +24,7 @@ namespace plugify {
 		Method& operator=(Method&& other) noexcept;
 
 		// Getters
-		[[nodiscard]] const std::vector<Property>& GetParamTypes() const noexcept;
+		[[nodiscard]] const std::inplace_vector<Property, Signature::kMaxFuncArgs>& GetParamTypes() const noexcept;
 		[[nodiscard]] const Property& GetRetType() const noexcept;
 		[[nodiscard]] const std::string& GetName() const noexcept;
 		[[nodiscard]] const std::string& GetFuncName() const noexcept;
@@ -32,7 +32,7 @@ namespace plugify {
 		[[nodiscard]] uint8_t GetVarIndex() const noexcept;
 
 		// Setters (pass by value and move)
-		void SetParamTypes(std::vector<Property> paramTypes);
+		void SetParamTypes(std::inplace_vector<Property, Signature::kMaxFuncArgs> paramTypes);
 		void SetRetType(Property retType);
 		void SetName(std::string name);
 		void SetFuncName(std::string funcName);

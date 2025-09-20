@@ -116,15 +116,15 @@ namespace plg {
 			using const_pointer = value_type const*;
 
 		protected:
-			constexpr pointer ptr(size_type idx) noexcept { return std::addressof(m_data[idx]); }
-			constexpr const_pointer ptr(size_type idx) const noexcept { return std::addressof(m_data[idx]); }
-			constexpr reference ref(size_type idx) noexcept { return m_data[idx]; }
-			constexpr const_reference ref(size_type idx) const noexcept { return m_data[idx]; }
+			constexpr pointer ptr(size_type idx) noexcept { return std::addressof(_data[idx]); }
+			constexpr const_pointer ptr(size_type idx) const noexcept { return std::addressof(_data[idx]); }
+			constexpr reference ref(size_type idx) noexcept { return _data[idx]; }
+			constexpr const_reference ref(size_type idx) const noexcept { return _data[idx]; }
 
 			template<class... Args>
 			constexpr reference construct_back(Args&&... args) {
-				auto& rv = m_data[m_size] = value_type{std::forward<Args>(args)...};
-				++m_size;
+				auto& rv = _data[_size] = value_type{std::forward<Args>(args)...};
+				++_size;
 				return rv;
 			}
 			constexpr void destroy(size_type) noexcept {}
@@ -132,15 +132,15 @@ namespace plg {
 			constexpr reference operator[](size_type idx) noexcept { return ref(idx); }
 			constexpr const_reference operator[](size_type idx) const noexcept { return ref(idx); }
 
-			constexpr size_type size() const noexcept { return m_size; }
-			constexpr void clear() noexcept { m_size = 0; }
+			constexpr size_type size() const noexcept { return _size; }
+			constexpr void clear() noexcept { _size = 0; }
 
-			[[maybe_unused]] constexpr size_type inc() noexcept { return ++m_size; }
-			[[maybe_unused]] constexpr size_type dec(size_type count = 1) noexcept { return m_size -= count; }
+			[[maybe_unused]] constexpr size_type inc() noexcept { return ++_size; }
+			[[maybe_unused]] constexpr size_type dec(size_type count = 1) noexcept { return _size -= count; }
 
 		private:
-			std::array<value_type, N> m_data;
-			size_type m_size = 0;
+			std::array<value_type, N> _data;
+			size_type _size = 0;
 		};
 
 		template<class T, std::size_t N>
@@ -153,15 +153,15 @@ namespace plg {
 			using const_pointer = value_type const*;
 
 		protected:
-			constexpr pointer ptr(size_type idx) noexcept { return m_data[idx].ptr(); }
-			constexpr const_pointer ptr(size_type idx) const noexcept { return m_data[idx].ptr(); }
+			constexpr pointer ptr(size_type idx) noexcept { return _data[idx].ptr(); }
+			constexpr const_pointer ptr(size_type idx) const noexcept { return _data[idx].ptr(); }
 			constexpr reference ref(size_type idx) noexcept { return *ptr(idx); }
 			constexpr const_reference ref(size_type idx) const noexcept { return *ptr(idx); }
 
 			template<class... Args>
 			constexpr reference construct_back(Args&&... args) noexcept(std::is_nothrow_constructible<T, Args...>::value) {
-				auto& rv = *std::construct_at(ptr(m_size), std::forward<Args>(args)...);
-				++m_size;
+				auto& rv = *std::construct_at(ptr(_size), std::forward<Args>(args)...);
+				++_size;
 				return rv;
 			}
 			constexpr void destroy(size_type idx) noexcept { ref(idx).~T(); }
@@ -169,13 +169,13 @@ namespace plg {
 			constexpr reference operator[](size_type idx) noexcept { return ref(idx); }
 			constexpr const_reference operator[](size_type idx) const noexcept { return ref(idx); }
 
-			constexpr size_type size() const noexcept { return m_size; }
+			constexpr size_type size() const noexcept { return _size; }
 
-			[[maybe_unused]] constexpr size_type inc() noexcept { return ++m_size; }
-			[[maybe_unused]] constexpr size_type dec(size_type count = 1) noexcept { return m_size -= count; }
+			[[maybe_unused]] constexpr size_type inc() noexcept { return ++_size; }
+			[[maybe_unused]] constexpr size_type dec(size_type count = 1) noexcept { return _size -= count; }
 			constexpr void clear() noexcept(std::is_nothrow_destructible_v<T>) {
-				while (m_size) {
-					destroy(--m_size);
+				while (_size) {
+					destroy(--_size);
 				}
 			}
 
@@ -186,9 +186,9 @@ namespace plg {
 				const_pointer ptr() const noexcept { return std::launder(reinterpret_cast<const_pointer>(data.data())); }
 			};
 
-			std::array<inner_storage, N> m_data;
-			static_assert(sizeof m_data == sizeof(T[N]), "erroneous size");
-			size_type m_size = 0;
+			std::array<inner_storage, N> _data;
+			static_assert(sizeof _data == sizeof(T[N]), "erroneous size");
+			size_type _size = 0;
 		};
 
 		template<class T, std::size_t N>
@@ -355,7 +355,7 @@ namespace plg {
 
 #if PLUGIFY_INPLACE_VECTOR_CONTAINERS_RANGES
 		template<detail::container_compatiblel_range<T> R>
-		constexpr inplace_vector(std::from_range_t, R&& rg) {
+		constexpr inplace_vector(std::fro_range_t, R&& rg) {
 			if constexpr(std::ranges::sized_range<R>) {
 				PLUGIFY_ASSERT(std::ranges::size(rg) <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
 				for (auto&& val : rg) unchecked_emplace_back(std::forward<decltype(val)>(val));
@@ -727,8 +727,8 @@ namespace plg {
 } // namespace plg
 
 namespace std {
-	using namespace plg;
-	using namespace plg::detail;
+	template<class T, std::size_t N>
+	using inplace_vector = plg::inplace_vector<T, N>;
 } // namespace std
 
 #endif

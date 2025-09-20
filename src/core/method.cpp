@@ -24,7 +24,7 @@ Method& Method::operator=(const Method& other) {
 
 Method& Method::operator=(Method&& other) noexcept = default;
 
-const std::vector<Property>& Method::GetParamTypes() const noexcept {
+const std::inplace_vector<Property, Signature::kMaxFuncArgs>& Method::GetParamTypes() const noexcept {
 	return _impl->paramTypes;
 }
 
@@ -48,7 +48,7 @@ uint8_t Method::GetVarIndex() const noexcept {
 	return _impl->varIndex.value_or(Signature::kNoVarArgs);
 }
 
-void Method::SetParamTypes(std::vector<Property> paramTypes) {
+void Method::SetParamTypes(std::inplace_vector<Property, Signature::kMaxFuncArgs> paramTypes) {
 	_impl->paramTypes = std::move(paramTypes);
 }
 

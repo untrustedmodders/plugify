@@ -160,6 +160,7 @@ namespace plugify {
 	 * @brief Namespace containing utility functions of ValueType enum.
 	 */
 	struct ValueUtils {
+
 		/**
 		 * @brief Checks if a value is between two other values.
 		 *
@@ -558,65 +559,25 @@ namespace plugify {
 	static_assert(ValueType::String == static_cast<ValueType>(plg::any::index_of<plg::string>));
 	static_assert(ValueType::Any == static_cast<ValueType>(plg::any::index_of<plg::variant<plg::none>>));
 	static_assert(ValueType::ArrayBool == static_cast<ValueType>(plg::any::index_of<plg::vector<bool>>));
-	static_assert(
-	    ValueType::ArrayChar8 == static_cast<ValueType>(plg::any::index_of<plg::vector<char>>)
-	);
-	static_assert(
-	    ValueType::ArrayChar16 == static_cast<ValueType>(plg::any::index_of<plg::vector<char16_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayInt8 == static_cast<ValueType>(plg::any::index_of<plg::vector<int8_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayInt16 == static_cast<ValueType>(plg::any::index_of<plg::vector<int16_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayInt32 == static_cast<ValueType>(plg::any::index_of<plg::vector<int32_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayInt64 == static_cast<ValueType>(plg::any::index_of<plg::vector<int64_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayUInt8 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint8_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayUInt16 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint16_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayUInt32 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint32_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayUInt64 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint64_t>>)
-	);
-	static_assert(
-	    ValueType::ArrayPointer == static_cast<ValueType>(plg::any::index_of<plg::vector<void*>>)
-	);
-	static_assert(
-	    ValueType::ArrayFloat == static_cast<ValueType>(plg::any::index_of<plg::vector<float>>)
-	);
-	static_assert(
-	    ValueType::ArrayDouble == static_cast<ValueType>(plg::any::index_of<plg::vector<double>>)
-	);
-	static_assert(
-	    ValueType::ArrayString == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::string>>)
-	);
-	static_assert(
-	    ValueType::ArrayAny
-	    == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::variant<plg::none>>>)
-	);
-	static_assert(
-	    ValueType::ArrayVector2 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec2>>)
-	);
-	static_assert(
-	    ValueType::ArrayVector3 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec3>>)
-	);
-	static_assert(
-	    ValueType::ArrayVector4 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec4>>)
-	);
-	static_assert(
-	    ValueType::ArrayMatrix4x4
-	    == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::mat4x4>>)
-	);
+	static_assert( ValueType::ArrayChar8 == static_cast<ValueType>(plg::any::index_of<plg::vector<char>>));
+	static_assert( ValueType::ArrayChar16 == static_cast<ValueType>(plg::any::index_of<plg::vector<char16_t>>));
+	static_assert( ValueType::ArrayInt8 == static_cast<ValueType>(plg::any::index_of<plg::vector<int8_t>>));
+	static_assert( ValueType::ArrayInt16 == static_cast<ValueType>(plg::any::index_of<plg::vector<int16_t>>));
+	static_assert( ValueType::ArrayInt32 == static_cast<ValueType>(plg::any::index_of<plg::vector<int32_t>>));
+	static_assert( ValueType::ArrayInt64 == static_cast<ValueType>(plg::any::index_of<plg::vector<int64_t>>));
+	static_assert( ValueType::ArrayUInt8 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint8_t>>));
+	static_assert( ValueType::ArrayUInt16 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint16_t>>));
+	static_assert( ValueType::ArrayUInt32 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint32_t>>));
+	static_assert( ValueType::ArrayUInt64 == static_cast<ValueType>(plg::any::index_of<plg::vector<uint64_t>>));
+	static_assert( ValueType::ArrayPointer == static_cast<ValueType>(plg::any::index_of<plg::vector<void*>>));
+	static_assert( ValueType::ArrayFloat == static_cast<ValueType>(plg::any::index_of<plg::vector<float>>));
+	static_assert( ValueType::ArrayDouble == static_cast<ValueType>(plg::any::index_of<plg::vector<double>>));
+	static_assert( ValueType::ArrayString == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::string>>));
+	static_assert( ValueType::ArrayAny == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::variant<plg::none>>>));
+	static_assert( ValueType::ArrayVector2 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec2>>));
+	static_assert( ValueType::ArrayVector3 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec3>>));
+	static_assert( ValueType::ArrayVector4 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::vec4>>));
+	static_assert( ValueType::ArrayMatrix4x4 == static_cast<ValueType>(plg::any::index_of<plg::vector<plg::mat4x4>>));
 	static_assert(ValueType::Vector2 == static_cast<ValueType>(plg::any::index_of<plg::vec2>));
 	static_assert(ValueType::Vector3 == static_cast<ValueType>(plg::any::index_of<plg::vec3>));
 	static_assert(ValueType::Vector4 == static_cast<ValueType>(plg::any::index_of<plg::vec4>));

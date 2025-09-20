@@ -75,7 +75,7 @@ struct JitCall::Impl {
 			cc.add(i, i, sizeof(uint64_t));
 		}
 
-		std::inplace_vector<Reg, asmjit::Globals::kMaxFuncArgs> argRegisters;
+		std::inplace_vector<Reg, Globals::kMaxFuncArgs> argRegisters;
 
 		// map argument slots to registers, following abi. (We can have multiple register per arg
 		// slot such as high and low 32bits of a 64bit slot)

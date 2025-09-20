@@ -6,7 +6,7 @@
 
 namespace plugify {
 	struct Method::Impl {
-		std::vector<Property> paramTypes;
+		std::inplace_vector<Property, 32> paramTypes;
 		Property retType;
 		std::string name;
 		std::string funcName;

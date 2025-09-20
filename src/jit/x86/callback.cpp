@@ -71,7 +71,7 @@ struct JitCallback::Impl {
 		};
 
 		// map argument slots to registers, following abi.
-		std::inplace_vector<ArgRegSlot, asmjit::Globals::kMaxFuncArgs> argRegSlots;
+		std::inplace_vector<ArgRegSlot, Globals::kMaxFuncArgs> argRegSlots;
 
 		for (uint32_t argIdx = 0; argIdx < sig.arg_count(); ++argIdx) {
 			const auto& argType = sig.args()[argIdx];

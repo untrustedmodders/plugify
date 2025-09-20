@@ -1422,8 +1422,24 @@ namespace plg {
 } // namespace plg
 
 namespace std {
-	using namespace plg;
-	using namespace plg::detail;
+	template<class U, class G>
+	using expected = plg::expected<U, G>;
+
+	template <class T>
+	concept is_expected = std::same_as<std::remove_cvref_t<T>, expected<typename T::value_type, typename T::error_type> >;
+
+#if PLUGIFY_COMPILER_CLANG
+	template <class U>
+	struct unexpected : public plg::unexpected<U> {
+		using plg::unexpected<U>::unexpected;
+	};
+	template <class U>
+	unexpected(U) -> unexpected<U>;
+#else
+	template <class U>
+	using unexpected = plg::unexpected<U>;
+#endif
+
 } // namespace std
 
 #endif // !PLUGIFY_HAS_STD_EXPECTED

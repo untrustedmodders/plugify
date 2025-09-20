@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "plugify/value_type.hpp"
+#include "plg/inplace_vector.hpp"
 
 namespace plugify {
 	/**
@@ -41,12 +42,13 @@ namespace plugify {
 	 * @brief Replacement for asmjit::FuncSignature using ValueType
 	 */
 	struct Signature {
-		CallConv callConv;                ///< Calling convention
-		ValueType retType;                ///< Return type
-		uint8_t varIndex;                 ///< Variable index for variadic functions
-		std::vector<ValueType> argTypes;  ///< Argument types
-
+		inline static const size_t kMaxFuncArgs = 32;
 		inline static const uint8_t kNoVarArgs = 0xffU;
+
+		CallConv callConv; ///< Calling convention
+		ValueType retType; ///< Return type
+		uint8_t varIndex;  ///< Variable index for variadic functions
+		std::inplace_vector<ValueType, kMaxFuncArgs> argTypes; ///< Argument types
 
 		Signature()
 		    : callConv(CallConv::CDecl)
