@@ -732,7 +732,7 @@ namespace plg {
 					std::rotate(pointer_position, _end - count, _end);
 				}
 			}
-			return begin() + position_distance;
+			return _begin + position_distance;
 		}
 
 		template<std::input_iterator InputIterator>
@@ -763,7 +763,7 @@ namespace plg {
 					std::rotate(pointer_position, _end - count, _end);
 				}
 			}
-			return begin() + position_distance;
+			return _begin + position_distance;
 		}
 
 		constexpr iterator insert(const_iterator position, std::initializer_list<T> list) {
@@ -807,7 +807,7 @@ namespace plg {
 					std::rotate(pointer_position, _end - 1, _end);
 				}
 			}
-			return begin() + position_distance;
+			return _begin + position_distance;
 		}
 
 		constexpr iterator erase(const_iterator position) {
