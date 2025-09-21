@@ -678,10 +678,8 @@ namespace plg {
 															 std::is_nothrow_move_constructible_v<T>))
 			requires (!std::is_const_v<T>)
 		{
-			auto&& p = (size() < other.size()) ? std::pair<inplace_vector&, inplace_vector&>(*this, other)
-												: std::pair<inplace_vector&, inplace_vector&>(other, *this);
-			auto& small = p.first;
-			auto& large = p.second;
+			inplace_vector& small = (size() < other.size()) ? *this : other;
+			inplace_vector& large = (size() < other.size()) ? other : *this;
 			size_type idx = 0, small_size = small.size();
 			for (; idx < small_size; ++idx) {
 				using std::swap;

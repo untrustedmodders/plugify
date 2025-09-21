@@ -160,7 +160,7 @@ namespace plg {
 		[[nodiscard]] constexpr operator bool() const noexcept { return ec == std::errc{}; }
 	};
 #endif
-  
+
 	enum class version_compare_option : std::uint8_t {
 		exclude_prerelease,
 		include_prerelease
@@ -195,12 +195,12 @@ namespace plg {
 		constexpr bool cmp_less(T t, U u) noexcept
 		{
 			if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
-	return t < u;
-  else if constexpr (std::is_signed_v<T>)
-	return t < 0 || std::make_unsigned_t<T>(t) < u;
-  else
-	return u >= 0 && t < std::make_unsigned_t<U>(u);
-}
+				return t < u;
+			else if constexpr (std::is_signed_v<T>)
+				return t < 0 || std::make_unsigned_t<T>(t) < u;
+			else
+				return u >= 0 && t < std::make_unsigned_t<U>(u);
+		}
 
 		template<class T, class U>
 		constexpr bool cmp_less_equal(T t, U u) noexcept
@@ -978,7 +978,7 @@ namespace plg {
 
 				return success(stream_.peek().lexeme);
 			}
-	
+
 		private:
 			token_stream stream_;
 
@@ -994,7 +994,7 @@ namespace plg {
 					skip_whitespaces();
 
 				} while (stream_.check(token_type::range_operator) || stream_.check(token_type::digit));
-	  
+
 				return success(stream_.peek().lexeme);
 			}
 
