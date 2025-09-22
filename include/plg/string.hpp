@@ -529,17 +529,13 @@ namespace plg {
 
 		template<std::input_iterator InputIterator>
 		constexpr basic_string(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
-			: _allocator(allocator) {
+		: _allocator(allocator) {
+			auto len = size_type(std::distance(first, last));
+			PLUGIFY_ASSERT(len <= max_size(), "constructed string size would exceed max_size()", std::length_error);
 			if constexpr (std::contiguous_iterator<InputIterator>) {
-				auto len = size_type(std::distance(first, last));
-				PLUGIFY_ASSERT(len <= max_size(), "constructed string size would exceed max_size()", std::length_error);
 				internal_assign(const_pointer(first), len);
 			} else {
-				if constexpr (std::random_access_iterator<InputIterator>) {
-					auto len = size_type(std::distance(first, last));
-					PLUGIFY_ASSERT(len <= max_size(), "constructed string size would exceed max_size()", std::length_error);
-					reserve(len);
-				}
+				reserve(len);
 				for (auto it = first; it != last; ++it) {
 					push_back(*it);
 				}
@@ -737,16 +733,12 @@ namespace plg {
 
 		template<std::input_iterator InputIterator>
 		constexpr basic_string& assign(InputIterator first, InputIterator last) {
+			auto len = size_type(std::distance(first, last));
+			PLUGIFY_ASSERT(len <= max_size(), "resulted string size would exceed max_size()", std::length_error);
 			if constexpr (std::contiguous_iterator<InputIterator>) {
-				auto len = size_type(std::distance(first, last));
-				PLUGIFY_ASSERT(len <= max_size(), "resulted string size would exceed max_size()", std::length_error);
 				internal_assign(const_pointer(first), len);
 			} else {
-				if constexpr (std::random_access_iterator<InputIterator>) {
-					auto len = size_type(std::distance(first, last));
-					PLUGIFY_ASSERT(len <= max_size(), "resulted string size would exceed max_size()", std::length_error);
-					reserve(len);
-				}
+				reserve(len);
 				for (auto it = first; it != last; ++it) {
 					push_back(*it);
 				}
