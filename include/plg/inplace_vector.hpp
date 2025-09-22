@@ -247,8 +247,9 @@ namespace plg {
 		}
 
 		template<std::input_iterator InputIterator>
-			requires std::constructible_from<T, typename std::iterator_traits<InputIt>::value_type>
-		constexpr explicit inplace_vector(InputIterator first, InputIterator last) {
+			requires std::constructible_from<T, typename std::iterator_traits<InputIterator>::value_type>
+		constexpr explicit inplace_vector(InputIterator first, InputIterator last)
+		{
 			if constexpr (std::random_access_iterator<InputIterator>) {
 				size_t n = static_cast<size_type>(std::distance(first, last));
 				PLUGIFY_ASSERT(n <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
@@ -270,20 +271,20 @@ namespace plg {
 		constexpr void assign(size_t n, const value_type& value)
 			requires std::is_copy_constructible_v<T>
 		{
-			if (n <= _size) {
+			if (n > N) {
+				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+			} else if (_size >= n) {
 				std::fill_n(data(), n, value);
 				std::destroy(data() + n, data() + _size);
-				set_size(n);
-			} else if (n > N) {
-				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
 			} else {
 				std::fill_n(data(), _size, value);
 				std::uninitialized_fill_n(data() + _size, n - _size, value);
 			}
+			set_size(n);
 		}
 
 		template<std::input_iterator InputIterator>
-			requires std::is_constructible_v<T, typename std::iterator_traits<InputIt>::value_type>
+			requires std::is_constructible_v<T, typename std::iterator_traits<InputIterator>::value_type>
 		constexpr void assign(InputIterator first, InputIterator last) {
 			size_t n = _size;
 			for (size_t i = 0; i < n; ++i) {
@@ -355,11 +356,11 @@ namespace plg {
 		constexpr void resize(size_type n)
 			requires std::is_default_constructible_v<T>
 		{
-			if (n < _size) {
+			if (n > N) {
+				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+			} else if (n < _size) {
 				std::destroy(data() + n, data() + _size);
 				set_size(n);
-			} else if (n > N) {
-				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
 			} else {
 				std::uninitialized_value_construct(data() + _size, data() + n);
 				set_size(_size + n);
@@ -369,11 +370,11 @@ namespace plg {
 		constexpr void resize(size_type n, const value_type& value)
 			requires std::is_copy_constructible_v<T>
 		{
-			if (n < _size) {
+			if (n > N) {
+				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+			} else if (n < _size) {
 				std::destroy(data() + n, data() + _size);
 				set_size(n);
-			} else if (n > N) {
-				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
 			} else {
 				std::uninitialized_fill(data() + _size, data() + n, value);
 				set_size(_size + n);
@@ -531,7 +532,7 @@ namespace plg {
 		}
 
 		template<std::input_iterator InputIterator>
-			requires (std::is_constructible_v<T, typename std::iterator_traits<InputIt>::value_type> && !std::is_const_v<T>)
+			requires (std::is_constructible_v<T, typename std::iterator_traits<InputIterator>::value_type> && !std::is_const_v<T>)
 		iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
 			auto it = iterator(pos);
 			auto oldend = end();
