@@ -561,7 +561,7 @@ namespace plg {
 		iterator erase(const_iterator first, const_iterator last) {
 			auto ifirst = iterator(first);
 			auto ilast = iterator(last);
-			auto n = ilast - ifirst;
+			auto n = static_cast<size_type>(std::distance(ifirst, ilast));
 			if (n != 0) {
 				auto oldend = end();
 	#if defined(__cpp_lib_trivially_relocatable)
