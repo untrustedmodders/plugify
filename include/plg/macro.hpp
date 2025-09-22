@@ -64,7 +64,7 @@
 #if PLUGIFY_EXCEPTIONS
 #  include <stdexcept>
 #  include <type_traits>
-#  define PLUGIFY_ASSERT(x, str, e, ...) do { if (!(x)) [[unlikely]] ::plg::throw_<e>(str __VA_OPT__(,) __VA_ARGS__); } while (0)
+#  define PLUGIFY_ASSERT(x, str, e, ...) do { if (!(x)) [[unlikely]] ::plg::throw_<e>(str, ##__VA_ARGS__); } while (0)
 #elif PLUGIFY_FALLBACK_CUSTOM
 #  include <source_location>
 #  define PLUGIFY_ASSERT(x, str, ...) do { if (!(x)) [[unlikely]] { PLUGIFY_CUSTOM_ASSERT_HANDLER((x), (str), std::source_location::current()); } } while (0)
