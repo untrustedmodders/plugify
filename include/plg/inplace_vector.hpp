@@ -219,17 +219,30 @@ namespace plg {
 		inplace_vector(const inplace_vector&) = default;
 		inplace_vector& operator=(inplace_vector&&) = default;
 		inplace_vector& operator=(const inplace_vector&) = default;
-		inplace_vector& operator=(std::initializer_list<value_type> il) { assign(il.begin(), il.end()); return *this; }
+		inplace_vector& operator=(std::initializer_list<value_type> il)
+			requires std::is_copy_constructible_v<T>
+		{
+			assign(il.begin(), il.end());
+			return *this;
+		}
 
-		constexpr inplace_vector(std::initializer_list<value_type> il) : inplace_vector(il.begin(), il.end()) { }
-		constexpr explicit inplace_vector(size_t n) {
+		constexpr inplace_vector(std::initializer_list<value_type> il)
+			requires std::copy_constructible<T> : inplace_vector(il.begin(), il.end()) { }
+		constexpr explicit inplace_vector(size_t n)
+			requires std::default_initializable<T>
+		{
 			PLUGIFY_ASSERT(n <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
 			std::uninitialized_value_construct_n(data(), n);
 			set_size(n);
 		}
-		constexpr explicit inplace_vector(size_t n, const value_type& value) { assign(n, value); }
+		constexpr explicit inplace_vector(size_t n, const value_type& value)
+			requires std::copy_constructible<T>
+		{
+			assign(n, value);
+		}
 
 		template<std::input_iterator InputIterator>
+			requires std::constructible_from<T, typename std::iterator_traits<InputIt>::value_type>
 		constexpr explicit inplace_vector(InputIterator first, InputIterator last) {
 			if constexpr (std::random_access_iterator<InputIterator>) {
 				size_t n = static_cast<size_type>(std::distance(first, last));
@@ -243,9 +256,15 @@ namespace plg {
 			}
 		}
 
-		constexpr void assign(std::initializer_list<value_type> il) { assign(il.begin(), il.end()); }
+		constexpr void assign(std::initializer_list<value_type> il)
+			requires std::is_copy_constructible_v<T>
+		{
+			assign(il.begin(), il.end());
+		}
 
-		constexpr void assign(size_t n, const value_type& value) {
+		constexpr void assign(size_t n, const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
 			if (n <= _size) {
 				std::fill_n(data(), n, value);
 				std::destroy(data() + n, data() + _size);
@@ -259,6 +278,7 @@ namespace plg {
 		}
 
 		template<std::input_iterator InputIterator>
+			requires std::is_constructible_v<T, typename std::iterator_traits<InputIt>::value_type>
 		constexpr void assign(InputIterator first, InputIterator last) {
 			size_t n = _size;
 			for (size_t i = 0; i < n; ++i) {
@@ -327,7 +347,9 @@ namespace plg {
 		constexpr const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
 		constexpr const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
-		constexpr void resize(size_type n) {
+		constexpr void resize(size_type n)
+			requires std::is_default_constructible_v<T>
+		{
 			if (n < _size) {
 				std::destroy(data() + n, data() + _size);
 				set_size(n);
@@ -339,7 +361,9 @@ namespace plg {
 			}
 		}
 
-		constexpr void resize(size_type n, const value_type& value) {
+		constexpr void resize(size_type n, const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
 			if (n < _size) {
 				std::destroy(data() + n, data() + _size);
 				set_size(n);
@@ -385,6 +409,7 @@ namespace plg {
 		// [inplace.vector.modifiers]
 
 		template<class... Args>
+			requires std::is_constructible_v<T, Args...>
 		value_type& unchecked_emplace_back(Args&&... args) {
 			// Precondition: (_size < N)
 			value_type* p = data() + _size;
@@ -392,26 +417,52 @@ namespace plg {
 			set_size(_size + 1);
 			return *p;
 		}
-		value_type& unchecked_push_back(const value_type& value) { return unchecked_emplace_back(value); }
-		value_type& unchecked_push_back(value_type&& value) { return unchecked_emplace_back(static_cast<value_type&&>(value)); }
+		value_type& unchecked_push_back(const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			return unchecked_emplace_back(value);
+		}
+		value_type& unchecked_push_back(value_type&& value)
+			requires std::is_move_constructible_v<T>
+		{
+			return unchecked_emplace_back(static_cast<value_type&&>(value));
+		}
 
 		template<class... Args>
+			requires std::is_constructible_v<T, Args...>
 		constexpr value_type* try_emplace_back(Args&&... args) {
 			if (_size == N) {
 				return nullptr;
 			}
 			return std::addressof(unchecked_emplace_back(static_cast<Args&&>(args)...));
 		}
-		constexpr value_type* try_push_back(const value_type& value) { return try_emplace_back(value); }
-		constexpr value_type* try_push_back(value_type&& value) { return try_emplace_back(static_cast<value_type&&>(value)); }
+		constexpr value_type* try_push_back(const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			return try_emplace_back(value);
+		}
+		constexpr value_type* try_push_back(value_type&& value)
+			requires std::is_move_constructible_v<T>
+		{
+			return try_emplace_back(static_cast<value_type&&>(value));
+		}
 
 		template<class... Args>
+			requires std::is_constructible_v<T, Args...>
 		value_type& emplace_back(Args&&... args) {
 			PLUGIFY_ASSERT(_size != N, "resulted vector size would exceed capacity()", std::bad_alloc);
 			return unchecked_emplace_back(static_cast<Args&&>(args)...);
 		}
-		value_type& push_back(const value_type& value) { return emplace_back(value); }
-		value_type& push_back(value_type&& value) { return emplace_back(static_cast<value_type&&>(value)); }
+		value_type& push_back(const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			return emplace_back(value);
+		}
+		value_type& push_back(value_type&& value)
+			requires std::is_move_constructible_v<T>
+		{
+			return emplace_back(static_cast<value_type&&>(value));
+		}
 
 	#if __cpp_lib_ranges >= 201911L && __cpp_lib_ranges_to_container >= 202202L
 		template<std::ranges::input_range R>
@@ -429,16 +480,27 @@ namespace plg {
 		}
 
 		template<class... Args>
+			requires std::is_constructible_v<T, Args...>
 		iterator emplace(const_iterator pos, Args&&... args) {
 			auto it = iterator(pos);
 			emplace_back(static_cast<Args&&>(args)...);
 			std::rotate(it, end() - 1, end());
 			return it;
 		}
-		iterator insert(const_iterator pos, const value_type& value) { return emplace(pos, value); }
-		iterator insert(const_iterator pos, value_type&& value) { return emplace(pos, static_cast<value_type&&>(value)); }
+		iterator insert(const_iterator pos, const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
+			return emplace(pos, value);
+		}
+		iterator insert(const_iterator pos, value_type&& value)
+			requires std::is_move_constructible_v<T>
+		{
+			return emplace(pos, static_cast<value_type&&>(value));
+		}
 
-		iterator insert(const_iterator pos, size_type n, const value_type& value) {
+		iterator insert(const_iterator pos, size_type n, const value_type& value)
+			requires std::is_copy_constructible_v<T>
+		{
 			PLUGIFY_ASSERT(N - _size >= n, "resulted vector size would exceed capacity()", std::bad_alloc);
 			auto it = iterator(pos);
 			auto oldend = end();
@@ -464,6 +526,7 @@ namespace plg {
 		}
 
 		template<std::input_iterator InputIterator>
+			requires (std::is_constructible_v<T, typename std::iterator_traits<InputIt>::value_type> && !std::is_const_v<T>)
 		iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
 			auto it = iterator(pos);
 			auto oldend = end();
@@ -539,9 +602,15 @@ namespace plg {
 		}
 	#endif // __cpp_lib_ranges >= 201911L && __cpp_lib_ranges_to_container >= 202202L
 
-		iterator insert(const_iterator pos, std::initializer_list<value_type> il) { return insert(pos, il.begin(), il.end()); }
+		iterator insert(const_iterator pos, std::initializer_list<value_type> il)
+			requires (std::is_copy_constructible_v<T> && !std::is_const_v<T>)
+		{
+			return insert(pos, il.begin(), il.end());
+		}
 
-		iterator erase(const_iterator pos) {
+		iterator erase(const_iterator pos)
+			requires (!std::is_const_v<T>)
+		{
 			auto it = iterator(pos);
 			auto oldend = end();
 	#if defined(__cpp_lib_trivially_relocatable)
@@ -558,7 +627,9 @@ namespace plg {
 			return it;
 		}
 
-		iterator erase(const_iterator first, const_iterator last) {
+		iterator erase(const_iterator first, const_iterator last)
+			requires (!std::is_const_v<T>)
+		{
 			auto ifirst = iterator(first);
 			auto ilast = iterator(last);
 			auto n = static_cast<size_type>(std::distance(ifirst, ilast));
@@ -585,6 +656,7 @@ namespace plg {
 
 		constexpr void swap(inplace_vector& b)
 			noexcept(N == 0 || (std::is_nothrow_swappable_v<T> && std::is_nothrow_move_constructible_v<T>))
+			requires (!std::is_const_v<T>)
 		{
 			auto& a = *this;
 			if (a._size < b._size) {
