@@ -286,19 +286,17 @@ namespace plg {
 		template<std::input_iterator InputIterator>
 			requires std::is_constructible_v<T, typename std::iterator_traits<InputIterator>::value_type>
 		constexpr void assign(InputIterator first, InputIterator last) {
-			size_t n = _size;
-			for (size_t i = 0; i < n; ++i) {
-				if (first == last) {
-					std::destroy(data() + i, data() + n);
-					set_size(i);
-					return;
-				}
-				(*this)[i] = *first;
-				++first;
+			const size_type n = static_cast<size_type>(std::distance(first, last));
+			if (n > N) {
+				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+			} else if (_size >= n) {
+				std::copy(first, last, data());
+				std::destroy(data() + n, data() + _size);
+			} else {
+				std::copy(first, first + _size, data());
+				std::uninitialized_copy(first + _size, last, data() + _size);
 			}
-			for (; first != last; ++first) {
-				emplace_back(*first);
-			}
+			set_size(n);
 		}
 
 	#if __cpp_lib_ranges >= 201911L && __cpp_lib_ranges_to_container >= 202202L
@@ -322,19 +320,18 @@ namespace plg {
 		constexpr void assign_range(R&& rg) {
 			auto first = std::ranges::begin(rg);
 			auto last = std::ranges::end(rg);
-			size_t n = _size;
-			for (size_t i = 0; i < n; ++i) {
-				if (first == last) {
-					std::destroy(data() + i, data() + n);
-					set_size(i);
-					return;
-				}
-				(*this)[i] = *first;
-				++first;
+			size_t n = std::ranges::size(rg);
+			if (n > N) {
+				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+			} else if (_size >= n) {
+				std::ranges::copy(first, last, data());
+				std::destroy(data() + n, data() + _size);
+			} else {
+				auto mid = std::ranges::next(first, _size, last);
+				std::ranges::copy(first, mid, data());
+				std::ranges::uninitialized_copy(mid, last, data() + _size);
 			}
-			for (; first != last; ++first) {
-				emplace_back(*first);
-			}
+			set_size(n);
 		}
 	#endif // __cpp_lib_ranges >= 201911L && __cpp_lib_ranges_to_container >= 202202L
 
