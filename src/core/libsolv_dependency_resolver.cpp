@@ -63,8 +63,8 @@ void LibsolvDependencyResolver::InitializePool() {
 }
 
 void LibsolvDependencyResolver::AddExtensionsToPool(std::span<const Extension> extensions) {
-	//_extensionToSolvableId.reserve(extensions.size());
-	//_solvableIdToExtension.reserve(extensions.size());
+	_extensionToSolvableId.reserve(extensions.size());
+	_solvableIdToExtension.reserve(extensions.size());
 
 	for (const auto& extension : extensions) {
 		const auto& id = extension.GetId();
@@ -368,8 +368,8 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 
 	size_t count = static_cast<size_t>(trans->steps.count);
 	resolution.loadOrder.reserve(count);
-	// resolution.dependencyGraph.reserve(count);
-	// resolution.reverseDependencyGraph.reserve(count);
+	resolution.dependencyGraph.reserve(count);
+	resolution.reverseDependencyGraph.reserve(count);
 
 	// Get installed extensions from transaction
 	for (size_t i = 0; i < count; i++) {

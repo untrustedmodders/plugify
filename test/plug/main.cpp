@@ -499,7 +499,7 @@ namespace {
 		size_t score = 100;  // 0-100
 		std::vector<std::string> issues;
 		std::vector<std::string> warnings;
-		std::flat_map<std::string, size_t> statistics;
+		std::map<std::string, size_t> statistics;
 	};
 
 	HealthReport CalculateSystemHealth(const Manager& manager) {

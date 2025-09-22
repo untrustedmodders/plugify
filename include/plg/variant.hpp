@@ -186,7 +186,6 @@ namespace plg {
 
 		template<>
 		struct node_trait<true> {
-
 			template<class A, class B>
 			static constexpr auto elem_size = not(std::is_same_v<B, dummy_type>) ? 2 : 1;
 

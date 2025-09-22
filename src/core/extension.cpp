@@ -23,7 +23,7 @@ struct Extension::Impl {
 
 	// Timing
 	struct Timings {
-		std::flat_map<ExtensionState, std::chrono::milliseconds> timepoints;
+		std::map<ExtensionState, std::chrono::milliseconds> timepoints;
 		std::chrono::steady_clock::time_point lastOperationStart;
 
 		std::chrono::milliseconds GetTotalTime() const {

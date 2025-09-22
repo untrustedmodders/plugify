@@ -37,11 +37,11 @@ namespace plugify {
 	 */
 	struct ResolutionReport {
 		// Main report data
-		std::flat_map<UniqueId, std::vector<DependencyIssue>> issues;
+		std::unordered_map<UniqueId, std::vector<DependencyIssue>> issues;
 
 		// Dependency graph
-		std::flat_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
-		std::flat_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping
+		std::unordered_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
+		std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping
 		                                                                        // dependents
 
 		// Load order

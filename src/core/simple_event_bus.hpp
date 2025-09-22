@@ -52,8 +52,8 @@ namespace plugify {
 			std::string,
 			std::vector<std::pair<SubscriptionId, EventHandler>>,
 			plg::case_insensitive_hash,
-			plg::case_insensitive_equal>
-			_handlers;
+			plg::case_insensitive_equal
+		> _handlers;
 		SubscriptionId _nextId = 1;
 	};
 }

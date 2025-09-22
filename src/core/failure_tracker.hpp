@@ -25,7 +25,7 @@ namespace plugify {
 
 		bool HasAnyDependencyFailed(
 			const Extension& ext,
-			const std::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps
+			const std::unordered_map<UniqueId, std::vector<UniqueId>>& reverseDeps
 		) const {
 			std::shared_lock lock(_mutex);
 
@@ -42,7 +42,7 @@ namespace plugify {
 
 		std::string GetFailedDependencyName(
 			const Extension& ext,
-			const std::flat_map<UniqueId, std::vector<UniqueId>>& reverseDeps
+			const std::unordered_map<UniqueId, std::vector<UniqueId>>& reverseDeps
 		) const {
 			std::shared_lock lock(_mutex);
 

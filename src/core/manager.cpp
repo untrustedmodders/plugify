@@ -52,8 +52,8 @@ struct Manager::Impl {
 
 	// Dependency graphs (filled by resolution stage)
 	std::vector<UniqueId> loadOrder;
-	std::flat_map<UniqueId, std::vector<UniqueId>> depGraph;
-	std::flat_map<UniqueId, std::vector<UniqueId>> reverseDepGraph;
+	std::unordered_map<UniqueId, std::vector<UniqueId>> depGraph;
+	std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDepGraph;
 
 public:
 	Result<void> Initialize() {
