@@ -236,7 +236,9 @@ namespace plg {
 		constexpr explicit inplace_vector(size_t n)
 			requires std::default_initializable<T>
 		{
-			PLUGIFY_ASSERT(n <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
+			if (n > N) {
+				PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+			}
 			std::uninitialized_value_construct_n(data(), n);
 			set_size(n);
 		}
@@ -252,7 +254,9 @@ namespace plg {
 		{
 			if constexpr (std::random_access_iterator<InputIterator>) {
 				size_t n = static_cast<size_type>(std::distance(first, last));
-				PLUGIFY_ASSERT(n <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
+				if (n > N) {
+					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+				}
 				std::uninitialized_copy_n(first, n, data());
 				set_size(n);
 			} else {
@@ -272,7 +276,7 @@ namespace plg {
 			requires std::is_copy_constructible_v<T>
 		{
 			if (n > N) {
-				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
 			} else if (_size >= n) {
 				std::fill_n(data(), n, value);
 				std::destroy(data() + n, data() + _size);
@@ -288,7 +292,7 @@ namespace plg {
 		constexpr void assign(InputIterator first, InputIterator last) {
 			const size_type n = static_cast<size_type>(std::distance(first, last));
 			if (n > N) {
-				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
 			} else if (_size >= n) {
 				std::copy(first, last, data());
 				std::destroy(data() + n, data() + _size);
@@ -305,7 +309,9 @@ namespace plg {
 		constexpr explicit inplace_vector(std::from_range_t, R&& rg) {
 			if constexpr (std::ranges::sized_range<R>) {
 				size_t n = std::ranges::size(rg);
-				PLUGIFY_ASSERT(n <= N, "resulted vector size would exceed capacity()", std::bad_alloc);
+				if (n > N) {
+					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+				}
 				std::ranges::uninitialized_copy_n(std::ranges::begin(rg), n, data(), std::unreachable_sentinel);
 				set_size(n);
 			} else {
@@ -322,7 +328,7 @@ namespace plg {
 			auto last = std::ranges::end(rg);
 			size_t n = std::ranges::size(rg);
 			if (n > N) {
-				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
 			} else if (_size >= n) {
 				std::ranges::copy(first, last, data());
 				std::destroy(data() + n, data() + _size);
@@ -354,7 +360,7 @@ namespace plg {
 			requires std::is_default_constructible_v<T>
 		{
 			if (n > N) {
-				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
 			} else if (n < _size) {
 				std::destroy(data() + n, data() + _size);
 				set_size(n);
@@ -368,7 +374,7 @@ namespace plg {
 			requires std::is_copy_constructible_v<T>
 		{
 			if (n > N) {
-				PLUGIFY_ASSERT(false, "memory size would exceed capacity()", std::bad_alloc);
+				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
 			} else if (n < _size) {
 				std::destroy(data() + n, data() + _size);
 				set_size(n);
@@ -378,25 +384,51 @@ namespace plg {
 			}
 		}
 
-		static constexpr void reserve(size_type n) { PLUGIFY_ASSERT(n <= N, "resulted vector size would exceed capacity()", std::bad_alloc); }
+		static constexpr void reserve(size_type n) {
+			if (n > N) {
+				PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+			}
+		}
 		static constexpr void shrink_to_fit() noexcept {}
 
 		// element access
 
-		constexpr reference operator[](size_type i) { return data()[i]; }
-		constexpr reference front() { return data()[0]; }
-		constexpr reference back() { return data()[_size - 1]; }
+		constexpr reference operator[](size_type pos) {
+			assert(pos < size() && "index out of bounds");
+			return data()[pos];
+		}
+		constexpr reference front() {
+			assert(!empty() && "called on an empty vector");
+			return data()[0];
+		}
+		constexpr reference back() {
+			assert(!empty() && "called on an empty vector");
+			return data()[_size - 1];
+		}
 
-		constexpr const_reference operator[](size_type i) const { return data()[i]; }
-		constexpr const_reference front() const { return data()[0]; }
-		constexpr const_reference back() const { return data()[_size - 1]; }
+		constexpr const_reference operator[](size_type pos) const {
+			assert(pos < size() && "index out of bounds");
+			return data()[pos];
+		}
+		constexpr const_reference front() const {
+			assert(!empty() && "called on an empty vector");
+			return data()[0];
+		}
+		constexpr const_reference back() const {
+			assert(!empty() && "called on an empty vector");
+			return data()[_size - 1];
+		}
 
 		constexpr reference at(size_type i) {
-			PLUGIFY_ASSERT(i < _size, "input index is out of bounds", std::out_of_range);
+			if (i >= _size) {
+				PLUGIFY_THROW("input index is out of bounds", std::out_of_range);
+			}
 			return data()[i];
 		}
 		constexpr const_reference at(size_type i) const {
-			PLUGIFY_ASSERT(i < _size, "input index is out of bounds", std::out_of_range);
+			if (i >= _size) {
+				PLUGIFY_THROW("input index is out of bounds", std::out_of_range);
+			}
 			return data()[i];
 		}
 
@@ -453,7 +485,9 @@ namespace plg {
 		template<class... Args>
 			requires std::is_constructible_v<T, Args...>
 		value_type& emplace_back(Args&&... args) {
-			PLUGIFY_ASSERT(_size != N, "resulted vector size would exceed capacity()", std::bad_alloc);
+			if (_size == N) {
+				PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+			}
 			return unchecked_emplace_back(static_cast<Args&&>(args)...);
 		}
 		value_type& push_back(const value_type& value)
@@ -504,7 +538,9 @@ namespace plg {
 		iterator insert(const_iterator pos, size_type n, const value_type& value)
 			requires std::is_copy_constructible_v<T>
 		{
-			PLUGIFY_ASSERT(N - _size >= n, "resulted vector size would exceed capacity()", std::bad_alloc);
+			if (N - _size < n) {
+				PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+			}
 			auto it = iterator(pos);
 			auto oldend = end();
 	#if defined(__cpp_lib_trivially_relocatable)
@@ -535,7 +571,9 @@ namespace plg {
 			auto oldend = end();
 			if constexpr (std::random_access_iterator<InputIterator>) {
 				size_type n = static_cast<size_type>(std::distance(first, last));
-				PLUGIFY_ASSERT(N - _size >= n, "resulted vector size would exceed capacity()", std::bad_alloc);
+				if (N - _size < n) {
+					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+				}
 	#if defined(__cpp_lib_trivially_relocatable)
 				// Open a window and fill in-place; if filling fails, close the window again.
 				if constexpr (std::is_trivially_relocatable_v<value_type>) {
@@ -572,7 +610,9 @@ namespace plg {
 			auto oldend = end();
 			if constexpr (std::ranges::sized_range<R>) {
 				size_type n = std::ranges::size(rg);
-				PLUGIFY_ASSERT(N - _size >= n, "resulted vector size would exceed capacity()", std::bad_alloc);
+				if (N - _size < n) {
+					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+				}
 	#if defined(__cpp_lib_trivially_relocatable)
 				// Open a window and fill in-place; if filling fails, close the window again.
 				if constexpr (std::is_trivially_relocatable_v<value_type>) {
@@ -595,7 +635,7 @@ namespace plg {
 				auto [rgend, newend] = std::ranges::uninitialized_copy(rg, std::ranges::subrange(oldend, data() + N));
 				if (rgend != std::ranges::end(rg)) {
 					std::destroy(oldend, newend);
-					PLUGIFY_ASSERT(false, "resulted vector size would exceed capacity()", std::bad_alloc);
+					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
 				} else {
 					set_size(newend - data());
 					std::rotate(it, oldend, newend);
@@ -696,8 +736,8 @@ namespace plg {
 		}
 	#else
 		constexpr friend bool operator<(const inplace_vector& a, const inplace_vector& b) {
-			const T *adata = a.data();
-			const T *bdata = b.data();
+			const T* adata = a.data();
+			const T* bdata = b.data();
 			size_t n = (a._size < b._size) ? a._size : b._size;
 			for (size_t i = 0; i < n; ++i) {
 				if (adata[i] < bdata[i]) {

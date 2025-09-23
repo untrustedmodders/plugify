@@ -52,8 +52,10 @@ namespace plg {
 			static_assert((alignof(T) & (alignof(T) - 1)) == 0, "alignof(T) must be a power of 2");
 
 			if (n > max_size()) [[unlikely]] {
-				PLUGIFY_ASSERT(n <= static_cast<size_type>(-1) / sizeof(T), "bad array new length", std::bad_array_new_length);
-				PLUGIFY_ASSERT(n <= max_size(), "too big", std::bad_alloc);
+				if (n > static_cast<size_type>(-1) / sizeof(T)) {
+					PLUGIFY_THROW("bad array new length", std::bad_array_new_length);
+				}
+				PLUGIFY_THROW("too big", std::bad_alloc);
 			}
 
 			pointer ret;
@@ -68,7 +70,9 @@ namespace plg {
 					ret = static_cast<T*>(std::malloc(size));
 				}
 
-				PLUGIFY_ASSERT(ret, "bad allocation", std::bad_alloc);
+				if (!ret) {
+					PLUGIFY_THROW("bad allocation", std::bad_alloc);
+				}
 			}
 
 			return ret;

@@ -20,63 +20,28 @@
 #  include <version>
 #endif
 
-#define PLUGIFY_HAS_EXCEPTIONS (__cpp_exceptions || __EXCEPTIONS || _HAS_EXCEPTIONS)
-
-#ifndef PLUGIFY_EXCEPTIONS
-#  if PLUGIFY_HAS_EXCEPTIONS
-#    define PLUGIFY_EXCEPTIONS 1
-#  else
-#    define PLUGIFY_EXCEPTIONS 0
-#  endif
+#if __has_include(<cassert>)
+#  include <cassert>
 #endif
 
-#if PLUGIFY_EXCEPTIONS && (!PLUGIFY_HAS_EXCEPTIONS || !__has_include(<stdexcept>))
-#  undef PLUGIFY_EXCEPTIONS
-#  define PLUGIFY_EXCEPTIONS 0
-#endif
-
-#ifdef PLUGIFY_CUSTOM_ASSERT_HANDLER
-#  define PLUGIFY_FALLBACK_CUSTOM 1
-#endif
-
-#ifndef PLUGIFY_FALLBACK_ASSERT
-#  define PLUGIFY_FALLBACK_ASSERT 1
-#endif
-
-#if PLUGIFY_FALLBACK_ASSERT && !__has_include(<cassert>)
-#  undef PLUGIFY_FALLBACK_ASSERT
-#  define PLUGIFY_FALLBACK_ASSERT 0
-#endif
-
-#ifndef PLUGIFY_FALLBACK_ABORT
-#  define PLUGIFY_FALLBACK_ABORT 1
-#endif
-
-#if PLUGIFY_FALLBACK_ABORT && !__has_include(<cstdlib>)
-#  undef PLUGIFY_FALLBACK_ABORT
-#  define PLUGIFY_FALLBACK_ABORT 0
-#endif
-
-#ifndef PLUGIFY_FALLBACK_ABORT_FUNCTION
-#  define PLUGIFY_FALLBACK_ABORT_FUNCTION [] (auto) { }
-#endif
-
-#if PLUGIFY_EXCEPTIONS
+#ifdef __cpp_exceptions
 #  include <stdexcept>
 #  include <type_traits>
-#  define PLUGIFY_ASSERT(x, str, e, ...) do { if (!(x)) [[unlikely]] ::plg::throw_<e>(str, ##__VA_ARGS__); } while (0)
-#elif PLUGIFY_FALLBACK_CUSTOM
-#  include <source_location>
-#  define PLUGIFY_ASSERT(x, str, ...) do { if (!(x)) [[unlikely]] { PLUGIFY_CUSTOM_ASSERT_HANDLER((x), (str), std::source_location::current()); } } while (0)
-#elif PLUGIFY_FALLBACK_ASSERT && !NDEBUG
-#  include <cassert>
-#  define PLUGIFY_ASSERT(x, str, ...) assert((x) && (str))
-#elif PLUGIFY_FALLBACK_ABORT
+namespace plg {
+	template<typename E, typename... Args>
+	[[noreturn]] constexpr void throw_exception(const char* msg, Args...args) {
+		if constexpr (std::is_constructible_v<E, const char*>) {
+			throw E(msg);
+		} else {
+			throw E(std::forward<Args>(args)...);
+		}
+	}
+} // namespace plg
+#  define PLUGIFY_THROW(str, e, ...) ::plg::throw_exception<e>(str, ##__VA_ARGS__);
+#else
 #  include <cstdlib>
 #  include <cstdio>
-#  define PLUGIFY_ASSERT(x, str, ...) do { if (!(x)) [[unlikely]] { std::puts((str), stderr); std::abort(); } } while (0)
-#else
-#  define PLUGIFY_ASSERT(x, str, ...) do { if (!(x)) [[unlikely]] { PLUGIFY_FALLBACK_ABORT_FUNCTION (str); { while (true) { [] { } (); } } } } while (0)
+#  define PLUGIFY_THROW(str, ...) { std::fputs(str "\n", stderr); std::abort(); }
 #endif
 
 #  define PLUGIFY_COMPILER_MAKE_VERSION2(version, sp)         ((version) * 100 + (sp))
@@ -280,19 +245,6 @@
 #  define PLUGIFY_RESTRICT __restrict
 #else
 #  define PLUGIFY_RESTRICT
-#endif
-
-#if PLUGIFY_EXCEPTIONS
-namespace plg {
-	template<typename E, typename... Args>
-	[[noreturn]] PLUGIFY_FORCE_INLINE constexpr void throw_(const char* msg, Args...args) {
-		if constexpr (std::is_constructible_v<E, const char*>) {
-			throw E(msg);
-		} else {
-			throw E(std::forward<Args>(args)...);
-		}
-	}
-}
 #endif
 
 #ifndef PLUGIFY_PLATFORM_WINDOWS

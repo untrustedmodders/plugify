@@ -5,7 +5,6 @@
 #include <utility> // swap
 #include <limits> // used for index_type
 #include <initializer_list>
-#include <cassert>
 
 #ifndef PLUGIFY_VARIANT_NO_CONSTEXPR_EMPLACE
 #  include <memory>
@@ -24,7 +23,7 @@
 
 // from https://github.com/groundswellaudio/swl-variant
 namespace plg {
-#if PLUGIFY_EXCEPTIONS
+#ifdef __cpp_exceptions
 	class bad_variant_access : public std::exception {
 		const char* message = ""; // llvm test requires a well formed what() on default init
 		public :
@@ -34,7 +33,7 @@ namespace plg {
 		bad_variant_access& operator=(const bad_variant_access&) noexcept = default;
 		const char* what() const noexcept override { return message; }
 	};
-#endif // PLUGIFY_EXCEPTIONS
+#endif // __cpp_exceptions
 
 	namespace detail {
 		//struct variant_tag{};
@@ -981,7 +980,9 @@ namespace plg {
 	template<std::size_t Idx, class... Ts>
 	constexpr auto& get(variant<Ts...>& v) {
 		static_assert(Idx < sizeof...(Ts), "Index exceeds the variant size. ");
-		PLUGIFY_ASSERT(v.index() == Idx, "bad variant access in get", bad_variant_access);
+		if (v.index() != Idx) {
+			PLUGIFY_THROW("bad variant access in get", bad_variant_access);
+		}
 		return (v.template unsafe_get<Idx>());
 	}
 
@@ -1060,8 +1061,9 @@ namespace plg {
 	template<class Fn, class... Vs>
 	constexpr decltype(auto) visit(Fn&& fn, Vs&&... vs) {
 		if constexpr ((std::decay_t<Vs>::can_be_valueless || ...))
-			PLUGIFY_ASSERT(!(vs.valueless_by_exception() || ...), "bad variant access in visit", bad_variant_access);
-
+			if ((vs.valueless_by_exception() || ...)) {
+				PLUGIFY_THROW("bad variant access in visit", bad_variant_access);
+			}
 		if constexpr (sizeof...(Vs) == 1)
 			return detail::visit(PLG_FWD(fn), PLG_FWD(vs)...);
 		else
