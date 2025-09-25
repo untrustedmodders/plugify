@@ -22,7 +22,7 @@ namespace plugify {
 
 	asmjit::CallConvId GetCallConvId(CallConv callConv) noexcept;
 
-	class SimpleErrorHandler : public asmjit::ErrorHandler {
+	class SimpleErrorHandler final : public asmjit::ErrorHandler {
 	public:
 		void handle_error(
 			asmjit::Error err,

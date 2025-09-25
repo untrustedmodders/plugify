@@ -19,13 +19,13 @@
 #endif
 
 namespace plg {
-	template <detail::is_string_like First>
-	PLUGIFY_FORCE_INLINE void print(First&& first) {
+	template <string_like First>
+	void print(First&& first) {
 		std::cout << first << std::endl;
 	}
 
 	template <typename... Args>
-	PLUGIFY_FORCE_INLINE void print(std::format_string<Args...> fmt, Args&&... args) {
+	void print(std::format_string<Args...> fmt, Args&&... args) {
 		std::cout << std::format(fmt, std::forward<Args>(args)...) << std::endl;
 	}
 }

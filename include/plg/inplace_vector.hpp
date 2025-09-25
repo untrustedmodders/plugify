@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plg/macro.hpp"
+#include "plg/config.hpp"
 
 #if __has_include(<inplace_vector>)
 #include <inplace_vector>
@@ -75,7 +75,7 @@ namespace plg {
 			};
 
 			constexpr T *base_data() { return _data; }
-		constexpr const T *base_data() const { return _data; }
+			constexpr const T *base_data() const { return _data; }
 			constexpr void set_size(size_t n) { _size = n; }
 
 			constexpr explicit ipvbase() noexcept {}
@@ -184,7 +184,7 @@ namespace plg {
 			};
 			constexpr explicit ipvbase_trivial() {}
 			constexpr T *base_data() { return _data; }
-		constexpr const T *base_data() const { return _data; }
+			constexpr const T *base_data() const { return _data; }
 			constexpr void set_size(size_t n) { _size = n; }
 		};
 
@@ -237,7 +237,7 @@ namespace plg {
 			requires std::default_initializable<T>
 		{
 			if (n > N) {
-				PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			}
 			std::uninitialized_value_construct_n(data(), n);
 			set_size(n);
@@ -255,7 +255,7 @@ namespace plg {
 			if constexpr (std::random_access_iterator<InputIterator>) {
 				size_t n = static_cast<size_type>(std::distance(first, last));
 				if (n > N) {
-					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+					throw_bad_alloc();
 				}
 				std::uninitialized_copy_n(first, n, data());
 				set_size(n);
@@ -276,7 +276,7 @@ namespace plg {
 			requires std::is_copy_constructible_v<T>
 		{
 			if (n > N) {
-				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			} else if (_size >= n) {
 				std::fill_n(data(), n, value);
 				std::destroy(data() + n, data() + _size);
@@ -292,7 +292,7 @@ namespace plg {
 		constexpr void assign(InputIterator first, InputIterator last) {
 			const size_type n = static_cast<size_type>(std::distance(first, last));
 			if (n > N) {
-				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			} else if (_size >= n) {
 				std::copy(first, last, data());
 				std::destroy(data() + n, data() + _size);
@@ -310,7 +310,7 @@ namespace plg {
 			if constexpr (std::ranges::sized_range<R>) {
 				size_t n = std::ranges::size(rg);
 				if (n > N) {
-					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+					throw_bad_alloc();
 				}
 				std::ranges::uninitialized_copy_n(std::ranges::begin(rg), n, data(), std::unreachable_sentinel);
 				set_size(n);
@@ -328,7 +328,7 @@ namespace plg {
 			auto last = std::ranges::end(rg);
 			size_t n = std::ranges::size(rg);
 			if (n > N) {
-				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			} else if (_size >= n) {
 				std::ranges::copy(first, last, data());
 				std::destroy(data() + n, data() + _size);
@@ -360,7 +360,7 @@ namespace plg {
 			requires std::is_default_constructible_v<T>
 		{
 			if (n > N) {
-				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			} else if (n < _size) {
 				std::destroy(data() + n, data() + _size);
 				set_size(n);
@@ -374,7 +374,7 @@ namespace plg {
 			requires std::is_copy_constructible_v<T>
 		{
 			if (n > N) {
-				PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			} else if (n < _size) {
 				std::destroy(data() + n, data() + _size);
 				set_size(n);
@@ -386,7 +386,7 @@ namespace plg {
 
 		static constexpr void reserve(size_type n) {
 			if (n > N) {
-				PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			}
 		}
 		static constexpr void shrink_to_fit() noexcept {}
@@ -394,40 +394,40 @@ namespace plg {
 		// element access
 
 		constexpr reference operator[](size_type pos) {
-			assert(pos < size() && "index out of bounds");
+			PLUGIFY_ASSERT(pos < size(), "index out of bounds");
 			return data()[pos];
 		}
 		constexpr reference front() {
-			assert(!empty() && "called on an empty vector");
+			PLUGIFY_ASSERT(!empty(), "called on an empty vector");
 			return data()[0];
 		}
 		constexpr reference back() {
-			assert(!empty() && "called on an empty vector");
+			PLUGIFY_ASSERT(!empty(), "called on an empty vector");
 			return data()[_size - 1];
 		}
 
 		constexpr const_reference operator[](size_type pos) const {
-			assert(pos < size() && "index out of bounds");
+			PLUGIFY_ASSERT(pos < size(), "index out of bounds");
 			return data()[pos];
 		}
 		constexpr const_reference front() const {
-			assert(!empty() && "called on an empty vector");
+			PLUGIFY_ASSERT(!empty(), "called on an empty vector");
 			return data()[0];
 		}
 		constexpr const_reference back() const {
-			assert(!empty() && "called on an empty vector");
+			PLUGIFY_ASSERT(!empty(), "called on an empty vector");
 			return data()[_size - 1];
 		}
 
 		constexpr reference at(size_type i) {
 			if (i >= _size) {
-				PLUGIFY_THROW("input index is out of bounds", std::out_of_range);
+				throw_out_of_range();
 			}
 			return data()[i];
 		}
 		constexpr const_reference at(size_type i) const {
 			if (i >= _size) {
-				PLUGIFY_THROW("input index is out of bounds", std::out_of_range);
+				throw_out_of_range();
 			}
 			return data()[i];
 		}
@@ -486,7 +486,7 @@ namespace plg {
 			requires std::is_constructible_v<T, Args...>
 		value_type& emplace_back(Args&&... args) {
 			if (_size == N) {
-				PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			}
 			return unchecked_emplace_back(static_cast<Args&&>(args)...);
 		}
@@ -539,7 +539,7 @@ namespace plg {
 			requires std::is_copy_constructible_v<T>
 		{
 			if (N - _size < n) {
-				PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+				throw_bad_alloc();
 			}
 			auto it = iterator(pos);
 			auto oldend = end();
@@ -572,7 +572,7 @@ namespace plg {
 			if constexpr (std::random_access_iterator<InputIterator>) {
 				size_type n = static_cast<size_type>(std::distance(first, last));
 				if (N - _size < n) {
-					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+					throw_bad_alloc();
 				}
 	#if defined(__cpp_lib_trivially_relocatable)
 				// Open a window and fill in-place; if filling fails, close the window again.
@@ -611,7 +611,7 @@ namespace plg {
 			if constexpr (std::ranges::sized_range<R>) {
 				size_type n = std::ranges::size(rg);
 				if (N - _size < n) {
-					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+					throw_bad_alloc();
 				}
 	#if defined(__cpp_lib_trivially_relocatable)
 				// Open a window and fill in-place; if filling fails, close the window again.
@@ -635,7 +635,7 @@ namespace plg {
 				auto [rgend, newend] = std::ranges::uninitialized_copy(rg, std::ranges::subrange(oldend, data() + N));
 				if (rgend != std::ranges::end(rg)) {
 					std::destroy(oldend, newend);
-					PLUGIFY_THROW("resulted vector size would exceed capacity()", std::bad_alloc);
+					throw_bad_alloc();
 				} else {
 					set_size(newend - data());
 					std::rotate(it, oldend, newend);
@@ -753,6 +753,15 @@ namespace plg {
 		constexpr friend bool operator>=(const inplace_vector& a, const inplace_vector& b) { return !(a < b); }
 		constexpr friend bool operator!=(const inplace_vector& a, const inplace_vector& b) { return !(a == b); }
 	#endif
+
+	private:
+		[[noreturn]] static void throw_bad_alloc() {
+			PLUGIFY_THROW("memory size would exceed capacity()", std::bad_alloc);
+		}
+
+		[[noreturn]] static void throw_out_of_range() {
+			PLUGIFY_THROW("input index is out of bounds", std::out_of_range);
+		}
 	};
 } // namespace plg
 

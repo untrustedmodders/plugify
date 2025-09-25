@@ -301,7 +301,7 @@ namespace plugify {
         }
     };
 
-    class GlazeConfigProvider : public IConfigProvider {
+    class GlazeConfigProvider final : public IConfigProvider {
     public:
         GlazeConfigProvider() = default;
         ~GlazeConfigProvider() = default;

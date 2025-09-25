@@ -16,7 +16,7 @@ TEST_CASE("string operation > clear", "[string]") {
 		  b.clear();
 		  REQUIRE(b.empty());
 		  REQUIRE(b.size() == 0);
-		  REQUIRE(b.capacity() == 32);
+		  REQUIRE(b.capacity() == 39);
 	 }
 
 }

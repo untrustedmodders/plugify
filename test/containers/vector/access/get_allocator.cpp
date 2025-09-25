@@ -15,7 +15,7 @@ TEST_CASE("vector access > get_allocator", "[vector]") {
 		REQUIRE(alloc_type{ } == v.get_allocator());
 
 		alloc_type alloc;
-		plg::vector<short, alloc_type> w(alloc);
+		plg::vector<int, alloc_type> w(alloc);
 
 		REQUIRE(w.empty());
 		REQUIRE(alloc == w.get_allocator());

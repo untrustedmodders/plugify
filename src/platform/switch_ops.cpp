@@ -7,7 +7,7 @@
 #include "plugify/platform_ops.hpp"
 
 namespace plugify {
-	class SwitchPlatformOps : public IPlatformOps {
+	class SwitchPlatformOps final : public IPlatformOps {
 	private:
 		struct NroHandle {
 			nn::ro::Module module{};

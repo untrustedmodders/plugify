@@ -19,7 +19,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += b;
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -41,7 +41,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += a;
 				REQUIRE(a == "tatatatatatatatatatatattatatatatatatatatatatat");
 				REQUIRE(a.size() == 46);
-				REQUIRE(a.capacity() == 46);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -49,7 +49,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += b;
 				REQUIRE(a == "tatalonglonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 36);
-				REQUIRE(a.capacity() == 36);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a;
@@ -57,7 +57,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += b;
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
@@ -65,7 +65,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += b;
 				REQUIRE(a == "longlonglonglonglonglonglonglongtotototototototototototototototo");
 				REQUIRE(a.size() == 64);
-				REQUIRE(a.capacity() == 64);
+				REQUIRE(a.capacity() == 79);
 		  }
 	 }
 
@@ -99,19 +99,19 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += 'b';
 				REQUIRE(a == "tototototototototototoab");
 				REQUIRE(a.size() == 24);
-				REQUIRE(a.capacity() == 24);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong"};
 				a += 'a';
 				REQUIRE(a == "longlonglonglonglonglonglonglonga");
 				REQUIRE(a.size() == 33);
-				REQUIRE(a.capacity() == 33);
+				REQUIRE(a.capacity() == 39);
 				a += 'b';
 				REQUIRE(a == "longlonglonglonglonglonglonglongab");
 				REQUIRE(a.size() == 34);
-			a.reserve(64);
-				REQUIRE(a.capacity() == 64);
+				a.reserve(64);
+				REQUIRE(a.capacity() == 71);
 		  }
 	 }
 
@@ -128,7 +128,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += "longlonglonglonglonglonglonglong";
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -142,28 +142,28 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += "longlonglonglonglonglonglonglong";
 				REQUIRE(a == "tatalonglonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 36);
-				REQUIRE(a.capacity() == 36);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a;
 				a += "longlonglonglonglonglonglonglong";
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
 				a += "totototototototototototototototo";
 				REQUIRE(a == "longlonglonglonglonglonglonglongtotototototototototototototototo");
 				REQUIRE(a.size() == 64);
-				REQUIRE(a.capacity() == 64);
+				REQUIRE(a.capacity() == 79);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
 				a += "\0tototototototototototototototot";
 				REQUIRE(a == plg::string{"longlonglonglonglonglonglonglong", 32});
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 39);
 		  }
 	 }
 
@@ -180,14 +180,14 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += {'a', 'b', 'c', 'd'};
 				REQUIRE(a == "totototototototototoabcd");
 				REQUIRE(a.size() == 24);
-				REQUIRE(a.capacity() == 24);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
 				a += {'a', 'b', 'c', 'd'};
 				REQUIRE(a == "longlonglonglonglonglonglonglongabcd");
 				REQUIRE(a.size() == 36);
-				REQUIRE(a.capacity() == 36);
+				REQUIRE(a.capacity() == 39);
 		  }
 	 }
 
@@ -206,7 +206,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += b;
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -222,7 +222,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += b;
 				REQUIRE(a == "tatalonglonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 36);
-				REQUIRE(a.capacity() == 36);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a;
@@ -230,7 +230,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += b;
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
@@ -238,7 +238,7 @@ TEST_CASE("string operator > assignment > addition", "[string]") {
 				a += b;
 				REQUIRE(a == "longlonglonglonglonglonglonglongtotototototototototototototototo");
 				REQUIRE(a.size() == 64);
-				REQUIRE(a.capacity() == 64);
+				REQUIRE(a.capacity() == 79);
 		  }
 	 }
 

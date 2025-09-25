@@ -49,7 +49,7 @@ TEST_CASE("string constructor", "[string]") {
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b == "longlonglonglonglonglonglong");
 				REQUIRE(b.size() == 28);
-				REQUIRE(b.capacity() == 28);
+				REQUIRE(b.capacity() == 31);
 		  }
 	 }
 
@@ -86,7 +86,7 @@ TEST_CASE("string constructor", "[string]") {
 				plg::string a(24, 'a');
 				REQUIRE_FALSE(a.empty());
 				REQUIRE(a.size() == 24);
-				REQUIRE(a.capacity() == 24);
+				REQUIRE(a.capacity() == 31);
 				REQUIRE(a == "aaaaaaaaaaaaaaaaaaaaaaaa");
 		  }
 	 }
@@ -130,7 +130,7 @@ TEST_CASE("string constructor", "[string]") {
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b == "longlonglonglonglonglong");
 				REQUIRE(b.size() == 24);
-				REQUIRE(b.capacity() == 24);
+				REQUIRE(b.capacity() == 31);
 		  }
 	 }
 
@@ -145,7 +145,7 @@ TEST_CASE("string constructor", "[string]") {
 		  plg::string b{"longlonglonglonglonglonglonglong", 32};
 		  REQUIRE_FALSE(b.empty());
 		  REQUIRE(b.size() == 32);
-		  REQUIRE(b.capacity() == 32);
+		  REQUIRE(b.capacity() == 39);
 		  REQUIRE(b[0] == 'l');
 		  REQUIRE(b[31] == 'g');
 
@@ -170,7 +170,7 @@ TEST_CASE("string constructor", "[string]") {
 		  plg::string const d{c};
 		  REQUIRE_FALSE(d.empty());
 		  REQUIRE(d.size() == 32);
-		  REQUIRE(d.capacity() == 32);
+		  REQUIRE(d.capacity() == 39);
 		  REQUIRE(d[0] == 'l');
 		  REQUIRE(d[31] == 'g');
 		  REQUIRE(c[0] == 'l');
@@ -193,7 +193,7 @@ TEST_CASE("string constructor", "[string]") {
 		  plg::string const d{std::move(c)};
 		  REQUIRE_FALSE(d.empty());
 		  REQUIRE(d.size() == 32);
-		  REQUIRE(d.capacity() == 32);
+		  REQUIRE(d.capacity() == 39);
 		  REQUIRE(d[0] == 'l');
 		  REQUIRE(d[31] == 'g');
 		  REQUIRE(c.empty());
@@ -216,7 +216,7 @@ TEST_CASE("string constructor", "[string]") {
 				plg::string a{&data[0], &data[0] + 32};
 				REQUIRE_FALSE(a.empty());
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 39);
 				REQUIRE(a[0] == 'l');
 				REQUIRE(a[31] == 'g');
 		  }

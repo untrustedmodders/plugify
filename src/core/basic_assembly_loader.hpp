@@ -5,10 +5,9 @@
 #include "plugify/file_system.hpp"
 
 #include "core/basic_assembly.hpp"
-#include "core/defer.hpp"
 
 namespace plugify {
-	class BasicAssemblyLoader : public IAssemblyLoader {
+	class BasicAssemblyLoader final : public IAssemblyLoader {
 	private:
 		std::shared_ptr<IPlatformOps> _ops;
 		std::shared_ptr<IFileSystem> _fs;
@@ -57,16 +56,15 @@ namespace plugify {
 				}
 			}
 
-			bool supportRuntimePaths = _ops->SupportsRuntimePathModification()
-									   && !searchPaths.empty();
+			bool supportRuntimePaths = _ops->SupportsRuntimePathModification() && !searchPaths.empty();
 
-			defer {
+			[[maybe_unused]] auto guard = plg::make_scope_guard([&] {
 				if (supportRuntimePaths) {
 					for (const auto& searchPath : searchPaths) {
 						[[maybe_unused]] auto removeResult = _ops->RemoveSearchPath(searchPath);
 					}
 				}
-			};
+			});
 
 			if (supportRuntimePaths) {
 				for (const auto& searchPath : searchPaths) {

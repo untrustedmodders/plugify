@@ -69,7 +69,11 @@ else()
 endif()
 file(GLOB_RECURSE PLUGIFY_JIT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/jit/${PLUGIFY_JIT_ARCH}/*.cpp")
 
-set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES} ${PLUGIFY_JIT_SOURCES})
+set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES} ${PLUGIFY_JIT_SOURCES}
+        include/plg/split_buffer.hpp
+        include/plg/guards.hpp
+        include/plg/uninitialized.hpp
+        include/plg/concepts.hpp)
 
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT BUILD_SHARED_LIBS)
     message(WARNING "PLUGIFY_BUILD_SHARED_LIB is ON, but plugify will be built as a static library")

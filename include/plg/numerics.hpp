@@ -1,7 +1,6 @@
 #pragma once
 
-#include "plg/string.hpp"
-#include "plg/vector.hpp"
+#include "plg/config.hpp"
 
 namespace plg {
 	PLUGIFY_WARN_PUSH()

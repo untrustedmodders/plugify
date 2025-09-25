@@ -32,7 +32,7 @@ TEST_CASE("string operation > append", "[string]") {
 				REQUIRE(a == "aaaaaaaaaaaaaaaaaaaaaaaa");
 				REQUIRE(a.size() == 24);
 				a.reserve(46);
-				REQUIRE(a.capacity() == 46);
+				REQUIRE(a.capacity() == 47);
 		  }
 	 }
 
@@ -52,7 +52,7 @@ TEST_CASE("string operation > append", "[string]") {
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
 				a.reserve(46);
-				REQUIRE(a.capacity() == 46);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -74,7 +74,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(a);
 				REQUIRE(a == "tatatatatatatatatatatattatatatatatatatatatatat");
 				REQUIRE(a.size() == 46);
-				REQUIRE(a.capacity() == 46);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -82,7 +82,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b);
 				REQUIRE(a == "tatalonglonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 36);
-				REQUIRE(a.capacity() == 36);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a;
@@ -90,7 +90,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b);
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
@@ -98,7 +98,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b);
 				REQUIRE(a == "longlonglonglonglonglonglonglongtotototototototototototototototo");
 				REQUIRE(a.size() == 64);
-				REQUIRE(a.capacity() == 64);
+				REQUIRE(a.capacity() == 79);
 		  }
 	 }
 
@@ -140,7 +140,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b, 1, 3);
 				REQUIRE(a == "totototototototototototari");
 				REQUIRE(a.size() == 26);
-				REQUIRE(a.capacity() == 26);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
@@ -148,8 +148,8 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b, 10, 5);
 				REQUIRE(a == "longlonglonglonglonglonglonglongklmno");
 				REQUIRE(a.size() == 37);
-			a.reserve(64);
-				REQUIRE(a.capacity() == 64);
+				a.reserve(64);
+				REQUIRE(a.capacity() == 71);
 		  }
 	 }
 
@@ -166,7 +166,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append("longlonglonglonglonglonglonglong", 24);
 				REQUIRE(a == "longlonglonglonglonglong");
 				REQUIRE(a.size() == 24);
-				REQUIRE(a.capacity() == 24);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -180,7 +180,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append("longlonglonglonglonglonglonglong", 24);
 				REQUIRE(a == "tatalonglonglonglonglonglong");
 				REQUIRE(a.size() == 28);
-				REQUIRE(a.capacity() == 28);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a;
@@ -194,14 +194,14 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append("totototototototototototototototo", 2);
 				REQUIRE(a == "longlonglonglonglonglonglonglongto");
 				REQUIRE(a.size() == 34);
-				REQUIRE(a.capacity() == 34);
+				REQUIRE(a.capacity() == 39);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
 				a.append("\0tototototototototototototototot", 32);
 				REQUIRE(a == plg::string{"longlonglonglonglonglonglonglong\0tototototototototototototototot", 64});
 				REQUIRE(a.size() == 64);
-				REQUIRE(a.capacity() == 64);
+				REQUIRE(a.capacity() == 79);
 		  }
 	 }
 
@@ -218,7 +218,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append("longlonglonglonglonglonglonglong");
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -232,28 +232,28 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append("longlonglonglonglonglonglonglong");
 				REQUIRE(a == "tatalonglonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 36);
-				REQUIRE(a.capacity() == 36);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a;
 				a.append("longlonglonglonglonglonglonglong");
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
 				a.append("totototototototototototototototo");
 				REQUIRE(a == "longlonglonglonglonglonglonglongtotototototototototototototototo");
 				REQUIRE(a.size() == 64);
-				REQUIRE(a.capacity() == 64);
+				REQUIRE(a.capacity() == 79);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
 				a.append("\0tototototototototototototototot");
 				REQUIRE(a == plg::string{"longlonglonglonglonglonglonglong", 32});
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 39);
 		  }
 	 }
 
@@ -285,7 +285,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(&data[0], &data[0] + 24);
 				REQUIRE(a == "tatatatatatatatatatatata");
 				REQUIRE(a.size() == 24);
-				REQUIRE(a.capacity() == 24);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				char const data[] {'t', 'a', 't', 'a',
@@ -330,16 +330,16 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append({'a', 'b', 'c', 'd'});
 				REQUIRE(a == "totototototototototoabcd");
 				REQUIRE(a.size() == 24);
-				REQUIRE(a.capacity() == 24);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
 				a.append({'a', 'b', 'c', 'd'});
 				REQUIRE(a == "longlonglonglonglonglonglonglongabcd");
 				REQUIRE(a.size() == 36);
-			a.resize(64);
-			REQUIRE(a.size() == 100);
-				REQUIRE(a.capacity() == 100);
+				a.resize(64);
+				REQUIRE(a.size() == 64);
+				REQUIRE(a.capacity() == 79);
 		  }
 	 }
 
@@ -358,7 +358,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b);
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"tata", 4};
@@ -374,7 +374,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b);
 				REQUIRE(a == "tatalonglonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 36);
-				REQUIRE(a.capacity() == 36);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a;
@@ -382,7 +382,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b);
 				REQUIRE(a == "longlonglonglonglonglonglonglong");
 				REQUIRE(a.size() == 32);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
@@ -390,7 +390,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b);
 				REQUIRE(a == "longlonglonglonglonglonglonglongtotototototototototototototototo");
 				REQUIRE(a.size() == 64);
-				REQUIRE(a.capacity() == 64);
+				REQUIRE(a.capacity() == 79);
 		  }
 	 }
 
@@ -425,7 +425,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b, 1, 3);
 				REQUIRE(a == "totototototototototototari");
 				REQUIRE(a.size() == 26);
-				REQUIRE(a.capacity() == 26);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
@@ -433,7 +433,7 @@ TEST_CASE("string operation > append", "[string]") {
 				a.append(b, 10, 5);
 				REQUIRE(a == "longlonglonglonglonglonglonglongklmno");
 				REQUIRE(a.size() == 37);
-				REQUIRE(a.capacity() == 37);
+				REQUIRE(a.capacity() == 39);
 		  }
 	 }
 

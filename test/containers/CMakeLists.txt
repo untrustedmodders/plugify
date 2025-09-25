@@ -33,6 +33,8 @@ endif()
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wno-stringop-overflow)
 endif()
 
 include(CTest)

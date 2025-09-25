@@ -1,85 +1,59 @@
 #pragma once
 
-#include <cstddef> // for std::size_t, std::ptrdiff_t
-#include <cstdlib> // for std::malloc, std::free, std::aligned_alloc
-#include <type_traits>  // for std::is_constant_evaluated
-#include <new>  // for ::operator new, ::operator delete
+#include <cstddef>		// for std::size_t, std::ptrdiff_t
+#include <cstdlib>		// for std::malloc, std::free, std::aligned_alloc
+#include <new>			// for ::operator new, ::operator delete
+#include <type_traits>	// for std::is_constant_evaluated
 
-#include "plg/macro.hpp"
+#include "plg/config.hpp"
 
 namespace plg {
-	// Forward declaration for allocator<void>
 	template<typename T>
 	class allocator;
 
-	// Specialization for `void`, but we no longer need to define `pointer` and `const_pointer`
 	template<>
 	class allocator<void> {
 	public:
 		using value_type = void;
 
-		// Rebind struct
 		template<class U>
 		struct rebind { using other = allocator<U>; };
 	};
 
-	// Define the custom allocator inheriting from std::allocator
 	template<typename T>
 	class allocator {
+		static_assert(!std::is_const_v<T>, "plg::allocator does not support const types");
+		static_assert(!std::is_volatile_v<T>, "plg::allocator does not support volatile types");
 	public:
 		using value_type = T;
-		using pointer = T*;
-		using const_pointer = const T*;
-		using reference = T&;
-		using const_reference = const T&;
 		using size_type = std::size_t;
 		using difference_type = std::ptrdiff_t;
 
-		// Default constructor
 		constexpr allocator() noexcept = default;
 
-		// Copy constructor
 		template<class U>
 		constexpr allocator(const allocator<U>&) noexcept {}
 
-		// Rebind struct
 		template<class U>
 		struct rebind { using other = allocator<U>; };
 
-		// Override allocate method to use custom allocation function
-		constexpr pointer allocate(size_type n, [[maybe_unused]] const_pointer hint = nullptr) {
+		[[nodiscard]] constexpr T* allocate(size_type n) {
 			static_assert(sizeof(T) != 0, "cannot allocate incomplete types");
 			static_assert((alignof(T) & (alignof(T) - 1)) == 0, "alignof(T) must be a power of 2");
 
-			if (n > max_size()) [[unlikely]] {
-				if (n > static_cast<size_type>(-1) / sizeof(T)) {
-					PLUGIFY_THROW("bad array new length", std::bad_array_new_length);
-				}
-				PLUGIFY_THROW("too big", std::bad_alloc);
+			if (n > std::allocator_traits<allocator>::max_size(*this)) {
+				throw_bad_array_new_length();
 			}
 
-			pointer ret;
 			size_type size = n * sizeof(T);
 			if (std::is_constant_evaluated()) {
-				ret = static_cast<T*>(::operator new(size));
+				return static_cast<T*>(::operator new(size));
 			} else {
-				if constexpr (alignof(T) > alignof(std::max_align_t)) {
-					size_type aligned_size = (size + (alignof(T) - 1)) & ~(alignof(T) - 1);
-					ret = static_cast<T*>(aligned_allocate(alignof(T), aligned_size));
-				} else {
-					ret = static_cast<T*>(std::malloc(size));
-				}
-
-				if (!ret) {
-					PLUGIFY_THROW("bad allocation", std::bad_alloc);
-				}
+				return malloc_allocate(size);
 			}
-
-			return ret;
 		}
 
-		// Override deallocate method to use custom deallocation function
-		constexpr void deallocate(pointer p, [[maybe_unused]] size_type n) {
+		constexpr void deallocate(T* p, [[maybe_unused]] size_type n) {
 			if (std::is_constant_evaluated()) {
 				::operator delete(p);
 			} else {
@@ -88,28 +62,106 @@ namespace plg {
 		}
 
 	private:
-		constexpr size_type max_size() noexcept {
-#if __PTRDIFF_MAX__ < __SIZE_MAX__
-			return static_cast<size_type>(__PTRDIFF_MAX__) / sizeof(T);
-#else
-			return static_cast<size_type>(-1) / sizeof(T);
-#endif // __PTRDIFF_MAX__
+		static T* malloc_allocate(size_type size) {
+			T* ret;
+			if constexpr (alignof(T) > alignof(std::max_align_t)) {
+				size_type aligned_size = (size + (alignof(T) - 1)) & ~(alignof(T) - 1);
+				ret = static_cast<T*>(aligned_allocate(alignof(T), aligned_size));
+			} else {
+				ret = static_cast<T*>(std::malloc(size));
+			}
+			if (!ret) {
+				throw_bad_alloc();
+			}
+			return ret;
 		}
 
-		void* aligned_allocate(size_type alignment, size_type size) {
+		[[noreturn]] static void throw_bad_array_new_length() {
+			PLUGIFY_THROW("bad array new length", std::bad_array_new_length);
+		}
+
+		[[noreturn]] static void throw_bad_alloc() {
+			PLUGIFY_THROW("bad allocation", std::bad_alloc);
+		}
+
+		static void* aligned_allocate(size_type alignment, size_type size) {
 #if PLUGIFY_PLATFORM_WINDOWS
 			return _aligned_malloc(size, alignment);
 #else
 			return std::aligned_alloc(alignment, size);
-#endif // _WIN32
+#endif // PLUGIFY_PLATFORM_WINDOWS
 		}
 	};
 
-	// Comparison operators for compatibility
 	template<typename T, typename U>
 	constexpr bool operator==(const allocator<T>&, const allocator<U>) { return true; }
 
 	template<typename T, typename U>
 	constexpr bool operator!=(const allocator<T>&, const allocator<U>) { return false; }
 
+	template <typename Alloc>
+	void swap_allocator(Alloc& a1, Alloc& a2, std::true_type) {
+		using std::swap;
+		swap(a1, a2);
+	}
+
+	template <typename Alloc>
+	void swap_allocator(Alloc&, Alloc&, std::false_type) noexcept {}
+
+	template <typename Alloc>
+	void swap_allocator(Alloc& a1, Alloc& a2) {
+		swap_allocator(a1, a2, std::integral_constant<bool, std::allocator_traits<Alloc>::propagate_on_container_swap::value>());
+	}
+
+	template <class Pointer, class Size = std::size_t>
+	struct allocation_result {
+		Pointer ptr;
+		Size count;
+	};
+
+	template <class Alloc>
+	[[nodiscard]] allocation_result<typename std::allocator_traits<Alloc>::pointer>
+	allocate_at_least(Alloc& alloc, size_t n) {
+		return { alloc.allocate(n), n };
+	}
+
+	template <class T, class U>
+	constexpr bool is_pointer_in_range(const T* begin, const T* end, const U* ptr) {
+		if (std::is_constant_evaluated())
+			return false;
+		return reinterpret_cast<const char*>(begin) <= reinterpret_cast<const char*>(ptr) &&
+			   reinterpret_cast<const char*>(ptr) < reinterpret_cast<const char*>(end);
+	}
+
+	template <class T, class U>
+	constexpr bool is_overlapping_range(const T* begin, const T* end, const U* begin2) {
+		auto size = end - begin;
+		auto end2 = begin2 + size;
+		return is_pointer_in_range(begin, end, begin2) || is_pointer_in_range(begin2, end2, begin);
+	}
+
+	// Annotate a contiguous range.
+	// [__first_storage, __last_storage) is the allocated memory region,
+	// __old_last_contained is the previously last allowed (unpoisoned) element, and
+	// __new_last_contained is the new last allowed (unpoisoned) element.
+	template <class Allocator>
+	void annotate_contiguous_container(
+		[[maybe_unused]] const void* first_storage,
+		[[maybe_unused]] const void* last_storage,
+		[[maybe_unused]] const void* old_last_contained,
+		[[maybe_unused]] const void* new_last_contained
+	) {
+#if __has_feature(address_sanitizer)
+		if (!std::is_constant_evaluated()
+			&& __asan_annotate_container_with_allocator<Allocator>::value
+			&& first_storage != nullptr) {
+			__sanitizer_annotate_contiguous_container(
+				first_storage,
+				last_storage,
+				old_last_contained,
+				new_last_contained
+			);
+		}
+#endif
+	}
 } // namespace plg

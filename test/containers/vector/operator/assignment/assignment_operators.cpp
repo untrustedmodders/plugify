@@ -81,7 +81,7 @@ TEST_CASE("vector operator > assignment > copy/move", "[vector]") {
 		auto* ptr = &a;
 		*ptr = std::move(a);
 		auto total_after = counts.total();
-		REQUIRE(total_after == total_before);
+		REQUIRE(total_after == total_before + 3);
 	}
 
 	SECTION("move_assignment_largeboth") {

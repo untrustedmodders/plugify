@@ -1,921 +1,1538 @@
 #pragma once
 
+#include <algorithm>
+#include <compare>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <initializer_list>
 #include <iterator>
-#include <type_traits>
-#include <utility>
+#include <limits>
 #include <memory>
 #include <memory_resource>
-#include <initializer_list>
-#include <algorithm>
-#include <span>
-#include <limits>
 #include <optional>
-#include <compare>
-
-#include <cstdint>
-#include <cstddef>
-#include <cstring>
+#include <span>
+#include <type_traits>
+#include <utility>
 
 #include "plg/allocator.hpp"
+#include "plg/guards.hpp"
+#include "plg/split_buffer.hpp"
+#include "plg/uninitialized.hpp"
 
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES && (PLUGIFY_CPP_VERSION <= 202002L || !__has_include(<ranges>) || !defined(__cpp_lib_containers_ranges))
-#  undef PLUGIFY_VECTOR_CONTAINERS_RANGES
-#  define PLUGIFY_VECTOR_CONTAINERS_RANGES 0
-#endif
-
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES
-#  include <ranges>
+// Just in case, because we can't ignore some warnings from `-Wpedantic` (about zero size arrays and anonymous structs when gnu extensions are disabled) on gcc
+#if PLUGIFY_COMPILER_CLANG
+#  pragma clang system_header
+#elif PLUGIFY_COMPILER_GCC
+#  pragma GCC system_header
 #endif
 
 // from https://github.com/masahisa/rtw/
 namespace plg {
 	namespace detail {
-		template<typename Alloc>
-		concept is_alloc = requires(Alloc& a, std::size_t n) {
-			typename std::allocator_traits<Alloc>::value_type;
-			typename std::allocator_traits<Alloc>::pointer;
-			typename std::allocator_traits<Alloc>::const_pointer;
-			typename std::allocator_traits<Alloc>::size_type;
-			typename std::allocator_traits<Alloc>::difference_type;
+		template <class T, class Alloc>
+		struct temp_value {
+			using allocator_traits = std::allocator_traits<Alloc>;
 
-			{ std::allocator_traits<Alloc>::allocate(a, n) }
-			-> std::convertible_to<typename std::allocator_traits<Alloc>::pointer>;
-
-			requires requires(typename std::allocator_traits<Alloc>::pointer p) {
-				std::allocator_traits<Alloc>::deallocate(a, p, n);
+			union {
+				T v;
 			};
+			PLUGIFY_NO_UNIQUE_ADDRESS Alloc& a;
+
+			constexpr T* addr() {
+				return std::addressof(v);
+			}
+
+			constexpr T& get() {
+				return *addr();
+			}
+
+			template <class... Args>
+			PLUGIFY_NO_CFI constexpr
+			explicit temp_value(Alloc& alloc, Args&&... args)
+				: a(alloc) {
+				allocator_traits::construct(a, addr(), std::forward<Args>(args)...);
+			}
+
+			constexpr ~temp_value() {
+				allocator_traits::destroy(a, addr());
+			}
 		};
-
-		struct initialized_value_tag {};
-
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES
-		template<typename Range, typename Type>
-		concept vector_compatible_range = std::ranges::input_range<Range> && std::convertible_to<std::ranges::range_reference_t<Range>, Type>;
-#endif
-	} // namespace detail
-
-	template<detail::is_alloc Allocator>
-	struct vector_iterator {
-		using allocator_traits = std::allocator_traits<Allocator>;
-	public:
-		using iterator_category = std::random_access_iterator_tag;
-		using value_type = typename allocator_traits::value_type;
-		using difference_type = std::ptrdiff_t;
-		using pointer = typename allocator_traits::pointer;
-		using reference = value_type&;
-	protected:
-		pointer _current;
-	public:
-		constexpr vector_iterator() = default;
-		constexpr vector_iterator(const vector_iterator& other) = default;
-		constexpr vector_iterator(vector_iterator&& other) = default;
-		constexpr vector_iterator(pointer ptr)
-			: _current(ptr) {}
-		constexpr vector_iterator& operator=(const vector_iterator& other) = default;
-		constexpr vector_iterator& operator=(vector_iterator&& other) = default;
-		constexpr ~vector_iterator() = default;
-	public:
-		constexpr reference operator*() const noexcept {
-			return *_current;
-		}
-		constexpr pointer operator->() const noexcept {
-			return _current;
-		}
-		constexpr vector_iterator& operator++() noexcept {
-			++_current;
-			return *this;
-		}
-		constexpr vector_iterator operator++(int) noexcept {
-			return vector_iterator(_current++);
-		}
-		constexpr vector_iterator& operator--() noexcept {
-			--_current;
-			return *this;
-		}
-		constexpr vector_iterator operator--(int) const noexcept {
-			return vector_iterator(_current--);
-		}
-		constexpr vector_iterator& operator+=(const difference_type n) noexcept {
-			_current += n;
-			return *this;
-		}
-		constexpr vector_iterator operator+(const difference_type n) const noexcept {
-			vector_iterator temp = *this;
-			return temp += n;
-		}
-		constexpr vector_iterator& operator-=(const difference_type n) noexcept {
-			_current -= n;
-			return *this;
-		}
-		constexpr vector_iterator operator-(const difference_type n) const noexcept {
-			vector_iterator temp = *this;
-			return temp -= n;
-		}
-		constexpr reference operator[](const difference_type n) const noexcept {
-			return _current[n];
-		}
-		template<typename Alloc>
-		constexpr friend typename vector_iterator<Alloc>::difference_type operator-(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
-		template<typename Alloc>
-		constexpr friend bool operator==(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
-		template<typename Alloc>
-		constexpr friend auto operator<=>(const vector_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
-		operator const pointer() const noexcept {
-			return _current;
-		}
-		pointer base() const noexcept {
-			return _current;
-		}
-	};
-
-	template<typename Allocator>
-	constexpr typename vector_iterator<Allocator>::difference_type operator-(const vector_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
-		using difference_type = typename vector_iterator<Allocator>::difference_type;
-		return difference_type(lhs.base() - rhs.base());
-	}
-	template<typename Allocator>
-	constexpr bool operator==(const vector_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
-		return lhs.base() == rhs.base();
-	}
-	template<typename Allocator>
-	constexpr auto operator<=>(const vector_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
-		return lhs.base() <=> rhs.base();
 	}
 
-	template<detail::is_alloc Allocator>
-	struct vector_const_iterator {
-		using allocator_traits = std::allocator_traits<Allocator>;
-	public:
-		using iterator_category = std::random_access_iterator_tag;
-		using value_type = typename allocator_traits::value_type;
-		using difference_type = std::ptrdiff_t;
-		using pointer = typename allocator_traits::const_pointer;
-		using reference = const value_type&;
-	protected:
-		pointer _current;
-	public:
-		constexpr vector_const_iterator() = default;
-		constexpr vector_const_iterator(const vector_const_iterator& other) = default;
-		constexpr vector_const_iterator(vector_const_iterator&& other) = default;
-		constexpr vector_const_iterator(pointer ptr)
-			: _current(ptr) {}
-		constexpr vector_const_iterator(const vector_iterator<Allocator>& other)  // allow only iterator to const_iterator conversion
-			: _current(other.base()) {}
-		constexpr vector_const_iterator& operator=(const vector_const_iterator& other) = default;
-		constexpr vector_const_iterator& operator=(vector_const_iterator&& other) = default;
-		constexpr ~vector_const_iterator() = default;
-	public:
-		constexpr reference operator*() const noexcept {
-			return *_current;
-		}
-		constexpr pointer operator->() const noexcept {
-			return _current;
-		}
-		constexpr vector_const_iterator& operator++() noexcept {
-			++_current;
-			return *this;
-		}
-		constexpr vector_const_iterator operator++(int) noexcept {
-			return vector_const_iterator(_current++);
-		}
-		constexpr vector_const_iterator& operator--() noexcept {
-			--_current;
-			return *this;
-		}
-		constexpr vector_const_iterator operator--(int) noexcept {
-			return vector_const_iterator(_current--);
-		}
-		constexpr vector_const_iterator& operator+=(const difference_type n) noexcept {
-			_current += n;
-			return *this;
-		}
-		constexpr vector_const_iterator operator+(const difference_type n) const noexcept {
-			vector_const_iterator temp = *this;
-			return temp += n;
-		}
-		constexpr vector_const_iterator& operator-=(const difference_type n) noexcept {
-			_current -= n;
-			return *this;
-		}
-		constexpr vector_const_iterator operator-(const difference_type n) const noexcept {
-			vector_const_iterator temp = *this;
-			return temp -= n;
-		}
-		constexpr reference operator[](const difference_type n) const noexcept {
-			return _current[n];
-		}
-		template<typename Alloc>
-		constexpr friend typename vector_const_iterator<Alloc>::difference_type operator-(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
-		template<typename Alloc>
-		constexpr friend bool operator==(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
-		template<typename Alloc>
-		constexpr friend auto operator<=>(const vector_const_iterator<Alloc>& lhs, const vector_const_iterator<Alloc>& rhs) noexcept;
-		template<typename Alloc>
-		constexpr friend typename vector_const_iterator<Alloc>::difference_type operator-(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
-		template<typename Alloc>
-		constexpr friend bool operator==(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
-		template<typename Alloc>
-		constexpr friend auto operator<=>(const vector_const_iterator<Alloc>& lhs, const vector_iterator<Alloc>& rhs) noexcept;
-		operator const pointer() const noexcept {
-			return _current;
-		}
-		pointer base() const noexcept {
-			return _current;
-		}
-	};
-
-	template<typename Allocator>
-	constexpr typename vector_const_iterator<Allocator>::difference_type operator-(const vector_const_iterator<Allocator>& lhs, const vector_const_iterator<Allocator>& rhs) noexcept {
-		using difference_type = typename vector_const_iterator<Allocator>::difference_type;
-		return difference_type(lhs.base() - rhs.base());
-	}
-	template<typename Allocator>
-	constexpr bool operator==(const vector_const_iterator<Allocator>& lhs, const vector_const_iterator<Allocator>& rhs) noexcept {
-		return lhs.base() == rhs.base();
-	}
-	template<typename Allocator>
-	constexpr auto operator<=>(const vector_const_iterator<Allocator>& lhs, const vector_const_iterator<Allocator>& rhs) noexcept {
-		return lhs.base() <=> rhs.base();
-	}
-	template<typename Allocator>
-	constexpr typename vector_const_iterator<Allocator>::difference_type operator-(const vector_const_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
-		using difference_type = typename vector_const_iterator<Allocator>::difference_type;
-		return difference_type(lhs.base() - rhs.base());	
-	}
-	template<typename Allocator>
-	constexpr bool operator==(const vector_const_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
-		return lhs.base() == rhs.base();
-	}
-	template<typename Allocator>
-	constexpr auto operator<=>(const vector_const_iterator<Allocator>& lhs, const vector_iterator<Allocator>& rhs) noexcept {
-		return lhs.base() <=> rhs.base();
-	}
-
-	// vector
-	// based on implementations from libc++, libstdc++ and Microsoft STL
-	template<typename T, detail::is_alloc Allocator = plg::allocator<T>>
+	template <class T, class Allocator = allocator<T>>
 	class vector {
-		using allocator_traits = std::allocator_traits<Allocator>;
+		template <class U, class Alloc>
+		using split_buffer = split_buffer<U, Alloc, split_buffer_pointer_layout>;
 	public:
+		//
+		// Types
+		//
 		using value_type = T;
 		using allocator_type = Allocator;
-		using size_type = typename allocator_traits::size_type;
-		using difference_type = typename allocator_traits::difference_type;
+		using alloc_traits = std::allocator_traits<allocator_type>;
 		using reference = value_type&;
 		using const_reference = const value_type&;
-		using pointer = typename allocator_traits::pointer;
-		using const_pointer = typename allocator_traits::const_pointer;
-		using iterator = vector_iterator<Allocator>;
-		using const_iterator = vector_const_iterator<Allocator>;
+		using size_type = typename alloc_traits::size_type;
+		using difference_type = typename alloc_traits::difference_type;
+		using pointer = typename alloc_traits::pointer;
+		using const_pointer = typename alloc_traits::const_pointer;
+		using iterator = pointer;
+		using const_iterator = const_pointer;
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-	protected:
-		PLUGIFY_NO_UNIQUE_ADDRESS
-		allocator_type _allocator;
-		pointer _begin;
-		pointer _end;
-		pointer _capacity;
+		//static_assert(std::check_valid_allocator<allocator_type>::value, "");
+		static_assert(
+			std::is_same_v<typename allocator_type::value_type, value_type>,
+			"Allocator::value_type must be same type as value_type"
+		);
+
+		//
+		// [vector.cons], construct/copy/destroy
+		//
+		constexpr vector() noexcept(std::is_nothrow_default_constructible_v<allocator_type>) = default;
+
+		constexpr explicit vector(const allocator_type& a) noexcept
+			: _alloc(a) {
+		}
+
+		constexpr explicit vector(size_type n) {
+			auto guard = make_exception_guard(destroy_vector(*this));
+			if (n > 0) {
+				vallocate(n);
+				construct_at_end(n);
+			}
+			guard.complete();
+		}
+
+		constexpr
+			explicit vector(size_type n, const allocator_type& a)
+			: _alloc(a) {
+			auto guard = make_exception_guard(destroy_vector(*this));
+			if (n > 0) {
+				vallocate(n);
+				construct_at_end(n);
+			}
+			guard.complete();
+		}
+
+		constexpr vector(size_type n, const value_type& x) {
+			auto guard = make_exception_guard(destroy_vector(*this));
+			if (n > 0) {
+				vallocate(n);
+				construct_at_end(n, x);
+			}
+			guard.complete();
+		}
+
+		constexpr
+		vector(size_type n, const value_type& x, const allocator_type& a)
+			: _alloc(a) {
+			auto guard = make_exception_guard(destroy_vector(*this));
+			if (n > 0) {
+				vallocate(n);
+				construct_at_end(n, x);
+			}
+			guard.complete();
+		}
+
+		template<std::input_iterator InputIterator>
+		constexpr
+		vector(InputIterator first, InputIterator last) {
+			init_with_sentinel(first, last);
+		}
+
+		template<std::input_iterator InputIterator>
+		constexpr
+		vector(InputIterator first, InputIterator last, const allocator_type& a)
+			: _alloc(a) {
+			init_with_sentinel(first, last);
+		}
+
+		template <std::forward_iterator ForwardIterator>
+		constexpr
+		vector(ForwardIterator first, ForwardIterator last) {
+			size_type n = static_cast<size_type>(std::distance(first, last));
+			init_with_size(first, last, n);
+		}
+
+		template <std::forward_iterator ForwardIterator>
+		constexpr
+		vector(ForwardIterator first, ForwardIterator last, const allocator_type& a)
+			: _alloc(a) {
+			size_type n = static_cast<size_type>(std::distance(first, last));
+			init_with_size(first, last, n);
+		}
+
+#if PLUGIFY_HAS_CXX23
+		template <container_compatible_range<T> Range>
+		constexpr vector(
+			std::from_range_t,
+			Range&& range,
+			const allocator_type& alloc = allocator_type()
+		) : _alloc(alloc) {
+			if constexpr (std::ranges::forward_range<Range> || std::ranges::sized_range<Range>) {
+				auto n = static_cast<size_type>(std::ranges::distance(range));
+				init_with_size(std::ranges::begin(range), std::ranges::end(range), n);
+
+			} else {
+				init_with_sentinel(std::ranges::begin(range), std::ranges::end(range));
+			}
+		}
+#endif
 
 	private:
-		constexpr static size_type growth_factor = 2; // When resizing, what number to scale by
-
-		constexpr void copy_constructor(const vector& other) {
-			const size_type capacity = other.capacity();
-			_begin = allocator_traits::allocate(_allocator, capacity);
-			std::uninitialized_copy(other.begin(), other.end(), begin());
-			_end = _begin + other.size();
-			_capacity = _begin + capacity;
-		}
-
-		template<std::input_iterator InputIterator>
-		constexpr void range_constructor(InputIterator first, InputIterator last) {
-			const size_type count = static_cast<size_type>(std::distance(first, last));
-			_begin = allocator_traits::allocate(_allocator, count);
-			std::uninitialized_copy(first, last, _begin);
-			_capacity = _begin + count;
-			_end = _begin + count;
-		}
-
-		constexpr bool is_full() const {
-			return _end == _capacity;
-		}
-
-		constexpr size_type calculate_new_capacity() const {
-			const size_type old_capacity = capacity();
-			return old_capacity == 0 ? 1 : growth_factor * old_capacity;
-		}
-
-		constexpr iterator const_iterator_cast(const_iterator iter) noexcept {
-			return begin() + (iter - cbegin());
-		}
-
-		constexpr void reallocate(size_type new_capacity) {
-			reallocate(new_capacity, [](pointer const) {});
-		}
-
-		template<typename F>
-		constexpr void reallocate(size_type new_capacity, const F& construct) {
-			const size_type old_size = size();
-			const size_type old_capacity = capacity();
-			if (new_capacity == old_capacity)
-				return;
-
-			pointer const new_begin = allocator_traits::allocate(_allocator, new_capacity);
-			construct(new_begin);
-			std::uninitialized_move(_begin, _end, new_begin);
-			std::destroy(_begin, _end);
-			allocator_traits::deallocate(_allocator, _begin, capacity());
-			_begin = new_begin;
-			_end = _begin + old_size;
-			_capacity = _begin + new_capacity;
-		}
-
-		template<typename F>
-		constexpr void emplace_at_end(const F& construct) {
-			if (is_full()) {
-				reallocate(calculate_new_capacity(), construct);
-			} else {
-				construct(_begin);
+		class destroy_vector {
+		public:
+			constexpr explicit destroy_vector(vector& vec)
+				: vec_(vec) {
 			}
-		}
 
-		template<typename V>
-		constexpr void resize_to(size_type count, const V& value) {
-			if (count > max_size()) {
-				PLUGIFY_THROW("allocated memory size would exceed max_size()", std::length_error);
-			}
-			if (count < size()) {
-				std::destroy(_begin + count, _end);
-				_end = _begin + count;
-			} else if (count > size()) {
-				const size_type old_size = size();
-				auto construct = [&](pointer const data) {
-					if constexpr (std::is_same_v<V, T>) {
-						std::uninitialized_fill(data + old_size, data + count, value);
-					} else {
-						std::uninitialized_value_construct(data + old_size, data + count);
-					}
-				};
-				if (count > capacity()) {
-					reallocate(count, construct);
-				} else {
-					construct(_begin);
+			constexpr void operator()() {
+				if (vec_._begin != nullptr) {
+					vec_.clear();
+					vec_.annotate_delete();
+					alloc_traits::deallocate(vec_._alloc, vec_._begin, vec_.capacity());
 				}
-				_end = _begin + count;
 			}
-		}
 
-		constexpr void swap_without_allocator(vector&& other) noexcept {
-			using std::swap;
-			swap(_begin, other._begin);
-			swap(_end, other._end);
-			swap(_capacity, other._capacity);
-		}
+		private:
+			vector& vec_;
+		};
 
 	public:
-		// constructor
-		constexpr vector() noexcept(std::is_nothrow_default_constructible<Allocator>::value)
-			: _allocator(Allocator()), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-		}
-
-		constexpr explicit vector(const Allocator& allocator) noexcept
-			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-		}
-
-		constexpr vector(size_type count, const T& value, const Allocator& allocator = Allocator())
-			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			_begin = allocator_traits::allocate(_allocator, count);
-			std::uninitialized_fill_n(_begin, count, value);
-			_capacity = _begin + count;
-			_end = _begin + count;
-		}
-
-		constexpr explicit vector(size_type count, const Allocator& allocator = Allocator())
-			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			_begin = allocator_traits::allocate(_allocator, count);
-			std::uninitialized_value_construct_n(_begin, count);
-			_capacity = _begin + count;
-			_end = _begin + count;
-		}
-
-		template<std::input_iterator InputIterator>
-		constexpr vector(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
-			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			range_constructor(first, last);
-		}
-
-		constexpr vector(const vector& other)
-			: _allocator(other.get_allocator()), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			copy_constructor(other);
-		}
-
-		constexpr vector(const vector& other, const Allocator& allocator)
-			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			copy_constructor(other);
-		}
-
-		constexpr vector(vector&& other) noexcept(std::is_nothrow_move_constructible<Allocator>::value)
-			: _allocator(std::move(other._allocator))
-			, _begin(std::exchange(other._begin, nullptr))
-			, _end(std::exchange(other._end, nullptr))
-			, _capacity(std::exchange(other._capacity, nullptr)) {
-		}
-
-		constexpr vector(vector&& other, const Allocator& allocator)
-			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			if constexpr (allocator_traits::is_always_equal::value) {
-				swap_without_allocator(std::move(other));
-			} else {
-				if (get_allocator() == other.get_allocator()) {
-					swap_without_allocator(std::move(other));
-				} else {
-					const size_type capacity = other.capacity();
-					_begin = allocator_traits::allocate(_allocator, capacity);
-					std::uninitialized_move(other.begin(), other.end(), begin());
-					_end = _begin + other.size();
-					_capacity = _begin + capacity;
-				}
-			}
-		}
-
-		constexpr vector(std::initializer_list<T> list, const Allocator& allocator = Allocator())
-			: _allocator(allocator), _begin{nullptr}, _end{nullptr}, _capacity{nullptr} {
-			range_constructor(list.begin(), list.end());
-		}
-
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES
-		template<detail::vector_compatible_range<T> Range>
-		constexpr vector(std::from_range_t, Range&& range, const Allocator& alloc = Allocator())
-			: vector(std::ranges::begin(range), std::ranges::end(range), alloc) {}
-#endif // PLUGIFY_VECTOR_CONTAINERS_RANGES
-
-		// destructor
 		constexpr ~vector() {
-			std::destroy(_begin, _end);
-			allocator_traits::deallocate(_allocator, _begin, capacity());
+			destroy_vector (*this)();
 		}
 
-		// operator=
-		constexpr vector& operator=(const vector& other) {
-			if (this == &other) [[unlikely]] {
-				return *this;
-			}
+		constexpr vector(const vector& x)
+			: _alloc(alloc_traits::select_on_container_copy_construction(x._alloc)) {
+			init_with_size(x._begin, x._end, x.size());
+		}
 
-			clear();
-			if constexpr (allocator_traits::propagate_on_container_copy_assignment::value) {
-				if constexpr (!allocator_traits::is_always_equal::value) {
-					if (get_allocator() != other.get_allocator()) {
-						allocator_traits::deallocate(_allocator, _begin, capacity());
-					}
-				}
-				_allocator = other.get_allocator();
-			}
+		constexpr
+		vector(const vector& x, const std::type_identity_t<allocator_type>& a)
+			: _alloc(a) {
+			init_with_size(x._begin, x._end, x.size());
+		}
 
-			assign(other.begin(), other.end());
+		constexpr vector& operator=(const vector& x);
+
+		constexpr vector(std::initializer_list<value_type> il) {
+			init_with_size(il.begin(), il.end(), il.size());
+		}
+
+		constexpr
+		vector(std::initializer_list<value_type> il, const allocator_type& a)
+			: _alloc(a) {
+			init_with_size(il.begin(), il.end(), il.size());
+		}
+
+		constexpr vector&
+		operator=(std::initializer_list<value_type> il) {
+			assign(il.begin(), il.end());
 			return *this;
 		}
 
-		constexpr vector& operator=(vector&& other) noexcept(
-				std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value ||
-				std::allocator_traits<Allocator>::is_always_equal::value) {
-			if (this == &other) [[unlikely]] {
-				return *this;
-			}
+		constexpr vector(vector&& x) noexcept;
 
-			clear();
-			if constexpr (allocator_traits::propagate_on_container_move_assignment::value) {
-				if constexpr (!allocator_traits::is_always_equal::value) {
-					if (get_allocator() != other.get_allocator()) {
-						allocator_traits::deallocate(_allocator, _begin, capacity());
-					}
-				}
-				_allocator = other.get_allocator();
-			}
+		constexpr
+		vector(vector&& x, const std::type_identity_t<allocator_type>& a);
 
-			if constexpr (allocator_traits::propagate_on_container_move_assignment::value || allocator_traits::is_always_equal::value) {
-				swap_without_allocator(std::move(other));
-			} else {
-				if (get_allocator() == other.get_allocator()) {
-					swap_without_allocator(std::move(other));
-				} else {
-					assign(std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
-					other.clear();
-				}
-			}
+		constexpr vector& operator=(vector&& x) noexcept(
+			std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value ||
+			std::allocator_traits<Allocator>::is_always_equal::value)
+		{
+			move_assign(
+				x,
+				std::integral_constant<bool, alloc_traits::propagate_on_container_move_assignment::value>()
+			);
 			return *this;
-		}
-
-		constexpr vector& operator=(std::initializer_list<T> list) {
-			assign(list.begin(), list.end());
-			return *this;
-		}
-
-		// assign
-		constexpr void assign(size_type count, const T& value) {
-			if (count > capacity()) {
-				pointer const new_begin = allocator_traits::allocate(_allocator, count);
-				std::uninitialized_fill_n(new_begin, count, value);
-				std::destroy(_begin, _end);
-				allocator_traits::deallocate(_allocator, _begin, capacity());
-				_begin = new_begin;
-				_capacity = _begin + count;
-			} else if (size() >= count) {
-				std::fill_n(_begin, count, value);
-				std::destroy(_begin + count, _end);
-			} else {
-				std::fill_n(_begin, size(), value);
-				std::uninitialized_fill_n(_begin + size(), count - size(), value);
-			}
-			_end = _begin + count;
 		}
 
 		template<std::input_iterator InputIterator>
-		constexpr void assign(InputIterator first, InputIterator last) {
-			const size_type count = static_cast<size_type>(std::distance(first, last));
-			if (count > capacity()) {
-				pointer const new_begin = allocator_traits::allocate(_allocator, count);
-				std::uninitialized_copy(first, last, new_begin);
-				std::destroy(_begin, _end);
-				allocator_traits::deallocate(_allocator, _begin, capacity());
-				_begin = new_begin;
-				_capacity = _begin + count;
-			} else if (size() >= count) {
-				std::copy(first, last, _begin);
-				std::destroy(_begin + count, _end);
-			} else {
-				std::copy(first, first + size(), _begin);
-				std::uninitialized_copy(first + size(), last, _begin + size());
-			}
-			_end = _begin + count;
+		constexpr void
+		assign(InputIterator first, InputIterator last) {
+			assign_with_sentinel(first, last);
 		}
 
-		constexpr void assign(std::initializer_list<T> list) {
-			assign(list.begin(), list.end());
+		template <std::forward_iterator ForwardIterator>
+		constexpr void
+		assign(ForwardIterator first, ForwardIterator last) {
+			assign_with_size(first, last, std::distance(first, last));
 		}
 
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES
-		template<detail::vector_compatible_range<T> Range>
+#if PLUGIFY_HAS_CXX23
+		template <container_compatible_range<T> Range>
 		constexpr void assign_range(Range&& range) {
-			assign(std::ranges::begin(range), std::ranges::end(range));
-		}
-#endif // PLUGIFY_VECTOR_CONTAINERS_RANGES
+			if constexpr (std::ranges::forward_range<Range> || std::ranges::sized_range<Range>) {
+				auto n = static_cast<size_type>(std::ranges::distance(range));
+				assign_with_size(std::ranges::begin(range), std::ranges::end(range), n);
 
-		// get_allocator
-		constexpr allocator_type get_allocator() const {
-			return _allocator;
-		}
-
-		// element access
-		constexpr reference at(size_type pos) {
-			if (pos >= size()) {
-				PLUGIFY_THROW("input index is out of bounds", std::out_of_range);
-			}
-			return *(_begin + pos);
-		}
-
-		constexpr const_reference at(size_type pos) const {
-			if (pos >= size()) {
-				PLUGIFY_THROW("input index is out of bounds", std::out_of_range);
-			}
-			return *(_begin + pos);
-		}
-
-		constexpr reference operator[](size_type pos) noexcept {
-			assert(pos < size() && "index out of bounds");
-			return *(_begin + pos);
-		}
-
-		constexpr const_reference operator[](size_type pos) const noexcept {
-			assert(pos < size() && "index out of bounds");
-			return *(_begin + pos);
-		}
-
-		constexpr reference front() {
-			assert(!empty() && "called on an empty vector");
-			return *_begin;
-		}
-
-		constexpr const_reference front() const {
-			assert(!empty() && "called on an empty vector");
-			return *_begin;
-		}
-
-		constexpr reference back() {
-			assert(!empty() && "called on an empty vector");
-			return *(_end - 1);
-		}
-
-		constexpr const_reference back() const {
-			assert(!empty() && "called on an empty vector");
-			return *(_end - 1);
-		}
-
-		constexpr T* data() noexcept {
-			return _begin;
-		}
-
-		constexpr const T* data() const noexcept {
-			return _begin;
-		}
-
-		// iterators
-		constexpr iterator begin() noexcept {
-			return iterator(_begin);
-		}
-
-		constexpr const_iterator begin() const noexcept {
-			return const_iterator(_begin);
-		}
-
-		constexpr const_iterator cbegin() const noexcept {
-			return const_iterator(_begin);
-		}
-
-		constexpr iterator end() noexcept {
-			return iterator(_end);
-		}
-
-		constexpr const_iterator end() const noexcept {
-			return const_iterator(_end);
-		}
-
-		constexpr const_iterator cend() const noexcept {
-			return const_iterator(_end);
-		}
-
-		constexpr reverse_iterator rbegin() noexcept {
-			return reverse_iterator(_end);
-		}
-
-		constexpr const_reverse_iterator rbegin() const noexcept {
-			return const_reverse_iterator(_end);
-		}
-
-		constexpr const_reverse_iterator crbegin() const noexcept {
-			return const_reverse_iterator(_end);
-		}
-
-		constexpr reverse_iterator rend() noexcept {
-			return reverse_iterator(_begin);
-		}
-
-		constexpr const_reverse_iterator rend() const noexcept {
-			return const_reverse_iterator(_begin);
-		}
-
-		constexpr const_reverse_iterator crend() const noexcept {
-			return const_reverse_iterator(_begin);
-		}
-
-		// capacity
-		constexpr bool empty() const {
-			return (_begin == _end);
-		}
-
-		constexpr size_type size() const noexcept {
-			return static_cast<size_type>(_end - _begin);
-		}
-
-		constexpr size_type max_size() const noexcept {
-			return allocator_traits::max_size(_allocator);
-		}
-
-		constexpr void reserve(size_type new_capacity) {
-			if (new_capacity > max_size()) {
-				PLUGIFY_THROW("allocated memory size would exceed max_size()", std::length_error);
-			}
-			if (new_capacity > capacity()) {
-				reallocate(new_capacity);
-			}
-		}
-
-		constexpr size_type capacity() const noexcept {
-			return static_cast<size_type>(_capacity - _begin);
-		}
-
-		constexpr void shrink_to_fit() {
-			reallocate(size());
-		}
-
-		// modifiers
-		constexpr void clear() noexcept {
-			std::destroy(_begin, _end);
-			_end = _begin;
-		}
-
-		constexpr iterator insert(const_iterator position, const T& value) {
-			return emplace(position, value);
-		}
-
-		constexpr iterator insert(const_iterator position, T&& value) {
-			return emplace(position, std::move(value));
-		}
-
-		constexpr iterator insert(const_iterator position, size_type count, const T& value) {
-			const size_type sz = size();
-			const size_type new_size = sz + count;
-			const size_type position_distance = static_cast<size_type>(position - cbegin());
-			if (count != 0) {
-				if (new_size > capacity()) {
-					pointer const new_begin = allocator_traits::allocate(_allocator, new_size);
-					pointer const old_position = _begin + position_distance;
-					std::uninitialized_move(_begin, old_position, new_begin);
-					pointer const new_position = new_begin + position_distance;
-					std::uninitialized_fill_n(new_position, count, value);
-					std::uninitialized_move(old_position, _end, new_position + count);
-					std::destroy(_begin, _end);
-					allocator_traits::deallocate(_allocator, _begin, capacity());
-					_begin = new_begin;
-					_end = _begin + new_size;
-					_capacity = _end;
-				} else {
-					pointer const pointer_position = _begin + position_distance;
-					std::uninitialized_fill_n(_end, count, value);
-					_end += count;
-					std::rotate(pointer_position, _end - count, _end);
-				}
-			}
-			return _begin + position_distance;
-		}
-
-		template<std::input_iterator InputIterator>
-		constexpr iterator insert(const_iterator position, InputIterator first, InputIterator last) {
-			const size_type sz = size();
-			const size_type count = static_cast<size_type>(std::distance(first, last));
-			const size_type new_size = sz + count;
-			const size_type position_distance = static_cast<size_type>(position - cbegin());
-			if (count != 0) {
-				if (new_size > capacity()) {
-					pointer const new_begin = allocator_traits::allocate(_allocator, new_size);
-					pointer const old_position = _begin + position_distance;
-					pointer const new_position = new_begin + position_distance;
-					std::uninitialized_move(_begin, old_position, new_begin);
-					std::uninitialized_copy(first, last, new_position);
-					std::uninitialized_move(old_position, _end, new_position + count);
-					std::destroy(_begin, _end);
-					allocator_traits::deallocate(_allocator, _begin, capacity());
-					_begin = new_begin;
-					_end = _begin + new_size;
-					_capacity = _end;
-				} else {
-					pointer const pointer_position = _begin + position_distance;
-					std::uninitialized_copy(first, last, _end);
-					_end += count;
-					std::rotate(pointer_position, _end - count, _end);
-				}
-			}
-			return _begin + position_distance;
-		}
-
-		constexpr iterator insert(const_iterator position, std::initializer_list<T> list) {
-			return insert(position, list.begin(), list.end());
-		}
-
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES
-		template<detail::vector_compatible_range<T> Range>
-		constexpr iterator insert_range(const_iterator pos, Range&& range) {
-			return insert(pos, std::ranges::begin(range), std::ranges::end(range));
-		}
-#endif // PLUGIFY_VECTOR_CONTAINERS_RANGES
-
-		template<typename... Args>
-		iterator emplace(const_iterator position, Args&&... args) {
-			const size_type sz = size();
-			const size_type new_size = sz + 1;
-			const size_type position_distance = static_cast<size_type>(position - cbegin());
-			if (position == cend()) {
-				emplace_back(std::forward<Args>(args)...);
 			} else {
-				if (is_full()) {
-					const size_type new_capacity = calculate_new_capacity();
-					pointer const new_begin = allocator_traits::allocate(_allocator, new_capacity);
-					pointer const old_position = _begin + position_distance;
-					pointer const new_position = new_begin + position_distance;
-					std::uninitialized_move(_begin, old_position, new_begin);
-					std::construct_at(new_position, std::forward<Args>(args)...);
-					std::uninitialized_move(old_position, _end, new_position + 1);
-					std::destroy(_begin, _end);
-					allocator_traits::deallocate(_allocator, _begin, capacity());
-					_begin = new_begin;
-					_end = _begin + new_size;
-					_capacity = _begin + new_capacity;
-				} else {
-					pointer const pointer_position = _begin + position_distance;
-					std::construct_at(_end, std::forward<Args>(args)...);
-					++_end;
-					std::rotate(pointer_position, _end - 1, _end);
-				}
+				assign_with_sentinel(std::ranges::begin(range), std::ranges::end(range));
 			}
-			return _begin + position_distance;
+		}
+#endif
+
+		constexpr void
+		assign(size_type n, const_reference u);
+
+		constexpr void
+		assign(std::initializer_list<value_type> il) {
+			assign(il.begin(), il.end());
 		}
 
-		constexpr iterator erase(const_iterator position) {
-			assert(position != end() && "called with a non-dereferenceable iterator");
-			iterator nonconst_position = const_iterator_cast(position);
-			if (nonconst_position + 1 != end()) {
-				std::rotate(nonconst_position, nonconst_position + 1, end());
+		[[nodiscard]] constexpr allocator_type
+		get_allocator() const noexcept {
+			return this->_alloc;
+		}
+
+		//
+		// Iterators
+		//
+		[[nodiscard]] constexpr iterator begin() noexcept {
+			return make_iter(add_alignment_assumption(this->_begin));
+		}
+
+		[[nodiscard]] constexpr const_iterator
+		begin() const noexcept {
+			return make_iter(add_alignment_assumption(this->_begin));
+		}
+
+		[[nodiscard]] constexpr iterator end() noexcept {
+			return make_iter(add_alignment_assumption(this->_end));
+		}
+
+		[[nodiscard]] constexpr const_iterator
+		end() const noexcept {
+			return make_iter(add_alignment_assumption(this->_end));
+		}
+
+		[[nodiscard]] constexpr reverse_iterator
+		rbegin() noexcept {
+			return reverse_iterator(end());
+		}
+
+		[[nodiscard]] constexpr const_reverse_iterator
+		rbegin() const noexcept {
+			return const_reverse_iterator(end());
+		}
+
+		[[nodiscard]] constexpr reverse_iterator
+		rend() noexcept {
+			return reverse_iterator(begin());
+		}
+
+		[[nodiscard]] constexpr const_reverse_iterator
+		rend() const noexcept {
+			return const_reverse_iterator(begin());
+		}
+
+		[[nodiscard]] constexpr const_iterator
+		cbegin() const noexcept {
+			return begin();
+		}
+
+		[[nodiscard]] constexpr const_iterator
+		cend() const noexcept {
+			return end();
+		}
+
+		[[nodiscard]] constexpr const_reverse_iterator
+		crbegin() const noexcept {
+			return rbegin();
+		}
+
+		[[nodiscard]] constexpr const_reverse_iterator
+		crend() const noexcept {
+			return rend();
+		}
+
+		//
+		// [vector.capacity], capacity
+		//
+		[[nodiscard]] constexpr size_type size() const noexcept {
+			return static_cast<size_type>(this->_end - this->_begin);
+		}
+
+		[[nodiscard]] constexpr size_type
+		capacity() const noexcept {
+			return static_cast<size_type>(this->_cap - this->_begin);
+		}
+
+		[[nodiscard]] constexpr bool
+		empty() const noexcept {
+			return this->_begin == this->_end;
+		}
+
+		[[nodiscard]] constexpr size_type
+		max_size() const noexcept {
+			return std::min<size_type>(
+				alloc_traits::max_size(this->_alloc),
+				std::numeric_limits<difference_type>::max()
+			);
+		}
+
+		constexpr void reserve(size_type n);
+		constexpr void shrink_to_fit() noexcept;
+
+		//
+		// element access
+		//
+		[[nodiscard]] constexpr reference
+		operator[](size_type n) noexcept {
+			PLUGIFY_ASSERT(n < size(), "vector[] index out of bounds");
+			return this->_begin[n];
+		}
+
+		[[nodiscard]] constexpr const_reference
+		operator[](size_type n) const noexcept {
+			PLUGIFY_ASSERT(n < size(), "vector[] index out of bounds");
+			return this->_begin[n];
+		}
+
+		[[nodiscard]] constexpr reference at(size_type n) {
+			if (n >= size()) {
+				this->throw_out_of_range();
 			}
-			--_end;
-			std::destroy_at(_end);
-			return nonconst_position;
+			return this->_begin[n];
 		}
 
-		constexpr iterator erase(const_iterator first, const_iterator last) {
-			assert(first <= last && "called with invalid range");
-			iterator nonconst_first = const_iterator_cast(first);
-			iterator nonconst_last = const_iterator_cast(last);
-			if (nonconst_first != nonconst_last) {
-				if (nonconst_last != end()) {
-					std::rotate(nonconst_first, nonconst_last, end());
-				}
-				_end = nonconst_first.base() + static_cast<size_type>(end() - nonconst_last);
-				std::destroy(_end, _end + static_cast<size_type>(std::distance(first, last)));
+		[[nodiscard]] constexpr const_reference
+		at(size_type n) const {
+			if (n >= size()) {
+				this->throw_out_of_range();
 			}
-			return nonconst_first;
+			return this->_begin[n];
 		}
 
-		constexpr void push_back(const T& value) {
-			const size_type sz = size();
-			emplace_at_end([&](pointer const data) {
-				std::construct_at(data + sz, value);
-			});
-			++_end;
+		[[nodiscard]] constexpr reference front() noexcept {
+			PLUGIFY_ASSERT(!empty(), "front() called on an empty vector");
+			return *this->_begin;
 		}
 
-		constexpr void push_back(T&& value) {
-			const size_type sz = size();
-			emplace_at_end([&](pointer const data) {
-				std::construct_at(data + sz, std::move(value));
-			});
-			++_end;
+		[[nodiscard]] constexpr const_reference
+		front() const noexcept {
+			PLUGIFY_ASSERT(!empty(), "front() called on an empty vector");
+			return *this->_begin;
 		}
 
-		template<typename... Args>
-		constexpr reference emplace_back(Args&&... args) {
-			const size_type sz = size();
-			emplace_at_end([&](pointer const data) {
-				std::construct_at(data + sz, std::forward<Args>(args)...);
-			});
-			++_end;
-			return back();
+		[[nodiscard]] constexpr reference back() noexcept {
+			PLUGIFY_ASSERT(!empty(), "back() called on an empty vector");
+			return *(this->_end - 1);
 		}
+
+		[[nodiscard]] constexpr const_reference
+		back() const noexcept {
+			PLUGIFY_ASSERT(!empty(), "back() called on an empty vector");
+			return *(this->_end - 1);
+		}
+
+		//
+		// [vector.data], data access
+		//
+		[[nodiscard]] constexpr value_type*
+		data() noexcept {
+			return std::to_address(this->_begin);
+		}
+
+		[[nodiscard]] constexpr const value_type*
+		data() const noexcept {
+			return std::to_address(this->_begin);
+		}
+
+		//
+		// [vector.modifiers], modifiers
+		//
+		constexpr void push_back(const_reference x) {
+			emplace_back(x);
+		}
+
+		constexpr void push_back(value_type&& x) {
+			emplace_back(std::move(x));
+		}
+
+		template <class... Args>
+		constexpr
+			reference
+			emplace_back(Args&&... args);
+
+		template <class... Args>
+		constexpr void
+		emplace_back_assume_capacity(Args&&... args) {
+			PLUGIFY_ASSERT(
+				size() < capacity(),
+				"We assume that we have enough space to insert an element at the end of the vector"
+			);
+			ConstructTransaction tx(*this, 1);
+			alloc_traits::construct(this->_alloc, std::to_address(tx.pos_), std::forward<Args>(args)...);
+			++tx.pos_;
+		}
+
+#if PLUGIFY_HAS_CXX23
+		template <container_compatible_range<T> Range>
+		constexpr void append_range(Range&& range) {
+			insert_range(end(), std::forward<Range>(range));
+		}
+#endif
 
 		constexpr void pop_back() {
-			assert(!empty() && "called on an empty vector");
-			--_end;
-			std::destroy_at(_end);
+			PLUGIFY_ASSERT(!empty(), "vector::pop_back called on an empty vector");
+			this->destruct_at_end(this->_end - 1);
 		}
 
-		constexpr void resize(size_type count) {
-			resize_to(count, detail::initialized_value_tag{});
+		constexpr iterator
+		insert(const_iterator position, const_reference x);
+
+		constexpr iterator
+		insert(const_iterator position, value_type&& x);
+		template <class... Args>
+		constexpr iterator
+		emplace(const_iterator position, Args&&... args);
+
+		constexpr iterator
+		insert(const_iterator position, size_type n, const_reference x);
+
+		template<std::input_iterator InputIterator>
+		constexpr iterator
+		insert(const_iterator position, InputIterator first, InputIterator last) {
+			return insert_with_sentinel(position, first, last);
 		}
 
-		constexpr void resize(size_type count, const T& value) {
-			resize_to(count, value);
+		template <std::forward_iterator ForwardIterator>
+		constexpr iterator
+		insert(const_iterator position, ForwardIterator first, ForwardIterator last) {
+			return insert_with_size(position, first, last, std::distance(first, last));
 		}
 
-		constexpr vector& operator+=(const T& value) {
-			push_back(value);
-			return *this;
+#if PLUGIFY_HAS_CXX23
+		template <container_compatible_range<T> Range>
+		constexpr iterator
+		insert_range(const_iterator position, Range&& range) {
+			if constexpr (std::ranges::forward_range<Range> || std::ranges::sized_range<Range>) {
+				auto n = static_cast<size_type>(std::ranges::distance(range));
+				return insert_with_size(position, std::ranges::begin(range), std::ranges::end(range), n);
+
+			} else {
+				return insert_with_sentinel(position, std::ranges::begin(range), std::ranges::end(range));
+			}
+		}
+#endif
+
+		constexpr iterator
+		insert(const_iterator position, std::initializer_list<value_type> il) {
+			return insert(position, il.begin(), il.end());
 		}
 
-		constexpr vector& operator+=(T&& value) {
-			push_back(std::move(value));
-			return *this;
+		constexpr iterator erase(const_iterator position);
+		constexpr iterator
+		erase(const_iterator first, const_iterator last);
+
+		constexpr void clear() noexcept {
+			size_type old_size = size();
+			base_destruct_at_end(this->_begin);
+			annotate_shrink(old_size);
 		}
 
-		constexpr vector& operator+=(const vector& other) {
-			insert(end(), other.begin(), other.end());
-			return *this;
+		constexpr void resize(size_type sz);
+		constexpr void
+		resize(size_type sz, const_reference x);
+
+		constexpr void swap(vector&) noexcept;
+
+		constexpr bool invariants() const;
+
+	private:
+		pointer _begin = nullptr;
+		pointer _end = nullptr;
+		pointer _cap = nullptr;
+		PLUGIFY_NO_UNIQUE_ADDRESS
+		allocator_type _alloc;
+
+		//  Allocate space for n objects
+		//  throws length_error if n > max_size()
+		//  throws (probably bad_alloc) if memory run out
+		//  Precondition:  _begin == _end == _cap == nullptr
+		//  Precondition:  n > 0
+		//  Postcondition:  capacity() >= n
+		//  Postcondition:  size() == 0
+		constexpr void vallocate(size_type n) {
+			if (n > max_size()) {
+				this->throw_length_error();
+			}
+			auto allocation = allocate_at_least(this->_alloc, n);
+			_begin = allocation.ptr;
+			_end = allocation.ptr;
+			_cap = _begin + allocation.count;
+			annotate_new(0);
 		}
 
-		constexpr vector& operator+=(vector&& other) {
-			if (this == &other) [[unlikely]] {
-				return *this;
+		constexpr void vdeallocate() noexcept;
+		constexpr size_type recommend(size_type new_size) const;
+		constexpr void construct_at_end(size_type n);
+		constexpr void
+		construct_at_end(size_type n, const_reference x);
+
+		template <class InputIterator, class Sentinel>
+		constexpr void
+		init_with_size(InputIterator first, Sentinel last, size_type n) {
+			auto guard = make_exception_guard(destroy_vector(*this));
+
+			if (n > 0) {
+				vallocate(n);
+				construct_at_end(std::move(first), std::move(last), n);
 			}
 
-			insert(end(), std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
-			return *this;
+			guard.complete();
 		}
 
-#if PLUGIFY_VECTOR_CONTAINERS_RANGES
-		template<detail::vector_compatible_range<T> Range>
-		constexpr void append_range(Range&& range) {
-			return insert(end(), std::ranges::begin(range), std::ranges::end(range));
-		}
-#endif // PLUGIFY_VECTOR_CONTAINERS_RANGES
+		template <class InputIterator, class Sentinel>
+		constexpr void
+		init_with_sentinel(InputIterator first, Sentinel last) {
+			auto guard = make_exception_guard(destroy_vector(*this));
 
-		constexpr void swap(vector& other) noexcept(std::allocator_traits<Allocator>::propagate_on_container_swap::value || std::allocator_traits<Allocator>::is_always_equal::value) {
-			using std::swap;
-			if constexpr (allocator_traits::propagate_on_container_swap::value) {
-				swap(_allocator, other._allocator);
+			for (; first != last; ++first) {
+				emplace_back(*first);
 			}
-			swap(_begin, other._begin);
-			swap(_end, other._end);
-			swap(_capacity, other._capacity);
+
+			guard.complete();
+		}
+
+		template <class Iterator, class Sentinel>
+		constexpr void
+		assign_with_sentinel(Iterator first, Sentinel last);
+
+		// The `Iterator` in `*_with_size` functions can be input-only only if called from
+		// `*_range` (since C++23). Otherwise, `Iterator` is a forward iterator.
+
+		template <class Iterator, class Sentinel>
+		constexpr void
+		assign_with_size(Iterator first, Sentinel last, difference_type n);
+
+		template <class Iterator>
+			requires (!std::same_as<decltype(*std::declval<Iterator&>())&&, value_type&&>)
+		constexpr void
+		insert_assign_n_unchecked(Iterator first, difference_type n, pointer position) {
+			for (pointer end_position = position + n; position != end_position;
+				 ++position, (void) ++first) {
+				detail::temp_value<value_type, Allocator> tmp(this->_alloc, *first);
+				*position = std::move(tmp.get());
+			}
+		}
+
+		template <class Iterator>
+			requires (std::same_as<decltype(*std::declval<Iterator&>())&&, value_type&&>)
+		constexpr void
+		insert_assign_n_unchecked(Iterator first, difference_type n, pointer position) {
+#if PLUGIFY_HAS_CXX23
+			if constexpr (!std::forward_iterator<Iterator>) {
+				// Handles input-only sized ranges for insert_range
+				std::ranges::copy_n(std::move(first), n, position);
+			} else
+#endif
+			{
+				std::copy_n(first, n, position);
+			}
+		}
+
+		template <class InputIterator, class Sentinel>
+		constexpr iterator
+		insert_with_sentinel(const_iterator position, InputIterator first, Sentinel last);
+
+		template <class Iterator, class Sentinel>
+		constexpr iterator
+		insert_with_size(const_iterator position, Iterator first, Sentinel last, difference_type n);
+
+		template <class InputIterator, class Sentinel>
+		constexpr void
+		construct_at_end(InputIterator first, Sentinel last, size_type n);
+
+		constexpr void append(size_type n);
+		constexpr void
+		append(size_type n, const_reference x);
+
+		constexpr iterator make_iter(pointer p) noexcept {
+			return iterator(p);
+		}
+
+		constexpr const_iterator make_iter(const_pointer p) const noexcept {
+			return const_iterator(p);
+		}
+
+		constexpr void
+		swap_out_circular_buffer(split_buffer<value_type, allocator_type&>& v);
+		constexpr pointer
+		swap_out_circular_buffer(split_buffer<value_type, allocator_type&>& v, pointer p);
+		constexpr void
+		move_range(pointer from_s, pointer from_e, pointer to);
+		constexpr void
+		move_assign(vector& c, std::true_type) noexcept(std::is_nothrow_move_assignable<allocator_type>::value);
+		constexpr void
+		move_assign(vector& c, std::false_type) noexcept(alloc_traits::is_always_equal::value);
+
+		constexpr void
+		destruct_at_end(pointer new_last) noexcept {
+			size_type old_size = size();
+			base_destruct_at_end(new_last);
+			annotate_shrink(old_size);
+		}
+
+		template <class... Args>
+		constexpr inline pointer
+		emplace_back_slow_path(Args&&... args);
+
+		// The following functions are no-ops outside of AddressSanitizer mode.
+		// We call annotations for every allocator, unless explicitly disabled.
+		//
+		// To disable annotations for a particular allocator, change value of
+		// asan_annotate_container_with_allocator to false.
+		// For more details, see the "Using libc++" documentation page or
+		// the documentation for sanitizer_annotate_contiguous_container.
+
+		constexpr void
+		annotate_contiguous_container(
+			[[maybe_unused]] const void* old_mid,
+			[[maybe_unused]] const void* new_mid
+		) const {
+			plg::annotate_contiguous_container<Allocator>(data(), data() + capacity(), old_mid, new_mid);
+		}
+
+		constexpr void
+		annotate_new(size_type current_size) const noexcept {
+			annotate_contiguous_container(data() + capacity(), data() + current_size);
+		}
+
+		constexpr void annotate_delete() const noexcept {
+			annotate_contiguous_container(data() + size(), data() + capacity());
+		}
+
+		constexpr void
+		annotate_increase(size_type n) const noexcept {
+			annotate_contiguous_container(data() + size(), data() + size() + n);
+		}
+
+		constexpr void
+		annotate_shrink(size_type old_size) const noexcept {
+			annotate_contiguous_container(data() + old_size, data() + size());
+		}
+
+		struct ConstructTransaction {
+			constexpr
+				explicit ConstructTransaction(vector& v, size_type n)
+				: v_(v)
+				, pos_(v._end)
+				, new_end_(v._end + n) {
+				v.annotate_increase(n);
+			}
+
+			constexpr ~ConstructTransaction() {
+				v_._end = pos_;
+				if (pos_ != new_end_) {
+					v_.annotate_shrink(new_end_ - v_._begin);
+				}
+			}
+
+			vector& v_;
+			pointer pos_;
+			const const_pointer new_end_;
+
+			ConstructTransaction(const ConstructTransaction&) = delete;
+			ConstructTransaction& operator=(const ConstructTransaction&) = delete;
+		};
+
+		constexpr void
+		base_destruct_at_end(pointer new_last) noexcept {
+			pointer soon_to_be_end = this->_end;
+			while (new_last != soon_to_be_end) {
+				alloc_traits::destroy(this->_alloc, std::to_address(--soon_to_be_end));
+			}
+			this->_end = new_last;
+		}
+
+		constexpr void copy_assign_alloc(const vector& c) {
+			copy_assign_alloc(
+				c,
+				std::integral_constant<bool, alloc_traits::propagate_on_container_copy_assignment::value>()
+			);
+		}
+
+		constexpr void
+		move_assign_alloc(vector& c) noexcept(
+			!alloc_traits::propagate_on_container_move_assignment::value
+			|| std::is_nothrow_move_assignable<allocator_type>::value
+		) {
+			move_assign_alloc(
+				c,
+				std::integral_constant<bool, alloc_traits::propagate_on_container_move_assignment::value>()
+			);
+		}
+
+		[[noreturn]] static void throw_length_error() {
+			PLUGIFY_THROW("allocated memory size would exceed max_size()", std::length_error);
+		}
+
+		[[noreturn]] static void throw_out_of_range() {
+			PLUGIFY_THROW("input index is out of bounds", std::out_of_range);
+		}
+
+		constexpr void
+		copy_assign_alloc(const vector& c, std::true_type) {
+			if (this->_alloc != c._alloc) {
+				clear();
+				annotate_delete();
+				alloc_traits::deallocate(this->_alloc, this->_begin, capacity());
+				this->_begin = this->_end = this->_cap = nullptr;
+			}
+			this->_alloc = c._alloc;
+		}
+
+		constexpr void
+		copy_assign_alloc(const vector&, std::false_type) {
+		}
+
+		constexpr void
+		move_assign_alloc(vector& c, std::true_type) noexcept(
+			std::is_nothrow_move_assignable_v<allocator_type>
+		) {
+			this->_alloc = std::move(c._alloc);
+		}
+
+		constexpr void
+		move_assign_alloc(vector&, std::false_type) noexcept {
+		}
+
+		template <class Ptr = pointer>
+			requires(std::is_pointer_v<Ptr>)
+		static constexpr PLUGIFY_NO_CFI pointer add_alignment_assumption(Ptr p) noexcept {
+			if (!std::is_constant_evaluated()) {
+				return static_cast<pointer>(std::assume_aligned<alignof(decltype(*p))>(p));
+			}
+			return p;
+		}
+
+		template <class Ptr = pointer>
+			requires(!std::is_pointer_v<Ptr>)
+		static constexpr PLUGIFY_NO_CFI pointer add_alignment_assumption(Ptr p) noexcept {
+			return p;
+		}
+
+		constexpr void
+		swap_layouts(split_buffer<T, allocator_type&>& sb) {
+			auto vector_begin = _begin;
+			auto vector_sentinel = _end;
+			auto vector_cap = _cap;
+
+			auto sb_begin = sb.begin();
+			auto sb_sentinel = sb.raw_sentinel();
+			auto sb_cap = sb.raw_capacity();
+
+			// TODO: replace with set_valid_range and set_capacity when vector supports it.
+			_begin = sb_begin;
+			_end = sb_sentinel;
+			_cap = sb_cap;
+
+			sb.set_valid_range(vector_begin, vector_sentinel);
+			sb.set_capacity(vector_cap);
 		}
 	};
+
+	template <
+		std::input_iterator InputIterator,
+		is_allocator Alloc>
+	vector(InputIterator, InputIterator, Alloc = Alloc())
+		-> vector<std::iterator_traits<InputIterator>, Alloc>;
+
+#if PLUGIFY_HAS_CXX23
+	template <
+		std::ranges::input_range Range,
+		is_allocator Alloc>
+	vector(std::from_range_t, Range&&, Alloc = Alloc())
+		-> vector<std::ranges::range_value_t<Range>, Alloc>;
+#endif
+
+	// swap_out_circular_buffer relocates the objects in [_begin, _end) into the front of v and
+	// swaps the buffers of *this and v. It is assumed that v provides space for exactly (_end -
+	// _begin) objects in the front. This function has a strong exception guarantee.
+	template <class T, class Allocator>
+	constexpr void
+	vector<T, Allocator>::swap_out_circular_buffer(split_buffer<value_type, allocator_type&>& v) {
+		annotate_delete();
+		auto new_begin = v.begin() - size();
+		uninitialized_allocator_relocate(
+			this->_alloc,
+			std::to_address(_begin),
+			std::to_address(_end),
+			std::to_address(new_begin)
+		);
+		v.set_valid_range(new_begin, v.end());
+		_end = _begin;	// All the objects have been destroyed by relocating them.
+
+		swap_layouts(v);
+		v.set_data(v.begin());
+		annotate_new(size());
+	}
+
+	// swap_out_circular_buffer relocates the objects in [_begin, p) into the front of v, the
+	// objects in [p, _end) into the back of v and swaps the buffers of *this and v. It is assumed
+	// that v provides space for exactly (p - _begin) objects in the front and space for at least
+	// (_end - p) objects in the back. This function has a strong exception guarantee if _begin == p
+	// || _end == p.
+	template <class T, class Allocator>
+	constexpr typename vector<T, Allocator>::pointer
+	vector<T, Allocator>::swap_out_circular_buffer(
+		split_buffer<value_type, allocator_type&>& v,
+		pointer p
+	) {
+		annotate_delete();
+		pointer ret = v.begin();
+
+		// Relocate [p, _end) first to avoid having a hole in [_begin, _end)
+		// in case something in [_begin, p) throws.
+		uninitialized_allocator_relocate(
+			this->_alloc,
+			std::to_address(p),
+			std::to_address(_end),
+			std::to_address(v.end())
+		);
+		auto relocated_so_far = _end - p;
+		v.set_sentinel(v.end() + relocated_so_far);
+		_end = p;  // The objects in [p, _end) have been destroyed by relocating them.
+		auto new_begin = v.begin() - (p - _begin);
+
+		uninitialized_allocator_relocate(
+			this->_alloc,
+			std::to_address(_begin),
+			std::to_address(p),
+			std::to_address(new_begin)
+		);
+		v.set_valid_range(new_begin, v.end());
+		_end = _begin;	// All the objects have been destroyed by relocating them.
+		swap_layouts(v);
+		v.set_data(v.begin());
+		annotate_new(size());
+		return ret;
+	}
+
+	template <class T, class Allocator>
+	constexpr void vector<T, Allocator>::vdeallocate() noexcept {
+		if (this->_begin != nullptr) {
+			clear();
+			annotate_delete();
+			alloc_traits::deallocate(this->_alloc, this->_begin, capacity());
+			this->_begin = this->_end = this->_cap = nullptr;
+		}
+	}
+
+	//  Precondition:  new_size > capacity()
+	template <class T, class Allocator>
+	constexpr inline
+		typename vector<T, Allocator>::size_type
+		vector<T, Allocator>::recommend(size_type new_size) const {
+		const size_type ms = max_size();
+		if (new_size > ms) {
+			this->throw_length_error();
+		}
+		const size_type cap = capacity();
+		if (cap >= ms / 2) {
+			return ms;
+		}
+		return std::max<size_type>(2 * cap, new_size);
+	}
+
+	//  Default constructs n objects starting at _end
+	//  throws if construction throws
+	//  Precondition:  n > 0
+	//  Precondition:  size() + n <= capacity()
+	//  Postcondition:  size() == size() + n
+	template <class T, class Allocator>
+	constexpr void vector<T, Allocator>::construct_at_end(size_type n) {
+		ConstructTransaction tx(*this, n);
+		const_pointer new_end = tx.new_end_;
+		for (pointer pos = tx.pos_; pos != new_end; tx.pos_ = ++pos) {
+			alloc_traits::construct(this->_alloc, std::to_address(pos));
+		}
+	}
+
+	//  Copy constructs n objects starting at _end from x
+	//  throws if construction throws
+	//  Precondition:  n > 0
+	//  Precondition:  size() + n <= capacity()
+	//  Postcondition:  size() == old size() + n
+	//  Postcondition:  [i] == x for all i in [size() - n, n)
+	template <class T, class Allocator>
+	constexpr inline void
+	vector<T, Allocator>::construct_at_end(size_type n, const_reference x) {
+		ConstructTransaction tx(*this, n);
+		const_pointer new_end = tx.new_end_;
+		for (pointer pos = tx.pos_; pos != new_end; tx.pos_ = ++pos) {
+			alloc_traits::construct(this->_alloc, std::to_address(pos), x);
+		}
+	}
+
+	template <class T, class Allocator>
+	template <class InputIterator, class Sentinel>
+	constexpr void
+	vector<T, Allocator>::construct_at_end(InputIterator first, Sentinel last, size_type n) {
+		ConstructTransaction tx(*this, n);
+		tx.pos_ = uninitialized_allocator_copy(
+			this->_alloc,
+			std::move(first),
+			std::move(last),
+			tx.pos_
+		);
+	}
+
+	//  Default constructs n objects starting at _end
+	//  throws if construction throws
+	//  Postcondition:  size() == size() + n
+	//  Exception safety: strong.
+	template <class T, class Allocator>
+	constexpr void vector<T, Allocator>::append(size_type n) {
+		if (static_cast<size_type>(this->_cap - this->_end) >= n) {
+			this->construct_at_end(n);
+		} else {
+			split_buffer<value_type, allocator_type&> v(recommend(size() + n), size(), this->_alloc);
+			v.construct_at_end(n);
+			swap_out_circular_buffer(v);
+		}
+	}
+
+	//  Default constructs n objects starting at _end
+	//  throws if construction throws
+	//  Postcondition:  size() == size() + n
+	//  Exception safety: strong.
+	template <class T, class Allocator>
+	constexpr void
+	vector<T, Allocator>::append(size_type n, const_reference x) {
+		if (static_cast<size_type>(this->_cap - this->_end) >= n) {
+			this->construct_at_end(n, x);
+		} else {
+			split_buffer<value_type, allocator_type&> v(recommend(size() + n), size(), this->_alloc);
+			v.construct_at_end(n, x);
+			swap_out_circular_buffer(v);
+		}
+	}
+
+	template <class T, class Allocator>
+	constexpr inline
+	vector<T, Allocator>::vector(vector&& x) noexcept
+		: _alloc(std::move(x._alloc)) {
+		this->_begin = x._begin;
+		this->_end = x._end;
+		this->_cap = x._cap;
+		x._begin = x._end = x._cap = nullptr;
+	}
+
+	template <class T, class Allocator>
+	constexpr inline
+	vector<T, Allocator>::vector(vector&& x, const std::type_identity_t<allocator_type>& a)
+		: _alloc(a) {
+		if (a == x._alloc) {
+			this->_begin = x._begin;
+			this->_end = x._end;
+			this->_cap = x._cap;
+			x._begin = x._end = x._cap = nullptr;
+		} else {
+			using Ip = std::move_iterator<iterator>;
+			init_with_size(Ip(x.begin()), Ip(x.end()), x.size());
+		}
+	}
+
+	template <class T, class Allocator>
+	constexpr void
+	vector<T, Allocator>::move_assign(vector& c, std::false_type) noexcept(
+		alloc_traits::is_always_equal::value
+	) {
+		if (this->_alloc != c._alloc) {
+			using Ip = std::move_iterator<iterator>;
+			assign(Ip(c.begin()), Ip(c.end()));
+		} else {
+			move_assign(c, std::true_type());
+		}
+	}
+
+	template <class T, class Allocator>
+	constexpr void
+	vector<T, Allocator>::move_assign(vector& c, std::true_type) noexcept(
+		std::is_nothrow_move_assignable<allocator_type>::value
+	) {
+		vdeallocate();
+		move_assign_alloc(c);  // this can throw
+		this->_begin = c._begin;
+		this->_end = c._end;
+		this->_cap = c._cap;
+		c._begin = c._end = c._cap = nullptr;
+	}
+
+	template <class T, class Allocator>
+	constexpr inline vector<T, Allocator>&
+	vector<T, Allocator>::operator=(const vector& x) {
+		if (this != std::addressof(x)) {
+			copy_assign_alloc(x);
+			assign(x._begin, x._end);
+		}
+		return *this;
+	}
+
+	template <class T, class Allocator>
+	template <class Iterator, class Sentinel>
+	constexpr void
+	vector<T, Allocator>::assign_with_sentinel(Iterator first, Sentinel last) {
+		pointer cur = _begin;
+		for (; first != last && cur != _end; ++first, (void) ++cur) {
+			*cur = *first;
+		}
+		if (cur != _end) {
+			destruct_at_end(cur);
+		} else {
+			for (; first != last; ++first) {
+				emplace_back(*first);
+			}
+		}
+	}
+
+	template <class T, class Allocator>
+	template <class Iterator, class Sentinel>
+	constexpr void
+	vector<T, Allocator>::assign_with_size(Iterator first, Sentinel last, difference_type n) {
+		size_type new_size = static_cast<size_type>(n);
+		if (new_size <= capacity()) {
+			if (new_size > size()) {
+#if PLUGIFY_HAS_CXX23
+				auto mid = std::ranges::copy_n(std::move(first), size(), this->_begin).in;
+				construct_at_end(std::move(mid), std::move(last), new_size - size());
+#else
+				Iterator mid = std::next(first, size());
+				std::copy(first, mid, this->_begin);
+				construct_at_end(mid, last, new_size - size());
+#endif
+			} else {
+				pointer m = std::copy(std::move(first), last, this->_begin);
+				this->destruct_at_end(m);
+			}
+		} else {
+			vdeallocate();
+			vallocate(recommend(new_size));
+			construct_at_end(std::move(first), std::move(last), new_size);
+		}
+	}
+
+	template <class T, class Allocator>
+	constexpr void
+	vector<T, Allocator>::assign(size_type n, const_reference u) {
+		if (n <= capacity()) {
+			size_type s = size();
+			std::fill_n(this->_begin, std::min(n, s), u);
+			if (n > s) {
+				construct_at_end(n - s, u);
+			} else {
+				this->destruct_at_end(this->_begin + n);
+			}
+		} else {
+			vdeallocate();
+			vallocate(recommend(static_cast<size_type>(n)));
+			construct_at_end(n, u);
+		}
+	}
+
+	template <class T, class Allocator>
+	constexpr void vector<T, Allocator>::reserve(size_type n) {
+		if (n > capacity()) {
+			if (n > max_size()) {
+				this->throw_length_error();
+			}
+			split_buffer<value_type, allocator_type&> v(n, size(), this->_alloc);
+			swap_out_circular_buffer(v);
+		}
+	}
+
+	template <class T, class Allocator>
+	constexpr void vector<T, Allocator>::shrink_to_fit() noexcept {
+		if (capacity() > size()) {
+#if PLUGIFY_HAS_EXCEPTIONS
+			try {
+#endif	// PLUGIFY_HAS_EXCEPTIONS
+				split_buffer<value_type, allocator_type&> v(size(), size(), this->_alloc);
+				// The Standard mandates shrink_to_fit() does not increase the capacity.
+				// With equal capacity keep the existing buffer. This avoids extra work
+				// due to swapping the elements.
+				if (v.capacity() < capacity()) {
+					swap_out_circular_buffer(v);
+				}
+#if PLUGIFY_HAS_EXCEPTIONS
+			} catch (...) {
+			}
+#endif	// PLUGIFY_HAS_EXCEPTIONS
+		}
+	}
+
+	template <class T, class Allocator>
+	template <class... Args>
+	constexpr typename vector<T, Allocator>::pointer
+	vector<T, Allocator>::emplace_back_slow_path(Args&&... args) {
+		split_buffer<value_type, allocator_type&> v(recommend(size() + 1), size(), this->_alloc);
+		//    v.emplace_back(std::forward<Args>(args)...);
+		pointer end = v.end();
+		alloc_traits::construct(this->_alloc, std::to_address(end), std::forward<Args>(args)...);
+		v.set_sentinel(++end);
+		swap_out_circular_buffer(v);
+		return this->_end;
+	}
+
+	// This makes the compiler inline `else()` if `cond` is known to be false. Currently LLVM
+	// doesn't do that without the `builtin_constant_p`, since it considers `else` unlikely even
+	// through it's known to be run. See https://llvm.org/PR154292
+	template <class If, class Else>
+	constexpr void
+	if_likely_else(bool cond, If _if, Else _else) {
+		if (__builtin_constant_p(cond)) {
+			if (cond) {
+				_if();
+			} else {
+				_else();
+			}
+		} else {
+			if (cond) [[likely]] {
+				_if();
+			} else {
+				_else();
+			}
+		}
+	}
+
+	template <class T, class Allocator>
+	template <class... Args>
+	constexpr inline
+		typename vector<T, Allocator>::reference
+		vector<T, Allocator>::emplace_back(Args&&... args) {
+		pointer end = this->_end;
+		if_likely_else(
+			end < this->_cap,
+			[&] {
+				emplace_back_assume_capacity(std::forward<Args>(args)...);
+				++end;
+			},
+			[&] { end = emplace_back_slow_path(std::forward<Args>(args)...); }
+		);
+
+		this->_end = end;
+		return *(end - 1);
+	}
+
+	template <class T, class Allocator>
+	constexpr inline
+		typename vector<T, Allocator>::iterator
+		vector<T, Allocator>::erase(const_iterator position) {
+		PLUGIFY_ASSERT(
+			position != end(),
+			"vector::erase(iterator) called with a non-dereferenceable iterator"
+		);
+		difference_type ps = position - cbegin();
+		pointer p = this->_begin + ps;
+		this->destruct_at_end(std::move(p + 1, this->_end, p));
+		return make_iter(p);
+	}
+
+	template <class T, class Allocator>
+	constexpr typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::erase(const_iterator first, const_iterator last) {
+		PLUGIFY_ASSERT(
+			first <= last,
+			"vector::erase(first, last) called with invalid range"
+		);
+		pointer p = this->_begin + (first - begin());
+		if (first != last) {
+			this->destruct_at_end(std::move(p + (last - first), this->_end, p));
+		}
+		return make_iter(p);
+	}
+
+	template <class T, class Allocator>
+	constexpr void
+	vector<T, Allocator>::move_range(pointer from_s, pointer from_e, pointer to) {
+		pointer old_last = this->_end;
+		difference_type n = old_last - to;
+		{
+			pointer i = from_s + n;
+			ConstructTransaction tx(*this, from_e - i);
+			for (pointer pos = tx.pos_; i < from_e; ++i, (void) ++pos, tx.pos_ = pos) {
+				alloc_traits::construct(this->_alloc, std::to_address(pos), std::move(*i));
+			}
+		}
+		std::move_backward(from_s, from_s + n, old_last);
+	}
+
+	template <class T, class Allocator>
+	constexpr typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::insert(const_iterator position, const_reference x) {
+		pointer p = this->_begin + (position - begin());
+		if (this->_end < this->_cap) {
+			if (p == this->_end) {
+				emplace_back_assume_capacity(x);
+			} else {
+				move_range(p, this->_end, p + 1);
+				const_pointer xr = std::pointer_traits<const_pointer>::pointer_to(x);
+				if (is_pointer_in_range(
+						std::to_address(p),
+						std::to_address(_end),
+						std::addressof(x)
+					)) {
+					++xr;
+				}
+				*p = *xr;
+			}
+		} else {
+			split_buffer<value_type, allocator_type&> v(
+				recommend(size() + 1),
+				p - this->_begin,
+				this->_alloc
+			);
+			v.emplace_back(x);
+			p = swap_out_circular_buffer(v, p);
+		}
+		return make_iter(p);
+	}
+
+	template <class T, class Allocator>
+	constexpr typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::insert(const_iterator position, value_type&& x) {
+		pointer p = this->_begin + (position - begin());
+		if (this->_end < this->_cap) {
+			if (p == this->_end) {
+				emplace_back_assume_capacity(std::move(x));
+			} else {
+				move_range(p, this->_end, p + 1);
+				*p = std::move(x);
+			}
+		} else {
+			split_buffer<value_type, allocator_type&> v(
+				recommend(size() + 1),
+				p - this->_begin,
+				this->_alloc
+			);
+			v.emplace_back(std::move(x));
+			p = swap_out_circular_buffer(v, p);
+		}
+		return make_iter(p);
+	}
+
+	template <class T, class Allocator>
+	template <class... Args>
+	constexpr typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::emplace(const_iterator position, Args&&... args) {
+		pointer p = this->_begin + (position - begin());
+		if (this->_end < this->_cap) {
+			if (p == this->_end) {
+				emplace_back_assume_capacity(std::forward<Args>(args)...);
+			} else {
+				detail::temp_value<value_type, Allocator> tmp(this->_alloc, std::forward<Args>(args)...);
+				move_range(p, this->_end, p + 1);
+				*p = std::move(tmp.get());
+			}
+		} else {
+			split_buffer<value_type, allocator_type&> v(
+				recommend(size() + 1),
+				p - this->_begin,
+				this->_alloc
+			);
+			v.emplace_back(std::forward<Args>(args)...);
+			p = swap_out_circular_buffer(v, p);
+		}
+		return make_iter(p);
+	}
+
+	template <class T, class Allocator>
+	constexpr typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::insert(const_iterator position, size_type n, const_reference x) {
+		pointer p = this->_begin + (position - begin());
+		if (n > 0) {
+			if (n <= static_cast<size_type>(this->_cap - this->_end)) {
+				size_type old_n = n;
+				pointer old_last = this->_end;
+				if (n > static_cast<size_type>(this->_end - p)) {
+					size_type cx = n - (this->_end - p);
+					construct_at_end(cx, x);
+					n -= cx;
+				}
+				if (n > 0) {
+					move_range(p, old_last, p + old_n);
+					const_pointer xr = std::pointer_traits<const_pointer>::pointer_to(x);
+					if (is_pointer_in_range(
+							std::to_address(p),
+							std::to_address(_end),
+							std::addressof(x)
+						)) {
+						xr += old_n;
+					}
+					std::fill_n(p, n, *xr);
+				}
+			} else {
+				split_buffer<value_type, allocator_type&> v(
+					recommend(size() + n),
+					p - this->_begin,
+					this->_alloc
+				);
+				v.construct_at_end(n, x);
+				p = swap_out_circular_buffer(v, p);
+			}
+		}
+		return make_iter(p);
+	}
+
+	template <class T, class Allocator>
+	template <class InputIterator, class Sentinel>
+	constexpr typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::insert_with_sentinel(
+		const_iterator position,
+		InputIterator first,
+		Sentinel last
+	) {
+		difference_type off = position - begin();
+		pointer p = this->_begin + off;
+		pointer old_last = this->_end;
+		for (; this->_end != this->_cap && first != last; ++first) {
+			emplace_back_assume_capacity(*first);
+		}
+
+		if (first == last) {
+			(void) std::rotate(p, old_last, this->_end);
+		} else {
+			split_buffer<value_type, allocator_type&> v(_alloc);
+			auto guard = make_exception_guard(
+				AllocatorDestroyRangeReverse<allocator_type, pointer>(_alloc, old_last, this->_end)
+			);
+			v.construct_at_end_with_sentinel(std::move(first), std::move(last));
+			split_buffer<value_type, allocator_type&> merged(
+				recommend(size() + v.size()),
+				off,
+				_alloc
+			);	// has `off` positions available at the front
+			uninitialized_allocator_relocate(
+				_alloc,
+				std::to_address(old_last),
+				std::to_address(this->_end),
+				std::to_address(merged.end())
+			);
+			guard.complete();  // Release the guard once objects in [old_last_, _end) have been
+							   // successfully relocated.
+			merged.set_sentinel(merged.end() + (this->_end - old_last));
+			this->_end = old_last;
+			uninitialized_allocator_relocate(
+				_alloc,
+				std::to_address(v.begin()),
+				std::to_address(v.end()),
+				std::to_address(merged.end())
+			);
+			merged.set_sentinel(merged.size() + v.size());
+			v.set_sentinel(v.begin());
+			p = swap_out_circular_buffer(merged, p);
+		}
+		return make_iter(p);
+	}
+
+	template <class T, class Allocator>
+	template <class Iterator, class Sentinel>
+	constexpr typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::insert_with_size(
+		const_iterator position,
+		Iterator first,
+		Sentinel last,
+		difference_type n
+	) {
+		pointer p = this->_begin + (position - begin());
+		if (n > 0) {
+			if (n <= this->_cap - this->_end) {
+				pointer old_last = this->_end;
+				difference_type dx = this->_end - p;
+				if (n > dx) {
+#if PLUGIFY_HAS_CXX23
+					if constexpr (!std::forward_iterator<Iterator>) {
+						construct_at_end(std::move(first), std::move(last), n);
+						std::rotate(p, old_last, this->_end);
+					} else
+#endif
+					{
+						Iterator m = std::next(first, dx);
+						construct_at_end(m, last, n - dx);
+						if (dx > 0) {
+							move_range(p, old_last, p + n);
+							insert_assign_n_unchecked(first, dx, p);
+						}
+					}
+				} else {
+					move_range(p, old_last, p + n);
+					insert_assign_n_unchecked(std::move(first), n, p);
+				}
+			} else {
+				split_buffer<value_type, allocator_type&> v(
+					recommend(size() + n),
+					p - this->_begin,
+					this->_alloc
+				);
+				v.construct_at_end_with_size(std::move(first), n);
+				p = swap_out_circular_buffer(v, p);
+			}
+		}
+		return make_iter(p);
+	}
+
+	template <class T, class Allocator>
+	constexpr void vector<T, Allocator>::resize(size_type sz) {
+		size_type cs = size();
+		if (cs < sz) {
+			this->append(sz - cs);
+		} else if (cs > sz) {
+			this->destruct_at_end(this->_begin + sz);
+		}
+	}
+
+	template <class T, class Allocator>
+	constexpr void
+	vector<T, Allocator>::resize(size_type sz, const_reference x) {
+		size_type cs = size();
+		if (cs < sz) {
+			this->append(sz - cs, x);
+		} else if (cs > sz) {
+			this->destruct_at_end(this->_begin + sz);
+		}
+	}
+
+	template <class T, class Allocator>
+	constexpr void vector<T, Allocator>::swap(vector& x)
+		noexcept
+	{
+		PLUGIFY_ASSERT(
+			alloc_traits::propagate_on_container_swap::value || this->_alloc == x._alloc,
+			"vector::swap: Either propagate_on_container_swap must be true"
+			" or the allocators must compare equal"
+		);
+		std::swap(this->_begin, x._begin);
+		std::swap(this->_end, x._end);
+		std::swap(this->_cap, x._cap);
+		swap_allocator(this->_alloc, x._alloc);
+	}
+
+	template <class T, class Allocator>
+	constexpr bool vector<T, Allocator>::invariants() const {
+		if (this->_begin == nullptr) {
+			if (this->_end != nullptr || this->_cap != nullptr) {
+				return false;
+			}
+		} else {
+			if (this->_begin > this->_end) {
+				return false;
+			}
+			if (this->_begin == this->_cap) {
+				return false;
+			}
+			if (this->_end > this->_cap) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	// comparisons
 	template<typename T, typename Allocator>
@@ -935,7 +1552,7 @@ namespace plg {
 	}
 
 	template<typename T, typename Allocator, typename U>
-	constexpr typename vector<T, Allocator>::size_type erase(vector<T, Allocator>& c, const U& value) {
+	constexpr vector<T, Allocator>::size_type erase(vector<T, Allocator>& c, const U& value) {
 		auto it = std::remove(c.begin(), c.end(), value);
 		auto r = std::distance(it, c.end());
 		c.erase(it, c.end());
@@ -943,20 +1560,15 @@ namespace plg {
 	}
 
 	template<typename T, typename Allocator, typename Pred>
-	constexpr typename vector<T, Allocator>::size_type erase_if(vector<T, Allocator>& c, Pred pred) {
+	constexpr vector<T, Allocator>::size_type erase_if(vector<T, Allocator>& c, Pred pred) {
 		auto it = std::remove_if(c.begin(), c.end(), pred);
 		auto r = std::distance(it, c.end());
 		c.erase(it, c.end());
 		return r;
 	}
 
-	// deduction guides
-	template<typename InputIterator, typename Allocator = plg::allocator<typename std::iterator_traits<InputIterator>::value_type>>
-	vector(InputIterator, InputIterator, Allocator = Allocator()) -> vector<typename std::iterator_traits<InputIterator>::value_type, Allocator>;
-
 	namespace pmr {
 		template<typename T>
 		using vector = ::plg::vector<T, std::pmr::polymorphic_allocator<T>>;
 	} // namespace pmr
-
 } // namespace plg

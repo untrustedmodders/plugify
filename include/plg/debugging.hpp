@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plg/macro.hpp"
+#include "plg/config.hpp"
 
 #if __has_include(<debugging>)
 #include <debugging>

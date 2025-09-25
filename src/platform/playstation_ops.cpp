@@ -3,7 +3,7 @@
 #include "plugify/platform_ops.hpp"
 
 namespace plugify {
-	class PlayStationPlatformOps : public IPlatformOps {
+	class PlayStationPlatformOps final : public IPlatformOps {
 	private:
 		static std::string TranslateError(int error) {
 			switch (error) {

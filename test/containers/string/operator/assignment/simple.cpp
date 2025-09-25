@@ -48,7 +48,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE(b.empty());
 				REQUIRE(b.size() == 0);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong", 32};
@@ -56,7 +56,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 47);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -66,7 +66,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -77,7 +77,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 64);
-				REQUIRE(b.capacity() == 64);
+				REQUIRE(b.capacity() == 79);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[63] == 'g');
 		  }
@@ -88,7 +88,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 24);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[23] == 'g');
 		  }
@@ -99,7 +99,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 5);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 's');
 				REQUIRE(b[4] == 'l');
 		  }
@@ -175,7 +175,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				REQUIRE(a.capacity() == 23);
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -188,7 +188,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				REQUIRE(a.capacity() == 23);
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -202,7 +202,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				REQUIRE(a.capacity() == 23);
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 64);
-				REQUIRE(b.capacity() == 64);
+				REQUIRE(b.capacity() == 71);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[63] == 'g');
 		  }
@@ -216,7 +216,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				REQUIRE(a.capacity() == 23);
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 24);
-				REQUIRE(b.capacity() == 24);
+				REQUIRE(b.capacity() == 31);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[23] == 'g');
 		  }
@@ -275,14 +275,14 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = "";
 				REQUIRE(b.empty());
 				REQUIRE(b.size() == 0);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 		  }
 		  {
 				plg::string b;
 				b = "longlonglonglonglonglonglonglong";
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 47);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -291,7 +291,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = "longlonglonglonglonglonglonglong";
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -301,7 +301,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglong";
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 64);
-				REQUIRE(b.capacity() == 64);
+				REQUIRE(b.capacity() == 79);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[63] == 'g');
 		  }
@@ -311,7 +311,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = "longlonglonglonglonglong";
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 24);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[23] == 'g');
 		  }
@@ -321,7 +321,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = "small";
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 5);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 's');
 				REQUIRE(b[4] == 'l');
 		  }
@@ -371,7 +371,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE(b.empty());
 				REQUIRE(b.size() == 0);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 		  }
 		  {
 				std::string_view a{"longlonglonglonglonglonglonglong", 32};
@@ -379,7 +379,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 47);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -389,7 +389,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -400,7 +400,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 64);
-				REQUIRE(b.capacity() == 64);
+				REQUIRE(b.capacity() == 79);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[63] == 'g');
 		  }
@@ -411,7 +411,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 24);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[23] == 'g');
 		  }
@@ -422,7 +422,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = a;
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 5);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 's');
 				REQUIRE(b[4] == 'l');
 		  }
@@ -451,7 +451,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = 'a';
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 1);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b == "a");
 		  }
 	 }
@@ -495,14 +495,14 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = {};
 				REQUIRE(b.empty());
 				REQUIRE(b.size() == 0);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 		  }
 		  {
 				plg::string b;
 				b = {'l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g'};
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 47);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -511,7 +511,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = {'l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g'};
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 32);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[31] == 'g');
 		  }
@@ -521,7 +521,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = {'l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g'};
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 64);
-				REQUIRE(b.capacity() == 64);
+				REQUIRE(b.capacity() == 79);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[63] == 'g');
 		  }
@@ -531,7 +531,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = {'l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g','l','o','n','g'};
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 24);
-				REQUIRE(b.capacity() == 32);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 'l');
 				REQUIRE(b[23] == 'g');
 		  }
@@ -541,7 +541,7 @@ TEST_CASE("string operator > assignment > simple", "[string]") {
 				b = {'s','m','a','l','l'};
 				REQUIRE_FALSE(b.empty());
 				REQUIRE(b.size() == 5);
-				REQUIRE(b.capacity() == 23);
+				REQUIRE(b.capacity() == 39);
 				REQUIRE(b[0] == 's');
 				REQUIRE(b[4] == 'l');
 		  }

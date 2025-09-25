@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <string>
 
-#include "plg/macro.hpp"
+#include "plg/config.hpp"
 
 namespace plg {
 	using path_view = std::basic_string_view<std::filesystem::path::value_type>;

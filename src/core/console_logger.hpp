@@ -5,7 +5,7 @@
 #include "plg/enum.hpp"
 
 namespace plugify {
-	class ConsoleLogger : public ILogger {
+	class ConsoleLogger final : public ILogger {
 	public:
 		ConsoleLogger(Severity minSeverity = Severity::Info)
 			: _minSeverity(minSeverity) {

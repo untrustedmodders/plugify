@@ -16,15 +16,25 @@
 #  define __has_builtin(x) 0
 #endif
 
+#ifndef __builtin_constant_p
+#  define __builtin_constant_p(x) std::is_constant_evaluated()
+#endif
+
 #if __has_include(<version>)
 #  include <version>
 #endif
 
 #if __has_include(<cassert>)
 #  include <cassert>
+#  define PLUGIFY_ASSERT(cond, mesg) assert((cond) && (mesg))
 #endif
 
-#ifdef __cpp_exceptions
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+#  include <sanitizer/asan_interface.h>
+#endif
+
+#define PLUGIFY_HAS_EXCEPTIONS __cpp_exceptions || _CPPUNWIND || __EXCEPTIONS
+#if PLUGIFY_HAS_EXCEPTIONS
 #  include <stdexcept>
 #  include <type_traits>
 namespace plg {
@@ -37,7 +47,7 @@ namespace plg {
 		}
 	}
 } // namespace plg
-#  define PLUGIFY_THROW(str, e, ...) ::plg::throw_exception<e>(str, ##__VA_ARGS__);
+#  define PLUGIFY_THROW(str, exp, ...) ::plg::throw_exception<exp>(str, ##__VA_ARGS__);
 #else
 #  include <cstdlib>
 #  include <cstdio>
@@ -233,10 +243,22 @@ namespace plg {
 #elif PLUGIFY_COMPILER_MSVC
 #  pragma warning(error: 4714)
 #  define PLUGIFY_FORCE_INLINE [[msvc::forceinline]]
-#  define PLUGIFY_NOINLINE __declspec(noinline)
+#  define PLUGIFY_NOINLINE [[msvc::noinline]]
 #else
 #  define PLUGIFY_FORCE_INLINE inline
 #  define PLUGIFY_NOINLINE
+#endif
+
+#if __has_feature(nullability)
+#  define PLUGIFY_NO_NULL _Nonnull
+#else
+#  define PLUGIFY_NO_NULL
+#endif
+
+#if __has_cpp_attribute(__no_sanitize__)
+#  define PLUGIFY_NO_CFI __attribute__((__no_sanitize__("cfi")))
+#else
+#  define PLUGIFY_NO_CFI
 #endif
 
 #if PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_CLANG

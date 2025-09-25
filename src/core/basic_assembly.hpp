@@ -5,7 +5,7 @@
 #include "core/assembly_handle.hpp"
 
 namespace plugify {
-	class BasicAssembly : public IAssembly {
+	class BasicAssembly final : public IAssembly {
 	private:
 		std::unique_ptr<AssemblyHandle> _handle;
 		std::shared_ptr<IPlatformOps> _ops;

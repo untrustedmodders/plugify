@@ -26,7 +26,7 @@ namespace plugify {
 	 * leveraging its capabilities to handle complex dependency graphs, version
 	 * constraints, and conflict detection.
 	 */
-	class LibsolvDependencyResolver : public IDependencyResolver {
+	class LibsolvDependencyResolver final : public IDependencyResolver {
 		struct PoolDeleter {
 			void operator()(Pool* p) const {
 				if (p) {

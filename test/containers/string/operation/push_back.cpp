@@ -37,18 +37,18 @@ TEST_CASE("string operation > push_back", "[string]") {
 			a.push_back('c');
 			a.push_back('7');
 			a.push_back('1');
-				REQUIRE(a.capacity() == 27);
+				REQUIRE(a.capacity() == 47);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong"};
 				a.push_back('a');
 				REQUIRE(a == "longlonglonglonglonglonglonglonga");
 				REQUIRE(a.size() == 33);
-				REQUIRE(a.capacity() == 33);
+				REQUIRE(a.capacity() == 39);
 				a.push_back('b');
 				REQUIRE(a == "longlonglonglonglonglonglonglongab");
 				REQUIRE(a.size() == 34);
-				REQUIRE(a.capacity() == 34);
+				REQUIRE(a.capacity() == 39);
 		  }
 	 }
 

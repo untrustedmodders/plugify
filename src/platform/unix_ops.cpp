@@ -3,7 +3,7 @@
 #include "plugify/platform_ops.hpp"
 
 namespace plugify {
-	class UnixPlatformOps : public IPlatformOps {
+	class UnixPlatformOps final : public IPlatformOps {
 	private:
 		static int TranslateFlags(LoadFlag flags) {
 			int dlFlags = 0;

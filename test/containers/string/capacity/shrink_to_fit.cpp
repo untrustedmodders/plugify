@@ -20,7 +20,7 @@ TEST_CASE("string capacity > shrink_to_fit", "[string]") {
 		  plg::string c{"toto", 4};
 		  c.reserve(32);
 		  c.shrink_to_fit();
-		  REQUIRE(c.capacity() == 4);
+		  REQUIRE(c.capacity() == 23);
 		  REQUIRE(c.size() == 4);
 		  REQUIRE(c[0] == 't');
 		  REQUIRE(c[3] == 'o');
@@ -28,7 +28,7 @@ TEST_CASE("string capacity > shrink_to_fit", "[string]") {
 		  plg::string d{"totototototototototototototototo", 32};
 		  d.reserve(65);
 		  d.shrink_to_fit();
-		  REQUIRE(d.capacity() == 32);
+		  REQUIRE(d.capacity() == 39);
 		  REQUIRE(d.size() == 32);
 		  REQUIRE(d[0] == 't');
 		  REQUIRE(d[31] == 'o');

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plg/macro.hpp"
+#include "plg/config.hpp"
 
 #if __has_include(<expected>)
 #include <expected>
@@ -529,37 +529,37 @@ namespace plg {
 
 		// precondition: has_value() = true
 		constexpr auto operator->() const noexcept -> T const* {
-			assert(this->has_val && "requires the expected to contain a value");
+			PLUGIFY_ASSERT(this->has_val, "requires the expected to contain a value");
 			return std::addressof(this->val);
 		}
 
 		// precondition: has_value() = true
 		constexpr auto operator->() noexcept -> T* {
-			assert(this->has_val && "requires the expected to contain a value");
+			PLUGIFY_ASSERT(this->has_val, "requires the expected to contain a value");
 			return std::addressof(this->val);
 		}
 
 		// precondition: has_value() = true
 		constexpr auto operator*() const& noexcept -> T const& {
-			assert(this->has_val && "requires the expected to contain a value");
+			PLUGIFY_ASSERT(this->has_val, "requires the expected to contain a value");
 			return this->val;
 		}
 
 		// precondition: has_value() = true
 		constexpr auto operator*() & noexcept -> T& {
-			assert(this->has_val && "requires the expected to contain a value");
+			PLUGIFY_ASSERT(this->has_val, "requires the expected to contain a value");
 			return this->val;
 		}
 
 		// precondition: has_value() = true
 		constexpr auto operator*() const&& noexcept -> T const&& {
-			assert(this->has_val && "requires the expected to contain a value");
+			PLUGIFY_ASSERT(this->has_val, "requires the expected to contain a value");
 			return std::move(this->val);
 		}
 
 		// precondition: has_value() = true
 		constexpr auto operator*() && noexcept -> T&& {
-			assert(this->has_val && "requires the expected to contain a value");
+			PLUGIFY_ASSERT(this->has_val, "requires the expected to contain a value");
 			return std::move(this->val);
 		}
 
@@ -599,25 +599,25 @@ namespace plg {
 
 		// precondition: has_value() = false
 		constexpr auto error() const& -> E const& {
-			assert(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val, "requires the expected to contain an error");
 			return this->unex;
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() & -> E& {
-			assert(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val, "requires the expected to contain an error");
 			return this->unex;
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() const&& -> E const&& {
-			assert(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val, "requires the expected to contain an error");
 			return std::move(this->unex);
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() && -> E&& {
-			assert(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val, "requires the expected to contain an error");
 			return std::move(this->unex);
 		}
 
@@ -1167,25 +1167,25 @@ namespace plg {
 
 		// precondition: has_value() = false
 		constexpr auto error() const& -> E const& {
-			assert(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val && "requires the expected to contain an error");
 			return this->unex;
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() & -> E& {
-			assert(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val && "requires the expected to contain an error");
 			return this->unex;
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() const&& -> E const&& {
-			assert(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val && "requires the expected to contain an error");
 			return std::move(this->unex);
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() && -> E&& {
-			assert(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val && "requires the expected to contain an error");
 			return std::move(this->unex);
 		}
 

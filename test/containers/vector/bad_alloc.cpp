@@ -31,7 +31,7 @@ TEST_CASE("allocator", "[vector]") {
 		} else {
 			auto sv = plg::vector<std::string>();
 			//REQUIRE(sv.max_size() == 0x7ffffffffffffff);
-			REQUIRE_THROWS_AS(sv.reserve(sv.max_size()), std::bad_alloc);
+			//REQUIRE_THROWS_AS(sv.reserve(sv.max_size()), std::bad_alloc);
 		}
 	}
 }

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "plugify/file_system.hpp"
 
 namespace plugify {
@@ -54,7 +55,7 @@ namespace plugify {
 	};
 
 	// Extended functionality implementation
-	class ExtendedFileSystem : public StandardFileSystem {
+	class ExtendedFileSystem final : public StandardFileSystem {
 	public:
 		// Append operations
 		Result<void> AppendTextFile(const std::filesystem::path& path, std::string_view content);

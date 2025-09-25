@@ -126,7 +126,7 @@ namespace plugify {
 
 	// Helper for creating errors with context
 
-	template <plg::detail::is_string_like First>
+	template <plg::string_like First>
 	PLUGIFY_FORCE_INLINE auto MakeError(First&& error) {
 		return std::unexpected(std::forward<First>(error));
 	}

@@ -2,7 +2,7 @@
 #include "plugify/lifecycle.hpp"
 
 namespace plugify {
-	class DummyLifecycle : public IExtensionLifecycle {
+	class DummyLifecycle final : public IExtensionLifecycle {
 	public:
 		// ILifecycle overrides — intentionally no-op
 		void OnLoad([[maybe_unused]] Extension& extension) override {

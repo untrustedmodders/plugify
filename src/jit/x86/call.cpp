@@ -127,7 +127,7 @@ struct JitCall::Impl {
 			cc.int3();
 		} else if (waitType == WaitType::Wait_Keypress) {
 			InvokeNode* invokeNode;
-			cc.invoke(Out(invokeNode), (uint64_t) &getchar, FuncSignature::build<int>());
+			cc.invoke(Out(invokeNode), reinterpret_cast<uint64_t>(&getchar), FuncSignature::build<int>());
 		}
 
 		// Gen the call

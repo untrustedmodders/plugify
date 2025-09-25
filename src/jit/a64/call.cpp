@@ -107,7 +107,7 @@ struct JitCall::Impl {
 			cc.brk(0x1);
 		} else if (waitType == WaitType::Wait_Keypress) {
 			a64::Gp dest = cc.new_gpz();
-			cc.mov(dest, (uint64_t) &getchar);
+			cc.mov(dest, reinterpret_cast<uint64_t>(&getchar));
 			InvokeNode* invokeNode;
 			cc.invoke(Out(invokeNode), dest, FuncSignature::build<int>());
 		}

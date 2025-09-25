@@ -3,7 +3,7 @@
 #include "core/console_logger.hpp"
 
 namespace plugify {
-	class FileLogger : public ConsoleLogger {
+	class FileLogger final : public ConsoleLogger {
 	public:
 		FileLogger(
 			const std::filesystem::path& logFile,

@@ -10,7 +10,7 @@
 #undef LoadLibrary
 
 namespace plugify {
-	class WindowsPlatformOps : public IPlatformOps {
+	class WindowsPlatformOps final : public IPlatformOps {
 	private:
 		std::unordered_map<std::filesystem::path, DLL_DIRECTORY_COOKIE, plg::path_hash> _searchCookies;
 		std::mutex _searchMutex;

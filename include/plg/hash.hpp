@@ -33,7 +33,7 @@ namespace plg {
 			return std::hash<plg::string>{}(txt);
 		}
 	};
-	
+
 	// --- Hash traits depending on pointer size ---
 	template <std::size_t Size>
 	struct hash_traits;
@@ -61,7 +61,7 @@ namespace plg {
 		auto operator()(const T& str_like) const noexcept {
 			std::string_view str = str_like;
 			std::size_t hash = active_hash_traits::fnv_basis; // FNV-1a
-			for (char c : str) {
+			for (const char& c : str) {
 				hash ^= static_cast<unsigned char>(std::tolower(static_cast<unsigned char>(c)));
 				hash *= active_hash_traits::fnv_prime;
 			}
@@ -113,5 +113,4 @@ namespace plg {
 			return hash_combine_all(p.first, p.second);
 		}
 	};
-
 }

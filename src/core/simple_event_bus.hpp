@@ -4,7 +4,7 @@
 
 namespace plugify {
 	// Simple event bus implementation
-	class SimpleEventBus : public IEventBus {
+	class SimpleEventBus final : public IEventBus {
 	public:
 		SubscriptionId Subscribe(std::string_view eventType, EventHandler handler) override {
 			std::lock_guard lock(_mutex);

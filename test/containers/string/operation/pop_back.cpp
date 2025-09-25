@@ -17,14 +17,14 @@ TEST_CASE("string operation > pop_back", "[string]") {
 				a.pop_back();
 				REQUIRE(a == "tototototototototototot");
 				REQUIRE(a.size() == 23);
-				REQUIRE(a.capacity() == 24);
+				REQUIRE(a.capacity() == 31);
 		  }
 		  {
 				plg::string a{"longlonglonglonglonglonglonglong"};
 				a.pop_back();
 				REQUIRE(a == "longlonglonglonglonglonglonglon");
 				REQUIRE(a.size() == 31);
-				REQUIRE(a.capacity() == 32);
+				REQUIRE(a.capacity() == 39);
 		  }
 	 }
 

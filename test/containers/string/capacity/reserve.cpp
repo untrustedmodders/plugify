@@ -13,9 +13,9 @@ TEST_CASE("string capacity > reserve", "[string]") {
 		  a.reserve(23);
 		  REQUIRE(a.capacity() == 23);
 		  a.reserve(24);
-		  REQUIRE(a.capacity() == 24);
+		  REQUIRE(a.capacity() == 31);
 		  a.reserve(25);
-		  REQUIRE(a.capacity() == 25);
+		  REQUIRE(a.capacity() == 31);
 
 		  plg::string b{"toto", 4};
 		  b.reserve(5);
@@ -25,10 +25,10 @@ TEST_CASE("string capacity > reserve", "[string]") {
 		  REQUIRE(b.capacity() == 23);
 		  REQUIRE(std::memcmp(b.data(), "toto", 4) == 0);
 		  b.reserve(24);
-		  REQUIRE(b.capacity() == 24);
+		  REQUIRE(b.capacity() == 31);
 		  REQUIRE(std::memcmp(b.data(), "toto", 4) == 0);
 		  b.reserve(25);
-		  REQUIRE(b.capacity() == 25);
+		  REQUIRE(b.capacity() == 31);
 		  REQUIRE(std::memcmp(b.data(), "toto", 4) == 0);
 	 }
 
