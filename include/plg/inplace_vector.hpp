@@ -593,7 +593,6 @@ namespace plg {
 				set_size(_size + n);
 				std::rotate(it, oldend, oldend + n);
 			} else {
-				auto oldend = end();
 				for (; first != last; ++first) {
 					emplace_back(*first);
 				}

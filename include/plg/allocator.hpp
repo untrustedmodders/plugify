@@ -140,6 +140,14 @@ namespace plg {
 		return is_pointer_in_range(begin, end, begin2) || is_pointer_in_range(begin2, end2, begin);
 	}
 
+	// asan_annotate_container_with_allocator determines whether containers with custom allocators are annotated. This is
+	// a public customization point to disable annotations if the custom allocator assumes that the memory isn't poisoned.
+	// See the https://libcxx.llvm.org/UsingLibcxx.html#turning-off-asan-annotation-in-containers for more information.
+#if __has_feature(address_sanitizer)
+	template <class Alloc>
+	struct asan_annotate_container_with_allocator : std::true_type {};
+#endif
+
 	// Annotate a contiguous range.
 	// [__first_storage, __last_storage) is the allocated memory region,
 	// __old_last_contained is the previously last allowed (unpoisoned) element, and
@@ -153,7 +161,7 @@ namespace plg {
 	) {
 #if __has_feature(address_sanitizer)
 		if (!std::is_constant_evaluated()
-			&& __asan_annotate_container_with_allocator<Allocator>::value
+			&& asan_annotate_container_with_allocator<Allocator>::value
 			&& first_storage != nullptr) {
 			__sanitizer_annotate_contiguous_container(
 				first_storage,
