@@ -2135,11 +2135,10 @@ namespace plg {
 			const void* old_mid,
 			const void* new_mid
 		) const {
-#if PLUGIFY_PLATFORM_APPLE
 			if (!is_long()) {
 				return;
 			}
-#endif
+
 			plg::annotate_contiguous_container<Allocator>(
 				data(),
 				data() + capacity() + 1,
