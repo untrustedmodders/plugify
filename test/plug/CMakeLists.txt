@@ -7,7 +7,7 @@ endif()
 
 project(plug VERSION 1.0.0.0  DESCRIPTION "Plugify Sample App" HOMEPAGE_URL "https://github.com/untrustedmodders/plugify" LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD ${PLUGIFY_DEFAULT_CXX_STANDARD})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
