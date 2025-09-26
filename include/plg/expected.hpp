@@ -4,7 +4,7 @@
 
 #if __has_include(<expected>)
 #include <expected>
-#if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202211L
+#if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202202L
 #define PLUGIFY_HAS_STD_EXPECTED 1
 #else
 #define PLUGIFY_HAS_STD_EXPECTED 0
@@ -1167,25 +1167,25 @@ namespace plg {
 
 		// precondition: has_value() = false
 		constexpr auto error() const& -> E const& {
-			PLUGIFY_ASSERT(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val, "requires the expected to contain an error");
 			return this->unex;
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() & -> E& {
-			PLUGIFY_ASSERT(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val, "requires the expected to contain an error");
 			return this->unex;
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() const&& -> E const&& {
-			PLUGIFY_ASSERT(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val, "requires the expected to contain an error");
 			return std::move(this->unex);
 		}
 
 		// precondition: has_value() = false
 		constexpr auto error() && -> E&& {
-			PLUGIFY_ASSERT(!this->has_val && "requires the expected to contain an error");
+			PLUGIFY_ASSERT(!this->has_val, "requires the expected to contain an error");
 			return std::move(this->unex);
 		}
 

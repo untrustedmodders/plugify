@@ -151,7 +151,7 @@ namespace plg {
 			allocator_destroy(alloc, first, last);
 		} else {
 			// Casting to void* to suppress clang complaining that this is technically UB.
-			std::memcpy(static_cast<void*>(result), first, sizeof(T) * (last - first));
+			std::memcpy(static_cast<void*>(result), first, sizeof(T) * static_cast<size_t>(last - first));
 		}
 	}
 };  // namespace plg
