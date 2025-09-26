@@ -857,7 +857,7 @@ namespace plg {
 		// Construct a string with the given allocator and enough storage to hold `size` characters,
 		// but don't initialize the characters. The contents of the string, including the null
 		// terminator, must be initialized separately.
-		constexpr explicit basic_string(uninitialized_size_tag, size_type size, const allocator_type& a)
+		constexpr /*explicit*/ basic_string(uninitialized_size_tag, size_type size, const allocator_type& a)
 			: _alloc(a) {
 			init_internal_buffer(size);
 		}
@@ -884,7 +884,7 @@ namespace plg {
 			annotate_new(0);
 		}
 
-		constexpr explicit basic_string(const allocator_type& a) noexcept
+		constexpr /*explicit*/ basic_string(const allocator_type& a) noexcept
 			: _rep(short_())
 			, _alloc(a) {
 			annotate_new(0);
@@ -1051,13 +1051,13 @@ namespace plg {
 		}
 
 		template <string_view_convertible_with_exceptiom<CharT, Traits, Allocator> T>
-		constexpr explicit basic_string(const T& t) {
+		constexpr /*explicit*/ basic_string(const T& t) {
 			self_view sv = t;
 			init(sv.data(), sv.size());
 		}
 
 		template <string_view_convertible_with_exceptiom<CharT, Traits, Allocator> T>
-		constexpr explicit basic_string(const T& t, const allocator_type& a)
+		constexpr /*explicit*/ basic_string(const T& t, const allocator_type& a)
 			: _alloc(a) {
 			self_view sv = t;
 			init(sv.data(), sv.size());
