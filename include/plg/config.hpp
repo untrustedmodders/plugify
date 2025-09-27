@@ -43,7 +43,7 @@ namespace plg {
 		}
 	}
 } // namespace plg
-#  define PLUGIFY_THROW(str, exp, ...) ::plg::throw_exception<exp>(str, ##__VA_ARGS__);
+#  define PLUGIFY_THROW(str, exp, ...) ::plg::throw_exception<exp>(str __VA_OPT__(,) __VA_ARGS__);
 #else
 #  include <cstdlib>
 #  include <cstdio>
