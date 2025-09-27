@@ -100,22 +100,13 @@ if(PLUGIFY_BUILD_OBJECT_LIB)
     target_compile_definitions(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_EXPORTS)
 endif()
 
-if(PLUGIFY_COMPILER_MSVC)
-    set(PLUGIFY_COMPILE_OPTIONS /W4 /WX /MP)
-elseif(PLUGIFY_COMPILER_CLANG_CL)
-    set(PLUGIFY_COMPILE_OPTIONS /W4 /WX)
+if(PLUGIFY_COMPILER_MSVC OR PLUGIFY_COMPILER_CLANG_CL)
+    set(PLUGIFY_COMPILE_OPTIONS /W4 /WX /Zc:preprocessor $<$<BOOL:PLUGIFY_COMPILER_MSVC>:/MP> $<$<CONFIG:Release>:/Zi>)
 else(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
-    set(PLUGIFY_COMPILE_OPTIONS -Wextra -Wshadow -Wconversion -Wpedantic -Werror)
+    set(PLUGIFY_COMPILE_OPTIONS -Wextra -Wshadow -Wconversion -Wpedantic -Werror $<$<CONFIG:Release>:-g1>)
 endif()
 
 target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})
-
-# Produce PDB file for debug
-if(PLUGIFY_COMPILER_MSVC OR PLUGIFY_COMPILER_CLANG_CL)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/Zi>)
-else()
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:-g1>)
-endif()
 
 if(PLUGIFY_HAS_LIBCPP)
     target_compile_options(${PROJECT_NAME} PUBLIC -stdlib=libc++)
