@@ -610,6 +610,13 @@ basic_string<char32_t> operator""s( const char32_t *str, size_t len );          
 #include "plg/format.hpp"
 #endif
 
+// Just in case, because we can't ignore some warnings from `-Wpedantic` (about zero size arrays and anonymous structs when gnu extensions are disabled) on gcc
+#if PLUGIFY_COMPILER_CLANG
+#  pragma clang system_header
+#elif PLUGIFY_COMPILER_GCC
+#  pragma GCC system_header
+#endif
+
 // from https://github.com/llvm/llvm-project/blob/main/libcxx/include/string
 namespace plg {
 	// basic_string
