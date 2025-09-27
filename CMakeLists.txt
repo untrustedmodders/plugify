@@ -25,8 +25,8 @@ list(GET PLUGIFY_VERSION_LIST 2 PLUGIFY_VERSION_PATCH)
 project(plugify VERSION "${PLUGIFY_VERSION_MAJOR}.${PLUGIFY_VERSION_MINOR}.${PLUGIFY_VERSION_PATCH}" DESCRIPTION "Plugify Core" HOMEPAGE_URL "https://github.com/untrustedmodders/plugify" LANGUAGES C CXX)
 
 if(NOT CMAKE_BUILD_TYPE MATCHES "Debug|Devel|MinSizeRel|RelWithDebInfo|Release")
-    message(STATUS "CMAKE_BUILD_TYPE not set, defaulting to Debug.")
-    set(CMAKE_BUILD_TYPE Debug)
+    message(STATUS "CMAKE_BUILD_TYPE not set, defaulting to Release.")
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 
 message(VERBOSE "*")
