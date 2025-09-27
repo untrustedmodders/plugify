@@ -26,13 +26,13 @@ namespace plg {
 #if PLUGIFY_HAS_EXCEPTIONS
 	class bad_variant_access : public std::exception {
 	public:
-		explicit bad_variant_access(const char* str) noexcept : message{str} {}
+		explicit bad_variant_access(const char* str) noexcept : message_{str} {}
 		bad_variant_access() noexcept = default;
 		bad_variant_access(const bad_variant_access&) noexcept = default;
 		bad_variant_access& operator=(const bad_variant_access&) noexcept = default;
-		const char* what() const noexcept override { return message; }
+		const char* what() const noexcept override { return message_; }
 	private:
-	  const char* message = ""; // llvm test requires a well formed what() on default init
+	  const char* message_ = ""; // llvm test requires a well formed what() on default init
 	};
 #endif // PLUGIFY_HAS_EXCEPTIONS
 
@@ -575,7 +575,7 @@ namespace plg {
 		constexpr variant()
 			noexcept(std::is_nothrow_default_constructible_v<alternative<0>>)
 			requires std::is_default_constructible_v<alternative<0>>
-		: _storage{in_place_index<0>}, _current{0}
+		: storage_{in_place_index<0>}, current_{0}
 		{}
 
 		// copy constructor (trivial)
@@ -587,7 +587,7 @@ namespace plg {
 		// copy constructor
 		constexpr variant(const variant& o)
 			requires (has_copy_ctor and not trivial_copy_ctor)
-		: _storage{detail::dummy_type{}} {
+		: storage_{detail::dummy_type{}} {
 			construct_from(o);
 		}
 
@@ -600,7 +600,7 @@ namespace plg {
 		constexpr variant(variant&& o)
 			noexcept((std::is_nothrow_move_constructible_v<Ts> && ...))
 			requires (has_move_ctor and not trivial_move_ctor)
-		: _storage{detail::dummy_type{}} {
+		: storage_{detail::dummy_type{}} {
 			construct_from(static_cast<variant&&>(o));
 		}
 
@@ -616,7 +616,7 @@ namespace plg {
 		template<std::size_t Index, class... Args>
 			requires (Index < size && std::is_constructible_v<alternative<Index>, Args&&...>)
 		explicit constexpr variant(in_place_index_t<Index> tag, Args&&... args)
-		: _storage{tag, static_cast<Args&&>(args)...}, _current(Index)
+		: storage_{tag, static_cast<Args&&>(args)...}, current_(Index)
 		{}
 
 		// construct a given type
@@ -633,7 +633,7 @@ namespace plg {
 				std::is_constructible_v<alternative<Index>, std::initializer_list<U>&, Args&&...>
 			)
 		explicit constexpr variant(in_place_index_t<Index> tag, std::initializer_list<U> list, Args&&... args)
-		: _storage{tag, list, PLG_FWD(args)...}, _current{Index}
+		: storage_{tag, list, PLG_FWD(args)...}, current_{Index}
 		{}
 
 		template<class T, class U, class... Args>
@@ -642,7 +642,7 @@ namespace plg {
 				&& std::is_constructible_v<T, std::initializer_list<U>&, Args&&...>
 			)
 		explicit constexpr variant(in_place_type_t<T>, std::initializer_list<U> list, Args&&... args)
-		: _storage{in_place_index<index_of<T>>, list, PLG_FWD(args)...}, _current{index_of<T> }
+		: storage_{in_place_index<index_of<T>>, list, PLG_FWD(args)...}, current_{index_of<T> }
 		{}
 
 		// ================================ destructors (20.7.3.3)
@@ -714,7 +714,7 @@ namespace plg {
 			using related_type = detail::best_overload_match<T&&, Ts...>;
 			constexpr auto new_index = index_of<related_type>;
 
-			if (_current == new_index)
+			if (current_ == new_index)
 				unsafe_get<new_index>() = PLG_FWD(t);
 			else {
 				constexpr bool do_simple_emplace =
@@ -765,12 +765,12 @@ namespace plg {
 
 		constexpr bool valueless_by_exception() const noexcept {
 			if constexpr (can_be_valueless)
-				return _current == npos;
+				return current_ == npos;
 			else return false;
 		}
 
 		constexpr index_type index() const noexcept {
-			return _current;
+			return current_;
 		}
 
 		// =================================== swap (20.7.3.7)
@@ -785,7 +785,7 @@ namespace plg {
 				constexpr auto impl_one_valueless = [](auto&& full, auto& empty) {
 					detail::visit_with_index(PLG_FWD(full), detail::emplace_no_dtor_from_elem<variant&>{empty});
 					full.reset_no_check();
-					full._current = npos;
+					full.current_ = npos;
 				};
 
 				switch (static_cast<int>(index() == npos) + static_cast<int>(o.index() == npos) * 2) {
@@ -837,29 +837,29 @@ namespace plg {
 		template<detail::union_index_t Idx>
 		constexpr auto& unsafe_get() & noexcept {
 			static_assert(Idx < size);
-			PLUGIFY_ASSERT(_current == Idx, "");
-			return _storage.template get<Idx>();
+			PLUGIFY_ASSERT(current_ == Idx, "");
+			return storage_.template get<Idx>();
 		}
 
 		template<detail::union_index_t Idx>
 		constexpr auto&& unsafe_get() && noexcept {
 			static_assert(Idx < size);
-			PLUGIFY_ASSERT(_current == Idx, "");
-			return PLG_MOV(_storage.template get<Idx>());
+			PLUGIFY_ASSERT(current_ == Idx, "");
+			return PLG_MOV(storage_.template get<Idx>());
 		}
 
 		template<detail::union_index_t Idx>
 		constexpr const auto& unsafe_get() const & noexcept {
 			static_assert(Idx < size);
-			PLUGIFY_ASSERT(_current == Idx, "");
-			return _storage.template get<Idx>();
+			PLUGIFY_ASSERT(current_ == Idx, "");
+			return storage_.template get<Idx>();
 		}
 
 		template<detail::union_index_t Idx>
 		constexpr const auto&& unsafe_get() const && noexcept {
 			static_assert(Idx < size);
-			PLUGIFY_ASSERT(_current == Idx, "");
-			return PLG_MOV(_storage.template get<Idx>());
+			PLUGIFY_ASSERT(current_ == Idx, "");
+			return PLG_MOV(storage_.template get<Idx>());
 		}
 
 	private:
@@ -868,9 +868,9 @@ namespace plg {
 		constexpr void assign_from(Other&& o, Fn&& fn) {
 			if constexpr (can_be_valueless) {
 				if (o.index() == npos) {
-					if (_current != npos) {
+					if (current_ != npos) {
 						reset_no_check();
-						_current = npos;
+						current_ = npos;
 					}
 					return;
 				}
@@ -906,7 +906,7 @@ namespace plg {
 				{
 					static_assert(can_be_valueless,
 								  "Internal error : the possibly valueless branch of emplace was taken despite |can_be_valueless| being false");
-					_current = npos;
+					current_ = npos;
 					do_emplace_no_dtor<Idx>(PLG_FWD(args)...);
 				}
 			}
@@ -916,7 +916,7 @@ namespace plg {
 
 		template<unsigned Idx, class... Args>
 		constexpr void do_emplace_no_dtor(Args&&... args) {
-			_current = static_cast<index_type>(Idx);
+			current_ = static_cast<index_type>(Idx);
 
 			auto* ptr = detail::addressof(unsafe_get<Idx>());
 
@@ -950,7 +950,7 @@ namespace plg {
 		constexpr void construct_from(Other&& o) {
 			if constexpr (can_be_valueless)
 				if (o.valueless_by_exception()) {
-					_current = npos;
+					current_ = npos;
 					return;
 				}
 
@@ -960,11 +960,11 @@ namespace plg {
 		template<class T>
 		friend struct detail::emplace_no_dtor_from_elem;
 
-		storage _storage;
+		storage storage_;
 #if INTPTR_MAX == INT32_MAX
-		volatile char pad[8];
+		volatile char padding_[8];
 #endif
-		index_type _current;
+		index_type current_;
 	};
 
 	// ================================= value access (20.7.5)

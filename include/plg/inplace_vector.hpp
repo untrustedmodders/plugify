@@ -68,15 +68,15 @@ namespace plg {
 		template<class T, size_t N, class = void>
 		struct PLUGIFY_INPLACE_VECTOR_TRIVIALLY_RELOCATABLE_IF(std::is_trivially_relocatable_v<T>) ipvbase
 		{
-			size_t _size = 0;
+			size_t size_ = 0;
 			union {
-				[[maybe_unused]] char _dummy;
-				T _data[N];
+				[[maybe_unused]] char dummy_;
+				T data_[N];
 			};
 
-			constexpr T *base_data() { return _data; }
-			constexpr const T *base_data() const { return _data; }
-			constexpr void set_size(size_t n) { _size = n; }
+			constexpr T *base_data() { return data_; }
+			constexpr const T *base_data() const { return data_; }
+			constexpr void set_size(size_t n) { size_ = n; }
 
 			constexpr explicit ipvbase() noexcept {}
 			ipvbase(const ipvbase& rhs)
@@ -85,8 +85,8 @@ namespace plg {
 				if constexpr (std::is_trivially_copy_constructible_v<T>) {
 					std::memmove((void*)this, (const void*)std::addressof(rhs), sizeof(ipvbase));
 				} else {
-					std::uninitialized_copy_n(rhs._data, rhs._size, _data);
-					_size = rhs._size;
+					std::uninitialized_copy_n(rhs.data_, rhs.size_, data_);
+					size_ = rhs.size_;
 				}
 			}
 			ipvbase(ipvbase&& rhs)
@@ -100,13 +100,13 @@ namespace plg {
 					std::memmove((void*)this, (const void*)std::addressof(rhs), sizeof(ipvbase));
 #if defined(__cpp_lib_trivially_relocatable)
 				} else if constexpr (std::is_trivially_relocatable_v<T>) {
-					std::uninitialized_relocate_n(rhs._data, rhs._size, _data);
-					_size = rhs._size;
-					rhs._size = 0;
+					std::uninitialized_relocate_n(rhs.data_, rhs.size_, data_);
+					size_ = rhs.size_;
+					rhs.size_ = 0;
 #endif // __cpp_lib_trivially_relocatable
 				} else {
-					std::uninitialized_move_n(rhs._data, rhs._size, _data);
-					_size = rhs._size;
+					std::uninitialized_move_n(rhs.data_, rhs.size_, data_);
+					size_ = rhs.size_;
 				}
 			}
 			void operator=(const ipvbase& rhs)
@@ -116,14 +116,14 @@ namespace plg {
 					std::memmove((void*)this, (const void*)std::addressof(rhs), sizeof(ipvbase));
 				} else if (this == std::addressof(rhs)) {
 					// do nothing
-				} else if (rhs._size <= _size) {
-					std::copy(rhs._data, rhs._data + rhs._size, _data);
-					std::destroy(_data + rhs._size, _data + _size);
-					_size = rhs._size;
+				} else if (rhs.size_ <= size_) {
+					std::copy(rhs.data_, rhs.data_ + rhs.size_, data_);
+					std::destroy(data_ + rhs.size_, data_ + size_);
+					size_ = rhs.size_;
 				} else {
-					std::copy(rhs._data, rhs._data + _size, _data);
-					std::uninitialized_copy(rhs._data + _size, rhs._data + rhs._size, _data + _size);
-					_size = rhs._size;
+					std::copy(rhs.data_, rhs.data_ + size_, data_);
+					std::uninitialized_copy(rhs.data_ + size_, rhs.data_ + rhs.size_, data_ + size_);
+					size_ = rhs.size_;
 				}
 			}
 			void operator=(ipvbase&& rhs)
@@ -133,21 +133,21 @@ namespace plg {
 					std::memmove((void*)this, (const void*)std::addressof(rhs), sizeof(ipvbase));
 				} else if (this == std::addressof(rhs)) {
 					// do nothing
-				} else if (rhs._size <= _size) {
-					std::move(rhs._data, rhs._data + rhs._size, _data);
-					std::destroy(_data + rhs._size, _data + _size);
-					_size = rhs._size;
+				} else if (rhs.size_ <= size_) {
+					std::move(rhs.data_, rhs.data_ + rhs.size_, data_);
+					std::destroy(data_ + rhs.size_, data_ + size_);
+					size_ = rhs.size_;
 				} else {
-					std::move(rhs._data, rhs._data + _size, _data);
+					std::move(rhs.data_, rhs.data_ + size_, data_);
 #if defined(__cpp_lib_trivially_relocatable)
 					if constexpr (std::is_trivially_relocatable_v<T>) {
-						std::uninitialized_relocate(rhs._data + _size, rhs._data + rhs._size, _data + _size);
-						std::swap(rhs._size, _size);
+						std::uninitialized_relocate(rhs.data_ + size_, rhs.data_ + rhs.size_, data_ + size_);
+						std::swap(rhs.size_, size_);
 						return;
 					}
 #endif // __cpp_lib_trivially_relocatable
-					std::uninitialized_move(rhs._data + _size, rhs._data + rhs._size, _data + _size);
-					_size = rhs._size;
+					std::uninitialized_move(rhs.data_ + size_, rhs.data_ + rhs.size_, data_ + size_);
+					size_ = rhs.size_;
 				}
 			}
 
@@ -163,13 +163,13 @@ namespace plg {
 			constexpr
 #endif // PLUGIFY_CPP_VERSION >= 202002L
 				~ipvbase() {
-				std::destroy(_data, _data + _size);
+				std::destroy(data_, data_ + size_);
 			}
 		};
 
 		template<class T>
 		struct ipvbase_zero {
-		static constexpr size_t _size = 0;
+		static constexpr size_t size_ = 0;
 			constexpr T *base_data() { return nullptr; }
 		constexpr const T *base_data() const { return nullptr; }
 			constexpr void set_size(size_t) { }
@@ -177,15 +177,15 @@ namespace plg {
 
 		template<class T, size_t N>
 		struct ipvbase_trivial {
-			size_t _size = 0;
+			size_t size_ = 0;
 			union {
-				[[maybe_unused]] char _dummy;
-				T _data[N];
+				[[maybe_unused]] char dummy_;
+				T data_[N];
 			};
 			constexpr explicit ipvbase_trivial() {}
-			constexpr T *base_data() { return _data; }
-			constexpr const T *base_data() const { return _data; }
-			constexpr void set_size(size_t n) { _size = n; }
+			constexpr T *base_data() { return data_; }
+			constexpr const T *base_data() const { return data_; }
+			constexpr void set_size(size_t n) { size_ = n; }
 		};
 
 		template<class T, size_t N>
@@ -202,7 +202,7 @@ namespace plg {
 
 	template<class T, size_t N>
 	class inplace_vector : detail::ipvbase_assignable<T>, detail::ipvbase_t<T, N> {
-		using detail::ipvbase_t<T, N>::_size;
+		using detail::ipvbase_t<T, N>::size_;
 		using detail::ipvbase_t<T, N>::set_size;
 	public:
 		using value_type = T;
@@ -277,12 +277,12 @@ namespace plg {
 		{
 			if (n > N) {
 				throw_bad_alloc();
-			} else if (_size >= n) {
+			} else if (size_ >= n) {
 				std::fill_n(data(), n, value);
-				std::destroy(data() + n, data() + _size);
+				std::destroy(data() + n, data() + size_);
 			} else {
-				std::fill_n(data(), _size, value);
-				std::uninitialized_fill_n(data() + _size, n - _size, value);
+				std::fill_n(data(), size_, value);
+				std::uninitialized_fill_n(data() + size_, n - size_, value);
 			}
 			set_size(n);
 		}
@@ -293,12 +293,12 @@ namespace plg {
 			const size_type n = static_cast<size_type>(std::distance(first, last));
 			if (n > N) {
 				throw_bad_alloc();
-			} else if (_size >= n) {
+			} else if (size_ >= n) {
 				std::copy(first, last, data());
-				std::destroy(data() + n, data() + _size);
+				std::destroy(data() + n, data() + size_);
 			} else {
-				std::copy(first, first + _size, data());
-				std::uninitialized_copy(first + _size, last, data() + _size);
+				std::copy(first, first + size_, data());
+				std::uninitialized_copy(first + size_, last, data() + size_);
 			}
 			set_size(n);
 		}
@@ -329,13 +329,13 @@ namespace plg {
 			size_t n = std::ranges::size(rg);
 			if (n > N) {
 				throw_bad_alloc();
-			} else if (_size >= n) {
+			} else if (size_ >= n) {
 				std::ranges::copy(first, last, data());
-				std::destroy(data() + n, data() + _size);
+				std::destroy(data() + n, data() + size_);
 			} else {
-				auto mid = std::ranges::next(first, _size, last);
+				auto mid = std::ranges::next(first, size_, last);
 				std::ranges::copy(first, mid, data());
-				std::ranges::uninitialized_copy(mid, last, data() + _size);
+				std::ranges::uninitialized_copy(mid, last, data() + size_);
 			}
 			set_size(n);
 		}
@@ -344,15 +344,15 @@ namespace plg {
 		// iterators
 
 		constexpr iterator begin() noexcept { return data(); }
-		constexpr iterator end() noexcept { return data() + _size; }
+		constexpr iterator end() noexcept { return data() + size_; }
 		constexpr const_iterator begin() const noexcept { return data(); }
-		constexpr const_iterator end() const noexcept { return data() + _size; }
+		constexpr const_iterator end() const noexcept { return data() + size_; }
 		constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
 		constexpr reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
 		constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
 		constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
 		constexpr const_iterator cbegin() const noexcept { return data(); }
-		constexpr const_iterator cend() const noexcept { return data() + _size; }
+		constexpr const_iterator cend() const noexcept { return data() + size_; }
 		constexpr const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
 		constexpr const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
@@ -361,12 +361,12 @@ namespace plg {
 		{
 			if (n > N) {
 				throw_bad_alloc();
-			} else if (n < _size) {
-				std::destroy(data() + n, data() + _size);
+			} else if (n < size_) {
+				std::destroy(data() + n, data() + size_);
 				set_size(n);
 			} else {
-				std::uninitialized_value_construct(data() + _size, data() + n);
-				set_size(_size + n);
+				std::uninitialized_value_construct(data() + size_, data() + n);
+				set_size(size_ + n);
 			}
 		}
 
@@ -375,12 +375,12 @@ namespace plg {
 		{
 			if (n > N) {
 				throw_bad_alloc();
-			} else if (n < _size) {
-				std::destroy(data() + n, data() + _size);
+			} else if (n < size_) {
+				std::destroy(data() + n, data() + size_);
 				set_size(n);
 			} else {
-				std::uninitialized_fill(data() + _size, data() + n, value);
-				set_size(_size + n);
+				std::uninitialized_fill(data() + size_, data() + n, value);
+				set_size(size_ + n);
 			}
 		}
 
@@ -403,7 +403,7 @@ namespace plg {
 		}
 		constexpr reference back() {
 			PLUGIFY_ASSERT(!empty(), "called on an empty vector");
-			return data()[_size - 1];
+			return data()[size_ - 1];
 		}
 
 		constexpr const_reference operator[](size_type pos) const {
@@ -416,17 +416,17 @@ namespace plg {
 		}
 		constexpr const_reference back() const {
 			PLUGIFY_ASSERT(!empty(), "called on an empty vector");
-			return data()[_size - 1];
+			return data()[size_ - 1];
 		}
 
 		constexpr reference at(size_type i) {
-			if (i >= _size) {
+			if (i >= size_) {
 				throw_out_of_range();
 			}
 			return data()[i];
 		}
 		constexpr const_reference at(size_type i) const {
-			if (i >= _size) {
+			if (i >= size_) {
 				throw_out_of_range();
 			}
 			return data()[i];
@@ -436,20 +436,20 @@ namespace plg {
 
 		constexpr T* data() noexcept { return this->base_data(); }
 		constexpr const T* data() const noexcept { return this->base_data(); }
-		constexpr size_type size() const noexcept { return _size; }
+		constexpr size_type size() const noexcept { return size_; }
 		static constexpr size_type max_size() noexcept { return N; }
 		static constexpr size_type capacity() noexcept { return N; }
-		[[nodiscard]] constexpr bool empty() const noexcept { return _size == 0; };
+		[[nodiscard]] constexpr bool empty() const noexcept { return size_ == 0; };
 
 		// [inplace.vector.modifiers]
 
 		template<class... Args>
 			requires std::is_constructible_v<T, Args...>
 		value_type& unchecked_emplace_back(Args&&... args) {
-			// Precondition: (_size < N)
-			value_type* p = data() + _size;
+			// Precondition: (size_ < N)
+			value_type* p = data() + size_;
 			p = std::construct_at(p, std::forward<Args>(args)...);
-			set_size(_size + 1);
+			set_size(size_ + 1);
 			return *p;
 		}
 		value_type& unchecked_push_back(const value_type& value)
@@ -466,7 +466,7 @@ namespace plg {
 		template<class... Args>
 			requires std::is_constructible_v<T, Args...>
 		constexpr value_type* try_emplace_back(Args&&... args) {
-			if (_size == N) {
+			if (size_ == N) {
 				return nullptr;
 			}
 			return std::addressof(unchecked_emplace_back(static_cast<Args&&>(args)...));
@@ -485,7 +485,7 @@ namespace plg {
 		template<class... Args>
 			requires std::is_constructible_v<T, Args...>
 		value_type& emplace_back(Args&&... args) {
-			if (_size == N) {
+			if (size_ == N) {
 				throw_bad_alloc();
 			}
 			return unchecked_emplace_back(static_cast<Args&&>(args)...);
@@ -512,8 +512,8 @@ namespace plg {
 	#endif // __cpp_lib_ranges >= 201911L && __cpp_lib_ranges_to_container >= 202202L
 
 		void pop_back() {
-			std::destroy_at(data() + _size - 1);
-			set_size(_size - 1);
+			std::destroy_at(data() + size_ - 1);
+			set_size(size_ - 1);
 		}
 
 		template<class... Args>
@@ -538,7 +538,7 @@ namespace plg {
 		iterator insert(const_iterator pos, size_type n, const value_type& value)
 			requires std::is_copy_constructible_v<T>
 		{
-			if (N - _size < n) {
+			if (N - size_ < n) {
 				throw_bad_alloc();
 			}
 			auto it = iterator(pos);
@@ -549,7 +549,7 @@ namespace plg {
 				std::uninitialized_relocate_backward(it, oldend, oldend + n);
 				try {
 					std::uninitialized_fill_n(it, n, value);
-					set_size(_size + n);
+					set_size(size_ + n);
 				} catch (...) {
 					std::uninitialized_relocate(it + n, oldend + n, it);
 					throw;
@@ -559,7 +559,7 @@ namespace plg {
 	#endif
 			// Fill at the end of the vector, then rotate into place.
 			std::uninitialized_fill_n(oldend, n, value);
-			set_size(_size + n);
+			set_size(size_ + n);
 			std::rotate(it, oldend, oldend + n);
 			return it;
 		}
@@ -571,7 +571,7 @@ namespace plg {
 			auto oldend = end();
 			if constexpr (std::random_access_iterator<InputIterator>) {
 				size_type n = static_cast<size_type>(std::distance(first, last));
-				if (N - _size < n) {
+				if (N - size_ < n) {
 					throw_bad_alloc();
 				}
 	#if defined(__cpp_lib_trivially_relocatable)
@@ -580,7 +580,7 @@ namespace plg {
 					std::uninitialized_relocate_backward(it, oldend, oldend + n);
 					try {
 						std::uninitialized_copy_n(first, n, it);
-						set_size(_size + n);
+						set_size(size_ + n);
 					} catch (...) {
 						std::uninitialized_relocate(it + n, oldend + n, it);
 						throw;
@@ -590,7 +590,7 @@ namespace plg {
 	#endif
 				// Fill at the end of the vector, then rotate into place.
 				std::uninitialized_copy_n(first, n, oldend);
-				set_size(_size + n);
+				set_size(size_ + n);
 				std::rotate(it, oldend, oldend + n);
 			} else {
 				for (; first != last; ++first) {
@@ -609,7 +609,7 @@ namespace plg {
 			auto oldend = end();
 			if constexpr (std::ranges::sized_range<R>) {
 				size_type n = std::ranges::size(rg);
-				if (N - _size < n) {
+				if (N - size_ < n) {
 					throw_bad_alloc();
 				}
 	#if defined(__cpp_lib_trivially_relocatable)
@@ -618,7 +618,7 @@ namespace plg {
 					std::uninitialized_relocate_backward(it, oldend, oldend + n);
 					try {
 						std::ranges::uninitialized_copy_n(std::ranges::begin(rg), n, it, std::unreachable_sentinel);
-						set_size(_size + n);
+						set_size(size_ + n);
 					} catch (...) {
 						std::uninitialized_relocate(it + n, oldend + n, it);
 						throw;
@@ -628,7 +628,7 @@ namespace plg {
 	#endif
 				// Fill at the end of the vector, then rotate into place.
 				std::ranges::uninitialized_copy_n(std::ranges::begin(rg), n, oldend, std::unreachable_sentinel);
-				set_size(_size + n);
+				set_size(size_ + n);
 				std::rotate(it, oldend, oldend + n);
 			} else {
 				auto [rgend, newend] = std::ranges::uninitialized_copy(rg, std::ranges::subrange(oldend, data() + N));
@@ -659,13 +659,13 @@ namespace plg {
 			if constexpr (std::is_trivially_relocatable_v<value_type>) {
 				std::destroy_at(it);
 				std::uninitialized_relocate(it + 1, oldend, it);
-				set_size(_size - 1);
+				set_size(size_ - 1);
 				return it;
 			}
 	#endif
 			std::move(it + 1, oldend, it);
 			std::destroy_at(oldend - 1);
-			set_size(_size - 1);
+			set_size(size_ - 1);
 			return it;
 		}
 
@@ -681,18 +681,18 @@ namespace plg {
 				if constexpr (std::is_trivially_relocatable_v<value_type>) {
 					std::destroy(ifirst, ilast);
 					std::uninitialized_relocate(ilast, oldend, ifirst);
-					set_size(_size - n);
+					set_size(size_ - n);
 					return ifirst;
 				}
 	#endif // __cpp_lib_trivially_relocatable
 				std::destroy(std::move(ilast, oldend, ifirst), oldend);
-				set_size(_size - n);
+				set_size(size_ - n);
 			}
 			return ifirst;
 		}
 
 		constexpr void clear() noexcept {
-			std::destroy(data(), data() + _size);
+			std::destroy(data(), data() + size_);
 			set_size(0);
 		}
 
@@ -701,20 +701,20 @@ namespace plg {
 			requires (!std::is_const_v<T>)
 		{
 			auto& a = *this;
-			if (a._size < b._size) {
+			if (a.size_ < b.size_) {
 				b.swap(a);
 			} else {
-				std::swap_ranges(a.data(), a.data() + b._size, b.data());
+				std::swap_ranges(a.data(), a.data() + b.size_, b.data());
 	#if defined(__cpp_lib_trivially_relocatable)
-				size_t n = a._size;
-				a.set_size(b._size);
-				std::uninitialized_relocate(a.data() + b._size, a.data() + n, b.data() + b._size);
+				size_t n = a.size_;
+				a.set_size(b.size_);
+				std::uninitialized_relocate(a.data() + b.size_, a.data() + n, b.data() + b.size_);
 				b.set_size(n);
 	#else
-				std::uninitialized_move(a.data() + b._size, a.data() + a._size, b.data() + b._size);
-				std::destroy(a.data() + b._size, a.data() + a._size);
+				std::uninitialized_move(a.data() + b.size_, a.data() + a.size_, b.data() + b.size_);
+				std::destroy(a.data() + b.size_, a.data() + a.size_);
 				if constexpr (N != 0) {
-					std::swap(a._size, b._size);
+					std::swap(a.size_, b.size_);
 				}
 	#endif
 			}
@@ -737,7 +737,7 @@ namespace plg {
 		constexpr friend bool operator<(const inplace_vector& a, const inplace_vector& b) {
 			const T* adata = a.data();
 			const T* bdata = b.data();
-			size_t n = (a._size < b._size) ? a._size : b._size;
+			size_t n = (a.size_ < b.size_) ? a.size_ : b.size_;
 			for (size_t i = 0; i < n; ++i) {
 				if (adata[i] < bdata[i]) {
 					return true;
@@ -745,7 +745,7 @@ namespace plg {
 					return false;
 				}
 			}
-			return (a._size < b._size);
+			return (a.size_ < b.size_);
 		}
 		constexpr friend bool operator>(const inplace_vector& a, const inplace_vector& b) { return (b < a); }
 		constexpr friend bool operator<=(const inplace_vector& a, const inplace_vector& b) { return !(b < a); }

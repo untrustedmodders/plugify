@@ -94,7 +94,7 @@ namespace plg {
 		constexpr vector() noexcept(std::is_nothrow_default_constructible_v<allocator_type>) = default;
 
 		constexpr explicit vector(const allocator_type& a) noexcept
-			: _alloc(a) {
+			: alloc_(a) {
 		}
 
 		constexpr explicit vector(size_type n) {
@@ -108,7 +108,7 @@ namespace plg {
 
 		constexpr
 			explicit vector(size_type n, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			auto guard = make_exception_guard(destroy_vector(*this));
 			if (n > 0) {
 				vallocate(n);
@@ -128,7 +128,7 @@ namespace plg {
 
 		constexpr
 		vector(size_type n, const value_type& x, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			auto guard = make_exception_guard(destroy_vector(*this));
 			if (n > 0) {
 				vallocate(n);
@@ -146,7 +146,7 @@ namespace plg {
 		template<std::input_iterator InputIterator>
 		constexpr
 		vector(InputIterator first, InputIterator last, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			init_with_sentinel(first, last);
 		}
 
@@ -160,7 +160,7 @@ namespace plg {
 		template <std::forward_iterator ForwardIterator>
 		constexpr
 		vector(ForwardIterator first, ForwardIterator last, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			size_type n = static_cast<size_type>(std::distance(first, last));
 			init_with_size(first, last, n);
 		}
@@ -171,7 +171,7 @@ namespace plg {
 			std::from_range_t,
 			Range&& range,
 			const allocator_type& alloc = allocator_type()
-		) : _alloc(alloc) {
+		) : alloc_(alloc) {
 			if constexpr (std::ranges::forward_range<Range> || std::ranges::sized_range<Range>) {
 				auto n = static_cast<size_type>(std::ranges::distance(range));
 				init_with_size(std::ranges::begin(range), std::ranges::end(range), n);
@@ -190,10 +190,10 @@ namespace plg {
 			}
 
 			constexpr void operator()() {
-				if (vec_._begin != nullptr) {
+				if (vec_.begin_ != nullptr) {
 					vec_.clear();
 					vec_.annotate_delete();
-					alloc_traits::deallocate(vec_._alloc, vec_._begin, vec_.capacity());
+					alloc_traits::deallocate(vec_.alloc_, vec_.begin_, vec_.capacity());
 				}
 			}
 
@@ -207,14 +207,14 @@ namespace plg {
 		}
 
 		constexpr vector(const vector& x)
-			: _alloc(alloc_traits::select_on_container_copy_construction(x._alloc)) {
-			init_with_size(x._begin, x._end, x.size());
+			: alloc_(alloc_traits::select_on_container_copy_construction(x.alloc_)) {
+			init_with_size(x.begin_, x.end_, x.size());
 		}
 
 		constexpr
 		vector(const vector& x, const std::type_identity_t<allocator_type>& a)
-			: _alloc(a) {
-			init_with_size(x._begin, x._end, x.size());
+			: alloc_(a) {
+			init_with_size(x.begin_, x.end_, x.size());
 		}
 
 		constexpr vector& operator=(const vector& x);
@@ -225,7 +225,7 @@ namespace plg {
 
 		constexpr
 		vector(std::initializer_list<value_type> il, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			init_with_size(il.begin(), il.end(), il.size());
 		}
 
@@ -286,28 +286,28 @@ namespace plg {
 
 		[[nodiscard]] constexpr allocator_type
 		get_allocator() const noexcept {
-			return this->_alloc;
+			return this->alloc_;
 		}
 
 		//
 		// Iterators
 		//
 		[[nodiscard]] constexpr iterator begin() noexcept {
-			return make_iter(add_alignment_assumption(this->_begin));
+			return make_iter(add_alignment_assumption(this->begin_));
 		}
 
 		[[nodiscard]] constexpr const_iterator
 		begin() const noexcept {
-			return make_iter(add_alignment_assumption(this->_begin));
+			return make_iter(add_alignment_assumption(this->begin_));
 		}
 
 		[[nodiscard]] constexpr iterator end() noexcept {
-			return make_iter(add_alignment_assumption(this->_end));
+			return make_iter(add_alignment_assumption(this->end_));
 		}
 
 		[[nodiscard]] constexpr const_iterator
 		end() const noexcept {
-			return make_iter(add_alignment_assumption(this->_end));
+			return make_iter(add_alignment_assumption(this->end_));
 		}
 
 		[[nodiscard]] constexpr reverse_iterator
@@ -354,23 +354,23 @@ namespace plg {
 		// [vector.capacity], capacity
 		//
 		[[nodiscard]] constexpr size_type size() const noexcept {
-			return static_cast<size_type>(this->_end - this->_begin);
+			return static_cast<size_type>(this->end_ - this->begin_);
 		}
 
 		[[nodiscard]] constexpr size_type
 		capacity() const noexcept {
-			return static_cast<size_type>(this->_cap - this->_begin);
+			return static_cast<size_type>(this->cap_ - this->begin_);
 		}
 
 		[[nodiscard]] constexpr bool
 		empty() const noexcept {
-			return this->_begin == this->_end;
+			return this->begin_ == this->end_;
 		}
 
 		[[nodiscard]] constexpr size_type
 		max_size() const noexcept {
 			return std::min<size_type>(
-				alloc_traits::max_size(this->_alloc),
+				alloc_traits::max_size(this->alloc_),
 				std::numeric_limits<difference_type>::max()
 			);
 		}
@@ -384,20 +384,20 @@ namespace plg {
 		[[nodiscard]] constexpr reference
 		operator[](size_type n) noexcept {
 			PLUGIFY_ASSERT(n < size(), "vector[] index out of bounds");
-			return this->_begin[n];
+			return this->begin_[n];
 		}
 
 		[[nodiscard]] constexpr const_reference
 		operator[](size_type n) const noexcept {
 			PLUGIFY_ASSERT(n < size(), "vector[] index out of bounds");
-			return this->_begin[n];
+			return this->begin_[n];
 		}
 
 		[[nodiscard]] constexpr reference at(size_type n) {
 			if (n >= size()) {
 				this->throw_out_of_range();
 			}
-			return this->_begin[n];
+			return this->begin_[n];
 		}
 
 		[[nodiscard]] constexpr const_reference
@@ -405,29 +405,29 @@ namespace plg {
 			if (n >= size()) {
 				this->throw_out_of_range();
 			}
-			return this->_begin[n];
+			return this->begin_[n];
 		}
 
 		[[nodiscard]] constexpr reference front() noexcept {
 			PLUGIFY_ASSERT(!empty(), "front() called on an empty vector");
-			return *this->_begin;
+			return *this->begin_;
 		}
 
 		[[nodiscard]] constexpr const_reference
 		front() const noexcept {
 			PLUGIFY_ASSERT(!empty(), "front() called on an empty vector");
-			return *this->_begin;
+			return *this->begin_;
 		}
 
 		[[nodiscard]] constexpr reference back() noexcept {
 			PLUGIFY_ASSERT(!empty(), "back() called on an empty vector");
-			return *(this->_end - 1);
+			return *(this->end_ - 1);
 		}
 
 		[[nodiscard]] constexpr const_reference
 		back() const noexcept {
 			PLUGIFY_ASSERT(!empty(), "back() called on an empty vector");
-			return *(this->_end - 1);
+			return *(this->end_ - 1);
 		}
 
 		//
@@ -435,12 +435,12 @@ namespace plg {
 		//
 		[[nodiscard]] constexpr value_type*
 		data() noexcept {
-			return std::to_address(this->_begin);
+			return std::to_address(this->begin_);
 		}
 
 		[[nodiscard]] constexpr const value_type*
 		data() const noexcept {
-			return std::to_address(this->_begin);
+			return std::to_address(this->begin_);
 		}
 
 		//
@@ -467,7 +467,7 @@ namespace plg {
 				"We assume that we have enough space to insert an element at the end of the vector"
 			);
 			ConstructTransaction tx(*this, 1);
-			alloc_traits::construct(this->_alloc, std::to_address(tx.pos_), std::forward<Args>(args)...);
+			alloc_traits::construct(this->alloc_, std::to_address(tx.pos_), std::forward<Args>(args)...);
 			++tx.pos_;
 		}
 
@@ -480,7 +480,7 @@ namespace plg {
 
 		constexpr void pop_back() {
 			PLUGIFY_ASSERT(!empty(), "vector::pop_back called on an empty vector");
-			this->destruct_at_end(this->_end - 1);
+			this->destruct_at_end(this->end_ - 1);
 		}
 
 		constexpr iterator
@@ -532,7 +532,7 @@ namespace plg {
 
 		constexpr void clear() noexcept {
 			size_type old_size = size();
-			base_destruct_at_end(this->_begin);
+			base_destruct_at_end(this->begin_);
 			annotate_shrink(old_size);
 		}
 
@@ -545,16 +545,16 @@ namespace plg {
 		constexpr bool invariants() const;
 
 	private:
-		pointer _begin = nullptr;
-		pointer _end = nullptr;
-		pointer _cap = nullptr;
+		pointer begin_ = nullptr;
+		pointer end_ = nullptr;
+		pointer cap_ = nullptr;
 		PLUGIFY_NO_UNIQUE_ADDRESS
-		allocator_type _alloc;
+		allocator_type alloc_;
 
 		//  Allocate space for n objects
 		//  throws length_error if n > max_size()
 		//  throws (probably bad_alloc) if memory run out
-		//  Precondition:  _begin == _end == _cap == nullptr
+		//  Precondition:  begin_ == end_ == cap_ == nullptr
 		//  Precondition:  n > 0
 		//  Postcondition:  capacity() >= n
 		//  Postcondition:  size() == 0
@@ -562,10 +562,10 @@ namespace plg {
 			if (n > max_size()) {
 				this->throw_length_error();
 			}
-			auto allocation = allocate_at_least(this->_alloc, n);
-			_begin = allocation.ptr;
-			_end = allocation.ptr;
-			_cap = _begin + allocation.count;
+			auto allocation = allocate_at_least(this->alloc_, n);
+			begin_ = allocation.ptr;
+			end_ = allocation.ptr;
+			cap_ = begin_ + allocation.count;
 			annotate_new(0);
 		}
 
@@ -617,7 +617,7 @@ namespace plg {
 		insert_assign_n_unchecked(Iterator first, difference_type n, pointer position) {
 			for (pointer end_position = position + n; position != end_position;
 				 ++position, (void) ++first) {
-				detail::temp_value<value_type, Allocator> tmp(this->_alloc, *first);
+				detail::temp_value<value_type, Allocator> tmp(this->alloc_, *first);
 				*position = std::move(tmp.get());
 			}
 		}
@@ -722,15 +722,15 @@ namespace plg {
 			constexpr
 				explicit ConstructTransaction(vector& v, size_type n)
 				: v_(v)
-				, pos_(v._end)
-				, new_end_(v._end + n) {
+				, pos_(v.end_)
+				, new_end_(v.end_ + n) {
 				v.annotate_increase(n);
 			}
 
 			constexpr ~ConstructTransaction() {
-				v_._end = pos_;
+				v_.end_ = pos_;
 				if (pos_ != new_end_) {
-					v_.annotate_shrink(new_end_ - v_._begin);
+					v_.annotate_shrink(new_end_ - v_.begin_);
 				}
 			}
 
@@ -744,11 +744,11 @@ namespace plg {
 
 		constexpr void
 		base_destruct_at_end(pointer new_last) noexcept {
-			pointer soon_to_be_end = this->_end;
+			pointer soon_to_be_end = this->end_;
 			while (new_last != soon_to_be_end) {
-				alloc_traits::destroy(this->_alloc, std::to_address(--soon_to_be_end));
+				alloc_traits::destroy(this->alloc_, std::to_address(--soon_to_be_end));
 			}
-			this->_end = new_last;
+			this->end_ = new_last;
 		}
 
 		constexpr void copy_assign_alloc(const vector& c) {
@@ -779,13 +779,13 @@ namespace plg {
 
 		constexpr void
 		copy_assign_alloc(const vector& c, std::true_type) {
-			if (this->_alloc != c._alloc) {
+			if (this->alloc_ != c.alloc_) {
 				clear();
 				annotate_delete();
-				alloc_traits::deallocate(this->_alloc, this->_begin, capacity());
-				this->_begin = this->_end = this->_cap = nullptr;
+				alloc_traits::deallocate(this->alloc_, this->begin_, capacity());
+				this->begin_ = this->end_ = this->cap_ = nullptr;
 			}
-			this->_alloc = c._alloc;
+			this->alloc_ = c.alloc_;
 		}
 
 		constexpr void
@@ -796,7 +796,7 @@ namespace plg {
 		move_assign_alloc(vector& c, std::true_type) noexcept(
 			std::is_nothrow_move_assignable_v<allocator_type>
 		) {
-			this->_alloc = std::move(c._alloc);
+			this->alloc_ = std::move(c.alloc_);
 		}
 
 		constexpr void
@@ -820,18 +820,18 @@ namespace plg {
 
 		constexpr void
 		swap_layouts(split_buffer<T, allocator_type&>& sb) {
-			auto vector_begin = _begin;
-			auto vector_sentinel = _end;
-			auto vector_cap = _cap;
+			auto vector_begin = begin_;
+			auto vector_sentinel = end_;
+			auto vector_cap = cap_;
 
 			auto sb_begin = sb.begin();
 			auto sb_sentinel = sb.raw_sentinel();
 			auto sb_cap = sb.raw_capacity();
 
 			// TODO: replace with set_valid_range and set_capacity when vector supports it.
-			_begin = sb_begin;
-			_end = sb_sentinel;
-			_cap = sb_cap;
+			begin_ = sb_begin;
+			end_ = sb_sentinel;
+			cap_ = sb_cap;
 
 			sb.set_valid_range(vector_begin, vector_sentinel);
 			sb.set_capacity(vector_cap);
@@ -852,33 +852,33 @@ namespace plg {
 		-> vector<std::ranges::range_value_t<Range>, Alloc>;
 #endif
 
-	// swap_out_circular_buffer relocates the objects in [_begin, _end) into the front of v and
-	// swaps the buffers of *this and v. It is assumed that v provides space for exactly (_end -
-	// _begin) objects in the front. This function has a strong exception guarantee.
+	// swap_out_circular_buffer relocates the objects in [begin_, end_) into the front of v and
+	// swaps the buffers of *this and v. It is assumed that v provides space for exactly (end_ -
+	// begin_) objects in the front. This function has a strong exception guarantee.
 	template <class T, class Allocator>
 	constexpr void
 	vector<T, Allocator>::swap_out_circular_buffer(split_buffer<value_type, allocator_type&>& v) {
 		annotate_delete();
 		auto new_begin = v.begin() - size();
 		uninitialized_allocator_relocate(
-			this->_alloc,
-			std::to_address(_begin),
-			std::to_address(_end),
+			this->alloc_,
+			std::to_address(begin_),
+			std::to_address(end_),
 			std::to_address(new_begin)
 		);
 		v.set_valid_range(new_begin, v.end());
-		_end = _begin;	// All the objects have been destroyed by relocating them.
+		end_ = begin_;	// All the objects have been destroyed by relocating them.
 
 		swap_layouts(v);
 		v.set_data(v.begin());
 		annotate_new(size());
 	}
 
-	// swap_out_circular_buffer relocates the objects in [_begin, p) into the front of v, the
-	// objects in [p, _end) into the back of v and swaps the buffers of *this and v. It is assumed
-	// that v provides space for exactly (p - _begin) objects in the front and space for at least
-	// (_end - p) objects in the back. This function has a strong exception guarantee if _begin == p
-	// || _end == p.
+	// swap_out_circular_buffer relocates the objects in [begin_, p) into the front of v, the
+	// objects in [p, end_) into the back of v and swaps the buffers of *this and v. It is assumed
+	// that v provides space for exactly (p - begin_) objects in the front and space for at least
+	// (end_ - p) objects in the back. This function has a strong exception guarantee if begin_ == p
+	// || end_ == p.
 	template <class T, class Allocator>
 	constexpr typename vector<T, Allocator>::pointer
 	vector<T, Allocator>::swap_out_circular_buffer(
@@ -888,27 +888,27 @@ namespace plg {
 		annotate_delete();
 		pointer ret = v.begin();
 
-		// Relocate [p, _end) first to avoid having a hole in [_begin, _end)
-		// in case something in [_begin, p) throws.
+		// Relocate [p, end_) first to avoid having a hole in [begin_, end_)
+		// in case something in [begin_, p) throws.
 		uninitialized_allocator_relocate(
-			this->_alloc,
+			this->alloc_,
 			std::to_address(p),
-			std::to_address(_end),
+			std::to_address(end_),
 			std::to_address(v.end())
 		);
-		auto relocated_so_far = _end - p;
+		auto relocated_so_far = end_ - p;
 		v.set_sentinel(v.end() + relocated_so_far);
-		_end = p;  // The objects in [p, _end) have been destroyed by relocating them.
-		auto new_begin = v.begin() - (p - _begin);
+		end_ = p;  // The objects in [p, end_) have been destroyed by relocating them.
+		auto new_begin = v.begin() - (p - begin_);
 
 		uninitialized_allocator_relocate(
-			this->_alloc,
-			std::to_address(_begin),
+			this->alloc_,
+			std::to_address(begin_),
 			std::to_address(p),
 			std::to_address(new_begin)
 		);
 		v.set_valid_range(new_begin, v.end());
-		_end = _begin;	// All the objects have been destroyed by relocating them.
+		end_ = begin_;	// All the objects have been destroyed by relocating them.
 		swap_layouts(v);
 		v.set_data(v.begin());
 		annotate_new(size());
@@ -917,11 +917,11 @@ namespace plg {
 
 	template <class T, class Allocator>
 	constexpr void vector<T, Allocator>::vdeallocate() noexcept {
-		if (this->_begin != nullptr) {
+		if (this->begin_ != nullptr) {
 			clear();
 			annotate_delete();
-			alloc_traits::deallocate(this->_alloc, this->_begin, capacity());
-			this->_begin = this->_end = this->_cap = nullptr;
+			alloc_traits::deallocate(this->alloc_, this->begin_, capacity());
+			this->begin_ = this->end_ = this->cap_ = nullptr;
 		}
 	}
 
@@ -941,7 +941,7 @@ namespace plg {
 		return std::max<size_type>(2 * cap, new_size);
 	}
 
-	//  Default constructs n objects starting at _end
+	//  Default constructs n objects starting at end_
 	//  throws if construction throws
 	//  Precondition:  n > 0
 	//  Precondition:  size() + n <= capacity()
@@ -951,11 +951,11 @@ namespace plg {
 		ConstructTransaction tx(*this, n);
 		const_pointer new_end = tx.new_end_;
 		for (pointer pos = tx.pos_; pos != new_end; tx.pos_ = ++pos) {
-			alloc_traits::construct(this->_alloc, std::to_address(pos));
+			alloc_traits::construct(this->alloc_, std::to_address(pos));
 		}
 	}
 
-	//  Copy constructs n objects starting at _end from x
+	//  Copy constructs n objects starting at end_ from x
 	//  throws if construction throws
 	//  Precondition:  n > 0
 	//  Precondition:  size() + n <= capacity()
@@ -967,7 +967,7 @@ namespace plg {
 		ConstructTransaction tx(*this, n);
 		const_pointer new_end = tx.new_end_;
 		for (pointer pos = tx.pos_; pos != new_end; tx.pos_ = ++pos) {
-			alloc_traits::construct(this->_alloc, std::to_address(pos), x);
+			alloc_traits::construct(this->alloc_, std::to_address(pos), x);
 		}
 	}
 
@@ -977,39 +977,39 @@ namespace plg {
 	vector<T, Allocator>::construct_at_end(InputIterator first, Sentinel last, size_type n) {
 		ConstructTransaction tx(*this, n);
 		tx.pos_ = uninitialized_allocator_copy(
-			this->_alloc,
+			this->alloc_,
 			std::move(first),
 			std::move(last),
 			tx.pos_
 		);
 	}
 
-	//  Default constructs n objects starting at _end
+	//  Default constructs n objects starting at end_
 	//  throws if construction throws
 	//  Postcondition:  size() == size() + n
 	//  Exception safety: strong.
 	template <class T, class Allocator>
 	constexpr void vector<T, Allocator>::append(size_type n) {
-		if (static_cast<size_type>(this->_cap - this->_end) >= n) {
+		if (static_cast<size_type>(this->cap_ - this->end_) >= n) {
 			this->construct_at_end(n);
 		} else {
-			split_buffer<value_type, allocator_type&> v(recommend(size() + n), size(), this->_alloc);
+			split_buffer<value_type, allocator_type&> v(recommend(size() + n), size(), this->alloc_);
 			v.construct_at_end(n);
 			swap_out_circular_buffer(v);
 		}
 	}
 
-	//  Default constructs n objects starting at _end
+	//  Default constructs n objects starting at end_
 	//  throws if construction throws
 	//  Postcondition:  size() == size() + n
 	//  Exception safety: strong.
 	template <class T, class Allocator>
 	constexpr void
 	vector<T, Allocator>::append(size_type n, const_reference x) {
-		if (static_cast<size_type>(this->_cap - this->_end) >= n) {
+		if (static_cast<size_type>(this->cap_ - this->end_) >= n) {
 			this->construct_at_end(n, x);
 		} else {
-			split_buffer<value_type, allocator_type&> v(recommend(size() + n), size(), this->_alloc);
+			split_buffer<value_type, allocator_type&> v(recommend(size() + n), size(), this->alloc_);
 			v.construct_at_end(n, x);
 			swap_out_circular_buffer(v);
 		}
@@ -1018,22 +1018,22 @@ namespace plg {
 	template <class T, class Allocator>
 	constexpr inline
 	vector<T, Allocator>::vector(vector&& x) noexcept
-		: _alloc(std::move(x._alloc)) {
-		this->_begin = x._begin;
-		this->_end = x._end;
-		this->_cap = x._cap;
-		x._begin = x._end = x._cap = nullptr;
+		: alloc_(std::move(x.alloc_)) {
+		this->begin_ = x.begin_;
+		this->end_ = x.end_;
+		this->cap_ = x.cap_;
+		x.begin_ = x.end_ = x.cap_ = nullptr;
 	}
 
 	template <class T, class Allocator>
 	constexpr inline
 	vector<T, Allocator>::vector(vector&& x, const std::type_identity_t<allocator_type>& a)
-		: _alloc(a) {
-		if (a == x._alloc) {
-			this->_begin = x._begin;
-			this->_end = x._end;
-			this->_cap = x._cap;
-			x._begin = x._end = x._cap = nullptr;
+		: alloc_(a) {
+		if (a == x.alloc_) {
+			this->begin_ = x.begin_;
+			this->end_ = x.end_;
+			this->cap_ = x.cap_;
+			x.begin_ = x.end_ = x.cap_ = nullptr;
 		} else {
 			using Ip = std::move_iterator<iterator>;
 			init_with_size(Ip(x.begin()), Ip(x.end()), x.size());
@@ -1045,7 +1045,7 @@ namespace plg {
 	vector<T, Allocator>::move_assign(vector& c, std::false_type) noexcept(
 		alloc_traits::is_always_equal::value
 	) {
-		if (this->_alloc != c._alloc) {
+		if (this->alloc_ != c.alloc_) {
 			using Ip = std::move_iterator<iterator>;
 			assign(Ip(c.begin()), Ip(c.end()));
 		} else {
@@ -1060,10 +1060,10 @@ namespace plg {
 	) {
 		vdeallocate();
 		move_assign_alloc(c);  // this can throw
-		this->_begin = c._begin;
-		this->_end = c._end;
-		this->_cap = c._cap;
-		c._begin = c._end = c._cap = nullptr;
+		this->begin_ = c.begin_;
+		this->end_ = c.end_;
+		this->cap_ = c.cap_;
+		c.begin_ = c.end_ = c.cap_ = nullptr;
 	}
 
 	template <class T, class Allocator>
@@ -1071,7 +1071,7 @@ namespace plg {
 	vector<T, Allocator>::operator=(const vector& x) {
 		if (this != std::addressof(x)) {
 			copy_assign_alloc(x);
-			assign(x._begin, x._end);
+			assign(x.begin_, x.end_);
 		}
 		return *this;
 	}
@@ -1080,11 +1080,11 @@ namespace plg {
 	template <class Iterator, class Sentinel>
 	constexpr void
 	vector<T, Allocator>::assign_with_sentinel(Iterator first, Sentinel last) {
-		pointer cur = _begin;
-		for (; first != last && cur != _end; ++first, (void) ++cur) {
+		pointer cur = begin_;
+		for (; first != last && cur != end_; ++first, (void) ++cur) {
 			*cur = *first;
 		}
-		if (cur != _end) {
+		if (cur != end_) {
 			destruct_at_end(cur);
 		} else {
 			for (; first != last; ++first) {
@@ -1101,15 +1101,15 @@ namespace plg {
 		if (new_size <= capacity()) {
 			if (new_size > size()) {
 #if PLUGIFY_HAS_CXX23
-				auto mid = std::ranges::copy_n(std::move(first), size(), this->_begin).in;
+				auto mid = std::ranges::copy_n(std::move(first), size(), this->begin_).in;
 				construct_at_end(std::move(mid), std::move(last), new_size - size());
 #else
 				Iterator mid = std::next(first, size());
-				std::copy(first, mid, this->_begin);
+				std::copy(first, mid, this->begin_);
 				construct_at_end(mid, last, new_size - size());
 #endif
 			} else {
-				pointer m = std::copy(std::move(first), last, this->_begin);
+				pointer m = std::copy(std::move(first), last, this->begin_);
 				this->destruct_at_end(m);
 			}
 		} else {
@@ -1124,11 +1124,11 @@ namespace plg {
 	vector<T, Allocator>::assign(size_type n, const_reference u) {
 		if (n <= capacity()) {
 			size_type s = size();
-			std::fill_n(this->_begin, std::min(n, s), u);
+			std::fill_n(this->begin_, std::min(n, s), u);
 			if (n > s) {
 				construct_at_end(n - s, u);
 			} else {
-				this->destruct_at_end(this->_begin + n);
+				this->destruct_at_end(this->begin_ + n);
 			}
 		} else {
 			vdeallocate();
@@ -1143,7 +1143,7 @@ namespace plg {
 			if (n > max_size()) {
 				this->throw_length_error();
 			}
-			split_buffer<value_type, allocator_type&> v(n, size(), this->_alloc);
+			split_buffer<value_type, allocator_type&> v(n, size(), this->alloc_);
 			swap_out_circular_buffer(v);
 		}
 	}
@@ -1154,7 +1154,7 @@ namespace plg {
 #if PLUGIFY_HAS_EXCEPTIONS
 			try {
 #endif	// PLUGIFY_HAS_EXCEPTIONS
-				split_buffer<value_type, allocator_type&> v(size(), size(), this->_alloc);
+				split_buffer<value_type, allocator_type&> v(size(), size(), this->alloc_);
 				// The Standard mandates shrink_to_fit() does not increase the capacity.
 				// With equal capacity keep the existing buffer. This avoids extra work
 				// due to swapping the elements.
@@ -1172,13 +1172,13 @@ namespace plg {
 	template <class... Args>
 	constexpr typename vector<T, Allocator>::pointer
 	vector<T, Allocator>::emplace_back_slow_path(Args&&... args) {
-		split_buffer<value_type, allocator_type&> v(recommend(size() + 1), size(), this->_alloc);
+		split_buffer<value_type, allocator_type&> v(recommend(size() + 1), size(), this->alloc_);
 		//    v.emplace_back(std::forward<Args>(args)...);
 		pointer end = v.end();
-		alloc_traits::construct(this->_alloc, std::to_address(end), std::forward<Args>(args)...);
+		alloc_traits::construct(this->alloc_, std::to_address(end), std::forward<Args>(args)...);
 		v.set_sentinel(++end);
 		swap_out_circular_buffer(v);
-		return this->_end;
+		return this->end_;
 	}
 
 	// This makes the compiler inline `else()` if `cond` is known to be false. Currently LLVM
@@ -1207,9 +1207,9 @@ namespace plg {
 	constexpr inline
 		typename vector<T, Allocator>::reference
 		vector<T, Allocator>::emplace_back(Args&&... args) {
-		pointer end = this->_end;
+		pointer end = this->end_;
 		if_likely_else(
-			end < this->_cap,
+			end < this->cap_,
 			[&] {
 				emplace_back_assume_capacity(std::forward<Args>(args)...);
 				++end;
@@ -1217,7 +1217,7 @@ namespace plg {
 			[&] { end = emplace_back_slow_path(std::forward<Args>(args)...); }
 		);
 
-		this->_end = end;
+		this->end_ = end;
 		return *(end - 1);
 	}
 
@@ -1230,8 +1230,8 @@ namespace plg {
 			"vector::erase(iterator) called with a non-dereferenceable iterator"
 		);
 		difference_type ps = position - cbegin();
-		pointer p = this->_begin + ps;
-		this->destruct_at_end(std::move(p + 1, this->_end, p));
+		pointer p = this->begin_ + ps;
+		this->destruct_at_end(std::move(p + 1, this->end_, p));
 		return make_iter(p);
 	}
 
@@ -1242,9 +1242,9 @@ namespace plg {
 			first <= last,
 			"vector::erase(first, last) called with invalid range"
 		);
-		pointer p = this->_begin + (first - begin());
+		pointer p = this->begin_ + (first - begin());
 		if (first != last) {
-			this->destruct_at_end(std::move(p + (last - first), this->_end, p));
+			this->destruct_at_end(std::move(p + (last - first), this->end_, p));
 		}
 		return make_iter(p);
 	}
@@ -1252,13 +1252,13 @@ namespace plg {
 	template <class T, class Allocator>
 	constexpr void
 	vector<T, Allocator>::move_range(pointer from_s, pointer from_e, pointer to) {
-		pointer old_last = this->_end;
+		pointer old_last = this->end_;
 		difference_type n = old_last - to;
 		{
 			pointer i = from_s + n;
 			ConstructTransaction tx(*this, from_e - i);
 			for (pointer pos = tx.pos_; i < from_e; ++i, (void) ++pos, tx.pos_ = pos) {
-				alloc_traits::construct(this->_alloc, std::to_address(pos), std::move(*i));
+				alloc_traits::construct(this->alloc_, std::to_address(pos), std::move(*i));
 			}
 		}
 		std::move_backward(from_s, from_s + n, old_last);
@@ -1267,16 +1267,16 @@ namespace plg {
 	template <class T, class Allocator>
 	constexpr typename vector<T, Allocator>::iterator
 	vector<T, Allocator>::insert(const_iterator position, const_reference x) {
-		pointer p = this->_begin + (position - begin());
-		if (this->_end < this->_cap) {
-			if (p == this->_end) {
+		pointer p = this->begin_ + (position - begin());
+		if (this->end_ < this->cap_) {
+			if (p == this->end_) {
 				emplace_back_assume_capacity(x);
 			} else {
-				move_range(p, this->_end, p + 1);
+				move_range(p, this->end_, p + 1);
 				const_pointer xr = std::pointer_traits<const_pointer>::pointer_to(x);
 				if (is_pointer_in_range(
 						std::to_address(p),
-						std::to_address(_end),
+						std::to_address(end_),
 						std::addressof(x)
 					)) {
 					++xr;
@@ -1286,8 +1286,8 @@ namespace plg {
 		} else {
 			split_buffer<value_type, allocator_type&> v(
 				recommend(size() + 1),
-				p - this->_begin,
-				this->_alloc
+				p - this->begin_,
+				this->alloc_
 			);
 			v.emplace_back(x);
 			p = swap_out_circular_buffer(v, p);
@@ -1298,19 +1298,19 @@ namespace plg {
 	template <class T, class Allocator>
 	constexpr typename vector<T, Allocator>::iterator
 	vector<T, Allocator>::insert(const_iterator position, value_type&& x) {
-		pointer p = this->_begin + (position - begin());
-		if (this->_end < this->_cap) {
-			if (p == this->_end) {
+		pointer p = this->begin_ + (position - begin());
+		if (this->end_ < this->cap_) {
+			if (p == this->end_) {
 				emplace_back_assume_capacity(std::move(x));
 			} else {
-				move_range(p, this->_end, p + 1);
+				move_range(p, this->end_, p + 1);
 				*p = std::move(x);
 			}
 		} else {
 			split_buffer<value_type, allocator_type&> v(
 				recommend(size() + 1),
-				p - this->_begin,
-				this->_alloc
+				p - this->begin_,
+				this->alloc_
 			);
 			v.emplace_back(std::move(x));
 			p = swap_out_circular_buffer(v, p);
@@ -1322,20 +1322,20 @@ namespace plg {
 	template <class... Args>
 	constexpr typename vector<T, Allocator>::iterator
 	vector<T, Allocator>::emplace(const_iterator position, Args&&... args) {
-		pointer p = this->_begin + (position - begin());
-		if (this->_end < this->_cap) {
-			if (p == this->_end) {
+		pointer p = this->begin_ + (position - begin());
+		if (this->end_ < this->cap_) {
+			if (p == this->end_) {
 				emplace_back_assume_capacity(std::forward<Args>(args)...);
 			} else {
-				detail::temp_value<value_type, Allocator> tmp(this->_alloc, std::forward<Args>(args)...);
-				move_range(p, this->_end, p + 1);
+				detail::temp_value<value_type, Allocator> tmp(this->alloc_, std::forward<Args>(args)...);
+				move_range(p, this->end_, p + 1);
 				*p = std::move(tmp.get());
 			}
 		} else {
 			split_buffer<value_type, allocator_type&> v(
 				recommend(size() + 1),
-				p - this->_begin,
-				this->_alloc
+				p - this->begin_,
+				this->alloc_
 			);
 			v.emplace_back(std::forward<Args>(args)...);
 			p = swap_out_circular_buffer(v, p);
@@ -1346,13 +1346,13 @@ namespace plg {
 	template <class T, class Allocator>
 	constexpr typename vector<T, Allocator>::iterator
 	vector<T, Allocator>::insert(const_iterator position, size_type n, const_reference x) {
-		pointer p = this->_begin + (position - begin());
+		pointer p = this->begin_ + (position - begin());
 		if (n > 0) {
-			if (n <= static_cast<size_type>(this->_cap - this->_end)) {
+			if (n <= static_cast<size_type>(this->cap_ - this->end_)) {
 				size_type old_n = n;
-				pointer old_last = this->_end;
-				if (n > static_cast<size_type>(this->_end - p)) {
-					size_type cx = n - (this->_end - p);
+				pointer old_last = this->end_;
+				if (n > static_cast<size_type>(this->end_ - p)) {
+					size_type cx = n - (this->end_ - p);
 					construct_at_end(cx, x);
 					n -= cx;
 				}
@@ -1361,7 +1361,7 @@ namespace plg {
 					const_pointer xr = std::pointer_traits<const_pointer>::pointer_to(x);
 					if (is_pointer_in_range(
 							std::to_address(p),
-							std::to_address(_end),
+							std::to_address(end_),
 							std::addressof(x)
 						)) {
 						xr += old_n;
@@ -1371,8 +1371,8 @@ namespace plg {
 			} else {
 				split_buffer<value_type, allocator_type&> v(
 					recommend(size() + n),
-					p - this->_begin,
-					this->_alloc
+					p - this->begin_,
+					this->alloc_
 				);
 				v.construct_at_end(n, x);
 				p = swap_out_circular_buffer(v, p);
@@ -1390,37 +1390,37 @@ namespace plg {
 		Sentinel last
 	) {
 		difference_type off = position - begin();
-		pointer p = this->_begin + off;
-		pointer old_last = this->_end;
-		for (; this->_end != this->_cap && first != last; ++first) {
+		pointer p = this->begin_ + off;
+		pointer old_last = this->end_;
+		for (; this->end_ != this->cap_ && first != last; ++first) {
 			emplace_back_assume_capacity(*first);
 		}
 
 		if (first == last) {
-			(void) std::rotate(p, old_last, this->_end);
+			(void) std::rotate(p, old_last, this->end_);
 		} else {
-			split_buffer<value_type, allocator_type&> v(_alloc);
+			split_buffer<value_type, allocator_type&> v(alloc_);
 			auto guard = make_exception_guard(
-				AllocatorDestroyRangeReverse<allocator_type, pointer>(_alloc, old_last, this->_end)
+				AllocatorDestroyRangeReverse<allocator_type, pointer>(alloc_, old_last, this->end_)
 			);
 			v.construct_at_end_with_sentinel(std::move(first), std::move(last));
 			split_buffer<value_type, allocator_type&> merged(
 				recommend(size() + v.size()),
 				off,
-				_alloc
+				alloc_
 			);	// has `off` positions available at the front
 			uninitialized_allocator_relocate(
-				_alloc,
+				alloc_,
 				std::to_address(old_last),
-				std::to_address(this->_end),
+				std::to_address(this->end_),
 				std::to_address(merged.end())
 			);
-			guard.complete();  // Release the guard once objects in [old_last_, _end) have been
+			guard.complete();  // Release the guard once objects in [old_last_, end_) have been
 							   // successfully relocated.
-			merged.set_sentinel(merged.end() + (this->_end - old_last));
-			this->_end = old_last;
+			merged.set_sentinel(merged.end() + (this->end_ - old_last));
+			this->end_ = old_last;
 			uninitialized_allocator_relocate(
-				_alloc,
+				alloc_,
 				std::to_address(v.begin()),
 				std::to_address(v.end()),
 				std::to_address(merged.end())
@@ -1441,16 +1441,16 @@ namespace plg {
 		Sentinel last,
 		difference_type n
 	) {
-		pointer p = this->_begin + (position - begin());
+		pointer p = this->begin_ + (position - begin());
 		if (n > 0) {
-			if (n <= this->_cap - this->_end) {
-				pointer old_last = this->_end;
-				difference_type dx = this->_end - p;
+			if (n <= this->cap_ - this->end_) {
+				pointer old_last = this->end_;
+				difference_type dx = this->end_ - p;
 				if (n > dx) {
 #if PLUGIFY_HAS_CXX23
 					if constexpr (!std::forward_iterator<Iterator>) {
 						construct_at_end(std::move(first), std::move(last), n);
-						std::rotate(p, old_last, this->_end);
+						std::rotate(p, old_last, this->end_);
 					} else
 #endif
 					{
@@ -1468,8 +1468,8 @@ namespace plg {
 			} else {
 				split_buffer<value_type, allocator_type&> v(
 					recommend(size() + n),
-					p - this->_begin,
-					this->_alloc
+					p - this->begin_,
+					this->alloc_
 				);
 				v.construct_at_end_with_size(std::move(first), n);
 				p = swap_out_circular_buffer(v, p);
@@ -1484,7 +1484,7 @@ namespace plg {
 		if (cs < sz) {
 			this->append(sz - cs);
 		} else if (cs > sz) {
-			this->destruct_at_end(this->_begin + sz);
+			this->destruct_at_end(this->begin_ + sz);
 		}
 	}
 
@@ -1495,7 +1495,7 @@ namespace plg {
 		if (cs < sz) {
 			this->append(sz - cs, x);
 		} else if (cs > sz) {
-			this->destruct_at_end(this->_begin + sz);
+			this->destruct_at_end(this->begin_ + sz);
 		}
 	}
 
@@ -1504,30 +1504,30 @@ namespace plg {
 		noexcept
 	{
 		PLUGIFY_ASSERT(
-			alloc_traits::propagate_on_container_swap::value || this->_alloc == x._alloc,
+			alloc_traits::propagate_on_container_swap::value || this->alloc_ == x.alloc_,
 			"vector::swap: Either propagate_on_container_swap must be true"
 			" or the allocators must compare equal"
 		);
-		std::swap(this->_begin, x._begin);
-		std::swap(this->_end, x._end);
-		std::swap(this->_cap, x._cap);
-		swap_allocator(this->_alloc, x._alloc);
+		std::swap(this->begin_, x.begin_);
+		std::swap(this->end_, x.end_);
+		std::swap(this->cap_, x.cap_);
+		swap_allocator(this->alloc_, x.alloc_);
 	}
 
 	template <class T, class Allocator>
 	constexpr bool vector<T, Allocator>::invariants() const {
-		if (this->_begin == nullptr) {
-			if (this->_end != nullptr || this->_cap != nullptr) {
+		if (this->begin_ == nullptr) {
+			if (this->end_ != nullptr || this->cap_ != nullptr) {
 				return false;
 			}
 		} else {
-			if (this->_begin > this->_end) {
+			if (this->begin_ > this->end_) {
 				return false;
 			}
-			if (this->_begin == this->_cap) {
+			if (this->begin_ == this->cap_) {
 				return false;
 			}
-			if (this->_end > this->_cap) {
+			if (this->end_ > this->cap_) {
 				return false;
 			}
 		}

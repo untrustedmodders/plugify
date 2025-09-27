@@ -17,15 +17,15 @@ namespace plg {
 	template <std::size_t N>
 	struct static_string {
 		constexpr static_string(std::string_view sv) noexcept {
-			std::copy(sv.begin(), sv.end(), _content.begin());
+			std::copy(sv.begin(), sv.end(), content_.begin());
 		}
 
 		constexpr operator std::string_view() const noexcept {
-			return { _content.data(), N };
+			return { content_.data(), N };
 		}
 
 	private:
-		std::array<char, N + 1> _content{};
+		std::array<char, N + 1> content_{};
 	};
 
 	constexpr auto is_pretty(char ch) noexcept {

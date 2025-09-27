@@ -650,7 +650,7 @@ namespace plg {
 
 	template <size_t N>
 	struct padding {
-		char _pad[N];
+		char padding[N];
 	};
 
 	template <>
@@ -781,32 +781,32 @@ namespace plg {
 			constexpr long_() = default;
 
 			constexpr long_(alloc_result alloc, size_type size)
-				: _data(alloc.ptr)
-				, _size(size)
-				, _cap(alloc.count / endian_factor)
-				, _is_long(true) {
+				: data_(alloc.ptr)
+				, size_(size)
+				, cap_(alloc.count / endian_factor)
+				, is_long_(true) {
 				PLUGIFY_ASSERT(!fits_in_sso(alloc.count), "Long capacity should always be larger than the SSO");
 			}
 
-			pointer _data;
-			size_type _size;
-			size_type _cap : sizeof(size_type) * char_bit - 1;
-			size_type _is_long : 1;
+			pointer data_;
+			size_type size_;
+			size_type cap_ : sizeof(size_type) * char_bit - 1;
+			size_type is_long_ : 1;
 		};
 
 		static constexpr size_type min_cap = ((sizeof(long_) - 1) / sizeof(value_type) > 2 ? (sizeof(long_) - 1) / sizeof(value_type) : 2) + 1;
 
 		struct short_ {
 			constexpr short_()
-				: _data{}
-				, _spare_size(min_cap - 1)
-				, _is_long(false) {
+				: data_{}
+				, spare_size_(min_cap - 1)
+				, is_long_(false) {
 			}
 
-			value_type _data[min_cap - 1];
-			PLUGIFY_NO_UNIQUE_ADDRESS padding<sizeof(value_type) - 1> _padding;
-			uint8_t _spare_size : 7;
-			uint8_t _is_long : 1;
+			value_type data_[min_cap - 1];
+			PLUGIFY_NO_UNIQUE_ADDRESS padding<sizeof(value_type) - 1> padding_;
+			uint8_t spare_size_ : 7;
+			uint8_t is_long_ : 1;
 		};
 
 		// The endian_factor is required because the field we use to store the size
@@ -836,21 +836,21 @@ namespace plg {
 		union rep {
 			short_ s{};
 			long_ l;
-		} _rep;
+		} rep_;
 		PLUGIFY_NO_UNIQUE_ADDRESS
-		allocator_type _alloc;
+		allocator_type alloc_;
 
 		// annotate the string with its size() at scope exit. The string has to be in a valid state
 		// at that point.
 		struct annotate_new_size {
-			basic_string& _str;
+			basic_string& str_;
 
 			constexpr explicit annotate_new_size(basic_string& str)
-				: _str(str) {
+				: str_(str) {
 			}
 
 			constexpr void operator()() {
-				_str.annotate_new(_str.size());
+				str_.annotate_new(str_.size());
 			}
 		};
 
@@ -858,13 +858,13 @@ namespace plg {
 		// but don't initialize the characters. The contents of the string, including the null
 		// terminator, must be initialized separately.
 		constexpr /*explicit*/ basic_string(uninitialized_size_tag, size_type size, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			init_internal_buffer(size);
 		}
 
 		template <class Iter, class Sent>
 		constexpr basic_string(init_with_sentinel_tag, Iter first, Sent last, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			init_with_sentinel(std::move(first), std::move(last));
 		}
 
@@ -880,20 +880,20 @@ namespace plg {
 		static const size_type npos = static_cast<size_type>(-1);
 
 		constexpr basic_string() noexcept(std::is_nothrow_default_constructible_v<allocator_type>)
-			: _rep(short_()) {
+			: rep_(short_()) {
 			annotate_new(0);
 		}
 
 		constexpr /*explicit*/ basic_string(const allocator_type& a) noexcept
-			: _rep(short_())
-			, _alloc(a) {
+			: rep_(short_())
+			, alloc_(a) {
 			annotate_new(0);
 		}
 
 		constexpr PLUGIFY_INTERNAL_MEMORY_ACCESS basic_string(const basic_string& str)
-			: _alloc(alloc_traits::select_on_container_copy_construction(str._alloc)) {
+			: alloc_(alloc_traits::select_on_container_copy_construction(str.alloc_)) {
 			if (!str.is_long()) {
-				_rep = str._rep;
+				rep_ = str.rep_;
 				annotate_new(get_short_size());
 			} else {
 				init_copy_ctor_external(std::to_address(str.get_long_pointer()), str.get_long_size());
@@ -902,9 +902,9 @@ namespace plg {
 
 		constexpr PLUGIFY_INTERNAL_MEMORY_ACCESS
 		basic_string(const basic_string& str, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			if (!str.is_long()) {
-				_rep = str._rep;
+				rep_ = str.rep_;
 				annotate_new(get_short_size());
 			} else {
 				init_copy_ctor_external(std::to_address(str.get_long_pointer()), str.get_long_size());
@@ -916,14 +916,14 @@ namespace plg {
 			// PLUGIFY_INTERNAL_MEMORY_ACCESS does not work consistently during
 			// initialization of r_, so we instead unpoison str's memory manually first. str's
 			// memory needs to be unpoisoned only in the case where it's a short string.
-			: _rep([](basic_string& s) -> decltype(s._rep)&& {
+			: rep_([](basic_string& s) -> decltype(s.rep_)&& {
 				if (!s.is_long()) {
 					s.annotate_delete();
 				}
-				return std::move(s._rep);
+				return std::move(s.rep_);
 			}(str))
-			, _alloc(std::move(str._alloc)) {
-			str._rep = rep();
+			, alloc_(std::move(str.alloc_)) {
+			str.rep_ = rep();
 			str.annotate_new(0);
 			if (!is_long()) {
 				annotate_new(size());
@@ -931,18 +931,18 @@ namespace plg {
 		}
 
 		constexpr basic_string(basic_string&& str, const allocator_type& a)
-			: _alloc(a) {
-			if (str.is_long() && a != str._alloc) {	 // copy, not move
+			: alloc_(a) {
+			if (str.is_long() && a != str.alloc_) {	 // copy, not move
 				init(std::to_address(str.get_long_pointer()), str.get_long_size());
 			} else {
 				if (std::is_constant_evaluated()) {
-					_rep = rep();
+					rep_ = rep();
 				}
 				if (!str.is_long()) {
 					str.annotate_delete();
 				}
-				_rep = str._rep;
-				str._rep = rep();
+				rep_ = str.rep_;
+				str.rep_ = rep();
 				str.annotate_new(0);
 				if (!is_long() && this != std::addressof(str)) {
 					annotate_new(size());
@@ -959,7 +959,7 @@ namespace plg {
 
 		constexpr basic_string(const CharT* PLUGIFY_NO_NULL s, const Allocator& a)
 			requires(is_allocator<Allocator>)
-			: _alloc(a) {
+			: alloc_(a) {
 			PLUGIFY_ASSERT(s != nullptr, "basic_string(const char*, allocator) detected nullptr");
 			init(s, traits_type::length(s));
 		}
@@ -972,7 +972,7 @@ namespace plg {
 		}
 
 		constexpr basic_string(const CharT* s, size_type n, const Allocator& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			PLUGIFY_ASSERT(
 				n == 0 || s != nullptr,
 				"basic_string(const char*, n, allocator) detected nullptr"
@@ -994,13 +994,13 @@ namespace plg {
 			size_type n,
 			const Allocator& alloc = Allocator()
 		)
-			: _alloc(alloc) {
+			: alloc_(alloc) {
 			if (pos > str.size()) {
 				this->throw_out_of_range();
 			}
 
 			auto len = std::min<size_type>(n, str.size() - pos);
-			if (alloc_traits::is_always_equal::value || alloc == str._alloc) {
+			if (alloc_traits::is_always_equal::value || alloc == str.alloc_) {
 				move_assign(std::move(str), pos, len);
 			} else {
 				// Perform a copy because the allocators are not compatible.
@@ -1010,7 +1010,7 @@ namespace plg {
 
 		constexpr basic_string(size_type n, CharT c, const Allocator& a)
 			requires(is_allocator<Allocator>)
-			: _alloc(a) {
+			: alloc_(a) {
 			init(n, c);
 		}
 
@@ -1020,7 +1020,7 @@ namespace plg {
 			size_type n,
 			const Allocator& a = Allocator()
 		)
-			: _alloc(a) {
+			: alloc_(a) {
 			size_type str_sz = str.size();
 			if (pos > str_sz) {
 				this->throw_out_of_range();
@@ -1029,7 +1029,7 @@ namespace plg {
 		}
 
 		constexpr basic_string(const basic_string& str, size_type pos, const Allocator& a = Allocator())
-			: _alloc(a) {
+			: alloc_(a) {
 			size_type str_sz = str.size();
 			if (pos > str_sz) {
 				this->throw_out_of_range();
@@ -1044,7 +1044,7 @@ namespace plg {
 			size_type n,
 			const allocator_type& a = allocator_type()
 		)
-			: _alloc(a) {
+			: alloc_(a) {
 			self_view sv0 = t;
 			self_view sv = sv0.substr(pos, n);
 			init(sv.data(), sv.size());
@@ -1058,7 +1058,7 @@ namespace plg {
 
 		template <string_view_convertible_with_exceptiom<CharT, Traits, Allocator> T>
 		constexpr /*explicit*/ basic_string(const T& t, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			self_view sv = t;
 			init(sv.data(), sv.size());
 		}
@@ -1070,14 +1070,14 @@ namespace plg {
 
 		template <std::input_iterator InputIterator>
 		constexpr basic_string(InputIterator first, InputIterator last, const allocator_type& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			init(first, last);
 		}
 
 #if PLUGIFY_HAS_CXX23
 		template <container_compatible_range<CharT> Range>
 		constexpr basic_string(std::from_range_t, Range&& range, const allocator_type& a = allocator_type())
-			: _alloc(a) {
+			: alloc_(a) {
 			if constexpr (std::ranges::forward_range<Range> || std::ranges::sized_range<Range>) {
 				init_with_size(
 					std::ranges::begin(range),
@@ -1095,7 +1095,7 @@ namespace plg {
 		}
 
 		constexpr basic_string(std::initializer_list<CharT> il, const Allocator& a)
-			: _alloc(a) {
+			: alloc_(a) {
 			init(il.begin(), il.end());
 		}
 
@@ -1194,7 +1194,7 @@ namespace plg {
 		constexpr size_type max_size() const noexcept {
 			constexpr bool uses_lsb = endian_factor == 2;
 
-			if (size_type m = alloc_traits::max_size(_alloc);
+			if (size_type m = alloc_traits::max_size(alloc_);
 				m <= std::numeric_limits<size_type>::max() / 2) {
 				size_type res = m - alignment;
 
@@ -1317,7 +1317,7 @@ namespace plg {
 
 		template <std::input_iterator InputIterator>
 		constexpr basic_string& append(InputIterator first, InputIterator last) {
-			const basic_string temp(first, last, _alloc);
+			const basic_string temp(first, last, alloc_);
 			append(temp.data(), temp.size());
 			return *this;
 		}
@@ -1341,7 +1341,7 @@ namespace plg {
 				set_size(sz + n);
 				return *this;
 			} else {
-				const basic_string temp(first, last, _alloc);
+				const basic_string temp(first, last, alloc_);
 				return append(temp.data(), temp.size());
 			}
 		}
@@ -1389,13 +1389,13 @@ namespace plg {
 
 		constexpr void move_assign(basic_string&& str, size_type pos, size_type len) {
 			// Pilfer the allocation from str.
-			PLUGIFY_ASSERT(_alloc == str._alloc, "move_assign called with wrong allocator");
+			PLUGIFY_ASSERT(alloc_ == str.alloc_, "move_assign called with wrong allocator");
 			size_type old_sz = str.size();
 			if (!str.is_long()) {
 				str.annotate_delete();
 			}
-			_rep = str._rep;
-			str._rep = rep();
+			rep_ = str.rep_;
+			str.rep_ = rep();
 			str.annotate_new(0);
 
 			Traits::move(data(), data() + pos, len);
@@ -1510,7 +1510,7 @@ namespace plg {
 				return insert_with_size(position, std::ranges::begin(range), std::ranges::end(range), n);
 
 			} else {
-				basic_string temp(std::from_range, std::forward<Range>(range), _alloc);
+				basic_string temp(std::from_range, std::forward<Range>(range), alloc_);
 				return insert(position, temp.data(), temp.data() + temp.size());
 			}
 		}
@@ -1524,7 +1524,7 @@ namespace plg {
 
 		template <std::input_iterator InputIterator>
 		constexpr iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
-			const basic_string temp(first, last, _alloc);
+			const basic_string temp(first, last, alloc_);
 			return insert(pos, temp.data(), temp.data() + temp.size());
 		}
 
@@ -1605,7 +1605,7 @@ namespace plg {
 		template <std::input_iterator InputIterator>
 		constexpr basic_string&
 		replace(const_iterator i1, const_iterator i2, InputIterator j1, InputIterator j2) {
-			const basic_string temp(j1, j2, _alloc);
+			const basic_string temp(j1, j2, alloc_);
 			return replace(i1, i2, temp);
 		}
 
@@ -1613,7 +1613,7 @@ namespace plg {
 		template <container_compatible_range<CharT> Range>
 		constexpr basic_string&
 		replace_with_range(const_iterator i1, const_iterator i2, Range&& range) {
-			basic_string temp(std::from_range, std::forward<Range>(range), _alloc);
+			basic_string temp(std::from_range, std::forward<Range>(range), alloc_);
 			return replace(i1, i2, temp);
 		}
 #endif
@@ -1651,7 +1651,7 @@ namespace plg {
 		}
 
 		constexpr allocator_type get_allocator() const noexcept {
-			return _alloc;
+			return alloc_;
 		}
 
 		// find
@@ -1933,10 +1933,10 @@ namespace plg {
 
 	private:
 		[[nodiscard]] constexpr PLUGIFY_INTERNAL_MEMORY_ACCESS bool is_long() const noexcept {
-			if (std::is_constant_evaluated() && __builtin_constant_p(_rep.l._is_long)) {
-				return _rep.l._is_long;
+			if (std::is_constant_evaluated() && __builtin_constant_p(rep_.l.is_long_)) {
+				return rep_.l.is_long_;
 			}
-			return _rep.s._is_long;
+			return rep_.s.is_long_;
 		}
 
 		static constexpr bool fits_in_sso(size_type sz) {
@@ -2008,22 +2008,22 @@ namespace plg {
 				s < min_cap,
 				"s should never be greater than or equal to the short string capacity"
 			);
-			_rep.s._spare_size = (min_cap - 1) - s;
-			_rep.s._is_long = false;
+			rep_.s.spare_size_ = (min_cap - 1) - s;
+			rep_.s.is_long_ = false;
 		}
 
 		constexpr PLUGIFY_INTERNAL_MEMORY_ACCESS size_type get_short_size() const noexcept {
-			PLUGIFY_ASSERT(!_rep.s._is_long, "String has to be short when trying to get the short size");
-			return (min_cap - 1) - _rep.s._spare_size;
+			PLUGIFY_ASSERT(!rep_.s.is_long_, "String has to be short when trying to get the short size");
+			return (min_cap - 1) - rep_.s.spare_size_;
 		}
 
 		constexpr void set_long_size(size_type s) noexcept {
-			_rep.l._size = s;
+			rep_.l.size_ = s;
 		}
 
 		constexpr size_type get_long_size() const noexcept {
-			PLUGIFY_ASSERT(_rep.l._is_long, "String has to be long when trying to get the long size");
-			return _rep.l._size;
+			PLUGIFY_ASSERT(rep_.l.is_long_, "String has to be long when trying to get the long size");
+			return rep_.l.size_;
 		}
 
 		constexpr void set_size(size_type s) noexcept {
@@ -2035,29 +2035,29 @@ namespace plg {
 		}
 
 		constexpr size_type get_long_cap() const noexcept {
-			PLUGIFY_ASSERT(_rep.l._is_long, "String has to be long when trying to get the long capacity");
-			return _rep.l._cap * endian_factor;
+			PLUGIFY_ASSERT(rep_.l.is_long_, "String has to be long when trying to get the long capacity");
+			return rep_.l.cap_ * endian_factor;
 		}
 
 		constexpr pointer get_long_pointer() noexcept {
-			PLUGIFY_ASSERT(_rep.l._is_long, "String has to be long when trying to get the long pointer");
-			return PLUGIFY_ASAN_VOLATILE_WRAPPER(_rep.l._data);
+			PLUGIFY_ASSERT(rep_.l.is_long_, "String has to be long when trying to get the long pointer");
+			return PLUGIFY_ASAN_VOLATILE_WRAPPER(rep_.l.data_);
 		}
 
 		constexpr const_pointer get_long_pointer() const noexcept {
-			PLUGIFY_ASSERT(_rep.l._is_long, "String has to be long when trying to get the long pointer");
-			return PLUGIFY_ASAN_VOLATILE_WRAPPER(_rep.l._data);
+			PLUGIFY_ASSERT(rep_.l.is_long_, "String has to be long when trying to get the long pointer");
+			return PLUGIFY_ASAN_VOLATILE_WRAPPER(rep_.l.data_);
 		}
 
 		constexpr PLUGIFY_INTERNAL_MEMORY_ACCESS pointer get_short_pointer() noexcept {
 			return PLUGIFY_ASAN_VOLATILE_WRAPPER(
-				std::pointer_traits<pointer>::pointer_to(_rep.s._data[0])
+				std::pointer_traits<pointer>::pointer_to(rep_.s.data_[0])
 			);
 		}
 
 		constexpr PLUGIFY_INTERNAL_MEMORY_ACCESS const_pointer get_short_pointer() const noexcept {
 			return PLUGIFY_ASAN_VOLATILE_WRAPPER(
-				std::pointer_traits<const_pointer>::pointer_to(_rep.s._data[0])
+				std::pointer_traits<const_pointer>::pointer_to(rep_.s.data_[0])
 			);
 		}
 
@@ -2094,22 +2094,22 @@ namespace plg {
 		constexpr void reset_internal_buffer() {
 			annotate_delete();
 			if (is_long()) {
-				alloc_traits::deallocate(_alloc, get_long_pointer(), get_long_cap());
+				alloc_traits::deallocate(alloc_, get_long_pointer(), get_long_cap());
 			}
-			_rep.s = short_();
+			rep_.s = short_();
 		}
 
 		// Replace the current buffer with alloc; the first size elements constitute a string
 		constexpr void replace_internal_buffer(long_ alloc) {
 			reset_internal_buffer();
-			_rep.l = alloc;
+			rep_.l = alloc;
 		}
 
 		// Initialize the internal buffer to hold size elements
 		// The elements and null terminator have to be set by the caller
 		constexpr pointer init_internal_buffer(size_type size) {
 			if (std::is_constant_evaluated()) {
-				_rep = rep();
+				rep_ = rep();
 			}
 
 			if (size > max_size()) {
@@ -2121,7 +2121,7 @@ namespace plg {
 				annotate_new(size);
 				return get_short_pointer();
 			} else {
-				_rep.l = allocate_long_buffer(_alloc, size);
+				rep_.l = allocate_long_buffer(alloc_, size);
 				annotate_new(size);
 				return get_long_pointer();
 			}
@@ -2270,18 +2270,18 @@ namespace plg {
 		}
 
 		constexpr void copy_assign_alloc(const basic_string& str, std::true_type) {
-			if (_alloc == str._alloc) {
-				_alloc = str._alloc;
+			if (alloc_ == str.alloc_) {
+				alloc_ = str.alloc_;
 			} else {
 				if (!str.is_long()) {
 					reset_internal_buffer();
-					_alloc = str._alloc;
+					alloc_ = str.alloc_;
 				} else {
 					annotate_delete();
 					[[maybe_unused]] auto guard = make_scope_guard(annotate_new_size(*this));
-					auto alloc = str._alloc;
+					auto alloc = str.alloc_;
 					replace_internal_buffer(allocate_long_buffer(alloc, str.size()));
-					_alloc = std::move(alloc);
+					alloc_ = std::move(alloc);
 				}
 			}
 		}
@@ -2307,7 +2307,7 @@ namespace plg {
 			basic_string& c,
 			std::true_type
 		) noexcept(std::is_nothrow_move_assignable_v<allocator_type>) {
-			_alloc = std::move(c._alloc);
+			alloc_ = std::move(c.alloc_);
 		}
 
 		constexpr void move_assign_alloc(basic_string&, std::false_type) noexcept {
@@ -2433,7 +2433,7 @@ namespace plg {
 	template <class InputIterator, class Sentinel>
 	constexpr void
 	basic_string<CharT, Traits, Allocator>::init_with_sentinel(InputIterator first, Sentinel last) {
-		_rep = rep();
+		rep_ = rep();
 		annotate_new(0);
 
 #if PLUGIFY_HAS_EXCEPTIONS
@@ -2500,23 +2500,23 @@ namespace plg {
 							: ms;
 		annotate_delete();
 		[[maybe_unused]] auto guard = make_scope_guard(annotate_new_size(*this));
-		long_ buffer = allocate_long_buffer(_alloc, cap);
+		long_ buffer = allocate_long_buffer(alloc_, cap);
 		if (n_copy != 0) {
-			traits_type::copy(std::to_address(buffer._data), std::to_address(old_p), n_copy);
+			traits_type::copy(std::to_address(buffer.data_), std::to_address(old_p), n_copy);
 		}
 		if (n_add != 0) {
-			traits_type::copy(std::to_address(buffer._data) + n_copy, p_new_stuff, n_add);
+			traits_type::copy(std::to_address(buffer.data_) + n_copy, p_new_stuff, n_add);
 		}
 		size_type sec_cp_sz = old_sz - n_del - n_copy;
 		if (sec_cp_sz != 0) {
 			traits_type::copy(
-				std::to_address(buffer._data) + n_copy + n_add,
+				std::to_address(buffer.data_) + n_copy + n_add,
 				std::to_address(old_p) + n_copy + n_del,
 				sec_cp_sz
 			);
 		}
-		buffer._size = n_copy + n_add + sec_cp_sz;
-		traits_type::assign(buffer._data[buffer._size], value_type());
+		buffer.size_ = n_copy + n_add + sec_cp_sz;
+		traits_type::assign(buffer.data_[buffer.size_], value_type());
 		replace_internal_buffer(buffer);
 	}
 
@@ -2539,14 +2539,14 @@ namespace plg {
 		size_type cap = old_cap < ms / 2 - alignment
 							? recommend(std::max(old_cap + delta_cap, 2 * old_cap))
 							: ms;
-		long_ buffer = allocate_long_buffer(_alloc, cap);
+		long_ buffer = allocate_long_buffer(alloc_, cap);
 		if (n_copy != 0) {
-			traits_type::copy(std::to_address(buffer._data), std::to_address(old_p), n_copy);
+			traits_type::copy(std::to_address(buffer.data_), std::to_address(old_p), n_copy);
 		}
 		size_type sec_cp_sz = old_sz - n_del - n_copy;
 		if (sec_cp_sz != 0) {
 			traits_type::copy(
-				std::to_address(buffer._data) + n_copy + n_add,
+				std::to_address(buffer.data_) + n_copy + n_add,
 				std::to_address(old_p) + n_copy + n_del,
 				sec_cp_sz
 			);
@@ -2554,7 +2554,7 @@ namespace plg {
 
 		// This is -1 to make sure the caller sets the size properly, since old versions of this
 		// function didn't set the size at all.
-		buffer._size = npos;
+		buffer.size_ = npos;
 		replace_internal_buffer(buffer);
 		set_long_size(old_sz - n_del + n_add);
 	}
@@ -2671,7 +2671,7 @@ namespace plg {
 
 		annotate_delete();
 		[[maybe_unused]] auto guard = make_scope_guard(annotate_new_size(*this));
-		_rep = str._rep;
+		rep_ = str.rep_;
 
 		return *this;
 	}
@@ -2681,7 +2681,7 @@ namespace plg {
 	basic_string<CharT, Traits, Allocator>::move_assign(basic_string& str, std::false_type) noexcept(
 		alloc_traits::is_always_equal::value
 	) {
-		if (_alloc != str._alloc) {
+		if (alloc_ != str.alloc_) {
 			assign(str);
 		} else {
 			move_assign(str, std::true_type());
@@ -2699,7 +2699,7 @@ namespace plg {
 		bool str_was_short = !str.is_long();
 
 		move_assign_alloc(str);
-		_rep = str._rep;
+		rep_ = str.rep_;
 		str.set_short_size(0);
 		traits_type::assign(str.get_short_pointer()[0], value_type());
 
@@ -2728,7 +2728,7 @@ namespace plg {
 	template <class InputIterator, class Sentinel>
 	constexpr void
 	basic_string<CharT, Traits, Allocator>::assign_with_sentinel(InputIterator first, Sentinel last) {
-		const basic_string temp(init_with_sentinel_tag(), std::move(first), std::move(last), _alloc);
+		const basic_string temp(init_with_sentinel_tag(), std::move(first), std::move(last), alloc_);
 		assign(temp.data(), temp.size());
 	}
 
@@ -2974,7 +2974,7 @@ namespace plg {
 		if (string_is_trivial_iterator_v<Iterator> && !addr_in_range(*first)) {
 			return insert_from_safe_copy(n, ip, std::move(first), std::move(last));
 		} else {
-			const basic_string temp(init_with_sentinel_tag(), std::move(first), std::move(last), _alloc);
+			const basic_string temp(init_with_sentinel_tag(), std::move(first), std::move(last), alloc_);
 			return insert_from_safe_copy(n, ip, temp.begin(), temp.end());
 		}
 	}
@@ -3228,9 +3228,9 @@ namespace plg {
 		}
 
 		[[maybe_unused]] annotation_guard g(*this);
-		long_ buffer = allocate_long_buffer(_alloc, requested_capacity);
-		buffer._size = size();
-		traits_type::copy(std::to_address(buffer._data), data(), buffer._size + 1);
+		long_ buffer = allocate_long_buffer(alloc_, requested_capacity);
+		buffer.size_ = size();
+		traits_type::copy(std::to_address(buffer.data_), data(), buffer.size_ + 1);
 		replace_internal_buffer(buffer);
 	}
 
@@ -3252,7 +3252,7 @@ namespace plg {
 			[[maybe_unused]] annotation_guard g(*this);
 			set_short_size(size);
 			traits_type::copy(std::to_address(get_short_pointer()), std::to_address(ptr), size + 1);
-			alloc_traits::deallocate(_alloc, ptr, cap);
+			alloc_traits::deallocate(alloc_, ptr, cap);
 			return;
 		}
 
@@ -3260,18 +3260,18 @@ namespace plg {
 		try {
 #endif	// PLUGIFY_HAS_EXCEPTIONS
 			[[maybe_unused]] annotation_guard g(*this);
-			long_ buffer = allocate_long_buffer(_alloc, size);
+			long_ buffer = allocate_long_buffer(alloc_, size);
 
 			// The Standard mandates shrink_to_fit() does not increase the capacity.
 			// With equal capacity keep the existing buffer. This avoids extra work
 			// due to swapping the elements.
-			if (buffer._cap * endian_factor - 1 >= capacity()) {
-				alloc_traits::deallocate(_alloc, buffer._data, buffer._cap * endian_factor);
+			if (buffer.cap_ * endian_factor - 1 >= capacity()) {
+				alloc_traits::deallocate(alloc_, buffer.data_, buffer.cap_ * endian_factor);
 				return;
 			}
 
 			traits_type::copy(
-				std::to_address(buffer._data),
+				std::to_address(buffer.data_),
 				std::to_address(get_long_pointer()),
 				size + 1
 			);
@@ -3316,7 +3316,7 @@ namespace plg {
 	template <class CharT, class Traits, class Allocator>
 	inline constexpr void basic_string<CharT, Traits, Allocator>::swap(basic_string& str) noexcept {
 		PLUGIFY_ASSERT(
-			alloc_traits::propagate_on_container_swap::value || alloc_traits::is_always_equal::value || _alloc == str._alloc,
+			alloc_traits::propagate_on_container_swap::value || alloc_traits::is_always_equal::value || alloc_ == str.alloc_,
 			"swapping non-equal allocators"
 		);
 		if (!is_long()) {
@@ -3325,8 +3325,8 @@ namespace plg {
 		if (this != std::addressof(str) && !str.is_long()) {
 			str.annotate_delete();
 		}
-		std::swap(_rep, str._rep);
-		swap_allocator(_alloc, str._alloc);
+		std::swap(rep_, str.rep_);
+		swap_allocator(alloc_, str.alloc_);
 		if (!is_long()) {
 			annotate_new(get_short_size());
 		}

@@ -26,115 +26,115 @@ namespace plg {
 
 	public:
 		constexpr split_buffer_pointer_layout()
-			: _back_cap(nullptr) {
+			: back_cap_(nullptr) {
 		}
 
 		constexpr explicit split_buffer_pointer_layout(const allocator_type& alloc)
-			: _back_cap(nullptr)
-			, _alloc(alloc) {
+			: back_cap_(nullptr)
+			, alloc_(alloc) {
 		}
 
 		constexpr pointer front_cap() noexcept {
-			return _front_cap;
+			return front_cap_;
 		}
 
 		constexpr const_pointer front_cap() const noexcept {
-			return _front_cap;
+			return front_cap_;
 		}
 
 		constexpr pointer begin() noexcept {
-			return _begin;
+			return begin_;
 		}
 
 		constexpr const_pointer begin() const noexcept {
-			return _begin;
+			return begin_;
 		}
 
 		constexpr pointer end() noexcept {
-			return _end;
+			return end_;
 		}
 
 		constexpr pointer end() const noexcept {
-			return _end;
+			return end_;
 		}
 
 		constexpr size_type size() const noexcept {
-			return static_cast<size_type>(_end - _begin);
+			return static_cast<size_type>(end_ - begin_);
 		}
 
 		constexpr bool empty() const noexcept {
-			return _begin == _end;
+			return begin_ == end_;
 		}
 
 		constexpr size_type capacity() const noexcept {
-			return static_cast<size_type>(_back_cap - _front_cap);
+			return static_cast<size_type>(back_cap_ - front_cap_);
 		}
 
 		constexpr allocator_type& get_allocator() noexcept {
-			return _alloc;
+			return alloc_;
 		}
 
 		constexpr const allocator_type& get_allocator() const noexcept {
-			return _alloc;
+			return alloc_;
 		}
 
 		// Returns the sentinel object directly. Should be used in conjunction with automatic type
 		// deduction, not explicit types.
 		constexpr sentinel_type raw_sentinel() const noexcept {
-			return _end;
+			return end_;
 		}
 
 		constexpr sentinel_type raw_capacity() const noexcept {
-			return _back_cap;
+			return back_cap_;
 		}
 
 		constexpr void set_data(pointer new_first) noexcept {
-			_front_cap = new_first;
+			front_cap_ = new_first;
 		}
 
 		constexpr void
 		set_valid_range(pointer new_begin, pointer new_end) noexcept {
-			_begin = new_begin;
-			_end = new_end;
+			begin_ = new_begin;
+			end_ = new_end;
 		}
 
 		constexpr void
 		set_valid_range(pointer new_begin, size_type new_size) noexcept {
-			_begin = new_begin;
-			_end = _begin + new_size;
+			begin_ = new_begin;
+			end_ = begin_ + new_size;
 		}
 
 		constexpr void set_sentinel(pointer new_end) noexcept {
-			PLUGIFY_ASSERT(_front_cap <= new_end, "new_end cannot precede _front_cap");
-			_end = new_end;
+			PLUGIFY_ASSERT(front_cap_ <= new_end, "new_end cannot precede front_cap_");
+			end_ = new_end;
 		}
 
 		constexpr void set_sentinel(size_type new_size) noexcept {
-			_end = _begin + new_size;
+			end_ = begin_ + new_size;
 		}
 
 		constexpr void set_capacity(size_type new_capacity) noexcept {
-			_back_cap = _front_cap + new_capacity;
+			back_cap_ = front_cap_ + new_capacity;
 		}
 
 		constexpr void set_capacity(pointer new_capacity) noexcept {
-			_back_cap = new_capacity;
+			back_cap_ = new_capacity;
 		}
 
 		constexpr size_type front_spare() const noexcept {
-			return static_cast<size_type>(_begin - _front_cap);
+			return static_cast<size_type>(begin_ - front_cap_);
 		}
 
 		constexpr size_type back_spare() const noexcept {
-			return static_cast<size_type>(_back_cap - _end);
+			return static_cast<size_type>(back_cap_ - end_);
 		}
 
 		constexpr reference back() noexcept {
-			return *(_end - 1);
+			return *(end_ - 1);
 		}
 
 		constexpr const_reference back() const noexcept {
-			return *(_end - 1);
+			return *(end_ - 1);
 		}
 
 		constexpr void swap_without_allocator(
@@ -143,42 +143,42 @@ namespace plg {
 				value_type,
 				alloc_rr&>& other
 		) noexcept {
-			std::swap(_front_cap, other._front_cap);
-			std::swap(_begin, other._begin);
-			std::swap(_back_cap, other._back_cap);
-			std::swap(_end, other._end);
+			std::swap(front_cap_, other.front_cap_);
+			std::swap(begin_, other.begin_);
+			std::swap(back_cap_, other.back_cap_);
+			std::swap(end_, other.end_);
 		}
 
 		constexpr void swap(split_buffer_pointer_layout& other) noexcept {
-			std::swap(_front_cap, other._front_cap);
-			std::swap(_begin, other._begin);
-			std::swap(_back_cap, other._back_cap);
-			std::swap(_end, other._end);
-			swap_allocator(_alloc, other._alloc);
+			std::swap(front_cap_, other.front_cap_);
+			std::swap(begin_, other.begin_);
+			std::swap(back_cap_, other.back_cap_);
+			std::swap(end_, other.end_);
+			swap_allocator(alloc_, other.alloc_);
 		}
 
 		constexpr void reset() noexcept {
-			_front_cap = nullptr;
-			_begin = nullptr;
-			_end = nullptr;
-			_back_cap = nullptr;
+			front_cap_ = nullptr;
+			begin_ = nullptr;
+			end_ = nullptr;
+			back_cap_ = nullptr;
 		}
 
 		constexpr void copy_without_alloc(
 			const split_buffer_pointer_layout& other
 		) noexcept(std::is_nothrow_copy_assignable<pointer>::value) {
-			_front_cap = other._front_cap;
-			_begin = other._begin;
-			_end = other._end;
-			_back_cap = other._back_cap;
+			front_cap_ = other.front_cap_;
+			begin_ = other.begin_;
+			end_ = other.end_;
+			back_cap_ = other.back_cap_;
 		}
 
 	private:
-		pointer _front_cap = nullptr;
-		pointer _begin = nullptr;
-		pointer _end = nullptr;
-		pointer _back_cap = nullptr;
-		PLUGIFY_NO_UNIQUE_ADDRESS allocator_type _alloc;
+		pointer front_cap_ = nullptr;
+		pointer begin_ = nullptr;
+		pointer end_ = nullptr;
+		pointer back_cap_ = nullptr;
+		PLUGIFY_NO_UNIQUE_ADDRESS allocator_type alloc_;
 
 		template <class, class, class>
 		friend class split_buffer_pointer_layout;
@@ -205,73 +205,73 @@ namespace plg {
 		constexpr split_buffer_size_layout() = default;
 
 		constexpr explicit split_buffer_size_layout(const allocator_type& alloc)
-			: _alloc(alloc) {
+			: alloc_(alloc) {
 		}
 
 		constexpr pointer front_cap() noexcept {
-			return _front_cap;
+			return front_cap_;
 		}
 
 		constexpr const_pointer front_cap() const noexcept {
-			return _front_cap;
+			return front_cap_;
 		}
 
 		constexpr pointer begin() noexcept {
-			return _begin;
+			return begin_;
 		}
 
 		constexpr const_pointer begin() const noexcept {
-			return _begin;
+			return begin_;
 		}
 
 		constexpr pointer end() noexcept {
-			return _begin + _size;
+			return begin_ + size_;
 		}
 
 		constexpr pointer end() const noexcept {
-			return _begin + _size;
+			return begin_ + size_;
 		}
 
 		constexpr size_type size() const noexcept {
-			return _size;
+			return size_;
 		}
 
 		constexpr bool empty() const noexcept {
-			return _size == 0;
+			return size_ == 0;
 		}
 
 		constexpr size_type capacity() const noexcept {
-			return _cap;
+			return cap_;
 		}
 
 		constexpr allocator_type& get_allocator() noexcept {
-			return _alloc;
+			return alloc_;
 		}
 
 		constexpr const allocator_type& get_allocator() const noexcept {
-			return _alloc;
+			return alloc_;
 		}
 
 		// Returns the sentinel object directly. Should be used in conjunction with automatic type
 		// deduction, not explicit types.
 		constexpr sentinel_type raw_sentinel() const noexcept {
-			return _size;
+			return size_;
 		}
 
 		constexpr sentinel_type raw_capacity() const noexcept {
-			return _cap;
+			return cap_;
 		}
 
 		constexpr void set_data(pointer new_first) noexcept {
-			_front_cap = new_first;
+			front_cap_ = new_first;
 		}
 
 		constexpr void
 		set_valid_range(pointer new_begin, pointer new_end) noexcept {
 			// Size-based split_buffers track their size directly: we need to explicitly update the size
 			// when the front is adjusted.
-			_size -= new_begin - _begin;
-			_begin = new_begin;
+			size_ -= new_begin - begin_;
+			begin_ = new_begin;
 			set_sentinel(new_end);
 		}
 
@@ -279,44 +279,44 @@ namespace plg {
 		set_valid_range(pointer new_begin, size_type new_size) noexcept {
 			// Size-based split_buffers track their size directly: we need to explicitly update the size
 			// when the front is adjusted.
-			_size -= new_begin - _begin;
-			_begin = new_begin;
+			size_ -= new_begin - begin_;
+			begin_ = new_begin;
 			set_sentinel(new_size);
 		}
 
 		constexpr void set_sentinel(pointer new_end) noexcept {
-			_LIBCPP_ASSERT_INTERNAL(_front_cap <= new_end, "new_end cannot precede _front_cap");
-			_size += new_end - end();
+			_LIBCPP_ASSERT_INTERNAL(front_cap_ <= new_end, "new_end cannot precede front_cap_");
+			size_ += new_end - end();
 		}
 
 		constexpr void set_sentinel(size_type new_size) noexcept {
-			_size = new_size;
+			size_ = new_size;
 		}
 
 		constexpr void set_capacity(size_type new_capacity) noexcept {
-			_cap = new_capacity;
+			cap_ = new_capacity;
 		}
 
 		constexpr void set_capacity(pointer new_capacity) noexcept {
-			_cap = new_capacity - _begin;
+			cap_ = new_capacity - begin_;
 		}
 
 		constexpr size_type front_spare() const noexcept {
-			return static_cast<size_type>(_begin - _front_cap);
+			return static_cast<size_type>(begin_ - front_cap_);
 		}
 
 		constexpr size_type back_spare() const noexcept {
-			// `_cap - _end` tells us the total number of spares when in size-mode. We need to remove
+			// `cap_ - end_` tells us the total number of spares when in size-mode. We need to remove
 			// the front_spare from the count.
-			return _cap - _size - front_spare();
+			return cap_ - size_ - front_spare();
 		}
 
 		constexpr reference back() noexcept {
-			return _begin[_size - 1];
+			return begin_[size_ - 1];
 		}
 
 		constexpr const_reference back() const noexcept {
-			return _begin[_size - 1];
+			return begin_[size_ - 1];
 		}
 
 		constexpr void swap_without_allocator(
@@ -325,42 +325,42 @@ namespace plg {
 				value_type,
 				alloc_rr&>& other
 		) noexcept {
-			std::swap(_front_cap, other._front_cap);
-			std::swap(_begin, other._begin);
-			std::swap(_cap, other._cap);
-			std::swap(_size, other._size);
+			std::swap(front_cap_, other.front_cap_);
+			std::swap(begin_, other.begin_);
+			std::swap(cap_, other.cap_);
+			std::swap(size_, other.size_);
 		}
 
 		constexpr void swap(split_buffer_size_layout& other) noexcept {
-			std::swap(_front_cap, other._front_cap);
-			std::swap(_begin, other._begin);
-			std::swap(_cap, other._cap);
-			std::swap(_size, other._size);
-			swap_allocator(_alloc, other._alloc);
+			std::swap(front_cap_, other.front_cap_);
+			std::swap(begin_, other.begin_);
+			std::swap(cap_, other.cap_);
+			std::swap(size_, other.size_);
+			swap_allocator(alloc_, other.alloc_);
 		}
 
 		constexpr void reset() noexcept {
-			_front_cap = nullptr;
-			_begin = nullptr;
-			_size = 0;
-			_cap = 0;
+			front_cap_ = nullptr;
+			begin_ = nullptr;
+			size_ = 0;
+			cap_ = 0;
 		}
 
 		constexpr void copy_without_alloc(
 			const split_buffer_size_layout& other
 		) noexcept(std::is_nothrow_copy_assignable<pointer>::value) {
-			_front_cap = other._front_cap;
-			_begin = other._begin;
-			_cap = other._cap;
-			_size = other._size;
+			front_cap_ = other.front_cap_;
+			begin_ = other.begin_;
+			cap_ = other.cap_;
+			size_ = other.size_;
 		}
 
 	private:
-		pointer _front_cap = nullptr;
-		pointer _begin = nullptr;
-		size_type _size = 0;
-		size_type _cap = 0;
-		PLUGIFY_NO_UNIQUE_ADDRESS allocator_type _alloc;
+		pointer front_cap_ = nullptr;
+		pointer begin_ = nullptr;
+		size_type size_ = 0;
+		size_type cap_ = 0;
+		PLUGIFY_NO_UNIQUE_ADDRESS allocator_type alloc_;
 
 		template <class, class, class>
 		friend class split_buffer_size_layout;
@@ -377,11 +377,11 @@ namespace plg {
 	//
 	//     |oooooooooooooooooooxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxoooooooooooooooooooooooo|
 	//      ^                  ^                                    ^                       ^
-	//  _front_cap        _begin                              _end               _back_cap
+	//  front_cap_        begin_                              end_               back_cap_
 	//
-	// The range [_front_cap, _begin) contains uninitialized memory. It is referred to as the "front
-	// spare capacity". The range [_begin, _end) contains valid objects. It is referred to as the "valid
-	// range". The range [_end, _back_cap) contains uninitialized memory. It is referred to as the "back
+	// The range [front_cap_, begin_) contains uninitialized memory. It is referred to as the "front
+	// spare capacity". The range [begin_, end_) contains valid objects. It is referred to as the "valid
+	// range". The range [end_, back_cap_) contains uninitialized memory. It is referred to as the "back
 	// spare capacity".
 	//
 	// The layout of `split_buffer` is determined by the `Layout` template template parameter. This
@@ -641,20 +641,20 @@ namespace plg {
 				pointer p,
 				size_type n
 			) noexcept
-				: _pos(p)
-				, _end(p + n)
-				, _parent(parent) {
+				: pos_(p)
+				, end_(p + n)
+				, parent_(parent) {
 			}
 
 			constexpr ~ConstructTransaction() {
-				_parent->set_sentinel(_pos);
+				parent_->set_sentinel(pos_);
 			}
 
-			pointer _pos;
-			const pointer _end;
+			pointer pos_;
+			const pointer end_;
 
 		private:
-			split_buffer* _parent;
+			split_buffer* parent_;
 		};
 
 		template <class T2, class A2, template <class, class, class> class L2>
@@ -669,8 +669,8 @@ namespace plg {
 	template <class T, class Allocator, template <class, class, class> class Layout>
 	constexpr void split_buffer<T, Allocator, Layout>::construct_at_end(size_type n) {
 		ConstructTransaction tx(this, end(), n);
-		for (; tx._pos != tx._end; ++tx._pos) {
-			alloc_traits::construct(get_allocator(), std::to_address(tx._pos));
+		for (; tx.pos_ != tx.end_; ++tx.pos_) {
+			alloc_traits::construct(get_allocator(), std::to_address(tx.pos_));
 		}
 	}
 
@@ -684,8 +684,8 @@ namespace plg {
 	constexpr void
 	split_buffer<T, Allocator, Layout>::construct_at_end(size_type n, const_reference x) {
 		ConstructTransaction tx(this, end(), n);
-		for (; tx._pos != tx._end; ++tx._pos) {
-			alloc_traits::construct(get_allocator(), std::to_address(tx._pos), x);
+		for (; tx.pos_ != tx.end_; ++tx.pos_) {
+			alloc_traits::construct(get_allocator(), std::to_address(tx.pos_), x);
 		}
 	}
 
@@ -725,8 +725,8 @@ namespace plg {
 	constexpr void
 	split_buffer<T, Allocator, Layout>::construct_at_end_with_size(ForwardIterator first, size_type n) {
 		ConstructTransaction tx(this, end(), n);
-		for (; tx._pos != tx._end; ++tx._pos, (void) ++first) {
-			alloc_traits::construct(get_allocator(), std::to_address(tx._pos), *first);
+		for (; tx.pos_ != tx.end_; ++tx.pos_, (void) ++first) {
+			alloc_traits::construct(get_allocator(), std::to_address(tx.pos_), *first);
 		}
 	}
 

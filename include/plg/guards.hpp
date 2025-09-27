@@ -9,16 +9,16 @@ namespace plg {
 		exception_guard_exceptions() = delete;
 
 		constexpr explicit exception_guard_exceptions(Rollback rollback)
-			: _rollback(std::move(rollback))
-			, _completed(false) {
+			: rollback_(std::move(rollback))
+			, completed_(false) {
 		}
 
 		constexpr exception_guard_exceptions(
 			exception_guard_exceptions&& other
 		) noexcept(std::is_nothrow_move_constructible_v<Rollback>)
-			: _rollback(std::move(other._rollback))
-			, _completed(other._completed) {
-			other._completed = true;
+			: rollback_(std::move(other.rollback_))
+			, completed_(other.completed_) {
+			other.completed_ = true;
 		}
 
 		exception_guard_exceptions(const exception_guard_exceptions&) = delete;
@@ -26,18 +26,18 @@ namespace plg {
 		exception_guard_exceptions& operator=(exception_guard_exceptions&&) = delete;
 
 		constexpr void complete() noexcept {
-			_completed = true;
+			completed_ = true;
 		}
 
 		constexpr ~exception_guard_exceptions() {
-			if (!_completed) {
-				_rollback();
+			if (!completed_) {
+				rollback_();
 			}
 		}
 
 	private:
-		PLUGIFY_NO_UNIQUE_ADDRESS Rollback _rollback;
-		bool _completed;
+		PLUGIFY_NO_UNIQUE_ADDRESS Rollback rollback_;
+		bool completed_;
 	};
 
 	template <class Rollback>
@@ -53,8 +53,8 @@ namespace plg {
 		constexpr exception_guard_noexceptions(
 			exception_guard_noexceptions&& other
 		) noexcept(std::is_nothrow_move_constructible_v<Rollback>)
-			: _completed(other._completed) {
-			other._completed = true;
+			: completed_(other.completed_) {
+			other.completed_ = true;
 		}
 
 		exception_guard_noexceptions(const exception_guard_noexceptions&) = delete;
@@ -62,15 +62,15 @@ namespace plg {
 		exception_guard_noexceptions& operator=(exception_guard_noexceptions&&) = delete;
 
 		constexpr void complete() noexcept {
-			_completed = true;
+			completed_ = true;
 		}
 
 		constexpr ~exception_guard_noexceptions() {
-			PLUGIFY_ASSERT(_completed, "exception_guard not completed with exceptions disabled");
+			PLUGIFY_ASSERT(completed_, "exception_guard not completed with exceptions disabled");
 		}
 
 	private:
-		bool _completed = false;
+		bool completed_ = false;
 	};
 
 	template <class Rollback>
@@ -84,15 +84,15 @@ namespace plg {
 
 	template <class Func>
 	class scope_guard {
-		PLUGIFY_NO_UNIQUE_ADDRESS Func _func;
+		PLUGIFY_NO_UNIQUE_ADDRESS Func func_;
 
 	public:
 		constexpr explicit scope_guard(Func func)
-			: _func(std::move(func)) {
+			: func_(std::move(func)) {
 		}
 
 		constexpr ~scope_guard() {
-			_func();
+			func_();
 		}
 
 		scope_guard(const scope_guard&) = delete;
