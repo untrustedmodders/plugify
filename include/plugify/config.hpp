@@ -83,7 +83,7 @@ namespace plugify {
 
 		// Loading configuration
 		struct Loading {
-			bool preferOwnSymbols = true;
+			bool preferOwnSymbols = false;
 			size_t maxConcurrentLoads = 4;
 			std::chrono::milliseconds loadTimeout{ 500 };
 			std::chrono::milliseconds exportTimeout{ 100 };
@@ -91,7 +91,7 @@ namespace plugify {
 
 			// Check if values are non-default
 			bool HasCustomPreferOwnSymbols() const {
-				return preferOwnSymbols != true;
+				return preferOwnSymbols != false;
 			}
 
 			bool HasCustomMaxConcurrentLoads() const {

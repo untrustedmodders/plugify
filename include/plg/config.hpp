@@ -29,11 +29,7 @@
 #  define PLUGIFY_ASSERT(cond, mesg) assert((cond) && (mesg))
 #endif
 
-#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
-#  include <sanitizer/asan_interface.h>
-#endif
-
-#define PLUGIFY_HAS_EXCEPTIONS __cpp_exceptions || _CPPUNWIND || __EXCEPTIONS
+#define PLUGIFY_HAS_EXCEPTIONS  __cpp_exceptions || _CPPUNWIND || __EXCEPTIONS
 #if PLUGIFY_HAS_EXCEPTIONS
 #  include <stdexcept>
 #  include <type_traits>
@@ -51,7 +47,16 @@ namespace plg {
 #else
 #  include <cstdlib>
 #  include <cstdio>
-#  define PLUGIFY_THROW(str, ...) { std::fputs(str "\n", stderr); std::abort(); }
+#  define PLUGIFY_THROW(str, ...) \
+	std::fputs(str "\n", stderr); \
+	std::abort();
+#endif
+
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+#  define PLUGIFY_INSTRUMENTED_WITH_ASAN 1
+#  include <sanitizer/asan_interface.h>
+#else
+#  define PLUGIFY_INSTRUMENTED_WITH_ASAN 0
 #endif
 
 #  define PLUGIFY_COMPILER_MAKE_VERSION2(version, sp)         ((version) * 100 + (sp))

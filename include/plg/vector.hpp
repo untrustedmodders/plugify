@@ -20,14 +20,7 @@
 #include "plg/split_buffer.hpp"
 #include "plg/uninitialized.hpp"
 
-// Just in case, because we can't ignore some warnings from `-Wpedantic` (about zero size arrays and anonymous structs when gnu extensions are disabled) on gcc
-#if PLUGIFY_COMPILER_CLANG
-#  pragma clang system_header
-#elif PLUGIFY_COMPILER_GCC
-#  pragma GCC system_header
-#endif
-
-// from https://github.com/masahisa/rtw/
+// from https://github.com/llvm/llvm-project/blob/main/libcxx/include/vector
 namespace plg {
 	namespace detail {
 		template <class T, class Alloc>

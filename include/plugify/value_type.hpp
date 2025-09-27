@@ -92,7 +92,7 @@ namespace plugify {
 		_StructEnd = Matrix4x4,
 
 	// First struct which return as hidden parameter
-#if _WIN32  && !_M_ARM64 || INTPTR_MAX == INT32_MAX
+#if _WIN32 && !_M_ARM64 || INTPTR_MAX == INT32_MAX
 		_HiddenParamStart = Vector3,
 #else
 		_HiddenParamStart = Matrix4x4,

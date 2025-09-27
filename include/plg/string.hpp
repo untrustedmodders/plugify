@@ -610,13 +610,6 @@ basic_string<char32_t> operator""s( const char32_t *str, size_t len );          
 #include "plg/format.hpp"
 #endif
 
-// Just in case, because we can't ignore some warnings from `-Wpedantic` (about zero size arrays and anonymous structs when gnu extensions are disabled) on gcc
-#if PLUGIFY_COMPILER_CLANG
-#  pragma clang system_header
-#elif PLUGIFY_COMPILER_GCC
-#  pragma GCC system_header
-#endif
-
 // from https://github.com/llvm/llvm-project/blob/main/libcxx/include/string
 namespace plg {
 	// basic_string
@@ -687,7 +680,7 @@ namespace plg {
 		// This string implementation doesn't contain any references into itself. It only contains a
 		// bit that says whether it is in small or large string mode, so the entire structure is
 		// trivially relocatable if its members are.
-#if __has_feature(address_sanitizer)
+#if PLUGIFY_INSTRUMENTED_WITH_ASAN
 		// When compiling with AddressSanitizer (ASan), basic_string cannot be trivially
 		// relocatable. Because the object's memory might be poisoned when its content
 		// is kept inside objects memory (short string optimization), instead of in allocated
@@ -704,9 +697,9 @@ namespace plg {
 				is_trivially_relocatable<pointer>::value,
 				basic_string,
 				void>;
-#endif
+#endif // PLUGIFY_INSTRUMENTED_WITH_ASAN
 
-#if __has_cpp_attribute(__no_sanitize__) && __has_feature(address_sanitizer)
+#if PLUGIFY_INSTRUMENTED_WITH_ASAN && __has_cpp_attribute(__no_sanitize__)
 #  define PLUGIFY_INTERNAL_MEMORY_ACCESS __attribute__((__no_sanitize__("address")))
 // This macro disables AddressSanitizer (ASan) instrumentation for a specific function,
 // allowing memory accesses that would normally trigger ASan errors to proceed without crashing.
@@ -715,9 +708,9 @@ namespace plg {
 // by other parts of the program.
 #else
 #  define PLUGIFY_INTERNAL_MEMORY_ACCESS
-#endif
+#endif // PLUGIFY_INSTRUMENTED_WITH_ASAN
 
-#if __has_feature(address_sanitizer)
+#if PLUGIFY_INSTRUMENTED_WITH_ASAN
 		constexpr pointer asan_volatile_wrapper(pointer const& ptr) const {
 			if (std::is_constant_evaluated()) {
 				return ptr;
@@ -741,7 +734,7 @@ namespace plg {
 #  define PLUGIFY_ASAN_VOLATILE_WRAPPER(PTR) asan_volatile_wrapper(PTR)
 #else
 #  define PLUGIFY_ASAN_VOLATILE_WRAPPER(PTR) PTR
-#endif
+#endif // PLUGIFY_INSTRUMENTED_WITH_ASAN
 
 		static_assert(!std::is_array_v<value_type>, "Character type of basic_string must not be an array");
 		static_assert(
