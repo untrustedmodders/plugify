@@ -69,11 +69,7 @@ else()
 endif()
 file(GLOB_RECURSE PLUGIFY_JIT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/jit/${PLUGIFY_JIT_ARCH}/*.cpp")
 
-set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES} ${PLUGIFY_JIT_SOURCES}
-        include/plg/split_buffer.hpp
-        include/plg/guards.hpp
-        include/plg/uninitialized.hpp
-        include/plg/concepts.hpp)
+set(PLUGIFY_CORE_SOURCES ${PLUGIFY_CORE_SOURCES} ${PLUGIFY_INTERFACE_SOURCES} ${PLUGIFY_PLATFORM_SOURCES} ${PLUGIFY_JIT_SOURCES})
 
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT BUILD_SHARED_LIBS)
     message(WARNING "PLUGIFY_BUILD_SHARED_LIB is ON, but plugify will be built as a static library")
@@ -113,6 +109,13 @@ else(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
 endif()
 
 target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})
+
+# Produce PDB file for debug
+if(PLUGIFY_COMPILER_MSVC OR PLUGIFY_COMPILER_CLANG_CL)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/Zi>)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:-g1>)
+endif()
 
 if(PLUGIFY_HAS_LIBCPP)
     target_compile_options(${PROJECT_NAME} PUBLIC -stdlib=libc++)

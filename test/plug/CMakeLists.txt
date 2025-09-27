@@ -37,7 +37,7 @@ elseif(APPLE)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wno-sign-conversion)
 endif()
 
-add_custom_command(TARGET plug POST_BUILD
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:plugify> $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )

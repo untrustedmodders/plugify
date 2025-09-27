@@ -1993,7 +1993,7 @@ int main(int argc, char** argv) {
 	PlugifyApp app(std::move(*plugify));
 
 	CLI::App cliApp{ "Plugify - Plugin Management System" };
-	cliApp.require_subcommand();  // 1 or more
+	//cliApp.require_subcommand();  // 1 or more
 	cliApp.set_version_flag("-v,--version", app.GetVersionString());
 	cliApp.usage("Usage: plugify <command> [options]");
 	// flag to display full help at once

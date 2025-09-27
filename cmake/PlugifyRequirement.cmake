@@ -26,9 +26,9 @@ check_cpp20_feature("__cpp_lib_bit_cast" 201806)
 check_cpp20_feature("__cpp_lib_bitops" 201907)
 check_cpp20_feature("__cpp_lib_int_pow2" 202002)
 check_cpp20_feature("__cpp_lib_starts_ends_with" 201711)
-check_cpp20_attribute("likely" 201803)
-check_cpp20_attribute("unlikely" 201803)
-check_cpp20_attribute("no_unique_address" 201803)
+check_cpp20_attribute("likely" 202002)
+check_cpp20_attribute("unlikely" 202002)
+check_cpp20_attribute("no_unique_address" 202002)
 
 include(CheckCXXCompilerFlag)
 
