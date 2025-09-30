@@ -63,7 +63,7 @@ namespace plg {
 		std::size_t operator()(const T& str) const noexcept {
 			std::size_t hash = active_hash_traits::fnv_basis; // FNV-1a
 			for (const auto& c : str) {
-				hash ^= std::tolower(c);
+				hash ^= static_cast<std::size_t>(std::tolower(c));
 				hash *= active_hash_traits::fnv_prime;
 			}
 			return hash;
