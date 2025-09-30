@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <locale>
 
 #include "plg/string.hpp"
 
@@ -58,11 +60,10 @@ namespace plg {
 		using is_transparent = void;  // Enables heterogeneous lookup
 
 		template <typename T>
-		auto operator()(const T& str_like) const noexcept {
-			std::string_view str = str_like;
+		std::size_t operator()(const T& str) const noexcept {
 			std::size_t hash = active_hash_traits::fnv_basis; // FNV-1a
-			for (const char& c : str) {
-				hash ^= static_cast<unsigned char>(std::tolower(static_cast<unsigned char>(c)));
+			for (const auto& c : str) {
+				hash ^= std::tolower(c);
 				hash *= active_hash_traits::fnv_prime;
 			}
 			return hash;
@@ -73,21 +74,14 @@ namespace plg {
 		using is_transparent = void;  // Enables heterogeneous lookup
 
 		template <typename T1, typename T2>
-		bool operator()(const T1& lhs_like, const T2& rhs_like) const noexcept {
-			std::string_view lhs = lhs_like;
-			std::string_view rhs = rhs_like;
-
-			if (lhs.size() != rhs.size()) {
-				return false;
-			}
-
-			for (size_t i = 0; i < lhs.size(); ++i) {
-				if (std::tolower(static_cast<unsigned char>(lhs[i]))
-				    != std::tolower(static_cast<unsigned char>(rhs[i]))) {
-					return false;
+		bool operator()(const T1& lhs, const T2& rhs) const noexcept {
+			return std::lexicographical_compare(
+				lhs.begin(), lhs.end(),
+				rhs.begin(), rhs.end(),
+				[](const auto& ac, const auto& bc) {
+					return std::tolower(ac) < std::tolower(bc);
 				}
-			}
-			return true;
+			);
 		}
 	};
 
