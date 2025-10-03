@@ -105,12 +105,13 @@ endif()
 set_target_debug_symbols(${PROJECT_NAME})
 set_target_strict_conformance(${PROJECT_NAME})
 set_target_enable_diagnostics(${PROJECT_NAME})
+
 if(PLUGIFY_USE_SANITIZER)
-    set_target_enable_analyzer(${PROJECT_NAME})
+    set_target_enable_asan(${PROJECT_NAME})
 endif()
 
 if(PLUGIFY_USE_ANALYZER)
-    set_target_enable_asan(${PROJECT_NAME})
+    set_target_enable_analyzer(${PROJECT_NAME})
 endif()
 
 if(PLUGIFY_USE_CLANG_TIDY)
@@ -184,7 +185,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         ${PLUGIFY_COMPILE_DEFINITIONS}
         PLUGIFY_CORE=1
 
+        # Disable the use of stdio cookie opens?
         WITHOUT_COOKIEOPEN
+        # dependencies are offsets into repo->idarraydata
+        # the ifdef resolves "requires" conflicting with a C++20 keyword
         LIBSOLV_SOLVABLE_PREPEND_DEP
 )
 

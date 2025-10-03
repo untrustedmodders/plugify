@@ -129,8 +129,9 @@ function(set_target_enable_analyzer target)
     else()
         target_compile_options(${target} PRIVATE
                 $<$<CONFIG:Debug>:
-                # enable analyzer
+                    # enable analyzer
                     -fanalyzer
+                    -Wno-analyzer-use-of-uninitialized-value # supress false positive in stl
                 >
         )
     endif()
