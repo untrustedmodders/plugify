@@ -153,7 +153,7 @@ namespace plg {
 	// __old_last_contained is the previously last allowed (unpoisoned) element, and
 	// __new_last_contained is the new last allowed (unpoisoned) element.
 	template <class Allocator>
-	void annotate_contiguous_container(
+	constexpr void annotate_contiguous_container(
 		[[maybe_unused]] const void* first_storage,
 		[[maybe_unused]] const void* last_storage,
 		[[maybe_unused]] const void* old_last_contained,

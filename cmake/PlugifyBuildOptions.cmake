@@ -2,12 +2,11 @@
 # Compiler stuff
 set(PLUGIFY_DEFAULT_CXX_STANDARD 23 CACHE STRING "Default C++ standard to use")
 set(PLUGIFY_DEFAULT_C_STANDARD 11 CACHE STRING "Default C standard to use")
-option(PLUGIFY_USE_LIBCPP "Use libc++ by adding -stdlib=libc++ flag if available." OFF)
-option(PLUGIFY_USE_STATIC_STDLIB "Enable static std library linkage to avoid ABI issues by adding -static-* flags if available." OFF)
-option(PLUGIFY_USE_SANITIZER "Enable sanitizers by adding -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined flags if available." OFF)
-option(PLUGIFY_SANITIZER_PATH "Path to sanitizes.")
-set(PLUGIFY_ENABLED_SANITIZERS "address" CACHE STRING "Semicolon separated list of sanitizer names. E.g 'address;leak'. Supported sanitizers are address, leak, undefined and thread.")
+option(PLUGIFY_USE_LIBCPP "Use libc++ by adding -stdlib=libc++ flag if available" OFF)
+option(PLUGIFY_USE_STATIC_STDLIB "Enable static std library linkage to avoid ABI issues by adding -static-* flags if available" OFF)
+option(PLUGIFY_USE_SANITIZER "Enable sanitizers by adding -fsanitize=address flags if available" OFF)
 option(PLUGIFY_USE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
+option(PLUGIFY_USE_ANALYZER "Enable compiler static analyzers. CPU intensive." OFF)
 option(PLUGIFY_USE_ABI0 "Enable use of the older C++ ABI, which was the default in GCC versions before GCC 5" OFF)
 
 # ------------------------------------------------------------------------------

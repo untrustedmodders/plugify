@@ -25,6 +25,10 @@ add_executable(${PROJECT_NAME} ${TESTS_SOURCES} ${Catch2_SOURCE_DIR}/extras/catc
 target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify Catch2::Catch2WithMain)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${Catch2_SOURCE_DIR}/extras)
 
+set_target_debug_symbols(${PROJECT_NAME})
+set_target_strict_conformance(${PROJECT_NAME})
+set_target_enable_diagnostics(${PROJECT_NAME})
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE TEST_VARIANT_HAS_NO_REFERENCES=1)
 
 if(NOT COMPILER_SUPPORTS_FORMAT)
@@ -40,5 +44,3 @@ endif()
 include(CTest)
 include(Catch)
 catch_discover_tests(${PROJECT_NAME})
-
-target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})

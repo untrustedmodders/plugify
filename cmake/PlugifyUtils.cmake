@@ -1,8 +1,138 @@
-function(disable_compiler_warnings_for_target target)
+# Create debug symbols for release builds, msvc will generate a pdb,
+# while gcc-like will have embedded symbols.
+function(set_target_debug_symbols target)
     if(MSVC)
-        target_compile_options(${target} PRIVATE "/W0")
+        # Generates debug symbols in a PDB
+        target_compile_options(${target} PRIVATE
+                $<$<CONFIG:Release>:
+                    /Zi
+                >)
+        # enable debug and re-enable optimizations that it disables
+        target_link_options(${target} PRIVATE
+                $<$<CONFIG:Release>:
+                    /DEBUG
+                    /OPT:REF
+                    /OPT:ICF
+                >
+        )
+        # Set file name and location
+        set_target_properties(${target} PROPERTIES
+                COMPILE_PDB_NAME "${target}"
+                COMPILE_PDB_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
     else()
-        target_compile_options(${target} PRIVATE "-w")
+        target_compile_options("${target}" PRIVATE
+                $<$<CONFIG:Release>:-g1>)
+    endif()
+endfunction()
+
+function(set_target_enable_diagnostics target)
+    if (MSVC)
+        target_compile_options(${target} PRIVATE
+                # hide warnings from system includes
+                /external:W0
+                /external:anglebrackets # any include <> is external
+                # enable diagnostics
+                /W4
+                /WX
+                # enable column numbers in diagnostics
+                /diagnostics:column
+                # various compiler and runtime checks
+                /sdl
+                # disable errors from using deprecated functions (set by /sdl)
+                /wd4996
+        )
+    else()
+        target_compile_options(${target} PRIVATE
+                # enable diagnostics
+                -Wall
+                -Wextra
+                -Wshadow
+                -Wconversion
+                -Wpedantic
+                -Werror
+        )
+    endif()
+endfunction()
+
+function(set_target_strict_conformance target)
+    if (MSVC)
+        target_compile_options(${target} PRIVATE
+                # all source files are utf8
+                /utf-8
+                # make msvc slightly more conformant to the standard
+                /permissive-
+                /Zc:inline
+                /Zc:externConstexpr
+                /Zc:preprocessor
+                /Zc:throwingNew
+        )
+    else()
+        target_compile_options(${target} PRIVATE
+                # errors on non conforming code
+                -pedantic-errors
+        )
+    endif()
+endfunction()
+
+function(set_target_disable_diagnostics target)
+    if (MSVC)
+        target_compile_options(${target} PRIVATE
+                /W0
+        )
+    else()
+        target_compile_options(${target} PRIVATE
+                -w
+        )
+    endif()
+endfunction()
+
+function(set_target_enable_asan target)
+    if (MSVC)
+        target_compile_options(${target} PRIVATE
+                $<$<CONFIG:Debug>:
+                    /fsanitize=address
+                >
+        )
+        target_compile_definitions(${target} PRIVATE
+                $<$<CONFIG:Debug>:
+                    _DISABLE_VECTOR_ANNOTATION
+                >
+        )
+    else()
+        target_compile_options(${target} PRIVATE
+                $<$<CONFIG:Debug>:
+                    -fsanitize=address
+                    -fsanitize=leak
+                    -fsanitize=undefined
+                >
+        )
+        target_link_options(${target} PRIVATE
+                $<$<CONFIG:Debug>:
+                    -fsanitize=address
+                    -fsanitize=leak
+                    -fsanitize=undefined
+                >
+        )
+    endif()
+endfunction()
+
+function(set_target_enable_analyzer target)
+    if (MSVC)
+        target_compile_options(${target} PRIVATE
+                $<$<CONFIG:Debug>:
+                    # enable analyzer
+                    /analyze
+                    /analyze:autolog- # disable log files
+                    /analyze:external-
+                >
+        )
+    else()
+        target_compile_options(${target} PRIVATE
+                $<$<CONFIG:Debug>:
+                # enable analyzer
+                    -fanalyzer
+                >
+        )
     endif()
 endfunction()
 

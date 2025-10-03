@@ -123,7 +123,7 @@ namespace plg {
 	// - is_copy_constructible<T>
 	// - is_trivially_relocatable<T>
 	template <class Alloc, class T>
-	void uninitialized_allocator_relocate(Alloc& alloc, T* first, T* last, T* result) {
+	constexpr void uninitialized_allocator_relocate(Alloc& alloc, T* first, T* last, T* result) {
 		if (std::is_constant_evaluated() ||
 			!is_trivially_relocatable<T>::value ||
 			!allocator_has_trivial_move_construct<Alloc, T>::value ||

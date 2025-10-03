@@ -23,8 +23,9 @@ add_executable(${PROJECT_NAME} ${PLUG_SOURCES})
 find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify glaze::glaze Threads::Threads CLI11 ${CMAKE_DL_LIBS})
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_DEFINITIONS})
-target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})
+set_target_debug_symbols(${PROJECT_NAME})
+set_target_strict_conformance(${PROJECT_NAME})
+set_target_enable_diagnostics(${PROJECT_NAME})
 
 if(NOT COMPILER_SUPPORTS_FORMAT)
     target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)

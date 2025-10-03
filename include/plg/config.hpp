@@ -16,7 +16,7 @@
 #  define __has_builtin(x) 0
 #endif
 
-#ifndef __builtin_constant_p
+#if !__has_builtin(__builtin_constant_p)
 #  define __builtin_constant_p(x) std::is_constant_evaluated()
 #endif
 

@@ -100,13 +100,28 @@ if(PLUGIFY_BUILD_OBJECT_LIB)
     target_compile_definitions(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_EXPORTS)
 endif()
 
-if(PLUGIFY_COMPILER_MSVC OR PLUGIFY_COMPILER_CLANG_CL)
-    set(PLUGIFY_COMPILE_OPTIONS /W4 /WX /Zc:preprocessor $<$<BOOL:PLUGIFY_COMPILER_MSVC>:/MP> $<$<CONFIG:Release>:/Zi>)
-else(PLUGIFY_COMPILER_GCC OR PLUGIFY_COMPILER_CLANG)
-    set(PLUGIFY_COMPILE_OPTIONS -Wextra -Wshadow -Wconversion -Wpedantic -Werror $<$<CONFIG:Release>:-g1>)
+# Create debug symbols for release builds, msvc will generate a pdb,
+# while gcc-like will have embedded symbols.
+set_target_debug_symbols(${PROJECT_NAME})
+set_target_strict_conformance(${PROJECT_NAME})
+set_target_enable_diagnostics(${PROJECT_NAME})
+if(PLUGIFY_USE_SANITIZER)
+    set_target_enable_analyzer(${PROJECT_NAME})
 endif()
 
-target_compile_options(${PROJECT_NAME} PRIVATE ${PLUGIFY_COMPILE_OPTIONS})
+if(PLUGIFY_USE_ANALYZER)
+    set_target_enable_asan(${PROJECT_NAME})
+endif()
+
+if(PLUGIFY_USE_CLANG_TIDY)
+    find_program(PLUGIFY_CLANG_TIDY_EXECUTABLE "clang-tidy")
+
+    if(PLUGIFY_CLANG_TIDY_EXECUTABLE)
+        set(CMAKE_CXX_CLANG_TIDY "${PLUGIFY_CLANG_TIDY_EXECUTABLE}; --config-file=.clang-tidy; --header-filter=src/.*; --extra-arg=/EHsc")
+    else()
+        message(VERBOSE "The option PLUGIFY_USE_CLANG_TIDY is set but clang-tidy executable is not available.")
+    endif()
+endif()
 
 if(PLUGIFY_HAS_LIBCPP)
     target_compile_options(${PROJECT_NAME} PUBLIC -stdlib=libc++)
@@ -184,8 +199,6 @@ if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
         target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/sym/version_script.lds")
     endif()
 endif()
-
-include(PlugifySanitizer)
 
 # ------------------------------------------------------------------------------
 # Test

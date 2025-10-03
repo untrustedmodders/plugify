@@ -171,7 +171,7 @@ public:
 		}
 
 		initialized = true;
-		return Result<void>{};
+		return {};
 	}
 
 	void Update(std::chrono::milliseconds deltaTime) {
@@ -268,8 +268,7 @@ public:
 		initialized = false;
 	}
 
-	inline static const std::array<std::string_view, 2> MANIFEST_EXTENSIONS = { "*.pplugin",
-																				"*.pmodule" };
+	inline static const std::array<std::string_view, 2> MANIFEST_EXTENSIONS = { "*.pplugin", "*.pmodule" };
 
 	Result<std::vector<Extension>> DiscoverExtensions() const {
 		auto paths = fileSystem->FindFiles(config.paths.extensionsDir, MANIFEST_EXTENSIONS, true);

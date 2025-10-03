@@ -20,7 +20,10 @@ if(MSVC)
 elseif(MINGW)
     target_compile_options(asmjit PUBLIC -Wno-deprecated-enum-enum-conversion -Wno-shadow -Wno-pedantic)
 else()
-    target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion -Wno-deprecated-enum-enum-conversion -Wno-shadow -Wno-pedantic)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        target_compile_options(asmjit PUBLIC -Wno-deprecated-anon-enum-enum-conversion)
+    endif()
+    target_compile_options(asmjit PUBLIC -Wno-deprecated-enum-enum-conversion -Wno-shadow -Wno-pedantic)
 endif()
 
 set_target_properties(asmjit PROPERTIES
