@@ -207,7 +207,7 @@ namespace plugify {
 
 	private:
 		slot_type* _data;
-		size_t _count;
+		[[maybe_unused]] size_t _count;
 	};
 
 	/**
@@ -273,6 +273,6 @@ namespace plugify {
 
 	private:
 		type* _data;
-		size_t _size;
+		[[maybe_unused]] size_t _size;
 	};
 }  // namespace plugify
