@@ -42,7 +42,7 @@ namespace plugify {
 		[[nodiscard]] bool operator==(const Method& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Method& other) const noexcept;
 
-		[[nodiscard]] const Method* FindPrototype(std::string_view name) const noexcept;
+		[[nodiscard]] std::shared_ptr<Method> FindPrototype(std::string_view name) const noexcept;
 
 		PLUGIFY_ACCESS : struct Impl;
 		PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)

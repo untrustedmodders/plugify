@@ -25,14 +25,14 @@ namespace plugify {
 		// Getters
 		[[nodiscard]] ValueType GetType() const noexcept;
 		[[nodiscard]] bool IsRef() const noexcept;
-		[[nodiscard]] const Method* GetPrototype() const noexcept;
-		[[nodiscard]] const EnumObject* GetEnumerate() const noexcept;
+		[[nodiscard]] std::shared_ptr<Method> GetPrototype() const noexcept;
+		[[nodiscard]] std::shared_ptr<EnumObject> GetEnumerate() const noexcept;
 
 		// Setters (pass by value and move)
 		void SetType(ValueType type);
 		void SetRef(bool ref);
-		void SetPrototype(Method prototype);
-		void SetEnumerate(EnumObject enumerate);
+		void SetPrototype(std::shared_ptr<Method> prototype);
+		void SetEnumerate(std::shared_ptr<EnumObject> enumerate);
 
 		[[nodiscard]] bool operator==(const Property& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Property& other) const noexcept;

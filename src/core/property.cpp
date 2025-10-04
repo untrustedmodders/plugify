@@ -32,12 +32,12 @@ bool Property::IsRef() const noexcept {
 	return _impl->ref.value_or(false);
 }
 
-const Method* Property::GetPrototype() const noexcept {
-	return _impl->prototype ? _impl->prototype.get() : nullptr;
+std::shared_ptr<Method> Property::GetPrototype() const noexcept {
+	return _impl->prototype;
 }
 
-const EnumObject* Property::GetEnumerate() const noexcept {
-	return _impl->enumerate ? _impl->enumerate.get() : nullptr;
+std::shared_ptr<EnumObject> Property::GetEnumerate() const noexcept {
+	return _impl->enumerate;
 }
 
 void Property::SetType(ValueType type) {
@@ -48,12 +48,12 @@ void Property::SetRef(bool ref) {
 	_impl->ref = ref;
 }
 
-void Property::SetPrototype(Method prototype) {
-	_impl->prototype = std::make_shared<Method>(prototype);
+void Property::SetPrototype(std::shared_ptr<Method> prototype) {
+	_impl->prototype = std::move(prototype);
 }
 
-void Property::SetEnumerate(EnumObject enumerate) {
-	_impl->enumerate = std::make_shared<EnumObject>(enumerate);
+void Property::SetEnumerate(std::shared_ptr<EnumObject> enumerate) {
+	_impl->enumerate = std::move(enumerate);
 }
 
 bool Property::operator==(const Property& other) const noexcept = default;
