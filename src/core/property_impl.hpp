@@ -8,7 +8,7 @@ namespace plugify {
 	struct Property::Impl {
 		ValueType type{};
 		std::optional<bool> ref;
-		std::optional<Method> prototype;
-		std::optional<EnumObject> enumerate;
+		std::shared_ptr<Method> prototype;
+		std::shared_ptr<EnumObject> enumerate;
 	};
 }
