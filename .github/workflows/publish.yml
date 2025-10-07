@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - 'docs/**'
+      - 'schemas/**'
+  pull_request:
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - 'docs/**'
+      - 'schemas/**'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  setup:
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      repository-projects: write
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Generate Release
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/release-please-manifest.json
