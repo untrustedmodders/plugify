@@ -385,7 +385,7 @@ See the [open issues](https://github.com/untrustedmodders/plugify/issues) for a 
 
 Reach out to the maintainer at one of the following places:
 
-- [Discord](https://discord.gg/ZT8SXzrY9a)
+- [Discord](https://discord.gg/rX9TMmpang)
 - [GitHub issues](https://github.com/untrustedmodders/plugify/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+)
 - Contact options listed on [this GitHub profile](https://github.com/untrustedmodders)
 
