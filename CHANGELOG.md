@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1](https://github.com/untrustedmodders/plugify/compare/v2.0.0...v2.0.1) (2025-10-09)
+
+
+### Bug Fixes
+
+* rework safecall to static method ([57bc377](https://github.com/untrustedmodders/plugify/commit/57bc377e0474bc7ce7bfcaa4cf975af2541f94b5))
+* small refactor ([c536899](https://github.com/untrustedmodders/plugify/commit/c5368993c14e42243392f6b312a37a25a8f4477c))
+
 ## [2.0.0](https://github.com/untrustedmodders/plugify/compare/v1.2.8...v2.0.0) (2025-10-07)
 
 
