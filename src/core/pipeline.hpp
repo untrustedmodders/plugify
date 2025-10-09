@@ -26,11 +26,10 @@ namespace plugify {
 			size_t initialItems = 0;
 			size_t finalItems = 0;
 
-			std::string ToString() const {
+			std::string Summary() const {
 				std::string buffer;
-				buffer.reserve(256);
-
 				auto it = std::back_inserter(buffer);
+
 				std::format_to(it, "\n=== Pipeline Report ===\n");
 				std::format_to(it, "Items: {} -> {} ({} total)\n", initialItems, finalItems, totalTime);
 
@@ -55,6 +54,39 @@ namespace plugify {
 
 					for (const auto& [key, value] : s.errors) {
 						std::format_to(it, "    {:<{}} : {}\n", key, maxWidth, value);
+					}
+				}
+
+				return buffer;
+			}
+
+			std::string Error() const {
+				std::string buffer;
+				auto it = std::back_inserter(buffer);
+
+				// Count total failures across all stages
+				size_t totalFailed = 0;
+				for (const auto& [_, s] : stages) {
+					totalFailed += s.failed;
+				}
+
+				if (totalFailed == 0) {
+					return "No errors occurred.";
+				}
+
+				std::format_to(it, "\n=== Pipeline Failed ===\n");
+				std::format_to(it, "{} item(s) failed to process:\n\n", totalFailed);
+
+				// Only show stages that had failures
+				for (const auto& [name, s] : stages) {
+					if (s.failed > 0 || !s.errors.empty()) {
+						std::format_to(it, "Stage '{}': {} failed\n", name, s.failed);
+
+						// Show actual errors with cleaner formatting
+						for (const auto& [item, error] : s.errors) {
+							std::format_to(it, "  • {}: {}\n", item, error);
+						}
+						std::format_to(it, "\n");
 					}
 				}
 

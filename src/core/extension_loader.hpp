@@ -14,14 +14,14 @@ namespace plugify {
 	class ScopedTimer {
 	public:
 		explicit ScopedTimer(Callback&& cb) noexcept(std::is_nothrow_move_constructible_v<Callback>)
-			: m_callback(std::forward<Callback>(cb))
-			, m_start(std::chrono::steady_clock::now()) {
+			: _callback(std::forward<Callback>(cb))
+			, _start(std::chrono::steady_clock::now()) {
 		}
 
 		~ScopedTimer() noexcept(std::is_nothrow_invocable_v<Callback>) {
 			auto end = std::chrono::steady_clock::now();
-			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - m_start);
-			m_callback(elapsed);
+			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - _start);
+			_callback(elapsed);
 		}
 
 		// Non-copyable
@@ -30,36 +30,34 @@ namespace plugify {
 
 		// Movable
 		ScopedTimer(ScopedTimer&& other) noexcept
-			: m_callback(std::move(other.m_callback))
-			, m_start(other.m_start) {
+			: _callback(std::move(other._callback))
+			, _start(other._start) {
 		}
 
 		ScopedTimer& operator=(ScopedTimer&& other) noexcept {
 			if (this != &other) {
-				m_callback = std::move(other.m_callback);
-				m_start = other.m_start;
+				_callback = std::move(other._callback);
+				_start = other._start;
 			}
 			return *this;
 		}
 
 	private:
-		Callback m_callback;
-		std::chrono::steady_clock::time_point m_start;
+		PLUGIFY_NO_UNIQUE_ADDRESS Callback _callback;
+		std::chrono::steady_clock::time_point _start;
 	};
 
-	// Deduction guide (important!)
 	template <typename Callback>
 	ScopedTimer(Callback&&) -> ScopedTimer<std::decay_t<Callback>>;
 
-	// Advanced: Exception-safe RAII wrapper for plugin calls
 	class SafeCall {
-		std::string_view operation;
-		std::string_view extensionName;
+		std::string_view _operation;
+		std::string_view _extensionName;
 
 	public:
 		SafeCall(std::string_view op, std::string_view name)
-			: operation(op)
-			, extensionName(name) {
+			: _operation(op)
+			, _extensionName(name) {
 		}
 
 		template <typename T, typename Func>
@@ -67,11 +65,11 @@ namespace plugify {
 			try {
 				return func();
 			} catch (const std::bad_alloc&) {
-				return MakeError("{}: out of memory", operation);
+				return MakeError("{}: out of memory", _operation);
 			} catch (const std::exception& e) {
-				return MakeError("{} failed for '{}': {}", operation, extensionName, e.what());
+				return MakeError("{} failed for '{}': {}", _operation, _extensionName, e.what());
 			} catch (...) {
-				return MakeError("{} failed for '{}': unknown exception", operation, extensionName);
+				return MakeError("{} failed for '{}': unknown exception", _operation, _extensionName);
 			}
 		}
 	};
@@ -89,7 +87,7 @@ namespace plugify {
 			std::chrono::milliseconds slowestPluginLoad{};
 			UniqueId slowestPlugin;
 
-			std::string ToString() const {
+			std::string Summary() const {
 				return std::format(
 					"\n=== Loader Report ===\n"
 					"  Modules loaded: {}\n"

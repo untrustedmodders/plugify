@@ -5,9 +5,7 @@
 #include "plugify/manager.hpp"
 #include "plugify/manifest.hpp"
 #include "plugify/manifest_parser.hpp"
-// #include "plugify/progress_reporter.hpp"
 
-// #include "asm/defer.hpp"
 #include "core/extension_loader.hpp"
 #include "core/stages_impl.hpp"
 
@@ -127,8 +125,8 @@ public:
 
 		// Print reports if configured
 		if (config.logging.printReport) {
-			logger->Log(report.ToString(), Severity::Info);
-			logger->Log(loader.GetStatistics().ToString(), Severity::Info);
+			logger->Log(report.Summary(), Severity::Info);
+			logger->Log(loader.GetStatistics().Summary(), Severity::Info);
 		}
 
 		if (!extensions.empty()) {
@@ -153,8 +151,8 @@ public:
 
 				const auto& exportPath = config.logging.exportDigraphDot;
 				if (!exportPath.empty()) {
-					if (auto writeResult = fileSystem->WriteTextFile(exportPath, graph);
-						!writeResult) {
+					auto writeResult = fileSystem->WriteTextFile(exportPath, graph);
+					if (!writeResult) {
 						logger->Log(std::format("Export DOT: {}", writeResult.error()), Severity::Error);
 					} else {
 						logger->Log(
@@ -167,7 +165,7 @@ public:
 		}
 
 		if (totalFailed > 0) {
-			return MakeError(report.ToString());
+			return MakeError(report.Error());
 		}
 
 		initialized = true;
@@ -286,13 +284,11 @@ public:
 		return exts;
 	}
 
-	const size_t INITIAL_BUFFER_SIZE = 1024;
-	const size_t REPORT_BUFFER_SIZE = 2048;
-	const size_t DOT_BUFFER_SIZE = 4096;
+	const size_t INITIAL_BUFFER_SIZE = 4096;
 
 	std::string GenerateLoadOrder() const {
 		std::string buffer;
-		buffer.reserve(INITIAL_BUFFER_SIZE);  // preallocate some space to reduce reallocs
+		buffer.reserve(INITIAL_BUFFER_SIZE);
 
 		auto it = std::back_inserter(buffer);
 
@@ -314,7 +310,7 @@ public:
 
 	std::string GenerateDependencyGraph() const {
 		std::string buffer;
-		buffer.reserve(REPORT_BUFFER_SIZE);
+		buffer.reserve(INITIAL_BUFFER_SIZE);
 
 		auto it = std::back_inserter(buffer);
 
@@ -350,7 +346,7 @@ public:
 
 	std::string GenerateDependencyGraphDOT() const {
 		std::string buffer;
-		buffer.reserve(DOT_BUFFER_SIZE);
+		buffer.reserve(INITIAL_BUFFER_SIZE);
 
 		auto it = std::back_inserter(buffer);
 
