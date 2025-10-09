@@ -24,11 +24,9 @@ namespace plugify {
 			_callback(elapsed);
 		}
 
-		// Non-copyable
 		ScopedTimer(const ScopedTimer&) = delete;
 		ScopedTimer& operator=(const ScopedTimer&) = delete;
 
-		// Movable
 		ScopedTimer(ScopedTimer&& other) noexcept
 			: _callback(std::move(other._callback))
 			, _start(other._start) {
@@ -49,30 +47,6 @@ namespace plugify {
 
 	template <typename Callback>
 	ScopedTimer(Callback&&) -> ScopedTimer<std::decay_t<Callback>>;
-
-	class SafeCall {
-		std::string_view _operation;
-		std::string_view _extensionName;
-
-	public:
-		SafeCall(std::string_view op, std::string_view name)
-			: _operation(op)
-			, _extensionName(name) {
-		}
-
-		template <typename T, typename Func>
-		Result<T> Execute(Func&& func) noexcept {
-			try {
-				return func();
-			} catch (const std::bad_alloc&) {
-				return MakeError("{}: out of memory", _operation);
-			} catch (const std::exception& e) {
-				return MakeError("{} failed for '{}': {}", _operation, _extensionName, e.what());
-			} catch (...) {
-				return MakeError("{} failed for '{}': unknown exception", _operation, _extensionName);
-			}
-		}
-	};
 
 	// Enhanced Loader class with better error handling and preloading support
 	class ExtensionLoader {
@@ -157,7 +131,7 @@ namespace plugify {
 			if (!hasUpdate) {
 				return {};
 			}
-			auto result = SafeCall("OnUpdate", module.GetName()).Execute<void>([&] {
+			auto result = SafeCall<void>("OnUpdate", module.GetName(), [&] {
 				module.GetLanguageModule()->OnUpdate(deltaTime);
 				return Result<void>{};
 			});
@@ -169,7 +143,7 @@ namespace plugify {
 			Result<void> result;
 
 			if (auto* languageModule = module.GetLanguageModule()) {
-				result = SafeCall("Shutdown", module.GetName()).Execute<void>([&] {
+				result = SafeCall<void>("Shutdown", module.GetName(), [&] {
 					languageModule->Shutdown();
 					return Result<void>{};
 				});
@@ -205,7 +179,7 @@ namespace plugify {
 			plugin.SetLanguageModule(languageModule);
 
 			// Load plugin through language module
-			auto loadResult = SafeCall("OnPluginLoad", plugin.GetName()).Execute<LoadData>([&] {
+			auto loadResult = SafeCall<LoadData>("OnPluginLoad", plugin.GetName(), [&] {
 				return plugin.GetLanguageModule()->OnPluginLoad(plugin);
 			});
 			if (!loadResult) {
@@ -228,7 +202,7 @@ namespace plugify {
 			if (!hasStart) {
 				return {};
 			}
-			auto result = SafeCall("OnPluginStart", plugin.GetName()).Execute<void>([&] {
+			auto result = SafeCall<void>("OnPluginStart", plugin.GetName(), [&] {
 				plugin.GetLanguageModule()->OnPluginStart(plugin);
 				return Result<void>{};
 			});
@@ -241,7 +215,7 @@ namespace plugify {
 			if (!hasEnd) {
 				return {};
 			}
-			auto result = SafeCall("OnPluginEnd", plugin.GetName()).Execute<void>([&] {
+			auto result = SafeCall<void>("OnPluginEnd", plugin.GetName(), [&] {
 				plugin.GetLanguageModule()->OnPluginEnd(plugin);
 				return Result<void>{};
 			});
@@ -254,7 +228,7 @@ namespace plugify {
 			if (!hasUpdate) {
 				return {};
 			}
-			auto result = SafeCall("OnPluginUpdate", plugin.GetName()).Execute<void>([&] {
+			auto result = SafeCall<void>("OnPluginUpdate", plugin.GetName(), [&] {
 				plugin.GetLanguageModule()->OnPluginUpdate(plugin, deltaTime);
 				return Result<void>{};
 			});
@@ -278,7 +252,7 @@ namespace plugify {
 			if (!hasExport) {
 				return {};
 			}
-			auto result = SafeCall("OnMethodExport", module.GetName()).Execute<void>([&] {
+			auto result = SafeCall<void>("OnMethodExport", module.GetName(), [&] {
 				module.GetLanguageModule()->OnMethodExport(plugin);
 				return Result<void>{};
 			});
@@ -385,7 +359,7 @@ namespace plugify {
 			}
 #endif
 
-			auto initResult = SafeCall("Initialize", module.GetName()).Execute<InitData>([&] {
+			auto initResult = SafeCall<InitData>("Initialize", module.GetName(), [&] {
 				return languageModule->Initialize(_provider, module);
 			});
 
@@ -436,6 +410,19 @@ namespace plugify {
 			plugin.SetMethodsData(std::move(methods));
 
 			return {};
+		}
+
+		template <typename T, typename Func>
+		static Result<T> SafeCall(std::string_view op, std::string_view name, Func&& func) noexcept {
+			try {
+				return func();
+			} catch (const std::bad_alloc&) {
+				return MakeError("{}: out of memory", op);
+			} catch (const std::exception& e) {
+				return MakeError("{} failed for '{}': {}", op, name, e.what());
+			} catch (...) {
+				return MakeError("{} failed for '{}': unknown exception", op, name);
+			}
 		}
 	};
 }
