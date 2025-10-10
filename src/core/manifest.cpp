@@ -65,10 +65,10 @@ namespace {
 		}
 
 		std::unordered_set<std::string> valueNames;
-		std::unordered_set<int64_t> valueNumbers;
+		//std::unordered_set<int64_t> valueNumbers;
 
 		valueNames.reserve(enumObj.values.size());
-		valueNumbers.reserve(enumObj.values.size());
+		//valueNumbers.reserve(enumObj.values.size());
 
 		for (const auto& v : enumObj.values) {
 			const auto& value = *v._impl;
@@ -85,14 +85,14 @@ namespace {
 				return MakeError("Duplicate enum value name: {} in enum '{}'", value.name, enumObj.name);
 			}
 
-			if (!valueNumbers.insert(value.value).second) {
+			/*if (!valueNumbers.insert(value.value).second) {
 				return MakeError(
 					"Duplicate enum value: {} for '{}' in enum '{}'",
 					value.value,
 					value.name,
 					enumObj.name
 				);
-			}
+			}*/
 		}
 
 		return {};
