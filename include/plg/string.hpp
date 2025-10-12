@@ -1890,7 +1890,7 @@ namespace plg {
 		// starts_with
 
 		constexpr bool starts_with(self_view sv) const noexcept {
-			return self_view(typename self_view::assume_valid(), data(), size()).starts_with(sv);
+			return self_view(data(), size()).starts_with(sv);
 		}
 
 		constexpr bool starts_with(value_type c) const noexcept {
@@ -1904,7 +1904,7 @@ namespace plg {
 		// ends_with
 
 		constexpr bool ends_with(self_view sv) const noexcept {
-			return self_view(typename self_view::assume_valid(), data(), size()).ends_with(sv);
+			return self_view(data(), size()).ends_with(sv);
 		}
 
 		constexpr bool ends_with(value_type c) const noexcept {
@@ -1918,15 +1918,15 @@ namespace plg {
 		// contains
 
 		constexpr bool contains(self_view sv) const noexcept {
-			return self_view(typename self_view::assume_valid(), data(), size()).contains(sv);
+			return self_view(data(), size()).contains(sv);
 		}
 
 		constexpr bool contains(value_type c) const noexcept {
-			return self_view(typename self_view::assume_valid(), data(), size()).contains(c);
+			return self_view(data(), size()).contains(c);
 		}
 
 		constexpr bool contains(const value_type* PLUGIFY_NO_NULL s) const {
-			return self_view(typename self_view::assume_valid(), data(), size()).contains(s);
+			return self_view(data(), size()).contains(s);
 		}
 
 		[[nodiscard]] constexpr bool invariants() const;
