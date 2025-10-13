@@ -1572,3 +1572,53 @@ namespace plg {
 		using vector = ::plg::vector<T, std::pmr::polymorphic_allocator<T>>;
 	} // namespace pmr
 } // namespace plg
+
+#ifndef PLUGIFY_VECTOR_NO_STD_UTIL
+#include <optional>
+#include <string_view>
+#include <charconv>
+
+namespace plg {
+	constexpr vector<std::string_view> split(std::string_view str, std::string_view delims = " ") {
+		vector<std::string_view> output;
+		size_t first = 0;
+
+		while (first < str.size()) {
+			const size_t second = str.find_first_of(delims, first);
+
+			if (first != second)
+				output.emplace_back(str.substr(first, second - first));
+
+			if (second == std::string_view::npos)
+				break;
+
+			first = second + 1;
+		}
+
+		return output;
+	}
+
+	template<typename T>
+	constexpr std::optional<T> cast_to(std::string_view str) {
+		T value;
+		auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+		if (ec == std::errc()) {
+			return value;
+		}
+		return std::nullopt;
+	}
+
+	template<typename T>
+	constexpr vector<T> parse(std::string_view str, std::string_view delims = " ") {
+		vector<T> vec;
+		auto items = split(str, delims);
+		vec.reserve(items.size());
+		for (const auto& item : items) {
+			if (auto value = cast_to<T>(item)) {
+				vec.emplace_back(*value);
+			}
+		}
+		return vec;
+	}
+}  // namespace plugify
+#endif // PLUGIFY_VECTOR_NO_STD_UTIL

@@ -3935,7 +3935,7 @@ std::ostream& operator<<(std::ostream& os, const plg::basic_string<Char, Traits,
 	return os;
 }
 
-#ifndef PLUGIFY_STRING_NO_STD_FORMAT
+#ifndef PLUGIFY_STRING_NO_STD_UTIL
 #include <functional>
 
 namespace plg {
@@ -4024,4 +4024,4 @@ namespace plg {
 		return result;
 	}
 }  // namespace plugify
-#endif	// PLUGIFY_STRING_NO_STD_FORMAT
+#endif // PLUGIFY_STRING_NO_STD_UTIL
