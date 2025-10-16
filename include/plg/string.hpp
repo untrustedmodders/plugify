@@ -2148,18 +2148,34 @@ namespace plg {
 		}
 
 		constexpr void annotate_new(size_type current_size) const noexcept {
+			if (!is_long()) {
+				return;
+			}
+
 			annotate_contiguous_container(data() + capacity() + 1, data() + current_size + 1);
 		}
 
 		constexpr void annotate_delete() const noexcept {
+			if (!is_long()) {
+				return;
+			}
+
 			annotate_contiguous_container(data() + size() + 1, data() + capacity() + 1);
 		}
 
 		constexpr void annotate_increase(size_type n) const noexcept {
+			if (!is_long()) {
+				return;
+			}
+
 			annotate_contiguous_container(data() + size() + 1, data() + size() + 1 + n);
 		}
 
 		constexpr void annotate_shrink(size_type old_size) const noexcept {
+			if (!is_long()) {
+				return;
+			}
+
 			annotate_contiguous_container(data() + old_size + 1, data() + size() + 1);
 		}
 
