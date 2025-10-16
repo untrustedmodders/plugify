@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.1](https://github.com/untrustedmodders/plugify/compare/v2.0.0...v2.0.1) (2025-10-16)
+
+
+### Bug Fixes
+
+* add vector parser util func ([cbd8a2f](https://github.com/untrustedmodders/plugify/commit/cbd8a2f8e26fa2448c778353accec742197458c1))
+* remove assume valid in string header ([8ad7f39](https://github.com/untrustedmodders/plugify/commit/8ad7f3981e9bafda7dca42e123a46c01466c8530))
+* remove dublicates validation for enum values ([b0399a7](https://github.com/untrustedmodders/plugify/commit/b0399a752f1fc115d994b470a921ae15710686a1))
+* rework safecall to static method ([57bc377](https://github.com/untrustedmodders/plugify/commit/57bc377e0474bc7ce7bfcaa4cf975af2541f94b5))
+* small refactor ([c536899](https://github.com/untrustedmodders/plugify/commit/c5368993c14e42243392f6b312a37a25a8f4477c))
+* string in constexpr on GCC 15 ([d9b99ea](https://github.com/untrustedmodders/plugify/commit/d9b99ea80eb031a845f294de0079b63ce84b7b0a))
+
 ## [2.0.0](https://github.com/untrustedmodders/plugify/compare/v1.2.8...v2.0.0) (2025-10-07)
 
 
