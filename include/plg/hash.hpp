@@ -75,13 +75,11 @@ namespace plg {
 
 		template <typename T1, typename T2>
 		bool operator()(const T1& lhs, const T2& rhs) const noexcept {
-			return std::lexicographical_compare(
-				lhs.begin(), lhs.end(),
-				rhs.begin(), rhs.end(),
+			return lhs.size() == rhs.size() &&
+				std::equal(lhs.begin(), lhs.end(), rhs.begin(),
 				[](const auto& ac, const auto& bc) {
-					return std::tolower(ac) < std::tolower(bc);
-				}
-			);
+					return std::tolower(ac) == std::tolower(bc);
+			});
 		}
 	};
 
