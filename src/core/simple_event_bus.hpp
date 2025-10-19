@@ -7,14 +7,14 @@ namespace plugify {
 	class SimpleEventBus final : public IEventBus {
 	public:
 		SubscriptionId Subscribe(std::string_view eventType, EventHandler handler) override {
-			std::lock_guard lock(_mutex);
+			std::unique_lock lock(_mutex);
 			auto id = _nextId++;
 			_handlers[std::string(eventType)].emplace_back(id, std::move(handler));
 			return id;
 		}
 
 		void Unsubscribe(SubscriptionId id) override {
-			std::lock_guard lock(_mutex);
+			std::unique_lock lock(_mutex);
 			for (auto& [_, handlers] : _handlers) {
 				handlers.erase(
 					std::remove_if(
@@ -31,7 +31,7 @@ namespace plugify {
 			std::vector<EventHandler> handlersToCall;
 
 			{
-				std::lock_guard lock(_mutex);
+				std::shared_lock lock(_mutex);
 				auto it = _handlers.find(eventType);
 				if (it != _handlers.end()) {
 					for (const auto& [_, handler] : it->second) {
@@ -47,7 +47,7 @@ namespace plugify {
 		}
 
 	private:
-		mutable std::mutex _mutex;
+		mutable std::shared_mutex _mutex;
 		std::unordered_map<
 			std::string,
 			std::vector<std::pair<SubscriptionId, EventHandler>>,
