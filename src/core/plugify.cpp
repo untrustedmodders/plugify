@@ -402,10 +402,8 @@ private:
 				manager.Update(deltaTime);
 
 				// Sleep for remaining time
-				auto updateDuration = std::chrono::steady_clock::now() - now;
-				auto sleepTime = interval
-								 - std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration
-								 );
+				auto updateDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - now);
+				auto sleepTime = interval - updateDuration;
 
 				if (sleepTime > 0ms) {
 					// Use interruptible sleep
@@ -417,7 +415,7 @@ private:
 					logger->Log(
 						std::format(
 							"Update took longer than interval: {} > {}",
-							std::chrono::duration_cast<std::chrono::milliseconds>(updateDuration),
+							updateDuration,
 							interval
 						),
 						Severity::Warning
