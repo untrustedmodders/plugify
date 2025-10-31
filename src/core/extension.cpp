@@ -61,7 +61,7 @@ struct Extension::Impl {
 		std::shared_ptr<IAssembly> assembly;
 	} moduleData;
 
-	void Cache() {
+	void Init() {
 		fs::path path = std::move(location);
 		location = path.parent_path();
 		if (type == ExtensionType::Module) {
@@ -297,16 +297,6 @@ bool Extension::HasWarnings() const noexcept {
 	return !_impl->warnings.empty();
 }
 
-/*bool Extension::IsLoaded() const noexcept {
-	switch (_impl->state) {
-		case ExtensionState::Loaded:
-		case ExtensionState::Started:
-			return true;
-		default:
-			return false;
-	}
-}*/
-
 // ============================================================================
 // Timing/Performance Getters
 // ============================================================================
@@ -387,7 +377,7 @@ void Extension::SetLanguageModule(ILanguageModule* module) {
 
 void Extension::SetManifest(Manifest manifest) {
 	_impl->manifest = std::move(manifest);
-	_impl->Cache();
+	_impl->Init();
 }
 
 // ============================================================================
@@ -427,11 +417,6 @@ auto Extension::operator<=>(const Extension& other) const noexcept {
 // ============================================================================
 
 plg::path_view Extension::GetFileExtension(ExtensionType type) {
-	/*switch(type) {
-		case ExtensionType::Plugin: return ".pplugin";
-		case ExtensionType::Module: return ".pmodule";
-		default: return "";
-	}*/
 	switch (type) {
 		case ExtensionType::Plugin:
 			return PLUGIFY_PATH_LITERAL(".pplugin");
@@ -443,12 +428,10 @@ plg::path_view Extension::GetFileExtension(ExtensionType type) {
 }
 
 ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
-	/*static std::unordered_map<std::string, ExtensionType, plg::case_insensitive_hash,
-	plg::case_insensitive_equal> manifests = { { ".pplugin", ExtensionType::Plugin }, { ".pmodule",
-	ExtensionType::Module }
+	constexpr std::array extensions = {
+		ExtensionType::Module,
+		ExtensionType::Plugin
 	};
-	return manifests[plg::as_string(path.extension())];*/
-	std::array extensions = { ExtensionType::Module, ExtensionType::Plugin };
 	for (const auto& extension : extensions) {
 		if (plg::has_extension(path, GetFileExtension(extension))) {
 			return extension;
@@ -550,26 +533,6 @@ std::string Extension::ToString() const {
 const std::string& Extension::GetVersionString() const noexcept {
 	return _impl->version;
 }
-
-// Helper to check if extension can be loaded
-/*bool Extension::CanLoad() const noexcept {
-	return (_impl->state == ExtensionState::Loading) && !HasErrors();
-}
-
-// Helper to check if extension can be started
-bool Extension::CanStart() const noexcept {
-	return _impl->state == ExtensionState::Loaded && !HasErrors();
-}
-
-// Helper to check if extension can be updated
-bool Extension::CanUpdate() const noexcept {
-	return _impl->state == ExtensionState::Started && !HasErrors();
-}
-
-// Helper to check if extension can be stopped
-bool Extension::CanStop() const noexcept {
-	return _impl->state == ExtensionState::Started && !HasErrors();
-}*/
 
 // Add dependency helper (for runtime dependency injection)
 void Extension::AddDependency(std::string dep) {
