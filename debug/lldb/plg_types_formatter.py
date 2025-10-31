@@ -24,10 +24,15 @@ def __lldb_init_module(debugger, dict):
     debugger.HandleCommand('type synthetic add -x "^plg::vector<.+>$" --python-class plg_types_formatter.VectorProvider')
     debugger.HandleCommand('type synthetic add -x "^plg::variant<.+>$" --python-class plg_types_formatter.VariantProvider')
     debugger.HandleCommand('type synthetic add -x "^plg::any$" --python-class plg_types_formatter.VariantProvider')
+
     debugger.HandleCommand('type summary add -x "^plg::basic_string<.+>$" --summary-string "${svar}"')
     debugger.HandleCommand('type summary add -x "^plg::vector<.+>$" --summary-string "${svar}"')
     debugger.HandleCommand('type summary add -x "^plg::variant<.+>$" --summary-string "${svar}"')
     debugger.HandleCommand('type summary add -x "^plg::any$" --summary-string "${svar}"')
+
+    debugger.HandleCommand('type summary add -x "^plg::vec2$" --summary-string "(${var.x}, ${var.y})"')
+    debugger.HandleCommand('type summary add -x "^plg::vec3$" --summary-string "(${var.x}, ${var.y}, ${var.z})"')
+    debugger.HandleCommand('type summary add -x "^plg::vec4"$ --summary-string "(${var.x}, ${var.y}, ${var.z}, ${var.w})"')
     print("✅ plg::types formatter LOADED!")
 
 class StringProvider:
@@ -54,7 +59,6 @@ class StringProvider:
             is_long = (raw_byte >> 7) & 0x1
 
             self.is_long = is_long
-
             if self.is_long:
                 # Long string - access rep_.l
                 long_rep = rep.GetChildMemberWithName('l')
@@ -254,63 +258,3 @@ class VariantProvider:
 
             self.index = 0
             self.storage = 0
-
-#
-# class VariantProvider:
-#     """Custom formatter for plg::variant"""
-#
-#     def __init__(self, valobj, internal_dict):
-#         self.valobj = valobj
-#         self.update()
-#
-#     def update(self):
-#         try:
-#             # Index of the currently active type
-#             self.current_index = self.valobj.GetChildMemberWithName('_current').GetValueAsUnsigned(0)
-#
-#             # Access the union storage
-#             self.storage = self.valobj.GetChildMemberWithName('_storage')
-#
-#             # Flatten the union tree
-#             self.children = []
-#             union_node = self.storage
-#             while union_node.IsValid() and union_node.GetNumChildren() > 0:
-#                 # For a detail::union_node, the first child is left, second is right
-#                 left = union_node.GetChildAtIndex(0)
-#                 right = union_node.GetChildAtIndex(1)
-#                 self.children.append(left)
-#                 union_node = right
-#
-#             # Select the active value
-#             if self.current_index < len(self.children):
-#                 self.active = self.children[self.current_index]
-#             else:
-#                 self.active = None
-#
-#         except Exception as e:
-#             print(f"EXCEPTION: {e}")
-#             import traceback
-#             traceback.print_exc()
-#
-#             self.active = None
-#             self.children = []
-#             self.current_index = 0
-#
-#     def num_children(self):
-#         # expose current index and active value
-#         return 2
-#
-#     def get_child_at_index(self, index):
-#         if index == 0:
-#             return self.valobj.CreateValueFromExpression('current_index', str(self.current_index))
-#         elif index == 1 and self.active is not None:
-#             return self.active
-#         return None
-#
-#     def get_value(self):
-#         if self.active is not None:
-#             return self.active.GetSummary() or "<active>"
-#         return "<empty>"
-#
-#     def has_children(self):
-#         return True
