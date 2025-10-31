@@ -266,24 +266,60 @@ public:
 		initialized = false;
 	}
 
-	inline static const std::array<std::string_view, 2> MANIFEST_EXTENSIONS = { "*.pplugin", "*.pmodule" };
-
 	Result<std::vector<Extension>> DiscoverExtensions() const {
-		auto paths = fileSystem->FindFiles(config.paths.extensionsDir, MANIFEST_EXTENSIONS, true);
-		if (!paths) {
-			return MakeError(std::move(paths.error()));
+		std::vector<std::filesystem::path> manifestPaths;
+		std::vector<std::filesystem::path> directoriesToProcess;
+
+		// Start with the root extensions directory
+		directoriesToProcess.push_back(config.paths.extensionsDir);
+
+		while (!directoriesToProcess.empty()) {
+			auto currentDir = std::move(directoriesToProcess.back());
+			directoriesToProcess.pop_back();
+
+			// List contents of current directory
+			auto entries = fileSystem->ListDirectory(currentDir);
+			if (!entries) {
+				// Log error but continue processing other directories
+				continue;
+			}
+
+			bool foundManifest = false;
+			std::vector<std::filesystem::path> subdirs;
+
+			// First pass: look for manifest files and collect subdirectories
+			for (auto&& entry : *entries) {
+				if (entry.is_regular_file()) {
+					if (Extension::GetExtensionType(entry.path) != ExtensionType::Unknown) {
+						manifestPaths.push_back(std::move(entry.path));
+						foundManifest = true;
+					}
+				} else if (entry.is_directory()) {
+					subdirs.push_back(std::move(entry.path));
+				}
+			}
+
+			// Only recurse into subdirectories if no manifest was found
+			if (!foundManifest) {
+				directoriesToProcess.insert(
+					directoriesToProcess.end(),
+					std::make_move_iterator(subdirs.begin()),
+					std::make_move_iterator(subdirs.end())
+				);
+			}
 		}
 
 		UniqueId id{ 0 };
 
 		std::vector<Extension> exts;
-		exts.reserve(paths->size());
-		for (auto&& path : *paths) {
+		exts.reserve(manifestPaths.size());
+		for (auto&& path : manifestPaths) {
 			exts.emplace_back(id++, std::move(path));
 		}
 		return exts;
 	}
 
+#pragma region Debug
 	const size_t INITIAL_BUFFER_SIZE = 4096;
 
 	std::string GenerateLoadOrder() const {
@@ -369,6 +405,7 @@ public:
 		std::format_to(it, "}}\n");
 		return buffer;
 	}
+#pragma endregion Debug
 };
 
 Manager::Manager(const ServiceLocator& services, const Config& config)
