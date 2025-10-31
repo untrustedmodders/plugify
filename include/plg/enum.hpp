@@ -28,17 +28,16 @@ namespace plg {
 		std::array<char, N + 1> content_{};
 	};
 
-	constexpr auto is_pretty(char ch) noexcept {
-		return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
-	}
-
 	constexpr auto pretty_name(std::string_view sv) noexcept {
-		for (std::size_t n = sv.size() - 1; n > 0; --n) {
-			if (!is_pretty(sv[n])) {
-				sv.remove_prefix(n + 1);
-				break;
-			}
+		// Find last non-pretty character from the end
+		auto pos = sv.find_last_not_of(
+		    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+		);
+
+		if (pos != std::string_view::npos) {
+			sv.remove_prefix(pos + 1);
 		}
+
 		return sv;
 	}
 
