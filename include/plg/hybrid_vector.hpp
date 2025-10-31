@@ -307,6 +307,14 @@ namespace plg {
 	        return plg::visit([](auto&& vec) { return vec.end(); }, self.storage_);
 	    }
 
+	    [[nodiscard]] constexpr auto cbegin(this auto&& self) {
+	        return plg::visit([](auto&& vec) { return vec.cbegin(); }, self.storage_);
+	    }
+
+	    [[nodiscard]] constexpr auto cend(this auto&& self) {
+	        return plg::visit([](auto&& vec) { return vec.cend(); }, self.storage_);
+	    }
+
 	    // Range support (C++23)
 	    [[nodiscard]] friend constexpr auto begin(hybrid_vector& v) {
 	        return v.begin();
@@ -314,6 +322,14 @@ namespace plg {
 
 	    [[nodiscard]] friend constexpr auto end(hybrid_vector& v) {
 	        return v.end();
+	    }
+
+	    [[nodiscard]] friend constexpr auto cbegin(hybrid_vector& v) {
+	        return v.cbegin();
+	    }
+
+	    [[nodiscard]] friend constexpr auto cend(hybrid_vector& v) {
+	        return v.cend();
 	    }
 	};
 }
