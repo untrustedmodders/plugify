@@ -295,7 +295,9 @@ public:
 						foundManifest = true;
 					}
 				} else if (entry.is_directory()) {
-					subdirs.push_back(std::move(entry.path));
+					if (!config.security.excludedDirs.contains(entry.path.filename())) {
+						subdirs.push_back(std::move(entry.path));
+					}
 				}
 			}
 

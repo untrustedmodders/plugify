@@ -141,6 +141,7 @@ namespace plugify {
 		struct Security {
 			std::unordered_set<std::string> whitelistedExtensions;
 			std::unordered_set<std::string> blacklistedExtensions;
+			std::unordered_set<std::filesystem::path> excludedDirs = DefaultExludedDirs;
 
 			bool HasWhitelist() const {
 				return !whitelistedExtensions.empty();
@@ -148,6 +149,10 @@ namespace plugify {
 
 			bool HasBlacklist() const {
 				return !blacklistedExtensions.empty();
+			}
+
+			bool HasExcluded() const {
+				return excludedDirs != DefaultExludedDirs;
 			}
 		} security;
 
@@ -301,6 +306,10 @@ namespace plugify {
 						security.blacklistedExtensions = other.security.blacklistedExtensions;
 						securityChanged = true;
 					}
+					if (other.security.HasExcluded()) {
+						security.excludedDirs = other.security.excludedDirs;
+						securityChanged = true;
+					}
 				} else {
 					// Other sources merge/append
 					if (other.security.HasWhitelist()) {
@@ -314,6 +323,13 @@ namespace plugify {
 						security.blacklistedExtensions.insert(
 						    other.security.blacklistedExtensions.begin(),
 						    other.security.blacklistedExtensions.end()
+						);
+						securityChanged = true;
+					}
+					if (other.security.HasExcluded()) {
+						security.excludedDirs.insert(
+						    other.security.excludedDirs.begin(),
+						    other.security.excludedDirs.end()
 						);
 						securityChanged = true;
 					}
@@ -451,5 +467,14 @@ namespace plugify {
 
 			return {};
 		}
+
+	private:
+		static constexpr std::unordered_set<std::filesystem::path> DefaultExludedDirs = {
+			PLUGIFY_PATH_LITERAL("disabled"),
+			PLUGIFY_PATH_LITERAL(".git"),
+			PLUGIFY_PATH_LITERAL(".svn"),
+			PLUGIFY_PATH_LITERAL("temp"),
+			PLUGIFY_PATH_LITERAL("tmp"),
+		};
 	};
 }  // namespace plugify
