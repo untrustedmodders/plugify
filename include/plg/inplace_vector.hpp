@@ -83,7 +83,8 @@ namespace plg {
 				noexcept(std::is_nothrow_copy_constructible_v<T>)
 			{
 				if constexpr (std::is_trivially_copy_constructible_v<T>) {
-					std::memmove((void*)this, (const void*)std::addressof(rhs), sizeof(ipvbase));
+					std::memcpy(data_, rhs.data_, rhs.size_ * sizeof(T));
+					size_ = rhs.size_;
 				} else {
 					std::uninitialized_copy_n(rhs.data_, rhs.size_, data_);
 					size_ = rhs.size_;
@@ -97,7 +98,8 @@ namespace plg {
 				)
 			{
 				if constexpr (std::is_trivially_move_constructible_v<T>) {
-					std::memmove((void*)this, (const void*)std::addressof(rhs), sizeof(ipvbase));
+					std::memcpy(data_, rhs.data_, rhs.size_ * sizeof(T));
+					size_ = rhs.size_;
 #if defined(__cpp_lib_trivially_relocatable)
 				} else if constexpr (std::is_trivially_relocatable_v<T>) {
 					std::uninitialized_relocate_n(rhs.data_, rhs.size_, data_);
@@ -112,10 +114,11 @@ namespace plg {
 			void operator=(const ipvbase& rhs)
 				noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_assignable_v<T>)
 			{
+				if (this == std::addressof(rhs)) return;
+
 				if constexpr (std::is_trivially_copy_constructible_v<T> && std::is_trivially_copy_assignable_v<T> && std::is_trivially_destructible_v<T>) {
-					std::memmove((void*)this, (const void*)std::addressof(rhs), sizeof(ipvbase));
-				} else if (this == std::addressof(rhs)) {
-					// do nothing
+					std::memcpy(data_, rhs.data_, rhs.size_ * sizeof(T));
+					size_ = rhs.size_;
 				} else if (rhs.size_ <= size_) {
 					std::copy(rhs.data_, rhs.data_ + rhs.size_, data_);
 					std::destroy(data_ + rhs.size_, data_ + size_);
@@ -129,10 +132,11 @@ namespace plg {
 			void operator=(ipvbase&& rhs)
 				noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_assignable_v<T>)
 			{
+				if (this == std::addressof(rhs)) return;
+
 				if constexpr (std::is_trivially_move_constructible_v<T> && std::is_trivially_move_assignable_v<T> && std::is_trivially_destructible_v<T>) {
-					std::memmove((void*)this, (const void*)std::addressof(rhs), sizeof(ipvbase));
-				} else if (this == std::addressof(rhs)) {
-					// do nothing
+					std::memcpy(data_, rhs.data_, rhs.size_ * sizeof(T));
+					size_ = rhs.size_;
 				} else if (rhs.size_ <= size_) {
 					std::move(rhs.data_, rhs.data_ + rhs.size_, data_);
 					std::destroy(data_ + rhs.size_, data_ + size_);
