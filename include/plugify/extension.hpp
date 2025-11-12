@@ -88,6 +88,7 @@ namespace plugify {
 		// --- Plugin-specific (returns empty/null for modules) ---
 		[[nodiscard]] const std::string& GetEntry() const noexcept;
 		[[nodiscard]] const std::vector<Method>& GetMethods() const noexcept;
+		[[nodiscard]] const std::vector<Class>& GetClasses() const noexcept;
 		[[nodiscard]] const std::vector<MethodData>& GetMethodsData() const noexcept;
 
 		// --- Module-specific (returns empty/null for plugins) ---

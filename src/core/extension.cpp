@@ -109,6 +109,7 @@ static const std::vector<Dependency> emptyDependencies;
 static const std::vector<Conflict> emptyConflicts;
 static const std::vector<Obsolete> emptyObsoletes;
 static const std::vector<Method> emptyMethods;
+static const std::vector<Class> emptyClasses;
 static const std::vector<MethodData> emptyMethodData;
 
 // ============================================================================
@@ -223,6 +224,13 @@ const std::vector<Method>& Extension::GetMethods() const noexcept {
 		return *_impl->manifest.methods;
 	}
 	return emptyMethods;
+}
+
+const std::vector<Class>& Extension::GetClasses() const noexcept {
+	if (_impl->type == ExtensionType::Plugin && _impl->manifest.classes) {
+		return *_impl->manifest.classes;
+	}
+	return emptyClasses;
 }
 
 const std::vector<MethodData>& Extension::GetMethodsData() const noexcept {

@@ -8,6 +8,7 @@
 #include "plugify/dependency.hpp"
 #include "plugify/global.h"
 #include "plugify/method.hpp"
+#include "plugify/class.hpp"
 
 namespace plugify {
 	// Unified Manifest (combines all fields)
@@ -30,6 +31,7 @@ namespace plugify {
 		// Plugin-specific fields (only used when type == Plugin)
 		std::optional<std::string> entry;
 		std::optional<std::vector<Method>> methods;
+		std::optional<std::vector<Class>> classes;
 
 		// Module-specific fields (only used when type == Module)
 		std::optional<std::filesystem::path> runtime;
