@@ -5,6 +5,6 @@
 namespace plugify {
 	struct Alias::Impl  {
 		std::string name;
-		std::optional<bool> owned;
+		std::optional<bool> owner;
 	};
 }

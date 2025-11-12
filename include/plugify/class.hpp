@@ -30,12 +30,12 @@ namespace plugify {
 		[[nodiscard]] const std::vector<Binding>& GetBindings() const noexcept;
 
 		// Setters (pass by value and move)
-		[[nodiscard]] void SetName(std::string name);
-		[[nodiscard]] void SetType(ValueType type);
-		[[nodiscard]] void SetInvalid(std::string invalid);
-		[[nodiscard]] void SetConstructors(std::vector<std::string> constructors);
-		[[nodiscard]] void SetDestructor(std::string destructor);
-		[[nodiscard]] void SetBindings(std::vector<Binding> bindings);
+		void SetName(std::string name);
+		void SetType(ValueType type);
+		void SetInvalid(std::string invalid);
+		void SetConstructors(std::vector<std::string> constructors);
+		void SetDestructor(std::string destructor);
+		void SetBindings(std::vector<Binding> bindings);
 
 		[[nodiscard]] bool operator==(const Class& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Class& other) const noexcept;

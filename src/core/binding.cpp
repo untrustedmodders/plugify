@@ -25,19 +25,23 @@ Binding& Binding::operator=(const Binding& other) {
 Binding& Binding::operator=(Binding&& other) noexcept = default;
 
 // Static empty defaults for returning const references to empty containers
-static const std::map<size_t, Alias> emptyAliases;
+static const std::inplace_vector<Alias, 0> emptyAliases;
 static const Alias emptyAlias;
 
 const std::string& Binding::GetName() const noexcept {
 	return _impl->name;
 }
 
+const std::string& Binding::GetMethod() const noexcept {
+	return _impl->method;
+}
+
 bool Binding::IsBindSelf() const noexcept {
 	return _impl->bindSelf.value_or(false);
 }
 
-const std::map<size_t, Alias>& Binding::GetParamAliases() const noexcept {
-	return _impl->paramAliases ? *_impl->paramAliases : emptyAliases;
+const std::inplace_vector<Alias, Signature::kMaxFuncArgs>& Binding::GetParamAliases() const noexcept {
+	return _impl->paramAliases ? *_impl->paramAliases : reinterpret_cast<const std::inplace_vector<Alias, Signature::kMaxFuncArgs>&>(emptyAliases);
 }
 
 const Alias& Binding::GetRetAlias() const noexcept {
@@ -48,11 +52,15 @@ void Binding::SetName(std::string name) {
 	_impl->name = std::move(name);
 }
 
+void Binding::SetMethod(std::string method) {
+	_impl->method = std::move(method);
+}
+
 void Binding::SetBindSelf(bool bindSelf) {
 	_impl->bindSelf = bindSelf;
 }
 
-void Binding::SetParamAliases(std::map<size_t, Alias> paramAliases) {
+void Binding::SetParamAliases(std::inplace_vector<Alias, Signature::kMaxFuncArgs> paramAliases) {
 	_impl->paramAliases = std::move(paramAliases);
 }
 

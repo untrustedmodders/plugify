@@ -6,8 +6,9 @@
 namespace plugify {
 	struct Binding::Impl  {
 		std::string name;
+		std::string method;
 		std::optional<bool> bindSelf;
-		std::optional<std::map<size_t, Alias>> paramAliases;
+		std::optional<std::inplace_vector<Alias, Signature::kMaxFuncArgs>> paramAliases;
 		std::optional<Alias> retAlias;
 	};
 }

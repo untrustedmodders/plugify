@@ -28,16 +28,16 @@ const std::string& Alias::GetName() const noexcept {
 	return _impl->name;
 }
 
-bool Alias::IsOwned() const noexcept {
-	return _impl->owned.value_or(false);
+bool Alias::IsOwner() const noexcept {
+	return _impl->owner.value_or(false);
 }
 
 void Alias::SetName(std::string name) {
 	_impl->name = std::move(name);
 }
 
-void Alias::SetOwned(bool owned) {
-	_impl->owned = owned;
+void Alias::SetOwner(bool owner) {
+	_impl->owner = owner;
 }
 
 bool Alias::operator==(const Alias& other) const noexcept = default;

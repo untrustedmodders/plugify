@@ -18,11 +18,11 @@ namespace plugify {
 
 		// Getters
 		[[nodiscard]] const std::string& GetName() const noexcept;
-		[[nodiscard]] bool IsOwned() const noexcept;
+		[[nodiscard]] bool IsOwner() const noexcept;
 
 		// Setters (pass by value and move)
 		void SetName(std::string name);
-		void SetOwned(bool owned);
+		void SetOwner(bool owner);
 
 		[[nodiscard]] bool operator==(const Alias& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Alias& other) const noexcept;
