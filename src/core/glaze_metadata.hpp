@@ -12,6 +12,9 @@
 #include "core/enum_value_impl.hpp"
 #include "core/method_impl.hpp"
 #include "core/property_impl.hpp"
+#include "core/alias_impl.hpp"
+#include "core/binding_impl.hpp"
+#include "core/class_impl.hpp"
 
 template <>
 struct glz::meta<plugify::Method> {
@@ -49,6 +52,7 @@ struct glz::meta<plugify::Manifest> {
 
 		"entry", &T::entry,
 		"methods", &T::methods,
+		"classes", &T::classes,
 		"runtime", &T::runtime,
 		"directories", &T::directories
 	);
@@ -100,6 +104,36 @@ struct glz::meta<plugify::EnumValue> {
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
 		"description", skip{},
 		"value", [](auto&& self) -> auto& { return self._impl->value; }
+	);
+};
+
+template <>
+struct glz::meta<plugify::Alias> {
+	static constexpr auto value = object(
+		"name", [](auto&& self) -> auto& { return self._impl->name; },
+		"owner", [](auto&& self) -> auto& { return self._impl->owner; }
+	);
+};
+
+template <>
+struct glz::meta<plugify::Binding> {
+	static constexpr auto value = object(
+		"name", [](auto&& self) -> auto& { return self._impl->name; },
+		"bindSelf", [](auto&& self) -> auto& { return self._impl->bindSelf; },
+		"paramAliases", [](auto&& self) -> auto& { return self._impl->paramAliases; },
+		"retAlias", [](auto&& self) -> auto& { return self._impl->retAlias; }
+	);
+};
+
+template <>
+struct glz::meta<plugify::Class> {
+	static constexpr auto value = object(
+		"name", [](auto&& self) -> auto& { return self._impl->name; },
+		"type", [](auto&& self) -> auto& { return self._impl->type; },
+		"invalid", [](auto&& self) -> auto& { return self._impl->invalid; },
+		"constructors", [](auto&& self) -> auto& { return self._impl->constructors; },
+		"destructor", [](auto&& self) -> auto& { return self._impl->destructor; },
+		"bindings", [](auto&& self) -> auto& { return self._impl->bindings; }
 	);
 };
 
