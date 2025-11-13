@@ -193,8 +193,10 @@ public:
 						break;
 					}
 
-					default:
+					default: {
 						result = MakeError("Unknown extension type");
+						break;
+					}
 				}
 				if (!result) {
 					logger->Log(result.error(), Severity::Error);
@@ -227,9 +229,12 @@ public:
 						break;
 					}
 
-					default:
+					default: {
 						result = MakeError("Unknown extension type");
+						break;
+					}
 				}
+
 				if (!result) {
 					logger->Log(result.error(), Severity::Error);
 				}
@@ -253,8 +258,10 @@ public:
 						break;
 					}
 
-					default:
+					default: {
 						result = MakeError("Unknown extension type");
+						break;
+					}
 				}
 				if (!result) {
 					logger->Log(result.error(), Severity::Error);

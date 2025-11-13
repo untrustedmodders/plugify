@@ -438,7 +438,7 @@ plg::path_view Extension::GetFileExtension(ExtensionType type) {
 ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
 	constexpr std::array extensions = {
 		ExtensionType::Module,
-		ExtensionType::Plugin
+		ExtensionType::Plugin,
 	};
 	for (const auto& extension : extensions) {
 		if (plg::has_extension(path, GetFileExtension(extension))) {

@@ -12,7 +12,7 @@ namespace plugify {
 		std::string problem;
 		std::string description;
 		std::optional<std::vector<std::string>> suggestedFixes;
-		bool isBlocking{ true };  // True if this issue prevents loading the extension
+		bool isBlocking{ true }; // True if this issue prevents loading the extension
 
 		// Generate detailed description with constraint info
 		std::string GetDetailedDescription() const {
@@ -41,8 +41,7 @@ namespace plugify {
 
 		// Dependency graph
 		std::unordered_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
-		std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping
-		                                                                        // dependents
+		std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping dependents
 
 		// Load order
 		std::vector<UniqueId> loadOrder;

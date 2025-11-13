@@ -436,11 +436,13 @@ namespace plugify {
 
 			// Check for path collisions
 			using pair = std::pair<std::string_view, const std::filesystem::path*>;
-			std::array pathList = { pair{ "extensions", &paths.extensionsDir },
-				                    pair{ "configs", &paths.configsDir },
-				                    pair{ "data", &paths.dataDir },
-				                    pair{ "logs", &paths.logsDir },
-				                    pair{ "cache", &paths.cacheDir } };
+			std::array pathList = {
+				pair{ "extensions", &paths.extensionsDir },
+				pair{ "configs", &paths.configsDir },
+				pair{ "data", &paths.dataDir },
+				pair{ "logs", &paths.logsDir },
+				pair{ "cache", &paths.cacheDir },
+			};
 
 			for (size_t i = 0; i < pathList.size(); ++i) {
 				for (size_t j = i + 1; j < pathList.size(); ++j) {
