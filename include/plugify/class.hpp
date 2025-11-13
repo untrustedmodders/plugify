@@ -23,16 +23,16 @@ namespace plugify {
 
 		// Getters
 		[[nodiscard]] const std::string& GetName() const noexcept;
-		[[nodiscard]] ValueType GetType() const noexcept;
-		[[nodiscard]] const std::string& GetInvalid() const noexcept;
+		[[nodiscard]] ValueType GetHandleType() const noexcept;
+		[[nodiscard]] const std::string& GetInvalidValue() const noexcept;
 		[[nodiscard]] const std::vector<std::string>& GetConstructors() const noexcept;
 		[[nodiscard]] const std::string& GetDestructor() const noexcept;
 		[[nodiscard]] const std::vector<Binding>& GetBindings() const noexcept;
 
 		// Setters (pass by value and move)
 		void SetName(std::string name);
-		void SetType(ValueType type);
-		void SetInvalid(std::string invalid);
+		void SetHandleType(ValueType handleType);
+		void SetInvalidValue(std::string invalidValue);
 		void SetConstructors(std::vector<std::string> constructors);
 		void SetDestructor(std::string destructor);
 		void SetBindings(std::vector<Binding> bindings);

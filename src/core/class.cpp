@@ -31,18 +31,23 @@ static const std::vector<std::string> emptyStrings;
 const std::string& Class::GetName() const noexcept {
 	return _impl->name;
 }
-ValueType Class::GetType() const noexcept {
-	return _impl->type.value_or(ValueType::Pointer);
+
+ValueType Class::GetHandleType() const noexcept {
+	return _impl->handleType.value_or(ValueType::Pointer);
 }
-const std::string& Class::GetInvalid() const noexcept {
-	return _impl->invalid ? *_impl->invalid : emptyString;
+
+const std::string& Class::GetInvalidValue() const noexcept {
+	return _impl->invalidValue ? *_impl->invalidValue : emptyString;
 }
+
 const std::vector<std::string>& Class::GetConstructors() const noexcept {
 	return _impl->constructors ? *_impl->constructors : emptyStrings;
 }
+
 const std::string& Class::GetDestructor() const noexcept {
 	return _impl->destructor ? *_impl->destructor : emptyString;
 }
+
 const std::vector<Binding>& Class::GetBindings() const noexcept {
 	return _impl->bindings;
 }
@@ -51,12 +56,12 @@ void Class::SetName(std::string name) {
 	_impl->name = std::move(name);
 }
 
-void Class::SetType(ValueType type) {
-	_impl->type = type;
+void Class::SetHandleType(ValueType handleType) {
+	_impl->handleType = handleType;
 }
 
-void Class::SetInvalid(std::string invalid) {
-	_impl->invalid = std::move(invalid);
+void Class::SetInvalidValue(std::string invalidValue) {
+	_impl->invalidValue = std::move(invalidValue);
 }
 
 void Class::SetConstructors(std::vector<std::string> constructors) {

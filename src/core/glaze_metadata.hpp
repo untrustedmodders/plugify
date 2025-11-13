@@ -129,8 +129,9 @@ template <>
 struct glz::meta<plugify::Class> {
 	static constexpr auto value = object(
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
-		"type", [](auto&& self) -> auto& { return self._impl->type; },
-		"invalid", [](auto&& self) -> auto& { return self._impl->invalid; },
+		"handleType", [](auto&& self) -> auto& { return self._impl->handleType; },
+		"invalidValue", [](auto&& self) -> auto& { return self._impl->invalidValue; },
+		"nullPolicy", skip{},
 		"constructors", [](auto&& self) -> auto& { return self._impl->constructors; },
 		"destructor", [](auto&& self) -> auto& { return self._impl->destructor; },
 		"bindings", [](auto&& self) -> auto& { return self._impl->bindings; }
