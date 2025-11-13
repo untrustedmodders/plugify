@@ -247,6 +247,128 @@ namespace {
 
 		return {};
 	}
+
+	// Validate Alias
+	Result<void> ValidateAlias(const Alias::Impl& alias, const std::string& context) {
+		if (alias.name.empty()) {
+			return MakeError("{}: Alias name cannot be empty", context);
+		}
+
+		if (!IsValidName(alias.name)) {
+			return MakeError("{}: Invalid alias name '{}'", context, alias.name);
+		}
+
+		return {};
+	}
+
+	// Validate Binding
+	Result<void> ValidateBinding(const Binding::Impl& binding, const std::string& context) {
+		if (binding.name.empty()) {
+			return MakeError("{}: Binding name cannot be empty", context);
+		}
+
+		if (!IsValidName(binding.name)) {
+			return MakeError("{}: Invalid binding name '{}'", context, binding.name);
+		}
+
+		if (binding.method.empty()) {
+			return MakeError("{}: Binding '{}' method cannot be empty", context, binding.name);
+		}
+
+		if (!IsValidName2(binding.method)) {
+			return MakeError("{}: Binding '{}' has invalid method name '{}'", context, binding.name, binding.method);
+		}
+
+		// Validate parameter aliases if present
+		if (binding.paramAliases) {
+			for (size_t i = 0; i < binding.paramAliases->size(); ++i) {
+				if (auto result = ValidateAlias(
+						*(*binding.paramAliases)[i]._impl,
+						std::format("{}: Binding '{}' paramAlias[{}]", context, binding.name, i)
+					);
+					!result) {
+					return result;
+				}
+			}
+		}
+
+		// Validate return alias if present
+		if (binding.retAlias) {
+			if (auto result = ValidateAlias(
+					*binding.retAlias->_impl,
+					std::format("{}: Binding '{}' retAlias", context, binding.name)
+				);
+				!result) {
+				return result;
+			}
+		}
+
+		return {};
+	}
+
+	// Validate Class
+	Result<void> ValidateClass(const Class::Impl& classObj) {
+		if (classObj.name.empty()) {
+			return MakeError("Class name cannot be empty");
+		}
+
+		if (!IsValidName(classObj.name)) {
+			return MakeError("Invalid class name: {}", classObj.name);
+		}
+
+		// Validate constructors if present
+		if (classObj.constructors) {
+			if (classObj.constructors->empty()) {
+				return MakeError("Class '{}': constructors list cannot be empty if specified", classObj.name);
+			}
+
+			for (size_t i = 0; i < classObj.constructors->size(); ++i) {
+				const auto& constructor = (*classObj.constructors)[i];
+				if (constructor.empty()) {
+					return MakeError("Class '{}': constructor[{}] cannot be empty", classObj.name, i);
+				}
+
+				if (!IsValidName2(constructor)) {
+					return MakeError("Class '{}': invalid constructor[{}] name '{}'", classObj.name, i, constructor);
+				}
+			}
+		}
+
+		// Validate destructor if present
+		if (classObj.destructor) {
+			if (classObj.destructor->empty()) {
+				return MakeError("Class '{}': destructor cannot be empty", classObj.name);
+			}
+
+			if (!IsValidName2(*classObj.destructor)) {
+				return MakeError("Class '{}': invalid destructor name '{}'", classObj.name, *classObj.destructor);
+			}
+		}
+
+		// Validate bindings
+		if (classObj.bindings.empty()) {
+			return MakeError("Class '{}': must have at least one binding", classObj.name);
+		}
+
+		std::unordered_set<std::string> bindingNames;
+		bindingNames.reserve(classObj.bindings.size());
+
+		for (const auto& binding : classObj.bindings) {
+			if (!bindingNames.insert(binding._impl->name).second) {
+				return MakeError("Class '{}': duplicate binding name '{}'", classObj.name, binding._impl->name);
+			}
+
+			if (auto result = ValidateBinding(
+					*binding._impl,
+					std::format("Class '{}'", classObj.name)
+				);
+				!result) {
+				return result;
+			}
+		}
+
+		return {};
+	}
 }
 
 // Main Manifest validation implementation
@@ -323,7 +445,7 @@ Result<void> Manifest::Validate() const {
 	}
 
 	// Determine manifest type based on fields present
-	bool hasPluginFields = entry.has_value() || methods.has_value();
+	bool hasPluginFields = entry.has_value() || methods.has_value() || classes.has_value();
 	bool hasModuleFields = runtime.has_value() || directories.has_value();
 
 	if (hasPluginFields && hasModuleFields) {
@@ -361,6 +483,26 @@ Result<void> Manifest::Validate() const {
 				}
 
 				if (auto result = ValidateMethod(*method._impl); !result) {
+					return result;
+				}
+			}
+		}
+
+		// Add this new block for classes validation:
+		if (classes) {
+			/*if (classes->empty()) {
+				return MakeError("Classes list cannot be empty if specified");
+			}*/
+
+			std::unordered_set<std::string> classNames;
+			classNames.reserve(classes->size());
+
+			for (const auto& classObj : *classes) {
+				if (!classNames.insert(classObj._impl->name).second) {
+					return MakeError("Duplicate class name: {}", classObj._impl->name);
+				}
+
+				if (auto result = ValidateClass(*classObj._impl); !result) {
 					return result;
 				}
 			}
