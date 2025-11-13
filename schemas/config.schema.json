@@ -36,5 +36,6 @@
       "type": "boolean",
       "description": "Flag indicating if the modules should prefer its own symbols over shared symbols."
     }
-  }
+  },
+  "additionalProperties": false
 }

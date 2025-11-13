@@ -93,7 +93,8 @@
             "type": "boolean",
             "description": "Indicates whether the plugin reference is optional."
           }
-        }
+        },
+        "additionalProperties": false
       }
     },
     "conflicts": {
@@ -127,7 +128,8 @@
             "description": "The reason why this plugin conflicts with the specified plugin.",
             "minLength": 1
           }
-        }
+        },
+        "additionalProperties": false
       }
     },
     "language": {
@@ -155,6 +157,13 @@
       "description": "Public API methods exposed by this plugin for other plugins to call. These methods form the plugin's inter-plugin communication interface. Each method defines its signature, parameters, and return type for cross-language compatibility.",
       "items": {
         "$ref": "#/$defs/methodObject"
+      }
+    },
+    "classes": {
+      "type": "array",
+      "description": "Object-oriented class wrappers that provide RAII (Resource Acquisition Is Initialization) semantics over handle-based APIs. Classes bundle related methods together and manage resource lifecycle through constructors and destructors.",
+      "items": {
+        "$ref": "#/$defs/classObject"
       }
     }
   },
@@ -231,7 +240,8 @@
                 "examples": ["defaultValue", 42, true]
               }
             }
-          }
+          },
+          "maxItems": 32
         },
         "retType": {
           "type": "object",
@@ -312,10 +322,137 @@
                 "type": "integer",
                 "description": "The integer value mapped to this enum entry. Must be unique within the enum. Used for consistent cross-language enum representation."
               }
-            }
+            },
+            "additionalProperties": false
           }
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "classObject": {
+      "type": "object",
+      "description": "An object describing a class wrapper for handle-based resources.",
+      "required": [
+        "name",
+        "type",
+        "invalid",
+        "constructors",
+        "destructor",
+        "bindings"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The class name. Should follow PascalCase naming convention and be descriptive of the resource it manages.",
+          "pattern": "^[A-Z][a-zA-Z0-9_]*$",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation of what this class represents, its purpose, and how it manages the underlying resource. Include any important lifecycle or usage notes."
+        },
+        "handleType": {
+          "type": "string",
+          "description": "The data type used for the underlying handle that this class wraps. Typically ptr64 or ptr32, but may support other types depending on the resource.",
+          "enum": ["bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double"]
+        },
+        "invalidValue": {
+          "type": "string",
+          "description": "The value that represents an invalid or null handle. Used to check if a handle is valid or to initialize handles before construction.",
+          "examples": ["0", "-1"]
+        },
+        "constructors": {
+          "type": "array",
+          "description": "List of method names that can be used to construct instances of this class. Each constructor should return a handle of the specified handleType. Multiple constructors allow different initialization patterns.",
+          "items": {
+            "type": "string",
+            "description": "The name of a method that serves as a constructor for this class. Must reference an existing method in the 'methods' array.",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "destructor": {
+          "type": "string",
+          "description": "The method name used to destroy instances of this class and release resources. Called automatically when the object goes out of scope in RAII-supporting languages. Must reference an existing method in the 'methods' array.",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "minLength": 1
+        },
+        "bindings": {
+          "type": "array",
+          "description": "Instance bindings available on this class. Each binding references an existing function from the plugin's methods array and specifies whether the handle should be automatically bound as the first parameter.",
+          "items": {
+            "type": "object",
+            "description": "A method binding that wraps an existing plugin method for use with this class.",
+            "required": [
+              "name",
+              "method"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of this method as it will appear on class instances. Should follow camelCase or PascalCase naming convention appropriate for the target language.",
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                "minLength": 1
+              },
+              "method": {
+                "type": "string",
+                "description": "The name of the plugin method to bind to this class method. Must reference an existing method in the plugin's 'methods' array. The referenced method's signature will be used, with optional self-binding.",
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                "minLength": 1
+              },
+              "bindSelf": {
+                "type": "boolean",
+                "description": "If true, the class instance handle is automatically bound as the first parameter when calling this method, and the first parameter is dropped from the method signature. If false, the method is called as-is without automatic handle binding (useful for static methods)."
+              },
+              "paramAliases": {
+                "type": "array",
+                "description": "Optional array of aliases for the method's parameters. Each alias provides an alternative name for the corresponding parameter at that position. The array length must match the number of parameters in the referenced method (after bindSelf is applied). Use this to provide more meaningful or language-appropriate parameter names.",
+                "items": {
+                  "type": "object",
+                  "description": "An alias for a parameter with optional ownership semantics.",
+                  "required": ["name"],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "The aliased parameter name.",
+                      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                      "minLength": 1
+                    },
+                    "owner": {
+                      "type": "boolean",
+                      "description": "Optional boolean indicating ownership semantics for this parameter. When true, indicates that this parameter takes ownership of the resource (e.g., for move semantics or transfer of ownership)."
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "retAlias": {
+                "type": "object",
+                "description": "Optional alias for the return value. Provides an alternative name and ownership semantics for the value returned by this method. Useful for providing more meaningful or language-appropriate return value names in generated bindings.",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The aliased return value name.",
+                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                    "minLength": 1
+                  },
+                  "owner": {
+                    "type": "boolean",
+                    "description": "Optional boolean indicating ownership semantics for the return value. When true, indicates that the caller takes ownership of the returned resource."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
     }
-  }
+  },
+  "additionalProperties": false
 }

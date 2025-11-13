@@ -92,7 +92,8 @@
             "type": "boolean",
             "description": "Indicates whether the module reference is optional."
           }
-        }
+        },
+        "additionalProperties": false
       }
     },
     "conflicts": {
@@ -126,7 +127,8 @@
             "description": "The reason why this module conflicts with the specified module.",
             "minLength": 1
           }
-        }
+        },
+        "additionalProperties": false
       }
     },
     "language": {
@@ -156,5 +158,6 @@
         "minLength": 1
       }
     }
-  }
+  },
+  "additionalProperties": false
 }
