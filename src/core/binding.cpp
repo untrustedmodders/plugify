@@ -25,7 +25,7 @@ Binding& Binding::operator=(const Binding& other) {
 Binding& Binding::operator=(Binding&& other) noexcept = default;
 
 // Static empty defaults for returning const references to empty containers
-static const std::inplace_vector<Alias, 0> emptyAliases;
+static const std::inplace_vector<Alias, Signature::kMaxFuncArgs> emptyAliases;
 static const Alias emptyAlias;
 
 const std::string& Binding::GetName() const noexcept {
@@ -41,7 +41,7 @@ bool Binding::IsBindSelf() const noexcept {
 }
 
 const std::inplace_vector<Alias, Signature::kMaxFuncArgs>& Binding::GetParamAliases() const noexcept {
-	return _impl->paramAliases ? *_impl->paramAliases : reinterpret_cast<const std::inplace_vector<Alias, Signature::kMaxFuncArgs>&>(emptyAliases);
+	return _impl->paramAliases ? *_impl->paramAliases : emptyAliases;
 }
 
 const Alias& Binding::GetRetAlias() const noexcept {
