@@ -1,7 +1,7 @@
 <a name="readme-top"></a>
 
 [![Documentation](https://img.shields.io/badge/docs-doxygen-blue)](https://untrustedmodders.github.io/plugify/)
-[![Discord channel](https://img.shields.io/discord/1215604597972795403?logo=discord)](https://discord.com/invite/rX9TMmpang)
+[![Discord channel](https://img.shields.io/discord/1215604597972795403?logo=discord)](https://discord.gg/rX9TMmpang)
 
 <h1 align="center">
   <a href="https://github.com/untrustedmodders/plugify">
