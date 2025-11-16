@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	
+	<Type Name="plg::basic_string&lt;*&gt;">
+		<Intrinsic Name="minCap" Expression="((sizeof(rep_.l) - 1) / sizeof($T1) > 2 ? (sizeof(rep_.l) - 1) / sizeof($T1) : 2) + 1" />
+		<DisplayString Condition="rep_.l.is_long_">
+			{{ data={rep_.l.data_} }}
+		</DisplayString>
+		<DisplayString Condition="!rep_.l.is_long_">
+			{{ data={rep_.s.data_} }}
+		</DisplayString>
+		<Expand>
+			<!-- Long string -->
+			<Item Name="[size]" Condition="rep_.l.is_long_">rep_.l.size_</Item>
+			<Item Name="[capacity]" Condition="rep_.l.is_long_">rep_.l.cap_</Item>
+			<ArrayItems Condition="rep_.l.is_long_">
+				<Size>rep_.l.size_</Size>
+				<ValuePointer>rep_.l.data_</ValuePointer>
+			</ArrayItems>
+
+			<!-- Short string -->
+			<Item Name="[size]" Condition="!rep_.l.is_long_">minCap() - rep_.s.spare_size_</Item>
+			<ArrayItems Condition="!rep_.l.is_long_">
+				<Size>minCap() - rep_.s.spare_size_</Size>
+				<ValuePointer>rep_.s.data_</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+	
+	<Type Name="plg::vector&lt;*&gt;">
+		<Intrinsic Name="size" Expression="(size_t)(cap_ - begin_)" />
+		<Intrinsic Name="capacity" Expression="(size_t)(end_ - begin_)" />
+		<DisplayString>{{ size={size()} }}</DisplayString>
+		<Expand>
+			<Item Name="[capacity]" ExcludeView="simple">capacity()</Item>
+			<Item Name="[allocator]" ExcludeView="simple">alloc_</Item>
+			<ArrayItems>
+				<Size>size()</Size>
+				<ValuePointer>begin_</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+
+	<Type Name="plg::variant&lt;*&gt;">
+		<Intrinsic Name="index" Expression="(int)current_"/>
+		<DisplayString Condition="index() &lt; 0">[valueless_by_exception]</DisplayString>
+		<DisplayString Condition="index() ==  0" Optional="true">{{ index=0, value={storage_.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  1" Optional="true">{{ index=1, value={storage_.a.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  2" Optional="true">{{ index=2, value={storage_.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  3" Optional="true">{{ index=3, value={storage_.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  4" Optional="true">{{ index=4, value={storage_.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  5" Optional="true">{{ index=5, value={storage_.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  6" Optional="true">{{ index=6, value={storage_.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  7" Optional="true">{{ index=7, value={storage_.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  8" Optional="true">{{ index=8, value={storage_.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() ==  9" Optional="true">{{ index=9, value={storage_.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 10" Optional="true">{{ index=10, value={storage_.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 11" Optional="true">{{ index=11, value={storage_.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 12" Optional="true">{{ index=12, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 13" Optional="true">{{ index=13, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 14" Optional="true">{{ index=14, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 15" Optional="true">{{ index=15, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 16" Optional="true">{{ index=16, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 17" Optional="true">{{ index=17, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 18" Optional="true">{{ index=18, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 19" Optional="true">{{ index=19, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 20" Optional="true">{{ index=20, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 21" Optional="true">{{ index=21, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 22" Optional="true">{{ index=22, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 23" Optional="true">{{ index=23, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 24" Optional="true">{{ index=24, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 25" Optional="true">{{ index=25, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 26" Optional="true">{{ index=26, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 27" Optional="true">{{ index=27, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 28" Optional="true">{{ index=28, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 29" Optional="true">{{ index=29, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 30" Optional="true">{{ index=30, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 31" Optional="true">{{ index=31, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 32" Optional="true">{{ index=32, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 33" Optional="true">{{ index=33, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 34" Optional="true">{{ index=34, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 35" Optional="true">{{ index=35, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 36" Optional="true">{{ index=36, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 37" Optional="true">{{ index=37, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 38" Optional="true">{{ index=38, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 39" Optional="true">{{ index=39, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 40" Optional="true">{{ index=40, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 41" Optional="true">{{ index=41, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 42" Optional="true">{{ index=42, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 43" Optional="true">{{ index=43, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 44" Optional="true">{{ index=44, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 45" Optional="true">{{ index=45, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 46" Optional="true">{{ index=46, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 47" Optional="true">{{ index=47, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 48" Optional="true">{{ index=48, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 49" Optional="true">{{ index=49, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 50" Optional="true">{{ index=50, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 51" Optional="true">{{ index=51, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 52" Optional="true">{{ index=52, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 53" Optional="true">{{ index=53, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 54" Optional="true">{{ index=54, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 55" Optional="true">{{ index=55, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 56" Optional="true">{{ index=56, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 57" Optional="true">{{ index=57, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 58" Optional="true">{{ index=58, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 59" Optional="true">{{ index=59, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 60" Optional="true">{{ index=60, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 61" Optional="true">{{ index=61, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 62" Optional="true">{{ index=62, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+		<DisplayString Condition="index() == 63" Optional="true">{{ index=63, value={storage_.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b} }}</DisplayString>
+
+		<Expand>
+
+		</Expand>
+	</Type>
+
+	<Type Name="plg::monostate">
+		<DisplayString>monostate</DisplayString>
+	</Type>
+	
+	<Type Name="plg::unexpected&lt;*&gt;">
+		<Intrinsic Name="unex" Expression="val"/>
+		<DisplayString>{unex()}</DisplayString>
+		<Expand>
+			<Item Name="unex">unex()</Item>
+		</Expand>
+	</Type>
+
+	<Type Name="plg::bad_expected_access&lt;*&gt;">
+		<Intrinsic Name="unex" Expression="val"/>
+		<DisplayString>{unex()}</DisplayString>
+		<Expand>
+			<Item Name="unex">unex()</Item>
+		</Expand>
+	</Type>
+
+	<Type Name="plg::expected&lt;*,*&gt;">
+		<Intrinsic Name="has_value" Expression="has_val"/>
+		<Intrinsic Name="value" Expression="val"/>
+		<Intrinsic Name="unex" Expression="unex"/>
+		<DisplayString Condition="has_value()">{value()}</DisplayString>
+		<DisplayString Condition="!has_value()">{unex()}</DisplayString>
+		<Expand>
+			<Item Condition="has_value()" Name="value">value()</Item>
+			<Item Condition="!has_value()" Name="unex">unex()</Item>
+		</Expand>
+	</Type>
+
+	<Type Name="plg::expected&lt;void,*&gt;">
+		<Intrinsic Name="has_value" Expression="has_val"/>
+		<Intrinsic Name="unex" Expression="unex"/>
+		<DisplayString Condition="has_value()">void</DisplayString>
+		<DisplayString Condition="!has_value()">{unex()}</DisplayString>
+		<Expand>
+			<Item Condition="!has_value()" Name="unex">unex()</Item>
+		</Expand>
+	</Type>
+
+	<Type Name="plg::allocator&lt;*&gt;">
+		<DisplayString>allocator</DisplayString>
+		<Expand/>
+	</Type>
+</AutoVisualizer>
