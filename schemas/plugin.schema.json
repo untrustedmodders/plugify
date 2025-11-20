@@ -334,8 +334,8 @@
       "description": "An object describing a class wrapper for handle-based resources.",
       "required": [
         "name",
-        "type",
-        "invalid",
+        "handleType",
+        "invalidValue",
         "constructors",
         "destructor",
         "bindings"
