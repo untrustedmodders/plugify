@@ -110,7 +110,7 @@ namespace plugify {
 			}
 
 			path.resize(size);
-			return std::filesystem::path(path);
+			return std::filesystem::path(std::move(path));
 		}
 
 		bool SupportsRuntimePathModification() const override {
