@@ -1608,6 +1608,34 @@ namespace plg {
 		return std::nullopt;
 	}
 
+#if PLUGIFY_PLATFORM_APPLE
+	template<>
+	inline std::optional<double> cast_to(std::string_view str) {
+		std::string p(str);
+		size_t pos = 0;
+		try {
+			double v = std::stod(p, &pos);
+			if (pos != p.size()) return std::nullopt;
+			return v;
+		} catch (...) {
+			return std::nullopt;
+		}
+	}
+
+	template<>
+	inline std::optional<float> cast_to(std::string_view str) {
+		std::string p(str);
+		size_t pos = 0;
+		try {
+			float v = std::stof(p, &pos);
+			if (pos != p.size()) return std::nullopt;
+			return v;
+		} catch (...) {
+			return std::nullopt;
+		}
+	}
+#endif
+
 	template<typename T>
 	constexpr vector<T> parse(std::string_view str, std::string_view delims = " ") {
 		vector<T> vec;
