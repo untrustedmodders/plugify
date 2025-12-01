@@ -10,7 +10,7 @@ namespace plugify {
 		Transform,	 // Parallel processing, no order changes
 		Barrier,	 // Can reorder/filter the container
 		Sequential,	 // Processes in container order
-					 // Batch        // Parallel processing in controlled batches
+		// Batch        // Parallel processing in controlled batches
 	};
 
 	// Execution context
