@@ -186,7 +186,7 @@
         },
         "group": {
           "type": "string",
-          "description":"Optional categorization for documentation generation. Groups related methods together (e.g., 'File Operations', 'Network', 'Configuration'). Used to organize API documentation."
+          "description": "Optional categorization for documentation generation. Groups related methods together (e.g., 'File Operations', 'Network', 'Configuration'). Used to organize API documentation."
         },
         "description": {
           "type": "string",
@@ -336,8 +336,6 @@
         "name",
         "handleType",
         "invalidValue",
-        "constructors",
-        "destructor",
         "bindings"
       ],
       "properties": {
@@ -346,6 +344,10 @@
           "description": "The class name. Should follow PascalCase naming convention and be descriptive of the resource it manages.",
           "pattern": "^[A-Z][a-zA-Z0-9_]*$",
           "minLength": 1
+        },
+        "group": {
+          "type": "string",
+          "description": "Optional categorization for documentation generation. Groups related methods together (e.g., 'File Operations', 'Network', 'Configuration'). Used to organize API documentation."
         },
         "description": {
           "type": "string",
