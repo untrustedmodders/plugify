@@ -43,7 +43,7 @@ const std::inplace_vector<std::optional<Alias>, Signature::kMaxFuncArgs>& Bindin
 	return _impl->paramAliases ? *_impl->paramAliases : emptyAliases;
 }
 
-std::optional<Alias> Binding::GetRetAlias() const noexcept {
+const std::optional<Alias>& Binding::GetRetAlias() const noexcept {
 	return _impl->retAlias;
 }
 
@@ -63,7 +63,7 @@ void Binding::SetParamAliases(std::inplace_vector<std::optional<Alias>, Signatur
 	_impl->paramAliases = std::move(paramAliases);
 }
 
-void Binding::SetRetAlias(Alias retAlias) {
+void Binding::SetRetAlias(std::optional<Alias> retAlias) {
 	_impl->retAlias = std::move(retAlias);
 }
 
