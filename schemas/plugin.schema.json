@@ -411,7 +411,7 @@
                 "type": "array",
                 "description": "Optional array of aliases for the method's parameters. Each alias provides an alternative name for the corresponding parameter at that position. The array length must match the number of parameters in the referenced method (after bindSelf is applied). Use this to provide more meaningful or language-appropriate parameter names.",
                 "items": {
-                  "type": "object",
+                  "type": ["object", "null"],
                   "description": "An alias for a parameter with optional ownership semantics.",
                   "required": ["name"],
                   "properties": {
@@ -431,7 +431,7 @@
                 "maxItems": 32
               },
               "retAlias": {
-                "type": "object",
+                "type": ["object", "null"],
                 "description": "Optional alias for the return value. Provides an alternative name and ownership semantics for the value returned by this method. Useful for providing more meaningful or language-appropriate return value names in generated bindings.",
                 "required": ["name"],
                 "properties": {

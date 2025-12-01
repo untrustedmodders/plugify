@@ -24,14 +24,14 @@ namespace plugify {
 		[[nodiscard]] const std::string& GetName() const noexcept;
 		[[nodiscard]] const std::string& GetMethod() const noexcept;
 		[[nodiscard]] bool IsBindSelf() const noexcept;
-		[[nodiscard]] const std::inplace_vector<Alias, Signature::kMaxFuncArgs>& GetParamAliases() const noexcept;
-		[[nodiscard]] const Alias& GetRetAlias() const noexcept;
+		[[nodiscard]] const std::inplace_vector<std::optional<Alias>, Signature::kMaxFuncArgs>& GetParamAliases() const noexcept;
+		[[nodiscard]] std::optional<Alias> GetRetAlias() const noexcept;
 
 		// Setters (pass by value and move)
 		void SetName(std::string name);
 		void SetMethod(std::string method);
 		void SetBindSelf(bool bindSelf);
-		void SetParamAliases(std::inplace_vector<Alias, Signature::kMaxFuncArgs> paramAliases);
+		void SetParamAliases(std::inplace_vector<std::optional<Alias>, Signature::kMaxFuncArgs> paramAliases);
 		void SetRetAlias(Alias retAlias);
 
 		[[nodiscard]] bool operator==(const Binding& other) const noexcept;

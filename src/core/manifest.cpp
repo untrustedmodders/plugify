@@ -282,12 +282,14 @@ namespace {
 		// Validate parameter aliases if present
 		if (binding.paramAliases) {
 			for (size_t i = 0; i < binding.paramAliases->size(); ++i) {
-				if (auto result = ValidateAlias(
-						*(*binding.paramAliases)[i]._impl,
-						std::format("{}: Binding '{}' paramAlias[{}]", context, binding.name, i)
-					);
-					!result) {
-					return result;
+				if (auto alias = (*binding.paramAliases)[i]) {
+					if (auto result = ValidateAlias(
+							*alias->_impl,
+							std::format("{}: Binding '{}' paramAlias[{}]", context, binding.name, i)
+						);
+						!result) {
+						return result;
+					}
 				}
 			}
 		}

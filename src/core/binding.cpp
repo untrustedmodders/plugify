@@ -25,8 +25,7 @@ Binding& Binding::operator=(const Binding& other) {
 Binding& Binding::operator=(Binding&& other) noexcept = default;
 
 // Static empty defaults for returning const references to empty containers
-static const std::inplace_vector<Alias, Signature::kMaxFuncArgs> emptyAliases;
-static const Alias emptyAlias;
+static const std::inplace_vector<std::optional<Alias>, Signature::kMaxFuncArgs> emptyAliases;
 
 const std::string& Binding::GetName() const noexcept {
 	return _impl->name;
@@ -40,12 +39,12 @@ bool Binding::IsBindSelf() const noexcept {
 	return _impl->bindSelf.value_or(false);
 }
 
-const std::inplace_vector<Alias, Signature::kMaxFuncArgs>& Binding::GetParamAliases() const noexcept {
+const std::inplace_vector<std::optional<Alias>, Signature::kMaxFuncArgs>& Binding::GetParamAliases() const noexcept {
 	return _impl->paramAliases ? *_impl->paramAliases : emptyAliases;
 }
 
-const Alias& Binding::GetRetAlias() const noexcept {
-	return _impl->retAlias ? *_impl->retAlias : emptyAlias;
+std::optional<Alias> Binding::GetRetAlias() const noexcept {
+	return _impl->retAlias;
 }
 
 void Binding::SetName(std::string name) {
@@ -60,7 +59,7 @@ void Binding::SetBindSelf(bool bindSelf) {
 	_impl->bindSelf = bindSelf;
 }
 
-void Binding::SetParamAliases(std::inplace_vector<Alias, Signature::kMaxFuncArgs> paramAliases) {
+void Binding::SetParamAliases(std::inplace_vector<std::optional<Alias>, Signature::kMaxFuncArgs> paramAliases) {
 	_impl->paramAliases = std::move(paramAliases);
 }
 
