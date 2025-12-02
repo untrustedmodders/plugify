@@ -334,9 +334,9 @@ namespace {
 
 		// Validate constructors if present
 		if (classObj.constructors) {
-			if (classObj.constructors->empty()) {
+			/*if (classObj.constructors->empty()) {
 				return MakeError("Class '{}': constructors list cannot be empty if specified", classObj.name);
-			}
+			}*/
 
 			for (size_t i = 0; i < classObj.constructors->size(); ++i) {
 				const auto& constructor = (*classObj.constructors)[i];
