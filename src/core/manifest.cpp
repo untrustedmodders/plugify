@@ -262,7 +262,7 @@ namespace {
 	}
 
 	// Validate Binding
-	Result<void> ValidateBinding(const Binding::Impl& binding, const std::string& context) {
+	Result<void> ValidateBinding(const Binding::Impl& binding, const std::string& context, const std::optional<ValueType>& handleType = std::nullopt) {
 		if (binding.name.empty()) {
 			return MakeError("{}: Binding name cannot be empty", context);
 		}
@@ -277,6 +277,12 @@ namespace {
 
 		if (!IsValidName2(binding.method)) {
 			return MakeError("{}: Binding '{}' has invalid method name '{}'", context, binding.name, binding.method);
+		}
+
+		// Check if handleless classes have instance methods
+		bool isHandleless = handleType.value_or(ValueType::Void) == ValueType::Void;
+		if (isHandleless && binding.bindSelf.value_or(false)) {
+			return MakeError("{}: Binding '{}': handleless classes (handleType is void/empty) cannot have instance methods (bindSelf=true)", context, binding.name);
 		}
 
 		// Validate parameter aliases if present
@@ -316,6 +322,14 @@ namespace {
 
 		if (!IsValidName(classObj.name)) {
 			return MakeError("Invalid class name: {}", classObj.name);
+		}
+
+		// Check if this is a handleless class
+		bool isHandleless = classObj.handleType.value_or(ValueType::Void) == ValueType::Void;
+
+		// Handleless classes cannot have constructors or destructors
+		if (isHandleless && (classObj.constructors || classObj.destructor)) {
+			return MakeError("Class '{}': handleless classes cannot have constructors or destructors", classObj.name);
 		}
 
 		// Validate constructors if present
@@ -362,7 +376,8 @@ namespace {
 
 			if (auto result = ValidateBinding(
 					*binding._impl,
-					std::format("Class '{}'", classObj.name)
+					std::format("Class '{}'", classObj.name),
+					classObj.handleType
 				);
 				!result) {
 				return result;

@@ -356,7 +356,7 @@
         "handleType": {
           "type": "string",
           "description": "The data type used for the underlying handle that this class wraps. Typically ptr64 or ptr32, but may support other types depending on the resource.",
-          "enum": ["bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double"]
+          "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double"]
         },
         "invalidValue": {
           "type": "string",
@@ -375,7 +375,7 @@
           "minItems": 1
         },
         "destructor": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "The method name used to destroy instances of this class and release resources. Called automatically when the object goes out of scope in RAII-supporting languages. Must reference an existing method in the 'methods' array.",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
           "minLength": 1

@@ -33,7 +33,7 @@ const std::string& Class::GetName() const noexcept {
 }
 
 ValueType Class::GetHandleType() const noexcept {
-	return _impl->handleType.value_or(ValueType::Pointer);
+	return _impl->handleType.value_or(ValueType::Void);
 }
 
 const std::string& Class::GetInvalidValue() const noexcept {
