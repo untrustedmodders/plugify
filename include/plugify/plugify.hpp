@@ -1,7 +1,6 @@
 #pragma once
 
 #include "plugify/config.hpp"
-#include "plugify/config_provider.hpp"
 #include "plugify/dependency_resolver.hpp"
 #include "plugify/event_bus.hpp"
 #include "plugify/file_system.hpp"

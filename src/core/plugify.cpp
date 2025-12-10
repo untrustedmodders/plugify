@@ -2,7 +2,6 @@
 #include "plugify/plugify.hpp"
 
 #include "core/console_logger.hpp"
-#include "core/glaze_config_provider.hpp"
 #include "core/glaze_manifest_parser.hpp"
 #include "core/glaze_metadata.hpp"
 #include "core/libsolv_dependency_resolver.hpp"
