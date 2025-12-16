@@ -359,6 +359,8 @@ Here is a list of all already implemented language modules:
 - [Python Language Module](https://github.com/untrustedmodders/plugify-module-python3)
 - [JavaScript Language Module](https://github.com/untrustedmodders/plugify-module-v8)
 - [Lua Language Module](https://github.com/untrustedmodders/plugify-module-lua)
+- [Rust Language Module](https://github.com/untrustedmodders/plugify-module-rust)
+- [D Language Module](https://github.com/untrustedmodders/plugify-module-dlang)
 - [C# (Mono) Language Module](https://github.com/untrustedmodders/plugify-module-mono)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
