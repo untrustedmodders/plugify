@@ -1648,5 +1648,23 @@ namespace plg {
 		}
 		return vec;
 	}
+
+	template<typename T>
+	struct view {
+		alignas(plg::vector<T>) unsigned char storage[sizeof(vector<T>)]{};
+
+		const vector<T>& get() {
+			return *reinterpret_cast<const vector<T>*>(storage);
+		}
+
+		view(const T* ptr, size_t size) {
+			const T* end = ptr + size;
+			std::memcpy(storage, &ptr, sizeof(T*));
+			std::memcpy(storage + sizeof(T*), &end, sizeof(T*));
+			std::memcpy(storage + 2 * sizeof(T*), &end, sizeof(T*));
+		}
+
+		~view() = default;
+	};
 }  // namespace plugify
 #endif // PLUGIFY_VECTOR_NO_STD_UTIL
