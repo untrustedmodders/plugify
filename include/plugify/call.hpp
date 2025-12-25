@@ -75,7 +75,12 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(const Signature& sig, MemAddr target, WaitType waitType, bool hidden);
+		MemAddr GetJitFunc(
+			const Signature& sig,
+			MemAddr target,
+			WaitType waitType,
+			bool hidden
+		);
 
 		/**
 		 * @brief Get a dynamically created function based on the method reference.
