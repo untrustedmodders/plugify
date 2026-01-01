@@ -192,6 +192,10 @@
           "type": "string",
           "description": "Detailed explanation of what this method does, including its purpose, behavior, side effects, and any important notes for callers."
         },
+        "deprecated": {
+          "type": "string",
+          "description": "Marks the symbol as deprecated. Contains a human-readable message explaining why it is deprecated and what should be used instead. Absence means not deprecated."
+        },
         "funcName": {
           "type": "string",
           "description": "The actual function name as implemented in the plugin's source code. This maps the public API name to the internal implementation. Must match exactly with the function name in your code.",
@@ -352,6 +356,10 @@
         "description": {
           "type": "string",
           "description": "Detailed explanation of what this class represents, its purpose, and how it manages the underlying resource. Include any important lifecycle or usage notes."
+        },
+        "deprecated": {
+          "type": "string",
+          "description": "Marks the symbol as deprecated. Contains a human-readable message explaining why it is deprecated and what should be used instead. Absence means not deprecated."
         },
         "handleType": {
           "type": "string",
