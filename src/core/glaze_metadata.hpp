@@ -21,6 +21,7 @@ struct glz::meta<plugify::Method> {
 	static constexpr auto value = object(
 		"group", skip{},
 		"description", skip{},
+		"deprecated", skip{},
 		"paramTypes", [](auto&& self) -> auto& { return self._impl->paramTypes; },
 		"retType", [](auto&& self) -> auto& { return self._impl->retType; },
 		"varIndex", [](auto&& self) -> auto& { return self._impl->varIndex; },
@@ -134,6 +135,7 @@ struct glz::meta<plugify::Class> {
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
 		"group", skip{},
 		"description", skip{},
+		"deprecated", skip{},
 		"handleType", [](auto&& self) -> auto& { return self._impl->handleType; },
 		"invalidValue", [](auto&& self) -> auto& { return self._impl->invalidValue; },
 		"nullPolicy", skip{},
