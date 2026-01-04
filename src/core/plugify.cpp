@@ -376,7 +376,7 @@ private:
 	}
 
 	void StartBackgroundUpdateThread() {
-		stopRequested = false;
+		stopRequested.store(false, std::memory_order_relaxed);
 
 		updateThread = std::thread([this]() {
 			// Set thread priority if specified
