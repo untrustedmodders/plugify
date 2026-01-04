@@ -86,6 +86,7 @@ struct glz::meta<plugify::Property> {
 		"ref", [](auto&& self) -> auto& { return self._impl->ref; },
 		"prototype", [](auto&& self) -> auto& { return self._impl->prototype; },
 		"enum", [](auto&& self) -> auto& { return self._impl->enumerate; },
+		"alias", skip{},
 		"default", skip{}
 	);
 };
