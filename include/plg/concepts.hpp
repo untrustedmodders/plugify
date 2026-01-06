@@ -95,12 +95,12 @@ namespace plg {
 	// A type is trivially relocatable if a move construct + destroy of the original object is equivalent to
 	// `memcpy(dst, src, sizeof(T))`.
 	//
-	// Note that we don't use the __cpp_lib_trivially_relocatable Clang builtin right now because it does not
+	// Note that we don't use the __is_trivially_relocatable Clang builtin right now because it does not
 	// implement the semantics of any current or future trivial relocation proposal and it can lead to
 	// incorrect optimizations on some platforms (Windows) and supported compilers (AppleClang).
-#if __has_builtin(__cpp_lib_trivially_relocatable)
+#if defined(__cpp_lib_trivially_relocatable) // P1144
 	template <class T, class = void>
-	struct is_trivially_relocatable : std::integral_constant<bool, std::is_trivially_relocatable(T)> {};
+	struct is_trivially_relocatable : std::is_trivially_relocatable<T> {};
 #else
 	template <class T, class = void>
 	struct is_trivially_relocatable : std::is_trivially_copyable<T> {};
