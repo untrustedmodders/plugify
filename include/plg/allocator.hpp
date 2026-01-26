@@ -118,10 +118,10 @@ namespace plg {
 	};
 
 	template<typename T, typename U>
-	constexpr bool operator==(const allocator<T>&, const allocator<U>) { return true; }
+	constexpr bool operator==(const allocator<T>&, const allocator<U>&) { return true; }
 
 	template<typename T, typename U>
-	constexpr bool operator!=(const allocator<T>&, const allocator<U>) { return false; }
+	constexpr bool operator!=(const allocator<T>&, const allocator<U>&) { return false; }
 
 	template <typename Alloc>
 	void swap_allocator(Alloc& a1, Alloc& a2, std::true_type) {

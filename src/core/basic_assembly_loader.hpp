@@ -89,7 +89,7 @@ namespace plugify {
 			// Update cache
 			{
 				std::unique_lock lock(_cacheMutex);
-				_cache.emplace(std::move(*resolvedPath), assembly);
+				_cache.emplace(std::move(*resolvedPath), assembly); //-V837
 			}
 
 			return assembly;

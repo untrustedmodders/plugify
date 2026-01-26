@@ -54,12 +54,12 @@ struct Extension::Impl {
 	// Plugin-specific data (only populated for plugins)
 	struct PluginData {
 		std::vector<MethodData> methodData;
-	} pluginData;
+	} pluginData{};
 
 	// Module-specific data (only populated for modules)
 	struct ModuleData {
 		std::shared_ptr<IAssembly> assembly;
-	} moduleData;
+	} moduleData{};
 
 	void Init() {
 		fs::path path = std::move(location);

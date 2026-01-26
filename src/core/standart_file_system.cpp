@@ -238,8 +238,8 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 		FileInfo& info = *info_result;
 
 		// Apply filter pattern if specified
-		if (options.filter_pattern.has_value()) {
-			if (!std::regex_match(plg::as_string(info.path.filename()), options.filter_pattern.value())) {
+		if (options.filter_pattern) {
+			if (!std::regex_match(plg::as_string(info.path.filename()), *options.filter_pattern)) {
 				return;
 			}
 		}

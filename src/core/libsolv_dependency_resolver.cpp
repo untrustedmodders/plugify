@@ -285,7 +285,7 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 		// Create issue for this problem
 		DependencyIssue issue;
 		issue.problem = std::format("Problem {}/{}", problemId, problemCount);
-		issue.isBlocking = true;  // All problems from solver are blocking
+		issue.isBlocking = true;  // All problems from solver are blocking //-V1048
 
 		// Determine affected extensions
 		if (source) {
@@ -314,7 +314,7 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 			if (it != resolution.issues.end()) {
 				it->second.push_back(std::move(issue));
 			} else {
-				resolution.issues.emplace(issue.affectedExtension, std::vector{ std::move(issue) });
+				resolution.issues.emplace(issue.affectedExtension, std::vector{ std::move(issue) }); //-V837
 			}
 		}
 	}
@@ -341,9 +341,9 @@ std::vector<std::string> LibsolvDependencyResolver::ExtractSolutions(Solver* sol
 
 		// Combine solution steps
 		if (!solutionSteps.empty()) {
-			fixes.push_back(std::format("Solution {}: {}", solutionId, plg::join(solutionSteps, ", ")));
+			fixes.emplace_back(std::format("Solution {}: {}", solutionId, plg::join(solutionSteps, ", ")));
 		} else {
-			fixes.push_back(std::format("Solution {}: Adjust installation requirements", solutionId));
+			fixes.emplace_back(std::format("Solution {}: Adjust installation requirements", solutionId));
 		}
 	}
 

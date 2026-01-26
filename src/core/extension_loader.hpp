@@ -322,7 +322,7 @@ namespace plugify {
 			}
 
 			// Cache for future use
-			_assemblyCache.emplace(std::move(*absPath), *assemblyResult);
+			_assemblyCache.emplace(std::move(*absPath), *assemblyResult); //-V837
 			return std::move(*assemblyResult);
 		}
 
@@ -354,7 +354,7 @@ namespace plugify {
 				return MakeError(
 					"Build type mismatch: plugify={}, module={}",
 					plugifyBuildType ? "debug" : "release",
-					moduleBuildType ? "debug" : "release"
+					moduleBuildType ? "debug" : "release" //-V547
 				);
 			}
 #endif
@@ -393,7 +393,7 @@ namespace plugify {
 				const auto& exportedMethod = exportedMethods[i];
 
 				if (&method != &exportedMethod || !addr) {
-					errors.push_back(std::format("{:>3}. {}", i + 1, exportedMethod.GetName()));
+					errors.emplace_back(std::format("{:>3}. {}", i + 1, exportedMethod.GetName()));
 					if (constexpr size_t kMaxDisplay = 100; errors.size() >= kMaxDisplay) {
 						errors.push_back(std::format("... and {} more", methods.size() - kMaxDisplay));
 						break;

@@ -113,7 +113,7 @@ namespace plugify {
 			template <typename StageType>
 			Builder& AddStage(std::unique_ptr<StageType> stage, bool required = true) {
 				static_assert(std::is_base_of_v<IStage<T>, StageType>);
-				_stages.push_back({ std::move(stage), required });
+				_stages.emplace_back(std::move(stage), required);
 				return *this;
 			}
 
@@ -150,7 +150,7 @@ namespace plugify {
 		Pipeline(Builder&& builder)
 			: _pool(builder._threadPoolSize) {
 			for (auto& [stage, required] : builder._stages) {
-				_stages.push_back({ std::move(stage), required });
+				_stages.emplace_back(std::move(stage), required);
 			}
 		}
 

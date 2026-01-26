@@ -195,12 +195,12 @@ namespace plugify {
 			std::vector<Extension>& filtered,
 			std::vector<Extension>& excluded
 		) {
-			items.insert(
+			items.insert( //-V823
 				items.end(),
 				std::make_move_iterator(filtered.begin()),
 				std::make_move_iterator(filtered.end())
 			);
-			items.insert(
+			items.insert( //-V823
 				items.end(),
 				std::make_move_iterator(excluded.begin()),
 				std::make_move_iterator(excluded.end())
@@ -223,7 +223,7 @@ namespace plugify {
 			idToExtension.reserve(filtered.size());
 
 			for (auto&& ext : filtered) {
-				idToExtension.emplace(ext.GetId(), std::move(ext));
+				idToExtension.emplace(ext.GetId(), std::move(ext)); //-V1098 //-V837
 			}
 
 			// Add resolved extensions in load order
@@ -256,7 +256,7 @@ namespace plugify {
 			}
 
 			// Add excluded extensions at the very end
-			result.insert(
+			result.insert( //-V823
 				result.end(),
 				std::make_move_iterator(excluded.begin()),
 				std::make_move_iterator(excluded.end())

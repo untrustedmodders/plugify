@@ -310,7 +310,7 @@ public:
 
 			// Only recurse into subdirectories if no manifest was found
 			if (!foundManifest) {
-				directoriesToProcess.insert(
+				directoriesToProcess.insert( //-V823
 					directoriesToProcess.end(),
 					std::make_move_iterator(subdirs.begin()),
 					std::make_move_iterator(subdirs.end())

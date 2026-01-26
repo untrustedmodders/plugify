@@ -34,7 +34,7 @@ namespace plugify {
 			ConfigSource runtime = ConfigSource::Default;
 			ConfigSource security = ConfigSource::Default;
 			ConfigSource logging = ConfigSource::Default;
-		} _sources;
+		} _sources{};
 
 		// Paths configuration
 		struct Paths {
@@ -79,7 +79,7 @@ namespace plugify {
 				makeAbsolute(logsDir);
 				makeAbsolute(cacheDir);
 			}
-		} paths;
+		} paths{};
 
 		// Loading configuration
 		struct Loading {
@@ -109,7 +109,7 @@ namespace plugify {
 			bool HasCustomStartTimeout() const {
 				return startTimeout != std::chrono::milliseconds{ 250 };
 			}
-		} loading;
+		} loading{};
 
 		// Runtime configuration
 		struct Runtime {
@@ -135,7 +135,7 @@ namespace plugify {
 			bool HasThreadPriority() const {
 				return threadPriority.has_value();
 			}
-		} runtime;
+		} runtime{};
 
 		// Security configuration
 		struct Security {
@@ -154,7 +154,7 @@ namespace plugify {
 			bool HasExcluded() const {
 				return excludedDirs != DefaultExcludedDirs;
 			}
-		} security;
+		} security{};
 
 		// Logging configuration
 		struct Logging {
@@ -188,7 +188,7 @@ namespace plugify {
 			bool HasExportPath() const {
 				return !exportDigraphDot.empty();
 			}
-		} logging;
+		} logging{};
 
 		// Comprehensive merge implementation
 		void MergeFrom(const Config& other, ConfigSource source = ConfigSource::Override);

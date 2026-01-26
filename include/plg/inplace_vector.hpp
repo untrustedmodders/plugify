@@ -78,7 +78,7 @@ namespace plg {
 			constexpr const T *base_data() const { return data_; }
 			constexpr void set_size(size_t n) { size_ = n; }
 
-			constexpr explicit ipvbase() noexcept {}
+			constexpr explicit ipvbase() noexcept = default;
 			ipvbase(const ipvbase& rhs)
 				noexcept(std::is_nothrow_copy_constructible_v<T>)
 			{
@@ -186,7 +186,7 @@ namespace plg {
 				[[maybe_unused]] char dummy_;
 				T data_[N];
 			};
-			constexpr explicit ipvbase_trivial() {}
+			constexpr explicit ipvbase_trivial() = default;
 			constexpr T *base_data() { return data_; }
 			constexpr const T *base_data() const { return data_; }
 			constexpr void set_size(size_t n) { size_ = n; }

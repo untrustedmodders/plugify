@@ -935,7 +935,7 @@ namespace plg {
 			if (str.is_long() && a != str.alloc_) {	 // copy, not move
 				init(std::to_address(str.get_long_pointer()), str.get_long_size());
 			} else {
-				if (std::is_constant_evaluated()) {
+				if (std::is_constant_evaluated()) { //-V1080
 					rep_ = rep();
 				}
 				if (!str.is_long()) {

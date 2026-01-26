@@ -74,7 +74,7 @@ namespace plg {
 
 	template <typename E, std::size_t... I>
 	constexpr auto values(std::index_sequence<I...>) noexcept {
-		constexpr bool valid[sizeof...(I)] = { is_valid<E, value<E>(I)>()... };
+		constexpr bool valid[sizeof...(I)] = { is_valid<E, value<E>(I)>()... }; //-V1009
 		constexpr auto num_valid = count_values(valid);
 		static_assert(num_valid > 0, "no support for empty enums");
 

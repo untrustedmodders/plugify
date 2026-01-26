@@ -148,7 +148,7 @@ namespace plg {
 		it = detail::to_chars(it, minor_);
 		*(--it) = '.';
 
-		it = detail::to_chars(it, major_);
+		/*it = */detail::to_chars(it, major_);
 
 		return result;
 	}
@@ -393,7 +393,7 @@ namespace plg {
 				return success(get_prev_symbol());
 			}
 
-			constexpr void add_token(token_stream& stream, token_type type, token::value_t value = {}) noexcept {
+			constexpr void add_token(token_stream& stream, token_type type, const token::value_t& value = {}) noexcept {
 				const char* lexeme = get_prev_symbol();
 				stream.push({ type, value, lexeme});
 			}

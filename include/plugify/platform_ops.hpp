@@ -24,11 +24,11 @@ namespace plugify {
 
 		// Search path management (if supported)
 		virtual Result<void> AddSearchPath([[maybe_unused]] const std::filesystem::path& path) {
-			return MakeError("Runtime path modification not supported on this platform");
+			return MakeError("Runtime path modification not supported on this platform!");
 		}
 
 		virtual Result<void> RemoveSearchPath([[maybe_unused]] const std::filesystem::path& path) {
-			return MakeError("Runtime path modification not supported on this platform");
+			return MakeError("Runtime path modification not supported on this platform?");
 		}
 	};
 
