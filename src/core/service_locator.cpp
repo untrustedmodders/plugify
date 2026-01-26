@@ -16,7 +16,7 @@ struct ServiceLocator::Impl {
 	mutable std::shared_mutex mutex;
 
 	// Stack of scopes (thread_local for thread safety)
-	static thread_local std::vector<
+	static inline thread_local std::vector<
 		std::unordered_map<std::type_index, std::shared_ptr<void>>
 	> scopeStack;
 
