@@ -160,10 +160,10 @@ struct JitCallback::Impl {
 
 		// get pointer to stack structure and pass it to the user callback
 		x86::Gp argStruct = cc.new_gpz("argStruct");
-		auto arg_count = static_cast<size_t>(sig.arg_count());
+		auto argCount = static_cast<size_t>(sig.arg_count());
 		if (hidden) {
 			// if hidden param, then we need to offset it
-			if (--arg_count != 0) {
+			if (--argCount != 0) {
 				x86::Mem argsStackIdxNoRet(argsStack);
 				argsStackIdxNoRet.set_size(sizeof(uint64_t));
 				argsStackIdxNoRet.add_offset(sizeof(uint64_t));
@@ -174,8 +174,8 @@ struct JitCallback::Impl {
 		}
 
 		// fill reg to pass struct arg count to callback
-		x86::Gp arg_countParam = cc.new_gpz("arg_countParam");
-		cc.mov(arg_countParam, arg_count);
+		x86::Gp argCountParam = cc.new_gpz("argCountParam");
+		cc.mov(argCountParam, argCount);
 
 		// create buffer for ret val
 		x86::Mem retStack;
@@ -201,7 +201,7 @@ struct JitCallback::Impl {
 		invokeNode->set_arg(0, methodPtrParam);
 		invokeNode->set_arg(1, dataPtrParam);
 		invokeNode->set_arg(2, argStruct);
-		invokeNode->set_arg(3, arg_countParam);
+		invokeNode->set_arg(3, argCountParam);
 		invokeNode->set_arg(4, retStruct);
 
 		// mov from arguments stack structure into regs

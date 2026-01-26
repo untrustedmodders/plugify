@@ -135,8 +135,8 @@ struct JitCallback::Impl {
 		cc.load_address_of(argStruct, argsStack);
 
 		// fill reg to pass struct arg count to callback
-		a64::Gp arg_countParam = cc.new_gpz("arg_countParam");
-		cc.mov(arg_countParam, static_cast<size_t>(sig.arg_count()));
+		a64::Gp argCountParam = cc.new_gpz("argCountParam");
+		cc.mov(argCountParam, static_cast<size_t>(sig.arg_count()));
 
 		// create buffer for ret val
 		a64::Mem retStack;
@@ -164,7 +164,7 @@ struct JitCallback::Impl {
 		invokeNode->set_arg(0, methodPtrParam);
 		invokeNode->set_arg(1, dataPtrParam);
 		invokeNode->set_arg(2, argStruct);
-		invokeNode->set_arg(3, arg_countParam);
+		invokeNode->set_arg(3, argCountParam);
 		invokeNode->set_arg(4, retStruct);
 
 		// mov from arguments stack structure into regs
