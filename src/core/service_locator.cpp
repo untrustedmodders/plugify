@@ -15,8 +15,10 @@ struct ServiceLocator::Impl {
 	std::unordered_map<std::type_index, ServiceDescriptor> services;
 	mutable std::shared_mutex mutex;
 
-	// Scoped instances (for scoped lifetime)
-	mutable std::unordered_map<std::type_index, std::shared_ptr<void>> scopedInstances;
+	// Stack of scopes (thread_local for thread safety)
+	static thread_local std::vector<
+		std::unordered_map<std::type_index, std::shared_ptr<void>>
+	> scopeStack;
 
 	// Methods
 	void RegisterInstance(std::type_index type, std::shared_ptr<void> instance) {
@@ -63,9 +65,22 @@ struct ServiceLocator::Impl {
 			case ServiceLifetime::Singleton:
 				return descriptor.singleton;
 
+			case ServiceLifetime::Transient:
+			default:
+				return descriptor.factory();
+
 			case ServiceLifetime::Scoped: {
-				auto scopedIt = scopedInstances.find(type);
-				if (scopedIt != scopedInstances.end()) {
+				if (scopeStack.empty()) {
+					throw std::runtime_error(
+						std::format("Scoped service: {} resolved outside of a scope", type.name())
+					);
+				}
+
+				auto& currentScope = scopeStack.back();
+
+				// Check again in case another thread created it
+				auto scopedIt = currentScope.find(type);
+				if (scopedIt != currentScope.end()) {
 					return scopedIt->second;
 				}
 
@@ -73,21 +88,11 @@ struct ServiceLocator::Impl {
 				lock.unlock();
 				std::unique_lock writeLock(mutex);
 
-				// Check again in case another thread created it
-				scopedIt = scopedInstances.find(type);
-				if (scopedIt != scopedInstances.end()) {
-					return scopedIt->second;
-				}
-
 				// Create new scoped instance
 				auto instance = descriptor.factory();
-				scopedInstances[type] = instance;
+				currentScope[type] = instance;
 				return instance;
 			}
-
-			case ServiceLifetime::Transient:
-			default:
-				return descriptor.factory();
 		}
 	}
 
@@ -105,19 +110,20 @@ struct ServiceLocator::Impl {
 	}
 
 	void BeginScope() {
-		std::unique_lock lock(mutex);
-		scopedInstances.clear();
+		scopeStack.emplace_back();
 	}
 
 	void EndScope() {
-		std::unique_lock lock(mutex);
-		scopedInstances.clear();
+		if (scopeStack.empty()) {
+			throw std::runtime_error("EndScope called without matching BeginScope");
+		}
+		scopeStack.pop_back();
 	}
 
 	void Clear() {
 		std::unique_lock lock(mutex);
 		services.clear();
-		scopedInstances.clear();
+		scopeStack.clear();
 	}
 
 	size_t Count() const {
