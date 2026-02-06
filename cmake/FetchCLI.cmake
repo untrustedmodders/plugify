@@ -9,6 +9,7 @@ FetchContent_Declare(
         GIT_PROGRESS TRUE
         GIT_SHALLOW TRUE
         OVERRIDE_FIND_PACKAGE
+        EXCLUDE_FROM_ALL
 )
 
 FetchContent_MakeAvailable(cli)

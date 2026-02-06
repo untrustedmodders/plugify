@@ -8,8 +8,8 @@ FetchContent_Declare(
         GIT_TAG ${PLUGIFY_FMT_TAG}
         GIT_PROGRESS TRUE
         GIT_SHALLOW TRUE
-        GIT_PROGRESS TRUE
         OVERRIDE_FIND_PACKAGE
+        EXCLUDE_FROM_ALL
 )
 
 set(FMT_DOC OFF CACHE INTERNAL "Generate the doc target.")

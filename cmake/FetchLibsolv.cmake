@@ -11,6 +11,7 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
         PATCH_COMMAND git reset --hard && git apply --ignore-whitespace --whitespace=nowarn --reject ${CMAKE_CURRENT_SOURCE_DIR}/patches/libsolv.patch
+        EXCLUDE_FROM_ALL
 )
 
 FetchContent_MakeAvailable(libsolv)
