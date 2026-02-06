@@ -73,4 +73,4 @@ target_compile_definitions(plugify-git INTERFACE
         PLUGIFY_GIT_URL="${GIT_URL}"
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC plugify-git)
+target_link_libraries(${PROJECT_NAME} PRIVATE plugify-git)

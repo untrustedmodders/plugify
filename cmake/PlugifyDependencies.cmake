@@ -65,4 +65,8 @@ generate_export_header(${PROJECT_NAME}
         EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/${PROJECT_NAME}_export.h
         STATIC_DEFINE PLUGIFY_STATIC
 )
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_BINARY_DIR}/exports)
+target_include_directories(${PROJECT_NAME}
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/exports>
+            $<INSTALL_INTERFACE:include>
+)
