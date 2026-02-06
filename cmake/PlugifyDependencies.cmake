@@ -52,10 +52,6 @@ if(NOT COMPILER_SUPPORTS_FORMAT)
 endif()
 
 # ------------------------------------------------------------------------------
-# Git
-include(FetchGit)
-
-# ------------------------------------------------------------------------------
 # Exports
 include(GenerateExportHeader)
 generate_export_header(${PROJECT_NAME}
