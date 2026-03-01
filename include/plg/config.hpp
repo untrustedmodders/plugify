@@ -340,5 +340,5 @@ namespace plg {
 	!defined(PLUGIFY_PLATFORM_SWITCH)  && \
 	!defined(PLUGIFY_PLATFORM_BSD)     && \
 	!defined(PLUGIFY_PLATFORM_UNIX)
-#  error "Unsupported platform! Please extend macro.hpp"
+#  error "Unsupported platform! Please extend config.hpp"
 #endif
