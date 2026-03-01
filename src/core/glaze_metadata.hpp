@@ -290,8 +290,7 @@ namespace glz {
 			parse<JSON>::op<Opts>(str, ctx, it, end);
 			if (auto result = plg::parse(str, value); !result) {
 				ctx.error = error_code::includer_error;
-				ctx.includer_error = plg::enum_to_string(result.ec);
-				ctx.custom_error_message = "Failed to parse semver string";
+				ctx.custom_error_message = plg::enum_to_string(result.ec);
 			}
 		}
 	};
@@ -313,8 +312,7 @@ namespace glz {
 			parse<JSON>::op<Opts>(str, ctx, it, end);
 			if (auto result = plg::parse(str, value); !result) {
 				ctx.error = error_code::includer_error;
-				ctx.includer_error = plg::enum_to_string(result.ec);
-				ctx.custom_error_message = "Failed to parse semver string";
+				ctx.custom_error_message = plg::enum_to_string(result.ec);
 			}
 		}
 	};

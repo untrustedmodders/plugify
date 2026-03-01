@@ -37,7 +37,7 @@ set(PLUGIFY_CLI_REPO "https://github.com/CLIUtils/CLI11.git" CACHE STRING "")
 set(PLUGIFY_CLI_TAG "v2.5.0" CACHE STRING "")
 set(PLUGIFY_GLAZE_REPO "https://github.com/stephenberry/glaze.git" CACHE STRING "")
 if (PLUGIFY_DEFAULT_CXX_STANDARD GREATER 20)
-    set(PLUGIFY_GLAZE_TAG "v5.5.5" CACHE STRING "")
+    set(PLUGIFY_GLAZE_TAG "v7.1.0" CACHE STRING "")
 else()
     set(PLUGIFY_GLAZE_TAG "v2.9.5" CACHE STRING "") # Use older version for C++20 compatibility
 endif()

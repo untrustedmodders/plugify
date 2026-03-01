@@ -32,6 +32,12 @@ namespace plg {
 
 using namespace plugify;
 
+#if PLUGIFY_HAS_CXX23
+using Value = glz::generic;
+#else
+using Value = glz::json_t;
+#endif
+
 namespace {
 	constexpr std::string_view SEPARATOR_LINE = "--------------------------------------------------------------------------------";
 	constexpr std::string_view DOUBLE_LINE = "================================================================================";
@@ -337,8 +343,8 @@ namespace {
 	}
 
 	// Convert extension to JSON
-	glz::json_t ExtensionToJson(const Extension* ext) {
-		glz::json_t j;
+	Value ExtensionToJson(const Extension* ext) {
+		Value j;
 		j["id"] = UniqueId::Value{ ext->GetId() };
 		j["name"] = ext->GetName();
 		j["version"] = ext->GetVersionString();
@@ -362,15 +368,15 @@ namespace {
 
 		// Dependencies
 		if (!ext->GetDependencies().empty()) {
-			glz::json_t::array_t dependencies;
+			Value::array_t dependencies;
 			for (const auto& dep : ext->GetDependencies()) {
-				glz::json_t::object_t depJson;
+				Value::object_t depJson;
 				depJson["name"] = dep.GetName();
 				depJson["constraints"] = dep.GetConstraints().to_string();
 				depJson["optional"] = dep.IsOptional();
 				dependencies.emplace_back(std::move(depJson));
 			}
-			j["dependencies"] = glz::json_t::array_t{ std::move(dependencies) };
+			j["dependencies"] = Value::array_t{ std::move(dependencies) };
 		}
 
 		// Performance
@@ -381,20 +387,20 @@ namespace {
 
 		// Errors and warnings
 		if (ext->HasErrors()) {
-			glz::json_t::array_t errors;
+			Value::array_t errors;
 			errors.reserve(ext->GetErrors().size());
 			for (const auto& error : ext->GetErrors()) {
 				errors.emplace_back(error);
 			}
-			j["errors"] = glz::json_t::array_t{ std::move(errors) };
+			j["errors"] = Value::array_t{ std::move(errors) };
 		}
 		if (ext->HasWarnings()) {
-			glz::json_t::array_t warnings;
+			Value::array_t warnings;
 			warnings.reserve(ext->GetWarnings().size());
 			for (const auto& warning : ext->GetWarnings()) {
 				warnings.emplace_back(warning);
 			}
-			j["warnings"] = glz::json_t::array_t{ std::move(warnings) };
+			j["warnings"] = Value::array_t{ std::move(warnings) };
 		}
 
 		return j;
@@ -677,12 +683,12 @@ public:
 
 		// Output
 		if (jsonOutput) {
-			glz::json_t::array_t objects;
+			Value::array_t objects;
 			objects.reserve(filtered.size());
 			for (const auto& plugin : filtered) {
 				objects.emplace_back(ExtensionToJson(plugin));
 			}
-			plg::print(*glz::json_t{ std::move(objects) }.dump());
+			plg::print(*Value{ std::move(objects) }.dump());
 			return;
 		}
 
@@ -786,12 +792,12 @@ public:
 
 		// Output
 		if (jsonOutput) {
-			glz::json_t::array_t objects;
+			Value::array_t objects;
 			objects.reserve(filtered.size());
 			for (const auto& module : filtered) {
 				objects.emplace_back(ExtensionToJson(module));
 			}
-			plg::print(*glz::json_t{ std::move(objects) }.dump());
+			plg::print(*Value{ std::move(objects) }.dump());
 			return;
 		}
 
@@ -884,7 +890,7 @@ public:
 
 		if (!plugin) {
 			if (jsonOutput) {
-				glz::json_t error;
+				Value error;
 				error["error"] = std::format("Plugin {} not found", identifier);
 				plg::print(*error.dump());
 			} else {
@@ -895,7 +901,7 @@ public:
 
 		if (!plugin->IsPlugin()) {
 			if (jsonOutput) {
-				glz::json_t error;
+				Value error;
 				error["error"] = std::format("'{}' is not a plugin (it's a module)", identifier);
 				plg::print(*error.dump());
 			} else {
@@ -1142,7 +1148,7 @@ public:
 
 		if (!module) {
 			if (jsonOutput) {
-				glz::json_t error;
+				Value error;
 				error["error"] = std::format("Module {} not found", identifier);
 				plg::print(*error.dump());
 			} else {
@@ -1153,7 +1159,7 @@ public:
 
 		if (!module->IsModule()) {
 			if (jsonOutput) {
-				glz::json_t error;
+				Value error;
 				error["error"] = std::format("'{}' is not a module (it's a plugin)", identifier);
 				plg::print(*error.dump());
 			} else {
