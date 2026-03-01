@@ -268,10 +268,13 @@ namespace plg {
 
 #if PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_CLANG
 #  define PLUGIFY_RESTRICT __restrict__
+#  define PLUGIFY_USED __attribute__((used))
 #elif PLUGIFY_COMPILER_MSVC
 #  define PLUGIFY_RESTRICT __restrict
+#  define PLUGIFY_USED __declspec(dllexport)
 #else
 #  define PLUGIFY_RESTRICT
+#  define PLUGIFY_USED
 #endif
 
 #ifndef PLUGIFY_PLATFORM_WINDOWS
