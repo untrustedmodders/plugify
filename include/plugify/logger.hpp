@@ -42,6 +42,12 @@ namespace plugify {
 		virtual void SetLogLevel(Severity minSeverity) = 0;
 
 		/**
+		 * @brief Get the minimum severity level for logging messages.
+		 * @return The minimum severity level to log.
+		 */
+		virtual Severity GetLogLevel() = 0;
+
+		/**
 		 * @brief Flush any buffered log messages.
 		 */
 		virtual void Flush() = 0;

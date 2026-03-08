@@ -39,14 +39,18 @@ namespace plugify {
 			_minSeverity = minSeverity;
 		}
 
+		Severity GetLogLevel() override {
+			return _minSeverity;
+		}
+
 		void Flush() override {
 			std::cout.flush();
 			std::cerr.flush();
 		}
 
 	protected:
-		std::string
-		FormatMessage(std::string_view message, Severity severity, Location loc) {
+		static std::string
+		FormatMessage(std::string_view message, Severity severity, Location location) {
 			using namespace std::chrono;
 
 			auto now = system_clock::now();
@@ -60,11 +64,11 @@ namespace plugify {
 				seconds,  // %F = YYYY-MM-DD, %T = HH:MM:SS
 				static_cast<int>(ms.count()),
 				plg::enum_to_string(severity),
-				loc.module_name(),
-				loc.file_name(),
-				loc.line(),
-				loc.column(),
-				loc.function_name(),
+				location.module_name(),
+				location.file_name(),
+				location.line(),
+				location.column(),
+				location.function_name(),
 				message
 			);
 		}
