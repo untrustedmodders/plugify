@@ -16,7 +16,7 @@ namespace plugify {
 		void Log(
 			std::string_view message,
 			Severity severity,
-			Location loc = Location::current()
+			const Location& loc = Location::current()
 		) override {
 			if (severity == Severity::Unknown) {
 				std::cout << message << std::endl;
@@ -50,7 +50,7 @@ namespace plugify {
 
 	protected:
 		static std::string
-		FormatMessage(std::string_view message, Severity severity, Location location) {
+		FormatMessage(std::string_view message, Severity severity, const Location& location) {
 			using namespace std::chrono;
 
 			auto now = system_clock::now();

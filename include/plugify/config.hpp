@@ -26,6 +26,14 @@ namespace plugify {
 		Override  // Explicit overrides (highest priority)
 	};
 
+	constexpr Severity DefaultVerbosity
+#ifndef NDEBUG
+	= Severity::Debug
+#else
+	= Severity::Error
+#endif
+	;
+
 	struct Config {
 		// Track source priority for each field group
 		struct SourceTracking {
@@ -158,7 +166,7 @@ namespace plugify {
 
 		// Logging configuration
 		struct Logging {
-			Severity severity{ Severity::Error };
+			Severity severity{ DefaultVerbosity };
 			bool printReport = false;
 			bool printLoadOrder = false;
 			bool printDependencyGraph = false;
@@ -166,7 +174,7 @@ namespace plugify {
 			std::filesystem::path exportDigraphDot;
 
 			bool HasCustomSeverity() const {
-				return severity != Severity::Error;
+				return severity != DefaultVerbosity;
 			}
 
 			bool HasCustomPrintReport() const {

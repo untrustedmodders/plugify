@@ -32,7 +32,7 @@ namespace plugify {
 		virtual void
 		Log(std::string_view message,
 		    Severity severity,
-		    Location location = Location::current()
+		    const Location& location = Location::current()
 		) = 0;
 
 		/**
