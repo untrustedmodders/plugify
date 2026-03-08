@@ -34,7 +34,7 @@ namespace plugify {
 		void Log(
 			std::string_view message,
 			Severity severity,
-			std::source_location loc = std::source_location::current()
+			Location loc = Location::current()
 		) override {
 			if (severity < _minSeverity) {
 				return;

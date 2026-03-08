@@ -52,6 +52,12 @@ namespace plg {
 	std::abort();
 #endif
 
+#ifndef NDEBUG
+#define PLUGIFY_DEBUG(e) e
+#else
+#define PLUGIFY_DEBUG(e)
+#endif
+
 #if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
 #  define PLUGIFY_INSTRUMENTED_WITH_ASAN 1
 #  include <sanitizer/asan_interface.h>

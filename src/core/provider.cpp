@@ -33,9 +33,9 @@ Provider& Provider::operator=(const Provider& other) {
 
 Provider& Provider::operator=(Provider&& other) noexcept = default;
 
-void Provider::Log(std::string_view msg, Severity severity, const std::source_location& loc) const {
+void Provider::Log(std::string_view msg, Severity sev, Location loc) const {
 	if (auto logger = _impl->services.Resolve<ILogger>()) {
-		logger->Log(msg, severity, loc);
+		logger->Log(msg, sev, loc);
 	}
 }
 

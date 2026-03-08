@@ -16,7 +16,7 @@ namespace plugify {
 		void Log(
 			std::string_view message,
 			Severity severity,
-			std::source_location loc = std::source_location::current()
+			Location loc = Location::current()
 		) override {
 			if (severity == Severity::Unknown) {
 				std::cout << message << std::endl;
@@ -46,7 +46,7 @@ namespace plugify {
 
 	protected:
 		std::string
-		FormatMessage(std::string_view message, Severity severity, const std::source_location& loc) {
+		FormatMessage(std::string_view message, Severity severity, Location loc) {
 			using namespace std::chrono;
 
 			auto now = system_clock::now();
@@ -56,12 +56,15 @@ namespace plugify {
 			auto ms = duration_cast<milliseconds>(now - seconds);
 
 			return std::format(
-				"[{:%F %T}.{:03d}] [{}] [{}:{}] {}",
+				"[{:%F %T}.{:03d}] [{}] [{} => {}:({}:{}): {}] {}",
 				seconds,  // %F = YYYY-MM-DD, %T = HH:MM:SS
 				static_cast<int>(ms.count()),
 				plg::enum_to_string(severity),
+				loc.module_name(),
 				loc.file_name(),
 				loc.line(),
+				loc.column(),
+				loc.function_name(),
 				message
 			);
 		}

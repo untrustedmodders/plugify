@@ -1,7 +1,6 @@
 #pragma once
 
 #include <optional>
-#include <source_location>
 #include <string>
 #include <vector>
 
@@ -9,6 +8,7 @@
 #include "plg/enum.hpp"
 #include "plg/expected.hpp"
 #include "plg/inplace_vector.hpp"
+#include "plg/source_location.hpp"
 #include "plg/format.hpp"
 #include "plg/path.hpp"
 #include "plg/version.hpp"
@@ -27,6 +27,11 @@ namespace plugify {
 	 * @typedef Constraint
 	 */
 	using Constraint = plg::range_set<>;
+
+	/**
+	 * @typedef Location
+	 */
+	using Location = plg::source_location;
 
 	/**
 	 * @typedef UniqueId

@@ -23,48 +23,48 @@ namespace plugify {
 		// Logging helpers
 		void Log(
 		    std::string_view msg,
-		    Severity severity = Severity::Info,
-		    const std::source_location& loc = std::source_location::current()
+		    Severity sev = Severity::Info,
+		    Location loc = Location::current()
 		) const;
 
 		void LogVerbose(
 		    std::string_view msg,
-		    const std::source_location& loc = std::source_location::current()
+		    Location loc = Location::current()
 		) const {
 			Log(msg, Severity::Verbose, loc);
 		}
 
 		void LogDebug(
 		    std::string_view msg,
-		    const std::source_location& loc = std::source_location::current()
+		    Location loc = Location::current()
 		) const {
 			Log(msg, Severity::Debug, loc);
 		}
 
 		void LogInfo(
 		    std::string_view msg,
-		    const std::source_location& loc = std::source_location::current()
+		    Location loc = Location::current()
 		) const {
 			Log(msg, Severity::Info, loc);
 		}
 
 		void LogWarning(
 		    std::string_view msg,
-		    const std::source_location& loc = std::source_location::current()
+		    Location loc = Location::current()
 		) const {
 			Log(msg, Severity::Warning, loc);
 		}
 
 		void LogError(
 		    std::string_view msg,
-		    const std::source_location& loc = std::source_location::current()
+		    Location loc = Location::current()
 		) const {
 			Log(msg, Severity::Error, loc);
 		}
 
 		void LogFatal(
 		    std::string_view msg,
-		    const std::source_location& loc = std::source_location::current()
+		    Location loc = Location::current()
 		) const {
 			Log(msg, Severity::Fatal, loc);
 		}
