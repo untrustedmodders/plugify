@@ -46,7 +46,7 @@ static void debug_callback([[maybe_unused]] Pool* pool, void* data, int type, co
 	} else if (type & SOLV_WARN) {
 		logger->Log(sv, Severity::Warning);
 	} else {
-		logger->Log(sv, Severity::Verbose);
+		logger->Log(sv, Severity::Debug);
 	}
 }
 

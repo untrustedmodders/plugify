@@ -27,11 +27,11 @@ namespace plugify {
 		    const Location& loc = Location::current()
 		) const;
 
-		void LogVerbose(
+		void LogTrace(
 		    std::string_view msg,
 		    const Location& loc = Location::current()
 		) const {
-			Log(msg, Severity::Verbose, loc);
+			Log(msg, Severity::Trace, loc);
 		}
 
 		void LogDebug(

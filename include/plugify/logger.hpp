@@ -12,7 +12,7 @@ namespace plugify {
 	 * @enum Severity
 	 * @brief Enumerates severity levels for logging messages.
 	 */
-	enum class Severity { Unknown, Verbose, Debug, Info, Warning, Error, Fatal };
+	enum class Severity { Unknown, Trace, Debug, Info, Warning, Error, Fatal };
 
 	/**
 	 * @class ILogger
