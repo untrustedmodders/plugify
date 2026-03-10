@@ -170,6 +170,7 @@ set(PLUGIFY_COMPILE_DEFINITIONS
         PLUGIFY_IS_BIG_ENDIAN=$<STREQUAL:${CMAKE_CXX_BYTE_ORDER},BIG_ENDIAN>
         PLUGIFY_IS_DEBUG=$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>
         PLUGIFY_IS_RELEASE=$<STREQUAL:${CMAKE_BUILD_TYPE},Release>
+        # PLUGIFY_MODULE_NAME="${PROJECT_NAME}"
 
         PLUGIFY_CXX_STANDARD=${CMAKE_CXX_STANDARD}
         PLUGIFY_COMPILED_COMPILER="${CMAKE_CXX_COMPILER_ID}"
@@ -228,45 +229,47 @@ endif()
 
 # ------------------------------------------------------------------------------
 # Installation
-include(GNUInstallDirs)
+if(NOT PLUGIFY_BUILD_OBJECT_LIB)
+    include(GNUInstallDirs)
 
-# install library
-install(TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}Targets
-        ARCHIVE DESTINATION lib        # .lib on Windows
-        RUNTIME DESTINATION bin        # .dll if you ever build shared
-        LIBRARY DESTINATION lib        # for non-Windows platforms
-        INCLUDES DESTINATION include
-)
+    # install library
+    install(TARGETS ${PROJECT_NAME}
+            EXPORT ${PROJECT_NAME}Targets
+            ARCHIVE DESTINATION lib        # .lib on Windows
+            RUNTIME DESTINATION bin        # .dll if you ever build shared
+            LIBRARY DESTINATION lib        # for non-Windows platforms
+            INCLUDES DESTINATION include
+    )
 
-# install public headers (simple approach copies include/ dir)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-)
+    # install public headers (simple approach copies include/ dir)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+            DESTINATION include
+            FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+    )
 
-# export CMake targets for find_package()
-install(EXPORT ${PROJECT_NAME}Targets
-        FILE ${PROJECT_NAME}Targets.cmake
-        NAMESPACE ${PROJECT_NAME}::
-        DESTINATION lib/cmake/${PROJECT_NAME}
-)
+    # export CMake targets for find_package()
+    install(EXPORT ${PROJECT_NAME}Targets
+            FILE ${PROJECT_NAME}Targets.cmake
+            NAMESPACE ${PROJECT_NAME}::
+            DESTINATION lib/cmake/${PROJECT_NAME}
+    )
 
-include(CMakePackageConfigHelpers)
+    include(CMakePackageConfigHelpers)
 
-# optional: write package config (basic)
-write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-        VERSION ${PROJECT_VERSION}
-        COMPATIBILITY AnyNewerVersion
-)
-configure_package_config_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in   # create this tiny file if you want
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-        INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
-)
-install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-        DESTINATION lib/cmake/${PROJECT_NAME}
-)
+    # optional: write package config (basic)
+    write_basic_package_version_file(
+            "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+            VERSION ${PROJECT_VERSION}
+            COMPATIBILITY AnyNewerVersion
+    )
+    configure_package_config_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in   # create this tiny file if you want
+            "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+            INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+    )
+    install(FILES
+            "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+            "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+            DESTINATION lib/cmake/${PROJECT_NAME}
+    )
+endif()
