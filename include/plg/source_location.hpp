@@ -11,12 +11,6 @@
 
 namespace plg {
 	class source_location {
-		const std::size_t line_;
-		const std::size_t column_;
-		const std::string_view file_name_;
-		const std::string_view function_name_;
-		const std::string_view module_name_;
-
 	public:
 		explicit constexpr source_location(
 			const std::size_t line = 0,
@@ -80,5 +74,12 @@ namespace plg {
 		constexpr std::string_view module_name() const noexcept {
 			return module_name_;
 		}
+
+	private:
+		const std::size_t line_;
+		const std::size_t column_;
+		const std::string_view file_name_;
+		const std::string_view function_name_;
+		const std::string_view module_name_;
 	};
 }
