@@ -540,6 +540,7 @@ PlugifyBuilder& PlugifyBuilder::WithUpdateCallback(
 
 // Service registration...
 PlugifyBuilder& PlugifyBuilder::WithLogger(std::shared_ptr<ILogger> logger) {
+	_impl->configOverrides.logging.severity = logger->GetLogLevel();
 	_impl->services.RegisterInstance<ILogger>(std::move(logger));
 	return *this;
 }
