@@ -1,5 +1,73 @@
 # Changelog
 
+## [2.1.0](https://github.com/untrustedmodders/plugify/compare/v2.0.0...v2.1.0) (2026-03-16)
+
+
+### Features
+
+* add class support ([b25a038](https://github.com/untrustedmodders/plugify/commit/b25a03817823a569fb008b011307ffd757b6fa54))
+* add new source locator ([7a7b669](https://github.com/untrustedmodders/plugify/commit/7a7b6699be3ef4e0b11713674684accd4c67cc23))
+* add option to get current log level ([2e15988](https://github.com/untrustedmodders/plugify/commit/2e15988ac02410bd1047e83666ae165410b5ef5b))
+
+
+### Bug Fixes
+
+* add case_insensitive_compare ([3fa4b41](https://github.com/untrustedmodders/plugify/commit/3fa4b41eb40d72397ef827d79f90952957b87d0d))
+* add class binding serialization ([065f790](https://github.com/untrustedmodders/plugify/commit/065f7904cd317ab9b0d4b292d1c476669c0d4fe7))
+* add class bindings structs ([ef245c1](https://github.com/untrustedmodders/plugify/commit/ef245c1e4bcfaf99b3fd5e519e4e4856fd1858cc))
+* add class validation to manifest ([419d98e](https://github.com/untrustedmodders/plugify/commit/419d98e3c86892e7ac1c6468d564bde35d26ba29))
+* add constant iters to hybrid vector ([1196475](https://github.com/untrustedmodders/plugify/commit/1196475177d5a1ac7359e406c0f18376c5a7ad22))
+* add deprecated fields to methods and classes ([7a11430](https://github.com/untrustedmodders/plugify/commit/7a114308dfc43ff3c017c9c200e2509eb1402066))
+* add deprecated fields to schema ([27cd6a5](https://github.com/untrustedmodders/plugify/commit/27cd6a55a878fc51ad522ec614ae106e4e6db0c3))
+* add directory exclusion for manifest search ([6396037](https://github.com/untrustedmodders/plugify/commit/6396037e80982497c0d2686ae37f4115c9116b28))
+* add float cast_to for apple clang ([ae5cb77](https://github.com/untrustedmodders/plugify/commit/ae5cb77bb027f3586511b45fdea0f7c261540438))
+* add hybrid_vector helper ([be69959](https://github.com/untrustedmodders/plugify/commit/be69959b10391afa80f91a84c5f1e7134eab0d79))
+* add missing move ([b5f6a9b](https://github.com/untrustedmodders/plugify/commit/b5f6a9bb45be27a340429e803e7be7d9edf8a9c0))
+* add module support ([8f6c623](https://github.com/untrustedmodders/plugify/commit/8f6c6236b0d5378400f6c3e427b45da03645938b))
+* add nullability to alias in bindings ([06b2284](https://github.com/untrustedmodders/plugify/commit/06b2284ef4d21dc79113e561e26c9e94f9e5b4f7))
+* add plg types for VS natvis ([f0b7aa9](https://github.com/untrustedmodders/plugify/commit/f0b7aa9213b675d6122a52256e1bed42d8125ecf))
+* add support of cmake install ([7988a9b](https://github.com/untrustedmodders/plugify/commit/7988a9b840cdd545c3cac05a97e05fb495429934))
+* add support of handless wrappers ([de726de](https://github.com/untrustedmodders/plugify/commit/de726de07a2fcb9d9e1efaad4c6f4b33eb227c8b))
+* add unsafe view for raw ptr ([32794d6](https://github.com/untrustedmodders/plugify/commit/32794d6ac151f91e7e1c99024c0604aec581c689))
+* add used macro ([39b234c](https://github.com/untrustedmodders/plugify/commit/39b234ccb0c05fff7c1907059710f112eb822f0d))
+* add vector parser util func ([cbd8a2f](https://github.com/untrustedmodders/plugify/commit/cbd8a2f8e26fa2448c778353accec742197458c1))
+* allow alias member for types ([b08027b](https://github.com/untrustedmodders/plugify/commit/b08027b4bde6dc2c2b370a6f723991fdd034d227))
+* allow constructors list be empty ([c9a2b10](https://github.com/untrustedmodders/plugify/commit/c9a2b10b4c20bb9853f9af26f688b718b62fc69c))
+* allow description in class data ([e5a7232](https://github.com/untrustedmodders/plugify/commit/e5a72328b8976c1a2a9cef0aa85914185168a492))
+* avoid alias copy on return ([27f47c6](https://github.com/untrustedmodders/plugify/commit/27f47c6ffd996a04b3abf7625ed42f961a34b3ed))
+* build issue ([6ef9731](https://github.com/untrustedmodders/plugify/commit/6ef97315de70fb2f0c3f30ae7ebbc1859a466180))
+* bump glaze to latest ([853e854](https://github.com/untrustedmodders/plugify/commit/853e854802a190750ad1f174231316dbf0a835fd))
+* case_insensitive_equal issue ([7d96f53](https://github.com/untrustedmodders/plugify/commit/7d96f53c2358cd8d15b2fdfddcd713a109392553))
+* dereferencing type-punned pointer ([d0b82ce](https://github.com/untrustedmodders/plugify/commit/d0b82ce85b0c1ffb4f1bde36e978b0a40da07a4f))
+* exclude deps from install ([1dc632a](https://github.com/untrustedmodders/plugify/commit/1dc632a7dfb8d45b2126957833778e65be3aaab8))
+* improve class bindings ([f045038](https://github.com/untrustedmodders/plugify/commit/f045038ff943066800613c0128e500bafcad54e7))
+* improve enum parsing for test app ([0458a42](https://github.com/untrustedmodders/plugify/commit/0458a42fb8ea3e83158fa5396e00980e2d9a8eee))
+* improve enum prettify ([fc46ac3](https://github.com/untrustedmodders/plugify/commit/fc46ac351c9935a643d113444f27b13cbb5c8cef))
+* improve ipvbase ([2c72070](https://github.com/untrustedmodders/plugify/commit/2c720701596de48169ddf89ad203f77d0e561a58))
+* improve logging when module not available ([fa7b1c1](https://github.com/untrustedmodders/plugify/commit/fa7b1c1618e1ce5661aaf46d85838a8d8adb932c))
+* improve plg formatter for primitive structs ([35b9a16](https://github.com/untrustedmodders/plugify/commit/35b9a165a9b12fb334c6a6d7a13dae9fa13f35c4))
+* make relaxed setter for atomic ([5dc203c](https://github.com/untrustedmodders/plugify/commit/5dc203c179eb9435b9f1fdb6e074c1d707b1a5ef))
+* make source location pass by ref ([3a25814](https://github.com/untrustedmodders/plugify/commit/3a258140e689b4b1606a4217e014858a60d29b38))
+* performance metrics output in plg app ([08eade5](https://github.com/untrustedmodders/plugify/commit/08eade52c6b1e6b43c65522ba71fae4a38c43745))
+* remove assume valid in string header ([8ad7f39](https://github.com/untrustedmodders/plugify/commit/8ad7f3981e9bafda7dca42e123a46c01466c8530))
+* remove dublicates validation for enum values ([b0399a7](https://github.com/untrustedmodders/plugify/commit/b0399a752f1fc115d994b470a921ae15710686a1))
+* remove git macros ([ded6061](https://github.com/untrustedmodders/plugify/commit/ded6061d4d00c9e9f8b207335c1f21ab367d4098))
+* remove install from object build type ([ca23248](https://github.com/untrustedmodders/plugify/commit/ca232489a2a922568c4183977580304601046b1c))
+* rename verbose to trace ([9736c84](https://github.com/untrustedmodders/plugify/commit/9736c847ec8c0b4fa6405ac3d2b23062fca74cfb))
+* rework allocator for alignment mode ([aea99c2](https://github.com/untrustedmodders/plugify/commit/aea99c2a0fa562895c8b3383c591bc8fa626076d))
+* rework event bus little bit ([361398f](https://github.com/untrustedmodders/plugify/commit/361398fd37af66771781fee9a33fa4ff3033295f))
+* rework manifest lookup ([e842305](https://github.com/untrustedmodders/plugify/commit/e842305f01d4304ff6714bcfbbdfe74b27381a3e))
+* rework safecall to static method ([57bc377](https://github.com/untrustedmodders/plugify/commit/57bc377e0474bc7ce7bfcaa4cf975af2541f94b5))
+* rework scoped service locator ([ac5c383](https://github.com/untrustedmodders/plugify/commit/ac5c38377a60260b22af56c235b1bb6428744ad7))
+* set default log verbosity in builder ([f7454f2](https://github.com/untrustedmodders/plugify/commit/f7454f23e0d302f5c5135fbb06fa333e55ed4d71))
+* set trace as default verbosity in debug build ([b571606](https://github.com/untrustedmodders/plugify/commit/b571606482a3139eb1f0e3bb094a2b12887f2b9a))
+* small refactor ([c536899](https://github.com/untrustedmodders/plugify/commit/c5368993c14e42243392f6b312a37a25a8f4477c))
+* some refactor of new classes ([d3b0dd3](https://github.com/untrustedmodders/plugify/commit/d3b0dd3c73a886091eb970b88cfebea84c7112c7))
+* static analysis warnings ([3f2dbfd](https://github.com/untrustedmodders/plugify/commit/3f2dbfd61521d3c6a2bc35f144ddb8e54e8346ec))
+* string in constexpr on GCC 15 ([d9b99ea](https://github.com/untrustedmodders/plugify/commit/d9b99ea80eb031a845f294de0079b63ce84b7b0a))
+* typo ([e7b0924](https://github.com/untrustedmodders/plugify/commit/e7b0924504167139b04162e804e45443db6f34ec))
+* typo ([c2b28f2](https://github.com/untrustedmodders/plugify/commit/c2b28f2d3055395f6913ee91f31508787f4e00cf))
+
 ## [2.0.0](https://github.com/untrustedmodders/plugify/compare/v1.2.8...v2.0.0) (2025-10-07)
 
 
