@@ -76,10 +76,10 @@ namespace plg {
 		}
 
 	private:
-		const std::size_t line_;
-		const std::size_t column_;
-		const std::string_view file_name_;
-		const std::string_view function_name_;
-		const std::string_view module_name_;
+		std::size_t line_;
+		std::size_t column_;
+		std::string_view file_name_;
+		std::string_view function_name_;
+		std::string_view module_name_;
 	};
 }
