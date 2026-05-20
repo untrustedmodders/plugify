@@ -34,7 +34,7 @@ namespace plg {
 			const std::string_view function_name = __builtin_FUNCTION(),
 			const std::string_view module_name = PLUGIFY_MODULE_NAME
 		) noexcept
-#elif defined(__GNUC__) and (__GNUC__ > 4 or (__GNUC__ == 4 and __GNUC_MINOR__ >= 8))
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 and __GNUC_MINOR__ >= 8))
 		inline static constexpr source_location current(
 			const std::size_t line = __builtin_LINE(),
 			const std::size_t column = 0,

@@ -544,6 +544,10 @@ PlugifyBuilder& PlugifyBuilder::WithLogger(std::shared_ptr<ILogger> logger) {
 	_impl->services.RegisterInstance<ILogger>(std::move(logger));
 	return *this;
 }
+PlugifyBuilder& PlugifyBuilder::WithProfiler(std::shared_ptr<IProfiler> profiler) {
+	_impl->services.RegisterInstance<IProfiler>(std::move(profiler));
+	return *this;
+}
 
 PlugifyBuilder& PlugifyBuilder::WithFileSystem(std::shared_ptr<IFileSystem> fs) {
 	_impl->services.RegisterInstance<IFileSystem>(std::move(fs));
@@ -591,6 +595,7 @@ PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
 
 PlugifyBuilder& PlugifyBuilder::WithDefaults() {
 	_impl->services.RegisterInstanceIfMissing<ILogger>(std::make_shared<ConsoleLogger>());
+	//_impl->services.RegisterInstanceIfMissing<IProfiler>(std::make_shared<TracyProfiler>());
 	_impl->services.RegisterInstanceIfMissing<IPlatformOps>(CreatePlatformOps());
 	_impl->services.RegisterInstanceIfMissing<IEventBus>(std::make_shared<SimpleEventBus>());
 	_impl->services.RegisterInstanceIfMissing<IFileSystem>(std::make_shared<ExtendedFileSystem>());

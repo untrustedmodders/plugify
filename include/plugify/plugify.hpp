@@ -3,6 +3,7 @@
 #include "plugify/config.hpp"
 #include "plugify/dependency_resolver.hpp"
 #include "plugify/event_bus.hpp"
+#include "plugify/profiler.hpp"
 #include "plugify/file_system.hpp"
 #include "plugify/global.h"
 #include "plugify/lifecycle.hpp"
@@ -45,6 +46,7 @@ namespace plugify {
 
 		// Service registration...
 		PlugifyBuilder& WithLogger(std::shared_ptr<ILogger> logger);
+		PlugifyBuilder& WithProfiler(std::shared_ptr<IProfiler> profiler);
 		PlugifyBuilder& WithFileSystem(std::shared_ptr<IFileSystem> fs);
 		PlugifyBuilder& WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
 		// PlugifyBuilder& WithConfigProvider(std::shared_ptr<IConfigProvider> provider);
