@@ -6,18 +6,16 @@ namespace plugify {
 	class FileLogger final : public ConsoleLogger {
 	public:
 		FileLogger(
-			const std::filesystem::path& logFile,
+			std::filesystem::path logFile,
 			Severity minSeverity = Severity::Info,
 			size_t maxFileSize = 10 * 1024 * 1024
 		)  // 10MB default
 			: ConsoleLogger(minSeverity)
-			, _logPath(logFile)
+			, _logPath(TimestampedPath(logFile))
+			, _logBase(std::move(logFile))
 			, _maxFileSize(maxFileSize) {
-			// Create log directory if needed
-			auto parent = _logPath.parent_path();
-			if (!parent.empty() && !std::filesystem::exists(parent)) {
-				std::filesystem::create_directories(parent);
-			}
+			std::error_code ec;
+			std::filesystem::create_directories(base.parent_path(), ec);
 
 			_logFile.open(_logPath, std::ios::app);
 			if (!_logFile) {
@@ -68,8 +66,9 @@ namespace plugify {
 		}
 
 	private:
-		std::filesystem::path _logPath;
 		std::ofstream _logFile;
+		std::filesystem::path _logPath;
+		std::filesystem::path _logBase;
 		size_t _maxFileSize;
 
 		bool ShouldRotate() {
@@ -78,28 +77,24 @@ namespace plugify {
 		}
 
 		void RotateLog() {
-			using namespace std::chrono;
-
 			_logFile.close();
+			_logPath = TimestampedPath(_logBase);
+			_logFile.open(_logPath, std::ios::trunc);
+		}
 
+		// Helper: turn /logs/session.log → /logs/session-20260418_143022.log
+		static std::filesystem::path TimestampedPath(const std::filesystem::path& base) {
+			using namespace std::chrono;
 			auto now = system_clock::now();
-			// floor to seconds so filename has no fractional seconds
-			auto seconds = floor<seconds>(now);
+			auto seconds = floor<std::chrono::seconds>(now);
 
-			// zoned_time with current_zone() -> local time
-			std::chrono::zoned_time zt{ std::chrono::current_zone(), seconds };
-
-			// Format as: stem.YYYYMMDD_HHMMSS.extension
-			auto rotatedPath = _logPath.parent_path()
-							   / std::format(
-								   "{}.{:%Y%m%d_%H%M%S}{}",
-								   plg::as_string(_logPath.stem()),
-								   zt,	// formatted using chrono spec
-								   plg::as_string(_logPath.extension())
-							   );
-
-			std::filesystem::rename(_logPath, rotatedPath);
-			_logFile.open(_logPath, std::ios::app);
+			return base.parent_path()
+			   / std::format(
+				   "{}-{:%Y%m%d_%H%M%S}{}",
+				   plg::as_string(base.stem()),
+				   utc_clock::from_sys(seconds),
+				   plg::as_string(base.extension())
+			   );
 		}
 	};
 }

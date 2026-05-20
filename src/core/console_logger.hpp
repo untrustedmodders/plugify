@@ -18,7 +18,11 @@ namespace plugify {
 			Severity severity,
 			const Location& location = Location::current()
 		) override {
+			if (message.empty())
+				return;
+
 			if (severity == Severity::Unknown) {
+				std::lock_guard lock(_mutex);
 				std::cout << message << std::endl;
 				return;
 			} else if (severity < _minSeverity) {
