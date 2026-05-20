@@ -28,7 +28,7 @@ namespace plugify {
 
 	constexpr Severity DefaultVerbosity
 #ifndef NDEBUG
-	= Severity::Trace
+	= Severity::Debug
 #else
 	= Severity::Error
 #endif

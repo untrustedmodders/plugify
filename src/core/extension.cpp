@@ -8,9 +8,9 @@ using namespace plugify;
 // Implementation structure
 struct Extension::Impl {
 	// Core identity
-	UniqueId id{ -1 };
-	ExtensionType type{ ExtensionType::Unknown };
-	ExtensionState state{ ExtensionState::Unknown };
+	UniqueId id{};
+	ExtensionType type{};
+	ExtensionState state{};
 
 	// Runtime state
 	MethodTable methodTable;

@@ -30,7 +30,7 @@
     "logSeverity": {
       "type": "string",
       "description": "Log severity.",
-      "enum": ["none", "fatal", "error", "warning", "info", "debug", "verbose"]
+      "enum": ["none", "fatal", "error", "warning", "info", "debug", "trace"]
     },
     "preferOwnSymbols": {
       "type": "boolean",

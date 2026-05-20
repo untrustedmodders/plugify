@@ -101,7 +101,7 @@ namespace plugify {
 
 		// Module Operations
 		Result<void> LoadModule(Extension& module) {
-			auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
+			[[maybe_unused]] auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
 				if (elapsed > _stats.slowestModuleLoad) {
 					_stats.slowestModuleLoad = elapsed;
@@ -163,7 +163,7 @@ namespace plugify {
 
 		// Plugin Operations
 		Result<void> LoadPlugin(const Extension& module, Extension& plugin) {
-			auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
+			[[maybe_unused]] auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
 				if (elapsed > _stats.slowestPluginLoad) {
 					_stats.slowestPluginLoad = elapsed;

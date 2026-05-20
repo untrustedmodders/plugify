@@ -237,12 +237,14 @@ Result<void> Config::Validate() const{
 
 	for (size_t i = 0; i < pathList.size(); ++i) {
 		for (size_t j = i + 1; j < pathList.size(); ++j) {
-			if (*pathList[i].second == *pathList[j].second) {
+			const auto& [iname, ipath] = pathList[i];
+			const auto& [jname, jpath] = pathList[j];
+			if (*ipath == *jpath) {
 				return MakeError(
 					"{} and {} directories are the same: {}",
-					pathList[i].first,
-					pathList[j].first,
-					plg::as_string(*pathList[i].second)
+					iname,
+					jname,
+					plg::as_string(*ipath)
 				);
 			}
 		}
