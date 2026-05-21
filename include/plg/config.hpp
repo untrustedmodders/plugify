@@ -283,6 +283,30 @@ namespace plg {
 #  define PLUGIFY_USED
 #endif
 
+#if __has_builtin(__builtin_FILE) || (defined(_MSC_VER) && _MSC_VER > 1925)
+#  define PLUGIFY_FILE __builtin_FILE()
+#else
+#  define PLUGIFY_FILE ""
+#endif
+
+#if __has_builtin(__builtin_FUNCTION) || (defined(_MSC_VER) && _MSC_VER > 1925)
+#  define PLUGIFY_FUNCTION __builtin_FUNCTION()
+#else
+#  define PLUGIFY_FUNCTION ""
+#endif
+
+#if __has_builtin(__builtin_LINE) || (defined(_MSC_VER) && _MSC_VER > 1925)
+#  define PLUGIFY_LINE __builtin_LINE()
+#else
+#  define PLUGIFY_LINE 0
+#endif
+
+#if __has_builtin(__builtin_COLUMN) || (defined(_MSC_VER) && _MSC_VER > 1925)
+#  define PLUGIFY_COLUMN __builtin_COLUMN()
+#else
+#  define PLUGIFY_COLUMN 0
+#endif
+
 #ifndef PLUGIFY_PLATFORM_WINDOWS
 #  if defined(_WIN32) || defined(_WIN64)
 #    define PLUGIFY_PLATFORM_WINDOWS 1

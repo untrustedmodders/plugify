@@ -26,32 +26,13 @@ namespace plg {
 			, module_name_(module_name) {
 		}
 
-#if __has_builtin(__builtin_COLUMN) || (defined(_MSC_VER) && _MSC_VER > 1925)
 		inline static constexpr source_location current(
-			const std::size_t line = __builtin_LINE(),
-			const std::size_t column = __builtin_COLUMN(),
-			const std::string_view file_name = __builtin_FILE(),
-			const std::string_view function_name = __builtin_FUNCTION(),
+			const std::size_t line = PLUGIFY_LINE,
+			const std::size_t column = PLUGIFY_COLUMN,
+			const std::string_view file_name = PLUGIFY_FILE,
+			const std::string_view function_name = PLUGIFY_FUNCTION,
 			const std::string_view module_name = PLUGIFY_MODULE_NAME
-		) noexcept
-#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 and __GNUC_MINOR__ >= 8))
-		inline static constexpr source_location current(
-			const std::size_t line = __builtin_LINE(),
-			const std::size_t column = 0,
-			const std::string_view file_name = __builtin_FILE(),
-			const std::string_view function_name = __builtin_FUNCTION(),
-			const std::string_view module_name = PLUGIFY_MODULE_NAME
-		) noexcept
-#else
-		inline static constexpr source_location current(
-			const std::size_t line = 0,
-			const std::size_t column = 0,
-			const std::string_view file_name = "",
-			const std::string_view function_name = ""
-			const std::string_view module_name = ""
-		) noexcept
-#endif
-		{
+		) noexcept {
 			return source_location(line, column, file_name, function_name, module_name);
 		}
 

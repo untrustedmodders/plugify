@@ -3,12 +3,10 @@
 #include <memory>
 #include <string_view>
 
-namespace plugify {
-	struct ZoneHandle {
-		uint64_t opaque = 0;
+#include "plg/config.hpp"
 
-		explicit operator bool() const { return opaque != 0; }
-	};
+namespace plugify {
+	using ZoneHandle = uint64_t;
 
 	struct ZoneInfo {
 		std::string_view name;
@@ -17,19 +15,19 @@ namespace plugify {
 		size_t line;
 		uint32_t color;
 
-		ZoneInfo(std::string_view name,
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 and __GNUC_MINOR__ >= 8)) || (defined(_MSC_VER) && _MSC_VER > 1925)
-			 const std::string_view function = __builtin_FUNCTION(),
-			 const std::string_view file = __builtin_FILE(),
-			 const size_t line = __builtin_LINE(),
-#else
-			 const std::string_view function = "",
-			 const std::string_view file = "",
-			 const size_t line = 0,
-#endif
-			 const uint32_t color = 0
-)
-			: name(name), function(function), file(file), line(line), color(color) {}
+		explicit ZoneInfo(
+			std::string_view name,
+			std::string_view function = PLUGIFY_FUNCTION,
+			std::string_view file = PLUGIFY_FILE,
+			size_t line = PLUGIFY_LINE,
+			uint32_t color = 0
+		) noexcept
+			: name(name)
+			, function(function)
+			, file(file)
+			, line(line)
+			, color(color) {
+		}
 	};
 
 	class IProfiler {
