@@ -165,14 +165,14 @@ namespace plugify {
 	 */
 	class ParametersSpan {
 	public:
-		using slot_type = uint64_t;
+		using SlotType = uint64_t;
 
 		/**
 		 * @brief Constructs a ParametersSpan.
 		 * @param data Pointer to the slot data.
 		 * @param count Number of slots.
 		 */
-		ParametersSpan(slot_type* data, size_t count) noexcept
+		ParametersSpan(SlotType* data, size_t count) noexcept
 		    : _data(data)
 		    , _count(count) {
 		}
@@ -206,7 +206,7 @@ namespace plugify {
 		}
 
 	private:
-		slot_type* _data;
+		SlotType* _data;
 		[[maybe_unused]] size_t _count;
 	};
 
@@ -220,14 +220,14 @@ namespace plugify {
 	 */
 	class ReturnSlot {
 	public:
-		using type = void;
+		using SlotType = void;
 
 		/**
 		 * @brief Construct from byte storage
 		 * @param data Pointer to aligned byte storage
 		 * @param size Size in bytes
 		 */
-		explicit ReturnSlot(type* data, size_t size) noexcept
+		explicit ReturnSlot(SlotType* data, size_t size) noexcept
 		    : _data(data)
 		    , _size(size) {
 		}
@@ -272,7 +272,7 @@ namespace plugify {
 		}
 
 	private:
-		type* _data;
+		SlotType* _data;
 		[[maybe_unused]] size_t _size;
 	};
 }  // namespace plugify
