@@ -1,7 +1,6 @@
 #pragma once
 
 #include "plugify/assembly.hpp"
-#include "plugify/config.hpp"
 #include "plugify/extension.hpp"
 #include "plugify/file_system.hpp"
 #include "plugify/language_module.hpp"
@@ -14,14 +13,17 @@ namespace plugify {
 	class ScopedTimer {
 	public:
 		explicit ScopedTimer(Callback&& cb) noexcept(std::is_nothrow_move_constructible_v<Callback>)
-			: _callback(std::forward<Callback>(cb))
+			: _callback(std::in_place, std::forward<Callback>(cb))
 			, _start(std::chrono::steady_clock::now()) {
 		}
 
 		~ScopedTimer() noexcept(std::is_nothrow_invocable_v<Callback>) {
-			auto end = std::chrono::steady_clock::now();
-			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - _start);
-			_callback(elapsed);
+			if (_callback) {
+				auto end = std::chrono::steady_clock::now();
+				auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - _start);
+
+				(*_callback)(elapsed);
+			}
 		}
 
 		ScopedTimer(const ScopedTimer&) = delete;
@@ -30,18 +32,23 @@ namespace plugify {
 		ScopedTimer(ScopedTimer&& other) noexcept
 			: _callback(std::move(other._callback))
 			, _start(other._start) {
+			other._callback.reset();
 		}
 
 		ScopedTimer& operator=(ScopedTimer&& other) noexcept {
 			if (this != &other) {
+				_callback.reset();
+
 				_callback = std::move(other._callback);
 				_start = other._start;
+
+				other._callback.reset();
 			}
 			return *this;
 		}
 
 	private:
-		PLUGIFY_NO_UNIQUE_ADDRESS Callback _callback;
+		std::optional<Callback> _callback;
 		std::chrono::steady_clock::time_point _start;
 	};
 

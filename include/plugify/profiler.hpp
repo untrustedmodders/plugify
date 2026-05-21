@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string_view>
 
 namespace plugify {
@@ -50,7 +51,7 @@ namespace plugify {
 		//virtual void TrackFree(void* ptr, std::string_view pool = {}) = 0;
 
 		// Thread metadata
-		virtual void SetThreadName(std::string_view name) = 0;
+		virtual void SetThread(std::string_view name) = 0;
 
 		// Capability query
 		virtual std::string_view GetName() const = 0; // "Tracy", "Optick", …
@@ -59,17 +60,38 @@ namespace plugify {
 
 	class ScopedZone {
 	public:
-		ScopedZone(IProfiler* profiler, const ZoneDesc& desc) : _profiler(profiler) {
+		ScopedZone() = default;
+
+		ScopedZone(const std::shared_ptr<IProfiler>& profiler, const ZoneDesc& desc) : _profiler(profiler.get()) {
 			if (_profiler) _handle = _profiler->BeginZone(desc);
 		}
+
 		~ScopedZone() {
 			if (_profiler && _handle) _profiler->EndZone(_handle);
 		}
 
 		ScopedZone(const ScopedZone&) = delete;
 		ScopedZone& operator=(const ScopedZone&) = delete;
-		ScopedZone(ScopedZone&&) = delete;
-		ScopedZone& operator=(ScopedZone&&) = delete;
+
+		ScopedZone(ScopedZone&& other) noexcept
+			: _profiler(other._profiler)
+			, _handle(other._handle) {
+			other._profiler = nullptr;
+			other._handle = {};
+		}
+
+		ScopedZone& operator=(ScopedZone&& other) noexcept {
+			if (this != &other) {
+				if (_profiler && _handle) _profiler->EndZone(_handle);
+
+				_profiler = other._profiler;
+				_handle = other._handle;
+
+				other._profiler = nullptr;
+				other._handle = {};
+			}
+			return *this;
+		}
 
 	private:
 		IProfiler* _profiler = nullptr;
