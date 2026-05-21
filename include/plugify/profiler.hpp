@@ -10,14 +10,14 @@ namespace plugify {
 		explicit operator bool() const { return opaque != 0; }
 	};
 
-	struct ZoneDesc {
+	struct ZoneInfo {
 		std::string_view name;
 		std::string_view function;
 		std::string_view file;
 		size_t line;
 		uint32_t color;
 
-		ZoneDesc(std::string_view name,
+		ZoneInfo(std::string_view name,
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 and __GNUC_MINOR__ >= 8)) || (defined(_MSC_VER) && _MSC_VER > 1925)
 			 const std::string_view function = __builtin_FUNCTION(),
 			 const std::string_view file = __builtin_FILE(),
@@ -43,7 +43,7 @@ namespace plugify {
 		// CPU zones 
 		// BeginZone / EndZone must be balanced. Prefer the RAII
 		// ScopedZone helper below — don't call these directly.
-		virtual ZoneHandle BeginZone(const ZoneDesc& desc) = 0;
+		virtual ZoneHandle BeginZone(const ZoneInfo& desc) = 0;
 		virtual void EndZone(ZoneHandle handle) = 0;
 
 		// Memory tracking 
@@ -62,7 +62,7 @@ namespace plugify {
 	public:
 		ScopedZone() = default;
 
-		ScopedZone(const std::shared_ptr<IProfiler>& profiler, const ZoneDesc& desc) : _profiler(profiler.get()) {
+		ScopedZone(const std::shared_ptr<IProfiler>& profiler, const ZoneInfo& desc) : _profiler(profiler.get()) {
 			if (_profiler) _handle = _profiler->BeginZone(desc);
 		}
 
