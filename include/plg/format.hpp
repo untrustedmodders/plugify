@@ -29,5 +29,13 @@ namespace std {
 	using namespace fmt;
 	using namespace fmt::detail;
 } // namespace std
+#else
+
+#if FMT_HEADER_ONLY
+#include <fmt/format.h>
+namespace pfl = fmt;
+#else
+namespace pfl = std;
+#endif
 
 #endif // !PLUGIFY_HAS_STD_FORMAT

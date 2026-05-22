@@ -1048,47 +1048,47 @@ namespace std {
 #endif
 	template<typename I1, typename I2, typename I3>
 	struct formatter<plg::version<I1, I2, I3>> {
-		constexpr auto parse(std::format_parse_context& ctx) {
+		constexpr auto parse(pfl::format_parse_context& ctx) {
 			return ctx.begin();
 		}
 
 		template<class FormatContext>
 		auto format(const plg::version<I1, I2, I3>& ver, FormatContext& ctx) const {
-			return std::format_to(ctx.out(), "{}", ver.to_string());
+			return pfl::format_to(ctx.out(), "{}", ver.to_string());
 		}
 	};
 	template<typename I1, typename I2, typename I3>
 	struct formatter<plg::range_set<I1, I2, I3>> {
-		constexpr auto parse(std::format_parse_context& ctx) {
+		constexpr auto parse(pfl::format_parse_context& ctx) {
 			return ctx.begin();
 		}
 
 		template<class FormatContext>
 		auto format(const plg::range_set<I1, I2, I3>& ver, FormatContext& ctx) const {
-			return std::format_to(ctx.out(), "{}", ver.to_string());
+			return pfl::format_to(ctx.out(), "{}", ver.to_string());
 		}
 	};
 	template<typename I1, typename I2, typename I3>
 	struct formatter<plg::detail::range<I1, I2, I3>> {
-		constexpr auto parse(std::format_parse_context& ctx) {
+		constexpr auto parse(pfl::format_parse_context& ctx) {
 			return ctx.begin();
 		}
 
 		template<class FormatContext>
 		auto format(const plg::detail::range<I1, I2, I3>& ver, FormatContext& ctx) const {
-			return std::format_to(ctx.out(), "{}", ver.to_string());
+			return pfl::format_to(ctx.out(), "{}", ver.to_string());
 		}
 	};
 	template<typename I1, typename I2, typename I3>
 	struct formatter<plg::detail::range_comparator<I1, I2, I3>> {
-		constexpr auto parse(std::format_parse_context& ctx) {
+		constexpr auto parse(pfl::format_parse_context& ctx) {
 			return ctx.begin();
 		}
 
 		template<class FormatContext>
 		auto format(const plg::detail::range_comparator<I1, I2, I3>& ver, FormatContext& ctx) const {
-			return std::format_to(ctx.out(), "{}", ver.to_string());
+			return pfl::format_to(ctx.out(), "{}", ver.to_string());
 		}
 	};
-}// namespace std
+}// namespace std / fmt
 #endif // PLUGIFY_VECTOR_NO_STD_FORMAT

@@ -3855,13 +3855,13 @@ namespace plg {
 			typename String = basic_string<Char, std::char_traits<Char>, Allocator>
 		>
 		struct string_formatter_base {
-			constexpr auto parse(std::format_parse_context& ctx) {
+			constexpr auto parse(pfl::format_parse_context& ctx) {
 				return ctx.begin();
 			}
 
 			template <class FormatContext>
 			auto format(const String& str, FormatContext& ctx) const {
-				return std::format_to(ctx.out(), format_string<Char>(), str.c_str());
+				return pfl::format_to(ctx.out(), format_string<Char>(), str.c_str());
 			}
 		};
 	}
@@ -3942,7 +3942,7 @@ namespace std {
 	template <typename Allocator>
 	struct formatter<plg::basic_string<wchar_t, std::char_traits<wchar_t>, Allocator>>
 		: plg::detail::string_formatter_base<wchar_t, Allocator> {};
-}  // namespace std
+}  // namespace std / fmt
 #endif	// PLUGIFY_STRING_NO_STD_FORMAT
 
 template <typename Char, typename Traits, typename Alloc>
@@ -3975,7 +3975,7 @@ namespace plg {
 			if constexpr (string_like<elem>) {
 				total_size += std::string_view(*tmp).size();
 			} else {
-				total_size += std::formatted_size("{}", *tmp);
+				total_size += formatted_size("{}", *tmp);
 			}
 			++count;
 		}
@@ -3987,9 +3987,9 @@ namespace plg {
 		auto in = std::back_inserter(result);
 
 		// Second pass: actual formatting
-		/*if (it != end)*/ { std::format_to(in, "{}", *it++); }
+		/*if (it != end)*/ { format_to(in, "{}", *it++); }
 		while (it != end) {
-			std::format_to(in, "{}{}", separator, *it++);
+			format_to(in, "{}{}", separator, *it++);
 		}
 
 		return result;
@@ -4016,7 +4016,7 @@ namespace plg {
 			if constexpr (string_like<elem>) {
 				total_size += std::string_view(*projected).size();
 			} else {
-				total_size += std::formatted_size("{}", projected);
+				total_size += formatted_size("{}", projected);
 			}
 			++count;
 		}
@@ -4030,11 +4030,11 @@ namespace plg {
 		// Second pass: actual formatting
 		{
 			auto&& projected = std::invoke(std::forward<Proj>(proj), *it++);
-			std::format_to(out, "{}", projected);
+			format_to(out, "{}", projected);
 		}
 		while (it != end) {
 			auto&& projected = std::invoke(std::forward<Proj>(proj), *it++);
-			std::format_to(out, "{}{}", separator, projected);
+			format_to(out, "{}{}", separator, projected);
 		}
 
 		return result;
