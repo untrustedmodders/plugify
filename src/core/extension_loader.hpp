@@ -139,8 +139,7 @@ namespace plugify {
 				return {};
 			}
 			auto result = SafeCall<void>("OnUpdate", module.GetName(), [&] {
-				module.GetLanguageModule()->OnUpdate(deltaTime);
-				return Result<void>{};
+				return module.GetLanguageModule()->OnUpdate(deltaTime);
 			});
 			_extensionLifecycle->OnUpdate(module, deltaTime);
 			return result;
@@ -151,8 +150,7 @@ namespace plugify {
 
 			if (auto* languageModule = module.GetLanguageModule()) {
 				result = SafeCall<void>("Shutdown", module.GetName(), [&] {
-					languageModule->Shutdown();
-					return Result<void>{};
+					return languageModule->Shutdown();
 				});
 				module.SetLanguageModule(nullptr);
 			}
@@ -210,8 +208,7 @@ namespace plugify {
 				return {};
 			}
 			auto result = SafeCall<void>("OnPluginStart", plugin.GetName(), [&] {
-				plugin.GetLanguageModule()->OnPluginStart(plugin);
-				return Result<void>{};
+				return plugin.GetLanguageModule()->OnPluginStart(plugin);
 			});
 			_extensionLifecycle->OnStart(plugin);
 			return result;
@@ -223,8 +220,7 @@ namespace plugify {
 				return {};
 			}
 			auto result = SafeCall<void>("OnPluginEnd", plugin.GetName(), [&] {
-				plugin.GetLanguageModule()->OnPluginEnd(plugin);
-				return Result<void>{};
+				return plugin.GetLanguageModule()->OnPluginEnd(plugin);
 			});
 			_extensionLifecycle->OnEnd(plugin);
 			return result;
@@ -236,8 +232,7 @@ namespace plugify {
 				return {};
 			}
 			auto result = SafeCall<void>("OnPluginUpdate", plugin.GetName(), [&] {
-				plugin.GetLanguageModule()->OnPluginUpdate(plugin, deltaTime);
-				return Result<void>{};
+				return plugin.GetLanguageModule()->OnPluginUpdate(plugin, deltaTime);
 			});
 			_extensionLifecycle->OnUpdate(plugin, deltaTime);
 			return result;
@@ -260,8 +255,7 @@ namespace plugify {
 				return {};
 			}
 			auto result = SafeCall<void>("OnMethodExport", module.GetName(), [&] {
-				module.GetLanguageModule()->OnMethodExport(plugin);
-				return Result<void>{};
+				return module.GetLanguageModule()->OnMethodExport(plugin);
 			});
 			//_lifecycle->OnExport(module, plugin);
 			return result;

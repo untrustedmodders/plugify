@@ -234,7 +234,6 @@ public:
 						break;
 					}
 				}
-
 				if (!result) {
 					logger->Log(result.error(), Severity::Error);
 				}

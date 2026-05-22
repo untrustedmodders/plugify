@@ -57,19 +57,20 @@ namespace plugify {
 
 		/**
 		 * @brief Shutdown the language module.
+		 * @return Result of the s.
 		 */
-		virtual void Shutdown() = 0;
+		virtual Result<void> Shutdown() = 0;
 
 		/**
 		 * @brief Handle actions to be performed on each frame.
 		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnUpdate(std::chrono::milliseconds deltaTime) = 0;
+		virtual Result<void> OnUpdate(std::chrono::milliseconds deltaTime) = 0;
 
 		/**
 		 * @brief
 		 */
-		// virtual void OnPluginInitialize(const Extension& plugin) = 0;
+		// virtual Result<void> OnPluginInitialize(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin load event.
@@ -82,26 +83,26 @@ namespace plugify {
 		 * @brief Handle plugin start event.
 		 * @param plugin Ref to the started plugin.
 		 */
-		virtual void OnPluginStart(const Extension& plugin) = 0;
+		virtual Result<void> OnPluginStart(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle plugin update event.
 		 * @param plugin Ref to the started plugin.
 		 * @param deltaTime The time delta since the last update.
 		 */
-		virtual void OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds deltaTime) = 0;
+		virtual Result<void> OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds deltaTime) = 0;
 
 		/**
 		 * @brief Handle plugin end event.
 		 * @param plugin Ref to the ended plugin.
 		 */
-		virtual void OnPluginEnd(const Extension& plugin) = 0;
+		virtual Result<void> OnPluginEnd(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle method export event.
 		 * @param plugin Ref to the plugin exporting a method.
 		 */
-		virtual void OnMethodExport(const Extension& plugin) = 0;
+		virtual Result<void> OnMethodExport(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Determine if language module is build with debugging mode.
