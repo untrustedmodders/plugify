@@ -5,8 +5,8 @@
 
 #include "plg/config.hpp"
 
-#ifndef PLUGIFY_MODULE_NAME
-#define PLUGIFY_MODULE_NAME ""
+#ifndef PLUGIFY_MODULE
+#define PLUGIFY_MODULE ""
 #endif
 
 namespace plg {
@@ -31,7 +31,7 @@ namespace plg {
 			const std::size_t column = PLUGIFY_COLUMN,
 			const std::string_view file_name = PLUGIFY_FILE,
 			const std::string_view function_name = PLUGIFY_FUNCTION,
-			const std::string_view module_name = PLUGIFY_MODULE_NAME
+			const std::string_view module_name = PLUGIFY_MODULE
 		) noexcept {
 			return source_location(line, column, file_name, function_name, module_name);
 		}
