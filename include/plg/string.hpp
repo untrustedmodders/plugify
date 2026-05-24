@@ -3975,7 +3975,7 @@ namespace plg {
 			if constexpr (string_like<elem>) {
 				total_size += std::string_view(*tmp).size();
 			} else {
-				total_size += formatted_size("{}", *tmp);
+				total_size += pfl::formatted_size("{}", *tmp);
 			}
 			++count;
 		}
@@ -4016,7 +4016,7 @@ namespace plg {
 			if constexpr (string_like<elem>) {
 				total_size += std::string_view(*projected).size();
 			} else {
-				total_size += formatted_size("{}", projected);
+				total_size += pfl::formatted_size("{}", projected);
 			}
 			++count;
 		}
