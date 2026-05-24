@@ -57,7 +57,7 @@ namespace plugify {
 
 		/**
 		 * @brief Shutdown the language module.
-		 * @return Result of the s.
+		 * @return Result of the shutdown, either void or string.
 		 */
 		virtual Result<void> Shutdown() = 0;
 
@@ -82,6 +82,7 @@ namespace plugify {
 		/**
 		 * @brief Handle plugin start event.
 		 * @param plugin Ref to the started plugin.
+		 * @return Result of the start, either void or string.
 		 */
 		virtual Result<void> OnPluginStart(const Extension& plugin) = 0;
 
@@ -89,18 +90,21 @@ namespace plugify {
 		 * @brief Handle plugin update event.
 		 * @param plugin Ref to the started plugin.
 		 * @param deltaTime The time delta since the last update.
+		 * @return Result of the update, either void or string.
 		 */
 		virtual Result<void> OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds deltaTime) = 0;
 
 		/**
 		 * @brief Handle plugin end event.
 		 * @param plugin Ref to the ended plugin.
+		 * @return Result of the end, either void or string.
 		 */
 		virtual Result<void> OnPluginEnd(const Extension& plugin) = 0;
 
 		/**
 		 * @brief Handle method export event.
 		 * @param plugin Ref to the plugin exporting a method.
+		 * @return Result of the export, either void or string.
 		 */
 		virtual Result<void> OnMethodExport(const Extension& plugin) = 0;
 
