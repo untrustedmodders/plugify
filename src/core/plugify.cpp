@@ -25,6 +25,7 @@ struct Plugify::Impl {
 	std::shared_ptr<IEventBus> eventBus;
 	std::shared_ptr<IFileSystem> fileSystem;
 	std::shared_ptr<IPlatformOps> ops;
+	std::shared_ptr<IProfiler> profiler;
 
 	bool initialized{ false };
 
@@ -49,6 +50,7 @@ struct Plugify::Impl {
 		eventBus = services.Resolve<IEventBus>();
 		fileSystem = services.Resolve<IFileSystem>();
 		ops = services.Resolve<IPlatformOps>();
+		profiler = services.TryResolve<IProfiler>();
 
 		// Set default logging level
 		logger->SetLogLevel(config.logging.severity);
@@ -64,6 +66,8 @@ struct Plugify::Impl {
 	}
 
 	Result<void> Initialize() {
+		[[maybe_unused]] ScopedZone zone(profiler);
+
 		// Thread safety check based on config
 		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
 			return MakeError("Initialization must be called from owner thread");
@@ -104,6 +108,8 @@ struct Plugify::Impl {
 	}
 
 	void Terminate() {
+		[[maybe_unused]] ScopedZone zone(profiler);
+
 		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
 			throw std::runtime_error("Termination must be called from owner thread");
 		}
@@ -130,6 +136,8 @@ struct Plugify::Impl {
 	}
 
 	void Update(std::chrono::milliseconds deltaTime = 0ms) {
+		[[maybe_unused]] ScopedZone zone(profiler);
+
 		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
 			throw std::runtime_error("Update must be called from owner thread");
 		}

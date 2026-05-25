@@ -93,6 +93,7 @@ namespace plugify {
 		std::shared_ptr<IFileSystem> _fileSystem;
 		std::shared_ptr<IAssemblyLoader> _assemblyLoader;
 		std::shared_ptr<IExtensionLifecycle> _extensionLifecycle;
+		std::shared_ptr<IProfiler> _profiler;
 		LoadStatistics _stats;
 
 		std::unordered_map<std::filesystem::path, std::shared_ptr<IAssembly>, plg::path_hash> _assemblyCache;
@@ -103,11 +104,14 @@ namespace plugify {
 			, _provider(provider)
 			, _fileSystem(locator.Resolve<IFileSystem>())
 			, _assemblyLoader(locator.Resolve<IAssemblyLoader>())
-			, _extensionLifecycle(locator.Resolve<IExtensionLifecycle>()) {
+			, _extensionLifecycle(locator.Resolve<IExtensionLifecycle>())
+			, _profiler(locator.TryResolve<IProfiler>()) {
 		}
 
 		// Module Operations
 		Result<void> LoadModule(Extension& module) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			[[maybe_unused]] auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
 				if (elapsed > _stats.slowestModuleLoad) {
@@ -134,6 +138,8 @@ namespace plugify {
 		}
 
 		Result<void> UpdateModule(Extension& module, std::chrono::milliseconds deltaTime) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = module.GetMethodTable();
 			if (!hasUpdate) {
 				return {};
@@ -146,6 +152,8 @@ namespace plugify {
 		}
 
 		Result<void> UnloadModule(Extension& module) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			Result<void> result;
 
 			if (auto* languageModule = module.GetLanguageModule()) {
@@ -168,6 +176,8 @@ namespace plugify {
 
 		// Plugin Operations
 		Result<void> LoadPlugin(const Extension& module, Extension& plugin) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			[[maybe_unused]] auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
 				if (elapsed > _stats.slowestPluginLoad) {
@@ -203,6 +213,8 @@ namespace plugify {
 		}
 
 		Result<void> StartPlugin(Extension& plugin) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
 			if (!hasStart) {
 				return {};
@@ -215,6 +227,8 @@ namespace plugify {
 		}
 
 		Result<void> EndPlugin(Extension& plugin) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
 			if (!hasEnd) {
 				return {};
@@ -227,6 +241,8 @@ namespace plugify {
 		}
 
 		Result<void> UpdatePlugin(Extension& plugin, std::chrono::milliseconds deltaTime) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
 			if (!hasUpdate) {
 				return {};
@@ -239,6 +255,8 @@ namespace plugify {
 		}
 
 		Result<void> UnloadPlugin(Extension& plugin) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			// Clear all plugin data
 			plugin.SetLanguageModule(nullptr);
 			plugin.SetUserData(nullptr);
@@ -250,6 +268,8 @@ namespace plugify {
 		}
 
 		Result<void> MethodExport(const Extension& module, const Extension& plugin) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
 			if (!hasExport) {
 				return {};
@@ -305,6 +325,8 @@ namespace plugify {
 			const std::filesystem::path& path,
 			const std::vector<std::filesystem::path>& searchPaths
 		) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			auto absPath = _fileSystem->GetAbsolutePath(path);
 			if (!absPath) {
 				return MakeError(std::move(absPath.error()));
@@ -336,6 +358,8 @@ namespace plugify {
 		}
 
 		Result<void> LoadLanguageModule(std::shared_ptr<IAssembly> assembly, Extension& module) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
 
 			auto entryFunc = assembly->GetSymbol(kGetLanguageModuleFn);
@@ -376,6 +400,8 @@ namespace plugify {
 		}
 
 		Result<void> ValidateAndSetPluginData(Extension& plugin, LoadData& result) {
+			[[maybe_unused]] ScopedZone zone(_profiler);
+
 			auto& [methods, data, table] = result;
 			const auto& exportedMethods = plugin.GetMethods();
 
@@ -414,7 +440,8 @@ namespace plugify {
 		}
 
 		template <typename T, typename Func>
-		static Result<T> SafeCall(std::string_view op, std::string_view name, Func&& func) noexcept {
+		Result<T> SafeCall(std::string_view op, std::string_view name, Func&& func) noexcept {
+			[[maybe_unused]] ScopedZone zone(_profiler, ZoneInfo(std::format("{}::{}", name, op)));
 			try {
 				return func();
 			} catch (const std::bad_alloc&) {

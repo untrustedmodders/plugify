@@ -5,6 +5,7 @@
 #include "plugify/manager.hpp"
 #include "plugify/manifest.hpp"
 #include "plugify/manifest_parser.hpp"
+#include "plugify/profiler.hpp"
 
 #include "core/extension_loader.hpp"
 #include "core/stages_impl.hpp"
@@ -24,6 +25,7 @@ struct Manager::Impl {
 		resolver = services.Resolve<IDependencyResolver>();
 		// progressReporter = services.Resolve<IProgressReporter>();
 		// metricsCollector = services.Resolve<IMetricsCollector>();
+		profiler = services.TryResolve<IProfiler>();
 	}
 
 	~Impl() {
@@ -47,6 +49,7 @@ struct Manager::Impl {
 	std::shared_ptr<IDependencyResolver> resolver;
 	// std::shared_ptr<IProgressReporter> progressReporter;
 	// std::shared_ptr<IMetricsCollector> metricsCollector;
+	std::shared_ptr<IProfiler> profiler;
 
 	// Dependency graphs (filled by resolution stage)
 	std::vector<UniqueId> loadOrder;
@@ -55,6 +58,8 @@ struct Manager::Impl {
 
 public:
 	Result<void> Initialize() {
+		[[maybe_unused]] ScopedZone zone(profiler);
+
 		std::lock_guard lock(lifecycleMutex);
 
 		if (initialized) {
@@ -173,6 +178,8 @@ public:
 	}
 
 	void Update(std::chrono::milliseconds deltaTime) {
+		[[maybe_unused]] ScopedZone zone(profiler);
+
 		std::lock_guard lock(lifecycleMutex);
 
 		if (!initialized) {
@@ -203,9 +210,15 @@ public:
 				}
 			}
 		}
+
+		if (profiler) {
+			profiler->MarkFrame("PlugifyLoop");
+		}
 	}
 
 	void Terminate() {
+		[[maybe_unused]] ScopedZone zone(profiler);
+
 		std::lock_guard lock(lifecycleMutex);
 
 		if (!initialized) {
