@@ -548,56 +548,59 @@ PlugifyBuilder& PlugifyBuilder::WithUpdateCallback(
 
 // Service registration...
 PlugifyBuilder& PlugifyBuilder::WithLogger(std::shared_ptr<ILogger> logger) {
-	_impl->configOverrides.logging.severity = logger->GetLogLevel();
-	_impl->services.RegisterInstance<ILogger>(std::move(logger));
+	if (logger) {
+		_impl->configOverrides.logging.severity = logger->GetLogLevel();
+		_impl->services.RegisterInstance<ILogger>(std::move(logger));
+	}
 	return *this;
 }
 PlugifyBuilder& PlugifyBuilder::WithProfiler(std::shared_ptr<IProfiler> profiler) {
-	_impl->services.RegisterInstance<IProfiler>(std::move(profiler));
+	if (profiler) _impl->services.RegisterInstance<IProfiler>(std::move(profiler));
 	return *this;
 }
 
 PlugifyBuilder& PlugifyBuilder::WithFileSystem(std::shared_ptr<IFileSystem> fs) {
-	_impl->services.RegisterInstance<IFileSystem>(std::move(fs));
+	if (fs) _impl->services.RegisterInstance<IFileSystem>(std::move(fs));
 	return *this;
 }
 
 PlugifyBuilder& PlugifyBuilder::WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader) {
-	_impl->services.RegisterInstance<IAssemblyLoader>(std::move(loader));
+	if (loader) _impl->services.RegisterInstance<IAssemblyLoader>(std::move(loader));
 	return *this;
 }
 
 /*PlugifyBuilder& PlugifyBuilder::WithConfigProvider(std::shared_ptr<IConfigProvider> provider) {
-	_impl->services.RegisterInstance<IConfigProvider>(std::move(provider));
+	if (provider) _impl->services.RegisterInstance<IConfigProvider>(std::move(provider));
 	return *this;
 }*/
 
 PlugifyBuilder& PlugifyBuilder::WithManifestParser(std::shared_ptr<IManifestParser> parser) {
-	_impl->services.RegisterInstance<IManifestParser>(std::move(parser));
+	if (parser) _impl->services.RegisterInstance<IManifestParser>(std::move(parser));
 	return *this;
 }
 
 PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver) {
-	_impl->services.RegisterInstance<IDependencyResolver>(std::move(resolver));
+	if (resolver) _impl->services.RegisterInstance<IDependencyResolver>(std::move(resolver));
 	return *this;
 }
 
 PlugifyBuilder& PlugifyBuilder::WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> lifecycle) {
-	_impl->services.RegisterInstance<IExtensionLifecycle>(std::move(lifecycle));
+	if (lifecycle) _impl->services.RegisterInstance<IExtensionLifecycle>(std::move(lifecycle));
 	return *this;
 }
 
-/*PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter)
-{ _impl->services.RegisterInstance<IProgressReporter>(std::move(reporter)); return *this;
+/*PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
+	if (reporter) _impl->services.RegisterInstance<IProgressReporter>(std::move(reporter));
+	return *this;
 }*/
 
 /*PlugifyBuilder& PlugifyBuilder::WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics) {
-	_impl->services.RegisterInstance<IMetricsCollector>(std::move(metrics));
+	if (metrics) _impl->services.RegisterInstance<IMetricsCollector>(std::move(metrics));
 	return *this;
 }*/
 
 PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
-	_impl->services.RegisterInstance<IEventBus>(std::move(bus));
+	if (bus) _impl->services.RegisterInstance<IEventBus>(std::move(bus));
 	return *this;
 }
 
@@ -607,16 +610,10 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
 	_impl->services.RegisterInstanceIfMissing<IPlatformOps>(CreatePlatformOps());
 	_impl->services.RegisterInstanceIfMissing<IEventBus>(std::make_shared<SimpleEventBus>());
 	_impl->services.RegisterInstanceIfMissing<IFileSystem>(std::make_shared<ExtendedFileSystem>());
-	_impl->services.RegisterInstanceIfMissing<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(
-		_impl->services.Resolve<IPlatformOps>(),
-		_impl->services.Resolve<IFileSystem>()
-	));
+	_impl->services.RegisterInstanceIfMissing<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(_impl->services.Resolve<IPlatformOps>(), _impl->services.Resolve<IFileSystem>()));
 	//_impl->services.RegisterInstanceIfMissing<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
-	_impl->services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>()
-	);
-	_impl->services.RegisterInstanceIfMissing<IDependencyResolver>(
-		std::make_shared<LibsolvDependencyResolver>(_impl->services.Resolve<ILogger>())
-	);
+	_impl->services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>());
+	_impl->services.RegisterInstanceIfMissing<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_impl->services.Resolve<ILogger>()));
 	_impl->services.RegisterInstanceIfMissing<IExtensionLifecycle>(std::make_shared<DummyLifecycle>());
 	//_impl->services.RegisterInstanceIfMissing<IProgressReporter>(std::make_shared<DefaultProgressReporter>(_impl->services.Resolve<ILogger>()));
 	//_impl->services.RegisterInstanceIfMissing<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());

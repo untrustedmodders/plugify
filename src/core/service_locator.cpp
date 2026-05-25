@@ -21,7 +21,16 @@ struct ServiceLocator::Impl {
 	> scopeStack;
 
 	// Methods
-	void RegisterInstance(std::type_index type, std::shared_ptr<void> instance) {
+	void RegisterInstance(
+		std::type_index type,
+		std::shared_ptr<void> instance
+	) {
+		if (!instance) {
+			throw std::invalid_argument(
+				std::format("RegisterInstance: null instance for type '{}'", type.name())
+			);
+		}
+
 		std::unique_lock lock(mutex);
 		services[type] = {
 			.factory = [instance]() { return instance; },
@@ -35,6 +44,12 @@ struct ServiceLocator::Impl {
 		std::function<std::shared_ptr<void>()> factory,
 		ServiceLifetime lifetime
 	) {
+		if (!factory) {
+			throw std::invalid_argument(
+				std::format("RegisterFactory: null factory for type '{}'", type.name())
+			);
+		}
+
 		std::unique_lock lock(mutex);
 
 		ServiceDescriptor descriptor{
