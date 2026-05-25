@@ -13,10 +13,7 @@
 using namespace plugify;
 
 struct Manager::Impl {
-	Impl(const ServiceLocator& services, const Config& cfg, const Manager& manager)
-		: config{ cfg }
-		, provider(services, config, manager)
-		, loader(services, config, provider) {
+	Impl(const ServiceLocator& srv, const Config& cfg) : services(srv), config(cfg) {
 		// Create services
 		assemblyLoader = services.Resolve<IAssemblyLoader>();
 		fileSystem = services.Resolve<IFileSystem>();
@@ -34,9 +31,10 @@ struct Manager::Impl {
 		}
 	}
 
+	const ServiceLocator& services;
 	const Config& config;
-	Provider provider;
-	ExtensionLoader loader;
+	std::optional<Provider> provider;
+	std::optional<ExtensionLoader> loader;
 	std::vector<Extension> extensions;
 	std::mutex lifecycleMutex;
 	bool initialized{ false };
@@ -55,6 +53,11 @@ struct Manager::Impl {
 	std::vector<UniqueId> loadOrder;
 	std::unordered_map<UniqueId, std::vector<UniqueId>> depGraph;
 	std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDepGraph;
+
+	void Setup(const Manager& manager) {
+		provider.emplace(services, config, manager);
+		loader.emplace(services, config, *provider);
+	}
 
 public:
 	Result<void> Initialize() {
@@ -89,7 +92,7 @@ public:
 							)
 							.AddStage(
 								std::make_unique<LoadingStage>(
-									loader,
+									*loader,
 									failureTracker,
 									depGraph,
 									reverseDepGraph,
@@ -98,7 +101,7 @@ public:
 							)
 							.AddStage(
 								std::make_unique<ExportingStage>(
-									loader,
+									*loader,
 									failureTracker,
 									depGraph,
 									reverseDepGraph,
@@ -107,7 +110,7 @@ public:
 							)
 							.AddStage(
 								std::make_unique<StartingStage>(
-									loader,
+									*loader,
 									failureTracker,
 									depGraph,
 									reverseDepGraph,
@@ -131,7 +134,7 @@ public:
 		// Print reports if configured
 		if (config.logging.printReport) {
 			logger->Log(report.Summary(), Severity::Info);
-			logger->Log(loader.GetStatistics().Summary(), Severity::Info);
+			logger->Log(loader->GetStatistics().Summary(), Severity::Info);
 		}
 
 		if (!extensions.empty()) {
@@ -191,12 +194,12 @@ public:
 				Result<void> result;
 				switch (ext.GetType()) {
 					case ExtensionType::Module: {
-						result = loader.UpdateModule(ext, deltaTime);
+						result = loader->UpdateModule(ext, deltaTime);
 						break;
 					}
 
 					case ExtensionType::Plugin: {
-						result = loader.UpdatePlugin(ext, deltaTime);
+						result = loader->UpdatePlugin(ext, deltaTime);
 						break;
 					}
 
@@ -238,7 +241,7 @@ public:
 					}
 
 					case ExtensionType::Plugin: {
-						result = loader.EndPlugin(ext);
+						result = loader->EndPlugin(ext);
 						break;
 					}
 
@@ -261,12 +264,12 @@ public:
 				Result<void> result;
 				switch (ext.GetType()) {
 					case ExtensionType::Module: {
-						result = loader.UnloadModule(ext);
+						result = loader->UnloadModule(ext);
 						break;
 					}
 
 					case ExtensionType::Plugin: {
-						result = loader.UnloadPlugin(ext);
+						result = loader->UnloadPlugin(ext);
 						break;
 					}
 
@@ -430,7 +433,8 @@ public:
 };
 
 Manager::Manager(const ServiceLocator& services, const Config& config)
-	: _impl(std::make_unique<Impl>(services, config, *this)) {
+	: _impl(std::make_unique<Impl>(services, config)) {
+	_impl->Setup(*this);
 }
 
 Manager::~Manager() = default;
