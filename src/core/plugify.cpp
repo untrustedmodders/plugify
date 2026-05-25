@@ -538,9 +538,7 @@ PlugifyBuilder& PlugifyBuilder::WithBackgroundUpdate(std::chrono::milliseconds i
 	return *this;
 }
 
-PlugifyBuilder& PlugifyBuilder::WithUpdateCallback(
-	std::function<void(std::chrono::milliseconds)> callback
-) {
+PlugifyBuilder& PlugifyBuilder::WithUpdateCallback(std::function<void(std::chrono::milliseconds)> callback) {
 	_impl->configOverrides.runtime.updateMode = UpdateMode::Callback;
 	_impl->configOverrides.runtime.updateCallback = std::move(callback);
 	return *this;

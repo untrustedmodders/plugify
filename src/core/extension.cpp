@@ -61,7 +61,7 @@ struct Extension::Impl {
 		std::shared_ptr<IAssembly> assembly;
 	} moduleData{};
 
-	void Init() {
+	void Setup() {
 		fs::path path = std::move(location);
 		location = path.parent_path();
 		if (type == ExtensionType::Module) {
@@ -385,7 +385,7 @@ void Extension::SetLanguageModule(ILanguageModule* module) {
 
 void Extension::SetManifest(Manifest manifest) {
 	_impl->manifest = std::move(manifest);
-	_impl->Init();
+	_impl->Setup();
 }
 
 // ============================================================================

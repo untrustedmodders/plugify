@@ -99,20 +99,20 @@ namespace plugify {
 		std::unordered_map<std::filesystem::path, std::shared_ptr<IAssembly>, plg::path_hash> _assemblyCache;
 
 	public:
-		ExtensionLoader(const ServiceLocator& locator, const Config& config, const Provider& provider)
+		ExtensionLoader(const ServiceLocator& services, const Config& config, const Provider& provider)
 			: _config(config)
 			, _provider(provider)
-			, _fileSystem(locator.Resolve<IFileSystem>())
-			, _assemblyLoader(locator.Resolve<IAssemblyLoader>())
-			, _extensionLifecycle(locator.Resolve<IExtensionLifecycle>())
-			, _profiler(locator.TryResolve<IProfiler>()) {
+			, _fileSystem(services.Resolve<IFileSystem>())
+			, _assemblyLoader(services.Resolve<IAssemblyLoader>())
+			, _extensionLifecycle(services.Resolve<IExtensionLifecycle>())
+			, _profiler(services.TryResolve<IProfiler>()) {
 		}
 
 		// Module Operations
 		Result<void> LoadModule(Extension& module) {
 			[[maybe_unused]] ScopedZone zone(_profiler);
 
-			[[maybe_unused]] auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
+			[[maybe_unused]] ScopedTimer timer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
 				if (elapsed > _stats.slowestModuleLoad) {
 					_stats.slowestModuleLoad = elapsed;
@@ -178,7 +178,7 @@ namespace plugify {
 		Result<void> LoadPlugin(const Extension& module, Extension& plugin) {
 			[[maybe_unused]] ScopedZone zone(_profiler);
 
-			[[maybe_unused]] auto timer = ScopedTimer([&](std::chrono::milliseconds elapsed) {
+			[[maybe_unused]] ScopedTimer timer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
 				if (elapsed > _stats.slowestPluginLoad) {
 					_stats.slowestPluginLoad = elapsed;
