@@ -175,7 +175,7 @@ namespace {
 			if (!ec) {
 				totalSize += sz;
 			}
-		} else if (fs::is_directory(path)) {
+		} else if (fs::is_directory(path, fs)) {
 			for (auto& entry : fs::recursive_directory_iterator(
 			         path,
 			         fs::directory_options::skip_permission_denied,
