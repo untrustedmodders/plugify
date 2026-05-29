@@ -2,6 +2,22 @@
 
 using namespace plugify;
 
+int GetError() {
+#if PLUGIFY_PLATFORM_WINDOWS
+	return GetLastError();
+#else
+	return errno;
+#endif
+}
+
+void SetError(int err) {
+#if PLUGIFY_PLATFORM_WINDOWS
+	SetLastError(err);
+#else
+	errno = err;
+#endif
+}
+
 // Get system error message from errno
 std::string StandardFileSystem::GetSystemError(int err) {
 	std::string result(1024, '\0');
@@ -26,7 +42,7 @@ std::string StandardFileSystem::GetSystemError(int err) {
 // Get detailed error message for stream operations
 std::string
 StandardFileSystem::GetStreamError(const std::ios& stream, const std::filesystem::path& path, std::string_view operation) {
-	int err = errno;  // Capture errno immediately
+	int err = GetError();
 	if (err != 0) {
 		return std::format("{} {}: {}", operation, plg::as_string(path), GetSystemError(err));
 	}
@@ -42,7 +58,7 @@ StandardFileSystem::GetStreamError(const std::ios& stream, const std::filesystem
 
 // File Operations
 Result<std::string> StandardFileSystem::ReadTextFile(const std::filesystem::path& path) {
-	errno = 0;	// Clear errno before operation
+	SetError(0);
 	std::ifstream file(path, std::ios::in | std::ios::binary);
 	if (!file) {
 		return MakeError(GetStreamError(file, path, "Failed to open file for reading"));
@@ -68,7 +84,7 @@ Result<std::string> StandardFileSystem::ReadTextFile(const std::filesystem::path
 }
 
 Result<std::vector<uint8_t>> StandardFileSystem::ReadBinaryFile(const std::filesystem::path& path) {
-	errno = 0;	// Clear errno before operation
+	SetError(0);
 	std::ifstream file(path, std::ios::in | std::ios::binary);
 	if (!file) {
 		return MakeError(GetStreamError(file, path, "Failed to open file for reading"));
@@ -104,7 +120,7 @@ Result<void> StandardFileSystem::WriteTextFile(const std::filesystem::path& path
 		}
 	}
 
-	errno = 0;	// Clear errno before operation
+	SetError(0);
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
 	if (!file) {
 		return MakeError(GetStreamError(file, path, "Failed to open file for writing"));
@@ -134,7 +150,7 @@ Result<void> StandardFileSystem::WriteBinaryFile(
 		}
 	}
 
-	errno = 0;	// Clear errno before operation
+	SetError(0);
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
 	if (!file) {
 		return MakeError(GetStreamError(file, path, "Failed to open file for writing"));
@@ -549,7 +565,7 @@ Result<std::filesystem::path> StandardFileSystem::GetRelativePath(
 // Append operations
 Result<void>
 ExtendedFileSystem::AppendTextFile(const std::filesystem::path& path, std::string_view content) {
-	errno = 0;	// Clear errno before operation
+	SetError(0);
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::app);
 	if (!file) {
 		return MakeError(GetStreamError(file, path, "Failed to open file for appending"));
@@ -569,7 +585,7 @@ Result<void> ExtendedFileSystem::AppendBinaryFile(
 	const std::filesystem::path& path,
 	std::span<const uint8_t> data
 ) {
-	errno = 0;	// Clear errno before operation
+	SetError(0);
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::app);
 	if (!file) {
 		return MakeError(GetStreamError(file, path, "Failed to open file for appending"));
@@ -638,7 +654,7 @@ Result<std::filesystem::path> ExtendedFileSystem::CreateTempFile(
 	std::filesystem::path temp_path = dir / std::format("{}_{}", prefix, timestamp);
 
 	// Create empty file
-	errno = 0;	// Clear errno before operation
+	SetError(0);
 	std::ofstream file(temp_path);
 	if (!file) {
 		return MakeError(GetStreamError(file, temp_path, "Failed to create temp file"));
@@ -695,7 +711,7 @@ Result<bool> ExtendedFileSystem::FilesEqual(
 		return false;
 	}
 
-	errno = 0;
+	SetError(0);
 
 	// Compare contents
 	std::ifstream file1(path1, std::ios::binary);
