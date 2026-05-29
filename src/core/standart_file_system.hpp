@@ -51,7 +51,7 @@ namespace plugify {
 
 	protected:
 		static std::string GetSystemError(int err);
-		static std::string GetStreamError(const std::filesystem::path& path, const std::string& operation);
+		static std::string GetStreamError(const std::ios& stream, const std::filesystem::path& path, std::string_view operation);
 	};
 
 	// Extended functionality implementation
@@ -67,13 +67,13 @@ namespace plugify {
 		// Create temporary file
 		Result<std::filesystem::path> CreateTempFile(
 			const std::filesystem::path& directory = {},
-			const std::string& prefix = "tmp"
+			std::string_view prefix = "tmp"
 		);
 
 		// Create temporary directory
 		Result<std::filesystem::path> CreateTempDirectory(
 			const std::filesystem::path& directory = {},
-			const std::string& prefix = "tmpdir"
+			std::string_view prefix = "tmpdir"
 		);
 		// Check if files are equal
 		Result<bool> FilesEqual(const std::filesystem::path& path1, const std::filesystem::path& path2);

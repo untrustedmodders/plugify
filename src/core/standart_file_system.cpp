@@ -25,12 +25,19 @@ std::string StandardFileSystem::GetSystemError(int err) {
 
 // Get detailed error message for stream operations
 std::string
-StandardFileSystem::GetStreamError(const std::filesystem::path& path, const std::string& operation) {
+StandardFileSystem::GetStreamError(const std::ios& stream, const std::filesystem::path& path, std::string_view operation) {
 	int err = errno;  // Capture errno immediately
 	if (err != 0) {
 		return std::format("{} {}: {}", operation, plg::as_string(path), GetSystemError(err));
 	}
-	return std::format("{} {}: Unknown error", operation, plg::as_string(path));
+
+	std::string_view state;
+	if (stream.bad()) state = "badbit (hardware/buffer error)";
+	else if (stream.fail()) state = "failbit (logical error)";
+	else if (stream.eof()) state = "eofbit (unexpected EOF)";
+	else state = "unknown stream error";
+
+	return std::format("{} {}: {}", operation, plg::as_string(path), state);
 }
 
 // File Operations
@@ -38,14 +45,14 @@ Result<std::string> StandardFileSystem::ReadTextFile(const std::filesystem::path
 	errno = 0;	// Clear errno before operation
 	std::ifstream file(path, std::ios::in | std::ios::binary);
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to open file for reading"));
+		return MakeError(GetStreamError(file, path, "Failed to open file for reading"));
 	}
 
 	// Get file size using seekg
 	file.seekg(0, std::ios::end);
 	auto size = file.tellg();
 	if (size == -1) {
-		return MakeError(GetStreamError(path, "Failed to determine file size"));
+		return MakeError(GetStreamError(file, path, "Failed to determine file size"));
 	}
 	file.seekg(0, std::ios::beg);
 
@@ -54,7 +61,7 @@ Result<std::string> StandardFileSystem::ReadTextFile(const std::filesystem::path
 	file.read(content.data(), size);
 
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to read file content"));
+		return MakeError(GetStreamError(file, path, "Failed to read file content"));
 	}
 
 	return content;
@@ -64,14 +71,14 @@ Result<std::vector<uint8_t>> StandardFileSystem::ReadBinaryFile(const std::files
 	errno = 0;	// Clear errno before operation
 	std::ifstream file(path, std::ios::in | std::ios::binary);
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to open file for reading"));
+		return MakeError(GetStreamError(file, path, "Failed to open file for reading"));
 	}
 
 	// Get file size
 	file.seekg(0, std::ios::end);
 	auto size = file.tellg();
 	if (size == -1) {
-		return MakeError(GetStreamError(path, "Failed to determine file size"));
+		return MakeError(GetStreamError(file, path, "Failed to determine file size"));
 	}
 	file.seekg(0, std::ios::beg);
 
@@ -80,7 +87,7 @@ Result<std::vector<uint8_t>> StandardFileSystem::ReadBinaryFile(const std::files
 	file.read(reinterpret_cast<char*>(content.data()), size);
 
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to read file content"));
+		return MakeError(GetStreamError(file, path, "Failed to read file content"));
 	}
 
 	return content;
@@ -100,14 +107,14 @@ Result<void> StandardFileSystem::WriteTextFile(const std::filesystem::path& path
 	errno = 0;	// Clear errno before operation
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to open file for writing"));
+		return MakeError(GetStreamError(file, path, "Failed to open file for writing"));
 	}
 
 	file.write(content.data(), static_cast<std::streamsize>(content.size()));
 	file.flush();
 
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to write to file"));
+		return MakeError(GetStreamError(file, path, "Failed to write to file"));
 	}
 
 	return {};
@@ -130,14 +137,14 @@ Result<void> StandardFileSystem::WriteBinaryFile(
 	errno = 0;	// Clear errno before operation
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to open file for writing"));
+		return MakeError(GetStreamError(file, path, "Failed to open file for writing"));
 	}
 
 	file.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
 	file.flush();
 
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to write to file"));
+		return MakeError(GetStreamError(file, path, "Failed to write to file"));
 	}
 
 	return {};
@@ -545,14 +552,14 @@ ExtendedFileSystem::AppendTextFile(const std::filesystem::path& path, std::strin
 	errno = 0;	// Clear errno before operation
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::app);
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to open file for appending"));
+		return MakeError(GetStreamError(file, path, "Failed to open file for appending"));
 	}
 
 	file.write(content.data(), static_cast<std::streamsize>(content.size()));
 	file.flush();
 
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to append to file"));
+		return MakeError(GetStreamError(file, path, "Failed to append to file"));
 	}
 
 	return {};
@@ -565,14 +572,14 @@ Result<void> ExtendedFileSystem::AppendBinaryFile(
 	errno = 0;	// Clear errno before operation
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::app);
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to open file for appending"));
+		return MakeError(GetStreamError(file, path, "Failed to open file for appending"));
 	}
 
 	file.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
 	file.flush();
 
 	if (!file) {
-		return MakeError(GetStreamError(path, "Failed to append to file"));
+		return MakeError(GetStreamError(file, path, "Failed to append to file"));
 	}
 
 	return {};
@@ -616,7 +623,7 @@ Result<std::filesystem::space_info> ExtendedFileSystem::GetSpaceInfo(const std::
 // Create temporary file
 Result<std::filesystem::path> ExtendedFileSystem::CreateTempFile(
 	const std::filesystem::path& directory,
-	const std::string& prefix
+	std::string_view prefix
 ) {
 	std::error_code ec;
 	std::filesystem::path dir = directory.empty() ? std::filesystem::temp_directory_path(ec)
@@ -634,7 +641,7 @@ Result<std::filesystem::path> ExtendedFileSystem::CreateTempFile(
 	errno = 0;	// Clear errno before operation
 	std::ofstream file(temp_path);
 	if (!file) {
-		return MakeError(GetStreamError(temp_path, "Failed to create temp file"));
+		return MakeError(GetStreamError(file, temp_path, "Failed to create temp file"));
 	}
 	file.close();
 
@@ -644,7 +651,7 @@ Result<std::filesystem::path> ExtendedFileSystem::CreateTempFile(
 // Create temporary directory
 Result<std::filesystem::path> ExtendedFileSystem::CreateTempDirectory(
 	const std::filesystem::path& directory,
-	const std::string& prefix
+	std::string_view prefix
 ) {
 	std::error_code ec;
 	std::filesystem::path dir = directory.empty() ? std::filesystem::temp_directory_path(ec)
@@ -688,18 +695,17 @@ Result<bool> ExtendedFileSystem::FilesEqual(
 		return false;
 	}
 
-	// Compare contents
 	errno = 0;
-	std::ifstream file1(path1, std::ios::binary);
-	std::ifstream file2(path2, std::ios::binary);
 
-	if (!file1 || !file2) {
-		std::string error = "Failed to open files for comparison";
-		int err = errno;
-		if (err != 0) {
-			error = std::format("{}: {}", error, GetSystemError(err));
-		}
-		return MakeError(error);
+	// Compare contents
+	std::ifstream file1(path1, std::ios::binary);
+	if (!file1) {
+		return MakeError(GetStreamError(file1, path1, "Failed to open file for comparison"));
+	}
+
+	std::ifstream file2(path2, std::ios::binary);
+	if (!file2) {
+		return MakeError(GetStreamError(file2, path2, "Failed to open file for comparison"));
 	}
 
 	constexpr size_t buffer_size = 8192;
