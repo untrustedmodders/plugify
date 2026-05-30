@@ -2,49 +2,86 @@
 
 using namespace plugify;
 
-int GetError() {
 #if PLUGIFY_PLATFORM_WINDOWS
-	return GetLastError();
+#  include <windows.h>
+#endif
+
+int StandardFileSystem::GetError() {
+#if PLUGIFY_PLATFORM_WINDOWS
+	return ::GetLastError();
 #else
 	return errno;
 #endif
 }
 
-void SetError(int err) {
+void StandardFileSystem::SetError(int err) {
 #if PLUGIFY_PLATFORM_WINDOWS
-	SetLastError(err);
+	::SetLastError(err);
 #else
 	errno = err;
 #endif
 }
 
-// Get system error message from errno
-std::string StandardFileSystem::GetSystemError(int err) {
-	std::string result(1024, '\0');
 #if PLUGIFY_PLATFORM_WINDOWS
-	strerror_s(result.data(), result.size(), err);
-#elif PLUGIFY_PLATFORM_APPLE
-	strerror_r(err, result.data(), result.size());
-#elif PLUGIFY_PLATFORM_UNIX || PLUGIFY_PLATFORM_LINUX
-	// GNU vs POSIX strerror_r
-	auto b = result.data();
-	auto r = strerror_r(err, b, result.size());
-	if (r != b) {
-		result.assign(r);
+std::string StandardFileSystem::GetStringError(int err) {
+	LPSTR buffer = nullptr;
+
+	const size_t size = ::FormatMessageA(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		nullptr,
+		static_cast<DWORD>(err),
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		reinterpret_cast<LPSTR>(&buffer),
+		0,
+		nullptr
+	);
+
+	if (size == 0) {
+		return std::format("Unknown error ({})", err);
 	}
-#else
-	result.assign(std::strerror(err));
-#endif
-	result.resize(std::strlen(result.data()));
-	return result;
+
+	std::string message(buffer, size);
+	::LocalFree(buffer);
+	return message;
 }
+#else
+std::string StandardFileSystem::GetStringError(int error) {
+	std::vector<char> buffer(80);
+	while (true) {
+#if !defined(__GLIBC__) || ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE)
+		// Use the XSI-compliant version of strerror_r
+		int err = strerror_r(error, buffer.data(), buffer.size());
+		if (err == 0) {
+			return { buffer.data() };
+		}
+#else
+		// Use the GNU-specific version of strerror_r
+		int oerrno = errno;
+		errno = 0;
+		const char* msg = strerror_r(error, buffer.data(), buffer.size());
+		int err = errno;
+		errno = oerrno;
+		if (err == 0) {
+			return msg;
+		}
+#endif
+		if (err == ERANGE && buffer.size() < 1024 * 1024) {
+			buffer.resize(buffer.size() * 2);
+		} else {
+			return std::format("Unknown error ({})", err);
+		}
+	}
+}
+#endif
 
 // Get detailed error message for stream operations
 std::string
 StandardFileSystem::GetStreamError(const std::ios& stream, const std::filesystem::path& path, std::string_view operation) {
 	int err = GetError();
 	if (err != 0) {
-		return std::format("{} {}: {}", operation, plg::as_string(path), GetSystemError(err));
+		return std::format("{} {}: {}", operation, plg::as_string(path), GetStringError(err));
 	}
 
 	std::string_view state;

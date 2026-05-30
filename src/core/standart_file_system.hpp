@@ -50,7 +50,9 @@ namespace plugify {
 		) override;
 
 	protected:
-		static std::string GetSystemError(int err);
+		static int GetError();
+		static void SetError(int err);
+		static std::string GetStringError(int err);
 		static std::string GetStreamError(const std::ios& stream, const std::filesystem::path& path, std::string_view operation);
 	};
 

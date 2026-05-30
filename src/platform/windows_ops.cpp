@@ -35,7 +35,7 @@ namespace plugify {
 
 			LPSTR buffer = nullptr;
 			size_t size = ::FormatMessageA(
-				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 				nullptr,
 				error,
 				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -45,7 +45,7 @@ namespace plugify {
 			);
 
 			if (size == 0) {
-				return std::format("Error code: {}", error);
+				return std::format("Unknown error ({})", error);
 			}
 
 			std::string message(buffer, size);
