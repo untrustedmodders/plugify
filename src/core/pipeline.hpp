@@ -157,6 +157,8 @@ namespace plugify {
 	public:
 		// Execute pipeline - container is modified in place
 		Report Execute(std::vector<T>& items) {
+			[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+
 			Report report;
 			report.stages.reserve(_stages.size());
 			report.initialItems = items.size();
@@ -195,6 +197,8 @@ namespace plugify {
 	private:
 		StageStatistics
 		ExecuteStage(IStage<T>* stage, std::vector<T>& items, const ExecutionContext<T>& ctx) {
+			[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+
 			StageStatistics stats;
 			stats.itemsIn = items.size();
 			auto startTime = std::chrono::steady_clock::now();
@@ -239,6 +243,8 @@ namespace plugify {
 			StageStatistics& stats,
 			const ExecutionContext<T>& ctx
 		) {
+			[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+
 			// Process items in parallel
 			std::atomic<size_t> succeeded{ 0 };
 			std::atomic<size_t> failed{ 0 };
@@ -274,6 +280,8 @@ namespace plugify {
 			StageStatistics& stats,
 			const ExecutionContext<T>& ctx
 		) {
+			[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+
 			size_t originalSize = items.size();
 
 			// Process all items together
@@ -293,6 +301,8 @@ namespace plugify {
 			StageStatistics& stats,
 			const ExecutionContext<T>& ctx
 		) {
+			[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+
 			bool continueOnError = stage->ContinueOnError();
 			size_t total = items.size();
 
@@ -428,5 +438,6 @@ namespace plugify {
 		// std::shared_ptr<ILogger> _logger;
 		// std::shared_ptr<IProgressReporter> _reporter;
 		// std::shared_ptr<IMetricsCollector> _metrics;
+		std::shared_ptr<IProfiler> profiler;
 	};
 }

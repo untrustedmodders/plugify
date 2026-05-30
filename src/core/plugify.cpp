@@ -66,7 +66,7 @@ struct Plugify::Impl {
 	}
 
 	Result<void> Initialize() {
-		[[maybe_unused]] ScopedZone zone(profiler);
+		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
 
 		// Thread safety check based on config
 		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
@@ -108,7 +108,7 @@ struct Plugify::Impl {
 	}
 
 	void Terminate() {
-		[[maybe_unused]] ScopedZone zone(profiler);
+		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
 
 		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
 			throw std::runtime_error("Termination must be called from owner thread");
@@ -136,7 +136,7 @@ struct Plugify::Impl {
 	}
 
 	void Update(std::chrono::milliseconds deltaTime = 0ms) {
-		[[maybe_unused]] ScopedZone zone(profiler);
+		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
 
 		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
 			throw std::runtime_error("Update must be called from owner thread");

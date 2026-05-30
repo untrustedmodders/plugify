@@ -275,12 +275,15 @@ namespace plg {
 #if PLUGIFY_COMPILER_GCC || PLUGIFY_COMPILER_CLANG
 #  define PLUGIFY_RESTRICT __restrict__
 #  define PLUGIFY_USED __attribute__((used))
+#  define PLUGIFY_SIGNATURE __PRETTY_FUNCTION__
 #elif PLUGIFY_COMPILER_MSVC
 #  define PLUGIFY_RESTRICT __restrict
 #  define PLUGIFY_USED __declspec(dllexport)
+#  define PLUGIFY_SIGNATURE __FUNCSIG__
 #else
 #  define PLUGIFY_RESTRICT
 #  define PLUGIFY_USED
+#  define PLUGIFY_SIGNATURE ""
 #endif
 
 #if __has_builtin(__builtin_FILE) || (defined(_MSC_VER) && _MSC_VER > 1925)

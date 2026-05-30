@@ -53,7 +53,7 @@ namespace plugify {
 
 		// Capability query
 		virtual std::string_view GetName() const = 0; // "Tracy", "Optick", …
-		virtual bool IsActive() const = 0;
+		virtual bool IsActive() const = 0; // TODO: Remove
 	};
 
 	class ScopedZone {
