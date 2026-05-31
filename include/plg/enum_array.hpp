@@ -6,7 +6,7 @@
 namespace plg {
 	// Enum-indexed array wrapper
 	template<typename T, typename Enum>
-	class enum_map {
+	class enum_array {
 	private:
 	    // Convert enum to index
 	    static constexpr size_t to_index(Enum e) {
@@ -29,15 +29,15 @@ namespace plg {
 	    using const_iterator = typename storage::const_iterator;
 
 	    // Default constructor
-	    enum_map() = default;
+	    enum_array() = default;
 
 	    // Initialize with default value
-	    explicit enum_map(const T& default_value) {
+	    explicit enum_array(const T& default_value) {
 	        data_.fill(default_value);
 	    }
 
 	    // Initialize with initializer list
-	    enum_map(std::initializer_list<T> init) {
+	    enum_array(std::initializer_list<T> init) {
 	        if (init.size() != size()) {
 	            throw std::invalid_argument("Initializer list size must match enum count");
 	        }
