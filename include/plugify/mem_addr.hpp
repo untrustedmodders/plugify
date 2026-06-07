@@ -10,6 +10,7 @@ namespace plugify {
 	 * manipulation.
 	 */
 	class MemAddr { // TODO: Rename to Address in next major
+		using nullptr_t = std::nullptr_t;
 	public:
 		MemAddr() noexcept = default;
 
