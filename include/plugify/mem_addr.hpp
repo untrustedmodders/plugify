@@ -14,11 +14,7 @@ namespace plugify {
 	public:
 		constexpr MemAddr() noexcept = default;
 
-		constexpr MemAddr(uintptr_t ptr) noexcept
-			: m_value(ptr) {
-		}
-
-		constexpr MemAddr(const void* addr) noexcept
+		constexpr MemAddr(auto addr) noexcept
 			: m_value(std::bit_cast<uintptr_t>(addr)) {
 		}
 
@@ -66,28 +62,28 @@ namespace plugify {
 			return m_value >= 0x1000 && m_value < 0x7FFFFFFEFFFF;
 		}
 
-		[[nodiscard]] constexpr MemAddr Offset(ptrdiff_t offset) const noexcept {
-			return m_value + offset;
+		[[nodiscard]] constexpr MemAddr Offset(auto offset) const noexcept {
+			return m_value + static_cast<uintptr_t>(offset);
 		}
 
-		constexpr MemAddr& OffsetSelf(ptrdiff_t offset) noexcept {
-			m_value += offset;
+		constexpr MemAddr& OffsetSelf(auto offset) noexcept {
+			m_value += static_cast<uintptr_t>(offset);
 			return *this;
 		}
 
-		[[nodiscard]] constexpr MemAddr Deref(ptrdiff_t offset, ptrdiff_t deref = 1) const noexcept {
+		[[nodiscard]] constexpr MemAddr Deref(auto offset, ptrdiff_t deref = 1) const noexcept {
 			uintptr_t base = m_value;
 
 			while (deref--) {
-				base = *reinterpret_cast<uintptr_t*>(base + offset);
+				base = *reinterpret_cast<uintptr_t*>(base + static_cast<uintptr_t>(offset));
 			}
 
 			return base;
 		}
 
-		constexpr MemAddr& DerefSelf(ptrdiff_t offset, ptrdiff_t deref = 1) noexcept {
+		constexpr MemAddr& DerefSelf(auto offset, ptrdiff_t deref = 1) noexcept {
 			while (deref--) {
-				m_value = *reinterpret_cast<uintptr_t*>(m_value + offset);
+				m_value = *reinterpret_cast<uintptr_t*>(m_value + static_cast<uintptr_t>(offset));
 			}
 
 			return *this;
@@ -95,30 +91,30 @@ namespace plugify {
 
 		// ── Equality operators ────────────────────────────────────────────────────
 
-		[[nodiscard]] constexpr bool operator==(const auto& other) const noexcept {
+		[[nodiscard]] constexpr bool operator==(auto other) const noexcept {
 			return m_value == static_cast<uintptr_t>(other);
 		}
 
-		[[nodiscard]] constexpr auto operator<=>(const auto& other) const noexcept {
+		[[nodiscard]] constexpr auto operator<=>(auto other) const noexcept {
 			return m_value <=> static_cast<uintptr_t>(other);
 		}
 
 		// ── Arithmetic operators ────────────────────────────────────────────────────
 
-		[[nodiscard]] constexpr MemAddr operator+(const auto& offset) const noexcept {
+		[[nodiscard]] constexpr MemAddr operator+(auto offset) const noexcept {
 			return m_value + static_cast<uintptr_t>(offset);
 		}
 
-		[[nodiscard]] constexpr MemAddr operator-(const auto& offset) const noexcept {
+		[[nodiscard]] constexpr MemAddr operator-(auto offset) const noexcept {
 			return m_value - static_cast<uintptr_t>(offset);
 		}
 
-		constexpr MemAddr& operator+=(const auto& offset) noexcept {
+		constexpr MemAddr& operator+=(auto offset) noexcept {
 			m_value += static_cast<uintptr_t>(offset);
 			return *this;
 		}
 
-		constexpr MemAddr& operator-=(const auto& offset) noexcept {
+		constexpr MemAddr& operator-=(auto offset) noexcept {
 			m_value -= static_cast<uintptr_t>(offset);
 			return *this;
 		}
@@ -143,23 +139,23 @@ namespace plugify {
 
 		// ── Bitwise operators ───────────────────────────────────────────────────────
 
-		[[nodiscard]] constexpr MemAddr operator&(const auto& mask) const noexcept {
+		[[nodiscard]] constexpr MemAddr operator&(auto mask) const noexcept {
 			return m_value & static_cast<uintptr_t>(mask);
 		}
 
-		[[nodiscard]] constexpr MemAddr operator|(const auto& mask) const noexcept {
+		[[nodiscard]] constexpr MemAddr operator|(auto mask) const noexcept {
 			return m_value | static_cast<uintptr_t>(mask);
 		}
 
-		[[nodiscard]] constexpr MemAddr operator^(const auto& mask) const noexcept {
+		[[nodiscard]] constexpr MemAddr operator^(auto mask) const noexcept {
 			return m_value ^ static_cast<uintptr_t>(mask);
 		}
 
-		[[nodiscard]] constexpr MemAddr operator>>(const auto& shift) const noexcept {
+		[[nodiscard]] constexpr MemAddr operator>>(auto shift) const noexcept {
 			return m_value >> static_cast<uintptr_t>(shift);
 		}
 
-		[[nodiscard]] constexpr MemAddr operator<<(const auto& shift) const noexcept {
+		[[nodiscard]] constexpr MemAddr operator<<(auto shift) const noexcept {
 			return m_value << static_cast<uintptr_t>(shift);
 		}
 
