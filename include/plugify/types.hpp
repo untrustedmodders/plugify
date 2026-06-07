@@ -47,7 +47,7 @@ namespace plugify {
 		}
 
 		// conversion to underlying value
-		operator Value() const noexcept {
+		constexpr operator Value() const noexcept {
 			return value;
 		}
 
