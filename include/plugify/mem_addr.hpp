@@ -11,6 +11,8 @@ namespace plugify {
 	 */
 	class MemAddr { // TODO: Rename to Address in next major
 	public:
+		MemAddr() noexcept = default;
+
 		MemAddr(nullptr_t) noexcept : m_value(0) {}
 
 		MemAddr(uintptr_t addr) noexcept : m_value(addr) {}
