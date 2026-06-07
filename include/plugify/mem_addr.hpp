@@ -14,6 +14,18 @@ namespace plugify {
 	public:
 		constexpr MemAddr() noexcept = default;
 
+		constexpr MemAddr(std::nullptr_t) noexcept
+			: m_value(0) {
+		}
+
+		constexpr MemAddr(uintptr_t addr) noexcept
+			: m_value(addr) {
+		}
+
+		constexpr MemAddr(const void* addr) noexcept
+			: m_value(std::bit_cast<uintptr_t>(addr)) {
+		}
+
 		constexpr MemAddr(auto addr) noexcept
 			: m_value(std::bit_cast<uintptr_t>(addr)) {
 		}
@@ -119,21 +131,17 @@ namespace plugify {
 			return *this;
 		}
 
-		[[nodiscard]] constexpr ptrdiff_t operator-(const MemAddr& other) const noexcept {
+		[[nodiscard]] constexpr ptrdiff_t operator-(MemAddr other) const noexcept {
 			return static_cast<ptrdiff_t>(m_value) - static_cast<ptrdiff_t>(other.m_value);
 		}
 
-		template <typename T>
-			requires(!std::is_same_v<T, MemAddr>)
-		[[nodiscard]] friend constexpr MemAddr
-		operator+(const T& offset, const MemAddr& addr) noexcept {
+		template <typename T> requires(!std::is_same_v<T, MemAddr>)
+		[[nodiscard]] friend constexpr MemAddr operator+(T offset, MemAddr addr) noexcept {
 			return static_cast<uintptr_t>(offset) + addr.m_value;
 		}
 
-		template <typename T>
-			requires(!std::is_same_v<T, MemAddr>)
-		[[nodiscard]] friend constexpr MemAddr
-		operator-(const T& offset, const MemAddr& addr) noexcept {
+		template <typename T> requires(!std::is_same_v<T, MemAddr>)
+		[[nodiscard]] friend constexpr MemAddr operator-(T offset, MemAddr addr) noexcept {
 			return static_cast<uintptr_t>(offset) - addr.m_value;
 		}
 
