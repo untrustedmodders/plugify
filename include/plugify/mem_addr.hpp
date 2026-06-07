@@ -11,12 +11,15 @@ namespace plugify {
 	 */
 	class MemAddr { // TODO: Rename to Address in next major
 	public:
-		MemAddr() noexcept = default;
-		MemAddr(std::nullptr_t) noexcept : m_value(0) {}
+		MemAddr(nullptr_t) noexcept : m_value(0) {}
+
 		MemAddr(uintptr_t addr) noexcept : m_value(addr) {}
-		MemAddr(const void* addr) noexcept : m_value(reinterpret_cast<uintptr_t>(addr)) {}
-		template <typename T> requires std::is_function_v<std::remove_pointer_t<T>>
+
+		template <typename T> requires std::is_pointer_v<T>
 		MemAddr(T addr) noexcept : m_value(reinterpret_cast<uintptr_t>(addr)) {}
+
+		template <typename T> requires std::is_integral_v<T> && (sizeof(T) <= sizeof(uintptr_t))
+		MemAddr(T addr) noexcept : m_value(static_cast<uintptr_t>(addr)) {}
 
 		operator uintptr_t() const noexcept {
 			return m_value;
