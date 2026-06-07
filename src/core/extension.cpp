@@ -14,7 +14,7 @@ struct Extension::Impl {
 
 	// Runtime state
 	MethodTable methodTable;
-	MemAddr userData;
+	Address userData;
 	ILanguageModule* languageModule{ nullptr };
 	std::filesystem::path location;
 	std::string version;
@@ -269,7 +269,7 @@ std::shared_ptr<IAssembly> Extension::GetAssembly() const noexcept {
 // Shared Runtime Getters
 // ============================================================================
 
-MemAddr Extension::GetUserData() const noexcept {
+Address Extension::GetUserData() const noexcept {
 	return _impl->userData;
 }
 
@@ -371,7 +371,7 @@ void Extension::ClearWarnings() {
 // Runtime Updates
 // ============================================================================
 
-void Extension::SetUserData(MemAddr data) {
+void Extension::SetUserData(Address data) {
 	_impl->userData = data;
 }
 

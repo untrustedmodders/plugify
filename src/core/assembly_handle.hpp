@@ -71,7 +71,7 @@ namespace plugify {
 			return _refCount.load();
 		}
 
-		Result<MemAddr> GetSymbol(std::string_view name) const {
+		Result<Address> GetSymbol(std::string_view name) const {
 			return _ops->GetSymbol(_handle, name);
 		}
 	};

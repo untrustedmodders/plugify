@@ -31,7 +31,7 @@ namespace plugify {
 	 */
 	struct LoadData {
 		std::vector<MethodData> methods;  ///< Methods exported by the loaded plugin.
-		MemAddr data;                     ///< Data associated with the loaded plugin.
+		Address data;                     ///< Data associated with the loaded plugin.
 		MethodTable table;                ///< Method table for the loaded plugin.
 	};
 

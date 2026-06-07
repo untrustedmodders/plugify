@@ -15,7 +15,7 @@ namespace plugify {
 		// Core operations
 		virtual Result<void*> LoadLibrary(const std::filesystem::path& path, LoadFlag flags) = 0;
 		virtual Result<void> UnloadLibrary(void* handle) = 0;
-		virtual Result<MemAddr> GetSymbol(void* handle, std::string_view name) = 0;
+		virtual Result<Address> GetSymbol(void* handle, std::string_view name) = 0;
 		virtual Result<std::filesystem::path> GetLibraryPath(void* handle) = 0;
 
 		// Platform capabilities

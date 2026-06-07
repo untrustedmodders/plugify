@@ -14,7 +14,7 @@ namespace plugify {
 
 #if PLUGIFY_CACHE_SYMBOLS
 		// Symbol cache
-		mutable std::unordered_map<std::string, MemAddr, plg::string_hash, std::equal_to<>> _symbolCache;
+		mutable std::unordered_map<std::string, Address, plg::string_hash, std::equal_to<>> _symbolCache;
 		mutable std::shared_mutex _cacheMutex;
 #endif
 
@@ -26,7 +26,7 @@ namespace plugify {
 			, _ops(std::move(ops)) {
 		}
 
-		Result<MemAddr> GetSymbol(std::string_view name) const override {
+		Result<Address> GetSymbol(std::string_view name) const override {
 #if PLUGIFY_CACHE_SYMBOLS
 			// Check cache first
 			{
@@ -59,7 +59,7 @@ namespace plugify {
 			return _handle ? _handle->GetPath() : emptyPath;
 		}
 
-		MemAddr GetBase() const override {
+		Address GetBase() const override {
 			return _handle ? _handle->GetHandle() : nullptr;
 		}
 

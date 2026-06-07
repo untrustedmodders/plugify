@@ -58,7 +58,7 @@ namespace plugify {
 	 */
 	struct MethodData {
 		const Method& method;  ///< Ref to representing the method.
-		MemAddr addr;          ///< Pointer to the method's memory address.
+		Address addr;          ///< Pointer to the method's memory address.
 	};
 
 	/**

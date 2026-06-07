@@ -75,9 +75,9 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(
+		Address GetJitFunc(
 			const Signature& sig,
-			MemAddr target,
+			Address target,
 			WaitType waitType,
 			bool hidden
 		);
@@ -90,9 +90,9 @@ namespace plugify {
 		 * @param hidden If true, return will be pass as hidden argument.
 		 * @return Pointer to the generated function.
 		 */
-		MemAddr GetJitFunc(
+		Address GetJitFunc(
 		    const Method& method,
-		    MemAddr target,
+		    Address target,
 		    WaitType waitType = WaitType::None,
 		    HiddenParam hidden = &ValueUtils::IsHiddenParam
 		);
@@ -102,7 +102,7 @@ namespace plugify {
 		 * @return Pointer to the already generated function.
 		 * @note The returned pointer can be nullptr if function is not generate.
 		 */
-		MemAddr GetFunction() const noexcept;
+		Address GetFunction() const noexcept;
 
 		/**
 		 * @brief Get the target associated with the object.
@@ -111,7 +111,7 @@ namespace plugify {
 		 * @return A void pointer to the target function.
 		 * @note The returned pointer can be nullptr if no target is set.
 		 */
-		MemAddr GetTargetFunc() const noexcept;
+		Address GetTargetFunc() const noexcept;
 
 		/**
 		 * @brief Get the error message, if any.

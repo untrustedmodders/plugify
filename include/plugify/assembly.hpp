@@ -24,7 +24,7 @@ namespace plugify {
 		 * @param name Symbol name to lookup
 		 * @return Address of the symbol or error
 		 */
-		virtual Result<MemAddr> GetSymbol(std::string_view name) const = 0;
+		virtual Result<Address> GetSymbol(std::string_view name) const = 0;
 
 		/**
 		 * @brief Check if assembly is valid
@@ -42,7 +42,7 @@ namespace plugify {
 		 * @brief Get the base address of the assembly
 		 * @return Base memory address
 		 */
-		virtual MemAddr GetBase() const = 0;
+		virtual Address GetBase() const = 0;
 
 		/**
 		 * @brief Get raw platform handle

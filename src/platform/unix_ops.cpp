@@ -51,7 +51,7 @@ namespace plugify {
 			return {};
 		}
 
-		Result<MemAddr> GetSymbol(void* handle, std::string_view name) override {
+		Result<Address> GetSymbol(void* handle, std::string_view name) override {
 			// Clear any existing error
 			::dlerror();
 

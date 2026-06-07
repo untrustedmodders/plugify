@@ -21,11 +21,11 @@ struct JitCallback::Impl {
 		}
 	}
 
-	MemAddr GetJitFunc(
+	Address GetJitFunc(
 		const Signature& signature,
 		const Method* method,
 		CallbackHandler callback,
-		MemAddr data,
+		Address data,
 		bool hidden
 	) {
 		if (function) {
@@ -255,10 +255,10 @@ struct JitCallback::Impl {
 		return function;
 	}
 
-	MemAddr function;
+	Address function;
 
 	union {
-		MemAddr userData;
+		Address userData;
 		const char* errorCode{};
 	};
 };
@@ -275,20 +275,20 @@ JitCallback::~JitCallback() = default;
 
 JitCallback& JitCallback::operator=(JitCallback&& other) noexcept = default;
 
-MemAddr JitCallback::GetJitFunc(
+Address JitCallback::GetJitFunc(
 	const Signature& signature,
 	const Method* method,
 	CallbackHandler callback,
-	MemAddr data,
+	Address data,
 	bool hidden
 ) {
 	return _impl->GetJitFunc(signature, method, callback, data, hidden);
 }
 
-MemAddr JitCallback::GetJitFunc(
+Address JitCallback::GetJitFunc(
 	const Method& method,
 	CallbackHandler callback,
-	MemAddr data,
+	Address data,
 	HiddenParam hidden
 ) {
 	ValueType retType = method.GetRetType().GetType();
@@ -309,11 +309,11 @@ MemAddr JitCallback::GetJitFunc(
 	return GetJitFunc(signature, &method, callback, data, retHidden);
 }
 
-MemAddr JitCallback::GetFunction() const noexcept {
+Address JitCallback::GetFunction() const noexcept {
 	return _impl->function;
 }
 
-MemAddr JitCallback::GetUserData() const noexcept {
+Address JitCallback::GetUserData() const noexcept {
 	return _impl->userData;
 }
 

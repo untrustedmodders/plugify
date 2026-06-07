@@ -54,7 +54,7 @@ namespace plugify {
 		 */
 		using CallbackHandler = void (*)(
 		    const Method* method,
-		    MemAddr data,
+		    Address data,
 		    uint64_t* params,
 		    size_t count,
 		    /*uint128_t*/ void* ret
@@ -78,11 +78,11 @@ namespace plugify {
 		 * @details The \p method pointer can be nullptr and is provided for context in addition to
 		 * user data, as it is common to access both in callback scenarios.
 		 */
-		MemAddr GetJitFunc(
+		Address GetJitFunc(
 		    const Signature& signature,
 		    const Method* method,
 		    CallbackHandler callback,
-		    MemAddr data,
+		    Address data,
 		    bool hidden
 		);
 
@@ -100,10 +100,10 @@ namespace plugify {
 		 * receives arguments and user data as specified. If the hidden predicate returns true,
 		 * the return value is passed as an additional hidden parameter.
 		 */
-		MemAddr GetJitFunc(
+		Address GetJitFunc(
 		    const Method& method,
 		    CallbackHandler callback,
-		    MemAddr data = nullptr,
+		    Address data = nullptr,
 		    HiddenParam hidden = &ValueUtils::IsHiddenParam
 		);
 
@@ -112,7 +112,7 @@ namespace plugify {
 		 * @return Pointer to the already generated function.
 		 * @note The returned pointer can be nullptr if function is not generate.
 		 */
-		MemAddr GetFunction() const noexcept;
+		Address GetFunction() const noexcept;
 
 		/**
 		 * @brief Get the user data associated with the object.
@@ -120,7 +120,7 @@ namespace plugify {
 		 * @return A void pointer to the user data.
 		 * @note The returned pointer can be nullptr if no user data is set.
 		 */
-		MemAddr GetUserData() const noexcept;
+		Address GetUserData() const noexcept;
 
 		/**
 		 * @brief Get the error message, if any.

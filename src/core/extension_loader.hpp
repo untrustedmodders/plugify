@@ -367,7 +367,9 @@ namespace plugify {
 				return MakeError(std::move(entryFunc.error()));
 			}
 
-			auto* languageModule = entryFunc->RCast<ILanguageModule* (*) ()>()();
+			using GetLanguageModule = ILanguageModule*(*)();
+
+			auto* languageModule = entryFunc->As<GetLanguageModule>()();
 			if (!languageModule) {
 				return MakeError("Invalid address from '{}'", kGetLanguageModuleFn);
 			}

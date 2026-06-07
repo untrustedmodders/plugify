@@ -89,7 +89,7 @@ namespace plugify {
 			return {};
 		}
 
-		Result<MemAddr> GetSymbol(void* handle, std::string_view name) override {
+		Result<Address> GetSymbol(void* handle, std::string_view name) override {
 			FARPROC proc = ::GetProcAddress(static_cast<HMODULE>(handle), name.data());
 			if (!proc) {
 				return MakeError("Symbol '{}' not found: {}", name, GetLastErrorString());

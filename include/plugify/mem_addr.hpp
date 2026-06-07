@@ -3,293 +3,192 @@
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+#include <bit>
 
 namespace plugify {
 	/**
 	 * @brief A wrapper class for memory addresses, providing utility functions for pointer
 	 * manipulation.
 	 */
-	class MemAddr {
+	class MemAddr { // TODO: Rename to Address in next major
 	public:
-		/**
-		 * @brief Default constructor initializing the pointer to 0.
-		 */
-		constexpr MemAddr() noexcept
-		    : _ptr{ 0 } {
+		constexpr MemAddr() noexcept = default;
+
+		constexpr MemAddr(uintptr_t ptr) noexcept
+			: m_value(ptr) {
 		}
 
-		/**
-		 * @brief Constructor initializing the pointer with a uintptr_t value.
-		 * @param ptr The uintptr_t value to initialize the pointer with.
-		 */
-		constexpr MemAddr(const uintptr_t ptr) noexcept
-		    : _ptr{ ptr } {
+		constexpr MemAddr(const void* addr) noexcept
+			: m_value(std::bit_cast<uintptr_t>(addr)) {
 		}
 
-		/**
-		 * @brief Template constructor initializing the pointer with a typed pointer.
-		 * @tparam T The type of the pointer.
-		 * @param ptr The typed pointer to initialize with.
-		 */
-		template <typename T>
-		    requires(std::is_pointer_v<T> or std::is_null_pointer_v<T>)
-		MemAddr(T ptr) noexcept
-		    : _ptr{ reinterpret_cast<uintptr_t>(ptr) } {
-		}
-
-		/**
-		 * @brief Constructor initializing the pointer with a void pointer.
-		 * @param other The void pointer to initialize with.
-		 */
-		constexpr MemAddr(const MemAddr& other) noexcept = default;
-
-		/**
-		 * @brief Move constructor initializing the pointer with another MemAddr.
-		 * @param other The MemAddr to move from.
-		 */
-		constexpr MemAddr(MemAddr&& other) noexcept = default;
-
-		/**
-		 * @brief Assignment operator to copy another MemAddr.
-		 * @param other The MemAddr to copy from.
-		 * @return A reference to the current MemAddr object.
-		 */
-		constexpr MemAddr& operator=(const MemAddr& other) noexcept = default;
-
-		/**
-		 * @brief Move assignment operator to move another MemAddr.
-		 * @param other The MemAddr to move from.
-		 * @return A reference to the current MemAddr object.
-		 */
-		constexpr MemAddr& operator=(MemAddr&& other) noexcept = default;
-
-		/**
-		 * @brief Converts the MemAddr object to a uintptr_t.
-		 * @return The uintptr_t representation of the memory address.
-		 */
 		constexpr operator uintptr_t() const noexcept {
-			return _ptr;
+			return m_value;
 		}
 
-		/**
-		 * @brief Converts the MemAddr object to a void pointer.
-		 * @return The void pointer representation of the memory address.
-		 */
-		constexpr operator void*() const noexcept {
-			return _addr;
-		}
-
-		/**
-		 * @brief Explicit conversion operator to bool, indicating if the pointer is non-zero.
-		 * @return True if the pointer is non-zero, false otherwise.
-		 */
 		constexpr explicit operator bool() const noexcept {
-			return _ptr != 0;
+			return m_value != 0;
 		}
 
-		/**
-		 * @brief Inequality operator.
-		 * @param addr The MemAddr object to compare with.
-		 * @return True if the pointers are not equal, false otherwise.
-		 */
-		constexpr bool operator!=(const MemAddr& addr) const noexcept {
-			return _ptr != addr._ptr;
+		constexpr operator uint8_t*() const noexcept {
+			return std::bit_cast<uint8_t*>(m_value);
 		}
 
-		/**
-		 * @brief Less-than comparison operator.
-		 * @param addr The MemAddr object to compare with.
-		 * @return True if this pointer is less than the other, false otherwise.
-		 */
-		constexpr bool operator<(const MemAddr& addr) const noexcept {
-			return _ptr < addr._ptr;
+		constexpr operator void*() const noexcept {
+			return std::bit_cast<void*>(m_value);
 		}
 
-		/**
-		 * @brief Equality operator.
-		 * @param addr The MemAddr object to compare with.
-		 * @return True if the pointers are equal, false otherwise.
-		 */
-		constexpr bool operator==(const MemAddr& addr) const noexcept {
-			return _ptr == addr._ptr;
-		}
-
-		/**
-		 * @brief Equality operator for comparing with uintptr_t.
-		 * @param addr The uintptr_t value to compare with.
-		 * @return True if the pointer is equal to the uintptr_t value, false otherwise.
-		 */
-		constexpr bool operator==(const uintptr_t addr) const noexcept {
-			return _ptr == addr;
-		}
-
-		/**
-		 * @brief Returns the uintptr_t representation of the pointer.
-		 * @return The uintptr_t value of the pointer.
-		 */
-		constexpr uintptr_t GetPtr() const noexcept {
-			return _ptr;
-		}
-
-		/**
-		 * @brief Retrieves the value at the memory address.
-		 * @tparam T The type of the value.
-		 * @return The value at the memory address.
-		 */
-		template <class T>
-		constexpr T GetValue() const noexcept {
-			return *reinterpret_cast<T*>(_ptr);
-		}
-
-		/**
-		 * @brief Casts the pointer to a specified type using C-style cast.
-		 * @tparam T The type to cast to.
-		 * @return The casted pointer.
-		 */
 		template <typename T>
-		constexpr T CCast() const noexcept {
-			return (T) _ptr;
+		[[nodiscard]] constexpr T As() noexcept {
+			return reinterpret_cast<T>(m_value);
 		}
 
-		/**
-		 * @brief Casts the pointer to a specified type using reinterpret_cast.
-		 * @tparam T The type to cast to.
-		 * @return The casted pointer.
-		 */
 		template <typename T>
-		constexpr T RCast() const noexcept {
-			return reinterpret_cast<T>(_ptr);
+		[[nodiscard]] constexpr T As() const noexcept {
+			return reinterpret_cast<T>(m_value);
 		}
 
-		/**
-		 * @brief Casts the pointer to a specified type using a union cast.
-		 * @tparam T The type to cast to.
-		 * @return The casted pointer.
-		 */
 		template <typename T>
-		constexpr T UCast() const noexcept {
-			union {
-				uintptr_t ptr;
-				T val;
-			} cast;
-
-			return cast.ptr = _ptr, cast.val;
+		[[nodiscard]] constexpr T Get() noexcept {
+			return *reinterpret_cast<T*>(m_value);
 		}
 
-		/**
-		 * @brief Offsets the memory address by a specified amount.
-		 * @param offset The offset value.
-		 * @return A new MemAddr object with the offset applied.
-		 */
-		constexpr MemAddr Offset(const ptrdiff_t offset) const noexcept {
-			return _ptr + static_cast<uintptr_t>(offset);
+		template <typename T>
+		[[nodiscard]] constexpr T Get() const noexcept {
+			return *reinterpret_cast<T*>(m_value);
 		}
 
-		/**
-		 * @brief Offsets the memory address by a specified amount in-place.
-		 * @param offset The offset value.
-		 * @return A reference to the current MemAddr object.
-		 */
-		constexpr MemAddr& OffsetSelf(const ptrdiff_t offset) noexcept {
-			_ptr += static_cast<uintptr_t>(offset);
+		[[nodiscard]] constexpr uintptr_t GetPtr() const noexcept {
+			return m_value;
+		}
+
+		[[nodiscard]] constexpr bool IsValid() const noexcept {
+			return m_value >= 0x1000 && m_value < 0x7FFFFFFEFFFF;
+		}
+
+		[[nodiscard]] constexpr MemAddr Offset(ptrdiff_t offset) const noexcept {
+			return m_value + offset;
+		}
+
+		constexpr MemAddr& OffsetSelf(ptrdiff_t offset) noexcept {
+			m_value += offset;
 			return *this;
 		}
 
-		/**
-		 * @brief Dereferences the memory address a specified number of times.
-		 * @param deref The number of times to dereference.
-		 * @return A new MemAddr object after dereferencing.
-		 */
-		constexpr MemAddr Deref(ptrdiff_t deref = 1) const {
-			uintptr_t reference = _ptr;
+		[[nodiscard]] constexpr MemAddr Deref(ptrdiff_t offset, ptrdiff_t deref = 1) const noexcept {
+			uintptr_t base = m_value;
 
 			while (deref--) {
-				if (reference) {
-					reference = *reinterpret_cast<uintptr_t*>(reference);
-				}
+				base = *reinterpret_cast<uintptr_t*>(base + offset);
 			}
 
-			return reference;
+			return base;
 		}
 
-		/**
-		 * @brief Dereferences the memory address a specified number of times in-place.
-		 * @param deref The number of times to dereference.
-		 * @return A reference to the current MemAddr object.
-		 */
-		constexpr MemAddr& DerefSelf(ptrdiff_t deref = 1) {
+		constexpr MemAddr& DerefSelf(ptrdiff_t offset, ptrdiff_t deref = 1) noexcept {
 			while (deref--) {
-				if (_ptr) {
-					_ptr = *reinterpret_cast<uintptr_t*>(_ptr);
-				}
+				m_value = *reinterpret_cast<uintptr_t*>(m_value + offset);
 			}
 
 			return *this;
 		}
 
-		/**
-		 * @brief Follows a near call to resolve the address.
-		 * @param opcodeOffset The offset to the opcode.
-		 * @param nextInstructionOffset The offset to the next instruction.
-		 * @return A new MemAddr object with the resolved address.
-		 */
-		MemAddr FollowNearCall(
-		    const ptrdiff_t opcodeOffset = 0x1,
-		    const ptrdiff_t nextInstructionOffset = 0x5
-		) const {
-			return ResolveRelativeAddress(opcodeOffset, nextInstructionOffset);
+		// ── Equality operators ────────────────────────────────────────────────────
+
+		[[nodiscard]] constexpr bool operator==(const auto& other) const noexcept {
+			return m_value == static_cast<uintptr_t>(other);
 		}
 
-		/**
-		 * @brief Follows a near call to resolve the address in-place.
-		 * @param opcodeOffset The offset to the opcode.
-		 * @param nextInstructionOffset The offset to the next instruction.
-		 * @return A reference to the current MemAddr object with the resolved address.
-		 */
-		MemAddr& FollowNearCallSelf(
-		    const ptrdiff_t opcodeOffset = 0x1,
-		    const ptrdiff_t nextInstructionOffset = 0x5
-		) {
-			return ResolveRelativeAddressSelf(opcodeOffset, nextInstructionOffset);
+		[[nodiscard]] constexpr auto operator<=>(const auto& other) const noexcept {
+			return m_value <=> static_cast<uintptr_t>(other);
 		}
 
-		/**
-		 * @brief Resolves a relative address.
-		 * @param registerOffset The offset to the register.
-		 * @param nextInstructionOffset The offset to the next instruction.
-		 * @return A new MemAddr object with the resolved address.
-		 */
-		MemAddr ResolveRelativeAddress(
-		    const ptrdiff_t registerOffset = 0x0,
-		    const ptrdiff_t nextInstructionOffset = 0x4
-		) const {
-			const uintptr_t skipRegister = _ptr + static_cast<uintptr_t>(registerOffset);
-			const int32_t relativeAddress = *reinterpret_cast<int32_t*>(skipRegister);
-			const uintptr_t nextInstruction = _ptr + static_cast<uintptr_t>(nextInstructionOffset);
-			return nextInstruction + static_cast<uintptr_t>(relativeAddress);
+		// ── Arithmetic operators ────────────────────────────────────────────────────
+
+		[[nodiscard]] constexpr MemAddr operator+(const auto& offset) const noexcept {
+			return m_value + static_cast<uintptr_t>(offset);
 		}
 
-		/**
-		 * @brief Resolves a relative address in-place.
-		 * @param registerOffset The offset to the register.
-		 * @param nextInstructionOffset The offset to the next instruction.
-		 * @return A reference to the current MemAddr object with the resolved address.
-		 */
-		MemAddr& ResolveRelativeAddressSelf(
-		    const ptrdiff_t registerOffset = 0x0,
-		    const ptrdiff_t nextInstructionOffset = 0x4
-		) {
-			const uintptr_t skipRegister = _ptr + static_cast<uintptr_t>(registerOffset);
-			const int32_t relativeAddress = *reinterpret_cast<int32_t*>(skipRegister);
-			const uintptr_t nextInstruction = _ptr + static_cast<uintptr_t>(nextInstructionOffset);
-			_ptr = nextInstruction + static_cast<uintptr_t>(relativeAddress);
+		[[nodiscard]] constexpr MemAddr operator-(const auto& offset) const noexcept {
+			return m_value - static_cast<uintptr_t>(offset);
+		}
+
+		constexpr MemAddr& operator+=(const auto& offset) noexcept {
+			m_value += static_cast<uintptr_t>(offset);
 			return *this;
+		}
+
+		constexpr MemAddr& operator-=(const auto& offset) noexcept {
+			m_value -= static_cast<uintptr_t>(offset);
+			return *this;
+		}
+
+		[[nodiscard]] constexpr ptrdiff_t operator-(const MemAddr& other) const noexcept {
+			return static_cast<ptrdiff_t>(m_value) - static_cast<ptrdiff_t>(other.m_value);
+		}
+
+		template <typename T>
+			requires(!std::is_same_v<T, MemAddr>)
+		[[nodiscard]] friend constexpr MemAddr
+		operator+(const T& offset, const MemAddr& addr) noexcept {
+			return static_cast<uintptr_t>(offset) + addr.m_value;
+		}
+
+		template <typename T>
+			requires(!std::is_same_v<T, MemAddr>)
+		[[nodiscard]] friend constexpr MemAddr
+		operator-(const T& offset, const MemAddr& addr) noexcept {
+			return static_cast<uintptr_t>(offset) - addr.m_value;
+		}
+
+		// ── Bitwise operators ───────────────────────────────────────────────────────
+
+		[[nodiscard]] constexpr MemAddr operator&(const auto& mask) const noexcept {
+			return m_value & static_cast<uintptr_t>(mask);
+		}
+
+		[[nodiscard]] constexpr MemAddr operator|(const auto& mask) const noexcept {
+			return m_value | static_cast<uintptr_t>(mask);
+		}
+
+		[[nodiscard]] constexpr MemAddr operator^(const auto& mask) const noexcept {
+			return m_value ^ static_cast<uintptr_t>(mask);
+		}
+
+		[[nodiscard]] constexpr MemAddr operator>>(const auto& shift) const noexcept {
+			return m_value >> static_cast<uintptr_t>(shift);
+		}
+
+		[[nodiscard]] constexpr MemAddr operator<<(const auto& shift) const noexcept {
+			return m_value << static_cast<uintptr_t>(shift);
+		}
+
+		// ── Increment / Decrement ───────────────────────────────────────────────────
+
+		constexpr MemAddr& operator++() noexcept {
+			++m_value;
+			return *this;
+		}
+
+		[[nodiscard]] constexpr MemAddr operator++(int) noexcept {
+			const auto t = *this;
+			++m_value;
+			return t;
+		}
+
+		constexpr MemAddr& operator--() noexcept {
+			--m_value;
+			return *this;
+		}
+
+		[[nodiscard]] constexpr MemAddr operator--(int) noexcept {
+			const auto t = *this;
+			--m_value;
+			return t;
 		}
 
 	private:
-		union {
-			void* _addr;
-			uintptr_t _ptr;
-		};  //!< The memory address.
+		uintptr_t m_value;//!< The memory address.
 	};
+	using Address = MemAddr;
 }  // namespace plugify

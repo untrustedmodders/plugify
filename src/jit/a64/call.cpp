@@ -21,7 +21,7 @@ struct JitCall::Impl {
 		}
 	}
 
-	MemAddr GetJitFunc(const Signature& signature, MemAddr target, WaitType waitType, bool hidden) {
+	Address GetJitFunc(const Signature& signature, Address target, WaitType waitType, bool hidden) {
 		if (function) {
 			return function;
 		}
@@ -107,13 +107,13 @@ struct JitCall::Impl {
 			cc.brk(0x1);
 		} else if (waitType == WaitType::Wait_Keypress) {
 			a64::Gp dest = cc.new_gpz();
-			cc.mov(dest, reinterpret_cast<uint64_t>(&getchar));
+			cc.mov(dest, reinterpret_cast<uintptr_t>(&getchar));
 			InvokeNode* invokeNode;
 			cc.invoke(Out(invokeNode), dest, FuncSignature::build<int>());
 		}
 
 		a64::Gp dest = cc.new_gpz();
-		cc.mov(dest, (uint64_t) target.GetPtr());
+		cc.mov(dest, static_cast<uintptr_t>(target));
 
 		if (hidden) {
 			a64::Gp tmp = cc.new_gpz();
@@ -182,10 +182,10 @@ struct JitCall::Impl {
 		return function;
 	}
 
-	MemAddr function;
+	Address function;
 
 	union {
-		MemAddr targetFunc;
+		Address targetFunc;
 		const char* errorCode{};
 	};
 };
@@ -202,11 +202,11 @@ JitCall::~JitCall() = default;
 
 JitCall& JitCall::operator=(JitCall&& other) noexcept = default;
 
-MemAddr JitCall::GetJitFunc(const Signature& signature, MemAddr target, WaitType waitType, bool hidden) {
+Address JitCall::GetJitFunc(const Signature& signature, Address target, WaitType waitType, bool hidden) {
 	return _impl->GetJitFunc(signature, target, waitType, hidden);
 }
 
-MemAddr JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitType, HiddenParam hidden) {
+Address JitCall::GetJitFunc(const Method& method, Address target, WaitType waitType, HiddenParam hidden) {
 	ValueType retType = method.GetRetType().GetType();
 	bool retHidden = hidden(retType);
 
@@ -225,11 +225,11 @@ MemAddr JitCall::GetJitFunc(const Method& method, MemAddr target, WaitType waitT
 	return GetJitFunc(signature, target, waitType, retHidden);
 }
 
-MemAddr JitCall::GetFunction() const noexcept {
+Address JitCall::GetFunction() const noexcept {
 	return _impl->function;
 }
 
-MemAddr JitCall::GetTargetFunc() const noexcept {
+Address JitCall::GetTargetFunc() const noexcept {
 	return _impl->targetFunc;
 }
 

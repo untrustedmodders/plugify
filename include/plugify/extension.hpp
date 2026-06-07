@@ -97,7 +97,7 @@ namespace plugify {
 		[[nodiscard]] std::shared_ptr<IAssembly> GetAssembly() const noexcept;
 
 		// --- Shared Runtime ---
-		[[nodiscard]] MemAddr GetUserData() const noexcept;
+		[[nodiscard]] Address GetUserData() const noexcept;
 		[[nodiscard]] MethodTable GetMethodTable() const noexcept;
 		[[nodiscard]] ILanguageModule* GetLanguageModule() const noexcept;
 		[[nodiscard]] const Manifest& GetManifest() const noexcept;
@@ -134,7 +134,7 @@ namespace plugify {
 		void ClearWarnings();
 
 		// --- Runtime Updates ---
-		void SetUserData(MemAddr data);
+		void SetUserData(Address data);
 		void SetMethodTable(MethodTable table);
 		void SetLanguageModule(ILanguageModule* module);
 		void SetManifest(Manifest manifest);
