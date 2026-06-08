@@ -299,7 +299,8 @@ Result<std::vector<FileInfo>> StandardFileSystem::IterateDirectory(
 
 		// Apply filter pattern if specified
 		if (options.filter_pattern) {
-			if (!std::regex_match(plg::as_string(info.path.filename()), *options.filter_pattern)) {
+			const auto& filename = plg::as_string(info.path.filename());
+			if (!std::regex_match(filename, *options.filter_pattern)) {
 				return;
 			}
 		}
@@ -428,7 +429,7 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
 			return;
 		}
 
-		std::string filename = plg::as_string(file_path.filename());
+		const auto& filename = plg::as_string(file_path.filename());
 		for (const auto& regex : regexes) {
 			if (std::regex_match(filename, regex)) {
 				matches.push_back(file_path);
@@ -438,11 +439,9 @@ Result<std::vector<std::filesystem::path>> StandardFileSystem::FindFiles(
 	};
 
 	if (recursive) {
-		for (auto it = std::filesystem::recursive_directory_iterator(
-				 directory,
-				 std::filesystem::directory_options::skip_permission_denied,
-				 ec
-			 );
+		auto dir_options = std::filesystem::directory_options::skip_permission_denied;
+
+		for (auto it = std::filesystem::recursive_directory_iterator(directory, dir_options, ec);
 			 it != std::filesystem::recursive_directory_iterator();) {
 			if (!ec) {
 				check_file(it->path());

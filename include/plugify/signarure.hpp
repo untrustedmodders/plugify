@@ -18,12 +18,10 @@ namespace plugify {
 	 */
 	enum class CallConv : uint8_t {
 		CDecl = 0,  ///< C declaration convention (caller cleans stack, right-to-left argument push)
-		StdCall = 1,      ///< Standard call convention (callee cleans stack, right-to-left argument
-		                  ///< push)
+		StdCall = 1,      ///< Standard call convention (callee cleans stack, right-to-left argument push)
 		FastCall = 2,     ///< Fast call convention (arguments passed in registers when possible)
 		VectorCall = 3,   ///< Vector call convention (uses SSE/vector registers for arguments)
-		ThisCall = 4,     ///< 'This' call convention (C++ member functions, 'this' pointer in
-		                  ///< register)
+		ThisCall = 4,     ///< 'This' call convention (C++ member functions, 'this' pointer in register)
 		RegParm1 = 5,     ///< Register parameter convention 1 (platform-specific register usage)
 		RegParm2 = 6,     ///< Register parameter convention 2 (platform-specific register usage)
 		RegParm3 = 7,     ///< Register parameter convention 3 (platform-specific register usage)

@@ -206,7 +206,6 @@ private:
 			if (!dir.empty() && !fileSystem->IsExists(dir)) {
 				if (auto result = fileSystem->CreateDirectories(dir); !result) {
 					logger->Log(result.error(), Severity::Error);
-					;
 				} else {
 					logger->Log(
 						std::format("Created directory: {}", plg::as_string(dir)),

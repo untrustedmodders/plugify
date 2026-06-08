@@ -183,7 +183,7 @@ namespace plugify {
 		}
 
 	private:
-		uintptr_t m_value;//!< The memory address.
+		uintptr_t m_value; //!< The memory address.
 	};
 	using Address = MemAddr;
 }  // namespace plugify
