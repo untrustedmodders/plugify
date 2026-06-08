@@ -202,7 +202,7 @@ private:
 			return false;
 		}
 
-		auto createDir = [&](const std::filesystem::path& dir) {
+		auto create_dir = [&](const std::filesystem::path& dir) {
 			if (!dir.empty() && !fileSystem->IsExists(dir)) {
 				if (auto result = fileSystem->CreateDirectories(dir); !result) {
 					logger->Log(result.error(), Severity::Error);
@@ -216,11 +216,11 @@ private:
 		};
 
 		// createDir(config.paths.baseDir);
-		createDir(config.paths.extensionsDir);
-		createDir(config.paths.configsDir);
-		createDir(config.paths.dataDir);
-		createDir(config.paths.logsDir);
-		createDir(config.paths.cacheDir);
+		create_dir(config.paths.extensionsDir);
+		create_dir(config.paths.configsDir);
+		create_dir(config.paths.dataDir);
+		create_dir(config.paths.logsDir);
+		create_dir(config.paths.cacheDir);
 		return true;
 	}
 
@@ -291,7 +291,7 @@ private:
 		}
 
 		// Step 2: Check for path collisions
-		auto checkCollisions = [&result](std::span<const PathValidation> paths, size_t startIdx = 0) {
+		auto check_collisions = [&result](std::span<const PathValidation> paths, size_t startIdx = 0) {
 			for (size_t i = startIdx; i < paths.size(); ++i) {
 				if (paths[i].path->empty()) {
 					continue;
@@ -329,7 +329,7 @@ private:
 		};
 
 		// Check collisions (skip baseDir at index 0)
-		checkCollisions(pathsToValidate, 1);
+		check_collisions(pathsToValidate, 1);
 
 		// Log results
 		if (!result.warnings.empty()) {

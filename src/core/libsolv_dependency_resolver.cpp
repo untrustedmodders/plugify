@@ -334,8 +334,7 @@ std::vector<std::string> LibsolvDependencyResolver::ExtractSolutions(Solver* sol
 		Id element = 0;
 		Id p, rp;
 
-		while ((element = solver_next_solutionelement(solver, problemId, solutionId, element, &p, &rp))
-			   != 0) {
+		while ((element = solver_next_solutionelement(solver, problemId, solutionId, element, &p, &rp)) != 0) {
 			solutionSteps.emplace_back(solver_solutionelement2str(solver, p, rp));
 		}
 
