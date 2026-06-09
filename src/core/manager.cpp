@@ -20,8 +20,6 @@ struct Manager::Impl {
 		logger = services.Resolve<ILogger>();
 		manifestParser = services.Resolve<IManifestParser>();
 		resolver = services.Resolve<IDependencyResolver>();
-		// progressReporter = services.Resolve<IProgressReporter>();
-		// metricsCollector = services.Resolve<IMetricsCollector>();
 		profiler = services.TryResolve<IProfiler>();
 	}
 
@@ -45,8 +43,6 @@ struct Manager::Impl {
 	std::shared_ptr<ILogger> logger;
 	std::shared_ptr<IManifestParser> manifestParser;
 	std::shared_ptr<IDependencyResolver> resolver;
-	// std::shared_ptr<IProgressReporter> progressReporter;
-	// std::shared_ptr<IMetricsCollector> metricsCollector;
 	std::shared_ptr<IProfiler> profiler;
 
 	// Dependency graphs (filled by resolution stage)
@@ -117,9 +113,8 @@ public:
 									config.loading.startTimeout
 								)
 							)
-							//.WithConfig(config)
-							//.WithReporter(progressReporter)
-							//.WithMetrics(metricsCollector)
+							//.WithLogger(logger)
+							//.WithProfiler(profiler)
 							.WithThreadPoolSize(config.loading.maxConcurrentLoads)
 							.Build();
 

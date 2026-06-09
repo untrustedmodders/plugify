@@ -18,9 +18,7 @@ namespace plugify {
 	struct ExecutionContext {
 		glz::pool& pool;
 		// std::shared_ptr<ILogger> logger;
-		// std::shared_ptr<IProgressReporter> reporter;
-		// std::shared_ptr<IMetricsCollector> metrics;
-		//std::shared_ptr<IProfiler> profiler;
+		// std::shared_ptr<IProfiler> profiler;
 	};
 
 	// Base interface
