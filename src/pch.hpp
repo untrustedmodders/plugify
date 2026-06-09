@@ -26,5 +26,3 @@
 #include <vector>
 
 #include "plugify/global.h"
-
-namespace fs = std::filesystem;

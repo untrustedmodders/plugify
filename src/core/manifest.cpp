@@ -570,8 +570,8 @@ Result<void> Manifest::Validate() const {
 	return {};
 }
 
-void Manifest::ResolvePaths(const fs::path& base, const fs::path& file) {
-	auto create_name = [](const fs::path& path) -> fs::path {
+void Manifest::ResolvePaths(const std::filesystem::path& base, const std::filesystem::path& file) {
+	auto create_name = [](const std::filesystem::path& path) -> std::filesystem::path {
 		return std::format(PLUGIFY_PATH_LITERAL("" PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX), path.stem().native());
 	};
 
