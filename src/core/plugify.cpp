@@ -5,7 +5,6 @@
 #include "core/glaze_manifest_parser.hpp"
 #include "core/glaze_metadata.hpp"
 #include "core/libsolv_dependency_resolver.hpp"
-#include "core/simple_event_bus.hpp"
 #include "core/standart_file_system.hpp"
 
 #include "basic_assembly_loader.hpp"
@@ -47,7 +46,6 @@ struct Plugify::Impl {
 
 		// Create services
 		logger = services.Resolve<ILogger>();
-		eventBus = services.Resolve<IEventBus>();
 		fileSystem = services.Resolve<IFileSystem>();
 		ops = services.Resolve<IPlatformOps>();
 		profiler = services.TryResolve<IProfiler>();
@@ -101,9 +99,6 @@ struct Plugify::Impl {
 
 		initialized = true;
 
-		// Publish initialization event
-		eventBus->Publish("plugify.initialized", std::any{});
-
 		return {};
 	}
 
@@ -125,9 +120,6 @@ struct Plugify::Impl {
 
 		// Terminate manager
 		manager.Terminate();
-
-		// Publish termination event
-		eventBus->Publish("plugify.terminating", std::any{});
 
 		logger->Log("Plugify terminated", Severity::Info);
 		logger->Flush();
@@ -172,29 +164,7 @@ struct Plugify::Impl {
 				logger->Log("Update() called in BackgroundThread mode - ignoring", Severity::Debug);
 				break;
 		}
-
-		// Process any pending events
-		// eventBus->ProcessPending();
 	}
-
-	// Get current update statistics
-	/*struct UpdateStats {
-		UpdateMode mode;
-		size_t updateCount;
-		std::chrono::milliseconds averageUpdateTime;
-		std::chrono::milliseconds lastUpdateDuration;
-		bool isBackgroundThreadRunning;
-	};
-
-	UpdateStats GetUpdateStats() const {
-		return {
-			.mode = config.runtime.updateMode,
-			.updateCount = manager.GetUpdateCount(),
-			.averageUpdateTime = manager.GetAverageUpdateTime(),
-			.lastUpdateDuration = manager.GetLastUpdateDuration(),
-			.isBackgroundThreadRunning = updateThread.joinable()
-		};
-	}*/
 
 private:
 	bool CreateDirectories() {
@@ -566,11 +536,6 @@ PlugifyBuilder& PlugifyBuilder::WithAssemblyLoader(std::shared_ptr<IAssemblyLoad
 	return *this;
 }
 
-/*PlugifyBuilder& PlugifyBuilder::WithConfigProvider(std::shared_ptr<IConfigProvider> provider) {
-	if (provider) _impl->services.RegisterInstance<IConfigProvider>(std::move(provider));
-	return *this;
-}*/
-
 PlugifyBuilder& PlugifyBuilder::WithManifestParser(std::shared_ptr<IManifestParser> parser) {
 	if (parser) _impl->services.RegisterInstance<IManifestParser>(std::move(parser));
 	return *this;
@@ -586,34 +551,15 @@ PlugifyBuilder& PlugifyBuilder::WithExtensionLifecycle(std::shared_ptr<IExtensio
 	return *this;
 }
 
-/*PlugifyBuilder& PlugifyBuilder::WithProgressReporter(std::shared_ptr<IProgressReporter> reporter) {
-	if (reporter) _impl->services.RegisterInstance<IProgressReporter>(std::move(reporter));
-	return *this;
-}*/
-
-/*PlugifyBuilder& PlugifyBuilder::WithMetricsCollector(std::shared_ptr<IMetricsCollector> metrics) {
-	if (metrics) _impl->services.RegisterInstance<IMetricsCollector>(std::move(metrics));
-	return *this;
-}*/
-
-PlugifyBuilder& PlugifyBuilder::WithEventBus(std::shared_ptr<IEventBus> bus) {
-	if (bus) _impl->services.RegisterInstance<IEventBus>(std::move(bus));
-	return *this;
-}
-
 PlugifyBuilder& PlugifyBuilder::WithDefaults() {
 	_impl->services.RegisterInstanceIfMissing<ILogger>(std::make_shared<ConsoleLogger>());
 	//_impl->services.RegisterInstanceIfMissing<IProfiler>(std::make_shared<TracyProfiler>());
 	_impl->services.RegisterInstanceIfMissing<IPlatformOps>(CreatePlatformOps());
-	_impl->services.RegisterInstanceIfMissing<IEventBus>(std::make_shared<SimpleEventBus>());
 	_impl->services.RegisterInstanceIfMissing<IFileSystem>(std::make_shared<ExtendedFileSystem>());
 	_impl->services.RegisterInstanceIfMissing<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(_impl->services.Resolve<IPlatformOps>(), _impl->services.Resolve<IFileSystem>()));
-	//_impl->services.RegisterInstanceIfMissing<IConfigProvider>(std::make_shared<TypedGlazeConfigProvider<Config>>());
 	_impl->services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>());
 	_impl->services.RegisterInstanceIfMissing<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_impl->services.Resolve<ILogger>()));
 	_impl->services.RegisterInstanceIfMissing<IExtensionLifecycle>(std::make_shared<DummyLifecycle>());
-	//_impl->services.RegisterInstanceIfMissing<IProgressReporter>(std::make_shared<DefaultProgressReporter>(_impl->services.Resolve<ILogger>()));
-	//_impl->services.RegisterInstanceIfMissing<IMetricsCollector>(std::make_shared<BasicMetricsCollector>());
 	return *this;
 }
 
