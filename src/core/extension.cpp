@@ -65,19 +65,20 @@ struct Extension::Impl {
 		id.SetName(manifest.name);
 		version = manifest.version.to_string();
 
-		registrar = std::make_unique<Registrar>(id,
-			Registrar::DebugInfo{
-				.name = manifest.name,
-				.type = type,
-				.version = version,
-			}
-		);
-
 		auto parent = location.parent_path();
 		if (type == ExtensionType::Module) {
 			manifest.ResolvePaths(parent, location);
 		}
 		location = std::move(parent);
+
+		registrar = std::make_unique<Registrar>(id,
+			Registrar::DebugInfo{
+				.name = manifest.name,
+				.type = type,
+				.version = version,
+				//.location = location
+			}
+		);
 	}
 };
 
