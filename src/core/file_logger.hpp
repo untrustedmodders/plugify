@@ -19,7 +19,7 @@ namespace plugify {
 
 			_logFile.open(_logPath, std::ios::app);
 			if (!_logFile) {
-				throw std::runtime_error("Failed to open log file: " + plg::as_string(_logPath));
+				throw std::runtime_error(std::format("Failed to open log file: {}", plg::as_string(_logPath)));
 			}
 		}
 
@@ -83,18 +83,20 @@ namespace plugify {
 		}
 
 		// Helper: turn /logs/session.log → /logs/session-20260418_143022.log
-		static std::filesystem::path TimestampedPath(const std::filesystem::path& base) {
+		static std::filesystem::path TimestampedPath(std::filesystem::path base) {
 			using namespace std::chrono;
 			auto now = system_clock::now();
 			auto seconds = floor<std::chrono::seconds>(now);
 
-			return base.parent_path()
-			   / std::format(
-				   "{}-{:%Y%m%d_%H%M%S}{}",
-				   plg::as_string(base.stem()),
-				   utc_clock::from_sys(seconds),
-				   plg::as_string(base.extension())
-			   );
+			base.replace_filename(
+				std::format(
+					PLUGIFY_PATH_LITERAL("{}-{:%Y%m%d_%H%M%S}{}"),
+					base.stem().native(),
+					utc_clock::from_sys(seconds),
+					base.extension().native()
+				)
+			);
+			return base;
 		}
 	};
 }

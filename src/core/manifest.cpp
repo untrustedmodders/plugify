@@ -569,3 +569,24 @@ Result<void> Manifest::Validate() const {
 	// All validations passed
 	return {};
 }
+
+void Manifest::ResolvePaths(const fs::path& base, const fs::path& file) {
+	auto create_name = [](const fs::path& path) -> fs::path {
+		return std::format(PLUGIFY_PATH_LITERAL("" PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX), path.stem().native());
+	};
+
+	// Language module library must be named 'lib${name}(.dylib|.so|.dll)'.
+	if (runtime) {
+		runtime->replace_filename(create_name(*runtime));
+	} else {
+		runtime = PLUGIFY_PATH_LITERAL("bin") / create_name(file);
+	}
+	runtime = base / *runtime;
+
+	// Set correct path to directories
+	if (directories) {
+		for (auto& dir : *directories) {
+			dir = base / dir;
+		}
+	}
+}

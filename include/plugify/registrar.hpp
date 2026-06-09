@@ -15,7 +15,7 @@ namespace plugify {
 			std::string name;
 			ExtensionType type;
 			std::string version;
-			std::filesystem::path location;
+			//std::filesystem::path location;
 		};
 
 		Registrar(UniqueId id, DebugInfo info);

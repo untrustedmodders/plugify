@@ -62,41 +62,22 @@ struct Extension::Impl {
 	} moduleData{};
 
 	void Setup() {
-		fs::path path = std::move(location);
-		location = path.parent_path();
-		if (type == ExtensionType::Module) {
-			// Language module library must be named 'lib${name}(.dylib|.so|.dll)'.
-			if (manifest.runtime) {
-				manifest.runtime = location / manifest.runtime->parent_path()
-								   / std::format(
-									   PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,
-									   plg::as_string(manifest.runtime->filename())
-								   );
-			} else {
-				manifest.runtime = location / "bin"
-								   / std::format(
-									   PLUGIFY_LIBRARY_PREFIX "{}" PLUGIFY_LIBRARY_SUFFIX,
-									   plg::as_string(path.filename().replace_extension())
-								   );
-			}
-			// Set correct path to directories
-			if (manifest.directories && !manifest.directories->empty()) {
-				for (auto& dir : *manifest.directories) {
-					dir = location / dir;
-				}
-			}
-		}
 		id.SetName(manifest.name);
 		version = manifest.version.to_string();
-		registrar = std::make_unique<Registrar>(
-			id,
+
+		registrar = std::make_unique<Registrar>(id,
 			Registrar::DebugInfo{
 				.name = manifest.name,
 				.type = type,
 				.version = version,
-				.location = std::move(path),
 			}
 		);
+
+		auto parent = location.parent_path();
+		if (type == ExtensionType::Module) {
+			manifest.ResolvePaths(parent, location);
+		}
+		location = std::move(parent);
 	}
 };
 
@@ -122,7 +103,7 @@ static const std::vector<MethodData> emptyMethodData;
 
 Extension::Extension(UniqueId id, std::filesystem::path location)
 	: _impl(std::make_unique<Impl>()) {
-	_impl->manifest.name = plg::as_string(location.filename().replace_extension());
+	_impl->manifest.name = plg::as_string(location.stem());
 
 	_impl->id = id;
 	_impl->state = ExtensionState::Discovered;
@@ -314,7 +295,7 @@ std::chrono::milliseconds Extension::GetOperationTime(ExtensionState state) cons
 	if (it != _impl->timings.timepoints.end()) {
 		return it->second;
 	}
-	return std::chrono::milliseconds{};
+	return {};
 }
 
 std::chrono::milliseconds Extension::GetTotalTime() const {

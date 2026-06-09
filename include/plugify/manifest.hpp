@@ -37,6 +37,8 @@ namespace plugify {
 		std::optional<std::filesystem::path> runtime;
 		std::optional<std::vector<std::filesystem::path>> directories;
 
+		void ResolvePaths(const std::filesystem::path& base, const std::filesystem::path& file);
+
 		[[nodiscard]] Result<void> Validate() const;
 	};
 

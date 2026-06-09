@@ -10,6 +10,7 @@ namespace plugify {
 		std::unique_ptr<AssemblyHandle> _handle;
 		std::shared_ptr<IPlatformOps> _ops;
 
+	public:
 		explicit BasicAssembly(std::unique_ptr<AssemblyHandle> handle, std::shared_ptr<IPlatformOps> ops)
 			: _handle(std::move(handle))
 			, _ops(std::move(ops)) {
