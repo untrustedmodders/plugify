@@ -164,7 +164,7 @@ namespace plugify {
 			}
 
 			// Clear assembly and remove from cache
-			if (auto assembly = module.GetAssembly()) {
+			if ([[maybe_unused]] auto assembly = module.GetAssembly()) {
 				_assemblyCache.erase(module.GetRuntime());
 				module.SetAssembly(nullptr);
 			}
@@ -267,7 +267,7 @@ namespace plugify {
 			return {};
 		}
 
-		Result<void> MethodExport(const Extension& module, const Extension& plugin) {
+		Result<void> MethodExport(const Extension& module, Extension& plugin) {
 			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
 
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
@@ -277,7 +277,7 @@ namespace plugify {
 			auto result = SafeCall<void>("OnMethodExport", module.GetName(), [&] {
 				return module.GetLanguageModule()->OnMethodExport(plugin);
 			});
-			//_lifecycle->OnExport(module, plugin);
+			_extensionLifecycle->OnExport(plugin);
 			return result;
 		}
 
