@@ -75,17 +75,17 @@ namespace plugify {
 			}
 
 			void ResolveRelativePaths() {
-				auto makeAbsolute = [this](std::filesystem::path& path) {
+				auto make_absolute = [&](std::filesystem::path& path) {
 					if (!path.empty() && path.is_relative() && !baseDir.empty()) {
 						path = (baseDir / path).lexically_normal();
 					}
 				};
 
-				makeAbsolute(extensionsDir);
-				makeAbsolute(configsDir);
-				makeAbsolute(dataDir);
-				makeAbsolute(logsDir);
-				makeAbsolute(cacheDir);
+				make_absolute(extensionsDir);
+				make_absolute(configsDir);
+				make_absolute(dataDir);
+				make_absolute(logsDir);
+				make_absolute(cacheDir);
 			}
 		} paths{};
 
@@ -221,7 +221,7 @@ namespace plugify {
 			*this = Config{};
 		}
 
-		// Validation remains the same
+		// Validation of fields
 		Result<void> Validate() const;
 
 	private:
