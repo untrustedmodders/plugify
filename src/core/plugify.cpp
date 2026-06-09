@@ -6,9 +6,7 @@
 #include "core/glaze_metadata.hpp"
 #include "core/libsolv_dependency_resolver.hpp"
 #include "core/standart_file_system.hpp"
-
-#include "basic_assembly_loader.hpp"
-#include "dummy_lifecycle.hpp"
+#include "core/basic_assembly_loader.hpp"
 
 using namespace plugify;
 using namespace std::chrono_literals;
@@ -558,7 +556,7 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
 	_impl->services.RegisterInstanceIfMissing<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(_impl->services.Resolve<IPlatformOps>(), _impl->services.Resolve<IFileSystem>()));
 	_impl->services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>());
 	_impl->services.RegisterInstanceIfMissing<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_impl->services.Resolve<ILogger>()));
-	_impl->services.RegisterInstanceIfMissing<IExtensionLifecycle>(std::make_shared<DummyLifecycle>());
+	//_impl->services.RegisterInstanceIfMissing<IExtensionLifecycle>(std::make_shared<DummyLifecycle>());
 	return *this;
 }
 

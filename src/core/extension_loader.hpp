@@ -104,7 +104,7 @@ namespace plugify {
 			, _provider(provider)
 			, _fileSystem(services.Resolve<IFileSystem>())
 			, _assemblyLoader(services.Resolve<IAssemblyLoader>())
-			, _extensionLifecycle(services.Resolve<IExtensionLifecycle>())
+			, _extensionLifecycle(services.TryResolve<IExtensionLifecycle>())
 			, _profiler(services.TryResolve<IProfiler>()) {
 		}
 
@@ -132,7 +132,9 @@ namespace plugify {
 				return langModuleResult;
 			}
 
-			_extensionLifecycle->OnLoad(module);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnLoad(module);
+			}
 			++_stats.modulesLoaded;
 			return {};
 		}
@@ -147,7 +149,9 @@ namespace plugify {
 			auto result = SafeCall<void>("OnUpdate", module.GetName(), [&] {
 				return module.GetLanguageModule()->OnUpdate(deltaTime);
 			});
-			_extensionLifecycle->OnUpdate(module, deltaTime);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnUpdate(module, deltaTime);
+			}
 			return result;
 		}
 
@@ -169,7 +173,9 @@ namespace plugify {
 				module.SetAssembly(nullptr);
 			}
 
-			_extensionLifecycle->OnUnload(module);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnUnload(module);
+			}
 			--_stats.modulesLoaded;
 			return result;
 		}
@@ -208,7 +214,9 @@ namespace plugify {
 			}
 
 			++_stats.pluginsLoaded;
-			_extensionLifecycle->OnLoad(plugin);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnLoad(plugin);
+			}
 			return {};
 		}
 
@@ -222,7 +230,9 @@ namespace plugify {
 			auto result = SafeCall<void>("OnPluginStart", plugin.GetName(), [&] {
 				return plugin.GetLanguageModule()->OnPluginStart(plugin);
 			});
-			_extensionLifecycle->OnStart(plugin);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnStart(plugin);
+			}
 			return result;
 		}
 
@@ -236,7 +246,9 @@ namespace plugify {
 			auto result = SafeCall<void>("OnPluginEnd", plugin.GetName(), [&] {
 				return plugin.GetLanguageModule()->OnPluginEnd(plugin);
 			});
-			_extensionLifecycle->OnEnd(plugin);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnEnd(plugin);
+			}
 			return result;
 		}
 
@@ -250,7 +262,9 @@ namespace plugify {
 			auto result = SafeCall<void>("OnPluginUpdate", plugin.GetName(), [&] {
 				return plugin.GetLanguageModule()->OnPluginUpdate(plugin, deltaTime);
 			});
-			_extensionLifecycle->OnUpdate(plugin, deltaTime);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnUpdate(plugin, deltaTime);
+			}
 			return result;
 		}
 
@@ -262,7 +276,9 @@ namespace plugify {
 			plugin.SetUserData(nullptr);
 			plugin.SetMethodTable({});
 			plugin.SetMethodsData({});
-			_extensionLifecycle->OnUnload(plugin);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnUnload(plugin);
+			}
 			--_stats.pluginsLoaded;
 			return {};
 		}
@@ -277,7 +293,9 @@ namespace plugify {
 			auto result = SafeCall<void>("OnMethodExport", module.GetName(), [&] {
 				return module.GetLanguageModule()->OnMethodExport(plugin);
 			});
-			_extensionLifecycle->OnExport(plugin);
+			if (_extensionLifecycle) {
+				_extensionLifecycle->OnExport(plugin);
+			}
 			return result;
 		}
 
