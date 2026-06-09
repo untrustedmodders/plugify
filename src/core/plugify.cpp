@@ -21,7 +21,6 @@ struct Plugify::Impl {
 	Version version;
 
 	std::shared_ptr<ILogger> logger;
-	std::shared_ptr<IEventBus> eventBus;
 	std::shared_ptr<IFileSystem> fileSystem;
 	std::shared_ptr<IPlatformOps> ops;
 	std::shared_ptr<IProfiler> profiler;
