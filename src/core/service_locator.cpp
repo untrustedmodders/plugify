@@ -1,4 +1,5 @@
 #include "plugify/service_locator.hpp"
+#include "plugify/types.hpp"
 
 using namespace plugify;
 
@@ -32,6 +33,7 @@ struct ServiceLocator::Impl {
 		}
 
 		std::unique_lock lock(mutex);
+
 		services[type] = {
 			.factory = [instance]() { return instance; },
 			.lifetime = ServiceLifetime::Singleton,
@@ -66,12 +68,12 @@ struct ServiceLocator::Impl {
 		services[type] = std::move(descriptor);
 	}
 
-	std::shared_ptr<void> Resolve(std::type_index type) const {
+	Result<std::shared_ptr<void>> ResolveInternal(std::type_index type) const noexcept {
 		std::shared_lock lock(mutex);
 
 		auto it = services.find(type);
 		if (it == services.end()) {
-			throw std::runtime_error(std::format("Service not registered: {}", type.name()));
+			return MakeError("Service not registered: {}", type.name());
 		}
 
 		const auto& descriptor = it->second;
@@ -86,9 +88,7 @@ struct ServiceLocator::Impl {
 
 			case ServiceLifetime::Scoped: {
 				if (scopeStack.empty()) {
-					throw std::runtime_error(
-						std::format("Scoped service: {} resolved outside of a scope", type.name())
-					);
+					return MakeError("Scoped service: {} resolved outside of a scope", type.name());
 				}
 
 				auto& currentScope = scopeStack.back();
@@ -111,12 +111,20 @@ struct ServiceLocator::Impl {
 		}
 	}
 
+	std::shared_ptr<void> Resolve(std::type_index type) const {
+		auto result = ResolveInternal(type);
+		if (!result) {
+			throw std::runtime_error(std::move(result.error()));
+		}
+		return *result;
+	}
+
 	std::shared_ptr<void> TryResolve(std::type_index type) const noexcept {
-		try {
-			return Resolve(type);
-		} catch (...) {
+		auto result = ResolveInternal(type);
+		if (!result) {
 			return nullptr;
 		}
+		return *result;
 	}
 
 	bool IsRegistered(std::type_index type) const {
