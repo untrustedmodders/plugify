@@ -2,19 +2,17 @@
 
 using namespace plugify;
 
-using DebugInfo = Registrar::DebugInfo;
-
 // A thread-safe global registry
 namespace {
-	std::unordered_map<UniqueId, DebugInfo> registry;
+	std::unordered_map<UniqueId, std::string> registry;
 	std::shared_mutex mutex;
 }
 
 // Register / unregister
-Registrar::Registrar(UniqueId id, DebugInfo info)
+Registrar::Registrar(UniqueId id, std::string name)
 	: _id(id) {
 	std::unique_lock lock(mutex);
-	registry[id] = std::move(info);
+	registry[id] = std::move(name);
 }
 
 Registrar::~Registrar() {
@@ -35,33 +33,11 @@ Registrar& Registrar::operator=(Registrar&& o) noexcept {
 	return *this;
 }
 
-// Lookup helper
-static DebugInfo* LookupDebugInfo(UniqueId id) {
+std::string plugify::ToString(UniqueId id) noexcept {
 	std::shared_lock lock(mutex);
 	auto it = registry.find(id);
-	if (it == registry.end()) {
-		return nullptr;
+	if (it != registry.end()) {
+		return it->second;
 	}
-	return &it->second;
-}
-
-std::string plugify::ToDebugString(UniqueId id) noexcept {
-	if (auto info = LookupDebugInfo(id)) {
-		std::string s = info->name.empty() ? std::format("id#{}", id) : info->name;
-		if (info->type != ExtensionType::Unknown) {
-			s += std::format(" ({})", plg::enum_to_string(info->type));
-		}
-		if (!info->version.empty()) {
-			s += std::format(" v{}", info->version);
-		}
-		return s;
-	}
-	return std::format("id#{}", id);
-}
-
-std::string plugify::ToShortString(UniqueId id) noexcept {
-	if (auto info = LookupDebugInfo(id)) {
-		return info->name;
-	}
-	return {};
+	return "<unknown>";
 }

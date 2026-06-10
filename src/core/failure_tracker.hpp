@@ -50,7 +50,7 @@ namespace plugify {
 				for (const auto& depId : it->second) {
 					if (_failedExtensions.contains(depId)) {
 						// Find the name of the failed dependency
-						return ToShortString(depId);
+						return ToString(depId);
 					}
 				}
 			}

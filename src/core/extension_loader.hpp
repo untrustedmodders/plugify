@@ -79,9 +79,9 @@ namespace plugify {
 					modulesLoaded,
 					pluginsLoaded,
 					slowestModuleLoad,
-					ToShortString(slowestModule),
+					ToString(slowestModule),
 					slowestPluginLoad,
-					ToShortString(slowestPlugin),
+					ToString(slowestPlugin),
 					totalLoadTime
 				);
 			}

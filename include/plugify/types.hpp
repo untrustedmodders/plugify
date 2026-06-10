@@ -41,14 +41,21 @@ namespace plugify {
 		using Value = std::ptrdiff_t;
 
 		constexpr UniqueId() noexcept = default;
+		constexpr explicit UniqueId(Value v) noexcept : value(v) {}
+		constexpr ~UniqueId() = default;
 
-		constexpr explicit UniqueId(Value v) noexcept
-		    : value(v) {
-		}
+		constexpr UniqueId(const UniqueId& other) = default;
+		constexpr UniqueId(UniqueId&& other) noexcept = default;
+		constexpr UniqueId& operator=(const UniqueId& other) = default;
+		constexpr UniqueId& operator=(UniqueId&& other) noexcept = default;
 
 		// conversion to underlying value
 		constexpr operator Value() const noexcept {
 			return value;
+		}
+
+		constexpr explicit operator bool() const noexcept {
+			return value != -1;
 		}
 
 		// prefix increment / decrement
@@ -94,8 +101,10 @@ namespace plugify {
 			return value <=> other.value;
 		}
 
-		constexpr void SetName(const std::string& str) noexcept {
-			name = str.c_str();
+		// for debug purpose only, not used in any logic
+		constexpr UniqueId& operator=(const char* str) {
+			name = str;
+			return *this;
 		}
 
 	private:

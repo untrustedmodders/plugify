@@ -356,7 +356,7 @@ public:
 
 		for (size_t i = 0; i < loadOrder.size(); ++i) {
 			const auto& id = loadOrder[i];
-			std::format_to(it, "{:3}: {} (id={})\n", i, ToShortString(id), id);
+			std::format_to(it, "{:3}: {} (id={})\n", i, ToString(id), id);
 		}
 
 		buffer.push_back('\n');
@@ -377,7 +377,7 @@ public:
 		}
 
 		for (const auto& [id, deps] : depGraph) {
-			std::format_to(it, "{} (id={}) -> ", ToShortString(id), id);
+			std::format_to(it, "{} (id={}) -> ", ToString(id), id);
 			if (deps.empty()) {
 				std::format_to(it, "[]\n");
 				continue;
@@ -389,7 +389,7 @@ public:
 				if (!first) {
 					std::format_to(it, ", ");
 				}
-				std::format_to(it, "{} (id={})", ToShortString(d), d);
+				std::format_to(it, "{} (id={})", ToString(d), d);
 				first = false;
 			}
 			std::format_to(it, "]\n");

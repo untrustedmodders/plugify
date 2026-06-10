@@ -62,7 +62,7 @@ struct Extension::Impl {
 	} moduleData{};
 
 	void Setup() {
-		id.SetName(manifest.name);
+		id = manifest.name.c_str();
 		version = manifest.version.to_string();
 
 		auto parent = location.parent_path();
@@ -71,14 +71,7 @@ struct Extension::Impl {
 		}
 		location = std::move(parent);
 
-		registrar = std::make_unique<Registrar>(id,
-			Registrar::DebugInfo{
-				.name = manifest.name,
-				.type = type,
-				.version = version,
-				//.location = location
-			}
-		);
+		registrar = std::make_unique<Registrar>(id, manifest.name);
 	}
 };
 
