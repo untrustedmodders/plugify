@@ -140,8 +140,8 @@ namespace plugify {
 
 	private:
 		Pipeline(Builder&& builder)
-			: _pool(builder._threadPoolSize)
-			, _stages(std::move(builder._stages)) {
+			: _stages(std::move(builder._stages))
+			, _pool(builder._threadPoolSize) {
 		}
 
 	public:
