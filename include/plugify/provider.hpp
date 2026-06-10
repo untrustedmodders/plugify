@@ -13,7 +13,7 @@ namespace plugify {
 	// Provider acts as a facade to simplify access to common services
 	class PLUGIFY_API Provider {
 	public:
-		explicit Provider(const ServiceLocator& services, const Config& config, const Manager& manager);
+		Provider(const ServiceLocator& services, const Config& config, const Manager& manager);
 		~Provider();
 		Provider(const Provider& other);
 		Provider(Provider&& other) noexcept;

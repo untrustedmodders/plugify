@@ -11,7 +11,7 @@ namespace plugify {
 
 	class PLUGIFY_API Manager {
 	public:
-		explicit Manager(const ServiceLocator& services, const Config& config);
+		Manager(const ServiceLocator& services, const Config& config);
 		~Manager();
 		Manager(const Manager& other) = delete;
 		Manager(Manager&& other) noexcept = delete;

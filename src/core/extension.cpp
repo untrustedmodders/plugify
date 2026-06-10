@@ -95,6 +95,8 @@ static const std::vector<MethodData> emptyMethodData;
 // Constructor & Destructor
 // ============================================================================
 
+Extension::Extension() = default;
+
 Extension::Extension(UniqueId id, std::filesystem::path location)
 	: _impl(std::make_unique<Impl>()) {
 	_impl->manifest.name = plg::as_string(location.stem());

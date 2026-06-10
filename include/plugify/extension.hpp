@@ -55,6 +55,7 @@ namespace plugify {
 	// Unified Extension class
 	class PLUGIFY_API Extension {
 	public:
+		Extension();
 		Extension(UniqueId id, std::filesystem::path location);
 		~Extension();
 
