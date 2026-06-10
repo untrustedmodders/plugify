@@ -140,10 +140,8 @@ namespace plugify {
 
 	private:
 		Pipeline(Builder&& builder)
-			: _pool(builder._threadPoolSize) {
-			for (auto& [stage, required] : builder._stages) {
-				_stages.emplace_back(std::move(stage), required);
-			}
+			: _pool(builder._threadPoolSize)
+			, _stages(std::move(builder._stages)) {
 		}
 
 	public:
@@ -413,6 +411,6 @@ namespace plugify {
 		std::vector<StageEntry> _stages;
 		glz::pool _pool;
 		// std::shared_ptr<ILogger> _logger;
-		//std::shared_ptr<IProfiler> profiler;
+		//std::shared_ptr<IProfiler> _profiler;
 	};
 }

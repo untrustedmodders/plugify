@@ -127,7 +127,7 @@ namespace plugify {
 			}
 
 			// Load language module interface
-			auto langModuleResult = LoadLanguageModule(*assemblyResult, module);
+			auto langModuleResult = LoadLanguageModule(std::move(*assemblyResult), module);
 			if (!langModuleResult) {
 				return langModuleResult;
 			}
@@ -213,10 +213,10 @@ namespace plugify {
 				return validateResult;
 			}
 
-			++_stats.pluginsLoaded;
 			if (_extensionLifecycle) {
 				_extensionLifecycle->OnLoad(plugin);
 			}
+			++_stats.pluginsLoaded;
 			return {};
 		}
 
