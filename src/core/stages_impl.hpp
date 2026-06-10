@@ -223,7 +223,7 @@ namespace plugify {
 			idToExtension.reserve(filtered.size());
 
 			for (auto&& ext : filtered) {
-				idToExtension.emplace(ext.GetId(), std::move(ext)); //-V1098 //-V837
+				idToExtension[ext.GetId()] = std::move(ext);
 			}
 
 			// Add resolved extensions in load order

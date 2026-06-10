@@ -285,7 +285,7 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 		// Create issue for this problem
 		DependencyIssue issue;
 		issue.problem = std::format("Problem {}/{}", problemId, problemCount);
-		issue.isBlocking = true;  // All problems from solver are blocking //-V1048
+		//issue.isBlocking = true; // All problems from solver are blocking
 
 		// Determine affected extensions
 		if (source) {
@@ -310,12 +310,8 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 
 		// Add issue to report
 		if (issue.affectedExtension != -1) {
-			auto it = resolution.issues.find(issue.affectedExtension);
-			if (it != resolution.issues.end()) {
-				it->second.push_back(std::move(issue));
-			} else {
-				resolution.issues.emplace(issue.affectedExtension, std::vector{ std::move(issue) }); //-V837
-			}
+			auto& issues = resolution.issues[issue.affectedExtension];
+			issues.push_back(std::move(issue));
 		}
 	}
 }

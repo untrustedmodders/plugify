@@ -14,7 +14,7 @@ namespace plugify {
 
 		// Assembly cache
 		std::unordered_map<std::filesystem::path, std::weak_ptr<IAssembly>, plg::path_hash> _cache;
-		mutable std::shared_mutex _cacheMutex;
+		std::mutex _mutex;
 
 		Result<std::filesystem::path> ResolvePath(const std::filesystem::path& path) const {
 			// If absolute path, just verify it exists
@@ -45,14 +45,13 @@ namespace plugify {
 				return MakeError(std::move(resolvedPath.error()));
 			}
 
+			std::unique_lock lock(_mutex);
+
 			// Check cache
-			{
-				std::shared_lock lock(_cacheMutex);
-				auto it = _cache.find(*resolvedPath);
-				if (it != _cache.end()) {
-					if (auto cached = it->second.lock()) {
-						return cached;
-					}
+			auto it = _cache.find(*resolvedPath);
+			if (it != _cache.end()) {
+				if (auto cached = it->second.lock()) {
+					return cached;
 				}
 			}
 
@@ -83,14 +82,10 @@ namespace plugify {
 
 			// Create assembly
 			auto handle = std::make_unique<AssemblyHandle>(*handleResult, _ops, *resolvedPath);
-
 			auto assembly = std::make_shared<BasicAssembly>(std::move(handle), _ops);
 
 			// Update cache
-			{
-				std::unique_lock lock(_cacheMutex);
-				_cache.emplace(std::move(*resolvedPath), assembly); //-V837
-			}
+			_cache[std::move(*resolvedPath)] = assembly;
 
 			return assembly;
 		}
@@ -101,10 +96,8 @@ namespace plugify {
 			}
 
 			// Remove from cache
-			{
-				std::unique_lock lock(_cacheMutex);
-				_cache.erase(assembly->GetPath());
-			}
+			std::unique_lock lock(_mutex);
+			_cache.erase(assembly->GetPath());
 
 			return {};
 		}

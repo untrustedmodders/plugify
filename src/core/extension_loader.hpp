@@ -96,7 +96,7 @@ namespace plugify {
 		std::shared_ptr<IProfiler> _profiler;
 		LoadStatistics _stats;
 
-		std::unordered_map<std::filesystem::path, std::shared_ptr<IAssembly>, plg::path_hash> _assemblyCache;
+		std::unordered_map<std::filesystem::path, std::shared_ptr<IAssembly>, plg::path_hash> _assemblies;
 
 	public:
 		ExtensionLoader(const ServiceLocator& services, const Config& config, const Provider& provider)
@@ -169,7 +169,7 @@ namespace plugify {
 
 			// Clear assembly and remove from cache
 			if ([[maybe_unused]] auto assembly = module.GetAssembly()) {
-				_assemblyCache.erase(module.GetRuntime());
+				_assemblies.erase(module.GetRuntime());
 				module.SetAssembly(nullptr);
 			}
 
@@ -310,7 +310,7 @@ namespace plugify {
 			}
 
 			// Check if already cached
-			if (_assemblyCache.contains(*absPath)) {
+			if (_assemblies.contains(*absPath)) {
 				return {};
 			}
 
@@ -320,7 +320,7 @@ namespace plugify {
 				return MakeError(assemblyResult.error());
 			}
 
-			_assemblyCache.emplace(std::move(*absPath), std::move(*assemblyResult));
+			_assemblies.emplace(std::move(*absPath), std::move(*assemblyResult));
 			return {};
 		}*/
 
@@ -334,7 +334,7 @@ namespace plugify {
 		}
 
 		void Clear() {
-			_assemblyCache.clear();
+			_assemblies.clear();
 		}
 
 	private:
@@ -351,8 +351,10 @@ namespace plugify {
 			}
 
 			// Check cache first
-			if (auto it = _assemblyCache.find(*absPath); it != _assemblyCache.end()) {
-				return it->second;
+			if (auto it = _assemblies.find(*absPath); it != _assemblies.end()) {
+				if (auto assembly = it->second) {
+					return assembly;
+				}
 			}
 
 			// Load assembly
@@ -362,9 +364,9 @@ namespace plugify {
 				return MakeError(std::move(assemblyResult.error()));
 			}
 
-			// Cache for future use
-			_assemblyCache.emplace(std::move(*absPath), *assemblyResult); //-V837
-			return std::move(*assemblyResult);
+			_assemblies[std::move(*absPath)] = *assemblyResult;
+
+			return *assemblyResult;
 		}
 
 		LoadFlag GetLoadFlags() const {
