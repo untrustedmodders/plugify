@@ -35,7 +35,7 @@ struct ServiceLocator::Impl {
 		std::unique_lock lock(mutex);
 
 		services[type] = {
-			.factory = [instance]() { return instance; },
+			.factory = [instance] { return instance; },
 			.lifetime = ServiceLifetime::Singleton,
 			.singleton = instance,
 		};
@@ -98,10 +98,6 @@ struct ServiceLocator::Impl {
 				if (scopedIt != currentScope.end()) {
 					return scopedIt->second;
 				}
-
-				// Need to upgrade to write lock
-				lock.unlock();
-				std::unique_lock writeLock(mutex);
 
 				// Create new scoped instance
 				auto instance = descriptor.factory();
