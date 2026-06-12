@@ -140,12 +140,12 @@ namespace plugify {
 	// Helper for creating errors with context
 
 	template <plg::string_like First>
-	constexpr std::unexpected<std::string> MakeError(First&& error) {
+	constexpr auto MakeError(First&& error) {
 		return std::unexpected(std::forward<First>(error));
 	}
 
 	template <typename... Args>
-	constexpr std::unexpected<std::string> MakeError(std::format_string<Args...> fmt, Args&&... args) {
+	constexpr auto MakeError(std::format_string<Args...> fmt, Args&&... args) {
 		return std::unexpected(std::format(fmt, std::forward<Args>(args)...));
 	}
 }
