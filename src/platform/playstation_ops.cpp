@@ -33,7 +33,7 @@ namespace plugify {
 		}
 
 	public:
-		Result<void*> LoadLibrary(const std::filesystem::path& path, LoadFlag flags) override {
+		Result<void*> LoadLibrary(const std::filesystem::path& path, [[maybe_unused]] LoadFlag flags) override {
 			// PlayStation doesn't use flags in the same way
 			SceKernelModule handle = sceKernelLoadStartModule(path.c_str(), 0, nullptr, 0, nullptr, nullptr);
 

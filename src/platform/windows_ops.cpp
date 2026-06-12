@@ -17,12 +17,8 @@ namespace plugify {
 
 		static int TranslateFlags(LoadFlag flags) {
 			int winFlags = 0;
-			if (flags & LoadFlag::DataOnly) {
-				winFlags |= LOAD_LIBRARY_AS_DATAFILE;
-			}
 			if (flags & LoadFlag::SecureSearch) {
-				winFlags |= LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS
-							| LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
+				winFlags |= LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
 			}
 			return winFlags;
 		}
