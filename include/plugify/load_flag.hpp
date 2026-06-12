@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "plg/bitmask.hpp"
+
 namespace plugify {
 	/**
 	 * @enum LoadFlag
@@ -23,36 +25,5 @@ namespace plugify {
 		Default = LazyBinding
 	};
 
-	/**
-	 * @brief Bitwise OR operator for LoadFlag enum class.
-	 * @param lhs Left-hand side LoadFlag.
-	 * @param rhs Right-hand side LoadFlag.
-	 * @return Result of the bitwise OR operation.
-	 */
-	inline LoadFlag operator|(LoadFlag lhs, LoadFlag rhs) noexcept {
-		using underlying = std::underlying_type_t<LoadFlag>;
-		return static_cast<LoadFlag>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
-	}
-
-	/**
-	 * @brief Bitwise AND operator for LoadFlag enum class.
-	 * @param lhs Left-hand side LoadFlag.
-	 * @param rhs Right-hand side LoadFlag.
-	 * @return Result of the bitwise AND operation.
-	 */
-	inline bool operator&(LoadFlag lhs, LoadFlag rhs) noexcept {
-		using underlying = std::underlying_type_t<LoadFlag>;
-		return static_cast<underlying>(lhs) & static_cast<underlying>(rhs);
-	}
-
-	/**
-	 * @brief Bitwise OR assignment operator for LoadFlag enum class.
-	 * @param lhs Left-hand side LoadFlag.
-	 * @param rhs Right-hand side LoadFlag.
-	 * @return Reference to the left-hand side LoadFlag.
-	 */
-	inline LoadFlag& operator|=(LoadFlag& lhs, LoadFlag rhs) noexcept {
-		lhs = lhs | rhs;
-		return lhs;
-	}
+	consteval void enable_bitmask_operators(LoadFlag);
 }
