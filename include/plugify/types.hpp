@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-// #include "plg/uuid.hpp"
 #include "plg/enum.hpp"
 #include "plg/expected.hpp"
 #include "plg/inplace_vector.hpp"
@@ -71,15 +70,15 @@ namespace plugify {
 
 		// postfix increment / decrement
 		constexpr UniqueId operator++(int) noexcept {
-			UniqueId old{ value };
+			const UniqueId tmp = *this;
 			++value;
-			return old;
+			return tmp;
 		}
 
 		constexpr UniqueId operator--(int) noexcept {
-			UniqueId old{ value };
+			const UniqueId tmp = *this;
 			--value;
-			return old;
+			return tmp;
 		}
 
 		// compound assign helpers
@@ -141,12 +140,12 @@ namespace plugify {
 	// Helper for creating errors with context
 
 	template <plg::string_like First>
-	constexpr auto MakeError(First&& error) {
+	constexpr std::unexpected<std::string> MakeError(First&& error) {
 		return std::unexpected(std::forward<First>(error));
 	}
 
 	template <typename... Args>
-	constexpr auto MakeError(std::format_string<Args...> fmt, Args&&... args) {
+	constexpr std::unexpected<std::string> MakeError(std::format_string<Args...> fmt, Args&&... args) {
 		return std::unexpected(std::format(fmt, std::forward<Args>(args)...));
 	}
 }

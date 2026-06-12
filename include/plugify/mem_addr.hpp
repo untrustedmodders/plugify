@@ -166,9 +166,9 @@ namespace plugify {
 		}
 
 		[[nodiscard]] MemAddr operator++(int) noexcept {
-			const auto t = *this;
+			const MemAddr tmp = *this;
 			++m_value;
-			return t;
+			return tmp;
 		}
 
 		MemAddr& operator--() noexcept {
@@ -177,9 +177,9 @@ namespace plugify {
 		}
 
 		[[nodiscard]] MemAddr operator--(int) noexcept {
-			const auto t = *this;
+			const MemAddr tmp = *this;
 			--m_value;
-			return t;
+			return tmp;
 		}
 
 	private:
