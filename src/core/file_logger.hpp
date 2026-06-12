@@ -32,13 +32,13 @@ namespace plugify {
 		void Log(
 			std::string_view message,
 			Severity severity,
-			const Location& loc = Location::current()
+			const Location& location = Location::current()
 		) override {
 			if (severity < _minSeverity) {
 				return;
 			}
 
-			auto output = FormatMessage(message, severity, loc);
+			auto output = FormatMessage(message, severity, location);
 
 			std::lock_guard lock(_mutex);
 
