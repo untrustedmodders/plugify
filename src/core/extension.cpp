@@ -529,22 +529,5 @@ void Extension::AddDependency(std::string dep) {
 
 // Reset extension to initial state (useful for reload scenarios)
 void Extension::Reset() {
-	_impl->state = ExtensionState::Unknown;
-	_impl->registrar.reset();
-	_impl->errors.clear();
-	_impl->warnings.clear();
-	_impl->timings.timepoints.clear();
-	_impl->timings.lastOperationStart = {};
-	_impl->languageModule = nullptr;
-	_impl->methodTable = {};
-	_impl->userData = nullptr;
-	_impl->manifest = {};
-	_impl->location.clear();
-	_impl->version.clear();
-
-	if (_impl->type == ExtensionType::Plugin) {
-		_impl->pluginData.methodData.clear();
-	} else if (_impl->type == ExtensionType::Module) {
-		_impl->moduleData.assembly.reset();
-	}
+	*this = Extension{};
 }
