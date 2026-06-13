@@ -1,5 +1,39 @@
 # Changelog
 
+## [3.0.1](https://github.com/untrustedmodders/plugify/compare/v3.0.0...v3.0.1) (2026-06-13)
+
+
+### Bug Fixes
+
+* add bitmask utils for enums ([bcb18ea](https://github.com/untrustedmodders/plugify/commit/bcb18ea434171bc1df37bad9dda547a04326d811))
+* add empty ctor to MemAddr ([8dce2c3](https://github.com/untrustedmodders/plugify/commit/8dce2c30ae24f3aaacde6e78a7e22c8b17eb7629))
+* add export lifecycle method ([e65ae81](https://github.com/untrustedmodders/plugify/commit/e65ae81b376b491944901f96a4b26813cdc4eea8))
+* add missing headers & small improvements in headers ([8ad8810](https://github.com/untrustedmodders/plugify/commit/8ad8810086796dff5cde53c6097b7a42e63025e1))
+* add missing headers to module ([20d00d2](https://github.com/untrustedmodders/plugify/commit/20d00d2b60225ba6efa622ca554d65ef908fba2a))
+* add missing type to MemAddr ([fc382c5](https://github.com/untrustedmodders/plugify/commit/fc382c5c243a08d768a0843eecc1c84c4697c3d6))
+* add old jobs cleanup ([4b4ac32](https://github.com/untrustedmodders/plugify/commit/4b4ac3294c5b1a26c52f10498a4cd7dadf7b3d4f))
+* arm64 build ([55c4362](https://github.com/untrustedmodders/plugify/commit/55c43628881889b9aa9f02e3d49fa84ff6d64a7a))
+* bump deps ([90d7d48](https://github.com/untrustedmodders/plugify/commit/90d7d48b602582f2378183757e0fc6ee5cc810d1))
+* bump glaze to latest ([71c9848](https://github.com/untrustedmodders/plugify/commit/71c9848782c05b27fd155aa63be3a11734d3da77))
+* clang signed warnings ([6cc804f](https://github.com/untrustedmodders/plugify/commit/6cc804f4b4d6f968833c7482414cd879561b26dc))
+* improve error handling in locator ([8772a36](https://github.com/untrustedmodders/plugify/commit/8772a36849c9f3db5e6ef7e345aa7a58acd951fc))
+* improve MemAddr structure ([dc4db5c](https://github.com/untrustedmodders/plugify/commit/dc4db5c6830f9092077b8ab71445e79421786164))
+* make IExtensionLifecycle optional interface ([3d590ce](https://github.com/untrustedmodders/plugify/commit/3d590cea0f0d1d687e0c923835059c67e02e9dab))
+* more warnings on clang ([907e65c](https://github.com/untrustedmodders/plugify/commit/907e65c7d45a3953a06112d620866d8e3ce71590))
+* remove commented code ([0cd2ba6](https://github.com/untrustedmodders/plugify/commit/0cd2ba6dc7ab8c4b2bba5cae087a17b03e027f18))
+* remove constexpr and bitcast ([0f1a1e7](https://github.com/untrustedmodders/plugify/commit/0f1a1e7a38521191688ee19ca4bd2c5439a3f020))
+* remove data only flag ([0628054](https://github.com/untrustedmodders/plugify/commit/0628054a41d3395e23f5686d0d83fca7d5becda5))
+* remove event bus as it not used ([53af5b5](https://github.com/untrustedmodders/plugify/commit/53af5b5cd28dc0de7cf49ddf18598d81ff48d6e3))
+* remove unique lock for thread_local access ([4f8c419](https://github.com/untrustedmodders/plugify/commit/4f8c419773293b821b42a58c28a23150a6b1d6d8))
+* remove unused data from registrar ([2c27bb4](https://github.com/untrustedmodders/plugify/commit/2c27bb414cb3ee050b84ad3e5563d12e1518900f))
+* remove unused var ([884b6ab](https://github.com/untrustedmodders/plugify/commit/884b6ab8ddd51ec734d349251209bc32d49925db))
+* reorder members ([e8c059b](https://github.com/untrustedmodders/plugify/commit/e8c059b95cd692dd73ee6910f87df1b0685d407f))
+* reset with ctor ([531c2ac](https://github.com/untrustedmodders/plugify/commit/531c2acfc846400bed7baaf457beeb4a84e262f7))
+* rework ctor of MemAddr ([993f0b5](https://github.com/untrustedmodders/plugify/commit/993f0b51ce7794eb691b4aaa3528f30a873bcdcc))
+* rework some ctors ([bf94ce8](https://github.com/untrustedmodders/plugify/commit/bf94ce82bff7d57193fb4cd7be11144b231f4679))
+* some rework of paths resolution ([11022f4](https://github.com/untrustedmodders/plugify/commit/11022f414d2481895b60d2aab66fc119a6ca2f65))
+* V837, V1048 and V1098 + prevent double assembly loading on multi thread ([87b8d75](https://github.com/untrustedmodders/plugify/commit/87b8d75ee3886f40c918788b7add19e10b919a48))
+
 ## [3.0.0](https://github.com/untrustedmodders/plugify/compare/v2.0.0...v3.0.0) (2026-05-31)
 
 
