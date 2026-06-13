@@ -1,10 +1,12 @@
 #pragma once
 
+#include <string>
+
 #include "plugify/global.h"
 #include "plugify/types.hpp"
 
 namespace plugify {
-	PLUGIFY_API std::string ToString(UniqueId id) noexcept;
+	PLUGIFY_API const std::string& ToString(UniqueId id) noexcept;
 
 	// RAII registrar helper: registers in ctor, unregisters in dtor
 	class Registrar {

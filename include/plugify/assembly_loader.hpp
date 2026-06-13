@@ -1,6 +1,8 @@
 #pragma once
 
-#include <vector>
+#include <memory>
+#include <span>
+#include <filesystem>
 
 #include "plugify/assembly.hpp"
 

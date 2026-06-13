@@ -1,7 +1,8 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
-#include <string_view>
+#include <string>
 
 #include "plg/config.hpp"
 

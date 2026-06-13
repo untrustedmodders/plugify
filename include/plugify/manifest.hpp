@@ -1,12 +1,12 @@
 #pragma once
 
-#include <filesystem>
 #include <string>
-#include <unordered_map>
+#include <optional>
+#include <filesystem>
 
+#include "plugify/global.h"
 #include "plugify/conflict.hpp"
 #include "plugify/dependency.hpp"
-#include "plugify/global.h"
 #include "plugify/method.hpp"
 #include "plugify/class.hpp"
 
@@ -41,5 +41,4 @@ namespace plugify {
 
 		[[nodiscard]] Result<void> Validate() const;
 	};
-
 }

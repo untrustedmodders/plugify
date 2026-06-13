@@ -5,6 +5,7 @@
 #include "plg/variant.hpp"
 
 namespace plg {
+	// only for c++23
 	// hybrid container that uses std::inplace_vector for stack storage up to N elements, then switches to std::vector for larger sizes.
 	template<typename T, std::size_t N>  requires (N > 0)
 	class hybrid_vector {
@@ -16,7 +17,6 @@ namespace plg {
 			return storage_.index() == 0;
 		}
 
-		// Promote from stack to heap storage
 		constexpr void promote_to_heap() {
 			if (is_small()) {
 				auto& small_vec = plg::get<0>(storage_);
@@ -31,6 +31,9 @@ namespace plg {
 	public:
 		using value_type = T;
 		using size_type = std::size_t;
+	    using difference_type = std::ptrdiff_t;
+		using pointer = T*;
+		using const_pointer = const T*;
 		using reference = T&;
 		using const_reference = const T&;
 
@@ -315,6 +318,22 @@ namespace plg {
 			return plg::visit([](auto&& vec) { return vec.cend(); }, self.storage_);
 		}
 
+		[[nodiscard]] constexpr auto rbegin(this auto&& self) {
+			return plg::visit([](auto&& vec) { return vec.rbegin(); }, self.storage_);
+		}
+
+		[[nodiscard]] constexpr auto rend(this auto&& self) {
+			return plg::visit([](auto&& vec) { return vec.rend(); }, self.storage_);
+		}
+
+		[[nodiscard]] constexpr auto crbegin(this auto&& self) {
+			return plg::visit([](auto&& vec) { return vec.crbegin(); }, self.storage_);
+		}
+
+		[[nodiscard]] constexpr auto crend(this auto&& self) {
+			return plg::visit([](auto&& vec) { return vec.crend(); }, self.storage_);
+		}
+
 		// Range support (C++23)
 		[[nodiscard]] friend constexpr auto begin(hybrid_vector& v) {
 			return v.begin();
@@ -330,6 +349,22 @@ namespace plg {
 
 		[[nodiscard]] friend constexpr auto cend(hybrid_vector& v) {
 			return v.cend();
+		}
+
+		[[nodiscard]] friend constexpr auto rbegin(hybrid_vector& v) {
+			return v.rbegin();
+		}
+
+		[[nodiscard]] friend constexpr auto rend(hybrid_vector& v) {
+			return v.rend();
+		}
+
+		[[nodiscard]] friend constexpr auto crbegin(hybrid_vector& v) {
+			return v.crbegin();
+		}
+
+		[[nodiscard]] friend constexpr auto crend(hybrid_vector& v) {
+			return v.crend();
 		}
 	};
 }

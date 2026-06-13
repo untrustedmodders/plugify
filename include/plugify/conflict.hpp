@@ -1,9 +1,7 @@
 #pragma once
 
-#include <optional>
-#include <span>
+#include <memory>
 #include <string>
-#include <vector>
 
 #include "plugify/global.h"
 #include "plugify/types.hpp"

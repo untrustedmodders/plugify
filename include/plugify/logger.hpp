@@ -1,8 +1,5 @@
 #pragma once
 
-#include <atomic>
-#include <cstdint>
-#include <iostream>
 #include <string>
 
 #include "plugify/types.hpp"

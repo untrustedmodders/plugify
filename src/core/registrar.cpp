@@ -33,11 +33,13 @@ Registrar& Registrar::operator=(Registrar&& o) noexcept {
 	return *this;
 }
 
-std::string plugify::ToString(UniqueId id) noexcept {
+static std::string unknownString = "<unknown>";
+
+const std::string& plugify::ToString(UniqueId id) noexcept {
 	std::shared_lock lock(mutex);
 	auto it = registry.find(id);
 	if (it != registry.end()) {
 		return it->second;
 	}
-	return "<unknown>";
+	return unknownString;
 }

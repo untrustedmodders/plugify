@@ -1,9 +1,8 @@
 #pragma once
 
-#include <any>
-#include <filesystem>
 #include <optional>
 #include <string>
+#include <filesystem>
 #include <unordered_set>
 
 #include "plugify/logger.hpp"

@@ -1,14 +1,13 @@
 #pragma once
 
 #include <memory>
-#include <span>
 #include <string>
-#include <vector>
 
 #include "plugify/global.h"
 #include "plugify/mem_addr.hpp"
 #include "plugify/signarure.hpp"
 #include "plugify/value_type.hpp"
+#include "plg/inplace_vector.hpp"
 
 namespace plugify {
 	class Property;

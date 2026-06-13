@@ -101,7 +101,7 @@ struct JitCallback::Impl {
 			argRegSlots.push_back(std::move(argSlot));
 		}
 
-		const uint32_t alignment = 16;
+		constexpr uint32_t alignment = 16;
 		size_t offsetNextSlot = sizeof(uint64_t);
 
 		// setup the stack structure to hold arguments for user callback

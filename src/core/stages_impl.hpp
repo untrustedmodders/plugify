@@ -565,5 +565,4 @@ namespace plugify {
 			return {};
 		}
 	};
-
 }

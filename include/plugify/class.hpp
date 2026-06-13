@@ -6,7 +6,6 @@
 
 #include "plugify/global.h"
 #include "plugify/value_type.hpp"
-#include "plg/inplace_vector.hpp"
 
 namespace plugify {
 	class Binding;

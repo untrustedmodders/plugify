@@ -255,5 +255,4 @@ namespace plugify {
 				return asmjit::CallConvId::kCDecl;
 		}
 	}
-
 }  // namespace plugify

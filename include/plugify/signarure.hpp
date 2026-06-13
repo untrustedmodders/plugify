@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 #include "plugify/value_type.hpp"
 #include "plg/inplace_vector.hpp"

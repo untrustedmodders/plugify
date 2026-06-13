@@ -1,10 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <filesystem>
-#include <memory>
-#include <type_traits>
-#include <vector>
 
 #include "plg/bitmask.hpp"
 

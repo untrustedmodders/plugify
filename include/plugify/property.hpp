@@ -1,9 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <optional>
-#include <string>
-#include <vector>
 
 #include "plugify/global.h"
 #include "plugify/value_type.hpp"

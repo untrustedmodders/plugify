@@ -1,12 +1,12 @@
 #pragma once
 
-#include <deque>
-#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include "plugify/manifest.hpp"
+#include "plg/path.hpp"
 
 namespace plugify {
 	class IAssembly;

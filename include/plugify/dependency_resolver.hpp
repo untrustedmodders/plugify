@@ -1,6 +1,14 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
+#include <optional>
+#include <unordered_map>
+#include <span>
+
 #include "plugify/extension.hpp"
+#include "plg/format.hpp"
 
 namespace plugify {
 	/**

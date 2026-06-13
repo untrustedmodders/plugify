@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <regex>
 #include <span>
 #include <string>
 #include <vector>
+#include <optional>
 
 #include "plugify/types.hpp"
 

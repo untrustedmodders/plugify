@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include "plugify/mem_addr.hpp"
 #include "plugify/method.hpp"

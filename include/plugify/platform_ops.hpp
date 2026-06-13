@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <filesystem>
 
 #include "plugify/load_flag.hpp"
 #include "plugify/mem_addr.hpp"

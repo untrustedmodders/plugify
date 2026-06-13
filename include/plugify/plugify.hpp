@@ -1,5 +1,10 @@
 #pragma once
 
+#include <memory>
+#include <chrono>
+#include <filesystem>
+#include <functional>
+
 #include "plugify/config.hpp"
 #include "plugify/dependency_resolver.hpp"
 #include "plugify/profiler.hpp"

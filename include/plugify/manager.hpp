@@ -1,5 +1,10 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
+#include <chrono>
+
 #include "plugify/extension.hpp"
 #include "plugify/global.h"
 #include "plugify/types.hpp"

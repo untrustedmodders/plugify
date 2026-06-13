@@ -3959,8 +3959,8 @@ namespace plg {
 	constexpr string join(const Range& range, std::string_view separator) {
 		string result;
 
-		auto it = range.cbegin();
-		auto end = range.cend();
+		auto it = std::cbegin(range);
+		auto end = std::cend(range);
 
 		if (it == end) {
 			return result;
@@ -3987,9 +3987,9 @@ namespace plg {
 		auto in = std::back_inserter(result);
 
 		// Second pass: actual formatting
-		/*if (it != end)*/ { format_to(in, "{}", *it++); }
+		/*if (it != end)*/ { pfl::format_to(in, "{}", *it++); }
 		while (it != end) {
-			format_to(in, "{}{}", separator, *it++);
+			pfl::format_to(in, "{}{}", separator, *it++);
 		}
 
 		return result;
@@ -3999,8 +3999,8 @@ namespace plg {
 	constexpr string join(const Range& range, Proj&& proj, std::string_view separator) {
 		string result;
 
-		auto it = range.cbegin();
-		auto end = range.cend();
+		auto it = std::cbegin(range);
+		auto end = std::cend(range);
 
 		if (it == end) {
 			return result;
@@ -4030,11 +4030,11 @@ namespace plg {
 		// Second pass: actual formatting
 		{
 			auto&& projected = std::invoke(std::forward<Proj>(proj), *it++);
-			format_to(out, "{}", projected);
+			pfl::format_to(out, "{}", projected);
 		}
 		while (it != end) {
 			auto&& projected = std::invoke(std::forward<Proj>(proj), *it++);
-			format_to(out, "{}{}", separator, projected);
+			pfl::format_to(out, "{}{}", separator, projected);
 		}
 
 		return result;

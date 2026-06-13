@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <typeindex>
-#include <unordered_map>
+#include <functional>
 
 namespace plugify {
 	/**

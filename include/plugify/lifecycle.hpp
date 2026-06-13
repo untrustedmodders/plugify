@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include "plugify/types.hpp"
 
 namespace plugify {

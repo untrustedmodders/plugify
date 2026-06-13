@@ -85,7 +85,7 @@ struct JitCallback::Impl {
 			cc.mov(retStruct, a64::x8);
 		}
 
-		const uint32_t alignment = 16;
+		constexpr uint32_t alignment = 16;
 
 		// setup the stack structure to hold arguments for user callback
 		const auto stackSize = static_cast<uint32_t>(sizeof(uint64_t) * sig.arg_count());

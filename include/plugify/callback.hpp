@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <concepts>
+#include <type_traits>
 
 #include "plugify/global.h"
 #include "plugify/mem_addr.hpp"

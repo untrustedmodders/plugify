@@ -1,7 +1,8 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
+#include <optional>
 
 #include "plugify/global.h"
 #include "plugify/signarure.hpp"

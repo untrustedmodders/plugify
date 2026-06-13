@@ -1,5 +1,11 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
+#include <filesystem>
+#include <optional>
+
 #include "plugify/global.h"
 #include "plugify/logger.hpp"
 #include "plugify/service_locator.hpp"
