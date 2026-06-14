@@ -138,6 +138,7 @@ struct glz::meta<plugify::Class> {
 		"description", skip{},
 		"deprecated", skip{},
 		"handleType", [](auto&& self) -> auto& { return self._impl->handleType; },
+		"handleAlias", skip{},
 		"invalidValue", [](auto&& self) -> auto& { return self._impl->invalidValue; },
 		"nullPolicy", skip{},
 		"constructors", [](auto&& self) -> auto& { return self._impl->constructors; },

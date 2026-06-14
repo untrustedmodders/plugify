@@ -366,6 +366,17 @@
           "description": "The data type used for the underlying handle that this class wraps. Typically ptr64 or ptr32, but may support other types depending on the resource.",
           "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double"]
         },
+        "handleAlias": {
+          "type": "string",
+          "description": "Optional alias name for the underlying handle type. Used to provide a more descriptive or domain-specific type name in generated bindings and documentation instead of the raw handle type.",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "minLength": 1,
+          "examples": [
+            "TextureHandle",
+            "WindowHandle",
+            "DatabaseConnectionHandle"
+          ]
+        },
         "invalidValue": {
           "type": "string",
           "description": "The value that represents an invalid or null handle. Used to check if a handle is valid or to initialize handles before construction.",
