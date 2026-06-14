@@ -193,7 +193,7 @@ struct JitCallback::Impl {
 		InvokeNode* invokeNode;
 		cc.invoke(
 			Out(invokeNode),
-			(uint64_t) callback,
+			static_cast<uint64_t>(reinterpret_cast<uintptr_t>(callback)),
 			FuncSignature::build<void, void*, void*, uint64_t*, size_t, void*>()
 		);
 
