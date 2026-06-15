@@ -85,6 +85,7 @@ namespace plugify {
 		// Helper: turn /logs/session.log → /logs/session-20260418_143022.log
 		static std::filesystem::path TimestampedPath(std::filesystem::path base) {
 			using namespace std::chrono;
+
 			auto now = system_clock::now();
 			auto seconds = floor<std::chrono::seconds>(now);
 

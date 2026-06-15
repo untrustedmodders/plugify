@@ -359,7 +359,7 @@ public:
 			std::format_to(it, "{:3}: {} (id={})\n", i, ToString(id), id);
 		}
 
-		buffer.push_back('\n');
+		std::format_to(it, "\n");
 		return buffer;
 	}
 
@@ -383,7 +383,7 @@ public:
 				continue;
 			}
 
-			buffer.push_back('[');
+			std::format_to(it, "[");
 			bool first = true;
 			for (const auto& d : deps) {
 				if (!first) {
@@ -395,7 +395,7 @@ public:
 			std::format_to(it, "]\n");
 		}
 
-		buffer.push_back('\n');
+		std::format_to(it, "\n");
 		return buffer;
 	}
 
