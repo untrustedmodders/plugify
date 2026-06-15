@@ -294,12 +294,11 @@ namespace plugify {
 			Result<void> result;
 			switch (ext.GetType()) {
 				case ExtensionType::Module: {
-					auto assemblyResult = _loader.PreloadAssembly(ext.GetRuntime(),
-	ext.GetDirectories()); break;
+					auto _ = _loader.PreloadAssembly(ext.GetRuntime(), ext.GetDirectories());
+					break;
 				}
 
 				case ExtensionType::Plugin: {
-
 					break;
 				}
 

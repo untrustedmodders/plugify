@@ -599,8 +599,7 @@ Result<std::filesystem::path> StandardFileSystem::GetRelativePath(
 }
 
 // Append operations
-Result<void>
-ExtendedFileSystem::AppendTextFile(const std::filesystem::path& path, std::string_view content) {
+Result<void> ExtendedFileSystem::AppendTextFile(const std::filesystem::path& path, std::string_view content) {
 	SetError(0);
 	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::app);
 	if (!file) {
@@ -638,8 +637,7 @@ Result<void> ExtendedFileSystem::AppendBinaryFile(
 }
 
 // Atomic write operation
-Result<void>
-ExtendedFileSystem::WriteFileAtomic(const std::filesystem::path& path, std::string_view content) {
+Result<void> ExtendedFileSystem::WriteFileAtomic(const std::filesystem::path& path, std::string_view content) {
 	// Generate temporary file path
 	auto temp_path = path;
 	temp_path += std::format(".tmp{}", std::chrono::steady_clock::now().time_since_epoch().count());

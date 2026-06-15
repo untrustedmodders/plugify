@@ -16,8 +16,7 @@ namespace plugify {
 		Result<std::string> ReadTextFile(const std::filesystem::path& path) override;
 		Result<std::vector<uint8_t>> ReadBinaryFile(const std::filesystem::path& path) override;
 		Result<void> WriteTextFile(const std::filesystem::path& path, std::string_view content) override;
-		Result<void>
-		WriteBinaryFile(const std::filesystem::path& path, std::span<const uint8_t> data) override;
+		Result<void> WriteBinaryFile(const std::filesystem::path& path, std::span<const uint8_t> data) override;
 
 		bool IsExists(const std::filesystem::path& path) override;
 		bool IsDirectory(const std::filesystem::path& path) override;
@@ -92,8 +91,7 @@ namespace plugify {
 		// Get last write time
 		Result<std::filesystem::file_time_type> GetLastWriteTime(const std::filesystem::path& path);
 		// Set last write time
-		Result<void>
-		SetLastWriteTime(const std::filesystem::path& path, std::filesystem::file_time_type time);
+		Result<void> SetLastWriteTime(const std::filesystem::path& path, std::filesystem::file_time_type time);
 		// Check if path is a symbolic link
 		bool IsSymlink(const std::filesystem::path& path);
 		// Create symbolic link

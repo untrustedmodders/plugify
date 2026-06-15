@@ -82,8 +82,7 @@ namespace plugify {
 		}
 
 		// Process item with knowledge of its position
-		virtual Result<void>
-		ProcessItem(T& item, size_t position, size_t total, const ExecutionContext<T>& ctx) = 0;
+		virtual Result<void> ProcessItem(T& item, size_t position, size_t total, const ExecutionContext<T>& ctx) = 0;
 
 		// Should we continue after an error?
 		virtual bool ContinueOnError() const {
