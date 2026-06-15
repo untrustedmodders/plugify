@@ -2312,8 +2312,8 @@ int main() {
     plugify::Config config;
     config.paths.baseDir = "./app";
     config.paths.extensionsDir = "extensions";
-    config.loading.enableHotReload = true;
-    config.loading.parallelLoading = true;
+    config.logging.printReport = true;
+    config.loading.preferOwnSymbols = false;
     config.runtime.updateInterval = std::chrono::milliseconds(16);
 
     // Build Plugify instance
@@ -2329,14 +2329,7 @@ int main() {
     }
 
     auto plugify = result.value();
-
-    // Initialize asynchronously
-    auto initFuture = plugify->InitializeAsync();
-
-    // Do other initialization...
-
-    // Wait for initialization
-    if (auto initResult = initFuture.get(); !initResult) {
+    if (auto initResult = plugify->Initialize(); !initResult) {
         std::cerr << "Failed to initialize: " << initResult.error().message << std::endl;
         return 1;
     }
