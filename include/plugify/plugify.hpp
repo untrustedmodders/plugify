@@ -42,11 +42,6 @@ namespace plugify {
 		PlugifyBuilder& WithConfigFile(std::filesystem::path path);
 		// PlugifyBuilder& WithPartialConfig(Config config); // Merges with existing
 
-		// Explicit runtime configuration
-		PlugifyBuilder& WithManualUpdate();  // Default
-		PlugifyBuilder& WithBackgroundUpdate(std::chrono::milliseconds interval = std::chrono::milliseconds{ 16 });
-		PlugifyBuilder& WithUpdateCallback(std::function<void(std::chrono::milliseconds)> callback);
-
 		// Service registration...
 		PlugifyBuilder& WithLogger(std::shared_ptr<ILogger> logger);
 		PlugifyBuilder& WithProfiler(std::shared_ptr<IProfiler> profiler);

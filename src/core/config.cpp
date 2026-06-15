@@ -72,36 +72,6 @@ void Config::MergeFrom(const Config& other, ConfigSource source) {
 		}
 	}
 
-	// Merge Runtime
-	if (source >= _sources.runtime) {
-		bool runtimeChanged = false;
-
-		if (other.runtime.HasCustomUpdateMode()) {
-			runtime.updateMode = other.runtime.updateMode;
-			runtimeChanged = true;
-		}
-		if (other.runtime.HasCustomUpdateInterval()) {
-			runtime.updateInterval = other.runtime.updateInterval;
-			runtimeChanged = true;
-		}
-		if (other.runtime.updateCallback) {
-			runtime.updateCallback = other.runtime.updateCallback;
-			runtimeChanged = true;
-		}
-		if (other.runtime.HasCustomPinToMainThread()) {
-			runtime.pinToMainThread = other.runtime.pinToMainThread;
-			runtimeChanged = true;
-		}
-		if (other.runtime.HasThreadPriority()) {
-			runtime.threadPriority = other.runtime.threadPriority;
-			runtimeChanged = true;
-		}
-
-		if (runtimeChanged) {
-			_sources.runtime = source;
-		}
-	}
-
 	// Merge Security
 	if (source >= _sources.security) {
 		bool securityChanged = false;
@@ -202,11 +172,6 @@ void Config::MergeField(std::string_view fieldPath, const Config& other, ConfigS
 			loading = other.loading;
 			_sources.loading = source;
 		}
-	} else if (fieldPath == "runtime") {
-		if (source >= _sources.runtime) {
-			runtime = other.runtime;
-			_sources.runtime = source;
-		}
 	} else if (fieldPath == "security") {
 		if (source >= _sources.security) {
 			security = other.security;
@@ -248,16 +213,6 @@ Result<void> Config::Validate() const{
 				);
 			}
 		}
-	}
-
-	// Validate runtime config
-	if (runtime.updateMode == UpdateMode::BackgroundThread
-		&& runtime.updateInterval <= std::chrono::milliseconds{ 0 }) {
-		return MakeError("Invalid update interval for background thread mode");
-	}
-
-	if (runtime.updateMode == UpdateMode::Callback && !runtime.updateCallback) {
-		return MakeError("Update callback not set for callback mode");
 	}
 
 	return {};

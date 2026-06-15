@@ -10,13 +10,6 @@
 #include "plugify/types.hpp"
 
 namespace plugify {
-	// Update mode for explicit control
-	enum class UpdateMode {
-		Manual,            // User calls Update() manually
-		BackgroundThread,  // Automatic updates in background thread
-		Callback           // User provides update callback
-	};
-
 	// Configuration source priority
 	enum class ConfigSource {
 		Default,  // Default values
@@ -38,7 +31,6 @@ namespace plugify {
 		struct SourceTracking {
 			ConfigSource paths = ConfigSource::Default;
 			ConfigSource loading = ConfigSource::Default;
-			ConfigSource runtime = ConfigSource::Default;
 			ConfigSource security = ConfigSource::Default;
 			ConfigSource logging = ConfigSource::Default;
 		} _sources{};
@@ -118,32 +110,6 @@ namespace plugify {
 			}
 		} loading{};
 
-		// Runtime configuration
-		struct Runtime {
-			bool pinToMainThread = true;
-			UpdateMode updateMode = UpdateMode::Manual;
-			std::chrono::milliseconds updateInterval{ 16 };
-			std::function<void(std::chrono::milliseconds)> updateCallback;
-			std::optional<size_t> threadPriority;
-
-			// Check if values are non-default
-			bool HasCustomPinToMainThread() const {
-				return pinToMainThread != true;
-			}
-
-			bool HasCustomUpdateMode() const {
-				return updateMode != UpdateMode::Manual;
-			}
-
-			bool HasCustomUpdateInterval() const {
-				return updateInterval != std::chrono::milliseconds{ 16 };
-			}
-
-			bool HasThreadPriority() const {
-				return threadPriority.has_value();
-			}
-		} runtime{};
-
 		// Security configuration
 		struct Security {
 			std::unordered_set<std::string> whitelistedExtensions;
@@ -206,10 +172,9 @@ namespace plugify {
 		// Get effective source for debugging
 		std::string GetSourceInfo() const {
 		    return std::format(
-		        "Config sources - Paths: {}, Loading: {}, Runtime: {}, Security: {}, Logging: {}",
+		        "Config sources - Paths: {}, Loading: {}, Security: {}, Logging: {}",
 		        plg::enum_to_string(_sources.paths),
 		        plg::enum_to_string(_sources.loading),
-		        plg::enum_to_string(_sources.runtime),
 		        plg::enum_to_string(_sources.security),
 		        plg::enum_to_string(_sources.logging)
 		    );

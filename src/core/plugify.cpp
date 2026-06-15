@@ -9,7 +9,6 @@
 #include "core/basic_assembly_loader.hpp"
 
 using namespace plugify;
-using namespace std::chrono_literals;
 
 // Plugify::Impl
 struct Plugify::Impl {
@@ -27,11 +26,6 @@ struct Plugify::Impl {
 
 	std::thread::id ownerThreadId;
 	std::chrono::steady_clock::time_point lastUpdateTime;
-	// TODO: replace by jthread when it will be available on mac
-	std::thread updateThread;
-	std::mutex cvMutex;
-	std::condition_variable cv;
-	std::atomic<bool> stopRequested{ false };
 
 	Impl(ServiceLocator srv, Config cfg)
 		: services(std::move(srv))
@@ -63,8 +57,7 @@ struct Plugify::Impl {
 	Result<void> Initialize() {
 		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
 
-		// Thread safety check based on config
-		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
+		if (std::this_thread::get_id() != ownerThreadId) {
 			return MakeError("Initialization must be called from owner thread");
 		}
 
@@ -73,10 +66,6 @@ struct Plugify::Impl {
 		}
 
 		logger->Log("Initializing Plugify...", Severity::Info);
-		logger->Log(
-			std::format("Update mode: {}", plg::enum_to_string(config.runtime.updateMode)),
-			Severity::Info
-		);
 
 		// Create necessary directories
 		if (!CreateDirectories()) {
@@ -84,12 +73,7 @@ struct Plugify::Impl {
 		}
 
 		// Initialize manager
-		// manager.Initialize();
-
-		// Start update mechanism based on mode
-		if (auto result = StartUpdateMechanism(); !result) {
-			return result;
-		}
+		//manager.Initialize();
 
 		logger->Log("Plugify initialized successfully", Severity::Info);
 		logger->Log(std::format("Version: {}", version), Severity::Info);
@@ -102,7 +86,7 @@ struct Plugify::Impl {
 	void Terminate() {
 		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
 
-		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
+		if (std::this_thread::get_id() != ownerThreadId) {
 			throw std::runtime_error("Termination must be called from owner thread");
 		}
 
@@ -111,9 +95,6 @@ struct Plugify::Impl {
 		}
 
 		logger->Log("Terminating Plugify...", Severity::Info);
-
-		// Stop update mechanism
-		StopUpdateMechanism();
 
 		// Terminate manager
 		manager.Terminate();
@@ -124,10 +105,10 @@ struct Plugify::Impl {
 		initialized = false;
 	}
 
-	void Update(std::chrono::milliseconds deltaTime = 0ms) {
+	void Update(std::chrono::milliseconds deltaTime) {
 		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
 
-		if (config.runtime.pinToMainThread && std::this_thread::get_id() != ownerThreadId) {
+		if (std::this_thread::get_id() != ownerThreadId) {
 			throw std::runtime_error("Update must be called from owner thread");
 		}
 
@@ -136,31 +117,14 @@ struct Plugify::Impl {
 		}
 
 		// Calculate delta time if not provided
-		if (deltaTime == 0ms) {
+		if (deltaTime == std::chrono::milliseconds{ 0 }) {
 			auto now = std::chrono::steady_clock::now();
 			deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdateTime);
 			lastUpdateTime = now;
 		}
 
-		// Update based on mode
-		switch (config.runtime.updateMode) {
-			case UpdateMode::Manual:
-				// Direct update
-				manager.Update(deltaTime);
-				break;
-
-			case UpdateMode::Callback:
-				// Call user callback which should eventually call manager.Update
-				if (config.runtime.updateCallback) {
-					config.runtime.updateCallback(deltaTime);
-				}
-				break;
-
-			case UpdateMode::BackgroundThread:
-				// Background thread handles updates, this call is a no-op
-				logger->Log("Update() called in BackgroundThread mode - ignoring", Severity::Debug);
-				break;
-		}
+		// Direct update
+		manager.Update(deltaTime);
 	}
 
 private:
@@ -312,103 +276,6 @@ private:
 
 		return result.IsSuccess();
 	}
-
-	Result<void> StartUpdateMechanism() {
-		switch (config.runtime.updateMode) {
-			case UpdateMode::Manual:
-				// Nothing to start for manual mode
-				logger->Log("Manual update mode - call Update() explicitly", Severity::Info);
-				break;
-
-			case UpdateMode::BackgroundThread:
-				if (config.runtime.updateInterval <= 0ms) {
-					return MakeError("Invalid update interval for background thread");
-				}
-				StartBackgroundUpdateThread();
-				break;
-
-			case UpdateMode::Callback:
-				if (!config.runtime.updateCallback) {
-					return MakeError("No update callback provided");
-				}
-				logger->Log("Callback update mode configured", Severity::Info);
-				break;
-		}
-
-		return {};
-	}
-
-	void StopUpdateMechanism() {
-		switch (config.runtime.updateMode) {
-			case UpdateMode::BackgroundThread:
-				StopBackgroundUpdateThread();
-				break;
-			default:
-				// Nothing to stop for other modes
-				break;
-		}
-	}
-
-	void StartBackgroundUpdateThread() {
-		stopRequested.store(false, std::memory_order_relaxed);
-
-		updateThread = std::thread([&] {
-			// Set thread priority if specified
-			/*if (config.runtime.threadPriority) {
-				ops->SetThreadPriority(*config.runtime.threadPriority);
-			}*/
-
-			auto lastTime = std::chrono::steady_clock::now();
-			const auto& interval = config.runtime.updateInterval;
-
-			logger->Log(
-				std::format("Background update thread started (interval: {})", interval),
-				Severity::Info
-			);
-
-			while (!stopRequested.load(std::memory_order_relaxed)) {
-				auto now = std::chrono::steady_clock::now();
-				auto deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime);
-				lastTime = now;
-
-				// Perform update
-				manager.Update(deltaTime);
-
-				// Sleep for remaining time
-				auto updateDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - now);
-				auto sleepTime = interval - updateDuration;
-
-				if (sleepTime > 0ms) {
-					// Use interruptible sleep
-					std::unique_lock lock(cvMutex);
-					cv.wait_for(lock, sleepTime, [this] {
-						return stopRequested.load(std::memory_order_relaxed);
-					});
-				} else {
-					logger->Log(
-						std::format(
-							"Update took longer than interval: {} > {}",
-							updateDuration,
-							interval
-						),
-						Severity::Warning
-					);
-				}
-			}
-
-			logger->Log("Background update thread stopped", Severity::Info);
-		});
-	}
-
-	void StopBackgroundUpdateThread() {
-		stopRequested.store(true, std::memory_order_relaxed);
-		cv.notify_all();  // Wake up the thread if it's sleeping
-
-		if (updateThread.joinable()) {
-			logger->Log("Stopping background update thread...", Severity::Info);
-			updateThread.join();
-		}
-	}
 };
 
 // Plugify implementation
@@ -489,24 +356,6 @@ PlugifyBuilder& PlugifyBuilder::WithConfigFile(std::filesystem::path path) {
 PlugifyBuilder& PlugifyBuilder::WithConfig(Config config) {
 	_impl->baseConfig = std::move(config);
 	_impl->hasBaseConfig = true;
-	return *this;
-}
-
-// Update mode configuration
-PlugifyBuilder& PlugifyBuilder::WithManualUpdate() {
-	_impl->configOverrides.runtime.updateMode = UpdateMode::Manual;
-	return *this;
-}
-
-PlugifyBuilder& PlugifyBuilder::WithBackgroundUpdate(std::chrono::milliseconds interval) {
-	_impl->configOverrides.runtime.updateMode = UpdateMode::BackgroundThread;
-	_impl->configOverrides.runtime.updateInterval = interval;
-	return *this;
-}
-
-PlugifyBuilder& PlugifyBuilder::WithUpdateCallback(std::function<void(std::chrono::milliseconds)> callback) {
-	_impl->configOverrides.runtime.updateMode = UpdateMode::Callback;
-	_impl->configOverrides.runtime.updateCallback = std::move(callback);
 	return *this;
 }
 
