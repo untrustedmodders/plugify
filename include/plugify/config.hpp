@@ -114,7 +114,7 @@ namespace plugify {
 		struct Security {
 			std::unordered_set<std::string> whitelistedExtensions;
 			std::unordered_set<std::string> blacklistedExtensions;
-			std::unordered_set<std::filesystem::path> excludedDirs = DefaultExcludedDirs;
+			std::unordered_set<std::filesystem::path> excludedDirs = GetDefaultExcludedDirs();
 
 			bool HasWhitelist() const {
 				return !whitelistedExtensions.empty();
@@ -125,7 +125,7 @@ namespace plugify {
 			}
 
 			bool HasExcluded() const {
-				return excludedDirs != DefaultExcludedDirs;
+				return excludedDirs != GetDefaultExcludedDirs();
 			}
 		} security{};
 
@@ -189,12 +189,6 @@ namespace plugify {
 		Result<void> Validate() const;
 
 	private:
-		static inline std::unordered_set<std::filesystem::path> DefaultExcludedDirs = {
-			PLUGIFY_PATH_LITERAL("disabled"),
-			PLUGIFY_PATH_LITERAL(".git"),
-			PLUGIFY_PATH_LITERAL(".svn"),
-			PLUGIFY_PATH_LITERAL("temp"),
-			PLUGIFY_PATH_LITERAL("tmp"),
-		};
+		static const std::unordered_set<std::filesystem::path>& GetDefaultExcludedDirs();
 	};
 }  // namespace plugify

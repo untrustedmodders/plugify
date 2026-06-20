@@ -217,3 +217,14 @@ Result<void> Config::Validate() const{
 
 	return {};
 }
+
+const std::unordered_set<std::filesystem::path>& Config::GetDefaultExcludedDirs() {
+	static const std::unordered_set<std::filesystem::path> dirs = {
+		PLUGIFY_PATH_LITERAL("disabled"),
+		PLUGIFY_PATH_LITERAL(".git"),
+		PLUGIFY_PATH_LITERAL(".svn"),
+		PLUGIFY_PATH_LITERAL("temp"),
+		PLUGIFY_PATH_LITERAL("tmp"),
+	};
+	return dirs;
+}

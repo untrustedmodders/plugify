@@ -7,6 +7,7 @@
 
 #include <CLI/CLI.hpp>
 #include <glaze/glaze.hpp>
+
 #include <plg/format.hpp>
 
 #include "plugify/extension.hpp"
@@ -14,7 +15,7 @@
 #include "plugify/manager.hpp"
 #include "plugify/plugify.hpp"
 
-#if PLUGIFY_PLATFORM_APPLE
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 
