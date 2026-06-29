@@ -9,17 +9,17 @@ namespace plugify {
 	 * @brief A wrapper class for memory addresses, providing utility functions for pointer
 	 * manipulation.
 	 */
-	class MemAddr { // TODO: Rename to Address in next major
+	class Address {
 	public:
-		MemAddr() noexcept = default;
+		Address() noexcept = default;
 
-		MemAddr(std::nullptr_t) noexcept : m_value(0) {}
+		Address(std::nullptr_t) noexcept : m_value(0) {}
 
 		template <typename T> requires std::is_pointer_v<T>
-		MemAddr(T ptr) noexcept : m_value(reinterpret_cast<uintptr_t>(ptr)) {}
+		Address(T ptr) noexcept : m_value(reinterpret_cast<uintptr_t>(ptr)) {}
 
 		template <typename T> requires std::is_integral_v<T>
-		MemAddr(T val) noexcept : m_value(static_cast<uintptr_t>(val)) {}
+		Address(T val) noexcept : m_value(static_cast<uintptr_t>(val)) {}
 
 		operator uintptr_t() const noexcept {
 			return m_value;
@@ -65,16 +65,16 @@ namespace plugify {
 			return m_value >= 0x1000 && m_value < 0x7FFFFFFEFFFF;
 		}
 
-		[[nodiscard]] MemAddr Offset(auto offset) const noexcept {
+		[[nodiscard]] Address Offset(auto offset) const noexcept {
 			return m_value + static_cast<uintptr_t>(offset);
 		}
 
-		MemAddr& OffsetSelf(auto offset) noexcept {
+		Address& OffsetSelf(auto offset) noexcept {
 			m_value += static_cast<uintptr_t>(offset);
 			return *this;
 		}
 
-		[[nodiscard]] MemAddr Deref(auto offset, ptrdiff_t deref = 1) const noexcept {
+		[[nodiscard]] Address Deref(auto offset, ptrdiff_t deref = 1) const noexcept {
 			uintptr_t base = m_value;
 
 			while (deref--) {
@@ -84,7 +84,7 @@ namespace plugify {
 			return base;
 		}
 
-		MemAddr& DerefSelf(auto offset, ptrdiff_t deref = 1) noexcept {
+		Address& DerefSelf(auto offset, ptrdiff_t deref = 1) noexcept {
 			while (deref--) {
 				m_value = *reinterpret_cast<uintptr_t*>(m_value + static_cast<uintptr_t>(offset));
 			}
@@ -104,80 +104,80 @@ namespace plugify {
 
 		// ── Arithmetic operators ────────────────────────────────────────────────────
 
-		[[nodiscard]] MemAddr operator+(auto offset) const noexcept {
+		[[nodiscard]] Address operator+(auto offset) const noexcept {
 			return m_value + static_cast<uintptr_t>(offset);
 		}
 
-		[[nodiscard]] MemAddr operator-(auto offset) const noexcept {
+		[[nodiscard]] Address operator-(auto offset) const noexcept {
 			return m_value - static_cast<uintptr_t>(offset);
 		}
 
-		MemAddr& operator+=(auto offset) noexcept {
+		Address& operator+=(auto offset) noexcept {
 			m_value += static_cast<uintptr_t>(offset);
 			return *this;
 		}
 
-		MemAddr& operator-=(auto offset) noexcept {
+		Address& operator-=(auto offset) noexcept {
 			m_value -= static_cast<uintptr_t>(offset);
 			return *this;
 		}
 
-		[[nodiscard]] ptrdiff_t operator-(MemAddr other) const noexcept {
+		[[nodiscard]] ptrdiff_t operator-(Address other) const noexcept {
 			return static_cast<ptrdiff_t>(m_value) - static_cast<ptrdiff_t>(other.m_value);
 		}
 
-		template <typename T> requires(!std::is_same_v<T, MemAddr>)
-		[[nodiscard]] friend MemAddr operator+(T offset, MemAddr addr) noexcept {
+		template <typename T> requires(!std::is_same_v<T, Address>)
+		[[nodiscard]] friend Address operator+(T offset, Address addr) noexcept {
 			return static_cast<uintptr_t>(offset) + addr.m_value;
 		}
 
-		template <typename T> requires(!std::is_same_v<T, MemAddr>)
-		[[nodiscard]] friend MemAddr operator-(T offset, MemAddr addr) noexcept {
+		template <typename T> requires(!std::is_same_v<T, Address>)
+		[[nodiscard]] friend Address operator-(T offset, Address addr) noexcept {
 			return static_cast<uintptr_t>(offset) - addr.m_value;
 		}
 
 		// ── Bitwise operators ───────────────────────────────────────────────────────
 
-		[[nodiscard]] MemAddr operator&(auto mask) const noexcept {
+		[[nodiscard]] Address operator&(auto mask) const noexcept {
 			return m_value & static_cast<uintptr_t>(mask);
 		}
 
-		[[nodiscard]] MemAddr operator|(auto mask) const noexcept {
+		[[nodiscard]] Address operator|(auto mask) const noexcept {
 			return m_value | static_cast<uintptr_t>(mask);
 		}
 
-		[[nodiscard]] MemAddr operator^(auto mask) const noexcept {
+		[[nodiscard]] Address operator^(auto mask) const noexcept {
 			return m_value ^ static_cast<uintptr_t>(mask);
 		}
 
-		[[nodiscard]] MemAddr operator>>(auto shift) const noexcept {
+		[[nodiscard]] Address operator>>(auto shift) const noexcept {
 			return m_value >> static_cast<uintptr_t>(shift);
 		}
 
-		[[nodiscard]] MemAddr operator<<(auto shift) const noexcept {
+		[[nodiscard]] Address operator<<(auto shift) const noexcept {
 			return m_value << static_cast<uintptr_t>(shift);
 		}
 
 		// ── Increment / Decrement ───────────────────────────────────────────────────
 
-		MemAddr& operator++() noexcept {
+		Address& operator++() noexcept {
 			++m_value;
 			return *this;
 		}
 
-		[[nodiscard]] MemAddr operator++(int) noexcept {
-			const MemAddr tmp = *this;
+		[[nodiscard]] Address operator++(int) noexcept {
+			const Address tmp = *this;
 			++m_value;
 			return tmp;
 		}
 
-		MemAddr& operator--() noexcept {
+		Address& operator--() noexcept {
 			--m_value;
 			return *this;
 		}
 
-		[[nodiscard]] MemAddr operator--(int) noexcept {
-			const MemAddr tmp = *this;
+		[[nodiscard]] Address operator--(int) noexcept {
+			const Address tmp = *this;
 			--m_value;
 			return tmp;
 		}
@@ -185,5 +185,4 @@ namespace plugify {
 	private:
 		uintptr_t m_value; //!< The memory address.
 	};
-	using Address = MemAddr;
 }  // namespace plugify
