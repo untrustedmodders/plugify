@@ -6,6 +6,7 @@
 #include <unordered_set>
 
 #include <CLI/CLI.hpp>
+#include <tracy/TracyC.h>
 #include <glaze/glaze.hpp>
 
 #include <plg/format.hpp>
@@ -1777,6 +1778,33 @@ private:
 	std::shared_ptr<Plugify> plug;
 };
 
+class TracyProfiler final : public IProfiler {
+public:
+	TracyProfiler() = default;
+
+	ZoneHandle BeginZone(const ZoneInfo& info) override {
+		auto id = info.name.empty() ?
+			___tracy_alloc_srcloc(static_cast<uint32_t>(info.line), info.file.data(), info.file.size(), info.function.data(), info.function.size(), info.color) :
+			___tracy_alloc_srcloc_name(static_cast<uint32_t>(info.line), info.file.data(), info.file.size(), info.function.data(), info.function.size(), info.name.data(), info.name.size(), info.color);
+		return std::bit_cast<ZoneHandle>(___tracy_emit_zone_begin_alloc(id, 1));
+	}
+
+	void EndZone(ZoneHandle zone) override {
+		___tracy_emit_zone_end(std::bit_cast<TracyCZoneCtx>(zone));
+	}
+
+	void MarkFrame(std::string_view name) override {
+		___tracy_emit_frame_mark(name.data());
+	}
+
+	void SetThread(std::string_view name) override {
+		___tracy_set_thread_name(name.data());
+	}
+
+	std::string_view GetName() const override { return "Tracy"; }
+	bool IsActive() const override { return true; }
+};
+
 // Enhanced interactive mode
 void RunEnhancedInteractiveMode(PlugifyApp& app) {
 	plg::print(
@@ -2007,7 +2035,9 @@ int main(int argc, char** argv) {
 	    plg::error("Warning: Failed to set UTF-8 locale");
 	}*/
 
-	auto plugify = MakePlugify();
+	auto plugify = Plugify::CreateBuilder()
+		.WithProfiler(std::make_shared<TracyProfiler>())
+		.WithBaseDir(std::filesystem::current_path()).Build();
 	if (!plugify) {
 		plg::print("{}: {}", Colorize("Error", Colors::RED), plugify.error());
 		return EXIT_FAILURE;

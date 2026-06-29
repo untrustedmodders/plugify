@@ -12,6 +12,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchCLI)
+include(FetchTracy)
+find_package(Threads REQUIRED)
 
 #
 # Plug
@@ -20,8 +22,7 @@ file(GLOB_RECURSE PLUG_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
 
 add_executable(${PROJECT_NAME} ${PLUG_SOURCES})
 
-find_package(Threads REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify glaze::glaze Threads::Threads CLI11 ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE plugify::plugify glaze::glaze Threads::Threads CLI11 Tracy::TracyClient ${CMAKE_DL_LIBS})
 
 set_target_debug_symbols(${PROJECT_NAME})
 set_target_strict_conformance(${PROJECT_NAME})

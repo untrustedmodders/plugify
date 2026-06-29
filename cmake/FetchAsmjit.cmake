@@ -2,6 +2,8 @@ include(FetchContent)
 
 message(STATUS "Pulling and configuring asmjit")
 
+set(ASMJIT_STATIC $<BOOL:${PLUGIFY_BUILD_SHARED_ASMJIT}> CACHE BOOL "Build static library")
+
 FetchContent_Declare(
         asmjit
         GIT_REPOSITORY ${PLUGIFY_ASMJIT_REPO}
@@ -11,8 +13,6 @@ FetchContent_Declare(
         OVERRIDE_FIND_PACKAGE
         EXCLUDE_FROM_ALL
 )
-
-set(ASMJIT_STATIC $<BOOL:${PLUGIFY_BUILD_SHARED_ASMJIT}> CACHE BOOL "Build static library")
 
 FetchContent_MakeAvailable(asmjit)
 
