@@ -463,7 +463,7 @@ namespace plugify {
 
 		template <typename T, typename Func>
 		Result<T> SafeCall(std::string_view op, std::string_view name, Func&& func) noexcept {
-			[[maybe_unused]] ScopedZone zone(_profiler, ZoneInfo{std::format("{}::{}", name, op)});
+			[[maybe_unused]] ScopedZone zone(_profiler, std::format("{}::{}", name, op));
 			try {
 				return func();
 			} catch (const std::bad_alloc&) {
