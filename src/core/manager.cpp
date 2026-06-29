@@ -57,7 +57,7 @@ struct Manager::Impl {
 
 public:
 	Result<void> Initialize() {
-		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+		[[maybe_unused]] ScopedZone zone(profiler, PLUGIFY_SIGNATURE);
 
 		std::lock_guard lock(lifecycleMutex);
 
@@ -176,7 +176,7 @@ public:
 	}
 
 	void Update(std::chrono::milliseconds deltaTime) {
-		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+		[[maybe_unused]] ScopedZone zone(profiler, PLUGIFY_SIGNATURE);
 
 		std::lock_guard lock(lifecycleMutex);
 
@@ -215,7 +215,7 @@ public:
 	}
 
 	void Terminate() {
-		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+		[[maybe_unused]] ScopedZone zone(profiler, PLUGIFY_SIGNATURE);
 
 		std::lock_guard lock(lifecycleMutex);
 

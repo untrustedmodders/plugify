@@ -110,7 +110,7 @@ namespace plugify {
 
 		// Module Operations
 		Result<void> LoadModule(Extension& module) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			[[maybe_unused]] ScopedTimer timer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
@@ -140,7 +140,7 @@ namespace plugify {
 		}
 
 		Result<void> UpdateModule(Extension& module, std::chrono::milliseconds deltaTime) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = module.GetMethodTable();
 			if (!hasUpdate) {
@@ -156,7 +156,7 @@ namespace plugify {
 		}
 
 		Result<void> UnloadModule(Extension& module) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			Result<void> result;
 
@@ -182,7 +182,7 @@ namespace plugify {
 
 		// Plugin Operations
 		Result<void> LoadPlugin(const Extension& module, Extension& plugin) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			[[maybe_unused]] ScopedTimer timer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
@@ -221,7 +221,7 @@ namespace plugify {
 		}
 
 		Result<void> StartPlugin(Extension& plugin) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
 			if (!hasStart) {
@@ -237,7 +237,7 @@ namespace plugify {
 		}
 
 		Result<void> EndPlugin(Extension& plugin) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
 			if (!hasEnd) {
@@ -253,7 +253,7 @@ namespace plugify {
 		}
 
 		Result<void> UpdatePlugin(Extension& plugin, std::chrono::milliseconds deltaTime) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
 			if (!hasUpdate) {
@@ -269,7 +269,7 @@ namespace plugify {
 		}
 
 		Result<void> UnloadPlugin(Extension& plugin) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			// Clear all plugin data
 			plugin.SetLanguageModule(nullptr);
@@ -284,7 +284,7 @@ namespace plugify {
 		}
 
 		Result<void> MethodExport(const Extension& module, Extension& plugin) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
 			if (!hasExport) {
@@ -343,7 +343,7 @@ namespace plugify {
 			const std::filesystem::path& path,
 			const std::vector<std::filesystem::path>& searchPaths
 		) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			auto absPath = _fileSystem->GetAbsolutePath(path);
 			if (!absPath) {
@@ -378,7 +378,7 @@ namespace plugify {
 		}
 
 		Result<void> LoadLanguageModule(std::shared_ptr<IAssembly> assembly, Extension& module) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
 
@@ -422,7 +422,7 @@ namespace plugify {
 		}
 
 		Result<void> ValidateAndSetPluginData(Extension& plugin, LoadData& result) {
-			[[maybe_unused]] ScopedZone zone(_profiler, {PLUGIFY_SIGNATURE});
+			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
 			auto& [methods, data, table] = result;
 			const auto& exportedMethods = plugin.GetMethods();

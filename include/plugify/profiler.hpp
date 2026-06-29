@@ -9,28 +9,6 @@
 namespace plugify {
 	using ZoneHandle = uint64_t;
 
-	struct ZoneInfo {
-		std::string_view name;
-		std::string_view function;
-		std::string_view file;
-		size_t line;
-		uint32_t color;
-
-		ZoneInfo(
-			std::string_view name_ = "",
-			std::string_view function_ = PLUGIFY_FUNCTION,
-			std::string_view file_ = PLUGIFY_FILE,
-			size_t line_ = PLUGIFY_LINE,
-			uint32_t color_ = 0
-		) noexcept
-			: name(name_)
-			, function(function_)
-			, file(file_)
-			, line(line_)
-			, color(color_) {
-		}
-	};
-
 	class IProfiler {
 	public:
 		virtual ~IProfiler() = default;
@@ -42,27 +20,20 @@ namespace plugify {
 		// CPU zones 
 		// BeginZone / EndZone must be balanced. Prefer the RAII
 		// ScopedZone helper below — don't call these directly.
-		virtual ZoneHandle BeginZone(const ZoneInfo& desc = {}) = 0;
+		virtual ZoneHandle BeginZone(std::string_view name, const Location& location = Location::current()) = 0;
 		virtual void EndZone(ZoneHandle handle) = 0;
 
-		// Memory tracking 
+		// Memory tracking
 		//virtual void TrackAlloc(void* ptr, size_t size, std::string_view pool = {}) = 0;
 		//virtual void TrackFree(void* ptr, std::string_view pool = {}) = 0;
-
-		// Thread metadata
-		virtual void SetThread(std::string_view name) = 0;
-
-		// Capability query
-		virtual std::string_view GetName() const = 0; // "Tracy", "Optick", …
-		virtual bool IsActive() const = 0; // TODO: Remove
 	};
 
 	class ScopedZone {
 	public:
 		ScopedZone() = default;
 
-		ScopedZone(const std::shared_ptr<IProfiler>& profiler, const ZoneInfo& desc = {}) : _profiler(profiler.get()) {
-			if (_profiler) _handle = _profiler->BeginZone(desc);
+		ScopedZone(const std::shared_ptr<IProfiler>& profiler, std::string_view name, const Location& location = Location::current()) : _profiler(profiler.get()) {
+			if (_profiler) _handle = _profiler->BeginZone(name, location);
 		}
 
 		~ScopedZone() {

@@ -55,7 +55,7 @@ struct Plugify::Impl {
 	}
 
 	Result<void> Initialize() {
-		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+		[[maybe_unused]] ScopedZone zone(profiler, PLUGIFY_SIGNATURE);
 
 		if (std::this_thread::get_id() != ownerThreadId) {
 			return MakeError("Initialization must be called from owner thread");
@@ -84,7 +84,7 @@ struct Plugify::Impl {
 	}
 
 	void Terminate() {
-		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+		[[maybe_unused]] ScopedZone zone(profiler, PLUGIFY_SIGNATURE);
 
 		if (std::this_thread::get_id() != ownerThreadId) {
 			throw std::runtime_error("Termination must be called from owner thread");
@@ -106,7 +106,7 @@ struct Plugify::Impl {
 	}
 
 	void Update(std::chrono::milliseconds deltaTime) {
-		[[maybe_unused]] ScopedZone zone(profiler, {PLUGIFY_SIGNATURE});
+		[[maybe_unused]] ScopedZone zone(profiler, PLUGIFY_SIGNATURE);
 
 		if (std::this_thread::get_id() != ownerThreadId) {
 			throw std::runtime_error("Update must be called from owner thread");
