@@ -5,7 +5,7 @@
 #include <filesystem>
 
 #include "plugify/load_flag.hpp"
-#include "plugify/mem_addr.hpp"
+#include "plugify/address.hpp"
 #include "plugify/types.hpp"
 
 #include "plg/expected.hpp"

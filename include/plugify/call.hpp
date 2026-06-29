@@ -11,7 +11,7 @@
 #include <type_traits>
 
 #include "plugify/global.h"
-#include "plugify/mem_addr.hpp"
+#include "plugify/address.hpp"
 #include "plugify/method.hpp"
 #include "plugify/property.hpp"
 #include "plugify/signarure.hpp"

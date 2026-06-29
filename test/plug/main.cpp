@@ -1782,10 +1782,10 @@ class TracyProfiler final : public IProfiler {
 public:
 	TracyProfiler() = default;
 
-	ZoneHandle BeginZone(const ZoneInfo& info) override {
-		auto id = info.name.empty() ?
-			___tracy_alloc_srcloc(static_cast<uint32_t>(info.line), info.file.data(), info.file.size(), info.function.data(), info.function.size(), info.color) :
-			___tracy_alloc_srcloc_name(static_cast<uint32_t>(info.line), info.file.data(), info.file.size(), info.function.data(), info.function.size(), info.name.data(), info.name.size(), info.color);
+	ZoneHandle BeginZone(std::string_view name, const Location& location) override {
+		auto id = name.empty() ?
+			___tracy_alloc_srcloc(static_cast<uint32_t>(location.line()), location.file_name().data(), location.file_name().size(), location.function_name().data(), location.function_name().size(), 0) :
+			___tracy_alloc_srcloc_name(static_cast<uint32_t>(location.line()), location.file_name().data(), location.file_name().size(), location.function_name().data(), location.function_name().size(), name.data(), name.size(), 0);
 		return std::bit_cast<ZoneHandle>(___tracy_emit_zone_begin_alloc(id, 1));
 	}
 
@@ -1796,13 +1796,6 @@ public:
 	void MarkFrame(std::string_view name) override {
 		___tracy_emit_frame_mark(name.data());
 	}
-
-	void SetThread(std::string_view name) override {
-		___tracy_set_thread_name(name.data());
-	}
-
-	std::string_view GetName() const override { return "Tracy"; }
-	bool IsActive() const override { return true; }
 };
 
 // Enhanced interactive mode
