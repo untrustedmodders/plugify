@@ -364,7 +364,7 @@ namespace plugify {
 				return MakeError(std::move(assemblyResult.error()));
 			}
 
-			_assemblies[std::move(*absPath)] = *assemblyResult;
+			_assemblies.emplace(std::move(*absPath), *assemblyResult);
 
 			return *assemblyResult;
 		}

@@ -85,7 +85,7 @@ namespace plugify {
 			auto assembly = std::make_shared<BasicAssembly>(std::move(handle), _ops);
 
 			// Update cache
-			_cache[std::move(*resolvedPath)] = assembly;
+			_cache.emplace(std::move(*resolvedPath), assembly);
 
 			return assembly;
 		}
