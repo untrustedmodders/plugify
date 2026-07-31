@@ -238,6 +238,11 @@
                 "description": "For enum type parameters. Defines the enumeration structure including all possible values and their integer mappings. Used for type-safe enum passing between plugins.",
                 "$ref": "#/$defs/enumObject"
               },
+              "alias": {
+                "type": "object",
+                "description": "Optional alternative type name for this parameter. Used to provide a more descriptive or domain-specific type name in generated bindings and documentation instead of the raw type.",
+                "$ref": "#/$defs/aliasObject"
+              },
               "default": {
                 "type": ["string", "number", "boolean"],
                 "description": "Optional default value for this parameter. If provided, the parameter becomes optional in languages that support default arguments. Must be a valid value for the parameter's type.",
@@ -278,10 +283,35 @@
               "type": "object",
               "description": "For enum type returns. Defines the enumeration structure including all possible values and their integer mappings. Used for type-safe enum passing between plugins.",
               "$ref": "#/$defs/enumObject"
+            },
+            "alias": {
+              "type": "object",
+              "description": "Optional alternative type name for this return value. Used to provide a more descriptive or domain-specific type name in generated bindings and documentation instead of the raw type.",
+              "$ref": "#/$defs/aliasObject"
             }
           }
         }
       }
+    },
+    "aliasObject": {
+      "type": "object",
+      "description": "An object describing an alternative type name.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The aliased type name used in generated bindings and documentation instead of the raw type.",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "Explanation of what this alias represents and how it should be used."
+        }
+      },
+      "additionalProperties": false
     },
     "enumObject": {
       "type": "object",
