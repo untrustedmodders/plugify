@@ -1,48 +1,177 @@
 #include "plugify/platform_ops.hpp"
 
-#define WIN32_LEAN_AND_MEAN
-#define NOGDICAPMASKS     // CC_*, LC_*, PC_*, CP_*, TC_*, RC_
-#define NOVIRTUALKEYCODES // VK_*
-#define NOWINMESSAGES     // WM_*, EM_*, LB_*, CB_*
-#define NOWINSTYLES       // WS_*, CS_*, ES_*, LBS_*, SBS_*, CBS_*
-#define NOSYSMETRICS      // SM_*
-#define NOMENUS           // MF_*
-#define NOICONS           // IDI_*
-#define NOKEYSTATES       // MK_*
-#define NOSYSCOMMANDS     // SC_*
-#define NORASTEROPS       // Binary and Tertiary raster ops
-#define NOSHOWWINDOW      // SW_*
-#define OEMRESOURCE       // OEM Resource values
-#define NOATOM            // Atom Manager routines
-#define NOCLIPBOARD       // Clipboard routines
-#define NOCOLOR           // Screen colors
-#define NOCTLMGR          // Control and Dialog routines
-#define NODRAWTEXT        // DrawText() and DT_*
-#define NOGDI             // All GDI defines and routines
-#define NOKERNEL          // All KERNEL defines and routines
-#define NOUSER            // All USER defines and routines
-#define NONLS             // All NLS defines and routines
-#define NOMB              // MB_* and MessageBox()
-#define NOMEMMGR          // GMEM_*, LMEM_*, GHND, LHND, associated routines
-#define NOMETAFILE        // typedef METAFILEPICT
-#define NOMINMAX          // Macros min(a,b) and max(a,b)
-#define NOMSG             // typedef MSG and associated routines
-#define NOOPENFILE        // OpenFile(), OemToAnsi, AnsiToOem, and OF_*
-#define NOSCROLL          // SB_* and scrolling routines
-#define NOSERVICE         // All Service Controller routines, SERVICE_ equates, etc.
-#define NOSOUND           // Sound driver routines
-#define NOTEXTMETRIC      // typedef TEXTMETRIC and associated routines
-#define NOWH              // SetWindowsHook and WH_*
-#define NOWINOFFSETS      // GWL_*, GCL_*, associated routines
-#define NOCOMM            // COMM driver routines
-#define NOKANJI           // Kanji support stuff.
-#define NOHELP            // Help engine interface.
-#define NOPROFILER        // Profiler interface.
-#define NODEFERWINDOWPOS  // DeferWindowPos routines
-#define NOMCX             // Modem Configuration Extensions
-#define NOWINRES
-#define NOIME
+#pragma region WinApi
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN 1
+#endif
+
+#ifndef NOGDICAPMASKS
+#define NOGDICAPMASKS 1 // CC_*, LC_*, PC_*, CP_*, TC_*, RC_*
+#endif
+
+#ifndef NOVIRTUALKEYCODES
+#define NOVIRTUALKEYCODES 1 // VK_*
+#endif
+
+#ifndef NOWINMESSAGES
+#define NOWINMESSAGES 1 // WM_*, EM_*, LB_*, CB_*
+#endif
+
+#ifndef NOWINSTYLES
+#define NOWINSTYLES 1 // WS_*, CS_*, ES_*, LBS_*, SBS_*, CBS_*
+#endif
+
+#ifndef NOSYSMETRICS
+#define NOSYSMETRICS 1 // SM_*
+#endif
+
+#ifndef NOMENUS
+#define NOMENUS 1 // MF_*
+#endif
+
+#ifndef NOICONS
+#define NOICONS 1 // IDI_*
+#endif
+
+#ifndef NOKEYSTATES
+#define NOKEYSTATES 1 // MK_*
+#endif
+
+#ifndef NOSYSCOMMANDS
+#define NOSYSCOMMANDS 1 // SC_*
+#endif
+
+#ifndef NORASTEROPS
+#define NORASTEROPS 1 // Binary and Tertiary raster ops
+#endif
+
+#ifndef NOSHOWWINDOW
+#define NOSHOWWINDOW 1 // SW_*
+#endif
+
+#ifndef OEMRESOURCE
+#define OEMRESOURCE 1 // OEM Resource values
+#endif
+
+#ifndef NOATOM
+#define NOATOM 1 // Atom Manager routines
+#endif
+
+#ifndef NOCLIPBOARD
+#define NOCLIPBOARD 1 // Clipboard routines
+#endif
+
+#ifndef NOCOLOR
+#define NOCOLOR 1 // Screen colors
+#endif
+
+#ifndef NOCTLMGR
+#define NOCTLMGR 1 // Control and Dialog routines
+#endif
+
+#ifndef NODRAWTEXT
+#define NODRAWTEXT 1 // DrawText() and DT_*
+#endif
+
+#ifndef NOGDI
+#define NOGDI 1 // All GDI defines and routines
+#endif
+
+#ifndef NOKERNEL
+#define NOKERNEL 1 // All KERNEL defines and routines
+#endif
+
+#ifndef NOUSER
+#define NOUSER 1 // All USER defines and routines
+#endif
+
+#ifndef NONLS
+#define NONLS 1 // All NLS defines and routines
+#endif
+
+#ifndef NOMB
+#define NOMB 1 // MB_* and MessageBox()
+#endif
+
+#ifndef NOMEMMGR
+#define NOMEMMGR 1 // GMEM_*, LMEM_*, GHND, LHND, associated routines
+#endif
+
+#ifndef NOMETAFILE
+#define NOMETAFILE 1 // typedef METAFILEPICT
+#endif
+
+#ifndef NOMINMAX
+#define NOMINMAX 1 // Macros min(a,b) and max(a,b)
+#endif
+
+#ifndef NOMSG
+#define NOMSG 1 // typedef MSG and associated routines
+#endif
+
+#ifndef NOOPENFILE
+#define NOOPENFILE 1 // OpenFile(), OemToAnsi, AnsiToOem, and OF_*
+#endif
+
+#ifndef NOSCROLL
+#define NOSCROLL 1 // SB_* and scrolling routines
+#endif
+
+#ifndef NOSERVICE
+#define NOSERVICE 1 // All Service Controller routines, SERVICE_ equates, etc.
+#endif
+
+#ifndef NOSOUND
+#define NOSOUND 1 // Sound driver routines
+#endif
+
+#ifndef NOTEXTMETRIC
+#define NOTEXTMETRIC 1 // typedef TEXTMETRIC and associated routines
+#endif
+
+#ifndef NOWH
+#define NOWH 1 // SetWindowsHook and WH_*
+#endif
+
+#ifndef NOWINOFFSETS
+#define NOWINOFFSETS 1 // GWL_*, GCL_*, associated routines
+#endif
+
+#ifndef NOCOMM
+#define NOCOMM 1 // COMM driver routines
+#endif
+
+#ifndef NOKANJI
+#define NOKANJI 1 // Kanji support stuff.
+#endif
+
+#ifndef NOHELP
+#define NOHELP 1 // Help engine interface.
+#endif
+
+#ifndef NOPROFILER
+#define NOPROFILER 1 // Profiler interface.
+#endif
+
+#ifndef NODEFERWINDOWPOS
+#define NODEFERWINDOWPOS 1 // DeferWindowPos routines
+#endif
+
+#ifndef NOMCX
+#define NOMCX 1 // Modem Configuration Extensions
+#endif
+
+#ifndef NOWINRES
+#define NOWINRES 1
+#endif
+
+#ifndef NOIME
+#define NOIME 1
+#endif
+#pragma endregion WinApi
+
 #include <windows.h>
+
 #undef LoadLibrary
 
 namespace plugify {
