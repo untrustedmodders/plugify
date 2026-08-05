@@ -132,4 +132,14 @@ namespace plg {
 			}, t);
 		}
 	};
+
+	template <typename T, typename Alloc = std::allocator<T>>
+	struct vector_hash {
+		std::size_t operator()(const std::vector<T, Alloc>& v) const {
+			std::size_t seed = 0;
+			for (const auto& e : v)
+				hash_combine(seed, e);
+			return seed;
+		}
+	};
 }

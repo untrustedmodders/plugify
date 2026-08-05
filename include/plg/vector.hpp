@@ -20,6 +20,10 @@
 #include "plg/split_buffer.hpp"
 #include "plg/uninitialized.hpp"
 
+#ifndef PLUGIFY_VECTOR_NO_STD_HASH
+#include "plg/hash.hpp"
+#endif
+
 // Just in case, because we can't ignore some warnings from `-Wpedantic` (about zero size arrays and anonymous structs when gnu extensions are disabled) on gcc
 #if PLUGIFY_COMPILER_CLANG
 #  pragma clang system_header
@@ -1572,6 +1576,21 @@ namespace plg {
 		using vector = ::plg::vector<T, std::pmr::polymorphic_allocator<T>>;
 	} // namespace pmr
 } // namespace plg
+
+#ifndef PLUGIFY_VECTOR_NO_STD_HASH
+// hash support
+namespace std {
+	template <typename T, typename Alloc>
+	struct hash<plg::vector<T, Alloc>> {
+		std::size_t operator()(const plg::vector<T, Alloc>& v) const {
+			std::size_t seed = 0;
+			for (const auto& e : v)
+				plg::hash_combine(seed, e);
+			return seed;
+		}
+	};
+}// namespace std
+#endif // PLUGIFY_VECTOR_NO_STD_HASH
 
 #ifndef PLUGIFY_VECTOR_NO_STD_UTIL
 #include <optional>
