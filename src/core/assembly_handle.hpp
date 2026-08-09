@@ -8,7 +8,6 @@ namespace plugify {
 		void* _handle = nullptr;
 		std::shared_ptr<IPlatformOps> _ops;
 		std::filesystem::path _path;
-		std::atomic<size_t> _refCount{ 1 };
 
 	public:
 		AssemblyHandle() = default;
@@ -33,8 +32,7 @@ namespace plugify {
 		AssemblyHandle(AssemblyHandle&& other) noexcept
 			: _handle(std::exchange(other._handle, nullptr))
 			, _ops(std::move(other._ops))
-			, _path(std::move(other._path))
-			, _refCount(other._refCount.load()) {
+			, _path(std::move(other._path)) {
 		}
 
 		AssemblyHandle& operator=(AssemblyHandle&& other) noexcept {
@@ -42,7 +40,6 @@ namespace plugify {
 				_handle = std::exchange(other._handle, nullptr);
 				_ops = std::move(other._ops);
 				_path = std::move(other._path);
-				_refCount = other._refCount.load();
 			}
 			return *this;
 		}
@@ -57,18 +54,6 @@ namespace plugify {
 
 		bool IsValid() const {
 			return _handle != nullptr;
-		}
-
-		void AddRef() {
-			_refCount.fetch_add(1, std::memory_order_relaxed);
-		}
-
-		size_t ReleaseRef() {
-			return _refCount.fetch_sub(1, std::memory_order_relaxed);
-		}
-
-		size_t GetRefCount() const {
-			return _refCount.load();
 		}
 
 		Result<Address> GetSymbol(std::string_view name) const {
