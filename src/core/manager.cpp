@@ -452,7 +452,7 @@ void Manager::Terminate() const {
 
 // Query operations
 bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
-	auto it = std::find_if(_impl->extensions.begin(), _impl->extensions.end(), [&](const Extension& e) {
+	auto it = std::ranges::find_if(_impl->extensions, [&](const Extension& e) {
 		return e.GetName() == name;
 	});
 	if (it != _impl->extensions.end()) {
@@ -462,7 +462,7 @@ bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint>
 }
 
 const Extension* Manager::FindExtension(std::string_view name) const noexcept {
-	auto it = std::find_if(_impl->extensions.begin(), _impl->extensions.end(), [&](const Extension& e) {
+	auto it = std::ranges::find_if(_impl->extensions, [&](const Extension& e) {
 		return e.GetName() == name;
 	});
 	if (it != _impl->extensions.end()) {
@@ -472,7 +472,7 @@ const Extension* Manager::FindExtension(std::string_view name) const noexcept {
 }
 
 const Extension* Manager::FindExtension(UniqueId id) const noexcept {
-	auto it = std::find_if(_impl->extensions.begin(), _impl->extensions.end(), [&](const Extension& e) {
+	auto it = std::ranges::find_if(_impl->extensions, [&](const Extension& e) {
 		return e.GetId() == id;
 	});
 	if (it != _impl->extensions.end()) {

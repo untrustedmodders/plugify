@@ -24,5 +24,6 @@
 #include <condition_variable>
 #include <utility>
 #include <vector>
+#include <ranges>
 
 #include "plugify/global.h"
