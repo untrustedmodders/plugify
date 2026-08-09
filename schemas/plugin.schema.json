@@ -15,6 +15,13 @@
     "language"
   ],
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema, used by editors for completion and validation. Ignored by the loader."
+    },
+    "metadata": {
+      "description": "Free-form data reserved for external tooling. Ignored by the loader."
+    },
     "version": {
       "type": "string",
       "description": "The semantic version (SemVer) of the plugin following the format MAJOR.MINOR.PATCH. Used for dependency resolution, compatibility checking, and update management.",
@@ -41,7 +48,7 @@
     "website": {
       "type": "string",
       "description": "The official website, repository, or documentation URL for this plugin. Typically links to the project's GitHub repository, documentation site, or support page.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+      "pattern": "^https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-zA-Z]{2,}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)$"
     },
     "license": {
       "type": "string",
@@ -67,69 +74,21 @@
       "type": "array",
       "description": "Other plugins required for this plugin to function properly. Dependencies are resolved and loaded before this plugin. Version constraints ensure compatibility between plugins.",
       "items": {
-        "type": "object",
-        "description": "Describes the properties of a plugin dependency.",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "The name of the plugin reference.",
-            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
-            "minLength": 1
-          },
-          "constraints": {
-            "type": "string",
-            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
-            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-            "examples": [
-              ">=1.0.0 <2.0.0",
-              ">=1.0.0 <2.0.0 || >3.2.1",
-              "==1.2.3 || >=2.0.0 <3.0.0"
-            ]
-          },
-          "optional": {
-            "type": "boolean",
-            "description": "Indicates whether the plugin reference is optional."
-          }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/dependencyObject"
       }
     },
     "conflicts": {
       "type": "array",
-      "description": "A list of plugin references specifying plugins that conflict with this plugin.",
+      "description": "Plugins that are incompatible with this plugin. The plugin manager will prevent loading conflicting plugins simultaneously. Use this to prevent issues with plugins that provide overlapping or incompatible functionality.",
       "items": {
-        "type": "object",
-        "description": "Plugins that are incompatible with this plugin. The plugin manager will prevent loading conflicting plugins simultaneously. Use this to prevent issues with plugins that provide overlapping or incompatible functionality.",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "The name of the conflicting plugin.",
-            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
-            "minLength": 1
-          },
-          "constraints": {
-            "type": "string",
-            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
-            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-            "examples": [
-              ">=1.0.0 <2.0.0",
-              ">=1.0.0 <2.0.0 || >3.2.1",
-              "==1.2.3 || >=2.0.0 <3.0.0"
-            ]
-          },
-          "reason": {
-            "type": "string",
-            "description": "The reason why this plugin conflicts with the specified plugin.",
-            "minLength": 1
-          }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/conflictObject"
+      }
+    },
+    "obsoletes": {
+      "type": "array",
+      "description": "Plugins that this plugin supersedes. A matching plugin is treated as replaced by this one during dependency resolution, so the two are never loaded side by side. Use this when renaming a plugin or when merging one plugin into another.",
+      "items": {
+        "$ref": "#/$defs/obsoleteObject"
       }
     },
     "language": {
@@ -182,6 +141,91 @@
     }
   },
   "$defs": {
+    "versionConstraint": {
+      "type": "string",
+      "description": "A version constraint expression. A comparison is one of '<', '<=', '>', '>=' or '=' (the default) followed by a full MAJOR.MINOR.PATCH version. Comparisons separated by spaces must all hold (AND); groups separated by '||' are alternatives (OR). Note that partial versions ('>=1.0'), ranges ('^1.0.0', '~1.0.0') and '==' are not supported.",
+      "pattern": "^\\s*(?:[<>]=?|=)?\\s*(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?(?:\\s*(?:[<>]=?|=)?\\s*(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?)*(?:\\s*\\|\\|\\s*(?:[<>]=?|=)?\\s*(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?(?:\\s*(?:[<>]=?|=)?\\s*(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?)*)*\\s*$",
+      "examples": [
+        "1.2.3",
+        ">=1.0.0",
+        ">=1.0.0 <2.0.0",
+        ">=1.0.0 <2.0.0 || >3.2.1",
+        "=1.2.3 || >=2.0.0 <3.0.0"
+      ]
+    },
+    "extensionName": {
+      "type": "string",
+      "description": "The name of a plugin or language module, as written in its own manifest.",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "minLength": 1
+    },
+    "valueType": {
+      "type": "string",
+      "description": "A data type from Plugify's type system, which guarantees a consistent representation across languages. 'ptr32' and 'ptr64' are the pointer type on 32-bit and 64-bit builds respectively, so a manifest that names one only loads on that pointer width.",
+      "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "ptr32[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
+    },
+    "dependencyObject": {
+      "type": "object",
+      "description": "Describes the properties of a plugin dependency.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/extensionName"
+        },
+        "constraints": {
+          "$ref": "#/$defs/versionConstraint"
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Indicates whether the plugin reference is optional."
+        }
+      },
+      "additionalProperties": false
+    },
+    "conflictObject": {
+      "type": "object",
+      "description": "Describes a plugin that is incompatible with this one.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/extensionName"
+        },
+        "constraints": {
+          "$ref": "#/$defs/versionConstraint"
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason why this plugin conflicts with the specified plugin.",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "obsoleteObject": {
+      "type": "object",
+      "description": "Describes a plugin that this plugin supersedes.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/extensionName"
+        },
+        "constraints": {
+          "$ref": "#/$defs/versionConstraint"
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason why this plugin supersedes the specified plugin.",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
     "definitionName": {
       "type": "string",
       "description": "The name of an entry declared in the manifest's top-level 'prototypes' or 'enums' array, or of a definition written inline anywhere else in this manifest.",
@@ -230,9 +274,20 @@
         },
         "funcName": {
           "type": "string",
-          "description": "The actual function name as implemented in the plugin's source code. This maps the public API name to the internal implementation. Must match exactly with the function name in your code.",
-          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "description": "The actual function name as implemented in the plugin's source code. This maps the public API name to the internal implementation. Must match exactly with the name the language module resolves, which for some languages is a qualified path such as 'Namespace.Class.Method'.",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_.-]*$",
           "minLength": 1
+        },
+        "callConv": {
+          "type": "string",
+          "description": "The calling convention the exported function uses. Only needed when it differs from the platform default; language modules that do not generate native call stubs ignore it.",
+          "enum": ["cdecl", "stdcall", "fastcall", "vectorcall", "thiscall", "regparm1", "regparm2", "regparm3", "lightcall2", "lightcall3", "lightcall4", "softfloat", "hardfloat", "x64systemv", "x64windows"]
+        },
+        "varIndex": {
+          "type": "integer",
+          "description": "Zero-based index of the first variadic parameter in 'paramTypes'. Omit it, or use 255, for a function that is not variadic.",
+          "minimum": 0,
+          "maximum": 255
         },
         "paramTypes": {
           "type": "array",
@@ -246,9 +301,7 @@
             ],
             "properties": {
               "type": {
-                "type": "string",
-                "description": "The data type of this parameter value.The type system ensures cross-language compatibility.",
-                "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
+                "$ref": "#/$defs/valueType"
               },
               "name": {
                 "type": "string",
@@ -259,6 +312,10 @@
               "description": {
                 "type": "string",
                 "description": "Explanation of this parameter's purpose, valid ranges, special values. Include units of measurement where applicable."
+              },
+              "ref": {
+                "type": "boolean",
+                "description": "When true the parameter is passed by reference, so the callee can write through it and the caller observes the change. Changes the ABI of the method, and must agree on both sides of the call."
               },
               "prototype": {
                 "description": "For 'function' type parameters only. The signature of the callback function or function pointer, given either as the name of an entry in the top-level 'prototypes' array or as an inline definition.",
@@ -283,8 +340,6 @@
                 ]
               },
               "alias": {
-                "type": "object",
-                "description": "Optional alternative type name for this parameter. Used to provide a more descriptive or domain-specific type name in generated bindings and documentation instead of the raw type.",
                 "$ref": "#/$defs/aliasObject"
               },
               "default": {
@@ -292,7 +347,8 @@
                 "description": "Optional default value for this parameter. If provided, the parameter becomes optional in languages that support default arguments. Must be a valid value for the parameter's type.",
                 "examples": ["defaultValue", 42, true]
               }
-            }
+            },
+            "additionalProperties": false
           },
           "maxItems": 32
         },
@@ -304,9 +360,7 @@
           ],
           "properties": {
             "type": {
-              "type": "string",
-              "description": "The data type of this return value.The type system ensures cross-language compatibility.",
-              "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double", "function", "string", "any", "bool[]", "char8[]", "char16[]", "int8[]", "int16[]", "int32[]", "int64[]", "uint8[]", "uint16[]", "uint32[]", "uint64[]", "ptr64[]", "float[]", "double[]", "string[]", "any[]", "vec2[]", "vec3[]", "vec4[]", "mat4x4[]", "vec2", "vec3", "vec4", "mat4x4"]
+              "$ref": "#/$defs/valueType"
             },
             "name": {
               "type": "string",
@@ -341,17 +395,17 @@
               ]
             },
             "alias": {
-              "type": "object",
-              "description": "Optional alternative type name for this return value. Used to provide a more descriptive or domain-specific type name in generated bindings and documentation instead of the raw type.",
               "$ref": "#/$defs/aliasObject"
             }
-          }
+          },
+          "additionalProperties": false
         }
-      }
+      },
+      "additionalProperties": false
     },
     "aliasObject": {
       "type": "object",
-      "description": "An object describing an alternative type name.",
+      "description": "An alternative type name, used in generated bindings and documentation instead of the raw type.",
       "required": [
         "name"
       ],
@@ -365,6 +419,10 @@
         "description": {
           "type": "string",
           "description": "Explanation of what this alias represents and how it should be used."
+        },
+        "owner": {
+          "type": "boolean",
+          "description": "Optional boolean indicating ownership semantics. When true, the value carries ownership of the resource it names (e.g. for move semantics or transfer of ownership)."
         }
       },
       "additionalProperties": false
@@ -410,11 +468,12 @@
               },
               "value": {
                 "type": "integer",
-                "description": "The integer value mapped to this enum entry. Must be unique within the enum. Used for consistent cross-language enum representation."
+                "description": "The integer value mapped to this enum entry. Used for consistent cross-language enum representation."
               }
             },
             "additionalProperties": false
-          }
+          },
+          "minItems": 1
         }
       },
       "additionalProperties": false
@@ -432,7 +491,7 @@
         "name": {
           "type": "string",
           "description": "The class name. Should follow PascalCase naming convention and be descriptive of the resource it manages.",
-          "pattern": "^[A-Z][a-zA-Z0-9_]*$",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
           "minLength": 1
         },
         "group": {
@@ -449,7 +508,7 @@
         },
         "handleType": {
           "type": "string",
-          "description": "The data type used for the underlying handle that this class wraps. Typically ptr64 or ptr32, but may support other types depending on the resource.",
+          "description": "The data type used for the underlying handle that this class wraps. Typically ptr64 or ptr32, but may support other types depending on the resource. Use 'void' for a handleless class, which groups static methods and can have neither constructors nor a destructor.",
           "enum": ["void", "bool", "char8", "char16", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "ptr64", "ptr32", "float", "double"]
         },
         "handleAlias": {
@@ -473,7 +532,7 @@
           "description": "List of method names that can be used to construct instances of this class. Each constructor should return a handle of the specified handleType. Multiple constructors allow different initialization patterns.",
           "items": {
             "type": "string",
-            "description": "The name of a method that serves as a constructor for this class. Must reference an existing method in the 'methods' array.",
+            "description": "The name of a method that serves as a constructor for this class. Must reference the 'name' of an entry in the 'methods' array.",
             "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
             "minLength": 1
           },
@@ -481,7 +540,7 @@
         },
         "destructor": {
           "type": ["string", "null"],
-          "description": "The method name used to destroy instances of this class and release resources. Called automatically when the object goes out of scope in RAII-supporting languages. Must reference an existing method in the 'methods' array.",
+          "description": "The method name used to destroy instances of this class and release resources. Called automatically when the object goes out of scope in RAII-supporting languages. Must reference the 'name' of an entry in the 'methods' array.",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
           "minLength": 1
         },
@@ -502,9 +561,13 @@
                 "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
                 "minLength": 1
               },
+              "description": {
+                "type": "string",
+                "description": "Explanation of what this binding does on the class, beyond what the referenced method already documents."
+              },
               "method": {
                 "type": "string",
-                "description": "The name of the plugin method to bind to this class method. Must reference an existing method in the plugin's 'methods' array. The referenced method's signature will be used, with optional self-binding.",
+                "description": "The name of the plugin method to bind to this class method. Must reference the 'name' of an entry in the 'methods' array. The referenced method's signature will be used, with optional self-binding.",
                 "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
                 "minLength": 1
               },
@@ -516,44 +579,30 @@
                 "type": "array",
                 "description": "Optional array of aliases for the method's parameters. Each alias provides an alternative name for the corresponding parameter at that position. The array length must match the number of parameters in the referenced method (after bindSelf is applied). Use this to provide more meaningful or language-appropriate parameter names.",
                 "items": {
-                  "type": ["object", "null"],
-                  "description": "An alias for a parameter with optional ownership semantics.",
-                  "required": ["name"],
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "description": "The aliased parameter name.",
-                      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                      "minLength": 1
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/aliasObject"
                     },
-                    "owner": {
-                      "type": "boolean",
-                      "description": "Optional boolean indicating ownership semantics for this parameter. When true, indicates that this parameter takes ownership of the resource (e.g., for move semantics or transfer of ownership)."
+                    {
+                      "type": "null"
                     }
-                  },
-                  "additionalProperties": false
+                  ]
                 },
                 "maxItems": 32
               },
               "retAlias": {
-                "type": ["object", "null"],
                 "description": "Optional alias for the return value. Provides an alternative name and ownership semantics for the value returned by this method. Useful for providing more meaningful or language-appropriate return value names in generated bindings.",
-                "required": ["name"],
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "The aliased return value name.",
-                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-                    "minLength": 1
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/aliasObject"
                   },
-                  "owner": {
-                    "type": "boolean",
-                    "description": "Optional boolean indicating ownership semantics for the return value. When true, indicates that the caller takes ownership of the returned resource."
+                  {
+                    "type": "null"
                   }
-                },
-                "additionalProperties": false
+                ]
               }
-            }
+            },
+            "additionalProperties": false
           },
           "minItems": 1
         }

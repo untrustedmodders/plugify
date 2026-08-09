@@ -14,6 +14,13 @@
     "language"
   ],
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema, used by editors for completion and validation. Ignored by the loader."
+    },
+    "metadata": {
+      "description": "Free-form data reserved for external tooling. Ignored by the loader."
+    },
     "version": {
       "type": "string",
       "description": "The semantic version (SemVer) of the language module following the format MAJOR.MINOR.PATCH. Used for dependency resolution and compatibility checking.",
@@ -40,7 +47,7 @@
     "website": {
       "type": "string",
       "description": "The official website, repository, or documentation URL for this language module. Typically links to the project's GitHub repository or documentation site.",
-      "pattern": "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)"
+      "pattern": "^https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-zA-Z]{2,}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)$"
     },
     "license": {
       "type": "string",
@@ -66,69 +73,21 @@
       "type": "array",
       "description": "Other modules required for this language module to function properly. Dependencies are resolved and loaded before this module. Version constraints ensure compatibility.",
       "items": {
-        "type": "object",
-        "description": "Describes the properties of a module dependency.",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "The name of the module reference.",
-            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
-            "minLength": 1
-          },
-          "constraints": {
-            "type": "string",
-            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
-            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-            "examples": [
-              ">=1.0.0 <2.0.0",
-              ">=1.0.0 <2.0.0 || >3.2.1",
-              "==1.2.3 || >=2.0.0 <3.0.0"
-            ]
-          },
-          "optional": {
-            "type": "boolean",
-            "description": "Indicates whether the module reference is optional."
-          }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/dependencyObject"
       }
     },
     "conflicts": {
       "type": "array",
       "description": "Modules that are incompatible with this language module. The plugin manager will prevent loading conflicting modules simultaneously. Use this to prevent issues with modules that provide overlapping functionality.",
       "items": {
-        "type": "object",
-        "description": "Describes the properties of a conflicting module.",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "The name of the conflicting module.",
-            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
-            "minLength": 1
-          },
-          "constraints": {
-            "type": "string",
-            "description": "A version constraint expression. Multiple constraints can be combined with spaces (AND) or '||' (OR). Example: '>=1.0.0 <2.0.0 || >3.2.1'.",
-            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-            "examples": [
-              ">=1.0.0 <2.0.0",
-              ">=1.0.0 <2.0.0 || >3.2.1",
-              "==1.2.3 || >=2.0.0 <3.0.0"
-            ]
-          },
-          "reason": {
-            "type": "string",
-            "description": "The reason why this module conflicts with the specified module.",
-            "minLength": 1
-          }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/conflictObject"
+      }
+    },
+    "obsoletes": {
+      "type": "array",
+      "description": "Modules that this language module supersedes. A matching module is treated as replaced by this one during dependency resolution, so the two are never loaded side by side. Use this when renaming a module or when merging one module into another.",
+      "items": {
+        "$ref": "#/$defs/obsoleteObject"
       }
     },
     "language": {
@@ -147,7 +106,9 @@
     },
     "runtime": {
       "type": "string",
-      "description": ""
+      "description": "Path to the module's shared library, relative to the module's directory. The file name is normalised to the platform's library naming convention, so give it without the 'lib' prefix or the '.dll'/'.so'/'.dylib' suffix. Defaults to 'bin/<manifest file name>'.",
+      "minLength": 1,
+      "examples": ["bin/plugify-module-cpp"]
     },
     "directories": {
       "type": "array",
@@ -156,7 +117,90 @@
         "type": "string",
         "description": "Relative folder path.",
         "minLength": 1
-      }
+      },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "versionConstraint": {
+      "type": "string",
+      "description": "A version constraint expression. A comparison is one of '<', '<=', '>', '>=' or '=' (the default) followed by a full MAJOR.MINOR.PATCH version. Comparisons separated by spaces must all hold (AND); groups separated by '||' are alternatives (OR). Note that partial versions ('>=1.0'), ranges ('^1.0.0', '~1.0.0') and '==' are not supported.",
+      "pattern": "^\\s*(?:[<>]=?|=)?\\s*(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?(?:\\s*(?:[<>]=?|=)?\\s*(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?)*(?:\\s*\\|\\|\\s*(?:[<>]=?|=)?\\s*(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?(?:\\s*(?:[<>]=?|=)?\\s*(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?)*)*\\s*$",
+      "examples": [
+        "1.2.3",
+        ">=1.0.0",
+        ">=1.0.0 <2.0.0",
+        ">=1.0.0 <2.0.0 || >3.2.1",
+        "=1.2.3 || >=2.0.0 <3.0.0"
+      ]
+    },
+    "extensionName": {
+      "type": "string",
+      "description": "The name of a plugin or language module, as written in its own manifest.",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "minLength": 1
+    },
+    "dependencyObject": {
+      "type": "object",
+      "description": "Describes the properties of a module dependency.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/extensionName"
+        },
+        "constraints": {
+          "$ref": "#/$defs/versionConstraint"
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Indicates whether the module reference is optional."
+        }
+      },
+      "additionalProperties": false
+    },
+    "conflictObject": {
+      "type": "object",
+      "description": "Describes a module that is incompatible with this one.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/extensionName"
+        },
+        "constraints": {
+          "$ref": "#/$defs/versionConstraint"
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason why this module conflicts with the specified module.",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "obsoleteObject": {
+      "type": "object",
+      "description": "Describes a module that this module supersedes.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/extensionName"
+        },
+        "constraints": {
+          "$ref": "#/$defs/versionConstraint"
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason why this module supersedes the specified module.",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
