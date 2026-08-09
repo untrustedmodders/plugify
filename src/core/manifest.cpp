@@ -10,25 +10,38 @@
 using namespace plugify;
 
 namespace {
-	// Helper function to validate a name (alphanumeric, underscore)
-	bool IsValidName(const std::string& name) {
-		if (name.empty()) {
-			return false;
-		}
-		static const std::regex nameRegex("^[A-Za-z0-9_]+$");
-		return std::regex_match(name, nameRegex);
+	// The JSON schemas under schemas/ are the published contract for a manifest,
+	// so each helper below mirrors one pattern from them verbatim. Changing a rule
+	// here without changing it there lets a manifest an editor calls valid fail to
+	// load, and the other way round.
+
+	// "^[A-Za-z_][A-Za-z0-9_]*$": anything that becomes a symbol in generated
+	// bindings - method, prototype, enum, class, parameter, alias and binding
+	// names, plus the method names a class refers to.
+	bool IsValidIdentifier(const std::string& name) {
+		static const std::regex identifierRegex("^[A-Za-z_][A-Za-z0-9_]*$");
+		return std::regex_match(name, identifierRegex);
 	}
 
-	// Helper function to validate a name (alphanumeric, underscore, dot, dash)
-	bool IsValidName2(const std::string& name) {
-		if (name.empty()) {
-			return false;
-		}
-		static const std::regex nameRegex("^[A-Za-z0-9_.-]+$");
-		return std::regex_match(name, nameRegex);
+	// "^[A-Za-z][A-Za-z0-9_.-]*$": the name of an extension, as written in its own
+	// manifest - this one, the language it needs, and everything it depends on,
+	// conflicts with or obsoletes.
+	bool IsValidExtensionName(const std::string& name) {
+		static const std::regex extensionNameRegex("^[A-Za-z][A-Za-z0-9_.-]*$");
+		return std::regex_match(name, extensionNameRegex);
 	}
 
-	// Helper function to validate URL
+	// "^[A-Za-z_][A-Za-z0-9_.-]*$": funcName, which a language module may resolve
+	// through a qualified path such as 'Namespace.Class.Method' rather than a bare
+	// identifier.
+	bool IsValidSymbolName(const std::string& name) {
+		static const std::regex symbolNameRegex("^[A-Za-z_][A-Za-z0-9_.-]*$");
+		return std::regex_match(name, symbolNameRegex);
+	}
+
+	// Deliberately looser than the schemas' "website" pattern, which insists on a
+	// scheme: a missing scheme is a cosmetic flaw in a field nothing dereferences,
+	// and refusing to load a plugin over it would be out of proportion.
 	bool IsValidURL(const std::string& url) {
 		static const std::regex urlRegex(R"(^(https?://)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(/.*)?$)");
 		return std::regex_match(url, urlRegex);
@@ -53,7 +66,7 @@ namespace {
 			return MakeError("Enum name cannot be empty");
 		}
 
-		if (!IsValidName(enumObj.name)) {
+		if (!IsValidIdentifier(enumObj.name)) {
 			return MakeError("Invalid enum name: {}", enumObj.name);
 		}
 
@@ -74,7 +87,7 @@ namespace {
 				return MakeError("Enum value name cannot be empty in enum '{}'", enumObj.name);
 			}
 
-			if (!IsValidName(value.name)) {
+			if (!IsValidIdentifier(value.name)) {
 				return MakeError("Invalid enum value name: {} in enum '{}'", value.name, enumObj.name);
 			}
 
@@ -142,7 +155,7 @@ namespace {
 			return MakeError("{}: name cannot be empty", prefix);
 		}
 
-		if (!IsValidName(method.name)) {
+		if (!IsValidIdentifier(method.name)) {
 			return MakeError("{}: invalid name '{}'", prefix, method.name);
 		}
 
@@ -151,15 +164,22 @@ namespace {
 				return MakeError("{} '{}': funcName cannot be empty", prefix, method.name);
 			}
 
-			if (!IsValidName2(method.funcName)) {
+			if (!IsValidSymbolName(method.funcName)) {
 				return MakeError("{} '{}': invalid funcName '{}'", prefix, method.name, method.funcName);
 			}
 		}
 
-		// Validate varIndex
-		constexpr uint8_t kNoVarArgs = 255;	 // Assuming this constant
-		if (method.varIndex != kNoVarArgs && method.varIndex >= method.paramTypes.size()) {
-			return MakeError("{} '{}': varIndex out of range", prefix, method.name);
+		// An absent varIndex and the explicit kNoVarArgs sentinel both mean "not
+		// variadic"; any other value has to name a parameter that exists.
+		if (method.varIndex && *method.varIndex != Signature::kNoVarArgs
+			&& *method.varIndex >= method.paramTypes.size()) {
+			return MakeError(
+				"{} '{}': varIndex {} is out of range, the method takes {} parameter(s)",
+				prefix,
+				method.name,
+				*method.varIndex,
+				method.paramTypes.size()
+			);
 		}
 
 		// Validate parameter types
@@ -193,8 +213,8 @@ namespace {
 			return MakeError("Dependency name cannot be empty");
 		}
 
-		if (!IsValidName(dep.name)) {
-			return MakeError("Invalid dependency name: ", dep.name);
+		if (!IsValidExtensionName(dep.name)) {
+			return MakeError("Invalid dependency name: {}", dep.name);
 		}
 
 		// Validate constraints if present
@@ -214,8 +234,8 @@ namespace {
 			return MakeError("Conflict name cannot be empty");
 		}
 
-		if (!IsValidName(conflict.name)) {
-			return MakeError("Invalid conflict name: ", conflict.name);
+		if (!IsValidExtensionName(conflict.name)) {
+			return MakeError("Invalid conflict name: {}", conflict.name);
 		}
 
 		// Validate constraints if present
@@ -234,8 +254,8 @@ namespace {
 			return MakeError("Obsolete name cannot be empty");
 		}
 
-		if (!IsValidName(obsolete.name)) {
-			return MakeError("Invalid obsolete name: ", obsolete.name);
+		if (!IsValidExtensionName(obsolete.name)) {
+			return MakeError("Invalid obsolete name: {}", obsolete.name);
 		}
 
 		return {};
@@ -247,7 +267,7 @@ namespace {
 			return MakeError("{}: Alias name cannot be empty", context);
 		}
 
-		if (!IsValidName(alias.name)) {
+		if (!IsValidIdentifier(alias.name)) {
 			return MakeError("{}: Invalid alias name '{}'", context, alias.name);
 		}
 
@@ -260,7 +280,7 @@ namespace {
 			return MakeError("{}: Binding name cannot be empty", context);
 		}
 
-		if (!IsValidName(binding.name)) {
+		if (!IsValidIdentifier(binding.name)) {
 			return MakeError("{}: Invalid binding name '{}'", context, binding.name);
 		}
 
@@ -268,7 +288,7 @@ namespace {
 			return MakeError("{}: Binding '{}' method cannot be empty", context, binding.name);
 		}
 
-		if (!IsValidName2(binding.method)) {
+		if (!IsValidIdentifier(binding.method)) {
 			return MakeError("{}: Binding '{}' has invalid method name '{}'", context, binding.name, binding.method);
 		}
 
@@ -313,7 +333,7 @@ namespace {
 			return MakeError("Class name cannot be empty");
 		}
 
-		if (!IsValidName(classObj.name)) {
+		if (!IsValidIdentifier(classObj.name)) {
 			return MakeError("Invalid class name: {}", classObj.name);
 		}
 
@@ -337,7 +357,7 @@ namespace {
 					return MakeError("Class '{}': constructor[{}] cannot be empty", classObj.name, i);
 				}
 
-				if (!IsValidName2(constructor)) {
+				if (!IsValidIdentifier(constructor)) {
 					return MakeError("Class '{}': invalid constructor[{}] name '{}'", classObj.name, i, constructor);
 				}
 			}
@@ -349,7 +369,7 @@ namespace {
 				return MakeError("Class '{}': destructor cannot be empty", classObj.name);
 			}
 
-			if (!IsValidName2(*classObj.destructor)) {
+			if (!IsValidIdentifier(*classObj.destructor)) {
 				return MakeError("Class '{}': invalid destructor name '{}'", classObj.name, *classObj.destructor);
 			}
 		}
@@ -699,7 +719,7 @@ Result<void> Manifest::Validate() const {
 		return MakeError("Manifest name is required");
 	}
 
-	if (!IsValidName2(name)) {
+	if (!IsValidExtensionName(name)) {
 		return MakeError("Invalid manifest name: {}", name);
 	}
 
@@ -712,7 +732,7 @@ Result<void> Manifest::Validate() const {
 		return MakeError("Language cannot be empty if specified");
 	}
 
-	if (!IsValidName(language)) {
+	if (!IsValidExtensionName(language)) {
 		return MakeError("Invalid language name: {}", language);
 	}
 
