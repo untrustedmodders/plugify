@@ -165,15 +165,47 @@
       "items": {
         "$ref": "#/$defs/classObject"
       }
+    },
+    "prototypes": {
+      "type": "array",
+      "description": "Shared callback signatures, each declared once and referenced by name from any 'prototype' field. Use this instead of repeating the same inline definition on every parameter that takes the same callback. Names must be unique across the manifest.",
+      "items": {
+        "$ref": "#/$defs/prototypeObject"
+      }
+    },
+    "enums": {
+      "type": "array",
+      "description": "Shared enumerations, each declared once and referenced by name from any 'enum' field. Use this instead of repeating the same inline definition on every parameter that takes the same enum. Names must be unique across the manifest.",
+      "items": {
+        "$ref": "#/$defs/enumObject"
+      }
     }
   },
   "$defs": {
+    "definitionName": {
+      "type": "string",
+      "description": "The name of an entry declared in the manifest's top-level 'prototypes' or 'enums' array, or of a definition written inline anywhere else in this manifest.",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "minLength": 1
+    },
     "methodObject": {
-      "type": "object",
       "description": "An object describing single function/method exposed by the plugin.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/prototypeObject"
+        },
+        {
+          "required": [
+            "funcName"
+          ]
+        }
+      ]
+    },
+    "prototypeObject": {
+      "type": "object",
+      "description": "An object describing a callable signature: its parameters and return type. Used both for methods the plugin exports and for the callback signatures they take or return.",
       "required": [
         "name",
-        "funcName",
         "paramTypes",
         "retType"
       ],
@@ -229,14 +261,26 @@
                 "description": "Explanation of this parameter's purpose, valid ranges, special values. Include units of measurement where applicable."
               },
               "prototype": {
-                "type": "object",
-                "description": "For 'function' type parameters only. Defines the signature of the callback function or function pointer, including its parameters and return type.",
-                "$ref": "#/$defs/methodObject"
+                "description": "For 'function' type parameters only. The signature of the callback function or function pointer, given either as the name of an entry in the top-level 'prototypes' array or as an inline definition.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/definitionName"
+                  },
+                  {
+                    "$ref": "#/$defs/prototypeObject"
+                  }
+                ]
               },
               "enum": {
-                "type": "object",
-                "description": "For enum type parameters. Defines the enumeration structure including all possible values and their integer mappings. Used for type-safe enum passing between plugins.",
-                "$ref": "#/$defs/enumObject"
+                "description": "For enum type parameters. The enumeration structure with all possible values and their integer mappings, given either as the name of an entry in the top-level 'enums' array or as an inline definition. Used for type-safe enum passing between plugins.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/definitionName"
+                  },
+                  {
+                    "$ref": "#/$defs/enumObject"
+                  }
+                ]
               },
               "alias": {
                 "type": "object",
@@ -275,14 +319,26 @@
               "description": "Meaning of the return value. Include units of measurement where applicable."
             },
             "prototype": {
-              "type": "object",
-              "description": "For 'function' type returns only. Defines the signature of the callback function or function pointer, including its parameters and return type.",
-              "$ref": "#/$defs/methodObject"
+              "description": "For 'function' type returns only. The signature of the callback function or function pointer, given either as the name of an entry in the top-level 'prototypes' array or as an inline definition.",
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/definitionName"
+                },
+                {
+                  "$ref": "#/$defs/prototypeObject"
+                }
+              ]
             },
             "enum": {
-              "type": "object",
-              "description": "For enum type returns. Defines the enumeration structure including all possible values and their integer mappings. Used for type-safe enum passing between plugins.",
-              "$ref": "#/$defs/enumObject"
+              "description": "For enum type returns. The enumeration structure with all possible values and their integer mappings, given either as the name of an entry in the top-level 'enums' array or as an inline definition. Used for type-safe enum passing between plugins.",
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/definitionName"
+                },
+                {
+                  "$ref": "#/$defs/enumObject"
+                }
+              ]
             },
             "alias": {
               "type": "object",

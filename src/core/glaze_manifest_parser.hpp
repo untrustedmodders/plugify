@@ -15,11 +15,15 @@ namespace plugify {
 			if (!parsed) {
 				return MakeError(glz::format_error(parsed.error(), content));
 			}
-			auto result = parsed->Validate();
-			if (!result) {
+			// Resolve() first: it links every by-name prototype/enum reference to
+			// its definition, which Validate() then relies on being present.
+			if (auto result = parsed->Resolve(); !result) {
 				return MakeError(std::move(result.error()));
 			}
-			return *parsed;
+			if (auto result = parsed->Validate(); !result) {
+				return MakeError(std::move(result.error()));
+			}
+			return std::move(*parsed);
 		}
 	};
 }

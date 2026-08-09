@@ -58,10 +58,7 @@ namespace {
 		}
 
 		if (enumObj.values.empty()) {
-			// TODO: add ref system to enum and prototype to allow easy dublication similar to
-			// schema $ref
-			return {};
-			// return MakeError("Enum '{}' must have at least one value", enumObj.name);
+			return MakeError("Enum '{}' must have at least one value", enumObj.name);
 		}
 
 		std::unordered_set<std::string> valueNames;
@@ -101,6 +98,10 @@ namespace {
 	extern Result<void> ValidateMethod(const Method::Impl& method, const std::string& context = "");
 
 	// Validate Property
+	// The prototype and enum a property points at are validated once via the
+	// manifest's shared tables, which Resolve() has already populated with every
+	// definition; recursing into them here would both repeat that work and hang
+	// on prototypes that refer to one another.
 	Result<void> ValidateProperty(const Property::Impl& prop, const std::string& context, bool param) {
 		// Check if type is valid (you'd need to define valid ValueType values)
 		// Assuming ValueType is an enum, check if it's in valid range
@@ -110,8 +111,18 @@ namespace {
 			return MakeError("{}: Parameter cannot be void type", context);
 		}
 
+		// Still holding a name means Resolve() never ran, or ran before this
+		// property was added; either way nothing downstream can use the property.
+		if (const auto* reference = std::get_if<std::string>(&prop.prototype)) {
+			return MakeError("{}: Unresolved prototype reference '{}'", context, *reference);
+		}
+
+		if (const auto* reference = std::get_if<std::string>(&prop.enumerate)) {
+			return MakeError("{}: Unresolved enum reference '{}'", context, *reference);
+		}
+
 		// If type is function/callback, prototype should be present
-		if (prop.type == ValueType::Function && !prop.prototype) {
+		if (prop.type == ValueType::Function && !DefinitionOf(prop.prototype)) {
 			return MakeError("{}: Function type requires prototype", context);
 		}
 
@@ -119,24 +130,6 @@ namespace {
 		// if (prop.type == ValueType::Enum && !prop.enumerate) {
 		//     return context + ": Enum type requires enumerate definition";
 		// }
-
-		// Validate enum if present
-		if (prop.enumerate) {
-			if (auto result = ValidateEnumObject(*prop.enumerate->_impl); !result) {
-				return MakeError("{}: {}", context, result.error());
-			}
-		}
-
-		// Validate prototype if present (recursive validation)
-		if (prop.prototype) {
-			if (auto result = ValidateMethod(
-					*prop.prototype->_impl,
-					std::format("{}{}", context, ".prototype")
-				);
-				!result) {
-				return result;
-			}
-		}
 
 		return {};
 	}
@@ -386,6 +379,317 @@ namespace {
 
 		return {};
 	}
+
+	// Two definitions written under the same name are only allowed if they say the
+	// same thing, so that repeating an inline enum across several methods keeps
+	// working. Nested prototypes and enums compare by name rather than by value:
+	// within a manifest a name denotes exactly one type, which also keeps this
+	// terminating when prototypes refer to one another.
+	template <class T>
+	std::string_view DefinitionName(const Definition<T>& def) noexcept {
+		if (const auto* reference = std::get_if<std::string>(&def)) {
+			return *reference;
+		}
+		const auto& definition = std::get<std::shared_ptr<T>>(def);
+		return definition ? definition->_impl->name : std::string_view{};
+	}
+
+	bool SameDefinition(const Property::Impl& lhs, const Property::Impl& rhs) {
+		return lhs.type == rhs.type
+			&& lhs.ref.value_or(false) == rhs.ref.value_or(false)
+			&& DefinitionName(lhs.prototype) == DefinitionName(rhs.prototype)
+			&& DefinitionName(lhs.enumerate) == DefinitionName(rhs.enumerate);
+	}
+
+	bool SameDefinition(const EnumObject::Impl& lhs, const EnumObject::Impl& rhs) {
+		return std::ranges::equal(lhs.values, rhs.values, [](const EnumValue& a, const EnumValue& b) {
+			return a._impl->name == b._impl->name && a._impl->value == b._impl->value;
+		});
+	}
+
+	bool SameDefinition(const Method::Impl& lhs, const Method::Impl& rhs) {
+		if (lhs.funcName != rhs.funcName || lhs.callConv != rhs.callConv
+			|| lhs.varIndex != rhs.varIndex) {
+			return false;
+		}
+
+		if (!SameDefinition(*lhs.retType._impl, *rhs.retType._impl)) {
+			return false;
+		}
+
+		return std::ranges::equal(lhs.paramTypes, rhs.paramTypes, [](const Property& a, const Property& b) {
+			return SameDefinition(*a._impl, *b._impl);
+		});
+	}
+
+	// Gathers every prototype and enum in a manifest into one table keyed by name,
+	// so a definition declared up front and the same definition written inline
+	// collapse onto a single shared object.
+	struct TypeTable {
+		std::unordered_map<std::string, std::shared_ptr<Method>> prototypes;
+		std::unordered_map<std::string, std::shared_ptr<EnumObject>> enums;
+
+		// Returns whether this definition is the first one seen under its name; a
+		// later duplicate is collapsed onto the first so that consumers can treat
+		// pointer identity as type identity.
+		// `definition` is null when the field is absent, and the pointer itself is
+		// null when the field is still holding a name rather than a definition.
+		template <class T>
+		Result<bool> Register(
+			std::unordered_map<std::string, std::shared_ptr<T>>& table,
+			std::shared_ptr<T>* definition,
+			std::string_view kind,
+			const std::string& context
+		) {
+			if (!definition || !*definition) {
+				return false;
+			}
+
+			const auto& name = (*definition)->_impl->name;
+			if (name.empty()) {
+				return MakeError("{}: {} definition must have a name", context, kind);
+			}
+
+			auto [it, inserted] = table.try_emplace(name, *definition);
+			if (inserted) {
+				return true;
+			}
+
+			if (it->second != *definition
+				&& !SameDefinition(*it->second->_impl, *(*definition)->_impl)) {
+				return MakeError("{}: conflicting definitions for {} '{}'", context, kind, name);
+			}
+
+			*definition = it->second;
+			return false;
+		}
+
+		// Pass one: register the inline definitions hanging off this property, then
+		// descend into an inline prototype's own parameters. Inline definitions nest
+		// as a tree, so this always terminates.
+		Result<void> Collect(Property::Impl& prop, const std::string& context) {
+			auto* inline_prototype = std::get_if<std::shared_ptr<Method>>(&prop.prototype);
+			auto prototype = Register(prototypes, inline_prototype, "prototype", context);
+			if (!prototype) {
+				return MakeError(std::move(prototype.error()));
+			}
+
+			auto* inline_enum = std::get_if<std::shared_ptr<EnumObject>>(&prop.enumerate);
+			if (auto enumerate = Register(enums, inline_enum, "enum", context); !enumerate) {
+				return MakeError(std::move(enumerate.error()));
+			}
+
+			// Only descend into a definition this call introduced; one that collapsed
+			// onto an earlier definition has already been walked.
+			if (*prototype) {
+				return Collect(*(*inline_prototype)->_impl, context);
+			}
+
+			return {};
+		}
+
+		Result<void> Collect(Method::Impl& method, const std::string& context) {
+			for (size_t i = 0; i < method.paramTypes.size(); ++i) {
+				if (auto result = Collect(
+						*method.paramTypes[i]._impl,
+						std::format("{} '{}' param[{}]", context, method.name, i)
+					);
+					!result) {
+					return result;
+				}
+			}
+
+			return Collect(*method.retType._impl, std::format("{} '{}' return type", context, method.name));
+		}
+
+		// Pass two: swap each by-name reference for the definition it names. Every
+		// definition is in the table by now, so references may point forwards, and
+		// no recursion is needed.
+		template <class T>
+		Result<void> Link(
+			const std::unordered_map<std::string, std::shared_ptr<T>>& table,
+			Definition<T>& def,
+			std::string_view kind,
+			const std::string& context
+		) {
+			const auto* reference = std::get_if<std::string>(&def);
+			if (!reference) {
+				return {};
+			}
+
+			auto it = table.find(*reference);
+			if (it == table.end()) {
+				return MakeError("{}: unknown {} '{}'", context, kind, *reference);
+			}
+
+			// Assigning the definition destroys the name `reference` points at, so
+			// nothing may read it past this line.
+			def = it->second;
+			return {};
+		}
+
+		Result<void> Link(Method::Impl& method, const std::string& context) {
+			auto link = [&](Property::Impl& prop, const std::string& where) -> Result<void> {
+				if (auto result = Link(prototypes, prop.prototype, "prototype", where); !result) {
+					return result;
+				}
+				return Link(enums, prop.enumerate, "enum", where);
+			};
+
+			for (size_t i = 0; i < method.paramTypes.size(); ++i) {
+				if (auto result = link(
+						*method.paramTypes[i]._impl,
+						std::format("{} '{}' param[{}]", context, method.name, i)
+					);
+					!result) {
+					return result;
+				}
+			}
+
+			return link(*method.retType._impl, std::format("{} '{}' return type", context, method.name));
+		}
+
+		// A prototype that can reach itself makes the shared_ptr graph
+		// self-referential, so it would never be freed, and sends anything that
+		// walks a signature recursively - Method::FindPrototype and every code
+		// generator among them - into unbounded recursion. Names are still to hand
+		// here, so reject it with one.
+		Result<void> DetectCycles() const {
+			enum class Mark : uint8_t { Unvisited, OnStack, Done };
+			std::unordered_map<const Method*, Mark> marks;
+
+			auto visit = [&marks](auto&& self, const std::shared_ptr<Method>& prototype) -> Result<void> {
+				switch (marks[prototype.get()]) {
+					case Mark::Done:
+						return {};
+					case Mark::OnStack:
+						return MakeError(
+							"Prototype '{}' is part of a reference cycle",
+							prototype->_impl->name
+						);
+					case Mark::Unvisited:
+						break;
+				}
+
+				marks[prototype.get()] = Mark::OnStack;
+
+				auto descend = [&](const Property::Impl& prop) -> Result<void> {
+					if (auto nested = DefinitionOf(prop.prototype)) {
+						return self(self, nested);
+					}
+					return {};
+				};
+
+				for (const auto& param : prototype->_impl->paramTypes) {
+					if (auto result = descend(*param._impl); !result) {
+						return result;
+					}
+				}
+
+				if (auto result = descend(*prototype->_impl->retType._impl); !result) {
+					return result;
+				}
+
+				marks[prototype.get()] = Mark::Done;
+				return {};
+			};
+
+			for (const auto& [_, prototype] : prototypes) {
+				if (auto result = visit(visit, prototype); !result) {
+					return result;
+				}
+			}
+
+			return {};
+		}
+	};
+}
+
+Result<void> Manifest::Resolve() {
+	TypeTable table;
+
+	// Declared definitions go in first, so that a clash between two of them is
+	// reported against the manifest's own tables rather than against whichever
+	// inline definition happened to be walked first.
+	std::vector<std::shared_ptr<Method>> declared;
+
+	if (prototypes) {
+		declared.reserve(prototypes->size());
+		for (auto& prototype : *prototypes) {
+			if (auto result = table.Register(table.prototypes, &prototype, "prototype", "Manifest");
+				!result) {
+				return MakeError(std::move(result.error()));
+			}
+			declared.push_back(prototype);
+		}
+	}
+
+	if (enums) {
+		for (auto& enumerate : *enums) {
+			if (auto result = table.Register(table.enums, &enumerate, "enum", "Manifest"); !result) {
+				return MakeError(std::move(result.error()));
+			}
+		}
+	}
+
+	// Pass one: hoist inline definitions into the table. Collect() descends into
+	// each definition it introduces, so walking the methods and the declared
+	// prototypes reaches everything.
+	if (methods) {
+		for (auto& method : *methods) {
+			if (auto result = table.Collect(*method._impl, "Method"); !result) {
+				return result;
+			}
+		}
+	}
+
+	for (auto& prototype : declared) {
+		if (auto result = table.Collect(*prototype->_impl, "Prototype"); !result) {
+			return result;
+		}
+	}
+
+	// Pass two: resolve references, now that every definition is known.
+	if (methods) {
+		for (auto& method : *methods) {
+			if (auto result = table.Link(*method._impl, "Method"); !result) {
+				return result;
+			}
+		}
+	}
+
+	for (const auto& [_, prototype] : table.prototypes) {
+		if (auto result = table.Link(*prototype->_impl, "Prototype"); !result) {
+			return result;
+		}
+	}
+
+	if (auto result = table.DetectCycles(); !result) {
+		return result;
+	}
+
+	// Publish the merged tables, sorted by name so that consumers which generate
+	// code from a manifest get a stable ordering.
+	auto publish = [](auto& field, const auto& table) {
+		if (table.empty()) {
+			return;
+		}
+
+		typename std::remove_reference_t<decltype(field)>::value_type merged;
+		merged.reserve(table.size());
+		for (const auto& [_, definition] : table) {
+			merged.push_back(definition);
+		}
+		std::ranges::sort(merged, {}, [](const auto& definition) -> const std::string& {
+			return definition->_impl->name;
+		});
+		field = std::move(merged);
+	};
+
+	publish(prototypes, table.prototypes);
+	publish(enums, table.enums);
+
+	return {};
 }
 
 // Main Manifest validation implementation
@@ -462,7 +766,8 @@ Result<void> Manifest::Validate() const {
 	}
 
 	// Determine manifest type based on fields present
-	bool hasPluginFields = entry.has_value() || methods.has_value() || classes.has_value();
+	bool hasPluginFields = entry.has_value() || methods.has_value() || classes.has_value()
+						   || prototypes.has_value() || enums.has_value();
 	bool hasModuleFields = runtime.has_value() || directories.has_value();
 
 	if (hasPluginFields && hasModuleFields) {
@@ -500,6 +805,29 @@ Result<void> Manifest::Validate() const {
 				}
 
 				if (auto result = ValidateMethod(*method._impl); !result) {
+					return result;
+				}
+			}
+		}
+
+		// Every prototype and enum in the manifest lives in these tables once
+		// Resolve() has run, inline ones included, so validating them here covers
+		// the definitions that paramTypes and retType point at.
+		if (prototypes) {
+			for (const auto& prototype : *prototypes) {
+				if (auto result = ValidateMethod(
+						*prototype->_impl,
+						std::format("Prototype '{}'", prototype->_impl->name)
+					);
+					!result) {
+					return result;
+				}
+			}
+		}
+
+		if (enums) {
+			for (const auto& enumerate : *enums) {
+				if (auto result = ValidateEnumObject(*enumerate->_impl); !result) {
 					return result;
 				}
 			}

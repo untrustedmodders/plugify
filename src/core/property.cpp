@@ -33,11 +33,11 @@ bool Property::IsRef() const noexcept {
 }
 
 std::shared_ptr<Method> Property::GetPrototype() const noexcept {
-	return _impl->prototype;
+	return DefinitionOf(_impl->prototype);
 }
 
 std::shared_ptr<EnumObject> Property::GetEnumerate() const noexcept {
-	return _impl->enumerate;
+	return DefinitionOf(_impl->enumerate);
 }
 
 void Property::SetType(ValueType type) {

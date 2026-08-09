@@ -54,6 +54,8 @@ struct glz::meta<plugify::Manifest> {
 		"entry", &T::entry,
 		"methods", &T::methods,
 		"classes", &T::classes,
+		"prototypes", &T::prototypes,
+		"enums", &T::enums,
 		"runtime", &T::runtime,
 		"directories", &T::directories
 	);
@@ -326,6 +328,40 @@ namespace glz {
 	};*/
 #else
 	namespace detail {
+		// plugify::Definition
+		// Glaze auto-deduces which alternative a value belongs to when they map to
+		// distinct JSON types, which is all the C++23 path needs. This glaze is old
+		// enough that it deduces the string alternative but not the shared_ptr one,
+		// silently leaving an inline definition unparsed, so route it by hand.
+		template <class T>
+		struct from_json<std::variant<std::shared_ptr<T>, std::string>> {
+			template <auto Opts>
+			static void op(
+				std::variant<std::shared_ptr<T>, std::string>& value,
+				is_context auto&& ctx,
+				auto&& it,
+				auto&& end
+			) {
+				if constexpr (!has_ws_handled(Opts)) {
+					skip_ws<Opts>(ctx, it, end);
+					if (bool(ctx.error)) [[unlikely]] {
+						return;
+					}
+				}
+				if (it == end) [[unlikely]] {
+					ctx.error = error_code::unexpected_end;
+					return;
+				}
+				if (*it == '"') {
+					read<json>::op<ws_handled<Opts>()>(value.template emplace<std::string>(), ctx, it, end);
+				} else {
+					read<json>::op<ws_handled<Opts>()>(
+						value.template emplace<std::shared_ptr<T>>(), ctx, it, end
+					);
+				}
+			}
+		};
+
 		// std::chrono::duration
 		template <class R, class P>
 		struct from_json<std::chrono::duration<R, P>> {
