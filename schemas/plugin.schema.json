@@ -68,7 +68,8 @@
           "windows_x64",
           "steamrt_x64"
         ]
-      }
+      },
+      "uniqueItems": true
     },
     "dependencies": {
       "type": "array",
@@ -536,7 +537,8 @@
             "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
             "minLength": 1
           },
-          "minItems": 1
+          "minItems": 1,
+          "uniqueItems": true
         },
         "destructor": {
           "type": ["string", "null"],

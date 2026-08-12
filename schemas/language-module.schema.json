@@ -67,7 +67,8 @@
           "windows_x64",
           "steamrt_x64"
         ]
-      }
+      },
+      "uniqueItems": true
     },
     "dependencies": {
       "type": "array",
@@ -118,7 +119,8 @@
         "description": "Relative folder path.",
         "minLength": 1
       },
-      "minItems": 1
+      "minItems": 1,
+      "uniqueItems": true
     }
   },
   "$defs": {
