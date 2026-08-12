@@ -16,6 +16,10 @@ namespace plugify {
 	class ParsingStage : public ITransformStage<Extension> {
 		std::shared_ptr<IFileSystem> _fileSystem;
 		std::unordered_map<ExtensionType, valijson::Schema> _schemas;
+		// Setup() cannot fail the pipeline, since the stage interface returns void,
+		// so a schema that would not load is held here and reported against every
+		// manifest that needed it.
+		Result<void> _setup;
 
 	public:
 		ParsingStage(std::shared_ptr<IFileSystem> fileSystem)
@@ -36,11 +40,16 @@ namespace plugify {
 		) override {
 			constexpr std::array schemas{
 				std::pair{ExtensionType::Plugin, PLUGIFY_PATH_LITERAL("schemas/plugin.schema.json")},
-				std::pair{ExtensionType::Module, PLUGIFY_PATH_LITERAL("schemas/module.schema.json")},
+				std::pair{ExtensionType::Module, PLUGIFY_PATH_LITERAL("schemas/language-module.schema.json")},
 			};
 			for (const auto& [type, file] : schemas) {
 				if (auto result = LoadSchema(file, type); !result) {
-					return MakeError("Failed to load schema for extension type {}: {}", plg::enum_to_string(type), result.error());
+					_setup = MakeError(
+						"Failed to load schema for extension type {}: {}",
+						plg::enum_to_string(type),
+						result.error()
+					);
+					return;
 				}
 			}
 		}
@@ -65,6 +74,10 @@ namespace plugify {
 
 	private:
 		Result<Manifest> ParseManifest(const std::filesystem::path& file, ExtensionType type) {
+			if (!_setup) {
+				return MakeError(_setup.error());
+			}
+
 			auto content = _fileSystem->ReadTextFile(file);
 			if (!content) {
 				return MakeError(std::move(content.error()));

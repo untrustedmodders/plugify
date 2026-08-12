@@ -4,7 +4,6 @@
 #include "plugify/extension.hpp"
 #include "plugify/manager.hpp"
 #include "plugify/manifest.hpp"
-#include "plugify/manifest_parser.hpp"
 #include "plugify/profiler.hpp"
 
 #include "core/extension_loader.hpp"

@@ -1,8 +1,7 @@
-#include "plugify/file_system.hpp"
 #include "plugify/manifest.hpp"
 
-#include "core/conflict_impl.hpp"
-#include "core/dependency_impl.hpp"
+#include "core/binding_impl.hpp"
+#include "core/class_impl.hpp"
 #include "core/enum_object_impl.hpp"
 #include "core/enum_value_impl.hpp"
 #include "core/method_impl.hpp"
@@ -11,116 +10,43 @@
 using namespace plugify;
 
 namespace {
-	// The JSON schemas under schemas/ are the published contract for a manifest,
-	// so each helper below mirrors one pattern from them verbatim. Changing a rule
-	// here without changing it there lets a manifest an editor calls valid fail to
-	// load, and the other way round.
+	// A manifest reaches Validate() only after ParsingStage has checked it against
+	// the JSON schema for its extension type, so every rule a schema can state -
+	// which fields must be present, what type each holds, and how each one is
+	// spelled - has already been enforced, with a better error message than
+	// anything reachable from here. Repeating those rules would only let the two
+	// descriptions drift apart.
+	//
+	// What is left is what JSON Schema cannot say: names that must be unique
+	// across an array, fields that constrain one another, and the invariants
+	// Resolve() is expected to have established.
 
-	// "^[A-Za-z_][A-Za-z0-9_]*$": anything that becomes a symbol in generated
-	// bindings - method, prototype, enum, class, parameter, alias and binding
-	// names, plus the method names a class refers to.
-	bool IsValidIdentifier(const std::string& name) {
-		static const std::regex identifierRegex("^[A-Za-z_][A-Za-z0-9_]*$");
-		return std::regex_match(name, identifierRegex);
-	}
-
-	// "^[A-Za-z][A-Za-z0-9_.-]*$": the name of an extension, as written in its own
-	// manifest - this one, the language it needs, and everything it depends on,
-	// conflicts with or obsoletes.
-	bool IsValidExtensionName(const std::string& name) {
-		static const std::regex extensionNameRegex("^[A-Za-z][A-Za-z0-9_.-]*$");
-		return std::regex_match(name, extensionNameRegex);
-	}
-
-	// "^[A-Za-z_][A-Za-z0-9_.-]*$": funcName, which a language module may resolve
-	// through a qualified path such as 'Namespace.Class.Method' rather than a bare
-	// identifier.
-	bool IsValidSymbolName(const std::string& name) {
-		static const std::regex symbolNameRegex("^[A-Za-z_][A-Za-z0-9_.-]*$");
-		return std::regex_match(name, symbolNameRegex);
-	}
-
-	// Deliberately looser than the schemas' "website" pattern, which insists on a
-	// scheme: a missing scheme is a cosmetic flaw in a field nothing dereferences,
-	// and refusing to load a plugin over it would be out of proportion.
-	bool IsValidURL(const std::string& url) {
-		static const std::regex urlRegex(R"(^(https?://)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(/.*)?$)");
-		return std::regex_match(url, urlRegex);
-	}
-
-	// Helper function to validate platform
-	bool IsValidPlatform(const std::string& platform) {
-		/*static const std::unordered_set<std::string> validPlatforms = {
-			"windows", "linux", "macos", "android", "ios",
-			"unix", "posix", "win32", "win64", "x86", "x64", "arm", "arm64"
-		};*/
-		if (platform.empty()) {
-			return true;
-		}
-		static const std::regex platformRegex("^[a-z0-9]+(_(x64|arm64|x86|arm32|riscv32|riscv64))$");
-		return std::regex_match(platform, platformRegex);
-	}
-
-	// Validate EnumObject
+	// The schema guarantees a non-empty list of well-named values. It cannot
+	// guarantee that no two of them share a name, which would make the generated
+	// binding ambiguous. Numbers are deliberately left alone: flag enums and
+	// aliases legitimately repeat them.
 	Result<void> ValidateEnumObject(const EnumObject::Impl& enumObj) {
-		if (enumObj.name.empty()) {
-			return MakeError("Enum name cannot be empty");
-		}
-
-		if (!IsValidIdentifier(enumObj.name)) {
-			return MakeError("Invalid enum name: {}", enumObj.name);
-		}
-
-		if (enumObj.values.empty()) {
-			return MakeError("Enum '{}' must have at least one value", enumObj.name);
-		}
-
-		std::unordered_set<std::string> valueNames;
-		//std::unordered_set<int64_t> valueNumbers;
-
+		std::unordered_set<std::string_view> valueNames;
 		valueNames.reserve(enumObj.values.size());
-		//valueNumbers.reserve(enumObj.values.size());
 
 		for (const auto& v : enumObj.values) {
 			const auto& value = *v._impl;
 
-			if (value.name.empty()) {
-				return MakeError("Enum value name cannot be empty in enum '{}'", enumObj.name);
-			}
-
-			if (!IsValidIdentifier(value.name)) {
-				return MakeError("Invalid enum value name: {} in enum '{}'", value.name, enumObj.name);
-			}
-
 			if (!valueNames.insert(value.name).second) {
 				return MakeError("Duplicate enum value name: {} in enum '{}'", value.name, enumObj.name);
 			}
-
-			/*if (!valueNumbers.insert(value.value).second) {
-				return MakeError(
-					"Duplicate enum value: {} for '{}' in enum '{}'",
-					value.value,
-					value.name,
-					enumObj.name
-				);
-			}*/
 		}
 
 		return {};
 	}
 
-	extern Result<void> ValidateMethod(const Method::Impl& method, std::string_view context = "");
-
-	// Validate Property
 	// The prototype and enum a property points at are validated once via the
 	// manifest's shared tables, which Resolve() has already populated with every
 	// definition; recursing into them here would both repeat that work and hang
 	// on prototypes that refer to one another.
 	Result<void> ValidateProperty(const Property::Impl& prop, std::string_view context, bool param) {
-		// Check if type is valid (you'd need to define valid ValueType values)
-		// Assuming ValueType is an enum, check if it's in valid range
-
-		// If type is void, something wrong
+		// The schema fixes the set of type names, but not where each one may be
+		// used: nothing can be passed as void.
 		if (param && prop.type == ValueType::Void) {
 			return MakeError("{}: Parameter cannot be void type", context);
 		}
@@ -135,41 +61,18 @@ namespace {
 			return MakeError("{}: Unresolved enum reference '{}'", context, *reference);
 		}
 
-		// If type is function/callback, prototype should be present
+		// A callback with no signature cannot be marshalled in either direction.
 		if (prop.type == ValueType::Function && !DefinitionOf(prop.prototype)) {
 			return MakeError("{}: Function type requires prototype", context);
 		}
 
-		// If type is enum, enumerate should be present
-		// if (prop.type == ValueType::Enum && !prop.enumerate) {
-		//     return context + ": Enum type requires enumerate definition";
-		// }
-
 		return {};
 	}
 
-	// Validate Method
-	Result<void> ValidateMethod(const Method::Impl& method, std::string_view context) {
-		std::string prefix = context.empty() ? "Method" : context;
-
-		if (method.name.empty()) {
-			return MakeError("{}: name cannot be empty", prefix);
-		}
-
-		if (!IsValidIdentifier(method.name)) {
-			return MakeError("{}: invalid name '{}'", prefix, method.name);
-		}
-
-		if (context.empty()) {
-			if (method.funcName.empty()) {
-				return MakeError("{} '{}': funcName cannot be empty", prefix, method.name);
-			}
-
-			if (!IsValidSymbolName(method.funcName)) {
-				return MakeError("{} '{}': invalid funcName '{}'", prefix, method.name, method.funcName);
-			}
-		}
-
+	// The schema checks each parameter and the return value on its own; it cannot
+	// see how they relate to the method holding them. `prefix` names the kind of
+	// signature being checked, for the error message.
+	Result<void> ValidateMethod(const Method::Impl& method, std::string_view prefix) {
 		// An absent varIndex and the explicit kNoVarArgs sentinel both mean "not
 		// variadic"; any other value has to name a parameter that exists.
 		if (method.varIndex && *method.varIndex != Signature::kNoVarArgs
@@ -183,7 +86,6 @@ namespace {
 			);
 		}
 
-		// Validate parameter types
 		for (size_t i = 0; i < method.paramTypes.size(); ++i) {
 			if (auto result = ValidateProperty(
 					*method.paramTypes[i]._impl,
@@ -195,211 +97,48 @@ namespace {
 			}
 		}
 
-		// Validate return type
-		if (auto result = ValidateProperty(
-				*method.retType._impl,
-				std::format("{} '{}' return type", prefix, method.name),
-				false
-			);
-			!result) {
-			return result;
-		}
-
-		return {};
-	}
-
-	// Validate Dependency
-	Result<void> ValidateDependency(const Dependency::Impl& dep) {
-		if (dep.name.empty()) {
-			return MakeError("Dependency name cannot be empty");
-		}
-
-		if (!IsValidExtensionName(dep.name)) {
-			return MakeError("Invalid dependency name: {}", dep.name);
-		}
-
-		// Validate constraints if present
-		// You would need to implement constraint validation based on your Constraint structure
-		// if (dep.constraints) {
-		//     if (auto result = ValidateConstraint(*dep.constraints); !result) {
-		//         return MakeError("Dependency '" + dep.name + "': " + *error);
-		//     }
-		// }
-
-		return {};
-	}
-
-	// Validate Conflict
-	Result<void> ValidateConflict(const Conflict::Impl& conflict) {
-		if (conflict.name.empty()) {
-			return MakeError("Conflict name cannot be empty");
-		}
-
-		if (!IsValidExtensionName(conflict.name)) {
-			return MakeError("Invalid conflict name: {}", conflict.name);
-		}
-
-		// Validate constraints if present
-		// if (conflict.constraints) {
-		//     if (auto result = ValidateConstraint(*conflict.constraints); !result) {
-		//         return MakeError("Conflict '" + conflict.name + "': " + *error);
-		//     }
-		// }
-
-		return {};
-	}
-
-	// Validate Obsolete
-	Result<void> ValidateObsolete(const Obsolete::Impl& obsolete) {
-		if (obsolete.name.empty()) {
-			return MakeError("Obsolete name cannot be empty");
-		}
-
-		if (!IsValidExtensionName(obsolete.name)) {
-			return MakeError("Invalid obsolete name: {}", obsolete.name);
-		}
-
-		return {};
-	}
-
-	// Validate Alias
-	Result<void> ValidateAlias(const Alias::Impl& alias, std::string_view context) {
-		if (alias.name.empty()) {
-			return MakeError("{}: Alias name cannot be empty", context);
-		}
-
-		if (!IsValidIdentifier(alias.name)) {
-			return MakeError("{}: Invalid alias name '{}'", context, alias.name);
-		}
-
-		return {};
-	}
-
-	// Validate Binding
-	Result<void> ValidateBinding(const Binding::Impl& binding, std::string_view context, const std::optional<ValueType>& handleType = std::nullopt) {
-		if (binding.name.empty()) {
-			return MakeError("{}: Binding name cannot be empty", context);
-		}
-
-		if (!IsValidIdentifier(binding.name)) {
-			return MakeError("{}: Invalid binding name '{}'", context, binding.name);
-		}
-
-		if (binding.method.empty()) {
-			return MakeError("{}: Binding '{}' method cannot be empty", context, binding.name);
-		}
-
-		if (!IsValidIdentifier(binding.method)) {
-			return MakeError("{}: Binding '{}' has invalid method name '{}'", context, binding.name, binding.method);
-		}
-
-		// Check if handleless classes have instance methods
-		bool isHandleless = handleType.value_or(ValueType::Void) == ValueType::Void;
-		if (isHandleless && binding.bindSelf.value_or(false)) {
-			return MakeError("{}: Binding '{}': handleless classes (handleType is void/empty) cannot have instance methods (bindSelf=true)", context, binding.name);
-		}
-
-		// Validate parameter aliases if present
-		if (binding.paramAliases) {
-			for (size_t i = 0; i < binding.paramAliases->size(); ++i) {
-				if (auto alias = (*binding.paramAliases)[i]) {
-					if (auto result = ValidateAlias(
-							*alias->_impl,
-							std::format("{}: Binding '{}' paramAlias[{}]", context, binding.name, i)
-						);
-						!result) {
-						return result;
-					}
-				}
-			}
-		}
-
-		// Validate return alias if present
-		if (binding.retAlias) {
-			if (auto result = ValidateAlias(
-					*binding.retAlias->_impl,
-					std::format("{}: Binding '{}' retAlias", context, binding.name)
-				);
-				!result) {
-				return result;
-			}
-		}
-
-		return {};
+		return ValidateProperty(
+			*method.retType._impl,
+			std::format("{} '{}' return type", prefix, method.name),
+			false
+		);
 	}
 
 	// Validate Class
 	Result<void> ValidateClass(const Class::Impl& classObj) {
-		if (classObj.name.empty()) {
-			return MakeError("Class name cannot be empty");
-		}
+		// A class with no handle is a namespace for free functions: there is no
+		// instance to construct, to destroy, or to pass as an implicit argument.
+		const bool isHandleless = classObj.handleType.value_or(ValueType::Void) == ValueType::Void;
 
-		if (!IsValidIdentifier(classObj.name)) {
-			return MakeError("Invalid class name: {}", classObj.name);
-		}
-
-		// Check if this is a handleless class
-		bool isHandleless = classObj.handleType.value_or(ValueType::Void) == ValueType::Void;
-
-		// Handleless classes cannot have constructors or destructors
 		if (isHandleless && (classObj.constructors || classObj.destructor)) {
-			return MakeError("Class '{}': handleless classes cannot have constructors or destructors", classObj.name);
+			return MakeError(
+				"Class '{}': handleless classes cannot have constructors or destructors",
+				classObj.name
+			);
 		}
 
-		// Validate constructors if present
-		if (classObj.constructors) {
-			/*if (classObj.constructors->empty()) {
-				return MakeError("Class '{}': constructors list cannot be empty if specified", classObj.name);
-			}*/
-
-			for (size_t i = 0; i < classObj.constructors->size(); ++i) {
-				const auto& constructor = (*classObj.constructors)[i];
-				if (constructor.empty()) {
-					return MakeError("Class '{}': constructor[{}] cannot be empty", classObj.name, i);
-				}
-
-				if (!IsValidIdentifier(constructor)) {
-					return MakeError("Class '{}': invalid constructor[{}] name '{}'", classObj.name, i, constructor);
-				}
-			}
-		}
-
-		// Validate destructor if present
-		if (classObj.destructor) {
-			if (classObj.destructor->empty()) {
-				return MakeError("Class '{}': destructor cannot be empty", classObj.name);
-			}
-
-			if (!IsValidIdentifier(*classObj.destructor)) {
-				return MakeError("Class '{}': invalid destructor name '{}'", classObj.name, *classObj.destructor);
-			}
-		}
-
-		// Validate bindings
-		if (classObj.bindings.empty()) {
-			return MakeError("Class '{}': must have at least one binding", classObj.name);
-		}
-
-		std::unordered_set<std::string> bindingNames;
+		std::unordered_set<std::string_view> bindingNames;
 		bindingNames.reserve(classObj.bindings.size());
 
 		for (const auto& binding : classObj.bindings) {
-			if (!bindingNames.insert(binding._impl->name).second) {
-				return MakeError("Class '{}': duplicate binding name '{}'", classObj.name, binding._impl->name);
+			const auto& bind = *binding._impl;
+
+			if (!bindingNames.insert(bind.name).second) {
+				return MakeError("Class '{}': duplicate binding name '{}'", classObj.name, bind.name);
 			}
 
-			if (auto result = ValidateBinding(
-					*binding._impl,
-					std::format("Class '{}'", classObj.name),
-					classObj.handleType
+			if (isHandleless && bind.bindSelf.value_or(false)) {
+				return MakeError(
+					"Class '{}': binding '{}' sets bindSelf, but a handleless class has no instance to bind",
+					classObj.name,
+					bind.name
 				);
-				!result) {
-				return result;
 			}
 		}
 
 		return {};
 	}
+
 
 	// Two definitions written under the same name are only allowed if they say the
 	// same thing, so that repeating an inline enum across several methods keeps
@@ -712,209 +451,70 @@ Result<void> Manifest::Resolve() {
 	return {};
 }
 
-// Main Manifest validation implementation
+// Checks what the JSON schema for this extension type could not: names that have
+// to be unique across an array, fields that constrain one another, and the links
+// Resolve() was supposed to have made. Everything about the shape of a manifest -
+// required fields, types, patterns - was settled before this runs, so a manifest
+// that never went through the schema is not fully checked by this alone.
 Result<void> Manifest::Validate() const {
-	// Validate required common fields
-	if (name.empty()) {
-		return MakeError("Manifest name is required");
-	}
+	if (methods) {
+		std::unordered_set<std::string_view> methodNames;
+		std::unordered_set<std::string_view> functionNames;
 
-	if (!IsValidExtensionName(name)) {
-		return MakeError("Invalid manifest name: {}", name);
-	}
+		methodNames.reserve(methods->size());
+		functionNames.reserve(methods->size());
 
-	// Validate version (assuming Version has its own validation)
-	// if (!version.IsValid()) {
-	//     return MakeError("Invalid version format");
-	// }
-
-	if (language.empty()) {
-		return MakeError("Language cannot be empty if specified");
-	}
-
-	if (!IsValidExtensionName(language)) {
-		return MakeError("Invalid language name: {}", language);
-	}
-
-	// Validate optional common fields
-	if (author && author->empty()) {
-		return MakeError("Author cannot be empty if specified");
-	}
-
-	if (website && !IsValidURL(*website)) {
-		return MakeError("Invalid website URL: {}", *website);
-	}
-
-	if (license && license->empty()) {
-		return MakeError("License cannot be empty if specified");
-	}
-
-	// Validate platforms
-	if (platforms) {
-		for (const auto& platform : *platforms) {
-			if (!IsValidPlatform(platform)) {
-				return MakeError("Invalid platform: {}", platform);
+		for (const auto& method : *methods) {
+			// Two methods under one name would make the exported API ambiguous;
+			// two names for one funcName would export the same symbol twice.
+			if (!methodNames.insert(method._impl->name).second) {
+				return MakeError("Duplicate method name: {}", method._impl->name);
 			}
-		}
-	}
 
-	// Validate dependencies
-	if (dependencies) {
-		for (const auto& dep : *dependencies) {
-			if (auto result = ValidateDependency(*dep._impl); !result) {
+			if (!functionNames.insert(method._impl->funcName).second) {
+				return MakeError("Duplicate function name: {}", method._impl->funcName);
+			}
+
+			if (auto result = ValidateMethod(*method._impl, "Method"); !result) {
 				return result;
 			}
 		}
 	}
 
-	// Validate conflicts
-	if (conflicts) {
-		for (const auto& conflict : *conflicts) {
-			if (auto result = ValidateConflict(*conflict._impl); !result) {
+	// Every prototype and enum in the manifest lives in these tables once
+	// Resolve() has run, inline ones included, so validating them here covers
+	// the definitions that paramTypes and retType point at.
+	if (prototypes) {
+		for (const auto& prototype : *prototypes) {
+			if (auto result = ValidateMethod(*prototype->_impl, "Prototype"); !result) {
 				return result;
 			}
 		}
 	}
 
-	// Validate obsoletes
-	if (obsoletes) {
-		for (const auto& obsolete : *obsoletes) {
-			if (auto result = ValidateObsolete(*obsolete._impl); !result) {
+	if (enums) {
+		for (const auto& enumerate : *enums) {
+			if (auto result = ValidateEnumObject(*enumerate->_impl); !result) {
 				return result;
 			}
 		}
 	}
 
-	// Determine manifest type based on fields present
-	bool hasPluginFields = entry.has_value() || methods.has_value() || classes.has_value()
-						   || prototypes.has_value() || enums.has_value();
-	bool hasModuleFields = runtime.has_value() || directories.has_value();
+	if (classes) {
+		std::unordered_set<std::string_view> classNames;
+		classNames.reserve(classes->size());
 
-	if (hasPluginFields && hasModuleFields) {
-		return MakeError("Manifest cannot have both plugin and module fields");
-	}
-
-	// Validate plugin-specific fields
-	if (hasPluginFields) {
-		if (entry && entry->empty()) {
-			return MakeError("Plugin entry point cannot be empty");
-		}
-
-		/*if (entry && !IsValidName(*entry)) {
-			return MakeError("Invalid plugin entry point: {}", *entry);
-		}*/
-
-		if (methods) {
-			/*if (methods->empty()) {
-				return MakeError("Methods list cannot be empty if specified");
-			}*/
-
-			std::unordered_set<std::string> methodNames;
-			std::unordered_set<std::string> functionNames;
-
-			methodNames.reserve(methods->size());
-			functionNames.reserve(methods->size());
-
-			for (const auto& method : *methods) {
-				if (!methodNames.insert(method._impl->name).second) {
-					return MakeError("Duplicate method name: {}", method._impl->name);
-				}
-
-				if (!functionNames.insert(method._impl->funcName).second) {
-					return MakeError("Duplicate function name: {}", method._impl->funcName);
-				}
-
-				if (auto result = ValidateMethod(*method._impl); !result) {
-					return result;
-				}
+		for (const auto& classObj : *classes) {
+			if (!classNames.insert(classObj._impl->name).second) {
+				return MakeError("Duplicate class name: {}", classObj._impl->name);
 			}
-		}
 
-		// Every prototype and enum in the manifest lives in these tables once
-		// Resolve() has run, inline ones included, so validating them here covers
-		// the definitions that paramTypes and retType point at.
-		if (prototypes) {
-			for (const auto& prototype : *prototypes) {
-				if (auto result = ValidateMethod(
-						*prototype->_impl,
-						std::format("Prototype '{}'", prototype->_impl->name)
-					);
-					!result) {
-					return result;
-				}
-			}
-		}
-
-		if (enums) {
-			for (const auto& enumerate : *enums) {
-				if (auto result = ValidateEnumObject(*enumerate->_impl); !result) {
-					return result;
-				}
-			}
-		}
-
-		// Add this new block for classes validation:
-		if (classes) {
-			/*if (classes->empty()) {
-				return MakeError("Classes list cannot be empty if specified");
-			}*/
-
-			std::unordered_set<std::string> classNames;
-			classNames.reserve(classes->size());
-
-			for (const auto& classObj : *classes) {
-				if (!classNames.insert(classObj._impl->name).second) {
-					return MakeError("Duplicate class name: {}", classObj._impl->name);
-				}
-
-				if (auto result = ValidateClass(*classObj._impl); !result) {
-					return result;
-				}
+			if (auto result = ValidateClass(*classObj._impl); !result) {
+				return result;
 			}
 		}
 	}
 
-	// Validate module-specific fields
-	if (hasModuleFields) {
-		if (runtime) {
-			/*if (runtime->empty()) {
-				return MakeError("Module runtime path cannot be empty");
-			}*/
-
-			// Check if runtime file exists (optional, might want to make this configurable)
-			/*if (!fs->IsExists(*runtime)) {
-				return MakeError("Runtime file does not exist: {}", plg::as_string(*runtime));
-			}
-
-			// Check if it's a regular file
-			if (!fs->IsRegularFile(*runtime)) {
-				return MakeError("Runtime path is not a file: {}", plg::as_string(*runtime));
-			}*/
-		}
-
-		if (directories) {
-			if (directories->empty()) {
-				return MakeError("Directories list cannot be empty if specified");
-			}
-
-			for (const auto& dir : *directories) {
-				if (dir.empty()) {
-					return MakeError("Directory path cannot be empty");
-				}
-
-				// Check if directory exists (optional)
-				/*if (!fs->IsExists(dir)) {
-					return MakeError("Directory does not exist: {}", plg::as_string(dir));
-				}
-
-				if (!fs->IsDirectory(dir)) {
-					return MakeError("Path is not a directory: {}", plg::as_string(dir));
-				}*/
-			}
-		}
-	}
-
-	// All validations passed
 	return {};
 }
 

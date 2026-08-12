@@ -12,7 +12,6 @@
 #include "plugify/global.h"
 #include "plugify/lifecycle.hpp"
 #include "plugify/manager.hpp"
-#include "plugify/manifest_parser.hpp"
 #include "plugify/provider.hpp"
 #include "plugify/service_locator.hpp"
 // #include "plugify/progress_reporter.hpp"
