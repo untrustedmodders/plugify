@@ -8,6 +8,15 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 
 # ------------------------------------------------------------------------------
+# valijson
+if(PLUGIFY_USE_EXTERNAL_VALIJSON)
+    find_package(valijson REQUIRED)
+else()
+    include(FetchValijson)
+endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE ValiJSON::valijson)
+
+# ------------------------------------------------------------------------------
 # libsolv
 if(PLUGIFY_USE_EXTERNAL_LIBSOLV)
     find_package(Libsolv REQUIRED)
