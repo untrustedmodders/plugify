@@ -7,6 +7,8 @@
 #include "core/glaze_metadata.hpp"
 #include "core/glaze_adapter.hpp"
 
+#include "plugify/schemas.hpp"
+
 namespace plugify {
 	// ============================================================================
 	// Concrete Stage Implementations
@@ -16,10 +18,6 @@ namespace plugify {
 	class ParsingStage : public ITransformStage<Extension> {
 		std::shared_ptr<IFileSystem> _fileSystem;
 		std::unordered_map<ExtensionType, valijson::Schema> _schemas;
-		// Setup() cannot fail the pipeline, since the stage interface returns void,
-		// so a schema that would not load is held here and reported against every
-		// manifest that needed it.
-		Result<void> _setup;
 
 	public:
 		ParsingStage(std::shared_ptr<IFileSystem> fileSystem)
@@ -39,18 +37,11 @@ namespace plugify {
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
 			constexpr std::array schemas{
-				std::pair{ExtensionType::Plugin, PLUGIFY_PATH_LITERAL("schemas/plugin.schema.json")},
-				std::pair{ExtensionType::Module, PLUGIFY_PATH_LITERAL("schemas/language-module.schema.json")},
+				std::pair{ExtensionType::Plugin, schemas::kPlugin},
+				std::pair{ExtensionType::Module, schemas::kModule},
 			};
-			for (const auto& [type, file] : schemas) {
-				if (auto result = LoadSchema(file, type); !result) {
-					_setup = MakeError(
-						"Failed to load schema for extension type {}: {}",
-						plg::enum_to_string(type),
-						result.error()
-					);
-					return;
-				}
+			for (const auto& [type, text] : schemas) {
+				LoadSchema(text, type);
 			}
 		}
 
@@ -74,10 +65,6 @@ namespace plugify {
 
 	private:
 		Result<Manifest> ParseManifest(const std::filesystem::path& file, ExtensionType type) {
-			if (!_setup) {
-				return MakeError(_setup.error());
-			}
-
 			auto content = _fileSystem->ReadTextFile(file);
 			if (!content) {
 				return MakeError(std::move(content.error()));
@@ -124,18 +111,14 @@ namespace plugify {
 			return manifest;
 		}
 
-		Result<void> LoadSchema(const std::filesystem::path& file, ExtensionType type) {
-			auto content = _fileSystem->ReadTextFile(file);
-			if (!content) {
-				return MakeError(std::move(content.error()));
-			}
-			auto& buffer = *content;
-
+		void LoadSchema(std::string_view text, ExtensionType type) {
 			valijson::adapters::GlazeDocument document;
 
 			// JSONC -> generic
-			if (auto ec = glz::read_jsonc(document, buffer); ec) {
-				return MakeError(glz::format_error(ec, buffer));
+			if (auto ec = glz::read_jsonc(document, text); ec) {
+				throw std::runtime_error(
+				std::format("Failed to load schema for extension type {}: {}", plg::enum_to_string(type), glz::format_error(ec, text))
+				);
 			}
 
 			valijson::adapters::GlazeAdapter adapter(document);
@@ -145,8 +128,8 @@ namespace plugify {
 
 			parser.populateSchema(adapter, schema);
 
+			// The schema owns its constraints, so it stays valid once `document` goes.
 			_schemas[type] = std::move(schema);
-			return {};
 		}
 	};
 

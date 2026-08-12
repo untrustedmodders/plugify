@@ -1,0 +1,13 @@
+// Generated from cmake/plugifySchemas.hpp.in by cmake/PlugifySchemas.cmake.
+// Do not edit: the source of truth is schemas/*.json in the repository root.
+#pragma once
+
+#include <string_view>
+
+namespace plugify::schemas {
+	// plugin.schema.json
+	inline constexpr std::string_view kPlugin = R"PLUGIFY_SCHEMA(@PLUGIFY_PLUGIN_SCHEMA@)PLUGIFY_SCHEMA";
+
+	// language-module.schema.json
+	inline constexpr std::string_view kModule = R"PLUGIFY_SCHEMA(@PLUGIFY_MODULE_SCHEMA@)PLUGIFY_SCHEMA";
+}

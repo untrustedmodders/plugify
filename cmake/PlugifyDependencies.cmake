@@ -75,3 +75,13 @@ target_include_directories(${PROJECT_NAME}
             $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/exports>
             $<INSTALL_INTERFACE:include>
 )
+
+# ------------------------------------------------------------------------------
+# Schemas
+include(PlugifySchemas)
+
+target_include_directories(${PROJECT_NAME}
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
+            $<INSTALL_INTERFACE:include>
+)
