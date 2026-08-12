@@ -401,25 +401,14 @@ auto Extension::operator<=>(const Extension& other) const noexcept {
 // Static Helper Methods
 // ============================================================================
 
-plg::path_view Extension::GetFileExtension(ExtensionType type) {
-	switch (type) {
-		case ExtensionType::Plugin:
-			return PLUGIFY_PATH_LITERAL(".pplugin");
-		case ExtensionType::Module:
-			return PLUGIFY_PATH_LITERAL(".pmodule");
-		default:
-			return PLUGIFY_PATH_LITERAL("");
-	}
-}
-
 ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
-	constexpr std::array extensions = {
-		ExtensionType::Module,
-		ExtensionType::Plugin,
+	constexpr std::array extensions{
+		std::pair{ExtensionType::Plugin, PLUGIFY_PATH_LITERAL(".pplugin")},
+		std::pair{ExtensionType::Module, PLUGIFY_PATH_LITERAL(".pmodule")},
 	};
-	for (const auto& extension : extensions) {
-		if (plg::has_extension(path, GetFileExtension(extension))) {
-			return extension;
+	for (const auto& [type, extension] : extensions) {
+		if (plg::has_extension(path, extension)) {
+			return type;
 		}
 	}
 	return ExtensionType::Unknown;

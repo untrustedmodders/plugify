@@ -4,6 +4,9 @@
 #include "core/pipeline.hpp"
 #include "core/stages.hpp"
 
+#include "core/glaze_metadata.hpp"
+#include "core/glaze_adapter.hpp"
+
 namespace plugify {
 	// ============================================================================
 	// Concrete Stage Implementations
@@ -11,13 +14,12 @@ namespace plugify {
 
 	// Parsing Stage - Transform type
 	class ParsingStage : public ITransformStage<Extension> {
-		std::shared_ptr<IManifestParser> _parser;
 		std::shared_ptr<IFileSystem> _fileSystem;
+		std::unordered_map<ExtensionType, valijson::Schema> _schemas;
 
 	public:
-		ParsingStage(std::shared_ptr<IManifestParser> parser, std::shared_ptr<IFileSystem> fileSystem)
-			: _parser(std::move(parser))
-			, _fileSystem(std::move(fileSystem)) {
+		ParsingStage(std::shared_ptr<IFileSystem> fileSystem)
+			: _fileSystem(std::move(fileSystem)) {
 		}
 
 		std::string GetName() const override {
@@ -28,20 +30,28 @@ namespace plugify {
 			return item.GetState() == ExtensionState::Discovered;
 		}
 
+		void Setup(
+			std::span<Extension> items,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
+		) override {
+			constexpr std::array schemas{
+				std::pair{ExtensionType::Plugin, PLUGIFY_PATH_LITERAL("schemas/plugin.schema.json")},
+				std::pair{ExtensionType::Module, PLUGIFY_PATH_LITERAL("schemas/module.schema.json")},
+			};
+			for (const auto& [type, file] : schemas) {
+				if (auto result = LoadSchema(file, type); !result) {
+					return MakeError("Failed to load schema for extension type {}: {}", plg::enum_to_string(type), result.error());
+				}
+			}
+		}
+
 		Result<void> ProcessItem(
 			Extension& ext,
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
 			ext.StartOperation(ExtensionState::Parsing);
 
-			auto content = _fileSystem->ReadTextFile(ext.GetLocation());
-			if (!content) {
-				ext.AddError(content.error());
-				ext.EndOperation(ExtensionState::Corrupted);
-				return MakeError(std::move(content.error()));
-			}
-
-			auto manifest = _parser->Parse(*content, ext.GetType());
+			auto manifest = ParseManifest(ext.GetLocation(), ext.GetType());
 			if (!manifest) {
 				ext.AddError(manifest.error());
 				ext.EndOperation(ExtensionState::Corrupted);
@@ -50,6 +60,70 @@ namespace plugify {
 
 			ext.SetManifest(std::move(*manifest));
 			ext.EndOperation(ExtensionState::Parsed);
+			return {};
+		}
+
+	private:
+		Result<Manifest> ParseManifest(const std::filesystem::path& file, ExtensionType type) {
+			auto content = _fileSystem->ReadTextFile(file);
+			if (!content) {
+				return MakeError(std::move(content.error()));
+			}
+			auto& buffer = *content;
+
+			valijson::adapters::GlazeDocument document;
+
+			// JSONC -> generic
+			if (auto ec = glz::read_jsonc(document, buffer); ec) {
+				return MakeError(glz::format_error(ec, buffer));
+			}
+
+			// generic -> JSON Schema validation
+			auto it = _schemas.find(type);
+			if (it == _schemas.end()) {
+				return MakeError("No JSON schema registered for extension type: {}", plg::enum_to_string(type));
+			}
+
+			valijson::adapters::GlazeAdapter adapter(document);
+			valijson::Validator validator;
+			valijson::ValidationResults results;
+
+			if (!validator.validate(it->second, adapter, &results)) {
+				return MakeError("Invalid json:\n{}", plg::join(results, &valijson::ValidationResults::Error::description, "\n"));
+			}
+
+			Manifest manifest;
+
+			// generic -> Manifest
+			if (auto ec = glz::read_json(manifest, document); ec) {
+				return MakeError(glz::format_error(ec, buffer));
+			}
+
+			return manifest;
+		}
+
+		Result<void> LoadSchema(const std::filesystem::path& file, ExtensionType type) {
+			auto content = _fileSystem->ReadTextFile(file);
+			if (!content) {
+				return MakeError(std::move(content.error()));
+			}
+			auto& buffer = *content;
+
+			valijson::adapters::GlazeDocument document;
+
+			// JSONC -> generic
+			if (auto ec = glz::read_jsonc(document, buffer); ec) {
+				return MakeError(glz::format_error(ec, buffer));
+			}
+
+			valijson::adapters::GlazeAdapter adapter(document);
+
+			valijson::SchemaParser parser;
+			valijson::Schema schema;
+
+			parser.populateSchema(adapter, schema);
+
+			_schemas[type] = std::move(schema);
 			return {};
 		}
 	};

@@ -151,7 +151,6 @@ namespace plugify {
 		[[nodiscard]] auto operator<=>(const Extension& other) const noexcept;
 
 		// --- File extensions ---
-		[[nodiscard]] static plg::path_view GetFileExtension(ExtensionType type);
 		[[nodiscard]] static ExtensionType GetExtensionType(const std::filesystem::path& path);
 
 		// --- Helpers ---
