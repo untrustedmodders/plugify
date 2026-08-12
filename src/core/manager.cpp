@@ -18,7 +18,6 @@ struct Manager::Impl {
 		assemblyLoader = services.Resolve<IAssemblyLoader>();
 		fileSystem = services.Resolve<IFileSystem>();
 		logger = services.Resolve<ILogger>();
-		manifestParser = services.Resolve<IManifestParser>();
 		resolver = services.Resolve<IDependencyResolver>();
 		profiler = services.TryResolve<IProfiler>();
 	}
@@ -41,7 +40,6 @@ struct Manager::Impl {
 	std::shared_ptr<IAssemblyLoader> assemblyLoader;
 	std::shared_ptr<IFileSystem> fileSystem;
 	std::shared_ptr<ILogger> logger;
-	std::shared_ptr<IManifestParser> manifestParser;
 	std::shared_ptr<IDependencyResolver> resolver;
 	std::shared_ptr<IProfiler> profiler;
 
@@ -76,7 +74,7 @@ public:
 		FailureTracker failureTracker(extensions.size());
 
 		auto pipeline = Pipeline<Extension>::Create()
-							.AddStage(std::make_unique<ParsingStage>(manifestParser, fileSystem))
+							.AddStage(std::make_unique<ParsingStage>(fileSystem))
 							.AddStage(
 								std::make_unique<ResolutionStage>(
 									resolver,

@@ -31,7 +31,7 @@ namespace plugify {
 		}
 
 		void Setup(
-			std::span<Extension> items,
+			[[maybe_unused]] std::span<Extension> items,
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
 			constexpr std::array schemas{
@@ -97,6 +97,15 @@ namespace plugify {
 			// generic -> Manifest
 			if (auto ec = glz::read_json(manifest, document); ec) {
 				return MakeError(glz::format_error(ec, buffer));
+			}
+
+			// Resolve() first: it links every by-name prototype/enum reference to
+			// its definition, which Validate() then relies on being present.
+			if (auto result = manifest.Resolve(); !result) {
+				return MakeError("Manifest resolution failed: {}", result.error());
+			}
+			if (auto result = manifest.Validate(); !result) {
+				return MakeError("Manifest validation failed: {}", result.error());
 			}
 
 			return manifest;

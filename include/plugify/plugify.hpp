@@ -47,7 +47,6 @@ namespace plugify {
 		PlugifyBuilder& WithProfiler(std::shared_ptr<IProfiler> profiler);
 		PlugifyBuilder& WithFileSystem(std::shared_ptr<IFileSystem> fs);
 		PlugifyBuilder& WithAssemblyLoader(std::shared_ptr<IAssemblyLoader> loader);
-		PlugifyBuilder& WithManifestParser(std::shared_ptr<IManifestParser> parser);
 		PlugifyBuilder& WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver);
 		PlugifyBuilder& WithExtensionLifecycle(std::shared_ptr<IExtensionLifecycle> lifecycle);
 

@@ -1,11 +1,12 @@
 #include "plugify/file_system.hpp"
+#include "plugify/manifest.hpp"
 
 #include "core/conflict_impl.hpp"
 #include "core/dependency_impl.hpp"
 #include "core/enum_object_impl.hpp"
 #include "core/enum_value_impl.hpp"
-#include "core/glaze_manifest_parser.hpp"
 #include "core/method_impl.hpp"
+#include "core/property_impl.hpp"
 
 using namespace plugify;
 
@@ -108,14 +109,14 @@ namespace {
 		return {};
 	}
 
-	extern Result<void> ValidateMethod(const Method::Impl& method, const std::string& context = "");
+	extern Result<void> ValidateMethod(const Method::Impl& method, std::string_view context = "");
 
 	// Validate Property
 	// The prototype and enum a property points at are validated once via the
 	// manifest's shared tables, which Resolve() has already populated with every
 	// definition; recursing into them here would both repeat that work and hang
 	// on prototypes that refer to one another.
-	Result<void> ValidateProperty(const Property::Impl& prop, const std::string& context, bool param) {
+	Result<void> ValidateProperty(const Property::Impl& prop, std::string_view context, bool param) {
 		// Check if type is valid (you'd need to define valid ValueType values)
 		// Assuming ValueType is an enum, check if it's in valid range
 
@@ -148,7 +149,7 @@ namespace {
 	}
 
 	// Validate Method
-	Result<void> ValidateMethod(const Method::Impl& method, const std::string& context) {
+	Result<void> ValidateMethod(const Method::Impl& method, std::string_view context) {
 		std::string prefix = context.empty() ? "Method" : context;
 
 		if (method.name.empty()) {
@@ -262,7 +263,7 @@ namespace {
 	}
 
 	// Validate Alias
-	Result<void> ValidateAlias(const Alias::Impl& alias, const std::string& context) {
+	Result<void> ValidateAlias(const Alias::Impl& alias, std::string_view context) {
 		if (alias.name.empty()) {
 			return MakeError("{}: Alias name cannot be empty", context);
 		}
@@ -275,7 +276,7 @@ namespace {
 	}
 
 	// Validate Binding
-	Result<void> ValidateBinding(const Binding::Impl& binding, const std::string& context, const std::optional<ValueType>& handleType = std::nullopt) {
+	Result<void> ValidateBinding(const Binding::Impl& binding, std::string_view context, const std::optional<ValueType>& handleType = std::nullopt) {
 		if (binding.name.empty()) {
 			return MakeError("{}: Binding name cannot be empty", context);
 		}
@@ -459,7 +460,7 @@ namespace {
 			std::unordered_map<std::string, std::shared_ptr<T>>& table,
 			std::shared_ptr<T>* definition,
 			std::string_view kind,
-			const std::string& context
+			std::string_view context
 		) {
 			if (!definition || !*definition) {
 				return false;
@@ -487,7 +488,7 @@ namespace {
 		// Pass one: register the inline definitions hanging off this property, then
 		// descend into an inline prototype's own parameters. Inline definitions nest
 		// as a tree, so this always terminates.
-		Result<void> Collect(Property::Impl& prop, const std::string& context) {
+		Result<void> Collect(Property::Impl& prop, std::string_view context) {
 			auto* inline_prototype = std::get_if<std::shared_ptr<Method>>(&prop.prototype);
 			auto prototype = Register(prototypes, inline_prototype, "prototype", context);
 			if (!prototype) {
@@ -508,7 +509,7 @@ namespace {
 			return {};
 		}
 
-		Result<void> Collect(Method::Impl& method, const std::string& context) {
+		Result<void> Collect(Method::Impl& method, std::string_view context) {
 			for (size_t i = 0; i < method.paramTypes.size(); ++i) {
 				if (auto result = Collect(
 						*method.paramTypes[i]._impl,
@@ -530,7 +531,7 @@ namespace {
 			const std::unordered_map<std::string, std::shared_ptr<T>>& table,
 			Definition<T>& def,
 			std::string_view kind,
-			const std::string& context
+			std::string_view context
 		) {
 			const auto* reference = std::get_if<std::string>(&def);
 			if (!reference) {
@@ -548,8 +549,8 @@ namespace {
 			return {};
 		}
 
-		Result<void> Link(Method::Impl& method, const std::string& context) {
-			auto link = [&](Property::Impl& prop, const std::string& where) -> Result<void> {
+		Result<void> Link(Method::Impl& method, std::string_view context) {
+			auto link = [&](Property::Impl& prop, std::string_view where) -> Result<void> {
 				if (auto result = Link(prototypes, prop.prototype, "prototype", where); !result) {
 					return result;
 				}
@@ -636,8 +637,7 @@ Result<void> Manifest::Resolve() {
 	if (prototypes) {
 		declared.reserve(prototypes->size());
 		for (auto& prototype : *prototypes) {
-			if (auto result = table.Register(table.prototypes, &prototype, "prototype", "Manifest");
-				!result) {
+			if (auto result = table.Register(table.prototypes, &prototype, "prototype", "Manifest"); !result) {
 				return MakeError(std::move(result.error()));
 			}
 			declared.push_back(prototype);

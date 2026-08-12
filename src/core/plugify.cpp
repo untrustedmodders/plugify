@@ -2,7 +2,6 @@
 #include "plugify/plugify.hpp"
 
 #include "core/console_logger.hpp"
-#include "core/glaze_manifest_parser.hpp"
 #include "core/glaze_metadata.hpp"
 #include "core/libsolv_dependency_resolver.hpp"
 #include "core/standart_file_system.hpp"
@@ -382,11 +381,6 @@ PlugifyBuilder& PlugifyBuilder::WithAssemblyLoader(std::shared_ptr<IAssemblyLoad
 	return *this;
 }
 
-PlugifyBuilder& PlugifyBuilder::WithManifestParser(std::shared_ptr<IManifestParser> parser) {
-	if (parser) _impl->services.RegisterInstance<IManifestParser>(std::move(parser));
-	return *this;
-}
-
 PlugifyBuilder& PlugifyBuilder::WithDependencyResolver(std::shared_ptr<IDependencyResolver> resolver) {
 	if (resolver) _impl->services.RegisterInstance<IDependencyResolver>(std::move(resolver));
 	return *this;
@@ -403,7 +397,6 @@ PlugifyBuilder& PlugifyBuilder::WithDefaults() {
 	_impl->services.RegisterInstanceIfMissing<IPlatformOps>(CreatePlatformOps());
 	_impl->services.RegisterInstanceIfMissing<IFileSystem>(std::make_shared<ExtendedFileSystem>());
 	_impl->services.RegisterInstanceIfMissing<IAssemblyLoader>(std::make_shared<BasicAssemblyLoader>(_impl->services.Resolve<IPlatformOps>(), _impl->services.Resolve<IFileSystem>()));
-	_impl->services.RegisterInstanceIfMissing<IManifestParser>(std::make_shared<GlazeManifestParser>());
 	_impl->services.RegisterInstanceIfMissing<IDependencyResolver>(std::make_shared<LibsolvDependencyResolver>(_impl->services.Resolve<ILogger>()));
 	//_impl->services.RegisterInstanceIfMissing<IExtensionLifecycle>(std::make_shared<DummyLifecycle>());
 	return *this;
