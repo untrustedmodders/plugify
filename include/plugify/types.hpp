@@ -172,7 +172,7 @@ namespace std {
 
 		template <class FormatContext>
 		auto format(const plugify::UniqueId& id, FormatContext& ctx) const {
-			return std::format_to(ctx.out(), "{}", plugify::UniqueId::Value{ id });
+			return format_to(ctx.out(), "{}", plugify::UniqueId::Value{ id });
 		}
 	};
 }

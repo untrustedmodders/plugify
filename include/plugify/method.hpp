@@ -52,7 +52,7 @@ namespace plugify {
 	 * @brief Represents data related to a plugin method.
 	 *
 	 * This structure holds information about a specific plugin method, including:
-	 * - A method handle to identify the method.
+	 * - A method reference to identify the method.
 	 * - A memory address pointer to the method's address.
 	 */
 	struct MethodData {

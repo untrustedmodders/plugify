@@ -4014,7 +4014,7 @@ namespace plg {
 			auto&& projected = std::invoke(std::forward<Proj>(proj), *tmp);
 			using elem = std::decay_t<decltype(projected)>;
 			if constexpr (string_like<elem>) {
-				total_size += std::string_view(*projected).size();
+				total_size += std::string_view(projected).size();
 			} else {
 				total_size += pfl::formatted_size("{}", projected);
 			}
