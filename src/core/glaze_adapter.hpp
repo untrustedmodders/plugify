@@ -98,14 +98,12 @@
 #include <glaze/json/json_t.hpp>
 #endif
 
-#include <valijson/adapters/rapidjson_adapter.hpp>
 #include <valijson/exceptions.hpp>
 #include <valijson/internal/adapter.hpp>
 #include <valijson/internal/basic_adapter.hpp>
 #include <valijson/internal/frozen_value.hpp>
 #include <valijson/schema.hpp>
 #include <valijson/schema_parser.hpp>
-#include <valijson/utils/rapidjson_utils.hpp>
 #include <valijson/validator.hpp>
 
 namespace valijson {
