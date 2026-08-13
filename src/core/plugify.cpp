@@ -456,17 +456,17 @@ Result<Config> PlugifyBuilder::LoadConfigFromFile(const std::filesystem::path& p
 		fs = std::make_shared<StandardFileSystem>();
 	}
 
-	auto text = fs->ReadTextFile(path);
-	if (!text) {
-		return MakeError("Failed to read config file");
+	auto content = fs->ReadTextFile(path);
+	if (!content) {
+		return MakeError(std::move(content.error()));
 	}
 
-	auto config = glz::read_jsonc<Config>(*text);
-	if (!config) {
-		return MakeError("Failed to parse config file");
+	auto schema = LoadSchema(schemas::config, "config");
+	if (!schema) {
+		return MakeError(std::move(schema.error()));
 	}
 
-	return *config;
+	return ReadJson<Config>(*content, *schema);
 }
 
 PlugifyBuilder Plugify::CreateBuilder() {

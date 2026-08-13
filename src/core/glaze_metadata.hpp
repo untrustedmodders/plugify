@@ -5,6 +5,9 @@
 #include "plugify/config.hpp"
 #include "plugify/logger.hpp"
 #include "plugify/manifest.hpp"
+#include "plugify/schemas.hpp"
+
+#include "core/glaze_adapter.hpp"
 
 #include "core/conflict_impl.hpp"
 #include "core/dependency_impl.hpp"
@@ -464,4 +467,53 @@ namespace glz {
 		};*/
 	}
 #endif
+}
+
+namespace plugify {
+	inline Result<valijson::Schema> LoadSchema(std::string_view text, std::string_view type) {
+		valijson::adapters::GlazeDocument document;
+
+		if (auto ec = glz::read_jsonc(document, text); ec) {
+			return MakeError("Failed to load schema for {}: {}", type, glz::format_error(ec, text));
+		}
+
+		valijson::Schema schema;
+
+		try {
+			valijson::SchemaParser parser;
+			valijson::adapters::GlazeAdapter adapter(document);
+			parser.populateSchema(adapter, schema);
+		} catch (std::exception& e) {
+			return MakeError(e.what());
+		}
+
+		return schema;
+	}
+
+	template<typename T>
+	Result<T> ReadJson(std::string_view buffer, valijson::Subschema& schema) {
+		valijson::adapters::GlazeDocument document;
+
+		// JSON -> generic
+		if (auto ec = glz::read_jsonc(document, buffer); ec) {
+			return MakeError(glz::format_error(ec, buffer));
+		}
+
+		valijson::adapters::GlazeAdapter adapter(document);
+		valijson::Validator validator;
+		valijson::ValidationResults results;
+
+		if (!validator.validate(schema, adapter, &results)) {
+			return MakeError("Invalid json:\n{}", plg::join(results, &valijson::ValidationResults::Error::description, "\n"));
+		}
+
+		T output;
+
+		// generic -> T
+		if (auto ec = glz::read_json(output, document); ec) {
+			return MakeError(glz::format_error(ec, buffer));
+		}
+
+		return output;
+	}
 }

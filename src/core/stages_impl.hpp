@@ -3,11 +3,7 @@
 #include "core/failure_tracker.hpp"
 #include "core/pipeline.hpp"
 #include "core/stages.hpp"
-
 #include "core/glaze_metadata.hpp"
-#include "core/glaze_adapter.hpp"
-
-#include "plugify/schemas.hpp"
 
 namespace plugify {
 	// ============================================================================
@@ -37,8 +33,13 @@ namespace plugify {
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
 			_schemas.reserve(2);
-			LoadSchema(schemas::kPlugin, ExtensionType::Plugin);
-			LoadSchema(schemas::kModule, ExtensionType::Module);
+
+			if (auto result = LoadSchema(schemas::module, "module")) {
+				_schemas[ExtensionType::Module] = std::move(*result);
+			}
+			if (auto result = LoadSchema(schemas::plugin, "plugin")) {
+				_schemas[ExtensionType::Plugin] = std::move(*result);
+			}
 		}
 
 		Result<void> ProcessItem(
@@ -65,67 +66,24 @@ namespace plugify {
 			if (!content) {
 				return MakeError(std::move(content.error()));
 			}
-			auto& buffer = *content;
 
-			valijson::adapters::GlazeDocument document;
-
-			// JSONC -> generic
-			if (auto ec = glz::read_jsonc(document, buffer); ec) {
-				return MakeError(glz::format_error(ec, buffer));
-			}
-
-			// generic -> JSON Schema validation
 			auto it = _schemas.find(type);
 			if (it == _schemas.end()) {
-				return MakeError("No JSON schema registered for extension type: {}", plg::enum_to_string(type));
+				return MakeError("No JSON schema registered for {} type", plg::enum_to_string(type));
 			}
 
-			valijson::adapters::GlazeAdapter adapter(document);
-			valijson::Validator validator;
-			valijson::ValidationResults results;
-
-			if (!validator.validate(it->second, adapter, &results)) {
-				return MakeError("Invalid json:\n{}", plg::join(results, &valijson::ValidationResults::Error::description, "\n"));
+			auto manifest = ReadJson<Manifest>(*content, it->second);
+			if (manifest) {
+				// Resolve() first: it links every by-name prototype/enum reference to
+				// its definition, which Validate() then relies on being present.
+				if (auto result = manifest->Resolve(); !result) {
+					return MakeError("Manifest resolution failed: {}", result.error());
+				}
+				if (auto result = manifest->Validate(); !result) {
+					return MakeError("Manifest validation failed: {}", result.error());
+				}
 			}
-
-			Manifest manifest;
-
-			// generic -> Manifest
-			if (auto ec = glz::read_json(manifest, document); ec) {
-				return MakeError(glz::format_error(ec, buffer));
-			}
-
-			// Resolve() first: it links every by-name prototype/enum reference to
-			// its definition, which Validate() then relies on being present.
-			if (auto result = manifest.Resolve(); !result) {
-				return MakeError(std::move(result.error()));
-			}
-			if (auto result = manifest.Validate(); !result) {
-				return MakeError(std::move(result.error()));
-			}
-
 			return manifest;
-		}
-
-		void LoadSchema(std::string_view text, ExtensionType type) {
-			valijson::adapters::GlazeDocument document;
-
-			// JSONC -> generic
-			if (auto ec = glz::read_jsonc(document, text); ec) {
-				throw std::runtime_error(
-					std::format("Failed to load schema for extension type {}: {}", plg::enum_to_string(type), glz::format_error(ec, text))
-				);
-			}
-
-			valijson::adapters::GlazeAdapter adapter(document);
-
-			valijson::SchemaParser parser;
-			valijson::Schema schema;
-
-			parser.populateSchema(adapter, schema);
-
-			// The schema owns its constraints, so it stays valid once `document` goes.
-			_schemas[type] = std::move(schema);
 		}
 	};
 
