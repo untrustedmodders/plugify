@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/untrustedmodders/plugify/main/schemas/language-module.schema.json",
+  "$id": "https://raw.githubusercontent.com/untrustedmodders/plugify/main/schemas/module.schema.json",
   "type": "object",
   "description": "A language module for Plugify.",
   "title": "LanguageModule",
@@ -119,7 +119,6 @@
         "description": "Relative folder path.",
         "minLength": 1
       },
-      "minItems": 1,
       "uniqueItems": true
     }
   },

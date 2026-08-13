@@ -8,7 +8,7 @@
 
 set(PLUGIFY_SCHEMA_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/schemas/plugin.schema.json"
-        "${CMAKE_CURRENT_SOURCE_DIR}/schemas/language-module.schema.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/schemas/module.schema.json"
 )
 
 # configure_file() runs at configure time and file(READ) registers no dependency,

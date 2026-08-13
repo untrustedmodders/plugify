@@ -8,6 +8,6 @@ namespace plugify::schemas {
 	// plugin.schema.json
 	inline constexpr std::string_view kPlugin = R"PLUGIFY_SCHEMA(@PLUGIFY_PLUGIN_SCHEMA@)PLUGIFY_SCHEMA";
 
-	// language-module.schema.json
+	// module.schema.json
 	inline constexpr std::string_view kModule = R"PLUGIFY_SCHEMA(@PLUGIFY_MODULE_SCHEMA@)PLUGIFY_SCHEMA";
 }
