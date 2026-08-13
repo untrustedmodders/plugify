@@ -402,15 +402,12 @@ auto Extension::operator<=>(const Extension& other) const noexcept {
 // ============================================================================
 
 ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
-	constexpr std::array extensions{
-		std::pair{ExtensionType::Plugin, PLUGIFY_PATH_LITERAL(".pplugin")},
-		std::pair{ExtensionType::Module, PLUGIFY_PATH_LITERAL(".pmodule")},
-	};
-	for (const auto& [type, extension] : extensions) {
-		if (plg::has_extension(path, extension)) {
-			return type;
-		}
-	}
+	if (plg::has_extension(path, PLUGIFY_PATH_LITERAL(".pplugin")))
+		return ExtensionType::Plugin;
+
+	if (plg::has_extension(path, PLUGIFY_PATH_LITERAL(".pmodule")))
+		return ExtensionType::Module;
+
 	return ExtensionType::Unknown;
 }
 

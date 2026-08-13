@@ -36,13 +36,9 @@ namespace plugify {
 			[[maybe_unused]] std::span<Extension> items,
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
-			constexpr std::array schemas{
-				std::pair{ExtensionType::Plugin, schemas::kPlugin},
-				std::pair{ExtensionType::Module, schemas::kModule},
-			};
-			for (const auto& [type, text] : schemas) {
-				LoadSchema(text, type);
-			}
+			_schemas.reserve(2);
+			LoadSchema(schemas::kPlugin, ExtensionType::Plugin);
+			LoadSchema(schemas::kModule, ExtensionType::Module);
 		}
 
 		Result<void> ProcessItem(
@@ -102,10 +98,10 @@ namespace plugify {
 			// Resolve() first: it links every by-name prototype/enum reference to
 			// its definition, which Validate() then relies on being present.
 			if (auto result = manifest.Resolve(); !result) {
-				return MakeError("Manifest resolution failed: {}", result.error());
+				return MakeError(std::move(result.error()));
 			}
 			if (auto result = manifest.Validate(); !result) {
-				return MakeError("Manifest validation failed: {}", result.error());
+				return MakeError(std::move(result.error()));
 			}
 
 			return manifest;
@@ -117,7 +113,7 @@ namespace plugify {
 			// JSONC -> generic
 			if (auto ec = glz::read_jsonc(document, text); ec) {
 				throw std::runtime_error(
-				std::format("Failed to load schema for extension type {}: {}", plg::enum_to_string(type), glz::format_error(ec, text))
+					std::format("Failed to load schema for extension type {}: {}", plg::enum_to_string(type), glz::format_error(ec, text))
 				);
 			}
 
