@@ -451,7 +451,7 @@ namespace plugify {
 			}
 
 			if (!errors.empty()) {
-				return MakeError("Invalid methods:\n{}", plg::join(errors, "\n"));
+				return MakeError("Invalid methods:\t\n{}", plg::join(errors, "\t\n"));
 			}
 
 			plugin.SetUserData(data);

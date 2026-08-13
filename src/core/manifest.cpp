@@ -70,7 +70,7 @@ namespace {
 	}
 
 	// The schema checks each parameter and the return value on its own; it cannot
-	// see how they relate to the method holding them. `prefix` names the kind of
+	// see how they relate to the method holding them. `prefix` names the type of
 	// signature being checked, for the error message.
 	Result<void> ValidateMethod(const Method::Impl& method, std::string_view prefix) {
 		// An absent varIndex and the explicit kNoVarArgs sentinel both mean "not
@@ -198,7 +198,7 @@ namespace {
 		Result<bool> Register(
 			std::unordered_map<std::string, std::shared_ptr<T>>& table,
 			std::shared_ptr<T>* definition,
-			std::string_view kind,
+			std::string_view type,
 			std::string_view context
 		) {
 			if (!definition || !*definition) {
@@ -207,7 +207,7 @@ namespace {
 
 			const auto& name = (*definition)->_impl->name;
 			if (name.empty()) {
-				return MakeError("{}: {} definition must have a name", context, kind);
+				return MakeError("{}: {} definition must have a name", context, type);
 			}
 
 			auto [it, inserted] = table.try_emplace(name, *definition);
@@ -217,7 +217,7 @@ namespace {
 
 			if (it->second != *definition
 				&& !SameDefinition(*it->second->_impl, *(*definition)->_impl)) {
-				return MakeError("{}: conflicting definitions for {} '{}'", context, kind, name);
+				return MakeError("{}: conflicting definitions for {} '{}'", context, type, name);
 			}
 
 			*definition = it->second;
@@ -269,7 +269,7 @@ namespace {
 		Result<void> Link(
 			const std::unordered_map<std::string, std::shared_ptr<T>>& table,
 			Definition<T>& def,
-			std::string_view kind,
+			std::string_view type,
 			std::string_view context
 		) {
 			const auto* reference = std::get_if<std::string>(&def);
@@ -279,7 +279,7 @@ namespace {
 
 			auto it = table.find(*reference);
 			if (it == table.end()) {
-				return MakeError("{}: unknown {} '{}'", context, kind, *reference);
+				return MakeError("{}: unknown {} '{}'", context, type, *reference);
 			}
 
 			// Assigning the definition destroys the name `reference` points at, so

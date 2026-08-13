@@ -504,7 +504,7 @@ namespace plugify {
 		valijson::ValidationResults results;
 
 		if (!validator.validate(schema, adapter, &results)) {
-			return MakeError("Invalid json:\n{}", plg::join(results, &valijson::ValidationResults::Error::description, "\n"));
+			return MakeError("Invalid json:\t\n{}", plg::join(results, &valijson::ValidationResults::Error::description, "\t\n"));
 		}
 
 		T output;
