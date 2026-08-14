@@ -2,7 +2,7 @@
 
 #include <variant>
 
-#include "plugify/enum_object.hpp"
+#include "plugify/enum.hpp"
 #include "plugify/method.hpp"
 #include "plugify/property.hpp"
 
@@ -26,6 +26,6 @@ namespace plugify {
 		ValueType type{};
 		std::optional<bool> ref;
 		Definition<Method> prototype;
-		Definition<EnumObject> enumerate;
+		Definition<Enum> enumerate;
 	};
 }

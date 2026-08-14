@@ -57,7 +57,6 @@ namespace plugify {
 
 		enum class WaitType { None, Breakpoint, Wait_Keypress };
 
-
 		using CallingFunc = void (*)(const uint64_t* params, const Return*);  // Return can be null
 
 		/**

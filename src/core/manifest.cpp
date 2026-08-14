@@ -2,8 +2,8 @@
 
 #include "core/binding_impl.hpp"
 #include "core/class_impl.hpp"
-#include "core/enum_object_impl.hpp"
-#include "core/enum_value_impl.hpp"
+#include "core/enum_impl.hpp"
+#include "core/value_impl.hpp"
 #include "core/method_impl.hpp"
 #include "core/property_impl.hpp"
 
@@ -25,7 +25,7 @@ namespace {
 	// guarantee that no two of them share a name, which would make the generated
 	// binding ambiguous. Numbers are deliberately left alone: flag enums and
 	// aliases legitimately repeat them.
-	Result<void> ValidateEnumObject(const EnumObject::Impl& enumObj) {
+	Result<void> ValidateEnum(const Enum::Impl& enumObj) {
 		std::unordered_set<std::string_view> valueNames;
 		valueNames.reserve(enumObj.values.size());
 
@@ -161,8 +161,8 @@ namespace {
 			&& DefinitionName(lhs.enumerate) == DefinitionName(rhs.enumerate);
 	}
 
-	bool SameDefinition(const EnumObject::Impl& lhs, const EnumObject::Impl& rhs) {
-		return std::ranges::equal(lhs.values, rhs.values, [](const EnumValue& a, const EnumValue& b) {
+	bool SameDefinition(const Enum::Impl& lhs, const Enum::Impl& rhs) {
+		return std::ranges::equal(lhs.values, rhs.values, [](const Value& a, const Value& b) {
 			return a._impl->name == b._impl->name && a._impl->value == b._impl->value;
 		});
 	}
@@ -187,7 +187,7 @@ namespace {
 	// collapse onto a single shared object.
 	struct TypeTable {
 		std::unordered_map<std::string, std::shared_ptr<Method>> prototypes;
-		std::unordered_map<std::string, std::shared_ptr<EnumObject>> enums;
+		std::unordered_map<std::string, std::shared_ptr<Enum>> enums;
 
 		// Returns whether this definition is the first one seen under its name; a
 		// later duplicate is collapsed onto the first so that consumers can treat
@@ -234,7 +234,7 @@ namespace {
 				return MakeError(std::move(prototype.error()));
 			}
 
-			auto* inline_enum = std::get_if<std::shared_ptr<EnumObject>>(&prop.enumerate);
+			auto* inline_enum = std::get_if<std::shared_ptr<Enum>>(&prop.enumerate);
 			if (auto enumerate = Register(enums, inline_enum, "enum", context); !enumerate) {
 				return MakeError(std::move(enumerate.error()));
 			}
@@ -494,7 +494,7 @@ Result<void> Manifest::Validate() const {
 
 	if (enums) {
 		for (const auto& enumerate : *enums) {
-			if (auto result = ValidateEnumObject(*enumerate->_impl); !result) {
+			if (auto result = ValidateEnum(*enumerate->_impl); !result) {
 				return result;
 			}
 		}

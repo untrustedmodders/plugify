@@ -11,8 +11,8 @@
 
 #include "core/conflict_impl.hpp"
 #include "core/dependency_impl.hpp"
-#include "core/enum_object_impl.hpp"
-#include "core/enum_value_impl.hpp"
+#include "core/enum_impl.hpp"
+#include "core/value_impl.hpp"
 #include "core/method_impl.hpp"
 #include "core/property_impl.hpp"
 #include "core/alias_impl.hpp"
@@ -97,7 +97,7 @@ struct glz::meta<plugify::Property> {
 };
 
 template <>
-struct glz::meta<plugify::EnumObject> {
+struct glz::meta<plugify::Enum> {
 	static constexpr auto value = object(
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
 		"description", skip{},
@@ -106,7 +106,7 @@ struct glz::meta<plugify::EnumObject> {
 };
 
 template <>
-struct glz::meta<plugify::EnumValue> {
+struct glz::meta<plugify::Value> {
 	static constexpr auto value = object(
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
 		"description", skip{},
@@ -478,10 +478,10 @@ namespace plugify {
 		}
 
 		valijson::Schema schema;
+		valijson::SchemaParser parser;
+		valijson::adapters::GlazeAdapter adapter(document);
 
 		try {
-			valijson::SchemaParser parser;
-			valijson::adapters::GlazeAdapter adapter(document);
 			parser.populateSchema(adapter, schema);
 		} catch (std::exception& e) {
 			return MakeError(e.what());

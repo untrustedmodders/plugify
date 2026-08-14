@@ -1,11 +1,11 @@
 #pragma once
 
-#include "plugify/enum_object.hpp"
-#include "plugify/enum_value.hpp"
+#include "plugify/enum.hpp"
+#include "plugify/value.hpp"
 
 namespace plugify {
-	struct EnumObject::Impl {
+	struct Enum::Impl {
 		std::string name;
-		std::vector<EnumValue> values;
+		std::vector<Value> values;
 	};
 }

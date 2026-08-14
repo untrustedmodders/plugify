@@ -1,44 +1,44 @@
-#include "core/enum_object_impl.hpp"
+#include "core/enum_impl.hpp"
 
 using namespace plugify;
 
 // Enum Implementation
-EnumObject::EnumObject()
+Enum::Enum()
 	: _impl(std::make_unique<Impl>()) {
 }
 
-EnumObject::~EnumObject() = default;
+Enum::~Enum() = default;
 
-EnumObject::EnumObject(const EnumObject& other)
+Enum::Enum(const Enum& other)
 	: _impl(std::make_unique<Impl>(*other._impl)) {
 }
 
-EnumObject::EnumObject(EnumObject&& other) noexcept = default;
+Enum::Enum(Enum&& other) noexcept = default;
 
-EnumObject& EnumObject::operator=(const EnumObject& other) {
+Enum& Enum::operator=(const Enum& other) {
 	if (this != &other) {
 		_impl = std::make_unique<Impl>(*other._impl);
 	}
 	return *this;
 }
 
-EnumObject& EnumObject::operator=(EnumObject&& other) noexcept = default;
+Enum& Enum::operator=(Enum&& other) noexcept = default;
 
-const std::string& EnumObject::GetName() const noexcept {
+const std::string& Enum::GetName() const noexcept {
 	return _impl->name;
 }
 
-const std::vector<EnumValue>& EnumObject::GetValues() const noexcept {
+const std::vector<Value>& Enum::GetValues() const noexcept {
 	return _impl->values;
 }
 
-void EnumObject::SetName(std::string name) {
+void Enum::SetName(std::string name) {
 	_impl->name = std::move(name);
 }
 
-void EnumObject::SetValues(std::vector<EnumValue> values) {
+void Enum::SetValues(std::vector<Value> values) {
 	_impl->values = std::move(values);
 }
 
-bool EnumObject::operator==(const EnumObject& other) const noexcept = default;
-auto EnumObject::operator<=>(const EnumObject& other) const noexcept = default;
+bool Enum::operator==(const Enum& other) const noexcept = default;
+auto Enum::operator<=>(const Enum& other) const noexcept = default;

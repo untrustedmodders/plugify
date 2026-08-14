@@ -36,7 +36,7 @@ std::shared_ptr<Method> Property::GetPrototype() const noexcept {
 	return DefinitionOf(_impl->prototype);
 }
 
-std::shared_ptr<EnumObject> Property::GetEnumerate() const noexcept {
+std::shared_ptr<Enum> Property::GetEnumerate() const noexcept {
 	return DefinitionOf(_impl->enumerate);
 }
 
@@ -52,7 +52,7 @@ void Property::SetPrototype(std::shared_ptr<Method> prototype) {
 	_impl->prototype = std::move(prototype);
 }
 
-void Property::SetEnumerate(std::shared_ptr<EnumObject> enumerate) {
+void Property::SetEnumerate(std::shared_ptr<Enum> enumerate) {
 	_impl->enumerate = std::move(enumerate);
 }
 

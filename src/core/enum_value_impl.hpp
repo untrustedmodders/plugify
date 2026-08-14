@@ -1,9 +1,9 @@
 #pragma once
 
-#include "plugify/enum_value.hpp"
+#include "plugify/value.hpp"
 
 namespace plugify {
-	struct EnumValue::Impl {
+	struct Value::Impl {
 		std::string name;
 		int64_t value{ 0 };
 	};

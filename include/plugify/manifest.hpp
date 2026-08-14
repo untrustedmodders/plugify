@@ -7,7 +7,7 @@
 #include "plugify/global.h"
 #include "plugify/conflict.hpp"
 #include "plugify/dependency.hpp"
-#include "plugify/enum_object.hpp"
+#include "plugify/enum.hpp"
 #include "plugify/method.hpp"
 #include "plugify/class.hpp"
 
@@ -40,7 +40,7 @@ namespace plugify {
 		// definition that was written inline, so each distinct type appears
 		// exactly once and consumers can walk a flat list.
 		std::optional<std::vector<std::shared_ptr<Method>>> prototypes;
-		std::optional<std::vector<std::shared_ptr<EnumObject>>> enums;
+		std::optional<std::vector<std::shared_ptr<Enum>>> enums;
 
 		// Module-specific fields (only used when type == Module)
 		std::optional<std::filesystem::path> runtime;

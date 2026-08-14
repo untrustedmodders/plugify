@@ -6,7 +6,7 @@
 #include "plugify/value_type.hpp"
 
 namespace plugify {
-	class EnumObject;
+	class Enum;
 	class Method;
 
 	// Property Class
@@ -23,13 +23,13 @@ namespace plugify {
 		[[nodiscard]] ValueType GetType() const noexcept;
 		[[nodiscard]] bool IsRef() const noexcept;
 		[[nodiscard]] std::shared_ptr<Method> GetPrototype() const noexcept;
-		[[nodiscard]] std::shared_ptr<EnumObject> GetEnumerate() const noexcept;
+		[[nodiscard]] std::shared_ptr<Enum> GetEnumerate() const noexcept;
 
 		// Setters (pass by value and move)
 		void SetType(ValueType type);
 		void SetRef(bool ref);
 		void SetPrototype(std::shared_ptr<Method> prototype);
-		void SetEnumerate(std::shared_ptr<EnumObject> enumerate);
+		void SetEnumerate(std::shared_ptr<Enum> enumerate);
 
 		[[nodiscard]] bool operator==(const Property& other) const noexcept;
 		[[nodiscard]] auto operator<=>(const Property& other) const noexcept;
