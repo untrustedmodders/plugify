@@ -13,7 +13,7 @@ namespace plugify {
 	// Parsing Stage - Transform type
 	class ParsingStage : public ITransformStage<Extension> {
 		std::shared_ptr<IFileSystem> _fileSystem;
-		std::unordered_map<ExtensionType, valijson::Schema> _schemas;
+		std::map<ExtensionType, valijson::Schema> _schemas;
 
 	public:
 		ParsingStage(std::shared_ptr<IFileSystem> fileSystem)
@@ -32,8 +32,6 @@ namespace plugify {
 			[[maybe_unused]] std::span<Extension> items,
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
-			_schemas.reserve(2);
-
 			if (auto result = LoadSchema(schemas::module, "module")) {
 				_schemas[ExtensionType::Module] = std::move(*result);
 			}
