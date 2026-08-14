@@ -470,11 +470,11 @@ namespace glz {
 }
 
 namespace plugify {
-	inline Result<valijson::Schema> LoadSchema(std::string_view text, std::string_view type) {
+	inline Result<valijson::Schema> LoadSchema(std::string_view content, std::string_view type) {
 		valijson::adapters::GlazeDocument document;
 
-		if (auto ec = glz::read_jsonc(document, text); ec) {
-			return MakeError("Failed to load schema for {}: {}", type, glz::format_error(ec, text));
+		if (auto ec = glz::read_jsonc(document, content); ec) {
+			return MakeError("Failed to load {} schema: {}", type, glz::format_error(ec, content));
 		}
 
 		valijson::Schema schema;

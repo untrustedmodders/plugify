@@ -25,7 +25,7 @@ namespace plugify {
 	struct Property::Impl {
 		ValueType type{};
 		std::optional<bool> ref;
-		Definition<Method> prototype;
+		Definition<Prototype> prototype;
 		Definition<Enum> enumerate;
 	};
 }

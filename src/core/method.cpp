@@ -74,27 +74,3 @@ void Method::SetVarIndex(uint8_t varIndex) {
 
 bool Method::operator==(const Method& other) const noexcept = default;
 auto Method::operator<=>(const Method& other) const noexcept = default;
-
-std::shared_ptr<Method> Method::FindPrototype(std::string_view name) const noexcept {
-	for (const auto& param : GetParamTypes()) {
-		if (auto method = param.GetPrototype()) {
-			if (method->GetName() == name) {
-				return method;
-			}
-			if (auto prototype = method->FindPrototype(name)) {
-				return prototype;
-			}
-		}
-	}
-
-	if (auto method = GetRetType().GetPrototype()) {
-		if (method->GetName() == name) {
-			return method;
-		}
-		if (auto prototype = method->FindPrototype(name)) {
-			return prototype;
-		}
-	}
-
-	return {};
-}

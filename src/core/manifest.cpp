@@ -186,7 +186,7 @@ namespace {
 	// so a definition declared up front and the same definition written inline
 	// collapse onto a single shared object.
 	struct TypeTable {
-		std::unordered_map<std::string, std::shared_ptr<Method>> prototypes;
+		std::unordered_map<std::string, std::shared_ptr<Prototype>> prototypes;
 		std::unordered_map<std::string, std::shared_ptr<Enum>> enums;
 
 		// Returns whether this definition is the first one seen under its name; a
@@ -228,7 +228,7 @@ namespace {
 		// descend into an inline prototype's own parameters. Inline definitions nest
 		// as a tree, so this always terminates.
 		Result<void> Collect(Property::Impl& prop, std::string_view context) {
-			auto* inline_prototype = std::get_if<std::shared_ptr<Method>>(&prop.prototype);
+			auto* inline_prototype = std::get_if<std::shared_ptr<Prototype>>(&prop.prototype);
 			auto prototype = Register(prototypes, inline_prototype, "prototype", context);
 			if (!prototype) {
 				return MakeError(std::move(prototype.error()));
@@ -318,7 +318,7 @@ namespace {
 			enum class Mark : uint8_t { Unvisited, OnStack, Done };
 			std::unordered_map<const Method*, Mark> marks;
 
-			auto visit = [&marks](auto&& self, const std::shared_ptr<Method>& prototype) -> Result<void> {
+			auto visit = [&marks](auto&& self, const std::shared_ptr<Prototype>& prototype) -> Result<void> {
 				switch (marks[prototype.get()]) {
 					case Mark::Done:
 						return {};
@@ -371,7 +371,7 @@ Result<void> Manifest::Resolve() {
 	// Declared definitions go in first, so that a clash between two of them is
 	// reported against the manifest's own tables rather than against whichever
 	// inline definition happened to be walked first.
-	std::vector<std::shared_ptr<Method>> declared;
+	std::vector<std::shared_ptr<Prototype>> declared;
 
 	if (prototypes) {
 		declared.reserve(prototypes->size());
@@ -429,15 +429,15 @@ Result<void> Manifest::Resolve() {
 
 	// Publish the merged tables, sorted by name so that consumers which generate
 	// code from a manifest get a stable ordering.
-	auto publish = [](auto& field, const auto& table) {
+	auto publish = [](auto& field, auto& table) {
 		if (table.empty()) {
 			return;
 		}
 
 		typename std::remove_reference_t<decltype(field)>::value_type merged;
 		merged.reserve(table.size());
-		for (const auto& [_, definition] : table) {
-			merged.push_back(definition);
+		for (auto& [_, definition] : table) {
+			merged.push_back(std::move(definition));
 		}
 		std::ranges::sort(merged, {}, [](const auto& definition) -> const std::string& {
 			return definition->_impl->name;

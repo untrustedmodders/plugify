@@ -32,7 +32,7 @@ bool Property::IsRef() const noexcept {
 	return _impl->ref.value_or(false);
 }
 
-std::shared_ptr<Method> Property::GetPrototype() const noexcept {
+std::shared_ptr<Prototype> Property::GetPrototype() const noexcept {
 	return DefinitionOf(_impl->prototype);
 }
 
@@ -48,7 +48,7 @@ void Property::SetRef(bool ref) {
 	_impl->ref = ref;
 }
 
-void Property::SetPrototype(std::shared_ptr<Method> prototype) {
+void Property::SetPrototype(std::shared_ptr<Prototype> prototype) {
 	_impl->prototype = std::move(prototype);
 }
 

@@ -85,6 +85,8 @@ static const std::vector<Conflict> emptyConflicts;
 static const std::vector<Obsolete> emptyObsoletes;
 static const std::vector<Method> emptyMethods;
 static const std::vector<Class> emptyClasses;
+static const std::vector<std::shared_ptr<Prototype>> emptyPrototypes;
+static const std::vector<std::shared_ptr<Enum>> emptyEnums;
 static const std::vector<MethodData> emptyMethodData;
 
 // ============================================================================
@@ -208,6 +210,20 @@ const std::vector<Class>& Extension::GetClasses() const noexcept {
 		return *_impl->manifest.classes;
 	}
 	return emptyClasses;
+}
+
+const std::vector<std::shared_ptr<Prototype>>& Extension::GetPrototypes() const noexcept {
+	if (_impl->type == ExtensionType::Plugin && _impl->manifest.prototypes) {
+		return *_impl->manifest.prototypes;
+	}
+	return emptyPrototypes;
+}
+
+const std::vector<std::shared_ptr<Enum>>& Extension::GetEnums() const noexcept {
+	if (_impl->type == ExtensionType::Plugin && _impl->manifest.enums) {
+		return *_impl->manifest.enums;
+	}
+	return emptyEnums;
 }
 
 const std::vector<MethodData>& Extension::GetMethodsData() const noexcept {

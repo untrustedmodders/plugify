@@ -39,7 +39,7 @@ namespace plugify {
 		// of repeating the definition. After Resolve() these also hold every
 		// definition that was written inline, so each distinct type appears
 		// exactly once and consumers can walk a flat list.
-		std::optional<std::vector<std::shared_ptr<Method>>> prototypes;
+		std::optional<std::vector<std::shared_ptr<Prototype>>> prototypes;
 		std::optional<std::vector<std::shared_ptr<Enum>>> enums;
 
 		// Module-specific fields (only used when type == Module)

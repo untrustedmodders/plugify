@@ -1,8 +1,8 @@
 #include "plugify/assembly_loader.hpp"
 #include "plugify/plugify.hpp"
 
-#include "core/console_logger.hpp"
 #include "core/glaze_metadata.hpp"
+#include "core/console_logger.hpp"
 #include "core/libsolv_dependency_resolver.hpp"
 #include "core/standart_file_system.hpp"
 #include "core/basic_assembly_loader.hpp"

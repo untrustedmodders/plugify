@@ -90,6 +90,8 @@ namespace plugify {
 		[[nodiscard]] const std::string& GetEntry() const noexcept;
 		[[nodiscard]] const std::vector<Method>& GetMethods() const noexcept;
 		[[nodiscard]] const std::vector<Class>& GetClasses() const noexcept;
+		[[nodiscard]] const std::vector<std::shared_ptr<Prototype>>& GetPrototypes() const noexcept;
+		[[nodiscard]] const std::vector<std::shared_ptr<Enum>>& GetEnums() const noexcept;
 		[[nodiscard]] const std::vector<MethodData>& GetMethodsData() const noexcept;
 
 		// --- Module-specific (returns empty/null for plugins) ---
