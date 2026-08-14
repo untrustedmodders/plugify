@@ -10,6 +10,32 @@
 using namespace plugify;
 
 namespace {
+	// Names the property being checked, for an error message. Formatting it eagerly
+	// for every parameter of every method cost several times more than all the
+	// checking put together, so the pieces are carried around instead and only
+	// spliced together on the path that actually reports a failure.
+	struct Where {
+		static constexpr size_t kReturnType = static_cast<size_t>(-1);
+		static constexpr size_t kScope = static_cast<size_t>(-2);
+
+		const Where* parent = nullptr;  // the property this one sits inside, if any
+		std::string_view label;         // used when there is no parent
+		std::string_view name;          // the method or prototype it belongs to
+		size_t index = kScope;          // parameter position, kReturnType, or kScope
+
+		[[nodiscard]] std::string str() const {
+			std::string prefix = parent ? parent->str() : std::string(label);
+			switch (index) {
+				case kScope:
+					return prefix;
+				case kReturnType:
+					return std::format("{} '{}' return type", prefix, name);
+				default:
+					return std::format("{} '{}' param[{}]", prefix, name, index);
+			}
+		}
+	};
+
 	// A manifest reaches Validate() only after ParsingStage has checked it against
 	// the JSON schema for its extension type, so every rule a schema can state -
 	// which fields must be present, what type each holds, and how each one is
@@ -44,26 +70,26 @@ namespace {
 	// manifest's shared tables, which Resolve() has already populated with every
 	// definition; recursing into them here would both repeat that work and hang
 	// on prototypes that refer to one another.
-	Result<void> ValidateProperty(const Property::Impl& prop, std::string_view context, bool param) {
+	Result<void> ValidateProperty(const Property::Impl& prop, const Where& context, bool param) {
 		// The schema fixes the set of type names, but not where each one may be
 		// used: nothing can be passed as void.
 		if (param && prop.type == ValueType::Void) {
-			return MakeError("{}: Parameter cannot be void type", context);
+			return MakeError("{}: Parameter cannot be void type", context.str());
 		}
 
 		// Still holding a name means Resolve() never ran, or ran before this
 		// property was added; either way nothing downstream can use the property.
 		if (const auto* reference = std::get_if<std::string>(&prop.prototype)) {
-			return MakeError("{}: Unresolved prototype reference '{}'", context, *reference);
+			return MakeError("{}: Unresolved prototype reference '{}'", context.str(), *reference);
 		}
 
 		if (const auto* reference = std::get_if<std::string>(&prop.enumerate)) {
-			return MakeError("{}: Unresolved enum reference '{}'", context, *reference);
+			return MakeError("{}: Unresolved enum reference '{}'", context.str(), *reference);
 		}
 
 		// A callback with no signature cannot be marshalled in either direction.
 		if (prop.type == ValueType::Function && !DefinitionOf(prop.prototype)) {
-			return MakeError("{}: Function type requires prototype", context);
+			return MakeError("{}: Function type requires prototype", context.str());
 		}
 
 		return {};
@@ -89,7 +115,7 @@ namespace {
 		for (size_t i = 0; i < method.paramTypes.size(); ++i) {
 			if (auto result = ValidateProperty(
 					*method.paramTypes[i]._impl,
-					std::format("{} '{}' param[{}]", prefix, method.name, i),
+					Where{ nullptr, prefix, method.name, i },
 					true
 				);
 				!result) {
@@ -99,7 +125,7 @@ namespace {
 
 		return ValidateProperty(
 			*method.retType._impl,
-			std::format("{} '{}' return type", prefix, method.name),
+			Where{ nullptr, prefix, method.name, Where::kReturnType },
 			false
 		);
 	}
@@ -199,7 +225,7 @@ namespace {
 			std::unordered_map<std::string, std::shared_ptr<T>>& table,
 			std::shared_ptr<T>* definition,
 			std::string_view type,
-			std::string_view context
+			const Where& context
 		) {
 			if (!definition || !*definition) {
 				return false;
@@ -207,7 +233,7 @@ namespace {
 
 			const auto& name = (*definition)->_impl->name;
 			if (name.empty()) {
-				return MakeError("{}: {} definition must have a name", context, type);
+				return MakeError("{}: {} definition must have a name", context.str(), type);
 			}
 
 			auto [it, inserted] = table.try_emplace(name, *definition);
@@ -217,7 +243,7 @@ namespace {
 
 			if (it->second != *definition
 				&& !SameDefinition(*it->second->_impl, *(*definition)->_impl)) {
-				return MakeError("{}: conflicting definitions for {} '{}'", context, type, name);
+				return MakeError("{}: conflicting definitions for {} '{}'", context.str(), type, name);
 			}
 
 			*definition = it->second;
@@ -227,7 +253,7 @@ namespace {
 		// Pass one: register the inline definitions hanging off this property, then
 		// descend into an inline prototype's own parameters. Inline definitions nest
 		// as a tree, so this always terminates.
-		Result<void> Collect(Property::Impl& prop, std::string_view context) {
+		Result<void> Collect(Property::Impl& prop, const Where& context) {
 			auto* inline_prototype = std::get_if<std::shared_ptr<Prototype>>(&prop.prototype);
 			auto prototype = Register(prototypes, inline_prototype, "prototype", context);
 			if (!prototype) {
@@ -235,7 +261,8 @@ namespace {
 			}
 
 			auto* inline_enum = std::get_if<std::shared_ptr<Enum>>(&prop.enumerate);
-			if (auto enumerate = Register(enums, inline_enum, "enum", context); !enumerate) {
+			auto enumerate = Register(enums, inline_enum, "enum", context);
+			if (!enumerate) {
 				return MakeError(std::move(enumerate.error()));
 			}
 
@@ -248,18 +275,18 @@ namespace {
 			return {};
 		}
 
-		Result<void> Collect(Method::Impl& method, std::string_view context) {
+		Result<void> Collect(Method::Impl& method, const Where& context) {
 			for (size_t i = 0; i < method.paramTypes.size(); ++i) {
 				if (auto result = Collect(
 						*method.paramTypes[i]._impl,
-						std::format("{} '{}' param[{}]", context, method.name, i)
+						Where{ &context, {}, method.name, i }
 					);
 					!result) {
 					return result;
 				}
 			}
 
-			return Collect(*method.retType._impl, std::format("{} '{}' return type", context, method.name));
+			return Collect(*method.retType._impl, Where{ &context, {}, method.name, Where::kReturnType });
 		}
 
 		// Pass two: swap each by-name reference for the definition it names. Every
@@ -270,7 +297,7 @@ namespace {
 			const std::unordered_map<std::string, std::shared_ptr<T>>& table,
 			Definition<T>& def,
 			std::string_view type,
-			std::string_view context
+			const Where& context
 		) {
 			const auto* reference = std::get_if<std::string>(&def);
 			if (!reference) {
@@ -279,7 +306,7 @@ namespace {
 
 			auto it = table.find(*reference);
 			if (it == table.end()) {
-				return MakeError("{}: unknown {} '{}'", context, type, *reference);
+				return MakeError("{}: unknown {} '{}'", context.str(), type, *reference);
 			}
 
 			// Assigning the definition destroys the name `reference` points at, so
@@ -288,8 +315,8 @@ namespace {
 			return {};
 		}
 
-		Result<void> Link(Method::Impl& method, std::string_view context) {
-			auto link = [&](Property::Impl& prop, std::string_view where) -> Result<void> {
+		Result<void> Link(Method::Impl& method, const Where& context) {
+			auto link = [&](Property::Impl& prop, const Where& where) -> Result<void> {
 				if (auto result = Link(prototypes, prop.prototype, "prototype", where); !result) {
 					return result;
 				}
@@ -299,14 +326,14 @@ namespace {
 			for (size_t i = 0; i < method.paramTypes.size(); ++i) {
 				if (auto result = link(
 						*method.paramTypes[i]._impl,
-						std::format("{} '{}' param[{}]", context, method.name, i)
+						Where{ &context, {}, method.name, i }
 					);
 					!result) {
 					return result;
 				}
 			}
 
-			return link(*method.retType._impl, std::format("{} '{}' return type", context, method.name));
+			return link(*method.retType._impl, Where{ &context, {}, method.name, Where::kReturnType });
 		}
 
 		// A prototype that can reach itself makes the shared_ptr graph
@@ -376,7 +403,7 @@ Result<void> Manifest::Resolve() {
 	if (prototypes) {
 		declared.reserve(prototypes->size());
 		for (auto& prototype : *prototypes) {
-			if (auto result = table.Register(table.prototypes, &prototype, "prototype", "Manifest"); !result) {
+			if (auto result = table.Register(table.prototypes, &prototype, "prototype", Where{ nullptr, "Manifest", {}, Where::kScope }); !result) {
 				return MakeError(std::move(result.error()));
 			}
 			declared.push_back(prototype);
@@ -385,7 +412,7 @@ Result<void> Manifest::Resolve() {
 
 	if (enums) {
 		for (auto& enumerate : *enums) {
-			if (auto result = table.Register(table.enums, &enumerate, "enum", "Manifest"); !result) {
+			if (auto result = table.Register(table.enums, &enumerate, "enum", Where{ nullptr, "Manifest", {}, Where::kScope }); !result) {
 				return MakeError(std::move(result.error()));
 			}
 		}
@@ -396,14 +423,14 @@ Result<void> Manifest::Resolve() {
 	// prototypes reaches everything.
 	if (methods) {
 		for (auto& method : *methods) {
-			if (auto result = table.Collect(*method._impl, "Method"); !result) {
+			if (auto result = table.Collect(*method._impl, Where{ nullptr, "Method", {}, Where::kScope }); !result) {
 				return result;
 			}
 		}
 	}
 
 	for (auto& prototype : declared) {
-		if (auto result = table.Collect(*prototype->_impl, "Prototype"); !result) {
+		if (auto result = table.Collect(*prototype->_impl, Where{ nullptr, "Prototype", {}, Where::kScope }); !result) {
 			return result;
 		}
 	}
@@ -411,14 +438,14 @@ Result<void> Manifest::Resolve() {
 	// Pass two: resolve references, now that every definition is known.
 	if (methods) {
 		for (auto& method : *methods) {
-			if (auto result = table.Link(*method._impl, "Method"); !result) {
+			if (auto result = table.Link(*method._impl, Where{ nullptr, "Method", {}, Where::kScope }); !result) {
 				return result;
 			}
 		}
 	}
 
 	for (const auto& [_, prototype] : table.prototypes) {
-		if (auto result = table.Link(*prototype->_impl, "Prototype"); !result) {
+		if (auto result = table.Link(*prototype->_impl, Where{ nullptr, "Prototype", {}, Where::kScope }); !result) {
 			return result;
 		}
 	}
