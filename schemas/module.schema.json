@@ -29,10 +29,10 @@
     },
     "name": {
       "type": "string",
-      "description": "The unique identifier for the language module. Should be lowercase, use hyphens for spaces, and clearly indicate the language (e.g., 'python3-module', 'cpp-language-support').",
-      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "description": "The unique identifier for the language module. Should be lowercase, use hyphens for spaces, and clearly indicate the language.",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
       "minLength": 1,
-      "examples": ["python3-module", "cpp-language-support"]
+      "examples": ["python3_module", "cpp_language"]
     },
     "description": {
       "type": "string",
@@ -138,7 +138,7 @@
     "extensionName": {
       "type": "string",
       "description": "The name of a plugin or language module, as written in its own manifest.",
-      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
       "minLength": 1
     },
     "dependencyObject": {

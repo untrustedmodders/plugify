@@ -30,10 +30,10 @@
     },
     "name": {
       "type": "string",
-      "description": "The unique identifier for the plugin. Should be lowercase, use hyphens for spaces, and be descriptive (e.g., 'audio-manager', 'database-connector', 'logging-framework').",
-      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "description": "The unique identifier for the plugin. Should be lowercase, use hyphens for spaces, and be descriptive (e.g., 'audio_manager', 'database_connector', 'logging_framework').",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
       "minLength": 1,
-      "examples": ["audio-manager", "database-connector", "logging-framework"]
+      "examples": ["audio_manager", "databas_connector", "logging_framework"]
     },
     "description": {
       "type": "string",
@@ -108,9 +108,9 @@
     },
     "entry": {
       "type": "string",
-      "description": "The entry point file or main executable for the plugin, relative to the plugin's directory. This is the file that will be loaded when the plugin starts (e.g., 'main.dll', 'plugin.so', 'index.js').",
+      "description": "The entry point file or main executable for the plugin, relative to the plugin's directory. This is the file that will be loaded when the plugin starts.",
       "minLength": 1,
-      "examples": ["main.dll", "plugin.so", "index.js", "Plugin.cs", "plugin.py"]
+      "examples": ["main.dll", "plugin.so"]
     },
     "methods": {
       "type": "array",
@@ -157,7 +157,7 @@
     "extensionName": {
       "type": "string",
       "description": "The name of a plugin or language module, as written in its own manifest.",
-      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
       "minLength": 1
     },
     "valueType": {
