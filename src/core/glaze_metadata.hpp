@@ -473,33 +473,35 @@ namespace glz {
 }
 
 namespace plugify {
-	inline Result<valijson::Schema> LoadSchema(std::string_view content, std::string_view type) {
+	inline Result<valijson::Schema> LoadSchema(const Schema& schema) {
 		valijson::adapters::GlazeDocument document;
 
-		if (auto ec = glz::read_jsonc(document, content); ec) {
-			return MakeError("Failed to load {} schema: {}", type, glz::format_error(ec, content));
+		const auto& [name, text] = schema;
+
+		if (auto ec = glz::read_jsonc(document, text); ec) {
+			return MakeError("Failed to load {} schema: {}", name, glz::format_error(ec, text));
 		}
 
-		valijson::Schema schema;
+		valijson::Schema result;
 		valijson::SchemaParser parser;
 		valijson::adapters::GlazeAdapter adapter(document);
 
 		try {
-			parser.populateSchema(adapter, schema);
+			parser.populateSchema(adapter, result);
 		} catch (std::exception& e) {
 			return MakeError(e.what());
 		}
 
-		return schema;
+		return result;
 	}
 
 	template<typename T>
-	Result<T> ReadJson(std::string_view buffer, valijson::Subschema& schema) {
+	Result<T> ReadJson(std::string_view text, const valijson::Schema& schema) {
 		valijson::adapters::GlazeDocument document;
 
 		// JSON -> generic
-		if (auto ec = glz::read_jsonc(document, buffer); ec) {
-			return MakeError(glz::format_error(ec, buffer));
+		if (auto ec = glz::read_jsonc(document, text); ec) {
+			return MakeError(glz::format_error(ec, text));
 		}
 
 		valijson::adapters::GlazeAdapter adapter(document);
@@ -510,13 +512,13 @@ namespace plugify {
 			return MakeError("Invalid json:\t\n{}", plg::join(results, &valijson::ValidationResults::Error::description, "\t\n"));
 		}
 
-		T output;
+		T result;
 
 		// generic -> T
-		if (auto ec = glz::read_json(output, document); ec) {
-			return MakeError(glz::format_error(ec, buffer));
+		if (auto ec = glz::read_json(result, document); ec) {
+			return MakeError(glz::format_error(ec, text));
 		}
 
-		return output;
+		return result;
 	}
 }

@@ -461,7 +461,7 @@ Result<Config> PlugifyBuilder::LoadConfigFromFile(const std::filesystem::path& p
 		return MakeError(std::move(content.error()));
 	}
 
-	auto schema = LoadSchema(schemas::config, "config");
+	auto schema = LoadSchema(schemas::config);
 	if (!schema) {
 		return MakeError(std::move(schema.error()));
 	}

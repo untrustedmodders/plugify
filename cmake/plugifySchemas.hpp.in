@@ -7,6 +7,13 @@
 
 #include <string_view>
 
-namespace plugify::schemas {
+namespace plugify {
+    struct Schema {
+        std::string_view name;
+        std::string_view text;
+    };
+
+    namespace schemas {
 @PLUGIFY_SCHEMA_DECLARATIONS@
+    }
 }

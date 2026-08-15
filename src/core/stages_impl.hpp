@@ -32,10 +32,10 @@ namespace plugify {
 			[[maybe_unused]] std::span<Extension> items,
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
-			if (auto result = LoadSchema(schemas::module, "module")) {
+			if (auto result = LoadSchema(schemas::module)) {
 				_schemas[ExtensionType::Module] = std::move(*result);
 			}
-			if (auto result = LoadSchema(schemas::plugin, "plugin")) {
+			if (auto result = LoadSchema(schemas::plugin)) {
 				_schemas[ExtensionType::Plugin] = std::move(*result);
 			}
 		}

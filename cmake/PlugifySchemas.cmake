@@ -51,9 +51,10 @@ foreach(PLUGIFY_SCHEMA_FILE IN LISTS PLUGIFY_SCHEMA_FILES)
     endif()
 
     string(APPEND PLUGIFY_SCHEMA_DECLARATIONS
-            "\t// ${PLUGIFY_SCHEMA_BASENAME}\n"
-            "\tinline constexpr std::string_view ${PLUGIFY_SCHEMA_NAME} ="
-            " R\"PLUGIFY_SCHEMA(${PLUGIFY_SCHEMA_TEXT})PLUGIFY_SCHEMA\";")
+            "\t\t// ${PLUGIFY_SCHEMA_BASENAME}\n"
+            "\t\tinline constexpr const Schema ${PLUGIFY_SCHEMA_NAME} ="
+            " { \"${PLUGIFY_SCHEMA_NAME}\","
+            " R\"PLUGIFY_SCHEMA(${PLUGIFY_SCHEMA_TEXT})PLUGIFY_SCHEMA\" };")
 
     message(VERBOSE "Embedding ${PLUGIFY_SCHEMA_BASENAME} as plugify::schemas::${PLUGIFY_SCHEMA_NAME}")
 endforeach()
