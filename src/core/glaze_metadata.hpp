@@ -101,6 +101,7 @@ struct glz::meta<plugify::Enum> {
 	static constexpr auto value = object(
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
 		"description", skip{},
+		"deprecated", skip{},
 		"values", [](auto&& self) -> auto& { return self._impl->values; }
 	);
 };
@@ -119,6 +120,7 @@ struct glz::meta<plugify::Alias> {
 	static constexpr auto value = object(
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
 		"description", skip{},
+		"deprecated", skip{},
 		"owner", [](auto&& self) -> auto& { return self._impl->owner; }
 	);
 };
@@ -128,6 +130,7 @@ struct glz::meta<plugify::Binding> {
 	static constexpr auto value = object(
 		"name", [](auto&& self) -> auto& { return self._impl->name; },
 		"description", skip{},
+		"deprecated", skip{},
 		"method", [](auto&& self) -> auto& { return self._impl->method; },
 		"bindSelf", [](auto&& self) -> auto& { return self._impl->bindSelf; },
 		"paramAliases", [](auto&& self) -> auto& { return self._impl->paramAliases; },
