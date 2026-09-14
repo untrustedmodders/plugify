@@ -4,37 +4,167 @@
   "type": "object",
   "description": "A configuration file for Plugify.",
   "title": "Config",
-  "required": [
-  ],
+  "required": [],
   "properties": {
-    "baseDir": {
-      "type": "string",
-      "description": "Relative base folder path.",
-      "minLength": 1
+    "paths": {
+      "type": "object",
+      "title": "Paths",
+      "properties": {
+        "baseDir": {
+          "type": "string",
+          "description": "Base folder path.",
+          "minLength": 1
+        },
+        "extensionsDir": {
+          "type": "string",
+          "description": "Path from the base folder to the extensions folder.",
+          "minLength": 1,
+          "default": "extensions"
+        },
+        "configsDir": {
+          "type": "string",
+          "description": "Path from the base folder to the configs folder.",
+          "minLength": 1,
+          "default": "configs"
+        },
+        "dataDir": {
+          "type": "string",
+          "description": "Path from the base folder to the data folder.",
+          "minLength": 1,
+          "default": "data"
+        },
+        "logsDir": {
+          "type": "string",
+          "description": "Path from the base folder to the logs folder.",
+          "minLength": 1,
+          "default": "logs"
+        },
+        "cacheDir": {
+          "type": "string",
+          "description": "Path from the base folder to the cache folder.",
+          "minLength": 1,
+          "default": "cache"
+        }
+      },
+      "additionalProperties": false
     },
-    "configsDir": {
-      "type": "string",
-      "description": "Relative path from base folder to configs folder.",
-      "minLength": 1
+    "loading": {
+      "type": "object",
+      "title": "Loading",
+      "properties": {
+        "preferOwnSymbols": {
+          "type": "boolean",
+          "description": "Flag indicating if modules should prefer their own symbols over shared symbols.",
+          "default": false
+        },
+        "maxConcurrentLoads": {
+          "type": "integer",
+          "description": "Maximum number of modules that can be loaded concurrently.",
+          "minimum": 1,
+          "default": 4
+        },
+        "loadTimeout": {
+          "type": "integer",
+          "description": "Timeout for loading a module, in milliseconds.",
+          "minimum": 0,
+          "default": 500
+        },
+        "exportTimeout": {
+          "type": "integer",
+          "description": "Timeout for resolving module exports, in milliseconds.",
+          "minimum": 0,
+          "default": 100
+        },
+        "startTimeout": {
+          "type": "integer",
+          "description": "Timeout for starting a module, in milliseconds.",
+          "minimum": 0,
+          "default": 250
+        }
+      },
+      "additionalProperties": false
     },
-    "dataDir": {
-      "type": "string",
-      "description": "Relative path from base folder to data folder.",
-      "minLength": 1
+    "security": {
+      "type": "object",
+      "title": "Security",
+      "properties": {
+        "whitelistedExtensions": {
+          "type": "array",
+          "description": "List of extensions explicitly allowed to load.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "blacklistedExtensions": {
+          "type": "array",
+          "description": "List of extensions explicitly blocked from loading.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "excludedDirs": {
+          "type": "array",
+          "description": "List of directories excluded from extension discovery.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
     },
-    "logsDir": {
-      "type": "string",
-      "description": "Relative path from base folder to logs folder.",
-      "minLength": 1
-    },
-    "logSeverity": {
-      "type": "string",
-      "description": "Log severity.",
-      "enum": ["none", "fatal", "error", "warning", "info", "debug", "trace"]
-    },
-    "preferOwnSymbols": {
-      "type": "boolean",
-      "description": "Flag indicating if the modules should prefer its own symbols over shared symbols."
+    "logging": {
+      "type": "object",
+      "title": "Logging",
+      "properties": {
+        "severity": {
+          "type": "string",
+          "description": "Log severity.",
+          "enum": [
+            "none",
+            "fatal",
+            "error",
+            "warning",
+            "info",
+            "debug",
+            "trace"
+          ],
+          "default": "error"
+        },
+        "printReport": {
+          "type": "boolean",
+          "description": "Print the module loading report.",
+          "default": false
+        },
+        "printLoadOrder": {
+          "type": "boolean",
+          "description": "Print the module load order.",
+          "default": false
+        },
+        "printDependencyGraph": {
+          "type": "boolean",
+          "description": "Print the module dependency graph.",
+          "default": false
+        },
+        "printDigraphDot": {
+          "type": "boolean",
+          "description": "Print the dependency graph in DOT format.",
+          "default": false
+        },
+        "exportDigraphDot": {
+          "type": "string",
+          "description": "Path to export the dependency graph in DOT format.",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
