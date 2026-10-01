@@ -36,15 +36,11 @@ foreach(PLUGIFY_SCHEMA_FILE IN LISTS PLUGIFY_SCHEMA_FILES)
     string(REGEX REPLACE "\\.schema\\.json$" "" PLUGIFY_SCHEMA_NAME "${PLUGIFY_SCHEMA_BASENAME}")
     string(MAKE_C_IDENTIFIER "${PLUGIFY_SCHEMA_NAME}" PLUGIFY_SCHEMA_NAME)
 
-    file(READ "${PLUGIFY_SCHEMA_FILE}" PLUGIFY_SCHEMA_TEXT)
+    # Convert text to C++ hex array initializer
+    file(READ "${PLUGIFY_SCHEMA_FILE}" PLUGIFY_SCHEMA_HEX HEX)
 
-    # A raw string literal ends at its delimiter, so a schema containing one would
-    # break out of the literal. Nothing has a reason to, but emitting code that is
-    # silently wrong is worse than failing the build.
-    string(FIND "${PLUGIFY_SCHEMA_TEXT}" ")PLUGIFY_SCHEMA\"" PLUGIFY_SCHEMA_COLLISION)
-    if(NOT PLUGIFY_SCHEMA_COLLISION EQUAL -1)
-        message(FATAL_ERROR "${PLUGIFY_SCHEMA_BASENAME} contains the raw string delimiter )PLUGIFY_SCHEMA\"")
-    endif()
+    # Format '01234567' into '0x01, 0x23, 0x45, 0x67, '
+    string(REGEX REPLACE "(..)" "0x\\1, " PLUGIFY_SCHEMA_HEX "${PLUGIFY_SCHEMA_HEX}")
 
     if(NOT PLUGIFY_SCHEMA_DECLARATIONS STREQUAL "")
         string(APPEND PLUGIFY_SCHEMA_DECLARATIONS "\n\n")
@@ -52,9 +48,9 @@ foreach(PLUGIFY_SCHEMA_FILE IN LISTS PLUGIFY_SCHEMA_FILES)
 
     string(APPEND PLUGIFY_SCHEMA_DECLARATIONS
             "\t\t// ${PLUGIFY_SCHEMA_BASENAME}\n"
-            "\t\tinline constexpr const Schema ${PLUGIFY_SCHEMA_NAME} ="
-            " { \"${PLUGIFY_SCHEMA_NAME}\","
-            " R\"PLUGIFY_SCHEMA(${PLUGIFY_SCHEMA_TEXT})PLUGIFY_SCHEMA\" };")
+            "\t\tinline constexpr const char ${PLUGIFY_SCHEMA_NAME}_data[] = { ${PLUGIFY_SCHEMA_HEX}0x00 };\n"
+            "\t\tinline constexpr const Schema ${PLUGIFY_SCHEMA_NAME} = { \"${PLUGIFY_SCHEMA_NAME}\", ${PLUGIFY_SCHEMA_NAME}_data };"
+    )
 
     message(VERBOSE "Embedding ${PLUGIFY_SCHEMA_BASENAME} as plugify::schemas::${PLUGIFY_SCHEMA_NAME}")
 endforeach()
