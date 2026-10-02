@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.1.1](https://github.com/untrustedmodders/plugify/compare/v3.1.0...v3.1.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* add bigobj attribute to plugify lib for MSVC ([3f1ed95](https://github.com/untrustedmodders/plugify/commit/3f1ed955ede359de028ce988863874ea2a302301)), closes [#28](https://github.com/untrustedmodders/plugify/issues/28)
+* MSVC C2026 error for embedded schemas ([5f14c62](https://github.com/untrustedmodders/plugify/commit/5f14c62d8699c71f4581ce49bf0f0f704e9da881)), closes [#26](https://github.com/untrustedmodders/plugify/issues/26)
+* update config schema ([6e8cf17](https://github.com/untrustedmodders/plugify/commit/6e8cf17752946008ef54b1daf615815fa53ce46d))
+* update ignore file with ds store ([62f3d8b](https://github.com/untrustedmodders/plugify/commit/62f3d8b3d35f9321f385f21a3470101478cd1039))
+
 ## [3.1.0](https://github.com/untrustedmodders/plugify/compare/v3.0.0...v3.1.0) (2026-08-16)
 
 
