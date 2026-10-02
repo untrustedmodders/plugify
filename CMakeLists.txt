@@ -202,6 +202,10 @@ if(LINUX)
     target_compile_definitions(${PROJECT_NAME} PUBLIC _GLIBCXX_USE_CXX11_ABI=$<IF:$<BOOL:${PLUGIFY_USE_ABI0}>,0,1>)
 endif()
 
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+endif()
+
 if(PLUGIFY_BUILD_SHARED_LIB AND NOT WIN32)
     if(APPLE)
         #target_link_options(${PROJECT_NAME} PRIVATE "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/sym/exported_symbols.lds")
