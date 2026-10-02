@@ -17,3 +17,6 @@ CMakeUserPresets.json
 /vcpkg_installed
 /vcpkg.json
 /vcpkg-configuration.json
+
+# other
+.DS_Store
