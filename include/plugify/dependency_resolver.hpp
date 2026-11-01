@@ -32,7 +32,7 @@ namespace plugify {
 			if (suggestedFixes && !suggestedFixes->empty()) {
 				std::format_to(it, "\n  Suggestions:");
 				for (const auto& fix : *suggestedFixes) {
-					std::format_to(it, "\n    - ", fix);
+					std::format_to(it, "\n    - {}", fix);
 				}
 			}
 
