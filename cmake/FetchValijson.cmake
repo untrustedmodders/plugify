@@ -8,7 +8,6 @@ FetchContent_Declare(
         GIT_TAG ${PLUGIFY_VALIJSON_TAG}
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
-        PATCH_COMMAND git reset --hard && git apply --ignore-whitespace --whitespace=nowarn --reject ${CMAKE_CURRENT_SOURCE_DIR}/patches/valijson.patch
         GIT_SUBMODULES ""
         EXCLUDE_FROM_ALL
 )

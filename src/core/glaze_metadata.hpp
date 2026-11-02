@@ -2,12 +2,16 @@
 
 #include <glaze/glaze.hpp>
 
+#include <valijson/exceptions.hpp>
+#include <valijson/schema.hpp>
+#include <valijson/schema_parser.hpp>
+#include <valijson/validator.hpp>
+#include <valijson/adapters/glaze_adapter.hpp>
+
 #include "plugify/config.hpp"
 #include "plugify/logger.hpp"
 #include "plugify/manifest.hpp"
 #include "plugify/schemas.hpp"
-
-#include "core/glaze_adapter.hpp"
 
 #include "core/conflict_impl.hpp"
 #include "core/dependency_impl.hpp"

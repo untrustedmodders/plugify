@@ -5,6 +5,7 @@ message(STATUS "Pulling and configuring tracy")
 set(TRACY_NO_CRASH_HANDLER ON CACHE BOOL "" FORCE)
 set(TRACY_ON_DEMAND ON CACHE BOOL "" FORCE)
 set(TRACY_STATIC ON CACHE BOOL "" FORCE)
+set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
         tracy
