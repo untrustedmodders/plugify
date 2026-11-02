@@ -549,7 +549,7 @@ void LibsolvDependencyResolver::ReportUnmetDependencies(
 				);
 			}
 
-			resolution.issues[extId].push_back(std::move(issue));
+			resolution.issues[issue.affectedExtension].push_back(std::move(issue));
 		}
 	}
 }
@@ -599,7 +599,6 @@ void LibsolvDependencyResolver::RunSolver(ResolutionReport& resolution) {
 // ============================================================================
 // Problem Processing
 // ============================================================================
-
 
 void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, ResolutionReport& resolution) {
 	Id problemCount = static_cast<Id>(solver_problem_count(solver));

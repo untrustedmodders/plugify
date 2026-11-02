@@ -46,6 +46,14 @@ namespace plugify {
 			}
 		};
 
+		struct QueueDeleter {
+			void operator()(Queue* q) const {
+				if (q) {
+					queue_free(q);
+				}
+			}
+		};
+
 		// libsolv's Queue owns a heap buffer but is a plain struct itself, so it is
 		// initialized and freed rather than constructed and destroyed. Wrapping it in
 		// a unique_ptr would claim ownership of a stack address; this says what is
