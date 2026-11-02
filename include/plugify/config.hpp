@@ -66,8 +66,21 @@ namespace plugify {
 			}
 
 			void ResolveRelativePaths() {
+				if (baseDir.empty()) {
+					return;
+				}
+
+				// Anchor the base itself first. This runs after every merge and
+				// again from Build(), and while the base stays relative so do the
+				// paths under it, so each call would prepend it once more and turn
+				// 'res/configs' into 'res/res/configs'.
+				std::error_code ec;
+				if (auto absolute = std::filesystem::absolute(baseDir, ec); !ec) {
+					baseDir = absolute.lexically_normal();
+				}
+
 				auto make_absolute = [&](std::filesystem::path& path) {
-					if (!path.empty() && path.is_relative() && !baseDir.empty()) {
+					if (!path.empty() && path.is_relative()) {
 						path = (baseDir / path).lexically_normal();
 					}
 				};

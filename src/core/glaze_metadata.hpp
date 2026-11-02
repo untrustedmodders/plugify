@@ -228,6 +228,33 @@ struct glz::meta<plugify::CallConv> {
 	);
 };
 
+template <>
+struct glz::meta<plugify::Severity> {
+	using T = plugify::Severity;
+	static constexpr auto value = enumerate(
+		"all", T::Unknown,
+		"trace", T::Trace,
+		"debug", T::Debug,
+		"info", T::Info,
+		"warning", T::Warning,
+		"error", T::Error,
+		"fatal", T::Fatal
+	);
+};
+
+template <>
+struct glz::meta<plugify::Config> {
+	using T = plugify::Config;
+	static constexpr auto value = object(
+		"$schema", skip{},
+
+		"paths", &T::paths,
+		"loading", &T::loading,
+		"security", &T::security,
+		"logging", &T::logging
+	);
+};
+
 namespace glz {
 #if PLUGIFY_CPP_VERSION > 202002L
 	// std::chrono::duration

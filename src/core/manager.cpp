@@ -158,19 +158,19 @@ public:
 
 			if (config.logging.printDigraphDot) {
 				auto graph = GenerateDependencyGraphDOT();
-				logger->Log(graph, Severity::Info);
 
 				const auto& exportPath = config.logging.exportDigraphDot;
-				if (!exportPath.empty()) {
-					auto writeResult = fileSystem->WriteTextFile(exportPath, graph);
-					if (!writeResult) {
-						logger->Log(std::format("Export DOT: {}", writeResult.error()), Severity::Error);
-					} else {
-						logger->Log(
-							std::format("Export DOT: {}", plg::as_string(exportPath)),
-							Severity::Info
-						);
-					}
+				if (exportPath.empty()) {
+					// Nowhere to put it, so the log is the only way to get it out
+					logger->Log(graph, Severity::Info);
+				} else if (auto result = fileSystem->WriteTextFile(exportPath, graph); !result) {
+					logger->Log(std::format("Export DOT: {}", result.error()), Severity::Error);
+					logger->Log(graph, Severity::Info);
+				} else {
+					logger->Log(
+						std::format("Export DOT: {}", plg::as_string(exportPath)),
+						Severity::Info
+					);
 				}
 			}
 		}
@@ -318,7 +318,17 @@ public:
 			// List contents of current directory
 			auto entries = fileSystem->ListDirectory(currentDir);
 			if (!entries) {
-				// Log error but continue processing other directories
+				// Keep going through the other directories, but say so: an
+				// unreadable extensions directory otherwise looks exactly like an
+				// empty one, and the user is left wondering where their plugin went.
+				logger->Log(
+					std::format(
+						"Skipped '{}': {}",
+						plg::as_string(currentDir),
+						entries.error()
+					),
+					Severity::Warning
+				);
 				continue;
 			}
 
@@ -497,7 +507,17 @@ public:
 	}
 
 #pragma region Reports
-	const size_t INITIAL_BUFFER_SIZE = 4096;
+	static constexpr size_t INITIAL_BUFFER_SIZE = 4096;
+
+	// Name of one of our own extensions. ToString() would answer from a registry
+	// shared by the whole process, where ids from another Plugify instance collide
+	// with ours, and anything it has not seen comes back as "<unknown>".
+	std::string_view NameOf(UniqueId id) const {
+		auto it = std::ranges::find_if(extensions, [&](const Extension& e) {
+			return e.GetId() == id;
+		});
+		return it != extensions.end() ? std::string_view(it->GetName()) : "<unknown>";
+	}
 
 	std::string GenerateLoadOrder() const {
 		std::string buffer;
@@ -514,7 +534,7 @@ public:
 
 		for (size_t i = 0; i < loadOrder.size(); ++i) {
 			const auto& id = loadOrder[i];
-			std::format_to(it, "{:3}: {} (id={})\n", i, ToString(id), id);
+			std::format_to(it, "{:3}: {} (id={})\n", i, NameOf(id), id);
 		}
 
 		std::format_to(it, "\n");
@@ -535,7 +555,7 @@ public:
 		}
 
 		for (const auto& [id, deps] : depGraph) {
-			std::format_to(it, "{} (id={}) -> ", ToString(id), id);
+			std::format_to(it, "{} (id={}) -> ", NameOf(id), id);
 			if (deps.empty()) {
 				std::format_to(it, "[]\n");
 				continue;
@@ -547,7 +567,7 @@ public:
 				if (!first) {
 					std::format_to(it, ", ");
 				}
-				std::format_to(it, "{} (id={})", ToString(d), d);
+				std::format_to(it, "{} (id={})", NameOf(d), d);
 				first = false;
 			}
 			std::format_to(it, "]\n");

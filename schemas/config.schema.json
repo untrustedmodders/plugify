@@ -6,6 +6,10 @@
   "title": "Config",
   "required": [],
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema, used by editors for completion and validation. Ignored by the loader."
+    },
     "paths": {
       "type": "object",
       "title": "Paths",
@@ -126,15 +130,15 @@
       "properties": {
         "severity": {
           "type": "string",
-          "description": "Log severity.",
+          "description": "Lowest severity that gets logged; 'all' also lets unclassified messages through.",
           "enum": [
-            "none",
-            "fatal",
-            "error",
-            "warning",
-            "info",
+            "all",
+            "trace",
             "debug",
-            "trace"
+            "info",
+            "warning",
+            "error",
+            "fatal"
           ],
           "default": "error"
         },
