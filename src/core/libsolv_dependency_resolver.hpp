@@ -85,12 +85,14 @@ namespace plugify {
 
 		// Resolution
 		void ExcludeConflictDeclarers(std::span<const Extension> extensions, ResolutionReport& resolution);
+		void ExcludeObsoletedExtensions(std::span<const Extension> extensions, ResolutionReport& resolution);
 		void RunSolver(ResolutionReport& resolution);
 		void ProcessSolverProblems(Solver* solver, ResolutionReport& resolution);
 		void AddUnsatisfiedRequires(ResolutionReport& resolution);
 		std::string DescribeInstalledVersions(Id dep);
 		std::vector<std::string> ExtractSolutions(Solver* solver, Id problemId);
 		void ComputeInstallationOrder(Transaction* trans, ResolutionReport& resolution);
+		void ReportOrderCycles(Transaction* trans, ResolutionReport& resolution);
 
 	private:
 		std::shared_ptr<ILogger> _logger;

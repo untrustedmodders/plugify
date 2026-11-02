@@ -276,6 +276,16 @@ namespace plugify {
 					auto& ext = it->second;
 					ext.SetState(ExtensionState::Resolved);
 
+					// Resolved is not the same as nothing to say: an order cycle leaves
+					// every member loadable but unordered, and that belongs on them.
+					if (auto found = report.issues.find(id); found != report.issues.end()) {
+						for (const auto& issue : found->second) {
+							if (!issue.isBlocking) {
+								ext.AddWarning(issue.GetDetailedDescription());
+							}
+						}
+					}
+
 					result.push_back(std::move(ext));
 					idToExtension.erase(it);
 				}

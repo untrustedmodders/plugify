@@ -22,8 +22,9 @@ ResolutionReport LibsolvDependencyResolver::Resolve(std::span<const Extension> e
 	// Step 2: Add all extensions to the pool
 	AddExtensionsToPool(extensions);
 
-	// Step 3: Settle the conflicts the manifests decide themselves
+	// Step 3: Settle what the manifests decide between themselves
 	ExcludeConflictDeclarers(extensions, resolution);
+	ExcludeObsoletedExtensions(extensions, resolution);
 
 	// Step 4: Run the solver
 	RunSolver(resolution);
@@ -58,6 +59,15 @@ static void debug_callback([[maybe_unused]] Pool* pool, void* data, int type, co
 }
 
 void LibsolvDependencyResolver::InitializePool() {
+	// Resolve can run again on the same resolver - the manager re-initializes on
+	// reload - and everything below is keyed by ids that belong to the pool being
+	// replaced. Carrying them over hands the new solver a solvable id from a freed
+	// pool as soon as the extension count drops, which reads off the end of the
+	// solvables array.
+	_extensionToSolvableId.clear();
+	_solvableIdToExtension.clear();
+	_excluded.clear();
+
 	_pool.reset(pool_create());
 
 	pool_setdebugcallback(_pool.get(), debug_callback, _logger.get());
@@ -300,6 +310,77 @@ void LibsolvDependencyResolver::ExcludeConflictDeclarers(
 	}
 }
 
+// `obsoletes` says "I replace X", so the side that steps aside is X - the mirror
+// of a conflict, where the side that declares it is the one that loses. libsolv
+// can only act on an obsoletes against a package that is already installed, and
+// nothing here ever is: no installed repo is ever set, so the entry degrades into
+// a plain conflict and takes out both sides. Settle it here instead.
+void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
+	std::span<const Extension> extensions,
+	ResolutionReport& resolution
+) {
+	// Collected and applied in one go at the end: while the walk is running
+	// `_excluded` holds the conflict losers only, so two manifests obsoleting each
+	// other take each other out instead of one of them surviving by being walked
+	// first.
+	std::vector<UniqueId> obsoleted;
+
+	for (const auto& extension : extensions) {
+		const auto& manifest = extension.GetManifest();
+		if (!manifest.obsoletes || manifest.obsoletes->empty()) {
+			continue;
+		}
+
+		// Nothing steps aside for an extension that lost a conflict itself
+		if (_excluded.contains(extension.GetId())) {
+			continue;
+		}
+
+		Id solvableId = _extensionToSolvableId[extension.GetId()];
+
+		for (const auto& obsolete : *manifest.obsoletes) {
+			const auto& [obsoleteName, constraints, reason] = *obsolete._impl;
+
+			Id dep = MakeDepConstraint(obsoleteName, constraints);
+
+			Id providers = pool_whatprovides(_pool.get(), dep);
+			if (providers == 0) {
+				continue;
+			}
+
+			for (Id* pp = _pool->whatprovidesdata + providers; *pp; ++pp) {
+				// Obsoleting your own name is how a manifest supersedes older copies of
+				// itself, not a reason for this one to step aside
+				if (*pp == solvableId) {
+					continue;
+				}
+
+				auto it = _solvableIdToExtension.find(*pp);
+				if (it == _solvableIdToExtension.end()) {
+					continue;
+				}
+
+				DependencyIssue issue;
+				issue.affectedExtension = it->second;
+				issue.involvedExtension = extension.GetId();
+				issue.problem = "Obsolete";
+				issue.description = std::format(
+					"replaced by {} {}, which obsoletes '{}'{}",
+					manifest.name,
+					manifest.version.to_string(),
+					pool_dep2str(_pool.get(), dep),
+					reason ? std::format(" ({})", *reason) : std::string()
+				);
+
+				resolution.issues[it->second].push_back(std::move(issue));
+				obsoleted.push_back(it->second);
+			}
+		}
+	}
+
+	_excluded.insert(obsoleted.begin(), obsoleted.end());
+}
+
 void LibsolvDependencyResolver::RunSolver(ResolutionReport& resolution) {
 	// Create solver
 	std::unique_ptr<Solver, SolverDeleter> solver(solver_create(_pool.get()));
@@ -530,7 +611,7 @@ std::vector<std::string> LibsolvDependencyResolver::ExtractSolutions(Solver* sol
 
 void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, ResolutionReport& resolution) {
 	// Get installation order from transaction
-	transaction_order(trans, 0);
+	transaction_order(trans, SOLVER_TRANSACTION_KEEP_ORDERCYCLES);
 
 	size_t count = static_cast<size_t>(trans->steps.count);
 	resolution.loadOrder.reserve(count);
@@ -582,4 +663,57 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 	}
 
 	resolution.isLoadOrderValid = true;	 // Since libsolv provides a valid transaction order
+
+	ReportOrderCycles(trans, resolution);
+}
+
+// libsolv breaks an order cycle on its own and then keeps quiet about it, so one
+// member ends up started before the dependency it asked for and nobody is told.
+// Every member is installed - only the order between them cannot be honoured - so
+// this is a warning rather than a reason to keep them out, and the chain is what
+// the manifest author needs in order to fix it.
+void LibsolvDependencyResolver::ReportOrderCycles(Transaction* trans, ResolutionReport& resolution) {
+	Queue cycleQueue, memberQueue;
+	std::unique_ptr<Queue, QueueDeleter> cycles(&cycleQueue), members(&memberQueue);
+	queue_init(cycles.get());
+	queue_init(members.get());
+
+	// Below NORMAL the edge that was broken is not a requirement in the first place
+	transaction_order_get_cycleids(trans, cycles.get(), SOLVER_ORDERCYCLE_NORMAL);
+
+	for (int i = 0; i < cycles->count; ++i) {
+		transaction_order_get_cycle(trans, cycles->elements[i], members.get());
+		if (members->count == 0) {
+			continue;
+		}
+
+		std::vector<std::string_view> names;
+		names.reserve(static_cast<size_t>(members->count));
+		for (int j = 0; j < members->count; ++j) {
+			Solvable* s = pool_id2solvable(_pool.get(), members->elements[j]);
+			names.emplace_back(pool_id2str(_pool.get(), s->name));
+		}
+
+		// Closed back on the first name, so that the chain reads as a cycle
+		auto chain = std::format("{} -> {}", plg::join(names, " -> "), names.front());
+
+		_logger->Log(
+			std::format("Dependency cycle: {}; the order between them is arbitrary", chain),
+			Severity::Warning
+		);
+
+		for (int j = 0; j < members->count; ++j) {
+			auto it = _solvableIdToExtension.find(members->elements[j]);
+			if (it == _solvableIdToExtension.end()) {
+				continue;
+			}
+
+			DependencyIssue issue;
+			issue.affectedExtension = it->second;
+			issue.problem = "Dependency cycle";
+			issue.description = std::format("{}; the order between them is arbitrary", chain);
+			issue.isBlocking = false;
+			resolution.issues[it->second].push_back(std::move(issue));
+		}
+	}
 }
