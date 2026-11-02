@@ -511,7 +511,10 @@ public:
 
 	std::string_view NameOf(UniqueId id) const {
 		auto it = std::ranges::find(extensions, id, &Extension::GetId);
-		return it != extensions.end() ? it->GetName() : "<unknown>";
+		// Both arms have to be views already. Left as a std::string against a
+		// literal, the conditional's composite type is std::string, so it copies
+		// the name into a temporary and the view returned dangles.
+		return it != extensions.end() ? std::string_view(it->GetName()) : "<unknown>";
 	}
 
 	std::string GenerateLoadOrder() const {

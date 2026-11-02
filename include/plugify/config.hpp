@@ -44,27 +44,6 @@ namespace plugify {
 			std::filesystem::path logsDir = "logs";
 			std::filesystem::path cacheDir = "cache";
 
-			// Check if paths have non-default values
-			bool HasCustomExtensionsDir() const {
-				return extensionsDir != "extensions";
-			}
-
-			bool HasCustomConfigsDir() const {
-				return configsDir != "configs";
-			}
-
-			bool HasCustomDataDir() const {
-				return dataDir != "data";
-			}
-
-			bool HasCustomLogsDir() const {
-				return logsDir != "logs";
-			}
-
-			bool HasCustomCacheDir() const {
-				return cacheDir != "cache";
-			}
-
 			void ResolveRelativePaths() {
 				if (baseDir.empty()) {
 					return;
@@ -101,26 +80,6 @@ namespace plugify {
 			std::chrono::milliseconds exportTimeout{ 100 };
 			std::chrono::milliseconds startTimeout{ 250 };
 
-			// Check if values are non-default
-			bool HasCustomPreferOwnSymbols() const {
-				return preferOwnSymbols != false;
-			}
-
-			bool HasCustomMaxConcurrentLoads() const {
-				return maxConcurrentLoads != 4;
-			}
-
-			bool HasCustomLoadTimeout() const {
-				return loadTimeout != std::chrono::milliseconds{ 500 };
-			}
-
-			bool HasCustomExportTimeout() const {
-				return exportTimeout != std::chrono::milliseconds{ 100 };
-			}
-
-			bool HasCustomStartTimeout() const {
-				return startTimeout != std::chrono::milliseconds{ 250 };
-			}
 		} loading{};
 
 		// Security configuration
@@ -150,26 +109,6 @@ namespace plugify {
 			bool printDependencyGraph = false;
 			bool printDigraphDot = false;
 			std::filesystem::path exportDigraphDot;
-
-			bool HasCustomSeverity() const {
-				return severity != DefaultVerbosity;
-			}
-
-			bool HasCustomPrintReport() const {
-				return printReport != false;
-			}
-
-			bool HasCustomPrintLoadOrder() const {
-				return printLoadOrder != false;
-			}
-
-			bool HasCustomPrintDependencyGraph() const {
-				return printDependencyGraph != false;
-			}
-
-			bool HasCustomPrintDigraphDot() const {
-				return printDigraphDot != false;
-			}
 
 			bool HasExportPath() const {
 				return !exportDigraphDot.empty();

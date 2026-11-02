@@ -2,155 +2,107 @@
 
 using namespace plugify;
 
+namespace {
+	// A merge has to tell "this source asked for it" from "this source left it
+	// alone", and the fields are plain values rather than optionals - so anything
+	// still equal to a freshly built Config counts as untouched. Comparing against
+	// one instance of it keeps every default written down once, in the member
+	// initializers, rather than a second time per field here.
+	const Config& Defaults() {
+		static const Config defaults;
+		return defaults;
+	}
+}
+
 void Config::MergeFrom(const Config& other, ConfigSource source) {
+	const Config& defaults = Defaults();
+
 	// Only merge if the new source has equal or higher priority
 
-	// Merge Paths
 	if (source >= _sources.paths) {
-		bool pathsChanged = false;
+		bool changed = false;
+		auto take = [&](auto field) {
+			if (other.paths.*field != defaults.paths.*field) {
+				paths.*field = other.paths.*field;
+				changed = true;
+			}
+		};
 
-		// Always take baseDir if provided
-		if (!other.paths.baseDir.empty()) {
-			paths.baseDir = other.paths.baseDir;
-			pathsChanged = true;
-		}
+		take(&Paths::baseDir);
+		take(&Paths::extensionsDir);
+		take(&Paths::configsDir);
+		take(&Paths::dataDir);
+		take(&Paths::logsDir);
+		take(&Paths::cacheDir);
 
-		// Take other paths if they're customized
-		if (other.paths.HasCustomExtensionsDir()) {
-			paths.extensionsDir = other.paths.extensionsDir;
-			pathsChanged = true;
-		}
-		if (other.paths.HasCustomConfigsDir()) {
-			paths.configsDir = other.paths.configsDir;
-			pathsChanged = true;
-		}
-		if (other.paths.HasCustomDataDir()) {
-			paths.dataDir = other.paths.dataDir;
-			pathsChanged = true;
-		}
-		if (other.paths.HasCustomLogsDir()) {
-			paths.logsDir = other.paths.logsDir;
-			pathsChanged = true;
-		}
-		if (other.paths.HasCustomCacheDir()) {
-			paths.cacheDir = other.paths.cacheDir;
-			pathsChanged = true;
-		}
-
-		if (pathsChanged) {
+		if (changed) {
 			_sources.paths = source;
 		}
 	}
 
-	// Merge Loading
 	if (source >= _sources.loading) {
-		bool loadingChanged = false;
+		bool changed = false;
+		auto take = [&](auto field) {
+			if (other.loading.*field != defaults.loading.*field) {
+				loading.*field = other.loading.*field;
+				changed = true;
+			}
+		};
 
-		if (other.loading.HasCustomPreferOwnSymbols()) {
-			loading.preferOwnSymbols = other.loading.preferOwnSymbols;
-			loadingChanged = true;
-		}
-		if (other.loading.HasCustomMaxConcurrentLoads()) {
-			loading.maxConcurrentLoads = other.loading.maxConcurrentLoads;
-			loadingChanged = true;
-		}
-		if (other.loading.HasCustomLoadTimeout()) {
-			loading.loadTimeout = other.loading.loadTimeout;
-			loadingChanged = true;
-		}
-		if (other.loading.HasCustomExportTimeout()) {
-			loading.exportTimeout = other.loading.exportTimeout;
-			loadingChanged = true;
-		}
-		if (other.loading.HasCustomStartTimeout()) {
-			loading.startTimeout = other.loading.startTimeout;
-			loadingChanged = true;
-		}
+		take(&Loading::preferOwnSymbols);
+		take(&Loading::maxConcurrentLoads);
+		take(&Loading::loadTimeout);
+		take(&Loading::exportTimeout);
+		take(&Loading::startTimeout);
 
-		if (loadingChanged) {
+		if (changed) {
 			_sources.loading = source;
 		}
 	}
 
-	// Merge Security
 	if (source >= _sources.security) {
-		bool securityChanged = false;
+		bool changed = false;
+		// An override replaces a set outright; anything below it adds to one.
+		bool replace = source == ConfigSource::Override;
+		auto take = [&](auto field) {
+			const auto& from = other.security.*field;
+			if (from == defaults.security.*field) {
+				return;
+			}
+			if (replace) {
+				security.*field = from;
+			} else {
+				(security.*field).insert(from.begin(), from.end());
+			}
+			changed = true;
+		};
 
-		// For sets, we have different merge strategies
-		if (source == ConfigSource::Override) {
-			// Override replaces entirely if non-empty
-			if (other.security.HasWhitelist()) {
-				security.whitelistedExtensions = other.security.whitelistedExtensions;
-				securityChanged = true;
-			}
-			if (other.security.HasBlacklist()) {
-				security.blacklistedExtensions = other.security.blacklistedExtensions;
-				securityChanged = true;
-			}
-			if (other.security.HasExcluded()) {
-				security.excludedDirs = other.security.excludedDirs;
-				securityChanged = true;
-			}
-		} else {
-			// Other sources merge/append
-			if (other.security.HasWhitelist()) {
-				security.whitelistedExtensions.insert(
-					other.security.whitelistedExtensions.begin(),
-					other.security.whitelistedExtensions.end()
-				);
-				securityChanged = true;
-			}
-			if (other.security.HasBlacklist()) {
-				security.blacklistedExtensions.insert(
-					other.security.blacklistedExtensions.begin(),
-					other.security.blacklistedExtensions.end()
-				);
-				securityChanged = true;
-			}
-			if (other.security.HasExcluded()) {
-				security.excludedDirs.insert(
-					other.security.excludedDirs.begin(),
-					other.security.excludedDirs.end()
-				);
-				securityChanged = true;
-			}
-		}
+		take(&Security::whitelistedExtensions);
+		take(&Security::blacklistedExtensions);
+		take(&Security::excludedDirs);
 
-		if (securityChanged) {
+		if (changed) {
 			_sources.security = source;
 		}
 	}
 
-	// Merge Logging
 	if (source >= _sources.logging) {
-		bool loggingChanged = false;
+		bool changed = false;
+		auto take = [&](auto field) {
+			if (other.logging.*field != defaults.logging.*field) {
+				logging.*field = other.logging.*field;
+				changed = true;
+			}
+		};
 
-		if (other.logging.HasCustomSeverity()) {
-			logging.severity = other.logging.severity;
-			loggingChanged = true;
-		}
-		if (other.logging.HasCustomPrintReport()) {
-			logging.printReport = other.logging.printReport;
-			loggingChanged = true;
-		}
-		if (other.logging.HasCustomPrintLoadOrder()) {
-			logging.printLoadOrder = other.logging.printLoadOrder;
-			loggingChanged = true;
-		}
-		if (other.logging.HasCustomPrintDependencyGraph()) {
-			logging.printDependencyGraph = other.logging.printDependencyGraph;
-			loggingChanged = true;
-		}
-		if (other.logging.HasCustomPrintDigraphDot()) {
-			logging.printDigraphDot = other.logging.printDigraphDot;
-			loggingChanged = true;
-		}
-		if (other.logging.HasExportPath()) {
-			logging.exportDigraphDot = other.logging.exportDigraphDot;
-			loggingChanged = true;
-		}
+		take(&Logging::severity);
+		take(&Logging::printReport);
+		take(&Logging::printLoadOrder);
+		take(&Logging::printDependencyGraph);
+		take(&Logging::printDigraphDot);
+		take(&Logging::exportDigraphDot);
 
-		if (loggingChanged) {
+		if (changed) {
 			_sources.logging = source;
 		}
 	}
