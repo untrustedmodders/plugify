@@ -23,6 +23,7 @@ ResolutionReport LibsolvDependencyResolver::Resolve(std::span<const Extension> e
 	AddExtensionsToPool(extensions);
 
 	// Step 3: Settle what the manifests decide between themselves
+	ExcludeSupersededCopies(extensions, resolution);
 	ExcludeConflictDeclarers(extensions, resolution);
 	ExcludeObsoletedExtensions(extensions, resolution);
 	ReportUnmetDependencies(extensions, resolution);
@@ -404,6 +405,51 @@ void LibsolvDependencyResolver::Exclude(ResolutionReport& resolution, Dependency
 	resolution.issues[issue.affectedExtension].push_back(std::move(issue));
 }
 
+// Several copies of one extension in the extensions directory is a thing that
+// happens by itself - the old folder left behind by an update - and the solver
+// answers it with "cannot install both", which is true and of no use. One name is
+// one extension, so the newest version of it loads and the older copies step
+// aside. The comparison is plg::version's own: this choice is ours to make rather
+// than the pool's, so it follows semver instead of rpm, and a release outranks
+// its own prereleases.
+void LibsolvDependencyResolver::ExcludeSupersededCopies(
+	std::span<const Extension> extensions,
+	ResolutionReport& resolution
+) {
+	std::unordered_map<std::string_view, const Extension*> newest;
+	newest.reserve(extensions.size());
+
+	for (const auto& extension : extensions) {
+		// Equal versions leave nothing to choose by, so the first one discovered
+		// keeps the name and the outcome is at least stable
+		auto [it, inserted] = newest.try_emplace(extension.GetName(), &extension);
+		if (!inserted && extension.GetVersion() > it->second->GetVersion()) {
+			it->second = &extension;
+		}
+	}
+
+	// A second walk, so that every copy is told about the one that actually won
+	// rather than about whichever was ahead when it was reached
+	for (const auto& extension : extensions) {
+		const Extension* kept = newest[extension.GetName()];
+		if (kept == &extension) {
+			continue;
+		}
+
+		DependencyIssue issue;
+		issue.affectedExtension = extension.GetId();
+		issue.involvedExtension = kept->GetId();
+		issue.problem = "Superseded";
+		issue.description = std::format(
+			"another copy of '{}' is installed as version {}, and that is the one that loads",
+			extension.GetName(),
+			kept->GetVersionString()
+		);
+
+		Exclude(resolution, std::move(issue));
+	}
+}
+
 // A `conflicts` entry is one-sided in intent - "do not load me together with X" -
 // but libsolv knows only the symmetric kind. With both sides queued as hard
 // installs the pair is simply unsolvable, and the partial transaction left behind
@@ -525,7 +571,14 @@ void LibsolvDependencyResolver::ReportUnmetDependencies(
 				continue;
 			}
 
-			if (!Matches(extensions, depName, constraints).empty()) {
+			auto providers = Matches(extensions, depName, constraints);
+
+			// A provider that is here but not going to load - a superseded copy, or
+			// one that lost a conflict - does not answer the requirement
+			const bool satisfied = std::ranges::any_of(providers, [this](const Extension* provider) {
+				return !_locked.contains(provider->GetId());
+			});
+			if (satisfied) {
 				continue;
 			}
 
@@ -536,17 +589,23 @@ void LibsolvDependencyResolver::ReportUnmetDependencies(
 
 			auto wanted = DescribeDependency(depName, constraints);
 
-			// Tell "not installed" from "installed, wrong version": saying nothing
-			// provides 'foo >=2.1.2' reads as if foo were missing altogether.
-			auto installed = DescribeInstalledVersions(extensions, depName);
-			if (installed.empty()) {
-				issue.description = std::format("nothing installed provides '{}'", wanted);
-			} else {
+			// Three different stories, and the one about a version is the easiest to
+			// tell wrongly: saying nothing provides 'foo >=2.1.2' reads as if foo
+			// were missing altogether.
+			if (!providers.empty()) {
+				issue.description = std::format(
+					"'{}' is satisfied only by a copy that is not loading",
+					wanted
+				);
+			} else if (auto installed = DescribeInstalledVersions(extensions, depName);
+					   !installed.empty()) {
 				issue.description = std::format(
 					"'{}' is not satisfied by the installed {}",
 					wanted,
 					installed
 				);
+			} else {
+				issue.description = std::format("nothing installed provides '{}'", wanted);
 			}
 
 			resolution.issues[issue.affectedExtension].push_back(std::move(issue));

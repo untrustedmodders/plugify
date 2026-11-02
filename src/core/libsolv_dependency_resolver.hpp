@@ -112,6 +112,7 @@ namespace plugify {
 
 		// Resolution
 		void Exclude(ResolutionReport& resolution, DependencyIssue issue);
+		void ExcludeSupersededCopies(std::span<const Extension> extensions, ResolutionReport& resolution);
 		void ExcludeConflictDeclarers(std::span<const Extension> extensions, ResolutionReport& resolution);
 		void ExcludeObsoletedExtensions(std::span<const Extension> extensions, ResolutionReport& resolution);
 		void ReportUnmetDependencies(std::span<const Extension> extensions, ResolutionReport& resolution);
