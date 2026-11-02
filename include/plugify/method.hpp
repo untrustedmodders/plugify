@@ -60,16 +60,26 @@ namespace plugify {
 
 	/**
 	 * @struct MethodTable
-	 * @brief Represents a table of method availability flags.
+	 * @brief Which optional callbacks exist, so they are not called for nothing.
 	 *
-	 * This structure contains offsets that indicate the presence of certain methods
-	 * within a plugin. Each field represents whether a corresponding method is available.
+	 * The same structure is returned from two places, and each field is only read
+	 * from one of them:
+	 * - in InitData, from ILanguageModule::Initialize, only @ref hasUpdate is
+	 *   read, for the module's own OnUpdate. The other three are ignored.
+	 * - in LoadData, from ILanguageModule::OnPluginLoad, @ref hasUpdate,
+	 *   @ref hasStart and @ref hasEnd are that plugin's OnPluginUpdate,
+	 *   OnPluginStart and OnPluginEnd, and @ref hasExport says the plugin has
+	 *   methods to export, which is what decides whether the module's
+	 *   OnMethodExport is called for it.
+	 *
+	 * So @ref hasExport describes a plugin, not the module whose OnMethodExport it
+	 * reaches, and a module leaves everything but @ref hasUpdate alone.
 	 */
 	struct MethodTable {
-		bool hasUpdate{};  ///< Boolean indicating if an update method exists.
-		bool hasStart{};   ///< Boolean indicating if a start method exists.
-		bool hasEnd{};     ///< Boolean indicating if an end method exists.
-		bool hasExport{};  ///< Boolean indicating if a export methods exists.
+		bool hasUpdate{};  ///< OnUpdate (in InitData) or OnPluginUpdate (in LoadData).
+		bool hasStart{};   ///< OnPluginStart exists. LoadData only.
+		bool hasEnd{};     ///< OnPluginEnd exists. LoadData only.
+		bool hasExport{};  ///< The plugin has methods to export. LoadData only.
 	};
 
 	using Prototype = Method;

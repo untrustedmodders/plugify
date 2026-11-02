@@ -142,8 +142,7 @@ namespace plugify {
 		Result<void> UpdateModule(Extension& module, std::chrono::milliseconds deltaTime) {
 			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
-			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = module.GetMethodTable();
-			if (!hasUpdate) {
+			if (!module.GetMethodTable().hasUpdate) {
 				return {};
 			}
 			auto result = SafeCall<void>("OnUpdate", module.GetName(), [&] {
@@ -223,8 +222,7 @@ namespace plugify {
 		Result<void> StartPlugin(Extension& plugin) {
 			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
-			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
-			if (!hasStart) {
+			if (!plugin.GetMethodTable().hasStart) {
 				return {};
 			}
 			auto result = SafeCall<void>("OnPluginStart", plugin.GetName(), [&] {
@@ -239,8 +237,7 @@ namespace plugify {
 		Result<void> EndPlugin(Extension& plugin) {
 			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
-			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
-			if (!hasEnd) {
+			if (!plugin.GetMethodTable().hasEnd) {
 				return {};
 			}
 			auto result = SafeCall<void>("OnPluginEnd", plugin.GetName(), [&] {
@@ -255,8 +252,7 @@ namespace plugify {
 		Result<void> UpdatePlugin(Extension& plugin, std::chrono::milliseconds deltaTime) {
 			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
-			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
-			if (!hasUpdate) {
+			if (!plugin.GetMethodTable().hasUpdate) {
 				return {};
 			}
 			auto result = SafeCall<void>("OnPluginUpdate", plugin.GetName(), [&] {
@@ -286,8 +282,7 @@ namespace plugify {
 		Result<void> MethodExport(const Extension& module, Extension& plugin) {
 			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
-			const auto& [hasUpdate, hasStart, hasEnd, hasExport] = plugin.GetMethodTable();
-			if (!hasExport) {
+			if (!plugin.GetMethodTable().hasExport) {
 				return {};
 			}
 			auto result = SafeCall<void>("OnMethodExport", module.GetName(), [&] {
