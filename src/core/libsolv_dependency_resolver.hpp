@@ -81,15 +81,18 @@ namespace plugify {
 
 		// Constraint conversion
 		Id MakeDepConstraint(const std::string& name, const std::optional<Constraint>& constraints);
+		static std::string MatchEvr(const Version& version);
+		static std::string DescribeDependency(const std::string& name, const std::optional<Constraint>& constraints);
+		static const Extension* FindExtension(std::span<const Extension> extensions, UniqueId id);
 		int ConvertComparison(plg::detail::range_operator op);
 
 		// Resolution
 		void ExcludeConflictDeclarers(std::span<const Extension> extensions, ResolutionReport& resolution);
 		void ExcludeObsoletedExtensions(std::span<const Extension> extensions, ResolutionReport& resolution);
-		void RunSolver(ResolutionReport& resolution);
+		void RunSolver(std::span<const Extension> extensions, ResolutionReport& resolution);
 		void ProcessSolverProblems(Solver* solver, ResolutionReport& resolution);
-		void AddUnsatisfiedRequires(ResolutionReport& resolution);
-		std::string DescribeInstalledVersions(Id dep);
+		void AddUnsatisfiedRequires(std::span<const Extension> extensions, ResolutionReport& resolution);
+		static std::string DescribeInstalledVersions(std::span<const Extension> extensions, const std::string& name);
 		std::vector<std::string> ExtractSolutions(Solver* solver, Id problemId);
 		void ComputeInstallationOrder(Transaction* trans, ResolutionReport& resolution);
 		void ReportOrderCycles(Transaction* trans, ResolutionReport& resolution);
