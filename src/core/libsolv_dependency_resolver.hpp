@@ -97,6 +97,7 @@ namespace plugify {
 		Id MakeDepConstraint(const std::string& name, const std::optional<Constraint>& constraints);
 		static std::string MatchEvr(const Version& version);
 		static std::string DescribeDependency(const std::string& name, const std::optional<Constraint>& constraints);
+		static const Extension* FindExtension(std::span<const Extension> extensions, UniqueId id);
 		int ConvertComparison(plg::detail::range_operator op);
 
 		// Resolution
@@ -115,9 +116,7 @@ namespace plugify {
 		std::unique_ptr<Pool, PoolDeleter> _pool;
 		Repo* _repo = nullptr;
 		std::unordered_map<UniqueId, Id> _extensionToSolvableId;
-		// Valid for the duration of one Resolve, which is where the extensions it
-		// points into live; cleared with the rest of the per-pool state.
-		std::unordered_map<Id, const Extension*> _solvableIdToExtension;
+		std::unordered_map<Id, UniqueId> _solvableIdToExtension;
 		std::unordered_set<UniqueId> _excluded;
 	};
 }  // namespace plugify

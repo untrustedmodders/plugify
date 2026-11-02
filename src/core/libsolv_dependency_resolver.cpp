@@ -94,7 +94,7 @@ void LibsolvDependencyResolver::AddExtensionsToPool(std::span<const Extension> e
 
 		Id solvableId = AddSolvable(manifest);
 		_extensionToSolvableId[id] = solvableId;
-		_solvableIdToExtension[solvableId] = &extension;
+		_solvableIdToExtension[solvableId] = id;
 
 		// Setup dependencies and conflicts
 		SetupDependencies(solvableId, manifest);
@@ -277,6 +277,16 @@ std::string LibsolvDependencyResolver::DescribeDependency(
 	return text;
 }
 
+// The extension behind a solvable. The map answers with an id rather than a
+// pointer on purpose: it outlives a single Resolve, and an id cannot go stale.
+const Extension* LibsolvDependencyResolver::FindExtension(
+	std::span<const Extension> extensions,
+	UniqueId id
+) {
+	auto it = std::ranges::find(extensions, id, &Extension::GetId);
+	return it != extensions.end() ? &*it : nullptr;
+}
+
 int LibsolvDependencyResolver::ConvertComparison(plg::detail::range_operator op) {
 	switch (op) {
 		case plg::detail::range_operator::less:
@@ -340,11 +350,12 @@ void LibsolvDependencyResolver::ExcludeConflictDeclarers(
 				}
 
 				auto found = _solvableIdToExtension.find(*pp);
-				if (found == _solvableIdToExtension.end()) {
+				const Extension* other = found != _solvableIdToExtension.end()
+										   ? FindExtension(extensions, found->second)
+										   : nullptr;
+				if (!other) {
 					continue;
 				}
-
-				const Extension* other = found->second;
 
 				DependencyIssue issue;
 				issue.affectedExtension = extension.GetId();
@@ -416,7 +427,7 @@ void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
 				}
 
 				DependencyIssue issue;
-				issue.affectedExtension = it->second->GetId();
+				issue.affectedExtension = it->second;
 				issue.involvedExtension = extension.GetId();
 				issue.problem = "Obsolete";
 				issue.description = std::format(
@@ -603,14 +614,14 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 		if (source) {
 			auto it = _solvableIdToExtension.find(source);
 			if (it != _solvableIdToExtension.end()) {
-				issue.affectedExtension = it->second->GetId();
+				issue.affectedExtension = it->second;
 			}
 		}
 
 		if (target) {
 			auto it = _solvableIdToExtension.find(target);
 			if (it != _solvableIdToExtension.end()) {
-				issue.involvedExtension = it->second->GetId();
+				issue.involvedExtension = it->second;
 			}
 		}
 
@@ -714,7 +725,7 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 		{
 			auto extIt = _solvableIdToExtension.find(p);
 			if (extIt != _solvableIdToExtension.end()) {
-				const auto extId = extIt->second->GetId();
+				const UniqueId& extId = extIt->second;
 				resolution.loadOrder.push_back(extId);
 
 				// Build dependency graph
@@ -733,7 +744,7 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 								Id providerId = *pp;
 								auto depIt = _solvableIdToExtension.find(providerId);
 								if (depIt != _solvableIdToExtension.end() && providerId != p) {
-									const auto depId = depIt->second->GetId();
+									const UniqueId& depId = depIt->second;
 
 									// Two requirements can name the same extension, and
 									// both graphs have to stay in step, so the edge goes
@@ -796,7 +807,7 @@ void LibsolvDependencyResolver::ReportOrderCycles(Transaction* trans, Resolution
 			}
 
 			DependencyIssue issue;
-			issue.affectedExtension = it->second->GetId();
+			issue.affectedExtension = it->second;
 			issue.problem = "Dependency cycle";
 			issue.description = std::format("{}; the order between them is arbitrary", chain);
 			issue.isBlocking = false;
