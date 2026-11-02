@@ -36,6 +36,11 @@ namespace plugify {
 			if (_profiler) _handle = _profiler->BeginZone(name, location);
 		}
 
+		template <typename... Args>
+		ScopedZone(const std::shared_ptr<IProfiler>& profiler, const Location& location, std::format_string<Args...> fmt, Args&&... args) : _profiler(profiler.get()) {
+			if (_profiler) _handle = _profiler->BeginZone(std::format(fmt, std::forward<Args>(args)...), location);
+		}
+
 		~ScopedZone() {
 			if (_profiler && _handle) _profiler->EndZone(_handle);
 		}

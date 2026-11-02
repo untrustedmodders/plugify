@@ -457,17 +457,9 @@ namespace plugify {
 		}
 
 		template <typename T, typename Func>
-		Result<T> SafeCall(std::string_view op, std::string_view name, Func&& func) noexcept {
+		Result<T> SafeCall(std::string_view op, std::string_view name, Func&& func, const Location& location = Location::current()) noexcept {
+			[[maybe_unused]] ScopedZone zone(_profiler, location, "{}::{}", name, op);
 			try {
-				// Built only when something is listening. This runs once per
-				// extension per frame through the update calls, so formatting a
-				// zone name unconditionally cost an allocation a frame each with
-				// no profiler attached. Inside the try, because std::format can
-				// throw and this function may not.
-				std::optional<ScopedZone> zone;
-				if (_profiler) {
-					zone.emplace(_profiler, std::format("{}::{}", name, op));
-				}
 				return func();
 			} catch (const std::bad_alloc&) {
 				return MakeError("{}: out of memory", op);
