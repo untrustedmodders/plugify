@@ -107,17 +107,33 @@ static const Extension* FindExtension(
 	return it != extensions.end() ? &*it : nullptr;
 }
 
-// The version installed under this name, or nothing when the name does not answer
-// at all - which is a different message. Read from the manifest, because the pool
-// holds the rewritten form that version comparison needs rather than the version
-// as written. One name is one extension; a second copy of it is a broken install,
-// and the solver reports that in its own right.
-static std::string_view DescribeInstalledVersion(
+// "version 2.0.0", or "versions 2.0.0, 1.5.0", for everything installed under
+// this name - empty when nothing answers to it at all, which is a different
+// message. Read from the manifests, since the pool holds the rewritten form that
+// version comparison needs rather than the version as written. Two extensions
+// under one name is a broken install rather than a thing to support, but nothing
+// upstream of here rejects it, so say what is actually there.
+static std::string DescribeInstalledVersions(
 	std::span<const Extension> extensions,
 	const std::string& name
 ) {
-	auto it = std::ranges::find(extensions, name, &Extension::GetName);
-	return it != extensions.end() ? std::string_view(it->GetVersionString()) : std::string_view();
+	std::vector<std::string_view> versions;
+
+	for (const auto& extension : extensions) {
+		if (extension.GetName() == name) {
+			versions.emplace_back(extension.GetVersionString());
+		}
+	}
+
+	if (versions.empty()) {
+		return {};
+	}
+
+	return std::format(
+		"{} {}",
+		versions.size() == 1 ? "version" : "versions",
+		plg::join(versions, ", ")
+	);
 }
 
 static bool InLoadOrder(const ResolutionReport& resolution, UniqueId id) {
