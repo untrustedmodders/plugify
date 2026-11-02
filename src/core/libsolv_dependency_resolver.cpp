@@ -279,6 +279,40 @@ ResolutionReport LibsolvDependencyResolver::RunSolver() {
 // several unmet requirements only ever names the first one - fix it, restart, and
 // the next one shows up. The pool already knows what provides what, so walk the
 // requirements against it and name all of them at once.
+// "version 2.0.0", or "versions 2.0.0, 1.5.0", for whatever is installed under
+// the name `dep` constrains - empty when that name is not installed at all. The
+// pool already holds this, so the constraint is stripped off and the bare name
+// looked up again rather than searching the extensions a second time.
+std::string LibsolvDependencyResolver::DescribeInstalledVersions(Id dep) {
+	// Descend to the plain name: a constraint is a relation around it, and an
+	// AND/OR of several ranges is a relation around those.
+	Id name = dep;
+	while (ISRELDEP(name)) {
+		name = GETRELDEP(_pool.get(), name)->name;
+	}
+
+	if (name == dep) {
+		return {};	// no constraint to begin with, so the name itself is missing
+	}
+
+	Id providers = pool_whatprovides(_pool.get(), name);
+	if (providers == 0 || _pool->whatprovidesdata[providers] == 0) {
+		return {};
+	}
+
+	std::vector<std::string> versions;
+	for (Id* pp = _pool->whatprovidesdata + providers; *pp; ++pp) {
+		Solvable* provider = pool_id2solvable(_pool.get(), *pp);
+		versions.emplace_back(pool_id2str(_pool.get(), provider->evr));
+	}
+
+	return std::format(
+		"{} {}",
+		versions.size() == 1 ? "version" : "versions",
+		plg::join(versions, ", ")
+	);
+}
+
 void LibsolvDependencyResolver::AddUnsatisfiedRequires(ResolutionReport& resolution) {
 	for (const auto& [extId, solvId] : _extensionToSolvableId) {
 		// Whatever made it into the load order is satisfied by definition
@@ -304,10 +338,22 @@ void LibsolvDependencyResolver::AddUnsatisfiedRequires(ResolutionReport& resolut
 			DependencyIssue issue;
 			issue.affectedExtension = extId;
 			issue.problem = "Unmet dependency";
-			issue.description = std::format(
-				"nothing installed provides '{}'",
-				pool_dep2str(_pool.get(), req)
-			);
+
+			// Tell "not installed" from "installed, wrong version": saying nothing
+			// provides 'foo >= 2.1.2' reads as if foo were missing altogether.
+			auto installed = DescribeInstalledVersions(req);
+			if (installed.empty()) {
+				issue.description = std::format(
+					"nothing installed provides '{}'",
+					pool_dep2str(_pool.get(), req)
+				);
+			} else {
+				issue.description = std::format(
+					"'{}' is not satisfied by the installed {}",
+					pool_dep2str(_pool.get(), req),
+					installed
+				);
+			}
 
 			resolution.issues[extId].push_back(std::move(issue));
 		}

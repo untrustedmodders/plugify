@@ -87,6 +87,7 @@ namespace plugify {
 		ResolutionReport RunSolver();
 		void ProcessSolverProblems(Solver* solver, ResolutionReport& resolution);
 		void AddUnsatisfiedRequires(ResolutionReport& resolution);
+		std::string DescribeInstalledVersions(Id dep);
 		std::vector<std::string> ExtractSolutions(Solver* solver, Id problemId);
 		void ComputeInstallationOrder(Transaction* trans, ResolutionReport& resolution);
 
