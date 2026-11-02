@@ -10,10 +10,13 @@ struct Provider::Impl {
 	const ServiceLocator& services;
 	const Config& config;
 	const Manager& manager;
+	// Resolved once: this is the logging path for every language module, and a
+	// lookup costs a shared lock, a hash lookup and a refcount per message.
+	std::shared_ptr<ILogger> logger;
 };
 
 Provider::Provider(const ServiceLocator& services, const Config& config, const Manager& manager)
-	: _impl(std::make_unique<Impl>(services, config, manager)) {
+	: _impl(std::make_unique<Impl>(services, config, manager, services.TryResolve<ILogger>())) {
 }
 
 Provider::~Provider() = default;
@@ -34,8 +37,8 @@ Provider& Provider::operator=(const Provider& other) {
 Provider& Provider::operator=(Provider&& other) noexcept = default;
 
 void Provider::Log(std::string_view msg, Severity sev, const Location& loc) const {
-	if (auto logger = _impl->services.Resolve<ILogger>()) {
-		logger->Log(msg, sev, loc);
+	if (_impl->logger) {
+		_impl->logger->Log(msg, sev, loc);
 	}
 }
 
