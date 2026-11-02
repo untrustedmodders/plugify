@@ -84,7 +84,8 @@ namespace plugify {
 		int ConvertComparison(plg::detail::range_operator op);
 
 		// Resolution
-		ResolutionReport RunSolver();
+		void ExcludeConflictDeclarers(std::span<const Extension> extensions, ResolutionReport& resolution);
+		void RunSolver(ResolutionReport& resolution);
 		void ProcessSolverProblems(Solver* solver, ResolutionReport& resolution);
 		void AddUnsatisfiedRequires(ResolutionReport& resolution);
 		std::string DescribeInstalledVersions(Id dep);
@@ -97,5 +98,6 @@ namespace plugify {
 		Repo* _repo = nullptr;
 		std::unordered_map<UniqueId, Id> _extensionToSolvableId;
 		std::unordered_map<Id, UniqueId> _solvableIdToExtension;
+		std::unordered_set<UniqueId> _excluded;
 	};
 }  // namespace plugify

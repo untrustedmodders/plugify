@@ -14,14 +14,21 @@ LibsolvDependencyResolver::LibsolvDependencyResolver(std::shared_ptr<ILogger> lo
 }
 
 ResolutionReport LibsolvDependencyResolver::Resolve(std::span<const Extension> extensions) {
+	ResolutionReport resolution;
+
 	// Step 1: Initialize libsolv pool
 	InitializePool();
 
 	// Step 2: Add all extensions to the pool
 	AddExtensionsToPool(extensions);
 
-	// Step 3: Run the solver
-	return RunSolver();
+	// Step 3: Settle the conflicts the manifests decide themselves
+	ExcludeConflictDeclarers(extensions, resolution);
+
+	// Step 4: Run the solver
+	RunSolver(resolution);
+
+	return resolution;
 }
 
 // ============================================================================
@@ -231,9 +238,69 @@ int LibsolvDependencyResolver::ConvertComparison(plg::detail::range_operator op)
 // Solver Execution
 // ============================================================================
 
-ResolutionReport LibsolvDependencyResolver::RunSolver() {
-	ResolutionReport resolution;
+// A `conflicts` entry is one-sided in intent - "do not load me together with X" -
+// but libsolv knows only the symmetric kind. With both sides queued as hard
+// installs the pair is simply unsolvable, and the partial transaction left behind
+// holds whichever side the solver happened to decide on first: the arbitrary half
+// of an unordered_map walk, so the extension that declared nothing can be the one
+// that is dropped. Settle it before the solver sees the pair - the side that
+// declared the conflict is the side that loses it - and the other one still loads.
+void LibsolvDependencyResolver::ExcludeConflictDeclarers(
+	std::span<const Extension> extensions,
+	ResolutionReport& resolution
+) {
+	for (const auto& extension : extensions) {
+		const auto& manifest = extension.GetManifest();
+		if (!manifest.conflicts || manifest.conflicts->empty()) {
+			continue;
+		}
 
+		Id solvableId = _extensionToSolvableId[extension.GetId()];
+
+		for (const auto& conflict : *manifest.conflicts) {
+			const auto& [conflictName, constraints, reason] = *conflict._impl;
+
+			// Ids are interned, so the same name and constraint give back exactly
+			// what SetupConflicts put into SOLVABLE_CONFLICTS.
+			Id dep = MakeDepConstraint(conflictName, constraints);
+
+			Id providers = pool_whatprovides(_pool.get(), dep);
+			if (providers == 0) {
+				continue;
+			}
+
+			for (Id* pp = _pool->whatprovidesdata + providers; *pp; ++pp) {
+				// Conflicting with yourself is how an extension rules out a second
+				// copy of itself; libsolv permits it and so do we.
+				if (*pp == solvableId) {
+					continue;
+				}
+
+				Solvable* other = pool_id2solvable(_pool.get(), *pp);
+
+				DependencyIssue issue;
+				issue.affectedExtension = extension.GetId();
+				issue.problem = "Conflict";
+				issue.description = std::format(
+					"the manifest declares a conflict with '{}', which is installed as {} {}{}",
+					pool_dep2str(_pool.get(), dep),
+					pool_id2str(_pool.get(), other->name),
+					pool_id2str(_pool.get(), other->evr),
+					reason ? std::format(" ({})", *reason) : std::string()
+				);
+
+				if (auto it = _solvableIdToExtension.find(*pp); it != _solvableIdToExtension.end()) {
+					issue.involvedExtension = it->second;
+				}
+
+				resolution.issues[extension.GetId()].push_back(std::move(issue));
+				_excluded.insert(extension.GetId());
+			}
+		}
+	}
+}
+
+void LibsolvDependencyResolver::RunSolver(ResolutionReport& resolution) {
 	// Create solver
 	std::unique_ptr<Solver, SolverDeleter> solver(solver_create(_pool.get()));
 
@@ -248,6 +315,15 @@ ResolutionReport LibsolvDependencyResolver::RunSolver() {
 
 	// Add all extensions as install jobs
 	for (const auto& [extId, solvId] : _extensionToSolvableId) {
+		if (_excluded.contains(extId)) {
+			// Locked rather than merely left out of the install jobs: the solvable
+			// stays in the pool, so a dependent would otherwise be free to pull the
+			// declarer - and the conflict with it - back in, and the solver would go
+			// back to dropping the other side.
+			queue_push2(jobs.get(), SOLVER_SOLVABLE | SOLVER_LOCK, solvId);
+			continue;
+		}
+
 		queue_push2(jobs.get(), SOLVER_SOLVABLE | SOLVER_INSTALL, solvId);
 	}
 
@@ -267,8 +343,6 @@ ResolutionReport LibsolvDependencyResolver::RunSolver() {
 		AddUnsatisfiedRequires(resolution);
 		ProcessSolverProblems(solver.get(), resolution);
 	}
-
-	return resolution;
 }
 
 // ============================================================================
@@ -315,8 +389,10 @@ std::string LibsolvDependencyResolver::DescribeInstalledVersions(Id dep) {
 
 void LibsolvDependencyResolver::AddUnsatisfiedRequires(ResolutionReport& resolution) {
 	for (const auto& [extId, solvId] : _extensionToSolvableId) {
-		// Whatever made it into the load order is satisfied by definition
-		if (std::ranges::find(resolution.loadOrder, extId) != resolution.loadOrder.end()) {
+		// Whatever made it into the load order is satisfied by definition, and a
+		// conflict declarer already carries the reason it was left out
+		if (_excluded.contains(extId)
+			|| std::ranges::find(resolution.loadOrder, extId) != resolution.loadOrder.end()) {
 			continue;
 		}
 
