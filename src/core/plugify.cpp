@@ -412,7 +412,11 @@ Result<std::shared_ptr<Plugify>> PlugifyBuilder::Build() {
 		if (auto fileConfig = LoadConfigFromFile(*_impl->configFilePath)) {
 			finalConfig.MergeFrom(*fileConfig, ConfigSource::File);
 		} else {
-			return MakeError("Failed to load config from {}", _impl->configFilePath->string());
+			return MakeError(
+				"Failed to load config from {}: {}",
+				_impl->configFilePath->string(),
+				fileConfig.error()
+			);
 		}
 	}
 

@@ -2028,9 +2028,29 @@ int main(int argc, char** argv) {
 	    plg::error("Warning: Failed to set UTF-8 locale");
 	}*/
 
-	auto plugify = Plugify::CreateBuilder()
-		.WithProfiler(std::make_shared<TracyProfiler>())
-		.WithBaseDir(std::filesystem::current_path()).Build();
+	std::filesystem::path configPath;
+	{
+		CLI::App pre{ "Plugify" };
+		pre.set_help_flag("");
+		pre.allow_extras();
+		pre.add_option("-c,--config", configPath);
+		try {
+			pre.parse(argc, argv);
+		} catch (const CLI::ParseError&) {
+			configPath.clear();
+		}
+	}
+
+	auto builder = Plugify::CreateBuilder();
+	builder.WithProfiler(std::make_shared<TracyProfiler>());
+
+	if (configPath.empty()) {
+		builder.WithBaseDir(std::filesystem::current_path());
+	} else {
+		builder.WithConfigFile(configPath);
+	}
+
+	auto plugify = builder.Build();
 	if (!plugify) {
 		plg::print("{}: {}", Colorize("Error", Colors::RED), plugify.error());
 		return EXIT_FAILURE;
@@ -2054,6 +2074,8 @@ int main(int argc, char** argv) {
 	cliApp.add_flag("-i,--interactive", interactive, "Run in interactive mode");
 	cliApp.add_flag("-p,--no-color", noColor, "Disable colored output");
 	cliApp.add_flag("-j,--json", jsonOutput, "Output in JSON format");
+	cliApp.add_option("-c,--config", configPath, "Load settings from a .pconfig file")
+		->check(CLI::ExistingFile);
 
 	// Define subcommands
 	auto* init_cmd = cliApp.add_subcommand("init", "Initialize plugin system");

@@ -70,6 +70,17 @@ public:
 		}*/
 		extensions = std::move(*initialExtensions);
 
+		if (extensions.empty()) {
+			logger->Log(
+				std::format(
+					"No extensions found in '{}'. Each extension needs its own folder there, "
+					"with a .pmodule or .pplugin manifest next to its binary.",
+					plg::as_string(config.paths.extensionsDir)
+				),
+				Severity::Warning
+			);
+		}
+
 		FailureTracker failureTracker(extensions.size());
 
 		auto pipeline = Pipeline<Extension>::Create()
@@ -164,8 +175,21 @@ public:
 			}
 		}
 
+		// Why anything is not running, in words that name the extension and the
+		// missing piece. Worth saying even when the pipeline itself succeeded:
+		// an extension silently dropped during resolution is the hardest kind of
+		// failure to track down.
+		auto problems = GenerateProblemReport();
+
 		if (totalFailed > 0) {
-			return MakeError(report.Error());
+			// The caller surfaces what we return, so the stage-by-stage breakdown
+			// only goes to the log, where it is useful for debugging Plugify itself.
+			logger->Log(report.Error(), Severity::Debug);
+			return MakeError(problems.empty() ? report.Error() : problems);
+		}
+
+		if (!problems.empty()) {
+			logger->Log(problems, Severity::Error);
 		}
 
 		initialized = true;
@@ -335,7 +359,144 @@ public:
 		return exts;
 	}
 
-#pragma region Debug
+	// What the user reads when something did not come up: every extension that is
+	// not running, the errors it collected on the way, and where the missing
+	// pieces belong. Empty when all is well.
+	std::string GenerateProblemReport() const {
+		std::vector<const Extension*> problems;
+		size_t running = 0;
+		size_t disabled = 0;
+
+		for (const auto& ext : extensions) {
+			switch (ext.GetState()) {
+				case ExtensionState::Running:
+					++running;
+					break;
+				case ExtensionState::Disabled:
+					++disabled;
+					[[fallthrough]];
+				default:
+					problems.push_back(&ext);
+					break;
+			}
+		}
+
+		// Extensions turned off on purpose are not a problem to report on their own.
+		if (problems.size() == disabled) {
+			return {};
+		}
+
+		// Which language modules are installed is the most useful piece of context
+		// here: a plugin without its module is the most common way to get here.
+		std::map<std::string, std::string> languages;
+		for (const auto& ext : extensions) {
+			if (ext.IsModule() && !ext.GetLanguage().empty()) {
+				languages.emplace(ext.GetLanguage(), ext.GetName());
+			}
+		}
+
+		std::string buffer;
+		buffer.reserve(INITIAL_BUFFER_SIZE);
+
+		auto it = std::back_inserter(buffer);
+
+		std::format_to(
+			it,
+			"\n=== Plugify: {} of {} extension(s) did not start ===\n\n",
+			problems.size(),
+			extensions.size()
+		);
+
+		for (const Extension* ext : problems) {
+			// A manifest that did not parse has neither a name nor a version yet,
+			// so the path is all there is to go on.
+			std::format_to(
+				it,
+				"  {} {} [{}, {}] - {}\n",
+				ext->GetName().empty() ? "<unnamed>" : ext->GetName(),
+				ext->GetVersionString().empty() ? "?" : ext->GetVersionString(),
+				plg::enum_to_string(ext->GetType()),
+				ext->GetLanguage().empty() ? "?" : ext->GetLanguage(),
+				plg::enum_to_string(ext->GetState())
+			);
+			std::format_to(it, "    at '{}'\n", plg::as_string(ext->GetLocation()));
+
+			// A plugin whose language has nothing to run it never gets a dependency
+			// to fail on, so this is the only place the missing module is named -
+			// unless it got as far as the loading stage, which says so itself.
+			bool noModule = ext->IsPlugin() && !ext->GetLanguage().empty()
+							&& !languages.contains(ext->GetLanguage())
+							&& ext->GetState() != ExtensionState::Failed;
+			if (noModule) {
+				AppendBlock(
+					buffer,
+					"! ",
+					std::format("No language module for '{}' is installed", ext->GetLanguage())
+				);
+			}
+
+			if (!noModule && !ext->HasErrors() && !ext->HasWarnings()) {
+				// Nothing to say about this one in particular: the pipeline stopped
+				// at an earlier stage, before it was its turn.
+				AppendBlock(buffer, "! ", "Never processed - startup stopped on an earlier failure");
+			}
+
+			for (const auto& error : ext->GetErrors()) {
+				AppendBlock(buffer, "! ", error);
+			}
+			for (const auto& warning : ext->GetWarnings()) {
+				AppendBlock(buffer, "~ ", warning);
+			}
+
+			std::format_to(it, "\n");
+		}
+
+		std::format_to(
+			it,
+			"Running: {}, not started: {} (of which disabled on purpose: {}).\n",
+			running,
+			problems.size(),
+			disabled
+		);
+
+		if (languages.empty()) {
+			std::format_to(it, "Installed language modules: none.\n");
+		} else {
+			std::format_to(it, "Installed language modules:");
+			for (const auto& [language, module] : languages) {
+				std::format_to(it, " {} ({})", language, module);
+			}
+			std::format_to(it, "\n");
+		}
+		std::format_to(
+			it,
+			"Extensions directory: '{}'\n"
+			"Each extension needs its own folder there, with a .pmodule or .pplugin manifest\n"
+			"next to its binary, together with everything it depends on.",
+			plg::as_string(config.paths.extensionsDir)
+		);
+
+		return buffer;
+	}
+
+	// Writes a possibly multi-line message as one indented block, so the
+	// "-> do this" hints stay attached to the error they belong to.
+	static void AppendBlock(std::string& buffer, std::string_view marker, std::string_view message) {
+		constexpr std::string_view indent = "    ";
+
+		auto it = std::back_inserter(buffer);
+
+		for (bool first = true; !message.empty(); first = false) {
+			auto eol = message.find('\n');
+			std::format_to(it, "{}{}{}\n", indent, first ? marker : "  ", message.substr(0, eol));
+			if (eol == std::string_view::npos) {
+				break;
+			}
+			message.remove_prefix(eol + 1);
+		}
+	}
+
+#pragma region Reports
 	const size_t INITIAL_BUFFER_SIZE = 4096;
 
 	std::string GenerateLoadOrder() const {
@@ -405,10 +566,18 @@ public:
 		std::format_to(it, "digraph packages {{\n");
 		std::format_to(it, "  rankdir=LR;\n");
 
-		// nodes
-		for (size_t i = 0; i < extensions.size(); ++i) {
-			const auto& ext = extensions[i];
-			std::format_to(it, "  node{} [label=\"{}\\n(id={})\"];\n", i, ext.GetName(), ext.GetId());
+		// Nodes are named after the extension id, because that is what the edges
+		// below are keyed by. Numbering them by their position in `extensions`
+		// wires up the wrong nodes: ids are handed out in discovery order, while
+		// the vector is rebuilt in load order.
+		for (const auto& ext : extensions) {
+			std::format_to(
+				it,
+				"  node{} [label=\"{}\\n(id={})\"];\n",
+				ext.GetId(),
+				ext.GetName(),
+				ext.GetId()
+			);
 		}
 
 		// edges
@@ -421,7 +590,7 @@ public:
 		std::format_to(it, "}}\n");
 		return buffer;
 	}
-#pragma endregion Debug
+#pragma endregion Reports
 };
 
 Manager::Manager(const ServiceLocator& services, const Config& config)

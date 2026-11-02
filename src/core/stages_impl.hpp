@@ -116,25 +116,38 @@ namespace plugify {
 			std::vector<Extension>& items,
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
+			size_t discovered = items.size();
 			auto [filtered, excluded] = FilterByPolicy(items);
 
 			if (filtered.empty()) {
-				return RestoreResult("No valid extensions to resolve", items, filtered, excluded);
+				Restore(items, filtered, excluded);
+				return MakeError(
+					"No extension passed the parsing and policy checks ({} discovered)",
+					discovered
+				);
 			}
+
+			size_t candidates = filtered.size();
 
 			AddLanguageDependencies(filtered);
 
 			auto report = _resolver->Resolve(filtered);
 
+			// Runs whatever the outcome, so that every extension ends up in a
+			// final state carrying the reason it is in it.
+			BuildResultInOrder(items, filtered, excluded, report);
+
 			if (!report.isLoadOrderValid) {
-				return RestoreResult("No valid loading order", items, filtered, excluded);
+				return MakeError("Dependency resolution did not produce a usable load order");
 			}
 
 			if (report.loadOrder.empty()) {
-				return RestoreResult("No valid extensions to load", items, filtered, excluded);
+				return MakeError(
+					"No extension could be resolved: all {} candidate(s) have unmet "
+					"dependencies or conflicts",
+					candidates
+				);
 			}
-
-			BuildResultInOrder(items, filtered, excluded, report);
 
 			// Store dependency graphs
 			*_depGraph = std::move(report.dependencyGraph);
@@ -156,45 +169,51 @@ namespace plugify {
 			// excluded.reserve(items.size());
 
 			for (auto&& ext : items) {
-				bool include = true;
-
-				// Check parsed state
+				// Anything that did not parse already carries its own error
 				if (ext.GetState() != ExtensionState::Parsed) {
-					include = false;
-				}
-
-				// Check whitelist
-				if (include && !_config.security.whitelistedExtensions.empty()
-					&& !_config.security.whitelistedExtensions.contains(ext.GetName())) {
-					include = false;
-				}
-
-				// Check blacklist
-				if (include && !_config.security.blacklistedExtensions.empty()
-					&& _config.security.blacklistedExtensions.contains(ext.GetName())) {
-					include = false;
-				}
-
-				// Check platform
-				if (include && !IsSupportsPlatform(ext.GetPlatforms())) {
-					include = false;
-				}
-
-				if (include) {
-					ext.SetState(ExtensionState::Resolving);
-					filtered.push_back(std::move(ext));
-				} else {
-					if (ext.GetState() == ExtensionState::Parsed) {
-						ext.SetState(ExtensionState::Disabled);
-						ext.AddWarning("Excluded due to policy");
-					}
 					excluded.push_back(std::move(ext));
+					continue;
 				}
+
+				if (auto reason = CheckPolicy(ext)) {
+					ext.SetState(ExtensionState::Disabled);
+					ext.AddWarning(std::move(*reason));
+					excluded.push_back(std::move(ext));
+					continue;
+				}
+
+				ext.SetState(ExtensionState::Resolving);
+				filtered.push_back(std::move(ext));
 			}
 
 			items.clear();
 
 			return { std::move(filtered), std::move(excluded) };
+		}
+
+		// Why this extension is not even a candidate, in words the user can act on,
+		// or nothing when it passes.
+		std::optional<std::string> CheckPolicy(const Extension& ext) const {
+			const auto& security = _config.security;
+
+			if (!security.whitelistedExtensions.empty()
+				&& !security.whitelistedExtensions.contains(ext.GetName())) {
+				return "Not started because a whitelist is configured and it is not on it";
+			}
+
+			if (!security.blacklistedExtensions.empty()
+				&& security.blacklistedExtensions.contains(ext.GetName())) {
+				return "Blacklisted in the configuration";
+			}
+
+			if (!IsSupportsPlatform(ext.GetPlatforms())) {
+				return std::format(
+					"Not supported on " PLUGIFY_PLATFORM " platform; the manifest lists {}",
+					plg::join(ext.GetPlatforms(), ", ")
+				);
+			}
+
+			return std::nullopt;
 		}
 
 		// Build language registry and add language dependencies
@@ -208,20 +227,20 @@ namespace plugify {
 			}
 
 			for (auto& ext : items) {
-				if (ext.GetType() == ExtensionType::Plugin) {
-					auto it = languages.find(ext.GetLanguage());
-					if (it != languages.end()) {
-						ext.AddDependency(it->second);
-					} else {
-						ext.AddDependency(ext.GetLanguage());
-						ext.AddError(std::format("Language module '{}' is missing", ext.GetLanguage()));
-					}
+				if (ext.GetType() != ExtensionType::Plugin) {
+					continue;
+				}
+
+				// With no module for the language there is nothing to depend on;
+				// the plugin then fails in the loading stage, which says so, and
+				// the problem report names the missing module either way.
+				if (auto it = languages.find(ext.GetLanguage()); it != languages.end()) {
+					ext.AddDependency(it->second);
 				}
 			}
 		}
 
-		static Result<void> RestoreResult(
-			std::string_view error,
+		static void Restore(
 			std::vector<Extension>& items,
 			std::vector<Extension>& filtered,
 			std::vector<Extension>& excluded
@@ -235,12 +254,6 @@ namespace plugify {
 				items.end(),
 				std::make_move_iterator(excluded.begin()),
 				std::make_move_iterator(excluded.end())
-			);
-			return MakeError(
-				"{}: {} filtered, {} excluded by resolver",
-				error,
-				filtered.size(),
-				excluded.size()
 			);
 		}
 
@@ -272,7 +285,8 @@ namespace plugify {
 			for (auto& [id, ext] : idToExtension) {
 				ext.SetState(ExtensionState::Unresolved);
 
-				// Add resolution errors if any
+				// What the solver has to say about it: it alone knows about version
+				// constraints, conflicts and cycles.
 				if (auto it = report.issues.find(id); it != report.issues.end()) {
 					for (const auto& issue : it->second) {
 						if (issue.isBlocking) {
@@ -281,6 +295,13 @@ namespace plugify {
 							ext.AddWarning(issue.GetDetailedDescription());
 						}
 					}
+				}
+
+				if (!ext.HasErrors()) {
+					ext.AddError(
+						"Could not be placed in the load order; a dependency or conflict of "
+						"another extension rules it out"
+					);
 				}
 
 				result.push_back(std::move(ext));

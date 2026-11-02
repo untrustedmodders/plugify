@@ -254,16 +254,18 @@ ResolutionReport LibsolvDependencyResolver::RunSolver() {
 	// Run the solver
 	int ret = solver_solve(solver.get(), jobs.get());
 
-	if (ret != 0) {
-		// Problems detected
-		ProcessSolverProblems(solver.get(), resolution);
-	}
-
 	// Success - extract the solution
 	std::unique_ptr<Transaction, TransactionDeleter> trans(solver_create_transaction(solver.get()));
 
 	if (trans) {
 		ComputeInstallationOrder(trans.get(), resolution);
+	}
+
+	if (ret != 0) {
+		// Problems detected. Name every requirement that nothing provides first,
+		// then let the solver speak for whatever is left.
+		AddUnsatisfiedRequires(resolution);
+		ProcessSolverProblems(solver.get(), resolution);
 	}
 
 	return resolution;
@@ -272,6 +274,45 @@ ResolutionReport LibsolvDependencyResolver::RunSolver() {
 // ============================================================================
 // Problem Processing
 // ============================================================================
+
+// The solver reports one representative rule per problem, so an extension with
+// several unmet requirements only ever names the first one - fix it, restart, and
+// the next one shows up. The pool already knows what provides what, so walk the
+// requirements against it and name all of them at once.
+void LibsolvDependencyResolver::AddUnsatisfiedRequires(ResolutionReport& resolution) {
+	for (const auto& [extId, solvId] : _extensionToSolvableId) {
+		// Whatever made it into the load order is satisfied by definition
+		if (std::ranges::find(resolution.loadOrder, extId) != resolution.loadOrder.end()) {
+			continue;
+		}
+
+		Solvable* s = pool_id2solvable(_pool.get(), solvId);
+		if (!s->dep_requires) {
+			continue;
+		}
+
+		Id req, *reqp = s->repo->idarraydata + s->dep_requires;
+		while ((req = *reqp++) != 0) {
+			// pool_whatprovides returns an offset into whatprovidesdata, which is
+			// non-zero even when nothing provides the dependency: the list it
+			// points at is what has to be empty.
+			Id providers = pool_whatprovides(_pool.get(), req);
+			if (providers != 0 && _pool->whatprovidesdata[providers] != 0) {
+				continue;
+			}
+
+			DependencyIssue issue;
+			issue.affectedExtension = extId;
+			issue.problem = "Unmet dependency";
+			issue.description = std::format(
+				"nothing installed provides '{}'",
+				pool_dep2str(_pool.get(), req)
+			);
+
+			resolution.issues[extId].push_back(std::move(issue));
+		}
+	}
+}
 
 void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, ResolutionReport& resolution) {
 	Id problemCount = static_cast<Id>(solver_problem_count(solver));
@@ -284,7 +325,7 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 
 		// Create issue for this problem
 		DependencyIssue issue;
-		issue.problem = std::format("Problem {}/{}", problemId, problemCount);
+		issue.problem = "Dependency problem";
 		//issue.isBlocking = true; // All problems from solver are blocking
 
 		// Determine affected extensions
@@ -293,6 +334,17 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 			if (it != _solvableIdToExtension.end()) {
 				issue.affectedExtension = it->second;
 			}
+		}
+
+		if (issue.affectedExtension == -1) {
+			continue;
+		}
+
+		// Unmet requirements are already spelled out one by one; what the solver
+		// adds on top of them is about conflicts, cycles and version constraints.
+		if (auto it = resolution.issues.find(issue.affectedExtension);
+			it != resolution.issues.end() && !it->second.empty()) {
+			continue;
 		}
 
 		if (target) {
@@ -309,10 +361,7 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 		issue.suggestedFixes = ExtractSolutions(solver, problemId);
 
 		// Add issue to report
-		if (issue.affectedExtension != -1) {
-			auto& issues = resolution.issues[issue.affectedExtension];
-			issues.push_back(std::move(issue));
-		}
+		resolution.issues[issue.affectedExtension].push_back(std::move(issue));
 	}
 }
 
