@@ -489,6 +489,10 @@ void LibsolvDependencyResolver::RunSolver(
 // Problem Processing
 // ============================================================================
 
+static bool InLoadOrder(const ResolutionReport& resolution, UniqueId id) {
+	return std::ranges::find(resolution.loadOrder, id) != resolution.loadOrder.end();
+}
+
 // "version 2.0.0", or "versions 2.0.0, 1.5.0", for everything installed under
 // this name - empty when nothing answers to it at all, which is a different
 // message. Read from the manifests, since the pool holds the rewritten form that
@@ -529,8 +533,7 @@ void LibsolvDependencyResolver::AddUnsatisfiedRequires(
 		// Whatever made it into the load order is satisfied by definition, and an
 		// extension that was excluded already carries the reason it was left out
 		const auto& extId = extension.GetId();
-		if (_excluded.contains(extId)
-			|| std::ranges::find(resolution.loadOrder, extId) != resolution.loadOrder.end()) {
+		if (_excluded.contains(extId) || InLoadOrder(resolution, extId)) {
 			continue;
 		}
 
@@ -607,6 +610,26 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 			}
 		}
 
+		if (target) {
+			auto it = _solvableIdToExtension.find(target);
+			if (it != _solvableIdToExtension.end()) {
+				issue.involvedExtension = it->second;
+			}
+		}
+
+		// A problem has two sides, and the representative rule puts one of them in
+		// `source` - not the one that was left out, necessarily. Two copies of the
+		// same extension are reported against the copy that won. An issue on an
+		// extension that did reach the load order is never read back, so the side
+		// that needs the reason would be left holding nothing but "ruled out by
+		// something else".
+		if (issue.involvedExtension != -1
+			&& (issue.affectedExtension == -1
+				|| (InLoadOrder(resolution, issue.affectedExtension)
+					&& !InLoadOrder(resolution, issue.involvedExtension)))) {
+			std::swap(issue.affectedExtension, issue.involvedExtension);
+		}
+
 		if (issue.affectedExtension == -1) {
 			continue;
 		}
@@ -616,13 +639,6 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 		if (auto it = resolution.issues.find(issue.affectedExtension);
 			it != resolution.issues.end() && !it->second.empty()) {
 			continue;
-		}
-
-		if (target) {
-			auto it = _solvableIdToExtension.find(target);
-			if (it != _solvableIdToExtension.end()) {
-				issue.involvedExtension = it->second;
-			}
 		}
 
 		// Get all problem rules for more detailed analysis
