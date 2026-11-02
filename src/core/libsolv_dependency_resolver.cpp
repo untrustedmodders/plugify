@@ -72,11 +72,16 @@ void LibsolvDependencyResolver::InitializePool() {
 
 	pool_setdebugcallback(_pool.get(), debug_callback, _logger.get());
 
-	constexpr int level = PLUGIFY_IS_DEBUG ? 3 : 1;
+	// Errors and fatals reach the callback whatever the level is, so this only
+	// decides how much of the solver's own trace comes with them. Level 3 is a
+	// few hundred logged lines per resolve, which is a lot to pay to have it on
+	// by default even in a debug build.
+	constexpr int level = PLUGIFY_IS_DEBUG ? 1 : 0;
 	pool_setdebuglevel(_pool.get(), level);
 
-	// Create a repository for our extensions
-	_repo = repo_create(_pool.get(), "installed");
+	// Create a repository for our extensions. Not libsolv's "installed" repo: that
+	// one is set with pool_set_installed and would turn every job into an upgrade.
+	_repo = repo_create(_pool.get(), "extensions");
 }
 
 void LibsolvDependencyResolver::AddExtensionsToPool(std::span<const Extension> extensions) {
@@ -89,7 +94,7 @@ void LibsolvDependencyResolver::AddExtensionsToPool(std::span<const Extension> e
 
 		Id solvableId = AddSolvable(manifest);
 		_extensionToSolvableId[id] = solvableId;
-		_solvableIdToExtension[solvableId] = id;
+		_solvableIdToExtension[solvableId] = &extension;
 
 		// Setup dependencies and conflicts
 		SetupDependencies(solvableId, manifest);
@@ -272,14 +277,6 @@ std::string LibsolvDependencyResolver::DescribeDependency(
 	return text;
 }
 
-const Extension* LibsolvDependencyResolver::FindExtension(
-	std::span<const Extension> extensions,
-	UniqueId id
-) {
-	auto it = std::ranges::find(extensions, id, &Extension::GetId);
-	return it != extensions.end() ? &*it : nullptr;
-}
-
 int LibsolvDependencyResolver::ConvertComparison(plg::detail::range_operator op) {
 	switch (op) {
 		case plg::detail::range_operator::less:
@@ -292,9 +289,12 @@ int LibsolvDependencyResolver::ConvertComparison(plg::detail::range_operator op)
 			return REL_GT | REL_EQ;
 		case plg::detail::range_operator::greater:
 			return REL_GT;
-		default:
-			return 0;  // No version requirement
 	}
+
+	// Every operator range_operator has is covered above, and there is no sane
+	// fallback: 0 would not read as "no version requirement" here, it would read
+	// as "matches nothing", so a new one must not slip through silently.
+	PLUGIFY_UNREACHABLE();
 }
 
 // ============================================================================
@@ -340,12 +340,11 @@ void LibsolvDependencyResolver::ExcludeConflictDeclarers(
 				}
 
 				auto found = _solvableIdToExtension.find(*pp);
-				const Extension* other = found != _solvableIdToExtension.end()
-										   ? FindExtension(extensions, found->second)
-										   : nullptr;
-				if (!other) {
+				if (found == _solvableIdToExtension.end()) {
 					continue;
 				}
+
+				const Extension* other = found->second;
 
 				DependencyIssue issue;
 				issue.affectedExtension = extension.GetId();
@@ -417,7 +416,7 @@ void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
 				}
 
 				DependencyIssue issue;
-				issue.affectedExtension = it->second;
+				issue.affectedExtension = it->second->GetId();
 				issue.involvedExtension = extension.GetId();
 				issue.problem = "Obsolete";
 				issue.description = std::format(
@@ -428,8 +427,8 @@ void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
 					reason ? std::format(" ({})", *reason) : std::string()
 				);
 
-				resolution.issues[it->second].push_back(std::move(issue));
-				obsoleted.push_back(it->second);
+				obsoleted.push_back(issue.affectedExtension);
+				resolution.issues[issue.affectedExtension].push_back(std::move(issue));
 			}
 		}
 	}
@@ -444,14 +443,8 @@ void LibsolvDependencyResolver::RunSolver(
 	// Create solver
 	std::unique_ptr<Solver, SolverDeleter> solver(solver_create(_pool.get()));
 
-	// Set solver flags
-	solver_set_flag(solver.get(), SOLVER_FLAG_ALLOW_DOWNGRADE, 1);
-	solver_set_flag(solver.get(), SOLVER_FLAG_SPLITPROVIDES, 1);
-
 	// Create job queue - install all extensions
-	Queue queue;
-	std::unique_ptr<Queue, QueueDeleter> jobs(&queue);
-	queue_init(jobs.get());
+	ScopedQueue jobs;
 
 	// Add all extensions as install jobs
 	for (const auto& [extId, solvId] : _extensionToSolvableId) {
@@ -477,10 +470,12 @@ void LibsolvDependencyResolver::RunSolver(
 		ComputeInstallationOrder(trans.get(), resolution);
 	}
 
+	// Name every requirement that is not answered first - which also covers the
+	// optional ones, nobody's problem and so never reaching the solver - and then
+	// let the solver speak for whatever is left.
+	AddUnsatisfiedRequires(extensions, resolution);
+
 	if (ret != 0) {
-		// Problems detected. Name every requirement that nothing provides first,
-		// then let the solver speak for whatever is left.
-		AddUnsatisfiedRequires(extensions, resolution);
 		ProcessSolverProblems(solver.get(), resolution);
 	}
 }
@@ -530,18 +525,19 @@ void LibsolvDependencyResolver::AddUnsatisfiedRequires(
 			continue;
 		}
 
-		// Whatever made it into the load order is satisfied by definition, and an
-		// extension that was excluded already carries the reason it was left out
-		const auto& extId = extension.GetId();
-		if (_excluded.contains(extId) || InLoadOrder(resolution, extId)) {
-			continue;
-		}
+		// Whatever made it into the load order has its requirements answered, and an
+		// extension that was excluded already carries the reason it was left out.
+		// Their optional dependencies are still worth a word.
+		const auto extId = extension.GetId();
+		const bool settled = _excluded.contains(extId) || InLoadOrder(resolution, extId);
 
 		for (const auto& dependency : *manifest.dependencies) {
 			const auto& [depName, constraints, optional] = *dependency._impl;
 
-			// An optional dependency going unmet is not a reason for anything
-			if (optional.value_or(false)) {
+			// An unmet optional dependency keeps nothing from starting, so it is a
+			// note on what will be missing rather than a reason
+			const bool isOptional = optional.value_or(false);
+			if (settled && !isOptional) {
 				continue;
 			}
 
@@ -557,7 +553,8 @@ void LibsolvDependencyResolver::AddUnsatisfiedRequires(
 
 			DependencyIssue issue;
 			issue.affectedExtension = extId;
-			issue.problem = "Unmet dependency";
+			issue.problem = isOptional ? "Optional dependency" : "Unmet dependency";
+			issue.isBlocking = !isOptional;
 
 			auto wanted = DescribeDependency(depName, constraints);
 
@@ -606,14 +603,14 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 		if (source) {
 			auto it = _solvableIdToExtension.find(source);
 			if (it != _solvableIdToExtension.end()) {
-				issue.affectedExtension = it->second;
+				issue.affectedExtension = it->second->GetId();
 			}
 		}
 
 		if (target) {
 			auto it = _solvableIdToExtension.find(target);
 			if (it != _solvableIdToExtension.end()) {
-				issue.involvedExtension = it->second;
+				issue.involvedExtension = it->second->GetId();
 			}
 		}
 
@@ -636,8 +633,10 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 
 		// Unmet requirements are already spelled out one by one; what the solver
 		// adds on top of them is about conflicts, cycles and version constraints.
+		// A note about an optional dependency is not a reason and does not count.
 		if (auto it = resolution.issues.find(issue.affectedExtension);
-			it != resolution.issues.end() && !it->second.empty()) {
+			it != resolution.issues.end()
+			&& std::ranges::any_of(it->second, &DependencyIssue::isBlocking)) {
 			continue;
 		}
 
@@ -715,7 +714,7 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 		{
 			auto extIt = _solvableIdToExtension.find(p);
 			if (extIt != _solvableIdToExtension.end()) {
-				const UniqueId& extId = extIt->second;
+				const auto extId = extIt->second->GetId();
 				resolution.loadOrder.push_back(extId);
 
 				// Build dependency graph
@@ -734,9 +733,16 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 								Id providerId = *pp;
 								auto depIt = _solvableIdToExtension.find(providerId);
 								if (depIt != _solvableIdToExtension.end() && providerId != p) {
-									const UniqueId& depId = depIt->second;
-									resolution.dependencyGraph[extId].push_back(depId);
-									resolution.reverseDependencyGraph[depId].push_back(extId);
+									const auto depId = depIt->second->GetId();
+
+									// Two requirements can name the same extension, and
+									// both graphs have to stay in step, so the edge goes
+									// in once or not at all.
+									auto& deps = resolution.dependencyGraph[extId];
+									if (std::ranges::find(deps, depId) == deps.end()) {
+										deps.push_back(depId);
+										resolution.reverseDependencyGraph[depId].push_back(extId);
+									}
 								}
 							}
 						}
@@ -757,10 +763,7 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 // this is a warning rather than a reason to keep them out, and the chain is what
 // the manifest author needs in order to fix it.
 void LibsolvDependencyResolver::ReportOrderCycles(Transaction* trans, ResolutionReport& resolution) {
-	Queue cycleQueue, memberQueue;
-	std::unique_ptr<Queue, QueueDeleter> cycles(&cycleQueue), members(&memberQueue);
-	queue_init(cycles.get());
-	queue_init(members.get());
+	ScopedQueue cycles, members;
 
 	// Below NORMAL the edge that was broken is not a requirement in the first place
 	transaction_order_get_cycleids(trans, cycles.get(), SOLVER_ORDERCYCLE_NORMAL);
@@ -793,11 +796,11 @@ void LibsolvDependencyResolver::ReportOrderCycles(Transaction* trans, Resolution
 			}
 
 			DependencyIssue issue;
-			issue.affectedExtension = it->second;
+			issue.affectedExtension = it->second->GetId();
 			issue.problem = "Dependency cycle";
 			issue.description = std::format("{}; the order between them is arbitrary", chain);
 			issue.isBlocking = false;
-			resolution.issues[it->second].push_back(std::move(issue));
+			resolution.issues[issue.affectedExtension].push_back(std::move(issue));
 		}
 	}
 }

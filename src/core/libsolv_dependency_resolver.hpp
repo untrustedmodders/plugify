@@ -4,14 +4,9 @@
 #include "plugify/logger.hpp"
 
 extern "C" {
-#include <solv/evr.h>
-#include <solv/policy.h>
 #include <solv/pool.h>
-#include <solv/poolarch.h>
 #include <solv/queue.h>
 #include <solv/repo.h>
-#include <solv/repo_solv.h>
-#include <solv/selection.h>
 #include <solv/solvable.h>
 #include <solv/solver.h>
 #include <solv/solverdebug.h>
@@ -51,11 +46,30 @@ namespace plugify {
 			}
 		};
 
-		struct QueueDeleter {
-			void operator()(Queue* q) const {
-				if (q) {
-					queue_free(q);
-				}
+		// libsolv's Queue owns a heap buffer but is a plain struct itself, so it is
+		// initialized and freed rather than constructed and destroyed. Wrapping it in
+		// a unique_ptr would claim ownership of a stack address; this says what is
+		// actually going on, once.
+		struct ScopedQueue {
+			Queue queue;
+
+			ScopedQueue() {
+				queue_init(&queue);
+			}
+
+			~ScopedQueue() {
+				queue_free(&queue);
+			}
+
+			ScopedQueue(const ScopedQueue&) = delete;
+			ScopedQueue& operator=(const ScopedQueue&) = delete;
+
+			Queue* get() {
+				return &queue;
+			}
+
+			Queue* operator->() {
+				return &queue;
 			}
 		};
 
@@ -83,7 +97,6 @@ namespace plugify {
 		Id MakeDepConstraint(const std::string& name, const std::optional<Constraint>& constraints);
 		static std::string MatchEvr(const Version& version);
 		static std::string DescribeDependency(const std::string& name, const std::optional<Constraint>& constraints);
-		static const Extension* FindExtension(std::span<const Extension> extensions, UniqueId id);
 		int ConvertComparison(plg::detail::range_operator op);
 
 		// Resolution
@@ -102,7 +115,9 @@ namespace plugify {
 		std::unique_ptr<Pool, PoolDeleter> _pool;
 		Repo* _repo = nullptr;
 		std::unordered_map<UniqueId, Id> _extensionToSolvableId;
-		std::unordered_map<Id, UniqueId> _solvableIdToExtension;
+		// Valid for the duration of one Resolve, which is where the extensions it
+		// points into live; cleared with the rest of the per-pool state.
+		std::unordered_map<Id, const Extension*> _solvableIdToExtension;
 		std::unordered_set<UniqueId> _excluded;
 	};
 }  // namespace plugify
