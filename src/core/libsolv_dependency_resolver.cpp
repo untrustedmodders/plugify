@@ -25,11 +25,112 @@ ResolutionReport LibsolvDependencyResolver::Resolve(std::span<const Extension> e
 	// Step 3: Settle what the manifests decide between themselves
 	ExcludeConflictDeclarers(extensions, resolution);
 	ExcludeObsoletedExtensions(extensions, resolution);
+	ReportUnmetDependencies(extensions, resolution);
 
-	// Step 4: Run the solver
-	RunSolver(extensions, resolution);
+	// Step 4: Run the solver for what is left
+	RunSolver(resolution);
 
 	return resolution;
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+// The version in the form libsolv has to compare, as opposed to the form it has
+// to print. Semver and rpm read the same string differently in two places, and
+// both are fixable in the string itself:
+//  - `-` is rpm's release separator, and a version that carries a release outranks
+//    one that does not, so `1.0.0-beta` would come out newer than `1.0.0`. rpm's
+//    `~` goes the other way - it sorts before anything at all, the end of the
+//    string included - which is what a prerelease means in semver.
+//  - build metadata takes no part in semver precedence, so it is dropped instead
+//    of being compared: `1.0.0+build1` has to satisfy `=1.0.0`.
+// What is left over is rpm's reading of a prerelease identifier: it splits
+// `beta2` into `beta` and `2`, and ranks a numeric identifier above an
+// alphabetic one where semver ranks it below.
+static std::string MatchEvr(const Version& version) {
+	auto evr = std::format("{}.{}.{}", version.major(), version.minor(), version.patch());
+
+	const auto& prerelease = version.prerelease_tag();
+	if (!prerelease.empty()) {
+		evr += '~';
+		evr += prerelease;
+	}
+
+	return evr;
+}
+
+static int ConvertComparison(plg::detail::range_operator op) {
+	switch (op) {
+		case plg::detail::range_operator::less:
+			return REL_LT;
+		case plg::detail::range_operator::less_or_equal:
+			return REL_LT | REL_EQ;
+		case plg::detail::range_operator::equal:
+			return REL_EQ;
+		case plg::detail::range_operator::greater_or_equal:
+			return REL_GT | REL_EQ;
+		case plg::detail::range_operator::greater:
+			return REL_GT;
+	}
+
+	// Every operator range_operator has is covered above, and there is no sane
+	// fallback: 0 would not read as "no version requirement" here, it would read
+	// as "matches nothing", so a new one must not slip through silently.
+	PLUGIFY_UNREACHABLE();
+}
+
+// A dependency as its manifest spells it. The pool renders it from the rewritten
+// form that version comparison needs, which is not what the author wrote.
+static std::string DescribeDependency(
+	const std::string& name,
+	const std::optional<Constraint>& constraints
+) {
+	std::string text = name;
+
+	if (constraints && !constraints->empty()) {
+		text += ' ';
+		text += constraints->to_string();
+	}
+
+	return text;
+}
+
+// The extension behind a solvable. The map answers with an id rather than a
+// pointer on purpose: it outlives a single Resolve, and an id cannot go stale.
+static const Extension* FindExtension(
+	std::span<const Extension> extensions,
+	UniqueId id
+) {
+	auto it = std::ranges::find(extensions, id, &Extension::GetId);
+	return it != extensions.end() ? &*it : nullptr;
+}
+
+// The version installed under this name, or nothing when the name does not answer
+// at all - which is a different message. Read from the manifest, because the pool
+// holds the rewritten form that version comparison needs rather than the version
+// as written. One name is one extension; a second copy of it is a broken install,
+// and the solver reports that in its own right.
+static std::string_view DescribeInstalledVersion(
+	std::span<const Extension> extensions,
+	const std::string& name
+) {
+	auto it = std::ranges::find(extensions, name, &Extension::GetName);
+	return it != extensions.end() ? std::string_view(it->GetVersionString()) : std::string_view();
+}
+
+static bool InLoadOrder(const ResolutionReport& resolution, UniqueId id) {
+	return std::ranges::find(resolution.loadOrder, id) != resolution.loadOrder.end();
+}
+
+// The solver composes its own text out of the comparable version form, where a
+// `~` stands for the `-` the manifest wrote. Neither an extension name nor a
+// semver version can hold a `~` of its own, so putting it back is unambiguous.
+static std::string SpelledAsWritten(const char* text) {
+	std::string spelled(text);
+	std::ranges::replace(spelled, '~', '-');
+	return spelled;
 }
 
 // ============================================================================
@@ -66,7 +167,7 @@ void LibsolvDependencyResolver::InitializePool() {
 	// solvables array.
 	_extensionToSolvableId.clear();
 	_solvableIdToExtension.clear();
-	_excluded.clear();
+	_locked.clear();
 
 	_pool.reset(pool_create());
 
@@ -76,8 +177,7 @@ void LibsolvDependencyResolver::InitializePool() {
 	// decides how much of the solver's own trace comes with them. Level 3 is a
 	// few hundred logged lines per resolve, which is a lot to pay to have it on
 	// by default even in a debug build.
-	constexpr int level = PLUGIFY_IS_DEBUG ? 1 : 0;
-	pool_setdebuglevel(_pool.get(), level);
+	pool_setdebuglevel(_pool.get(), PLUGIFY_IS_DEBUG);
 
 	// Create a repository for our extensions. Not libsolv's "installed" repo: that
 	// one is set with pool_set_installed and would turn every job into an upgrade.
@@ -236,80 +336,57 @@ Id LibsolvDependencyResolver::MakeDepConstraint(
 	return resultDep;
 }
 
-// The version in the form libsolv has to compare, as opposed to the form it has
-// to print. Semver and rpm read the same string differently in two places, and
-// both are fixable in the string itself:
-//  - `-` is rpm's release separator, and a version that carries a release outranks
-//    one that does not, so `1.0.0-beta` would come out newer than `1.0.0`. rpm's
-//    `~` goes the other way - it sorts before anything at all, the end of the
-//    string included - which is what a prerelease means in semver.
-//  - build metadata takes no part in semver precedence, so it is dropped instead
-//    of being compared: `1.0.0+build1` has to satisfy `=1.0.0`.
-// What is left over is rpm's reading of a prerelease identifier: it splits
-// `beta2` into `beta` and `2`, and ranks a numeric identifier above an
-// alphabetic one where semver ranks it below.
-std::string LibsolvDependencyResolver::MatchEvr(const Version& version) {
-	auto evr = std::format("{}.{}.{}", version.major(), version.minor(), version.patch());
-
-	const auto& prerelease = version.prerelease_tag();
-	if (!prerelease.empty()) {
-		evr += '~';
-		evr.append(prerelease.data(), prerelease.size());
-	}
-
-	return evr;
-}
-
-// A dependency as its manifest spells it. The pool renders it from the rewritten
-// form that version comparison needs, which is not what the author wrote.
-std::string LibsolvDependencyResolver::DescribeDependency(
-	const std::string& name,
-	const std::optional<Constraint>& constraints
-) {
-	std::string text = name;
-
-	if (constraints && !constraints->empty()) {
-		auto rendered = constraints->to_string();
-		text += ' ';
-		text.append(rendered.data(), rendered.size());
-	}
-
-	return text;
-}
-
-// The extension behind a solvable. The map answers with an id rather than a
-// pointer on purpose: it outlives a single Resolve, and an id cannot go stale.
-const Extension* LibsolvDependencyResolver::FindExtension(
+// Every installed extension that answers to this name and version range, other
+// than `self`. Three passes ask the same question of the pool - who is here that
+// this entry is about - and this is that question.
+std::vector<const Extension*> LibsolvDependencyResolver::Matches(
 	std::span<const Extension> extensions,
-	UniqueId id
+	const std::string& name,
+	const std::optional<Constraint>& constraints,
+	Id self
 ) {
-	auto it = std::ranges::find(extensions, id, &Extension::GetId);
-	return it != extensions.end() ? &*it : nullptr;
-}
+	std::vector<const Extension*> matches;
 
-int LibsolvDependencyResolver::ConvertComparison(plg::detail::range_operator op) {
-	switch (op) {
-		case plg::detail::range_operator::less:
-			return REL_LT;
-		case plg::detail::range_operator::less_or_equal:
-			return REL_LT | REL_EQ;
-		case plg::detail::range_operator::equal:
-			return REL_EQ;
-		case plg::detail::range_operator::greater_or_equal:
-			return REL_GT | REL_EQ;
-		case plg::detail::range_operator::greater:
-			return REL_GT;
+	// Interned, so this asks the pool exactly what the Setup functions put into the
+	// solvable's deparray
+	Id dep = MakeDepConstraint(name, constraints);
+
+	// pool_whatprovides answers with an offset that is non-zero even when nothing
+	// provides the dependency: the list it points at is what has to be empty.
+	Id providers = pool_whatprovides(_pool.get(), dep);
+	if (providers == 0) {
+		return matches;
 	}
 
-	// Every operator range_operator has is covered above, and there is no sane
-	// fallback: 0 would not read as "no version requirement" here, it would read
-	// as "matches nothing", so a new one must not slip through silently.
-	PLUGIFY_UNREACHABLE();
+	for (Id* pp = _pool->whatprovidesdata + providers; *pp; ++pp) {
+		// A manifest naming its own name means other copies of itself, not this one;
+		// libsolv permits that and so do we
+		if (*pp == self) {
+			continue;
+		}
+
+		auto found = _solvableIdToExtension.find(*pp);
+		if (found == _solvableIdToExtension.end()) {
+			continue;
+		}
+
+		if (const Extension* match = FindExtension(extensions, found->second)) {
+			matches.push_back(match);
+		}
+	}
+
+	return matches;
 }
 
 // ============================================================================
-// Solver Execution
+// Settling What the Manifests Decide
 // ============================================================================
+
+// An extension that is out and the reason it is out always travel together
+void LibsolvDependencyResolver::Exclude(ResolutionReport& resolution, DependencyIssue issue) {
+	_locked.insert(issue.affectedExtension);
+	resolution.issues[issue.affectedExtension].push_back(std::move(issue));
+}
 
 // A `conflicts` entry is one-sided in intent - "do not load me together with X" -
 // but libsolv knows only the symmetric kind. With both sides queued as hard
@@ -333,30 +410,7 @@ void LibsolvDependencyResolver::ExcludeConflictDeclarers(
 		for (const auto& conflict : *manifest.conflicts) {
 			const auto& [conflictName, constraints, reason] = *conflict._impl;
 
-			// Ids are interned, so the same name and constraint give back exactly
-			// what SetupConflicts put into SOLVABLE_CONFLICTS.
-			Id dep = MakeDepConstraint(conflictName, constraints);
-
-			Id providers = pool_whatprovides(_pool.get(), dep);
-			if (providers == 0) {
-				continue;
-			}
-
-			for (Id* pp = _pool->whatprovidesdata + providers; *pp; ++pp) {
-				// Conflicting with yourself is how an extension rules out a second
-				// copy of itself; libsolv permits it and so do we.
-				if (*pp == solvableId) {
-					continue;
-				}
-
-				auto found = _solvableIdToExtension.find(*pp);
-				const Extension* other = found != _solvableIdToExtension.end()
-										   ? FindExtension(extensions, found->second)
-										   : nullptr;
-				if (!other) {
-					continue;
-				}
-
+			for (const Extension* other : Matches(extensions, conflictName, constraints, solvableId)) {
 				DependencyIssue issue;
 				issue.affectedExtension = extension.GetId();
 				issue.involvedExtension = other->GetId();
@@ -369,8 +423,7 @@ void LibsolvDependencyResolver::ExcludeConflictDeclarers(
 					reason ? std::format(" ({})", *reason) : std::string()
 				);
 
-				resolution.issues[extension.GetId()].push_back(std::move(issue));
-				_excluded.insert(extension.GetId());
+				Exclude(resolution, std::move(issue));
 			}
 		}
 	}
@@ -385,11 +438,10 @@ void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
 	std::span<const Extension> extensions,
 	ResolutionReport& resolution
 ) {
-	// Collected and applied in one go at the end: while the walk is running
-	// `_excluded` holds the conflict losers only, so two manifests obsoleting each
-	// other take each other out instead of one of them surviving by being walked
-	// first.
-	std::vector<UniqueId> obsoleted;
+	// Taken before the walk: only the conflict losers count as already out, so that
+	// two manifests obsoleting each other take each other out instead of one of
+	// them surviving by being walked first.
+	const auto lostAConflict = _locked;
 
 	for (const auto& extension : extensions) {
 		const auto& manifest = extension.GetManifest();
@@ -398,7 +450,7 @@ void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
 		}
 
 		// Nothing steps aside for an extension that lost a conflict itself
-		if (_excluded.contains(extension.GetId())) {
+		if (lostAConflict.contains(extension.GetId())) {
 			continue;
 		}
 
@@ -407,27 +459,9 @@ void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
 		for (const auto& obsolete : *manifest.obsoletes) {
 			const auto& [obsoleteName, constraints, reason] = *obsolete._impl;
 
-			Id dep = MakeDepConstraint(obsoleteName, constraints);
-
-			Id providers = pool_whatprovides(_pool.get(), dep);
-			if (providers == 0) {
-				continue;
-			}
-
-			for (Id* pp = _pool->whatprovidesdata + providers; *pp; ++pp) {
-				// Obsoleting your own name is how a manifest supersedes older copies of
-				// itself, not a reason for this one to step aside
-				if (*pp == solvableId) {
-					continue;
-				}
-
-				auto it = _solvableIdToExtension.find(*pp);
-				if (it == _solvableIdToExtension.end()) {
-					continue;
-				}
-
+			for (const Extension* other : Matches(extensions, obsoleteName, constraints, solvableId)) {
 				DependencyIssue issue;
-				issue.affectedExtension = it->second;
+				issue.affectedExtension = other->GetId();
 				issue.involvedExtension = extension.GetId();
 				issue.problem = "Obsolete";
 				issue.description = std::format(
@@ -438,95 +472,19 @@ void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
 					reason ? std::format(" ({})", *reason) : std::string()
 				);
 
-				obsoleted.push_back(issue.affectedExtension);
-				resolution.issues[issue.affectedExtension].push_back(std::move(issue));
+				Exclude(resolution, std::move(issue));
 			}
 		}
 	}
-
-	_excluded.insert(obsoleted.begin(), obsoleted.end());
 }
 
-void LibsolvDependencyResolver::RunSolver(
-	std::span<const Extension> extensions,
-	ResolutionReport& resolution
-) {
-	// Create solver
-	std::unique_ptr<Solver, SolverDeleter> solver(solver_create(_pool.get()));
-
-	// Create job queue - install all extensions
-	ScopedQueue jobs;
-
-	// Add all extensions as install jobs
-	for (const auto& [extId, solvId] : _extensionToSolvableId) {
-		if (_excluded.contains(extId)) {
-			// Locked rather than merely left out of the install jobs: the solvable
-			// stays in the pool, so a dependent would otherwise be free to pull the
-			// declarer - and the conflict with it - back in, and the solver would go
-			// back to dropping the other side.
-			queue_push2(jobs.get(), SOLVER_SOLVABLE | SOLVER_LOCK, solvId);
-			continue;
-		}
-
-		queue_push2(jobs.get(), SOLVER_SOLVABLE | SOLVER_INSTALL, solvId);
-	}
-
-	// Run the solver
-	int ret = solver_solve(solver.get(), jobs.get());
-
-	// Success - extract the solution
-	std::unique_ptr<Transaction, TransactionDeleter> trans(solver_create_transaction(solver.get()));
-
-	if (trans) {
-		ComputeInstallationOrder(trans.get(), resolution);
-	}
-
-	// Name every requirement that is not answered first - which also covers the
-	// optional ones, nobody's problem and so never reaching the solver - and then
-	// let the solver speak for whatever is left.
-	AddUnsatisfiedRequires(extensions, resolution);
-
-	if (ret != 0) {
-		ProcessSolverProblems(solver.get(), resolution);
-	}
-}
-
-// ============================================================================
-// Problem Processing
-// ============================================================================
-
-static bool InLoadOrder(const ResolutionReport& resolution, UniqueId id) {
-	return std::ranges::find(resolution.loadOrder, id) != resolution.loadOrder.end();
-}
-
-// "version 2.0.0", or "versions 2.0.0, 1.5.0", for everything installed under
-// this name - empty when nothing answers to it at all, which is a different
-// message. Read from the manifests, since the pool holds the rewritten form that
-// version comparison needs rather than the version as written.
-std::string LibsolvDependencyResolver::DescribeInstalledVersions(
-	std::span<const Extension> extensions,
-	const std::string& name
-) {
-	std::vector<std::string> versions;
-
-	for (const auto& extension : extensions) {
-		if (extension.GetName() == name) {
-			versions.emplace_back(extension.GetVersionString());
-		}
-	}
-
-	if (versions.empty()) {
-		return {};
-	}
-
-	return std::format(
-		"{} {}",
-		versions.size() == 1 ? "version" : "versions",
-		plg::join(versions, ", ")
-	);
-}
-
-void LibsolvDependencyResolver::AddUnsatisfiedRequires(
+// The solver reports one representative rule per problem, so an extension with
+// several unmet requirements would only ever name the first one - fix it, restart,
+// and the next one shows up. A requirement is a plain question to the pool though,
+// and the answer does not depend on the solve: a requirement nothing provides
+// cannot be met, and an extension that has one cannot reach the load order. So
+// walk the manifests and name all of them at once, before solving.
+void LibsolvDependencyResolver::ReportUnmetDependencies(
 	std::span<const Extension> extensions,
 	ResolutionReport& resolution
 ) {
@@ -536,11 +494,10 @@ void LibsolvDependencyResolver::AddUnsatisfiedRequires(
 			continue;
 		}
 
-		// Whatever made it into the load order has its requirements answered, and an
-		// extension that was excluded already carries the reason it was left out.
-		// Their optional dependencies are still worth a word.
+		// An extension that is already out carries the reason it is out; its
+		// optional dependencies are still worth a word.
 		const auto extId = extension.GetId();
-		const bool settled = _excluded.contains(extId) || InLoadOrder(resolution, extId);
+		const bool settled = _locked.contains(extId);
 
 		for (const auto& dependency : *manifest.dependencies) {
 			const auto& [depName, constraints, optional] = *dependency._impl;
@@ -552,13 +509,7 @@ void LibsolvDependencyResolver::AddUnsatisfiedRequires(
 				continue;
 			}
 
-			// Interned, so this is the dep SetupDependencies put into
-			// SOLVABLE_REQUIRES. pool_whatprovides answers with an offset that is
-			// non-zero even when nothing provides the dependency: the list it points
-			// at is what has to be empty.
-			Id dep = MakeDepConstraint(depName, constraints);
-			Id providers = pool_whatprovides(_pool.get(), dep);
-			if (providers != 0 && _pool->whatprovidesdata[providers] != 0) {
+			if (!Matches(extensions, depName, constraints).empty()) {
 				continue;
 			}
 
@@ -587,14 +538,52 @@ void LibsolvDependencyResolver::AddUnsatisfiedRequires(
 	}
 }
 
-// The solver composes its own text out of the comparable version form, where a
-// `~` stands for the `-` the manifest wrote. Neither an extension name nor a
-// semver version can hold a `~` of its own, so putting it back is unambiguous.
-static std::string SpelledAsWritten(const char* text) {
-	std::string spelled(text);
-	std::ranges::replace(spelled, '~', '-');
-	return spelled;
+// ============================================================================
+// Solver Execution
+// ============================================================================
+
+void LibsolvDependencyResolver::RunSolver(ResolutionReport& resolution) {
+	// Create solver
+	std::unique_ptr<Solver, SolverDeleter> solver(solver_create(_pool.get()));
+
+	// Create job queue - install all extensions
+	ScopedQueue jobs;
+
+	// Add all extensions as install jobs
+	for (const auto& [extId, solvId] : _extensionToSolvableId) {
+		if (_locked.contains(extId)) {
+			// Locked rather than merely left out of the install jobs: the solvable
+			// stays in the pool, so a dependent would otherwise be free to pull the
+			// declarer - and the conflict with it - back in, and the solver would go
+			// back to dropping the other side.
+			queue_push2(jobs.get(), SOLVER_SOLVABLE | SOLVER_LOCK, solvId);
+			continue;
+		}
+
+		queue_push2(jobs.get(), SOLVER_SOLVABLE | SOLVER_INSTALL, solvId);
+	}
+
+	// Run the solver
+	int ret = solver_solve(solver.get(), jobs.get());
+
+	// Success - extract the solution
+	std::unique_ptr<Transaction, TransactionDeleter> trans(solver_create_transaction(solver.get()));
+
+	if (trans) {
+		ComputeInstallationOrder(trans.get(), resolution);
+	}
+
+	if (ret != 0) {
+		// Unmet requirements are already named one by one; what the solver adds on
+		// top of them is about conflicts, cycles and competing copies.
+		ProcessSolverProblems(solver.get(), resolution);
+	}
 }
+
+// ============================================================================
+// Problem Processing
+// ============================================================================
+
 
 void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, ResolutionReport& resolution) {
 	Id problemCount = static_cast<Id>(solver_problem_count(solver));

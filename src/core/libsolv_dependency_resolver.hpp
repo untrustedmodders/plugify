@@ -95,18 +95,20 @@ namespace plugify {
 
 		// Constraint conversion
 		Id MakeDepConstraint(const std::string& name, const std::optional<Constraint>& constraints);
-		static std::string MatchEvr(const Version& version);
-		static std::string DescribeDependency(const std::string& name, const std::optional<Constraint>& constraints);
-		static const Extension* FindExtension(std::span<const Extension> extensions, UniqueId id);
-		int ConvertComparison(plg::detail::range_operator op);
+		std::vector<const Extension*> Matches(
+			std::span<const Extension> extensions,
+			const std::string& name,
+			const std::optional<Constraint>& constraints,
+			Id self = 0  // a solvable to leave out, none by default
+		);
 
 		// Resolution
+		void Exclude(ResolutionReport& resolution, DependencyIssue issue);
 		void ExcludeConflictDeclarers(std::span<const Extension> extensions, ResolutionReport& resolution);
 		void ExcludeObsoletedExtensions(std::span<const Extension> extensions, ResolutionReport& resolution);
-		void RunSolver(std::span<const Extension> extensions, ResolutionReport& resolution);
+		void ReportUnmetDependencies(std::span<const Extension> extensions, ResolutionReport& resolution);
+		void RunSolver(ResolutionReport& resolution);
 		void ProcessSolverProblems(Solver* solver, ResolutionReport& resolution);
-		void AddUnsatisfiedRequires(std::span<const Extension> extensions, ResolutionReport& resolution);
-		static std::string DescribeInstalledVersions(std::span<const Extension> extensions, const std::string& name);
 		std::vector<std::string> ExtractSolutions(Solver* solver, Id problemId);
 		void ComputeInstallationOrder(Transaction* trans, ResolutionReport& resolution);
 		void ReportOrderCycles(Transaction* trans, ResolutionReport& resolution);
@@ -117,6 +119,6 @@ namespace plugify {
 		Repo* _repo = nullptr;
 		std::unordered_map<UniqueId, Id> _extensionToSolvableId;
 		std::unordered_map<Id, UniqueId> _solvableIdToExtension;
-		std::unordered_set<UniqueId> _excluded;
+		std::unordered_set<UniqueId> _locked;
 	};
 }  // namespace plugify
