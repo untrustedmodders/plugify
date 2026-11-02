@@ -509,14 +509,9 @@ public:
 #pragma region Reports
 	static constexpr size_t INITIAL_BUFFER_SIZE = 4096;
 
-	// Name of one of our own extensions. ToString() would answer from a registry
-	// shared by the whole process, where ids from another Plugify instance collide
-	// with ours, and anything it has not seen comes back as "<unknown>".
 	std::string_view NameOf(UniqueId id) const {
-		auto it = std::ranges::find_if(extensions, [&](const Extension& e) {
-			return e.GetId() == id;
-		});
-		return it != extensions.end() ? std::string_view(it->GetName()) : "<unknown>";
+		auto it = std::ranges::find(extensions, id, &Extension::GetId);
+		return it != extensions.end() ? it->GetName() : "<unknown>";
 	}
 
 	std::string GenerateLoadOrder() const {
@@ -638,9 +633,7 @@ void Manager::Terminate() const {
 
 // Query operations
 bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
-	auto it = std::ranges::find_if(_impl->extensions, [&](const Extension& e) {
-		return e.GetName() == name;
-	});
+	auto it = std::ranges::find(_impl->extensions, name, &Extension::GetName);
 	if (it != _impl->extensions.end()) {
 		return !constraint || constraint->contains(it->GetVersion());
 	}
@@ -648,9 +641,7 @@ bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint>
 }
 
 const Extension* Manager::FindExtension(std::string_view name) const noexcept {
-	auto it = std::ranges::find_if(_impl->extensions, [&](const Extension& e) {
-		return e.GetName() == name;
-	});
+	auto it = std::ranges::find(_impl->extensions, name, &Extension::GetName);
 	if (it != _impl->extensions.end()) {
 		return &(*it);
 	}
@@ -658,9 +649,7 @@ const Extension* Manager::FindExtension(std::string_view name) const noexcept {
 }
 
 const Extension* Manager::FindExtension(UniqueId id) const noexcept {
-	auto it = std::ranges::find_if(_impl->extensions, [&](const Extension& e) {
-		return e.GetId() == id;
-	});
+	auto it = std::ranges::find(_impl->extensions, id, &Extension::GetId);
 	if (it != _impl->extensions.end()) {
 		return &(*it);
 	}
