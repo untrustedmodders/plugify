@@ -410,7 +410,7 @@ namespace plugify {
 			const ExecutionContext<Extension>& ctx
 		) override {
 			// Common dependency failure check
-			if (_failureTracker.HasAnyDependencyFailed(ext, _reverseDepGraph)) {
+			if (_failureTracker.HasAnyDependencyFailed(ext, _depGraph)) {
 				return HandleDependencyFailure(ext);
 			}
 
@@ -431,7 +431,7 @@ namespace plugify {
 
 		// Handle dependency failure uniformly
 		Result<void> HandleDependencyFailure(Extension& ext) {
-			std::string failedDep = _failureTracker.GetFailedDependencyName(ext, _reverseDepGraph);
+			std::string failedDep = _failureTracker.GetFailedDependencyName(ext, _depGraph);
 
 			ext.SetState(ExtensionState::Skipped);
 			ext.AddError(std::format("Skipped: dependency '{}' failed", failedDep));
@@ -458,8 +458,10 @@ namespace plugify {
 		}
 
 	private:
+		// The dependents of a failed extension live in the reverse graph; the forward
+		// one holds what it depended on, which has nothing to answer for.
 		void PropagateFailureToDirectDependents(const Extension& failedExt) const {
-			if (auto it = _depGraph.find(failedExt.GetId()); it != _depGraph.end()) {
+			if (auto it = _reverseDepGraph.find(failedExt.GetId()); it != _reverseDepGraph.end()) {
 				for (const auto& dependentId : it->second) {
 					_failureTracker.MarkFailed(dependentId);
 				}
