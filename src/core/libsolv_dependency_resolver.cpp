@@ -482,7 +482,7 @@ void LibsolvDependencyResolver::ExcludeConflictDeclarers(
 					DescribeDependency(conflictName, constraints),
 					other->GetName(),
 					other->GetVersionString(),
-					reason ? std::format(" ({})", *reason) : std::string()
+					reason ? std::format(" ({})", *reason) : ""
 				);
 
 				Exclude(resolution, std::move(issue));
@@ -531,7 +531,7 @@ void LibsolvDependencyResolver::ExcludeObsoletedExtensions(
 					extension.GetName(),
 					extension.GetVersionString(),
 					DescribeDependency(obsoleteName, constraints),
-					reason ? std::format(" ({})", *reason) : std::string()
+					reason ? std::format(" ({})", *reason) : ""
 				);
 
 				Exclude(resolution, std::move(issue));
