@@ -10,6 +10,7 @@
 #include "plg/source_location.hpp"
 #include "plg/format.hpp"
 #include "plg/path.hpp"
+#include "plg/flat.hpp"
 #include "plg/version.hpp"
 
 namespace plugify {

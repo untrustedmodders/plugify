@@ -13,7 +13,7 @@ namespace plugify {
 	// Parsing Stage - Transform type
 	class ParsingStage : public ITransformStage<Extension> {
 		std::shared_ptr<IFileSystem> _fileSystem;
-		std::map<ExtensionType, valijson::Schema> _schemas;
+		std::flat_map<ExtensionType, valijson::Schema> _schemas;
 
 	public:
 		ParsingStage(std::shared_ptr<IFileSystem> fileSystem)
@@ -226,7 +226,7 @@ namespace plugify {
 
 		// Build language registry and add language dependencies
 		static void AddLanguageDependencies(std::vector<Extension>& items) {
-			std::map<std::string, std::string> languages;
+			std::flat_map<std::string, std::string> languages;
 
 			for (const auto& ext : items) {
 				if (ext.GetType() == ExtensionType::Module) {
@@ -482,7 +482,7 @@ namespace plugify {
 	// ============================================================================
 
 	class LoadingStage : public BaseFailurePropagatingStage<LoadingStage> {
-		std::map<std::string, Extension*> _loadedModules;
+		std::flat_map<std::string, Extension*> _loadedModules;
 
 	public:
 		using BaseFailurePropagatingStage::BaseFailurePropagatingStage;

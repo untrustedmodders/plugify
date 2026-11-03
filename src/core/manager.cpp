@@ -400,7 +400,7 @@ public:
 
 		// Which language modules are installed is the most useful piece of context
 		// here: a plugin without its module is the most common way to get here.
-		std::map<std::string, std::string> languages;
+		std::flat_map<std::string, std::string> languages;
 		for (const auto& ext : extensions) {
 			if (ext.IsModule() && !ext.GetLanguage().empty()) {
 				languages.emplace(ext.GetLanguage(), ext.GetName());
