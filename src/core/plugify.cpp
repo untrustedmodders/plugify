@@ -116,7 +116,7 @@ struct Plugify::Impl {
 		}
 
 		// Calculate delta time if not provided
-		if (deltaTime == std::chrono::milliseconds{ 0 }) {
+		if (deltaTime == std::chrono::milliseconds::zero()) {
 			auto now = std::chrono::steady_clock::now();
 			deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdateTime);
 			lastUpdateTime = now;

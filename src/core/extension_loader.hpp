@@ -78,10 +78,10 @@ namespace plugify {
 					"  Total load time: {}\n",
 					modulesLoaded,
 					pluginsLoaded,
-					slowestModuleLoad,
 					ToString(slowestModule),
-					slowestPluginLoad,
+					slowestModuleLoad,
 					ToString(slowestPlugin),
+					slowestPluginLoad,
 					totalLoadTime
 				);
 			}
