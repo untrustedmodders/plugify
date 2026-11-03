@@ -42,7 +42,7 @@ set(PLUGIFY_VALIJSON_REPO "https://github.com/tristanpenman/valijson.git" CACHE 
 set(PLUGIFY_VALIJSON_TAG "f994b2a155a093b5c80ae7641932e4f455eeff20" CACHE STRING "")
 set(PLUGIFY_GLAZE_REPO "https://github.com/stephenberry/glaze.git" CACHE STRING "")
 if (PLUGIFY_DEFAULT_CXX_STANDARD GREATER 20)
-    set(PLUGIFY_GLAZE_TAG "v9.1.0" CACHE STRING "")
+    set(PLUGIFY_GLAZE_TAG "v7.1.1" CACHE STRING "")
 else()
     set(PLUGIFY_GLAZE_TAG "v2.9.5" CACHE STRING "") # Use older version for C++20 compatibility
 endif()

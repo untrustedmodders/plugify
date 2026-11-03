@@ -3,11 +3,16 @@
 #include <version>
 #include <functional>
 
-#ifndef __cpp_lib_flat_map
-#include <map>
+#ifdef __cpp_lib_flat_map
+#  include <flat_map>
+#else
+#  include <map>
 #endif
-#ifndef __cpp_lib_flat_set
-#include <set>
+
+#ifdef __cpp_lib_flat_set
+#  include <flat_set>
+#else
+#  include <set>
 #endif
 
 namespace std {
