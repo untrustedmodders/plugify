@@ -117,6 +117,14 @@ namespace plugify {
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
 		) override {
 			size_t discovered = items.size();
+
+			// Nothing to resolve is not the same as nothing resolvable: an empty
+			// extensions directory is answered with a warning further up, and there is
+			// no load order to be wrong about.
+			if (discovered == 0) {
+				return {};
+			}
+
 			auto [filtered, excluded] = FilterByPolicy(items);
 
 			if (filtered.empty()) {

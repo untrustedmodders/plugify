@@ -14,6 +14,7 @@ namespace plugify {
 		size_t succeeded = 0;
 		size_t failed = 0;
 		std::chrono::milliseconds elapsed{ 0 };
+		bool stopped = false;
 		std::vector<std::pair<std::string, std::string>> errors;
 	};
 
@@ -69,26 +70,31 @@ namespace plugify {
 				std::string buffer;
 				auto it = std::back_inserter(buffer);
 
-				// Count total failures across all stages
+				// A stage that stopped has nothing to say through its failure count: with
+				// no items to process that count is zero, so ask it directly
 				size_t totalFailed = 0;
-				for (const auto& [_, s] : stages) {
-					totalFailed += s.failed;
+				bool anyStopped = false;
+				for (const auto& [_, stage] : stages) {
+					totalFailed += stage.failed;
+					anyStopped |= stage.stopped;
 				}
 
-				if (totalFailed == 0) {
+				if (totalFailed == 0 && !anyStopped) {
 					return "No errors occurred.";
 				}
 
 				std::format_to(it, "\n=== Pipeline Failed ===\n");
-				std::format_to(it, "{} item(s) failed to process:\n\n", totalFailed);
+				if (totalFailed != 0) {
+					std::format_to(it, "{} item(s) failed to process:\n\n", totalFailed);
+				}
 
 				// Only show stages that had failures
-				for (const auto& [name, s] : stages) {
-					if (s.failed > 0 || !s.errors.empty()) {
-						std::format_to(it, "Stage '{}': {} failed\n", name, s.failed);
+				for (const auto& [name, stage] : stages) {
+					if (stage.failed > 0 || !stage.errors.empty()) {
+						std::format_to(it, "Stage '{}': {} failed\n", name, stage.failed);
 
 						// Show actual errors with cleaner formatting
-						for (const auto& [item, error] : s.errors) {
+						for (const auto& [item, error] : stage.errors) {
 							std::format_to(it, "  • {}: {}\n", item, error);
 						}
 						std::format_to(it, "\n");
@@ -165,11 +171,14 @@ namespace plugify {
 				);
 				auto stats = ExecuteStage(stage.get(), items, ctx);
 
-				bool failed = stats.failed > 0 && required;
+				// Items that failed are the normal outcome of a stage doing its work:
+				// each one carries its own reason and the stages after this one still
+				// have work to do for everything else. Only a stage that could not run
+				// at all leaves nothing to continue with.
+				bool stopped = stats.stopped && required;
 				report.stages.emplace_back(std::move(title), std::move(stats));
 
-				// Check if we should continue
-				if (failed) {
+				if (stopped) {
 					break;
 				}
 			}
@@ -273,6 +282,7 @@ namespace plugify {
 			} else {
 				stats.succeeded = 0;
 				stats.failed = originalSize;
+				stats.stopped = true;
 				stats.errors.emplace_back(stage->GetName(), std::move(result.error()));
 			}
 		}

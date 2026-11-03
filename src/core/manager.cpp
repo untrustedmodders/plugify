@@ -128,11 +128,13 @@ public:
 
 		auto report = pipeline->Execute(extensions);
 
-		// compute total failed items across stages
-		size_t totalFailed = 0;
-		for (const auto& [name, stats] : report.stages) {
-			totalFailed += stats.failed;
-		}
+		// A stage that stopped is Plugify unable to do its job; an extension that did
+		// not come up is Plugify doing its job and saying so. Only the first is the
+		// caller's problem, and a stage can only stop before anything is loaded, so
+		// the second always leaves a system that is up and has to be torn down.
+		const bool stopped = std::ranges::any_of(report.stages, [](const auto& stage) {
+			return stage.second.stopped;
+		});
 
 		// Print reports if configured
 		if (config.logging.printReport) {
@@ -159,8 +161,7 @@ public:
 			if (config.logging.printDigraphDot) {
 				auto graph = GenerateDependencyGraphDOT();
 
-				const auto& exportPath = config.logging.exportDigraphDot;
-				if (exportPath.empty()) {
+				if (const auto& exportPath = config.logging.exportDigraphDot; exportPath.empty()) {
 					// Nowhere to put it, so the log is the only way to get it out
 					logger->Log(graph, Severity::Info);
 				} else if (auto result = fileSystem->WriteTextFile(exportPath, graph); !result) {
@@ -180,16 +181,17 @@ public:
 		// an extension silently dropped during resolution is the hardest kind of
 		// failure to track down.
 		auto problems = GenerateProblemReport();
-
-		if (totalFailed > 0) {
-			// The caller surfaces what we return, so the stage-by-stage breakdown
-			// only goes to the log, where it is useful for debugging Plugify itself.
-			logger->Log(report.Error(), Severity::Debug);
-			return MakeError(problems.empty() ? report.Error() : problems);
-		}
-
 		if (!problems.empty()) {
 			logger->Log(problems, Severity::Error);
+		}
+
+		if (stopped) {
+			// The caller surfaces what we return, so the stage-by-stage breakdown
+			// only goes to the log, where it is useful for debugging Plugify itself.
+			auto error = report.Error();
+			logger->Log(error, Severity::Debug);
+
+			return MakeError(!problems.empty() ? std::move(problems) : std::move(error));
 		}
 
 		initialized = true;
