@@ -6,7 +6,6 @@
 #include "plugify/language_module.hpp"
 #include "plugify/lifecycle.hpp"
 #include "plugify/provider.hpp"
-#include "plugify/registrar.hpp"
 
 namespace plugify {
 	template <typename Callback>
@@ -64,9 +63,9 @@ namespace plugify {
 			std::chrono::milliseconds totalLoadTime{};
 
 			std::chrono::milliseconds slowestModuleLoad{};
-			UniqueId slowestModule;
+			std::string_view slowestModule{ "<unknown>" };
 			std::chrono::milliseconds slowestPluginLoad{};
-			UniqueId slowestPlugin;
+			std::string_view slowestPlugin{ "<unknown>" };
 
 			std::string Summary() const {
 				return std::format(
@@ -78,9 +77,9 @@ namespace plugify {
 					"  Total load time: {}\n",
 					modulesLoaded,
 					pluginsLoaded,
-					ToString(slowestModule),
+					slowestModule,
 					slowestModuleLoad,
-					ToString(slowestPlugin),
+					slowestPlugin,
 					slowestPluginLoad,
 					totalLoadTime
 				);
@@ -116,7 +115,7 @@ namespace plugify {
 				_stats.totalLoadTime += elapsed;
 				if (elapsed > _stats.slowestModuleLoad) {
 					_stats.slowestModuleLoad = elapsed;
-					_stats.slowestModule = module.GetId();
+					_stats.slowestModule = module.GetName();
 				}
 			});
 
@@ -187,7 +186,7 @@ namespace plugify {
 				_stats.totalLoadTime += elapsed;
 				if (elapsed > _stats.slowestPluginLoad) {
 					_stats.slowestPluginLoad = elapsed;
-					_stats.slowestPlugin = plugin.GetId();
+					_stats.slowestPlugin = plugin.GetName();
 				}
 			});
 
@@ -375,9 +374,9 @@ namespace plugify {
 		Result<void> LoadLanguageModule(std::shared_ptr<IAssembly> assembly, Extension& module) {
 			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
-			constexpr std::string_view kGetLanguageModuleFn = "GetLanguageModule";
+			constexpr std::string_view GetLanguageModuleFn = "GetLanguageModule";
 
-			auto entryFunc = assembly->GetSymbol(kGetLanguageModuleFn);
+			auto entryFunc = assembly->GetSymbol(GetLanguageModuleFn);
 			if (!entryFunc) {
 				return MakeError(std::move(entryFunc.error()));
 			}
@@ -386,7 +385,7 @@ namespace plugify {
 
 			auto* languageModule = entryFunc->As<GetLanguageModule>()();
 			if (!languageModule) {
-				return MakeError("Invalid address from '{}'", kGetLanguageModuleFn);
+				return MakeError("Invalid address from '{}'", GetLanguageModuleFn);
 			}
 
 #if PLUGIFY_PLATFORM_WINDOWS

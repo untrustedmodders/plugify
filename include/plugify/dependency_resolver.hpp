@@ -15,8 +15,8 @@ namespace plugify {
 	 * @brief Represents a specific issue found during dependency resolution
 	 */
 	struct DependencyIssue {
-		UniqueId affectedExtension{ -1 };
-		UniqueId involvedExtension{ -1 };
+		UniqueId affectedExtension;
+		UniqueId involvedExtension;
 		std::string problem;
 		std::string description;
 		std::optional<std::vector<std::string>> suggestedFixes;

@@ -391,6 +391,7 @@ namespace plugify {
 		const std::unordered_map<UniqueId, std::vector<UniqueId>>& _depGraph;
 		const std::unordered_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
 		std::chrono::milliseconds _timeout;
+		std::span<Extension> _extensions;
 
 	public:
 		BaseFailurePropagatingStage(
@@ -411,6 +412,19 @@ namespace plugify {
 			return true;
 		}
 
+		void Setup(
+			std::span<Extension> items,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
+		) override {
+			_extensions = items;
+
+			if constexpr (requires(Derived& d) {
+				d.DoSetup(items, ctx);
+			}) {
+				static_cast<Derived*>(this)->DoSetup(items, ctx);
+			}
+		}
+
 		Result<void> ProcessItem(
 			Extension& ext,
 			size_t position,
@@ -418,12 +432,27 @@ namespace plugify {
 			const ExecutionContext<Extension>& ctx
 		) override {
 			// Common dependency failure check
-			if (_failureTracker.HasAnyDependencyFailed(ext, _depGraph)) {
-				return HandleDependencyFailure(ext);
+			if (auto failedDep = _failureTracker.GetFailedDependency(ext, _depGraph)) {
+				return HandleDependencyFailure(ext, failedDep);
 			}
 
 			// Delegate to derived class for actual processing
-			return static_cast<Derived*>(this)->DoProcessItem(ext, position, total, ctx);
+			if constexpr (requires(Derived& d) {
+				d.DoProcessItem(ext, position, total, ctx);
+			}) {
+				return static_cast<Derived*>(this)->DoProcessItem(ext, position, total, ctx);
+			}
+		}
+
+		void Teardown(
+			std::span<Extension> items,
+			[[maybe_unused]] const ExecutionContext<Extension>& ctx
+		) override {
+			if constexpr (requires(Derived& d) {
+				d.DoTeardown(items, ctx);
+			}) {
+				static_cast<Derived*>(this)->DoTeardown(items, ctx);
+			}
 		}
 
 		// Make timeout configurable per stage
@@ -438,8 +467,9 @@ namespace plugify {
 		// virtual void OnProcessingComplete(Extension& ext, bool success) {}
 
 		// Handle dependency failure uniformly
-		Result<void> HandleDependencyFailure(Extension& ext) {
-			std::string failedDep = _failureTracker.GetFailedDependencyName(ext, _depGraph);
+		Result<void> HandleDependencyFailure(Extension& ext, UniqueId id) {
+			auto it = std::ranges::find(_extensions, id, &Extension::GetId);
+			std::string_view failedDep = it != _extensions.end() ? it->GetName() : std::string_view{"<unknown>"};
 
 			ext.SetState(ExtensionState::Skipped);
 			ext.AddError(std::format("Skipped: dependency '{}' failed", failedDep));
@@ -564,10 +594,10 @@ namespace plugify {
 				   && item.GetType() == ExtensionType::Plugin;
 		}
 
-		void Setup(
+		void DoSetup(
 			std::span<Extension> items,
 			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) override {
+		) {
 			for (const auto& ext : items) {
 				if (ext.GetType() == ExtensionType::Module
 					&& ext.GetState() == ExtensionState::Running) {

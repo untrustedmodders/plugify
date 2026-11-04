@@ -98,16 +98,6 @@ static std::string DescribeDependency(
 	return text;
 }
 
-// The extension behind a solvable. The map answers with an id rather than a
-// pointer on purpose: it outlives a single Resolve, and an id cannot go stale.
-static const Extension* FindExtension(
-	std::span<const Extension> extensions,
-	UniqueId id
-) {
-	auto it = std::ranges::find(extensions, id, &Extension::GetId);
-	return it != extensions.end() ? &*it : nullptr;
-}
-
 // "version 2.0.0", or "versions 2.0.0, 1.5.0", for everything installed under
 // this name - empty when nothing answers to it at all, which is a different
 // message. Read from the manifests, since the pool holds the rewritten form that
@@ -135,10 +125,6 @@ static std::string DescribeInstalledVersions(
 		versions.size() == 1 ? "version" : "versions",
 		plg::join(versions, ", ")
 	);
-}
-
-static bool InLoadOrder(const ResolutionReport& resolution, UniqueId id) {
-	return std::ranges::find(resolution.loadOrder, id) != resolution.loadOrder.end();
 }
 
 // The solver composes its own text out of the comparable version form, where a
@@ -387,8 +373,9 @@ std::vector<const Extension*> LibsolvDependencyResolver::Matches(
 			continue;
 		}
 
-		if (const Extension* match = FindExtension(extensions, found->second)) {
-			matches.push_back(match);
+		auto it = std::ranges::find(extensions, found->second, &Extension::GetId);
+		if (it != extensions.end()) {
+			matches.push_back(&(*it));
 		}
 	}
 
@@ -597,8 +584,7 @@ void LibsolvDependencyResolver::ReportUnmetDependencies(
 					"'{}' is satisfied only by a copy that is not loading",
 					wanted
 				);
-			} else if (auto installed = DescribeInstalledVersions(extensions, depName);
-					   !installed.empty()) {
+			} else if (auto installed = DescribeInstalledVersions(extensions, depName); !installed.empty()) {
 				issue.description = std::format(
 					"'{}' is not satisfied by the installed {}",
 					wanted,
@@ -694,14 +680,14 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 		// extension that did reach the load order is never read back, so the side
 		// that needs the reason would be left holding nothing but "ruled out by
 		// something else".
-		if (issue.involvedExtension != -1
-			&& (issue.affectedExtension == -1
-				|| (InLoadOrder(resolution, issue.affectedExtension)
-					&& !InLoadOrder(resolution, issue.involvedExtension)))) {
+		if (issue.involvedExtension
+			&& (!issue.affectedExtension
+				|| (std::ranges::contains(resolution.loadOrder, issue.affectedExtension)
+					&& !std::ranges::contains(resolution.loadOrder, issue.involvedExtension)))) {
 			std::swap(issue.affectedExtension, issue.involvedExtension);
 		}
 
-		if (issue.affectedExtension == -1) {
+		if (!issue.affectedExtension) {
 			continue;
 		}
 
@@ -813,7 +799,7 @@ void LibsolvDependencyResolver::ComputeInstallationOrder(Transaction* trans, Res
 									// both graphs have to stay in step, so the edge goes
 									// in once or not at all.
 									auto& deps = resolution.dependencyGraph[extId];
-									if (std::ranges::find(deps, depId) == deps.end()) {
+									if (!std::ranges::contains(deps, depId)) {
 										deps.push_back(depId);
 										resolution.reverseDependencyGraph[depId].push_back(extId);
 									}

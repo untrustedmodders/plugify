@@ -361,12 +361,12 @@ public:
 			}
 		}
 
-		UniqueId id{ 0 };
+		UniqueId id;
 
 		std::vector<Extension> exts;
 		exts.reserve(manifestPaths.size());
 		for (auto&& path : manifestPaths) {
-			exts.emplace_back(id++, std::move(path));
+			exts.emplace_back(++id, std::move(path));
 		}
 		return exts;
 	}

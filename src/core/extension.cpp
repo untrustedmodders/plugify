@@ -1,7 +1,6 @@
 #include "plugify/assembly.hpp"
 #include "plugify/extension.hpp"
 #include "plugify/language_module.hpp"
-#include "plugify/registrar.hpp"
 
 using namespace plugify;
 
@@ -47,7 +46,6 @@ struct Extension::Impl {
 	} timings;
 
 	// Error tracking
-	std::unique_ptr<Registrar> registrar;
 	std::vector<std::string> errors;
 	std::vector<std::string> warnings;
 
@@ -70,8 +68,6 @@ struct Extension::Impl {
 			manifest.ResolvePaths(parent, location);
 		}
 		location = std::move(parent);
-
-		registrar = std::make_unique<Registrar>(id, manifest.name);
 	}
 };
 

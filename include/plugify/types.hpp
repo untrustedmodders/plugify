@@ -55,7 +55,7 @@ namespace plugify {
 		}
 
 		constexpr explicit operator bool() const noexcept {
-			return value != -1;
+			return value;
 		}
 
 		// prefix increment / decrement
@@ -108,8 +108,8 @@ namespace plugify {
 		}
 
 	private:
-		Value value{ -1 };
-		const char* name{ nullptr };  // Debug-only pointer.
+		Value value{};
+		const char* name{};  // Debug-only pointer.
 	};
 
 	/**
