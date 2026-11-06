@@ -29,7 +29,9 @@ namespace plugify {
 		void Update(std::chrono::milliseconds deltaTime) const;
 		void Terminate() const;
 
-		// Query operations
+		// Query operations. The pointers point into the manager's own list and stay
+		// valid until the next Initialize rebuilds it, so nothing worth keeping
+		// across a reload should be kept as a pointer.
 		[[nodiscard]] bool
 		IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;
 		[[nodiscard]] const Extension* FindExtension(std::string_view name) const noexcept;

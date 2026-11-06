@@ -31,7 +31,10 @@ struct Manager::Impl {
 	std::optional<Provider> provider;
 	std::optional<ExtensionLoader> loader;
 	std::vector<Extension> extensions;
-	std::mutex lifecycleMutex;
+	// Recursive on purpose: the queries below take it too, and plugin code reaches
+	// them through Provider from inside OnPluginStart, which runs on this thread
+	// with Initialize already holding it.
+	std::recursive_mutex lifecycleMutex;
 	bool initialized{ false };
 
 	std::shared_ptr<IAssemblyLoader> assemblyLoader;
@@ -60,12 +63,19 @@ public:
 			return MakeError("Manager already initialized");
 		}
 
+		// All of this outlives the cycle, and none of it means anything in the next
+		// one: the loader keeps counting, and the graphs are only assigned when
+		// resolution gets that far, so a resolve that fails early would otherwise
+		// report the previous run - with ids that now name other extensions.
+		loader->ResetStatistics();
+		loadOrder.clear();
+		depGraph.clear();
+		reverseDepGraph.clear();
+
 		auto initialExtensions = DiscoverExtensions();
 		if (!initialExtensions) {
 			return MakeError(std::move(initialExtensions.error()));
-		} /*else if (initialExtensions->empty()) {
-			return MakeError("No extensions found");
-		}*/
+		}
 		extensions = std::move(*initialExtensions);
 
 		if (extensions.empty()) {
@@ -318,6 +328,10 @@ public:
 				ext.EndOperation(ExtensionState::Terminated);
 			}
 		}
+
+		// Every module gave its assembly back above, so this drops nothing - which
+		// is the point: the next Initialize starts from an empty cache either way.
+		loader->Clear();
 	}
 
 	Result<std::vector<Extension>> DiscoverExtensions() const {
@@ -458,9 +472,9 @@ public:
 			}
 
 			if (!noModule && !ext->HasErrors() && !ext->HasWarnings()) {
-				// Nothing to say about this one in particular: the pipeline stopped
-				// at an earlier stage, before it was its turn.
-				AppendBlock(buffer, "! ", "Never processed - startup stopped on an earlier failure");
+				// Nothing was recorded against this one, so the state printed above
+				// is all there is: it was dropped or never reached.
+				AppendBlock(buffer, "! ", "No reason recorded - startup never got this far");
 			}
 
 			for (const auto& error : ext->GetErrors()) {
@@ -644,7 +658,14 @@ void Manager::Terminate() const {
 
 // Query operations
 bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
-	auto it = std::ranges::find(_impl->extensions, name, &Extension::GetName);
+	std::lock_guard lock(_impl->lifecycleMutex);
+
+	// Running, not merely discovered: one that failed, was skipped or is still on
+	// its way through the pipeline is not something a dependant can use. It is also
+	// what picks the surviving copy when a name is installed twice.
+	auto it = std::ranges::find_if(_impl->extensions, [&](const Extension& ext) {
+		return ext.GetState() == ExtensionState::Running && ext.GetName() == name;
+	});
 	if (it != _impl->extensions.end()) {
 		return !constraint || constraint->contains(it->GetVersion());
 	}
@@ -652,6 +673,8 @@ bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint>
 }
 
 const Extension* Manager::FindExtension(std::string_view name) const noexcept {
+	std::lock_guard lock(_impl->lifecycleMutex);
+
 	auto it = std::ranges::find(_impl->extensions, name, &Extension::GetName);
 	if (it != _impl->extensions.end()) {
 		return &(*it);
@@ -660,6 +683,8 @@ const Extension* Manager::FindExtension(std::string_view name) const noexcept {
 }
 
 const Extension* Manager::FindExtension(UniqueId id) const noexcept {
+	std::lock_guard lock(_impl->lifecycleMutex);
+
 	auto it = std::ranges::find(_impl->extensions, id, &Extension::GetId);
 	if (it != _impl->extensions.end()) {
 		return &(*it);
@@ -668,6 +693,8 @@ const Extension* Manager::FindExtension(UniqueId id) const noexcept {
 }
 
 std::vector<const Extension*> Manager::GetExtensions() const {
+	std::lock_guard lock(_impl->lifecycleMutex);
+
 	std::vector<const Extension*> result;
 	for (auto& ext : _impl->extensions) {
 		result.push_back(&ext);
@@ -676,6 +703,8 @@ std::vector<const Extension*> Manager::GetExtensions() const {
 }
 
 std::vector<const Extension*> Manager::GetExtensionsByState(ExtensionState state) const {
+	std::lock_guard lock(_impl->lifecycleMutex);
+
 	std::vector<const Extension*> result;
 	for (auto& ext : _impl->extensions) {
 		if (ext.GetState() == state) {
@@ -686,6 +715,8 @@ std::vector<const Extension*> Manager::GetExtensionsByState(ExtensionState state
 }
 
 std::vector<const Extension*> Manager::GetExtensionsByType(ExtensionType type) const {
+	std::lock_guard lock(_impl->lifecycleMutex);
+
 	std::vector<const Extension*> result;
 	for (auto& ext : _impl->extensions) {
 		if (ext.GetType() == type) {
