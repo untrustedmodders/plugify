@@ -20,6 +20,19 @@ namespace plugify {
 		std::vector<std::pair<std::string, std::string>> errors;
 	};
 
+	// What one stage did. The name is copied rather than viewed: a report is a
+	// value and outlives nothing in particular, while the title it is printed
+	// under is only assembled when something actually prints it.
+	struct StageReport {
+		std::string name;
+		StageType type;
+		StageStatistics stats;
+
+		std::string Title() const {
+			return std::format("{} [{}]", name, plg::enum_to_string(type));
+		}
+	};
+
 	template <typename T>
 	class Pipeline {
 		struct StageEntry {
@@ -29,7 +42,7 @@ namespace plugify {
 
 	public:
 		struct Report {
-			std::vector<std::pair<std::string, StageStatistics>> stages;
+			std::vector<StageReport> stages;
 			std::chrono::milliseconds totalTime{ 0 };
 			size_t initialItems = 0;
 			size_t finalItems = 0;
@@ -42,25 +55,25 @@ namespace plugify {
 				std::format_to(it, "Items: {} -> {} ({} total)\n", initialItems, finalItems, totalTime);
 
 				for (size_t i = 0; i < stages.size(); ++i) {
-					const auto& [n, s] = stages[i];
+					const auto& [name, type, stats] = stages[i];
 					std::format_to(
 						it,
 						"  Stage {} ({}): {} -> {} items, {} succeeded, {} failed ({})\n",
 						i,
-						n,
-						s.itemsIn,
-						s.itemsOut,
-						s.succeeded,
-						s.failed,
-						s.elapsed
+						stages[i].Title(),
+						stats.itemsIn,
+						stats.itemsOut,
+						stats.succeeded,
+						stats.failed,
+						stats.elapsed
 					);
 
 					size_t maxWidth = 0;
-					for (const auto& [key, _] : s.errors) {
+					for (const auto& [key, _] : stats.errors) {
 						maxWidth = std::max(maxWidth, key.size());
 					}
 
-					for (const auto& [key, value] : s.errors) {
+					for (const auto& [key, value] : stats.errors) {
 						std::format_to(it, "    {:<{}} : {}\n", key, maxWidth, value);
 					}
 				}
@@ -76,9 +89,9 @@ namespace plugify {
 				// no items to process that count is zero, so ask it directly
 				size_t totalFailed = 0;
 				bool anyStopped = false;
-				for (const auto& [_, stage] : stages) {
-					totalFailed += stage.failed;
-					anyStopped |= stage.stopped;
+				for (const auto& stage : stages) {
+					totalFailed += stage.stats.failed;
+					anyStopped |= stage.stats.stopped;
 				}
 
 				if (totalFailed == 0 && !anyStopped) {
@@ -91,12 +104,12 @@ namespace plugify {
 				}
 
 				// Only show stages that had failures
-				for (const auto& [name, stage] : stages) {
-					if (stage.failed > 0 || !stage.errors.empty()) {
-						std::format_to(it, "Stage '{}': {} failed\n", name, stage.failed);
+				for (const auto& stage : stages) {
+					if (stage.stats.failed > 0 || !stage.stats.errors.empty()) {
+						std::format_to(it, "Stage '{}': {} failed\n", stage.Title(), stage.stats.failed);
 
 						// Show actual errors with cleaner formatting
-						for (const auto& [item, error] : stage.errors) {
+						for (const auto& [item, error] : stage.stats.errors) {
 							std::format_to(it, "  • {}: {}\n", item, error);
 						}
 						std::format_to(it, "\n");
@@ -121,16 +134,6 @@ namespace plugify {
 				_stages.emplace_back(std::move(stage), required);
 				return *this;
 			}
-
-			/*Builder& WithLogger(std::shared_ptr<ILogger> logger) {
-				_logger = std::move(logger);
-				return *this;
-			}
-
-			Builder& WithProfiler(std::shared_ptr<IProfiler> profiler) {
-				_profiler = std::move(profiler);
-				return *this;
-			}*/
 
 			Builder& WithThreadPoolSize(size_t size) {
 				_threadPoolSize = size;
@@ -163,11 +166,6 @@ namespace plugify {
 
 			// Execute each stage
 			for (const auto& [stage, required] : _stages) {
-				auto title = std::format(
-					"{} [{}]",
-					stage->GetName(),
-					plg::enum_to_string(stage->GetType())
-				);
 				auto stats = ExecuteStage(stage.get(), items);
 
 				// Items that failed are the normal outcome of a stage doing its work:
@@ -175,7 +173,11 @@ namespace plugify {
 				// have work to do for everything else. Only a stage that could not run
 				// at all leaves nothing to continue with.
 				bool stopped = stats.stopped && required;
-				report.stages.emplace_back(std::move(title), std::move(stats));
+				report.stages.push_back({
+					.name = stage->GetName(),
+					.type = stage->GetType(),
+					.stats = std::move(stats),
+				});
 
 				if (stopped) {
 					break;
@@ -197,26 +199,34 @@ namespace plugify {
 			stats.itemsIn = items.size();
 			auto startTime = std::chrono::steady_clock::now();
 
-			// Setup
-			stage->Setup(items);
+			// Setup. A stage that could not set itself up cannot do its job either,
+			// which is what stops the pipeline.
+			if (auto result = Guarded([&] { stage->Setup(items); })) {
+				// Execute based on stage type
+				switch (stage->GetType()) {
+					case StageType::Transform:
+						ExecuteTransform(static_cast<ITransformStage<T>*>(stage), items, stats);
+						break;
 
-			// Execute based on stage type
-			switch (stage->GetType()) {
-				case StageType::Transform:
-					ExecuteTransform(static_cast<ITransformStage<T>*>(stage), items, stats);
-					break;
+					case StageType::Barrier:
+						ExecuteBarrier(static_cast<IBarrierStage<T>*>(stage), items, stats);
+						break;
 
-				case StageType::Barrier:
-					ExecuteBarrier(static_cast<IBarrierStage<T>*>(stage), items, stats);
-					break;
-
-				case StageType::Sequential:
-					ExecuteSequential(static_cast<ISequentialStage<T>*>(stage), items, stats);
-					break;
+					case StageType::Sequential:
+						ExecuteSequential(static_cast<ISequentialStage<T>*>(stage), items, stats);
+						break;
+				}
+			} else {
+				stats.failed = items.size();
+				stats.stopped = true;
+				stats.errors.emplace_back(stage->GetName(), std::move(result.error()));
 			}
 
-			// Teardown
-			stage->Teardown(items);
+			// Teardown whatever happened above: a stage may have taken something in
+			// Setup that it has to give back.
+			if (auto result = Guarded([&] { stage->Teardown(items); }); !result) {
+				stats.errors.emplace_back(stage->GetName(), std::move(result.error()));
+			}
 
 			stats.itemsOut = items.size();
 			stats.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -242,7 +252,7 @@ namespace plugify {
 						return;
 					}
 
-					if (auto result = stage->ProcessItem(item)) {
+					if (auto result = Guarded([&] { return stage->ProcessItem(item); })) {
 						succeeded.fetch_add(1, std::memory_order_relaxed);
 					} else {
 						failed.fetch_add(1, std::memory_order_relaxed);
@@ -268,7 +278,7 @@ namespace plugify {
 			size_t originalSize = items.size();
 
 			// Process all items together
-			if (auto result = stage->ProcessAll(items)) {
+			if (auto result = Guarded([&] { return stage->ProcessAll(items); })) {
 				stats.succeeded = originalSize;
 				stats.failed = 0;
 			} else {
@@ -299,7 +309,7 @@ namespace plugify {
 					break;
 				}
 
-				if (auto result = stage->ProcessItem(item, i, total)) {
+				if (auto result = Guarded([&] { return stage->ProcessItem(item, i, total); })) {
 					++stats.succeeded;
 				} else {
 					++stats.failed;
@@ -308,7 +318,31 @@ namespace plugify {
 			}
 		}
 
-		static std::string GetItemName(const T& item) {
+		// A stage is third-party code as far as the pipeline is concerned: glaze and
+		// valijson while parsing, libsolv while resolving, a language module after
+		// that. Whatever any of them throws has to come back as a failure, because
+		// Result is the only channel the pipeline reports through - and because the
+		// one place that would otherwise catch it, the thread pool, puts it in a
+		// future that nobody keeps.
+		template <typename Fn>
+		static Result<void> Guarded(Fn&& fn) noexcept {
+			try {
+				if constexpr (std::is_void_v<std::invoke_result_t<Fn>>) {
+					fn();
+					return {};
+				} else {
+					return fn();
+				}
+			} catch (const std::bad_alloc&) {
+				return MakeError("out of memory");
+			} catch (const std::exception& e) {
+				return MakeError("unhandled exception: {}", e.what());
+			} catch (...) {
+				return MakeError("unhandled exception");
+			}
+		}
+
+		static std::string_view GetItemName(const T& item) {
 			if constexpr (requires { item.GetName(); }) {
 				return item.GetName();
 			} else if constexpr (requires { item.name; }) {

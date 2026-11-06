@@ -133,7 +133,7 @@ public:
 		// caller's problem, and a stage can only stop before anything is loaded, so
 		// the second always leaves a system that is up and has to be torn down.
 		const bool stopped = std::ranges::any_of(report.stages, [](const auto& stage) {
-			return stage.second.stopped;
+			return stage.stats.stopped;
 		});
 
 		// Print reports if configured
