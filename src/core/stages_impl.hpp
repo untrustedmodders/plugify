@@ -344,43 +344,6 @@ namespace plugify {
 		}
 	};
 
-	// Initialize Stage - Transform type
-	/*class InitializeStage : public ITransformStage<Extension> {
-		ExtensionLoader& _loader;
-	public:
-		InitializeStage(ExtensionLoader& loader) : _loader(loader) {}
-
-		std::string GetName() const override { return "Initialization"; }
-
-		bool ShouldProcess(const Extension& item) const override {
-			return item.GetState() == ExtensionState::Resolved;
-		}
-
-		Result<void> ProcessItem(
-			Extension& ext,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx) override {
-
-			ext.StartOperation(ExtensionState::Initializating);
-
-			Result<void> result;
-			switch (ext.GetType()) {
-				case ExtensionType::Module: {
-					auto _ = _loader.PreloadAssembly(ext.GetRuntime(), ext.GetDirectories());
-					break;
-				}
-
-				case ExtensionType::Plugin: {
-					break;
-				}
-
-				default:
-					result = MakeError("Unknown extension type");
-			}
-
-			ext.EndOperation(ExtensionState::Initialized);
-			return {};
-		}
-	};*/
 
 	// Uses CRTP (Curiously Recurring Template Pattern) for compile-time polymorphism
 	// Derived classes must implement: DoProcessItem() [non-virtual]

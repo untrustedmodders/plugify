@@ -10,7 +10,6 @@ namespace plugify {
 		Transform,	 // Parallel processing, no order changes
 		Barrier,	 // Can reorder/filter the container
 		Sequential,	 // Processes in container order
-		// Batch        // Parallel processing in controlled batches
 	};
 
 	// Execution context
@@ -95,61 +94,4 @@ namespace plugify {
 		}
 	};
 
-#if 0
-    // Batch stage - processes items in parallel batches
-    template <typename T>
-    class IBatchStage : public IStage<T> {
-    public:
-
-        StageType GetType() const override {
-            return StageType::Batch;
-        }
-
-        // Process a batch of items (called for each batch)
-        virtual Result<void> ProcessBatch(
-            std::span<T> batch,
-            size_t batchIndex,
-            size_t totalBatches,
-            const ExecutionContext<T>& ctx
-        ) = 0;
-
-        // Get batch size
-        virtual size_t GetBatchSize() const {
-            return 10;
-        }
-
-        // Process items within batch in parallel?
-        virtual bool ProcessBatchInParallel() const {
-            return true;
-        }
-
-        // Optional: Process individual item within batch (for parallel processing)
-        virtual Result<void> ProcessItem(
-            [[maybe_unused]] T& item,
-            [[maybe_unused]] const ExecutionContext<T>& ctx
-        ) {
-            return {};  // Default: no per-item processing
-        }
-
-        // Optional: filter
-        virtual bool ShouldProcess([[maybe_unused]] const T& item) const {
-            return true;
-        }
-
-        // Optional: Setup/teardown for each batch
-        virtual void SetupBatch(
-            [[maybe_unused]] std::span<T> batch,
-            [[maybe_unused]] size_t batchIndex,
-            [[maybe_unused]] const ExecutionContext<T>& ctx
-        ) {
-        }
-
-        virtual void TeardownBatch(
-            [[maybe_unused]] std::span<T> batch,
-            [[maybe_unused]] size_t batchIndex,
-            [[maybe_unused]] const ExecutionContext<T>& ctx
-        ) {
-        }
-    };
-#endif
 }

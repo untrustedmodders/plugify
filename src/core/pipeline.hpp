@@ -214,11 +214,6 @@ namespace plugify {
 				case StageType::Sequential:
 					ExecuteSequential(static_cast<ISequentialStage<T>*>(stage), items, stats, ctx);
 					break;
-#if 0
-                case StageType::Batch:
-                    ExecuteBatch(static_cast<IBatchStage<T>*>(stage), items, stats, ctx);
-                    break;
-#endif
 			}
 
 			// Teardown
@@ -316,96 +311,6 @@ namespace plugify {
 				}
 			}
 		}
-#if 0
-        void ExecuteBatch(
-            IBatchStage<T>* stage,
-            std::vector<T>& items,
-            StageStatistics& stats,
-            const ExecutionContext<T>& ctx) {
-
-            size_t batchSize = stage->GetBatchSize();
-            size_t numBatches = (items.size() + batchSize - 1) / batchSize;
-            bool processInParallel = stage->ProcessBatchInParallel();
-
-            std::atomic<size_t> succeeded{0};
-            std::atomic<size_t> failed{0};
-            std::mutex errorMutex;
-
-            // Process each batch
-            for (size_t batchIdx = 0; batchIdx < numBatches; ++batchIdx) {
-                size_t start = batchIdx * batchSize;
-                size_t end = std::min(start + batchSize, items.size());
-                std::span<T> batch(&items[start], end - start);
-
-                // Setup batch
-                stage->SetupBatch(batch, batchIdx, ctx);
-
-                // Process batch
-                auto batchResult = stage->ProcessBatch(batch, batchIdx, numBatches, ctx);
-
-                if (batchResult.has_value()) {
-                    // If batch processing succeeded, optionally process items within batch
-                    if (processInParallel) {
-                        // Process items within batch in parallel
-                        _pool.submit_sequence(0, batch.size(), [&](size_t i) {
-                            auto& item = batch[i];
-
-                            if (!stage->ShouldProcess(item)) {
-                                return;
-                            }
-
-                            auto result = stage->ProcessItem(item, ctx);
-
-                            if (result.has_value()) {
-                                succeeded.fetch_add(1, std::memory_order_relaxed);
-                            } else {
-                                failed.fetch_add(1, std::memory_order_relaxed);
-                                {
-                                    std::lock_guard lock(errorMutex);
-                                    stats.errors.emplace_back(GetItemName(item), std::move(result.error()));
-                                }
-                            }
-                        }).wait();
-                    } else {
-                        // Process items within batch sequentially
-                        for (auto& item : batch) {
-                            if (!stage->ShouldProcess(item)) {
-                                continue;
-                            }
-
-                            auto result = stage->ProcessItem(item, ctx);
-
-                            if (result.has_value()) {
-                                succeeded.fetch_add(1, std::memory_order_relaxed);
-                            } else {
-                                failed.fetch_add(1, std::memory_order_relaxed);
-                                stats.errors.emplace_back(GetItemName(item), std::move(result.error()));
-                            }
-                        }
-                    }
-                } else {
-                    // Batch processing failed
-                    failed.fetch_add(batch.size());
-                    {
-                        std::lock_guard lock(errorMutex);
-                        stats.errors.emplace_back(std::format("Batch {}", batchIdx), std::move(batchResult.error()));
-                    }
-                }
-
-                // Teardown batch
-                stage->TeardownBatch(batch, batchIdx, ctx);
-
-                // Optional: Add delay between batches if needed
-                if (batchIdx < numBatches - 1) {
-                    // Could add a virtual method for inter-batch delay
-                    // std::this_thread::sleep_for(stage->GetInterBatchDelay());
-                }
-            }
-
-            stats.succeeded = succeeded.load();
-            stats.failed = failed.load();
-        }
-#endif
 
 		static std::string GetItemName(const T& item) {
 			if constexpr (requires { item.GetName(); }) {

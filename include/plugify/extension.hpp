@@ -29,9 +29,6 @@ namespace plugify {
 		Skipped,
 		Failed,
 
-		// Initializing,
-		// Initialized,
-
 		Loading,
 		Loaded,
 
