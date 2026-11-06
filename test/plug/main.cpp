@@ -241,7 +241,7 @@ namespace {
 
 	// Helper to parse sort option
 	SortBy ParseSortBy(std::string str) {
-		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+		std::ranges::transform(str, str.begin(), ::tolower);
 
 		if (str == "name") {
 			return SortBy::Name;
@@ -264,7 +264,7 @@ namespace {
 
 	// Helper to parse extension state
 	ExtensionState ParseExtensionState(std::string str) {
-		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+		std::ranges::transform(str, str.begin(), ::tolower);
 
 		if (str == "loaded") {
 			return ExtensionState::Loaded;
@@ -327,30 +327,26 @@ namespace {
 		}
 
 		if (filter.states.has_value()) {
-			auto state = ext->GetState();
-			if (std::find(filter.states->begin(), filter.states->end(), state)
-			    == filter.states->end()) {
+			if (!std::ranges::contains(*filter.states, ext->GetState())) {
 				return false;
 			}
 		}
 
 		if (filter.languages.has_value()) {
-			auto& lang = ext->GetLanguage();
-			if (std::find(filter.languages->begin(), filter.languages->end(), lang)
-			    == filter.languages->end()) {
+			if (!std::ranges::contains(*filter.languages, ext->GetLanguage())) {
 				return false;
 			}
 		}
 
 		if (filter.searchQuery.has_value()) {
 			std::string query = filter.searchQuery.value();
-			std::transform(query.begin(), query.end(), query.begin(), ::tolower);
+			std::ranges::transform(query, query.begin(), ::tolower);
 
 			std::string name = ext->GetName();
-			std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+			std::ranges::transform(name, name.begin(), ::tolower);
 
 			std::string desc = ext->GetDescription();
-			std::transform(desc.begin(), desc.end(), desc.begin(), ::tolower);
+			std::ranges::transform(desc, desc.begin(), ::tolower);
 
 			if (name.find(query) == std::string::npos && desc.find(query) == std::string::npos) {
 				return false;
@@ -739,9 +735,6 @@ public:
 			auto state = plugin->GetState();
 			auto stateStr = plg::enum_to_string(state);
 			auto [symbol, color] = GetStateInfo(state);
-			const auto& name = !plugin->GetName().empty()
-			                       ? plugin->GetName()
-			                       : plg::as_string(plugin->GetLocation().filename());
 
 			// Get load time if available
 			std::string loadTime = "N/A";
@@ -756,7 +749,7 @@ public:
 			plg::print(
 			    "{:<3} {:<25} {:<15} {} {:<11} {:<8} {:<12}",
 			    index++,
-			    Truncate(name, 24),
+			    Truncate(plugin->GetName(), 24),
 			    plugin->GetVersionString(),
 			    Colorize(symbol, color),
 			    Truncate(std::string(stateStr), 10),
@@ -1551,16 +1544,16 @@ public:
 
 		std::vector<const Extension*> matches;
 		std::string lowerQuery(query);
-		std::transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
+		std::ranges::transform(lowerQuery, lowerQuery.begin(), ::tolower);
 
 		for (const auto& ext : allExtensions) {
 			std::string name = ext->GetName();
 			std::string desc = ext->GetDescription();
 			std::string author = ext->GetAuthor();
 
-			std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-			std::transform(desc.begin(), desc.end(), desc.begin(), ::tolower);
-			std::transform(author.begin(), author.end(), author.begin(), ::tolower);
+			std::ranges::transform(name, name.begin(), ::tolower);
+			std::ranges::transform(desc, desc.begin(), ::tolower);
+			std::ranges::transform(author, author.begin(), ::tolower);
 
 			if (name.find(lowerQuery) != std::string::npos || desc.find(lowerQuery) != std::string::npos
 			    || author.find(lowerQuery) != std::string::npos) {

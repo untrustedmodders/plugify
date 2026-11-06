@@ -400,10 +400,10 @@ public:
 
 		// Which language modules are installed is the most useful piece of context
 		// here: a plugin without its module is the most common way to get here.
-		std::flat_map<std::string, std::string> languages;
+		std::flat_map<std::string_view, std::string_view> languages;
 		for (const auto& ext : extensions) {
-			if (ext.IsModule() && !ext.GetLanguage().empty()) {
-				languages.emplace(ext.GetLanguage(), ext.GetName());
+			if (ext.GetType() == ExtensionType::Module && !ext.GetLanguage().empty()) {
+				languages[ext.GetLanguage()] = ext.GetName();
 			}
 		}
 
@@ -425,10 +425,10 @@ public:
 			std::format_to(
 				it,
 				"  {} {} [{}, {}] - {}\n",
-				ext->GetName().empty() ? "<unnamed>" : ext->GetName(),
-				ext->GetVersionString().empty() ? "?" : ext->GetVersionString(),
+				ext->GetName(),
+				ext->GetVersionString(),
 				plg::enum_to_string(ext->GetType()),
-				ext->GetLanguage().empty() ? "?" : ext->GetLanguage(),
+				ext->GetLanguage(),
 				plg::enum_to_string(ext->GetState())
 			);
 			std::format_to(it, "    at '{}'\n", plg::as_string(ext->GetLocation()));
@@ -436,7 +436,7 @@ public:
 			// A plugin whose language has nothing to run it never gets a dependency
 			// to fail on, so this is the only place the missing module is named -
 			// unless it got as far as the loading stage, which says so itself.
-			bool noModule = ext->IsPlugin() && !ext->GetLanguage().empty()
+			bool noModule = ext->GetType() == ExtensionType::Plugin && !ext->GetLanguage().empty()
 							&& !languages.contains(ext->GetLanguage())
 							&& ext->GetState() != ExtensionState::Failed;
 			if (noModule) {
@@ -513,10 +513,7 @@ public:
 
 	std::string_view NameOf(UniqueId id) const {
 		auto it = std::ranges::find(extensions, id, &Extension::GetId);
-		// Both arms have to be views already. Left as a std::string against a
-		// literal, the conditional's composite type is std::string, so it copies
-		// the name into a temporary and the view returned dangles.
-		return it != extensions.end() ? std::string_view(it->GetName()) : "<unknown>";
+		return it != extensions.end() ? it->GetName() : std::string_view{"<unknown>"};
 	}
 
 	std::string GenerateLoadOrder() const {

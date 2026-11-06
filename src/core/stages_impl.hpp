@@ -226,10 +226,10 @@ namespace plugify {
 
 		// Build language registry and add language dependencies
 		static void AddLanguageDependencies(std::vector<Extension>& items) {
-			std::flat_map<std::string, std::string> languages;
+			std::flat_map<std::string_view, std::string_view> languages;
 
 			for (const auto& ext : items) {
-				if (ext.GetType() == ExtensionType::Module) {
+				if (ext.GetType() == ExtensionType::Module && !ext.GetLanguage().empty()) {
 					languages[ext.GetLanguage()] = ext.GetName();
 				}
 			}
@@ -242,8 +242,9 @@ namespace plugify {
 				// With no module for the language there is nothing to depend on;
 				// the plugin then fails in the loading stage, which says so, and
 				// the problem report names the missing module either way.
-				if (auto it = languages.find(ext.GetLanguage()); it != languages.end()) {
-					ext.AddDependency(it->second);
+				auto it = languages.find(ext.GetLanguage());
+				if (it != languages.end()) {
+					ext.AddDependency(std::string(it->second));
 				}
 			}
 		}
@@ -512,7 +513,7 @@ namespace plugify {
 	// ============================================================================
 
 	class LoadingStage : public BaseFailurePropagatingStage<LoadingStage> {
-		std::flat_map<std::string, Extension*> _loadedModules;
+		std::flat_map<std::string_view, const Extension*> _loadedModules;
 
 	public:
 		using BaseFailurePropagatingStage::BaseFailurePropagatingStage;

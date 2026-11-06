@@ -574,12 +574,10 @@ void LibsolvDependencyResolver::ReportUnmetDependencies(
 			issue.problem = isOptional ? "Optional dependency" : "Unmet dependency";
 			issue.isBlocking = !isOptional;
 
-			auto wanted = DescribeDependency(depName, constraints);
-
 			// Three different stories, and the one about a version is the easiest to
 			// tell wrongly: saying nothing provides 'foo >=2.1.2' reads as if foo
 			// were missing altogether.
-			if (!providers.empty()) {
+			if (auto wanted = DescribeDependency(depName, constraints); !providers.empty()) {
 				issue.description = std::format(
 					"'{}' is satisfied only by a copy that is not loading",
 					wanted
