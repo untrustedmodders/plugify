@@ -106,7 +106,11 @@ namespace plugify {
 				// Only show stages that had failures
 				for (const auto& stage : stages) {
 					if (stage.stats.failed > 0 || !stage.stats.errors.empty()) {
-						std::format_to(it, "Stage '{}': {} failed\n", stage.Title(), stage.stats.failed);
+						if (stage.stats.failed > 0) {
+							std::format_to(it, "Stage '{}': {} failed\n", stage.Title(), stage.stats.failed);
+						} else {
+							std::format_to(it, "Stage '{}':\n", stage.Title());
+						}
 
 						// Show actual errors with cleaner formatting
 						for (const auto& [item, error] : stage.stats.errors) {
@@ -173,11 +177,11 @@ namespace plugify {
 				// have work to do for everything else. Only a stage that could not run
 				// at all leaves nothing to continue with.
 				bool stopped = stats.stopped && required;
-				report.stages.push_back({
-					.name = stage->GetName(),
-					.type = stage->GetType(),
-					.stats = std::move(stats),
-				});
+				report.stages.emplace_back(
+					stage->GetName(),
+					stage->GetType(),
+					std::move(stats)
+				);
 
 				if (stopped) {
 					break;
@@ -342,7 +346,7 @@ namespace plugify {
 			}
 		}
 
-		static std::string_view GetItemName(const T& item) {
+		static std::string GetItemName(const T& item) {
 			if constexpr (requires { item.GetName(); }) {
 				return item.GetName();
 			} else if constexpr (requires { item.name; }) {

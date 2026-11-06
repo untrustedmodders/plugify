@@ -436,7 +436,7 @@ namespace plugify {
 				const auto& exportedMethod = exportedMethods[i];
 
 				if (&method != &exportedMethod || !addr) {
-					errors.emplace_back(std::format("{:>3}. {}", i + 1, exportedMethod.GetName()));
+					errors.push_back(std::format("{:>3}. {}", i + 1, exportedMethod.GetName()));
 					if (constexpr size_t kMaxDisplay = 100; errors.size() >= kMaxDisplay) {
 						errors.push_back(std::format("... and {} more", methods.size() - kMaxDisplay));
 						break;
@@ -465,7 +465,7 @@ namespace plugify {
 			} catch (const std::exception& e) {
 				return MakeError("{} failed for '{}': {}", op, name, e.what());
 			} catch (...) {
-				return MakeError("{} failed for '{}': unknown exception", op, name);
+				return MakeError("{} failed for '{}': unhandled exception", op, name);
 			}
 		}
 	};

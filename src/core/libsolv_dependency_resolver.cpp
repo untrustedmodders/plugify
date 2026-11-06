@@ -724,14 +724,14 @@ std::vector<std::string> LibsolvDependencyResolver::ExtractSolutions(Solver* sol
 		Id p, rp;
 
 		while ((element = solver_next_solutionelement(solver, problemId, solutionId, element, &p, &rp)) != 0) {
-			solutionSteps.emplace_back(SpelledAsWritten(solver_solutionelement2str(solver, p, rp)));
+			solutionSteps.push_back(SpelledAsWritten(solver_solutionelement2str(solver, p, rp)));
 		}
 
 		// Combine solution steps
 		if (!solutionSteps.empty()) {
-			fixes.emplace_back(std::format("Solution {}: {}", solutionId, plg::join(solutionSteps, ", ")));
+			fixes.push_back(std::format("Solution {}: {}", solutionId, plg::join(solutionSteps, ", ")));
 		} else {
-			fixes.emplace_back(std::format("Solution {}: Adjust installation requirements", solutionId));
+			fixes.push_back(std::format("Solution {}: Adjust installation requirements", solutionId));
 		}
 	}
 

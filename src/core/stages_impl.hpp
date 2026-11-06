@@ -20,7 +20,7 @@ namespace plugify {
 			: _fileSystem(std::move(fileSystem)) {
 		}
 
-		std::string_view GetName() const override {
+		std::string GetName() const override {
 			return "Parsing";
 		}
 
@@ -102,7 +102,7 @@ namespace plugify {
 			, _config(config) {
 		}
 
-		std::string_view GetName() const override {
+		std::string GetName() const override {
 			return "Resolution";
 		}
 
@@ -477,7 +477,7 @@ namespace plugify {
 		static constexpr ExtensionState kBusy = ExtensionState::Loading;
 		static constexpr ExtensionState kDone = ExtensionState::Loaded;
 
-		std::string_view GetName() const override {
+		std::string GetName() const override {
 			return "Loading";
 		}
 
@@ -530,7 +530,7 @@ namespace plugify {
 		static constexpr ExtensionState kBusy = ExtensionState::Exporting;
 		static constexpr ExtensionState kDone = ExtensionState::Exported;
 
-		std::string_view GetName() const override {
+		std::string GetName() const override {
 			return "Exporting";
 		}
 
@@ -570,7 +570,7 @@ namespace plugify {
 		static constexpr ExtensionState kBusy = ExtensionState::Starting;
 		static constexpr ExtensionState kDone = ExtensionState::Started;
 
-		std::string_view GetName() const override {
+		std::string GetName() const override {
 			return "Starting";
 		}
 
