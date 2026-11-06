@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glaze/thread/threadpool.hpp>
+
 #include "core/stages.hpp"
 
 namespace plugify {
@@ -159,9 +161,6 @@ namespace plugify {
 
 			auto pipelineStart = std::chrono::steady_clock::now();
 
-			// Create execution context
-			ExecutionContext<T> ctx{ .pool = _pool };
-
 			// Execute each stage
 			for (const auto& [stage, required] : _stages) {
 				auto title = std::format(
@@ -169,7 +168,7 @@ namespace plugify {
 					stage->GetName(),
 					plg::enum_to_string(stage->GetType())
 				);
-				auto stats = ExecuteStage(stage.get(), items, ctx);
+				auto stats = ExecuteStage(stage.get(), items);
 
 				// Items that failed are the normal outcome of a stage doing its work:
 				// each one carries its own reason and the stages after this one still
@@ -193,31 +192,31 @@ namespace plugify {
 
 	private:
 		StageStatistics
-		ExecuteStage(IStage<T>* stage, std::vector<T>& items, const ExecutionContext<T>& ctx) {
+		ExecuteStage(IStage<T>* stage, std::vector<T>& items) {
 			StageStatistics stats;
 			stats.itemsIn = items.size();
 			auto startTime = std::chrono::steady_clock::now();
 
 			// Setup
-			stage->Setup(items, ctx);
+			stage->Setup(items);
 
 			// Execute based on stage type
 			switch (stage->GetType()) {
 				case StageType::Transform:
-					ExecuteTransform(static_cast<ITransformStage<T>*>(stage), items, stats, ctx);
+					ExecuteTransform(static_cast<ITransformStage<T>*>(stage), items, stats);
 					break;
 
 				case StageType::Barrier:
-					ExecuteBarrier(static_cast<IBarrierStage<T>*>(stage), items, stats, ctx);
+					ExecuteBarrier(static_cast<IBarrierStage<T>*>(stage), items, stats);
 					break;
 
 				case StageType::Sequential:
-					ExecuteSequential(static_cast<ISequentialStage<T>*>(stage), items, stats, ctx);
+					ExecuteSequential(static_cast<ISequentialStage<T>*>(stage), items, stats);
 					break;
 			}
 
 			// Teardown
-			stage->Teardown(items, ctx);
+			stage->Teardown(items);
 
 			stats.itemsOut = items.size();
 			stats.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -230,8 +229,7 @@ namespace plugify {
 		void ExecuteTransform(
 			ITransformStage<T>* stage,
 			std::vector<T>& items,
-			StageStatistics& stats,
-			const ExecutionContext<T>& ctx
+			StageStatistics& stats
 		) {
 			// Process items in parallel
 			std::atomic<size_t> succeeded{ 0 };
@@ -244,7 +242,7 @@ namespace plugify {
 						return;
 					}
 
-					if (auto result = stage->ProcessItem(item, ctx)) {
+					if (auto result = stage->ProcessItem(item)) {
 						succeeded.fetch_add(1, std::memory_order_relaxed);
 					} else {
 						failed.fetch_add(1, std::memory_order_relaxed);
@@ -265,13 +263,12 @@ namespace plugify {
 		void ExecuteBarrier(
 			IBarrierStage<T>* stage,
 			std::vector<T>& items,
-			StageStatistics& stats,
-			const ExecutionContext<T>& ctx
+			StageStatistics& stats
 		) {
 			size_t originalSize = items.size();
 
 			// Process all items together
-			if (auto result = stage->ProcessAll(items, ctx)) {
+			if (auto result = stage->ProcessAll(items)) {
 				stats.succeeded = originalSize;
 				stats.failed = 0;
 			} else {
@@ -285,8 +282,7 @@ namespace plugify {
 		void ExecuteSequential(
 			ISequentialStage<T>* stage,
 			std::vector<T>& items,
-			StageStatistics& stats,
-			const ExecutionContext<T>& ctx
+			StageStatistics& stats
 		) {
 			bool continueOnError = stage->ContinueOnError();
 			size_t total = items.size();
@@ -303,7 +299,7 @@ namespace plugify {
 					break;
 				}
 
-				if (auto result = stage->ProcessItem(item, i, total, ctx)) {
+				if (auto result = stage->ProcessItem(item, i, total)) {
 					++stats.succeeded;
 				} else {
 					++stats.failed;
@@ -325,7 +321,5 @@ namespace plugify {
 	private:
 		std::vector<StageEntry> _stages;
 		glz::pool _pool;
-		// std::shared_ptr<ILogger> _logger;
-		//std::shared_ptr<IProfiler> _profiler;
 	};
 }

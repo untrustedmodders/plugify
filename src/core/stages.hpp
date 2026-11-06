@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glaze/thread/threadpool.hpp>
-
 namespace plugify {
 	// ============================================================================
 	// Stage Interfaces
@@ -12,33 +10,21 @@ namespace plugify {
 		Sequential,	 // Processes in container order
 	};
 
-	// Execution context
-	template <typename T>
-	struct ExecutionContext {
-		glz::pool& pool;
-		// std::shared_ptr<ILogger> logger;
-		// std::shared_ptr<IProfiler> profiler;
-	};
-
 	// Base interface
 	template <typename T>
 	class IStage {
 	public:
 		virtual ~IStage() = default;
 
-		virtual std::string GetName() const = 0;
+		virtual std::string_view GetName() const = 0;
 
 		virtual StageType GetType() const = 0;
 
 		// Optional: setup/teardown
-		virtual void
-		Setup([[maybe_unused]] std::span<T> items, [[maybe_unused]] const ExecutionContext<T>& ctx) {
+		virtual void Setup([[maybe_unused]] std::span<T> items) {
 		}
 
-		virtual void Teardown(
-			[[maybe_unused]] std::span<T> items,
-			[[maybe_unused]] const ExecutionContext<T>& ctx
-		) {
+		virtual void Teardown([[maybe_unused]] std::span<T> items) {
 		}
 	};
 
@@ -51,7 +37,7 @@ namespace plugify {
 		}
 
 		// Process single item
-		virtual Result<void> ProcessItem(T& item, const ExecutionContext<T>& ctx) = 0;
+		virtual Result<void> ProcessItem(T& item) = 0;
 
 		// Optional: filter predicate
 		virtual bool ShouldProcess([[maybe_unused]] const T& item) const {
@@ -69,7 +55,7 @@ namespace plugify {
 
 		// Process all items
 		// This allows the stage to reorder, filter, or add/remove items
-		virtual Result<void> ProcessAll(std::vector<T>& items, const ExecutionContext<T>& ctx) = 0;
+		virtual Result<void> ProcessAll(std::vector<T>& items) = 0;
 	};
 
 	// Sequential stage - processes in container order
@@ -81,7 +67,7 @@ namespace plugify {
 		}
 
 		// Process item with knowledge of its position
-		virtual Result<void> ProcessItem(T& item, size_t position, size_t total, const ExecutionContext<T>& ctx) = 0;
+		virtual Result<void> ProcessItem(T& item, size_t position, size_t total) = 0;
 
 		// Should we continue after an error?
 		virtual bool ContinueOnError() const {

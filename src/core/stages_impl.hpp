@@ -20,7 +20,7 @@ namespace plugify {
 			: _fileSystem(std::move(fileSystem)) {
 		}
 
-		std::string GetName() const override {
+		std::string_view GetName() const override {
 			return "Parsing";
 		}
 
@@ -28,10 +28,7 @@ namespace plugify {
 			return item.GetState() == ExtensionState::Discovered;
 		}
 
-		void Setup(
-			[[maybe_unused]] std::span<Extension> items,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) override {
+		void Setup([[maybe_unused]] std::span<Extension> items) override {
 			if (auto result = LoadSchema(schemas::module)) {
 				_schemas[ExtensionType::Module] = std::move(*result);
 			}
@@ -40,10 +37,7 @@ namespace plugify {
 			}
 		}
 
-		Result<void> ProcessItem(
-			Extension& ext,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) override {
+		Result<void> ProcessItem(Extension& ext) override {
 			ext.StartOperation(ExtensionState::Parsing);
 
 			auto manifest = ParseManifest(ext.GetLocation(), ext.GetType());
@@ -88,17 +82,17 @@ namespace plugify {
 	// Resolution Stage - Barrier type (reorders and filters)
 	class ResolutionStage : public IBarrierStage<Extension> {
 		std::shared_ptr<IDependencyResolver> _resolver;
-		std::vector<UniqueId>* _loadOrder;
-		std::unordered_map<UniqueId, std::vector<UniqueId>>* _depGraph;
-		std::unordered_map<UniqueId, std::vector<UniqueId>>* _reverseDepGraph;
+		std::vector<UniqueId>& _loadOrder;
+		std::unordered_map<UniqueId, std::vector<UniqueId>>& _depGraph;
+		std::unordered_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
 		const Config& _config;
 
 	public:
 		ResolutionStage(
 			std::shared_ptr<IDependencyResolver> resolver,
-			std::vector<UniqueId>* loadOrder,
-			std::unordered_map<UniqueId, std::vector<UniqueId>>* depGraph,
-			std::unordered_map<UniqueId, std::vector<UniqueId>>* reverseDepGraph,
+			std::vector<UniqueId>& loadOrder,
+			std::unordered_map<UniqueId, std::vector<UniqueId>>& depGraph,
+			std::unordered_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
 			const Config& config
 		)
 			: _resolver(std::move(resolver))
@@ -108,14 +102,11 @@ namespace plugify {
 			, _config(config) {
 		}
 
-		std::string GetName() const override {
+		std::string_view GetName() const override {
 			return "Resolution";
 		}
 
-		Result<void> ProcessAll(
-			std::vector<Extension>& items,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) override {
+		Result<void> ProcessAll(std::vector<Extension>& items) override {
 			size_t discovered = items.size();
 
 			// Nothing to resolve is not the same as nothing resolvable: an empty
@@ -158,9 +149,9 @@ namespace plugify {
 			}
 
 			// Store dependency graphs
-			*_depGraph = std::move(report.dependencyGraph);
-			*_reverseDepGraph = std::move(report.reverseDependencyGraph);
-			*_loadOrder = std::move(report.loadOrder);
+			_depGraph = std::move(report.dependencyGraph);
+			_reverseDepGraph = std::move(report.reverseDependencyGraph);
+			_loadOrder = std::move(report.loadOrder);
 
 			return {};
 		}
@@ -376,25 +367,15 @@ namespace plugify {
 			return true;
 		}
 
-		void Setup(
-			std::span<Extension> items,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) override {
+		void Setup(std::span<Extension> items) override {
 			_extensions = items;
 
-			if constexpr (requires(Derived& d) {
-				d.DoSetup(items, ctx);
-			}) {
-				static_cast<Derived*>(this)->DoSetup(items, ctx);
+			if constexpr (requires(Derived& d) { d.DoSetup(items); }) {
+				static_cast<Derived*>(this)->DoSetup(items);
 			}
 		}
 
-		Result<void> ProcessItem(
-			Extension& ext,
-			size_t position,
-			size_t total,
-			const ExecutionContext<Extension>& ctx
-		) override {
+		Result<void> ProcessItem(Extension& ext, size_t position, size_t total) override {
 			// Common dependency failure check
 			if (auto failedDep = _failureTracker.GetFailedDependency(ext, _depGraph)) {
 				return HandleDependencyFailure(ext, failedDep);
@@ -403,9 +384,7 @@ namespace plugify {
 			// Not `if constexpr`: a derived class without the method would leave this
 			// function returning nothing at all, which no warning catches.
 			static_assert(
-				requires(Derived& d, Extension& e, const ExecutionContext<Extension>& c) {
-					d.DoProcessItem(e, size_t{}, size_t{}, c);
-				},
+				requires(Derived& d, Extension& e) { d.DoProcessItem(e, size_t{}, size_t{}); },
 				"a failure-propagating stage has to implement DoProcessItem"
 			);
 
@@ -415,7 +394,7 @@ namespace plugify {
 			// forget the timeout or to name the wrong state.
 			ext.StartOperation(Derived::kBusy);
 
-			auto result = static_cast<Derived*>(this)->DoProcessItem(ext, position, total, ctx);
+			auto result = static_cast<Derived*>(this)->DoProcessItem(ext, position, total);
 			if (!result) {
 				HandleOperationFailure(ext, result, ExtensionState::Failed);
 				return result;
@@ -432,14 +411,9 @@ namespace plugify {
 			return {};
 		}
 
-		void Teardown(
-			std::span<Extension> items,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) override {
-			if constexpr (requires(Derived& d) {
-				d.DoTeardown(items, ctx);
-			}) {
-				static_cast<Derived*>(this)->DoTeardown(items, ctx);
+		void Teardown(std::span<Extension> items) override {
+			if constexpr (requires(Derived& d) { d.DoTeardown(items); }) {
+				static_cast<Derived*>(this)->DoTeardown(items);
 			}
 		}
 
@@ -503,7 +477,7 @@ namespace plugify {
 		static constexpr ExtensionState kBusy = ExtensionState::Loading;
 		static constexpr ExtensionState kDone = ExtensionState::Loaded;
 
-		std::string GetName() const override {
+		std::string_view GetName() const override {
 			return "Loading";
 		}
 
@@ -512,7 +486,7 @@ namespace plugify {
 		}
 
 		// Non-virtual method called by base class via CRTP
-		Result<void> DoProcessItem(Extension& ext, size_t, size_t, const ExecutionContext<Extension>&) {
+		Result<void> DoProcessItem(Extension& ext, size_t, size_t) {
 			switch (ext.GetType()) {
 				case ExtensionType::Module: {
 					auto result = _loader.LoadModule(ext);
@@ -556,7 +530,7 @@ namespace plugify {
 		static constexpr ExtensionState kBusy = ExtensionState::Exporting;
 		static constexpr ExtensionState kDone = ExtensionState::Exported;
 
-		std::string GetName() const override {
+		std::string_view GetName() const override {
 			return "Exporting";
 		}
 
@@ -565,10 +539,7 @@ namespace plugify {
 				   && item.GetType() == ExtensionType::Plugin;
 		}
 
-		void DoSetup(
-			std::span<Extension> items,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) {
+		void DoSetup(std::span<Extension> items) {
 			for (const auto& ext : items) {
 				if (ext.GetType() == ExtensionType::Module
 					&& ext.GetState() == ExtensionState::Running) {
@@ -577,7 +548,7 @@ namespace plugify {
 			}
 		}
 
-		Result<void> DoProcessItem(Extension& ext, size_t, size_t, const ExecutionContext<Extension>&) {
+		Result<void> DoProcessItem(Extension& ext, size_t, size_t) {
 			for (const auto& module : _runningModules) {
 				if (auto result = _loader.MethodExport(*module, ext); !result) {
 					return result;
@@ -599,7 +570,7 @@ namespace plugify {
 		static constexpr ExtensionState kBusy = ExtensionState::Starting;
 		static constexpr ExtensionState kDone = ExtensionState::Started;
 
-		std::string GetName() const override {
+		std::string_view GetName() const override {
 			return "Starting";
 		}
 
@@ -608,7 +579,7 @@ namespace plugify {
 				   && item.GetType() == ExtensionType::Plugin;
 		}
 
-		Result<void> DoProcessItem(Extension& ext, size_t, size_t, const ExecutionContext<Extension>&) {
+		Result<void> DoProcessItem(Extension& ext, size_t, size_t) {
 			return _loader.StartPlugin(ext);
 		}
 

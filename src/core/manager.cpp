@@ -88,9 +88,9 @@ public:
 							.AddStage(
 								std::make_unique<ResolutionStage>(
 									resolver,
-									&loadOrder,
-									&depGraph,
-									&reverseDepGraph,
+									loadOrder,
+									depGraph,
+									reverseDepGraph,
 									config
 								)
 							)
