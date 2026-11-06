@@ -429,6 +429,32 @@ ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
 
 // Helper to validate state transitions (optional implementation)
 bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
+	// Teardown reaches further than the table below suggests. Anything that got as
+	// far as the loading stage may still hold a language module and an assembly,
+	// whether it came up or not: a plugin that failed to start, or one a stage
+	// abandoned halfway, has to give them back exactly like a running one. Those
+	// states are dead ends for everything except this.
+	if (to == ExtensionState::Terminating) {
+		switch (from) {
+			case ExtensionState::Loading:
+			case ExtensionState::Loaded:
+			case ExtensionState::Exporting:
+			case ExtensionState::Exported:
+			case ExtensionState::Starting:
+			case ExtensionState::Started:
+			case ExtensionState::Running:
+			case ExtensionState::Ending:
+			case ExtensionState::Ended:
+			case ExtensionState::Failed:
+			case ExtensionState::Skipped:
+				return true;
+
+			default:
+				// Never loaded, so there is nothing to give back
+				return false;
+		}
+	}
+
 	// Define valid state transitions
 	// This is just an example - adjust based on your actual state machine
 	switch (from) {
@@ -481,19 +507,18 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 		case ExtensionState::Ending:
 			return to == ExtensionState::Ended || to == ExtensionState::Failed;
 
-		case ExtensionState::Ended:
-			return to == ExtensionState::Terminating;
-
 		case ExtensionState::Terminating:
 			return to == ExtensionState::Terminated;
 
+		// Teardown is the only way out of these, and it is answered above
+		case ExtensionState::Ended:
 		case ExtensionState::Failed:
 		case ExtensionState::Terminated:
 		case ExtensionState::Corrupted:
 		case ExtensionState::Unresolved:
 		case ExtensionState::Disabled:
 		case ExtensionState::Skipped:
-			return false;  // Terminal states
+			return false;
 
 		default:
 			return false;

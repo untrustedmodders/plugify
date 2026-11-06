@@ -400,21 +400,18 @@ namespace plugify {
 			// forget the timeout or to name the wrong state.
 			ext.StartOperation(Derived::kBusy);
 
-			// A stage that does not implement it does no work at all, and still
-			// reports every item as a success: the item walks from kBusy to kDone
-			// with nothing in between.
-			if constexpr (requires(Derived& d) { d.DoProcessItem(ext); }) {
-				auto result = static_cast<Derived*>(this)->DoProcessItem(ext);
-				if (!result) {
-					HandleOperationFailure(ext, result, ExtensionState::Failed);
-					return result;
-				}
-			} else {
-				static_assert(
-					true,
-					"a failure-propagating stage has to implement "
-					"Result<void> DoProcessItem(Extension&)"
-				);
+			// Not optional: a stage without it does no work at all and still reports
+			// every item as a success, walking it from kBusy to kDone with nothing in
+			// between. Nothing else notices, so this is the only thing that does.
+			static_assert(
+				requires(Derived& d, Extension& e) { d.DoProcessItem(e); },
+				"a failure-propagating stage has to implement "
+				"Result<void> DoProcessItem(Extension&)"
+			);
+
+			if (auto result = static_cast<Derived*>(this)->DoProcessItem(ext); !result) {
+				HandleOperationFailure(ext, result, ExtensionState::Failed);
+				return result;
 			}
 
 			ext.EndOperation(Derived::kDone);

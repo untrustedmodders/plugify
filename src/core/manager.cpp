@@ -186,6 +186,11 @@ public:
 		}
 
 		if (stopped) {
+			// Whatever came up before the stage that stopped has to come back down:
+			// the caller is told that initialization failed, and will not call
+			// Terminate for something it does not believe is running.
+			TearDown();
+
 			// The caller surfaces what we return, so the stage-by-stage breakdown
 			// only goes to the log, where it is useful for debugging Plugify itself.
 			auto error = report.Error();
@@ -246,6 +251,15 @@ public:
 			return;
 		}
 
+		TearDown();
+
+		initialized = false;
+	}
+
+	// Ends and unloads everything, in the reverse of the order it came up in.
+	// Apart from Terminate because Initialize has to be able to do this too, with
+	// the lifecycle mutex already held.
+	void TearDown() {
 		for (auto it = extensions.rbegin(); it != extensions.rend(); ++it) {
 			auto& ext = *it;
 			if (ext.GetState() == ExtensionState::Running) {
@@ -275,9 +289,17 @@ public:
 			}
 		}
 
+		// Not keyed on the state: an extension that failed to start, or that a stage
+		// left halfway, holds its language module exactly like a running one, and
+		// nothing else ever gives it back. Keyed on Ended, it kept it until the
+		// process died, with the module shut down underneath it.
+		//
+		// The same question for both kinds: a plugin is handed the module that runs
+		// it, a module is handed itself, and a module's assembly comes and goes with
+		// that same pointer.
 		for (auto it = extensions.rbegin(); it != extensions.rend(); ++it) {
 			auto& ext = *it;
-			if (ext.GetState() == ExtensionState::Ended) {
+			if (ext.GetLanguageModule() != nullptr) {
 				ext.StartOperation(ExtensionState::Terminating);
 				Result<void> result;
 				switch (ext.GetType()) {
@@ -302,8 +324,6 @@ public:
 				ext.EndOperation(ExtensionState::Terminated);
 			}
 		}
-
-		initialized = false;
 	}
 
 	Result<std::vector<Extension>> DiscoverExtensions() const {

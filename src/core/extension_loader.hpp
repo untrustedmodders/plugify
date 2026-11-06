@@ -128,6 +128,10 @@ namespace plugify {
 			// Load language module interface
 			auto langModuleResult = LoadLanguageModule(std::move(*assemblyResult), module);
 			if (!langModuleResult) {
+				// The module did not come up, so nothing holds its assembly any more -
+				// and leaving it cached would hand the same one, never shut down, to the
+				// next Initialize.
+				_assemblies.erase(module.GetRuntime());
 				return langModuleResult;
 			}
 
@@ -202,12 +206,16 @@ namespace plugify {
 				return plugin.GetLanguageModule()->OnPluginLoad(plugin);
 			});
 			if (!loadResult) {
+				// A plugin that did not load holds nothing, which is what teardown reads
+				// to decide what to give back - and the counter below never ran
+				plugin.SetLanguageModule(nullptr);
 				return MakeError(std::move(loadResult.error()));
 			}
 
 			// Validate and set plugin data
 			auto validateResult = ValidateAndSetPluginData(plugin, *loadResult);
 			if (!validateResult) {
+				plugin.SetLanguageModule(nullptr);
 				return validateResult;
 			}
 
