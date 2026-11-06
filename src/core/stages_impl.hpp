@@ -346,7 +346,6 @@ namespace plugify {
 		}
 	};
 
-
 	// Uses CRTP (Curiously Recurring Template Pattern) for compile-time polymorphism
 	template <typename Derived>
 	class BaseFailurePropagatingStage : public ISequentialStage<Extension> {
@@ -401,8 +400,9 @@ namespace plugify {
 			// forget the timeout or to name the wrong state.
 			ext.StartOperation(Derived::kBusy);
 
-			// Not `if constexpr`: a derived class without the method would leave this
-			// function returning nothing at all, which no warning catches.
+			// A stage that does not implement it does no work at all, and still
+			// reports every item as a success: the item walks from kBusy to kDone
+			// with nothing in between.
 			if constexpr (requires(Derived& d) { d.DoProcessItem(ext); }) {
 				auto result = static_cast<Derived*>(this)->DoProcessItem(ext);
 				if (!result) {
@@ -410,7 +410,11 @@ namespace plugify {
 					return result;
 				}
 			} else {
-				static_assert("a failure-propagating stage has to implement DoProcessItem");
+				static_assert(
+					true,
+					"a failure-propagating stage has to implement "
+					"Result<void> DoProcessItem(Extension&)"
+				);
 			}
 
 			ext.EndOperation(Derived::kDone);
@@ -562,6 +566,18 @@ namespace plugify {
 					_runningModules.push_back(&ext);
 				}
 			}
+		}
+
+		// Hands the plugin's methods to every module that is up, which is what
+		// fills in the function pointers the plugin's own code calls through
+		Result<void> DoProcessItem(Extension& ext) {
+			for (const auto& module : _runningModules) {
+				if (auto result = _loader.MethodExport(*module, ext); !result) {
+					return result;
+				}
+			}
+
+			return {};
 		}
 	};
 
