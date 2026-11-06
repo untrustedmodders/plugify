@@ -328,7 +328,7 @@ void Extension::EndOperation(ExtensionState newState) {
 }
 
 void Extension::SetState(ExtensionState state) {
-	assert(IsValidTransition(_impl->state, state) && "Invalid state transition");
+	PLUGIFY_ASSERT(IsValidTransition(_impl->state, state), "Invalid state transition");
 	_impl->state = state;
 }
 

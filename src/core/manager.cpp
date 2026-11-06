@@ -183,7 +183,7 @@ public:
 			// Whatever came up before the stage that stopped has to come back down:
 			// the caller is told that initialization failed, and will not call
 			// Terminate for something it does not believe is running.
-			TearDown();
+			Shutdown();
 
 			// The caller surfaces what we return, so the stage-by-stage breakdown
 			// only goes to the log, where it is useful for debugging Plugify itself.
@@ -245,7 +245,7 @@ public:
 			return;
 		}
 
-		TearDown();
+		Shutdown();
 
 		initialized = false;
 	}
@@ -253,7 +253,7 @@ public:
 	// Ends and unloads everything, in the reverse of the order it came up in.
 	// Apart from Terminate because Initialize has to be able to do this too, with
 	// the lifecycle mutex already held.
-	void TearDown() {
+	void Shutdown() {
 		for (auto it = extensions.rbegin(); it != extensions.rend(); ++it) {
 			auto& ext = *it;
 			if (ext.GetState() == ExtensionState::Running) {
