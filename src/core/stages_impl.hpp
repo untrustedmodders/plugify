@@ -400,12 +400,36 @@ namespace plugify {
 				return HandleDependencyFailure(ext, failedDep);
 			}
 
-			// Delegate to derived class for actual processing
-			if constexpr (requires(Derived& d) {
-				d.DoProcessItem(ext, position, total, ctx);
-			}) {
-				return static_cast<Derived*>(this)->DoProcessItem(ext, position, total, ctx);
+			// Not `if constexpr`: a derived class without the method would leave this
+			// function returning nothing at all, which no warning catches.
+			static_assert(
+				requires(Derived& d, Extension& e, const ExecutionContext<Extension>& c) {
+					d.DoProcessItem(e, size_t{}, size_t{}, c);
+				},
+				"a failure-propagating stage has to implement DoProcessItem"
+			);
+
+			// Every stage keeps the same book: enter the busy state, do the work, and
+			// then either record the failure or leave the item in the state the next
+			// stage looks for. Written out once per stage, it was three chances to
+			// forget the timeout or to name the wrong state.
+			ext.StartOperation(Derived::kBusy);
+
+			auto result = static_cast<Derived*>(this)->DoProcessItem(ext, position, total, ctx);
+			if (!result) {
+				HandleOperationFailure(ext, result, ExtensionState::Failed);
+				return result;
 			}
+
+			ext.EndOperation(Derived::kDone);
+			CheckTimeout(ext, Derived::kBusy);
+
+			// Whatever the stage has to do once the item is through, if anything
+			if constexpr (requires(Derived& d) { d.DoFinish(ext); }) {
+				static_cast<Derived*>(this)->DoFinish(ext);
+			}
+
+			return {};
 		}
 
 		void Teardown(
@@ -417,11 +441,6 @@ namespace plugify {
 			}) {
 				static_cast<Derived*>(this)->DoTeardown(items, ctx);
 			}
-		}
-
-		// Make timeout configurable per stage
-		std::chrono::milliseconds GetTimeout() const {
-			return _timeout;
 		}
 
 	protected:
@@ -481,6 +500,9 @@ namespace plugify {
 	public:
 		using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
+		static constexpr ExtensionState kBusy = ExtensionState::Loading;
+		static constexpr ExtensionState kDone = ExtensionState::Loaded;
+
 		std::string GetName() const override {
 			return "Loading";
 		}
@@ -490,52 +512,34 @@ namespace plugify {
 		}
 
 		// Non-virtual method called by base class via CRTP
-		Result<void> DoProcessItem(
-			Extension& ext,
-			[[maybe_unused]] size_t position,
-			[[maybe_unused]] size_t total,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) {
-			ext.StartOperation(ExtensionState::Loading);
-
-			Result<void> result;
+		Result<void> DoProcessItem(Extension& ext, size_t, size_t, const ExecutionContext<Extension>&) {
 			switch (ext.GetType()) {
 				case ExtensionType::Module: {
-					result = _loader.LoadModule(ext);
+					auto result = _loader.LoadModule(ext);
 					if (result) {
 						_loadedModules[ext.GetLanguage()] = &ext;
 					}
-					break;
+					return result;
 				}
 
 				case ExtensionType::Plugin: {
 					auto it = _loadedModules.find(ext.GetLanguage());
 					if (it == _loadedModules.end()) {
-						result = MakeError("Language module '{}' not found", ext.GetLanguage());
-					} else {
-						result = _loader.LoadPlugin(*it->second, ext);
+						return MakeError("Language module '{}' not found", ext.GetLanguage());
 					}
-					break;
+					return _loader.LoadPlugin(*it->second, ext);
 				}
 
 				default:
-					result = MakeError("Unknown extension type");
+					return MakeError("Unknown extension type");
 			}
+		}
 
-			if (!result) {
-				HandleOperationFailure(ext, result, ExtensionState::Failed);
-				return result;
-			}
-
-			ext.EndOperation(ExtensionState::Loaded);
-
-			CheckTimeout(ext, ExtensionState::Loading);
-
-			// Set module as running as it not has start and export
+		// A module has nothing to export and nothing to start, so it goes straight on
+		void DoFinish(Extension& ext) {
 			if (ext.GetType() == ExtensionType::Module) {
 				ext.StartOperation(ExtensionState::Running);
 			}
-			return {};
 		}
 	};
 
@@ -548,6 +552,9 @@ namespace plugify {
 
 	public:
 		using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
+
+		static constexpr ExtensionState kBusy = ExtensionState::Exporting;
+		static constexpr ExtensionState kDone = ExtensionState::Exported;
 
 		std::string GetName() const override {
 			return "Exporting";
@@ -570,24 +577,13 @@ namespace plugify {
 			}
 		}
 
-		Result<void> DoProcessItem(
-			Extension& ext,
-			[[maybe_unused]] size_t position,
-			[[maybe_unused]] size_t total,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) {
-			ext.StartOperation(ExtensionState::Exporting);
-
+		Result<void> DoProcessItem(Extension& ext, size_t, size_t, const ExecutionContext<Extension>&) {
 			for (const auto& module : _runningModules) {
-				auto result = _loader.MethodExport(*module, ext);
-				if (!result) {
-					HandleOperationFailure(ext, result, ExtensionState::Failed);
+				if (auto result = _loader.MethodExport(*module, ext); !result) {
 					return result;
 				}
 			}
 
-			ext.EndOperation(ExtensionState::Exported);
-			CheckTimeout(ext, ExtensionState::Exporting);
 			return {};
 		}
 	};
@@ -600,6 +596,9 @@ namespace plugify {
 	public:
 		using BaseFailurePropagatingStage::BaseFailurePropagatingStage;
 
+		static constexpr ExtensionState kBusy = ExtensionState::Starting;
+		static constexpr ExtensionState kDone = ExtensionState::Started;
+
 		std::string GetName() const override {
 			return "Starting";
 		}
@@ -609,25 +608,13 @@ namespace plugify {
 				   && item.GetType() == ExtensionType::Plugin;
 		}
 
-		Result<void> DoProcessItem(
-			Extension& ext,
-			[[maybe_unused]] size_t position,
-			[[maybe_unused]] size_t total,
-			[[maybe_unused]] const ExecutionContext<Extension>& ctx
-		) {
-			ext.StartOperation(ExtensionState::Starting);
+		Result<void> DoProcessItem(Extension& ext, size_t, size_t, const ExecutionContext<Extension>&) {
+			return _loader.StartPlugin(ext);
+		}
 
-			auto result = _loader.StartPlugin(ext);
-			if (!result) {
-				HandleOperationFailure(ext, result, ExtensionState::Failed);
-				return result;
-			}
-
-			ext.EndOperation(ExtensionState::Started);
-			CheckTimeout(ext, ExtensionState::Starting);
-
+		// Starting is the last thing that happens to a plugin
+		void DoFinish(Extension& ext) {
 			ext.StartOperation(ExtensionState::Running);
-			return {};
 		}
 	};
 }
