@@ -48,8 +48,8 @@ namespace plugify {
 		std::unordered_map<UniqueId, std::vector<DependencyIssue>> issues;
 
 		// Dependency graph
-		DependencyGraph dependencyGraph;  // For quick dep checks
-		DependencyGraph reverseDependencyGraph;  // For skipping dependents
+		std::unordered_map<UniqueId, std::vector<UniqueId>> dependencyGraph;  // For quick dep checks
+		std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDependencyGraph;  // For skipping dependents
 
 		// Load order
 		std::vector<UniqueId> loadOrder;

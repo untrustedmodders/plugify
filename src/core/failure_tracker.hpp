@@ -23,7 +23,7 @@ namespace plugify {
 
 		UniqueId GetFailedDependency(
 			const Extension& ext,
-			const DependencyGraph& dependencies
+			const std::unordered_map<UniqueId, std::vector<UniqueId>>& dependencies
 		) const {
 			std::shared_lock lock(_mutex);
 

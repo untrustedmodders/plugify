@@ -2,7 +2,6 @@
 
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "plg/enum.hpp"
@@ -112,16 +111,6 @@ namespace plugify {
 		Value value{};
 		const char* name{};  // Debug-only pointer.
 	};
-
-	/**
-	 * @typedef DependencyGraph
-	 * @brief Which extensions each extension is related to, by id.
-	 *
-	 * Read one way it answers "what does this one depend on", and reversed it
-	 * answers "who depends on this one"; the shape is the same either way, so the
-	 * direction lives in the name of the variable rather than in the type.
-	 */
-	using DependencyGraph = std::unordered_map<UniqueId, std::vector<UniqueId>>;
 
 	/**
 	 * @enum ExtensionType

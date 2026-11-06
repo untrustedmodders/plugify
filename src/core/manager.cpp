@@ -44,8 +44,8 @@ struct Manager::Impl {
 
 	// Dependency graphs (filled by resolution stage)
 	std::vector<UniqueId> loadOrder;
-	DependencyGraph depGraph;
-	DependencyGraph reverseDepGraph;
+	std::unordered_map<UniqueId, std::vector<UniqueId>> depGraph;
+	std::unordered_map<UniqueId, std::vector<UniqueId>> reverseDepGraph;
 
 	void Setup(const Manager& manager) {
 		provider.emplace(services, config, manager);
