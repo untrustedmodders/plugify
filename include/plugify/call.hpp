@@ -160,7 +160,7 @@ namespace plugify {
 	class Parameters {
 	public:
 		using SlotType = uint64_t;
-		static constexpr size_t SlotSize = sizeof(SlotType);
+		static constexpr size_t kSlotSize = sizeof(SlotType);
 
 		/**
 		 * @brief Constructor.
@@ -191,7 +191,7 @@ namespace plugify {
 		 */
 		template <MultiSlotType T>
 		Parameters& AddLarge(const T& value) {
-			constexpr size_t slotsNeeded = (sizeof(T) + SlotSize - 1) / SlotSize;
+			constexpr size_t slotsNeeded = (sizeof(T) + kSlotSize - 1) / kSlotSize;
 			size_t oldSize = _storage.size();
 			_storage.resize(oldSize + slotsNeeded);
 			std::memcpy(&_storage[oldSize], &value, sizeof(T));
@@ -287,7 +287,7 @@ namespace plugify {
 	class Return {
 	public:
 		using SlotType = uint64_t;
-		static constexpr size_t MaxSize = 2 * sizeof(SlotType);
+		static constexpr size_t kMaxSize = 2 * sizeof(SlotType);
 
 		/**
 		 * @brief Construct an object of type T in the return storage.
@@ -295,7 +295,7 @@ namespace plugify {
 		 * @param args Arguments to forward to the constructor.
 		 */
 		template <typename T, typename... Args>
-		    requires(sizeof(T) <= MaxSize && std::is_trivially_destructible_v<T>)
+		    requires(sizeof(T) <= kMaxSize && std::is_trivially_destructible_v<T>)
 		void Construct(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...))) {
 			std::construct_at(reinterpret_cast<T*>(_storage.data()), std::forward<Args>(args)...);
 		}
@@ -306,7 +306,7 @@ namespace plugify {
 		 * @param value Value to set.
 		 */
 		template <typename T>
-		    requires(sizeof(T) <= MaxSize && std::is_trivially_copyable_v<T>)
+		    requires(sizeof(T) <= kMaxSize && std::is_trivially_copyable_v<T>)
 		void Set(T value) noexcept {
 			_storage = {};
 			std::memcpy(_storage.data(), &value, sizeof(T));
@@ -318,7 +318,7 @@ namespace plugify {
 		 * @return The return value.
 		 */
 		template <typename T>
-		    requires(sizeof(T) <= MaxSize && std::is_trivially_copyable_v<T>)
+		    requires(sizeof(T) <= kMaxSize && std::is_trivially_copyable_v<T>)
 		[[nodiscard]] T Get() const noexcept {
 			T result;
 			std::memcpy(&result, _storage.data(), sizeof(T));
@@ -334,6 +334,6 @@ namespace plugify {
 
 	private:
 		alignas(alignof(std::max_align_t))
-		std::array<std::byte, MaxSize> _storage{};  ///< 128-bit storage
+		std::array<std::byte, kMaxSize> _storage{};  ///< 128-bit storage
 	};
 }  // namespace plugify

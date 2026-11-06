@@ -408,7 +408,7 @@ public:
 		}
 
 		std::string buffer;
-		buffer.reserve(INITIAL_BUFFER_SIZE);
+		buffer.reserve(kBufferSize);
 
 		auto it = std::back_inserter(buffer);
 
@@ -509,7 +509,7 @@ public:
 	}
 
 #pragma region Reports
-	static constexpr size_t INITIAL_BUFFER_SIZE = 4096;
+	static constexpr size_t kBufferSize = 4096;
 
 	std::string_view NameOf(UniqueId id) const {
 		auto it = std::ranges::find(extensions, id, &Extension::GetId);
@@ -518,7 +518,7 @@ public:
 
 	std::string GenerateLoadOrder() const {
 		std::string buffer;
-		buffer.reserve(INITIAL_BUFFER_SIZE);
+		buffer.reserve(kBufferSize);
 
 		auto it = std::back_inserter(buffer);
 
@@ -540,7 +540,7 @@ public:
 
 	std::string GenerateDependencyGraph() const {
 		std::string buffer;
-		buffer.reserve(INITIAL_BUFFER_SIZE);
+		buffer.reserve(kBufferSize);
 
 		auto it = std::back_inserter(buffer);
 
@@ -576,7 +576,7 @@ public:
 
 	std::string GenerateDependencyGraphDOT() const {
 		std::string buffer;
-		buffer.reserve(INITIAL_BUFFER_SIZE);
+		buffer.reserve(kBufferSize);
 
 		auto it = std::back_inserter(buffer);
 
