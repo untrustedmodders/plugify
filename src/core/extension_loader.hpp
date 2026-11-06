@@ -61,10 +61,12 @@ namespace plugify {
 			size_t pluginsLoaded{ 0 };
 			std::chrono::milliseconds totalLoadTime{};
 
+			// Owned, not viewed: the names live in the extensions, which Initialize
+			// replaces and Terminate destroys, while the loader and these numbers stay
 			std::chrono::milliseconds slowestModuleLoad{};
-			std::string_view slowestModule{ "<unknown>" };
+			std::string slowestModule{ "<unknown>" };
 			std::chrono::milliseconds slowestPluginLoad{};
-			std::string_view slowestPlugin{ "<unknown>" };
+			std::string slowestPlugin{ "<unknown>" };
 
 			std::string Summary() const {
 				return std::format(
@@ -112,7 +114,7 @@ namespace plugify {
 
 			[[maybe_unused]] ScopedTimer timer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
-				if (elapsed > _stats.slowestModuleLoad) {
+				if (elapsed >= _stats.slowestModuleLoad) {
 					_stats.slowestModuleLoad = elapsed;
 					_stats.slowestModule = module.GetName();
 				}
@@ -184,7 +186,7 @@ namespace plugify {
 
 			[[maybe_unused]] ScopedTimer timer([&](std::chrono::milliseconds elapsed) {
 				_stats.totalLoadTime += elapsed;
-				if (elapsed > _stats.slowestPluginLoad) {
+				if (elapsed >= _stats.slowestPluginLoad) {
 					_stats.slowestPluginLoad = elapsed;
 					_stats.slowestPlugin = plugin.GetName();
 				}
