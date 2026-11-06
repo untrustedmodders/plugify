@@ -83,16 +83,16 @@ namespace plugify {
 	class ResolutionStage : public IBarrierStage<Extension> {
 		std::shared_ptr<IDependencyResolver> _resolver;
 		std::vector<UniqueId>& _loadOrder;
-		std::unordered_map<UniqueId, std::vector<UniqueId>>& _depGraph;
-		std::unordered_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
+		DependencyGraph& _depGraph;
+		DependencyGraph& _reverseDepGraph;
 		const Config& _config;
 
 	public:
 		ResolutionStage(
 			std::shared_ptr<IDependencyResolver> resolver,
 			std::vector<UniqueId>& loadOrder,
-			std::unordered_map<UniqueId, std::vector<UniqueId>>& depGraph,
-			std::unordered_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
+			DependencyGraph& depGraph,
+			DependencyGraph& reverseDepGraph,
 			const Config& config
 		)
 			: _resolver(std::move(resolver))
@@ -343,8 +343,8 @@ namespace plugify {
 	protected:
 		ExtensionLoader& _loader;
 		FailureTracker& _failureTracker;
-		const std::unordered_map<UniqueId, std::vector<UniqueId>>& _depGraph;
-		const std::unordered_map<UniqueId, std::vector<UniqueId>>& _reverseDepGraph;
+		const DependencyGraph& _depGraph;
+		const DependencyGraph& _reverseDepGraph;
 		std::chrono::milliseconds _timeout;
 		std::span<Extension> _extensions;
 
@@ -352,8 +352,8 @@ namespace plugify {
 		BaseFailurePropagatingStage(
 			ExtensionLoader& loader,
 			FailureTracker& failureTracker,
-			const std::unordered_map<UniqueId, std::vector<UniqueId>>& depGraph,
-			const std::unordered_map<UniqueId, std::vector<UniqueId>>& reverseDepGraph,
+			const DependencyGraph& depGraph,
+			const DependencyGraph& reverseDepGraph,
 			std::chrono::milliseconds timeout
 		)
 			: _loader(loader)
