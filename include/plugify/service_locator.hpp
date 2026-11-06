@@ -22,11 +22,9 @@ namespace plugify {
 		ServiceLocator();
 		~ServiceLocator();
 
-		// Delete copy operations
 		ServiceLocator(const ServiceLocator&) = delete;
 		ServiceLocator& operator=(const ServiceLocator&) = delete;
 
-		// Move operations
 		ServiceLocator(ServiceLocator&&) noexcept;
 		ServiceLocator& operator=(ServiceLocator&&) noexcept;
 
@@ -254,7 +252,6 @@ namespace plugify {
 		[[nodiscard]] std::shared_ptr<void> TryResolveInternal(std::type_index type) const noexcept;
 		[[nodiscard]] bool IsRegisteredInternal(std::type_index type) const;
 
-		// PIMPL
 		PLUGIFY_ACCESS : struct Impl;
 		PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
@@ -267,7 +264,6 @@ namespace plugify {
 		explicit ScopedServiceLocator(ServiceLocator& locator);
 		~ScopedServiceLocator();
 
-		// Delete copy/move
 		ScopedServiceLocator(const ScopedServiceLocator&) = delete;
 		ScopedServiceLocator& operator=(const ScopedServiceLocator&) = delete;
 		ScopedServiceLocator(ScopedServiceLocator&&) = delete;

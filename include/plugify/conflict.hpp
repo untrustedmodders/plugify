@@ -9,7 +9,6 @@
 namespace plugify {
 	class Manager;
 
-	// Conflict Class
 	class PLUGIFY_API Conflict {
 	public:
 		Conflict();

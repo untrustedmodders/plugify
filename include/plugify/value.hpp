@@ -9,7 +9,6 @@
 namespace plugify {
 	class Method;
 
-	// Value Class
 	class PLUGIFY_API Value {
 	public:
 		Value();

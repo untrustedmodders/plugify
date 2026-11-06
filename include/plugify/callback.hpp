@@ -265,9 +265,9 @@ namespace plugify {
 		 * @tparam T Type to construct
 		 * @tparam Args Constructor argument types
 		 * @param args Constructor arguments
+		 * @note Nothing destroys the slot, so T has to be trivially destructible
 		 */
 		template <typename T, typename... Args>
-			// requires std::is_trivially_destructible_v<T>
 		void Construct(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...))) {
 			assert(sizeof(T) <= _size && "Type too large");
 			std::construct_at(reinterpret_cast<T*>(_data), std::forward<Args>(args)...);

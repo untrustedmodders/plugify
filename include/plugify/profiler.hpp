@@ -13,19 +13,15 @@ namespace plugify {
 	public:
 		virtual ~IProfiler() = default;
 
-		// Frame boundary 
+		// Frame boundary
 		// Call once per application frame (or per plugin tick).
 		virtual void MarkFrame(std::string_view name) = 0;
 
-		// CPU zones 
+		// CPU zones
 		// BeginZone / EndZone must be balanced. Prefer the RAII
 		// ScopedZone helper below — don't call these directly.
 		virtual ZoneHandle BeginZone(std::string_view name, const Location& location = Location::current()) = 0;
 		virtual void EndZone(ZoneHandle handle) = 0;
-
-		// Memory tracking
-		//virtual void TrackAlloc(void* ptr, size_t size, std::string_view pool = {}) = 0;
-		//virtual void TrackFree(void* ptr, std::string_view pool = {}) = 0;
 	};
 
 	class ScopedZone {

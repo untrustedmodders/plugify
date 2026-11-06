@@ -12,7 +12,6 @@ namespace plugify {
 	class IAssembly;
 	class ILanguageModule;
 
-	// Extension State Enum
 	enum class ExtensionState {
 		Unknown,
 		Discovered,
@@ -49,14 +48,14 @@ namespace plugify {
 		Max
 	};
 
-	// Unified Extension class
 	class PLUGIFY_API Extension {
 	public:
 		Extension();
 		Extension(UniqueId id, std::filesystem::path location);
 		~Extension();
 
-		// Delete copy/move for safety (can be implemented if needed)
+		// Copying would duplicate a loaded extension; moving is what the pipeline
+		// does to reorder and filter them, so that one stays
 		Extension(const Extension&) = delete;
 		Extension(Extension&&) noexcept;
 		Extension& operator=(const Extension&) = delete;
@@ -108,7 +107,6 @@ namespace plugify {
 		[[nodiscard]] bool HasErrors() const noexcept;
 		[[nodiscard]] bool HasWarnings() const noexcept;
 
-		//[[nodiscard]] bool IsLoaded() const noexcept;
 		[[nodiscard]] bool IsPlugin() const noexcept {
 			return GetType() == ExtensionType::Plugin;
 		}
@@ -156,10 +154,6 @@ namespace plugify {
 		[[nodiscard]] static bool IsValidTransition(ExtensionState from, ExtensionState to);
 		[[nodiscard]] std::string ToString() const;
 		[[nodiscard]] const std::string& GetVersionString() const noexcept;
-		// bool CanLoad() const noexcept;
-		// bool CanStart() const noexcept;
-		// bool CanUpdate() const noexcept;
-		// bool CanStop() const noexcept;
 		void AddDependency(std::string dep);
 		void Reset();
 

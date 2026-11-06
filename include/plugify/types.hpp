@@ -138,7 +138,6 @@ namespace plugify {
 	template <typename T>
 	using Result = std::expected<T, std::string>;
 
-	// Helper for creating errors with context
 
 	template <plg::string_like First>
 	constexpr auto MakeError(First&& error) {

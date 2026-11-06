@@ -11,7 +11,6 @@
 namespace plugify {
 	class Alias;
 
-	// Binding Class
 	class PLUGIFY_API Binding {
 	public:
 		Binding();

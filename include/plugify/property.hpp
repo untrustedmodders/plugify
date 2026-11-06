@@ -9,7 +9,6 @@ namespace plugify {
 	class Enum;
 	class Method;
 
-	// Property Class
 	class PLUGIFY_API Property {
 	public:
 		Property();

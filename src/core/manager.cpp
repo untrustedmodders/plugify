@@ -13,7 +13,6 @@ using namespace plugify;
 
 struct Manager::Impl {
 	Impl(const ServiceLocator& srv, const Config& cfg) : services(srv), config(cfg) {
-		// Create services
 		assemblyLoader = services.Resolve<IAssemblyLoader>();
 		fileSystem = services.Resolve<IFileSystem>();
 		logger = services.Resolve<ILogger>();
@@ -35,7 +34,6 @@ struct Manager::Impl {
 	std::mutex lifecycleMutex;
 	bool initialized{ false };
 
-	// Services
 	std::shared_ptr<IAssemblyLoader> assemblyLoader;
 	std::shared_ptr<IFileSystem> fileSystem;
 	std::shared_ptr<ILogger> logger;
@@ -121,8 +119,6 @@ public:
 									config.loading.startTimeout
 								)
 							)
-							//.WithLogger(logger)
-							//.WithProfiler(profiler)
 							.WithThreadPoolSize(config.loading.maxConcurrentLoads)
 							.Build();
 
@@ -130,13 +126,11 @@ public:
 
 		// A stage that stopped is Plugify unable to do its job; an extension that did
 		// not come up is Plugify doing its job and saying so. Only the first is the
-		// caller's problem, and a stage can only stop before anything is loaded, so
-		// the second always leaves a system that is up and has to be torn down.
+		// caller's problem.
 		const bool stopped = std::ranges::any_of(report.stages, [](const auto& stage) {
 			return stage.stats.stopped;
 		});
 
-		// Print reports if configured
 		if (config.logging.printReport) {
 			logger->Log(report.Summary(), Severity::Info);
 			logger->Log(loader->GetStatistics().Summary(), Severity::Info);
@@ -330,14 +324,12 @@ public:
 		std::vector<std::filesystem::path> manifestPaths;
 		std::vector<std::filesystem::path> directoriesToProcess;
 
-		// Start with the root extensions directory
 		directoriesToProcess.push_back(config.paths.extensionsDir);
 
 		while (!directoriesToProcess.empty()) {
 			auto currentDir = std::move(directoriesToProcess.back());
 			directoriesToProcess.pop_back();
 
-			// List contents of current directory
 			auto entries = fileSystem->ListDirectory(currentDir);
 			if (!entries) {
 				// Keep going through the other directories, but say so: an
@@ -357,7 +349,6 @@ public:
 			bool foundManifest = false;
 			std::vector<std::filesystem::path> subdirs;
 
-			// First pass: look for manifest files and collect subdirectories
 			for (auto&& entry : *entries) {
 				if (entry.is_regular_file()) {
 					if (Extension::GetExtensionType(entry.path) != ExtensionType::Unknown) {
@@ -371,7 +362,6 @@ public:
 				}
 			}
 
-			// Only recurse into subdirectories if no manifest was found
 			if (!foundManifest) {
 				directoriesToProcess.insert( //-V823
 					directoriesToProcess.end(),
@@ -617,7 +607,6 @@ public:
 			);
 		}
 
-		// edges
 		for (const auto& [id, deps] : depGraph) {
 			for (auto dep : deps) {
 				std::format_to(it, "  node{} -> node{};\n", id, dep);

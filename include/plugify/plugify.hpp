@@ -14,15 +14,11 @@
 #include "plugify/manager.hpp"
 #include "plugify/provider.hpp"
 #include "plugify/service_locator.hpp"
-// #include "plugify/progress_reporter.hpp"
-// #include "plugify/metric_collector.hpp"
-// #include "plugify/plugin_lifecycle.hpp"
 #include "plugify/assembly_loader.hpp"
 
 namespace plugify {
 	class Plugify;
 
-	// Builder pattern for configuration
 	class PLUGIFY_API PlugifyBuilder {
 	public:
 		PlugifyBuilder();
@@ -32,16 +28,15 @@ namespace plugify {
 		PlugifyBuilder& operator=(const PlugifyBuilder& other) = delete;
 		PlugifyBuilder& operator=(PlugifyBuilder&& other) noexcept = delete;
 
-		// Path configuration methods - these have clear precedence
+		// Paths
 		PlugifyBuilder& WithBaseDir(std::filesystem::path dir);
 		PlugifyBuilder& WithPaths(Config::Paths paths);
 
-		// Config methods with clear semantics
+		// Config
 		PlugifyBuilder& WithConfig(Config config);
 		PlugifyBuilder& WithConfigFile(std::filesystem::path path);
-		// PlugifyBuilder& WithPartialConfig(Config config); // Merges with existing
 
-		// Service registration...
+		// Services
 		PlugifyBuilder& WithLogger(std::shared_ptr<ILogger> logger);
 		PlugifyBuilder& WithProfiler(std::shared_ptr<IProfiler> profiler);
 		PlugifyBuilder& WithFileSystem(std::shared_ptr<IFileSystem> fs);

@@ -6,7 +6,6 @@
 #include "plugify/global.h"
 
 namespace plugify {
-	// Alias Class
 	class PLUGIFY_API Alias {
 	public:
 		Alias();

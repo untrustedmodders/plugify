@@ -159,7 +159,6 @@ namespace plugify {
 				);
 			}
 
-			// Store dependency graphs
 			_depGraph = std::move(report.dependencyGraph);
 			_reverseDepGraph = std::move(report.reverseDependencyGraph);
 			_loadOrder = std::move(report.loadOrder);
@@ -168,7 +167,6 @@ namespace plugify {
 		}
 
 	private:
-		// Filter extensions based on whitelist/blacklist
 		std::pair<std::vector<Extension>, std::vector<Extension>> FilterByPolicy(
 			std::vector<Extension>& items
 		) const {
@@ -176,7 +174,6 @@ namespace plugify {
 			std::vector<Extension> excluded;
 
 			filtered.reserve(items.size());
-			// excluded.reserve(items.size());
 
 			for (auto&& ext : items) {
 				// Anything that did not parse already carries its own error
@@ -226,7 +223,6 @@ namespace plugify {
 			return std::nullopt;
 		}
 
-		// Build language registry and add language dependencies
 		static void AddLanguageDependencies(std::vector<Extension>& items) {
 			std::flat_map<std::string_view, std::string_view> languages;
 
@@ -389,7 +385,6 @@ namespace plugify {
 		}
 
 		Result<void> ProcessItem(Extension& ext) override {
-			// Common dependency failure check
 			if (auto failedDep = _failureTracker.GetFailedDependency(ext, _depGraph)) {
 				return HandleDependencyFailure(ext, failedDep);
 			}
@@ -434,12 +429,6 @@ namespace plugify {
 		}
 
 	protected:
-		// Add hook points for derived classes
-		// virtual void OnDependencyFailure(Extension& ext) {}
-		// virtual void OnProcessingStart(Extension& ext) {}
-		// virtual void OnProcessingComplete(Extension& ext, bool success) {}
-
-		// Handle dependency failure uniformly
 		Result<void> HandleDependencyFailure(Extension& ext, UniqueId id) {
 			auto it = std::ranges::find(_extensions, id, &Extension::GetId);
 			std::string_view failedDep = it != _extensions.end() ? it->GetName() : std::string_view{"<unknown>"};
@@ -451,7 +440,6 @@ namespace plugify {
 			return MakeError("Dependency '{}' failed", failedDep);
 		}
 
-		// Handle operation failure uniformly
 		void HandleOperationFailure(Extension& ext, const Result<void>& result, ExtensionState failedState) {
 			ext.AddError(result.error());
 			ext.EndOperation(failedState);
@@ -459,7 +447,6 @@ namespace plugify {
 			PropagateFailureToDirectDependents(ext);
 		}
 
-		// Check and add timeout warning
 		void CheckTimeout(Extension& ext, ExtensionState state) {
 			if (auto operationTime = ext.GetOperationTime(state); operationTime > _timeout) {
 				ext.AddWarning(
@@ -502,7 +489,6 @@ namespace plugify {
 			return item.GetState() == ExtensionState::Resolved;
 		}
 
-		// Non-virtual method called by base class via CRTP
 		Result<void> DoProcessItem(Extension& ext) {
 			switch (ext.GetType()) {
 				case ExtensionType::Module: {

@@ -27,7 +27,6 @@ namespace plugify {
 		) const {
 			std::shared_lock lock(_mutex);
 
-			// Check if any of this extension's dependencies have failed
 			if (auto it = dependencies.find(ext.GetId()); it != dependencies.end()) {
 				for (const auto& dependencyId : it->second) {
 					if (_failedExtensions.contains(dependencyId)) {

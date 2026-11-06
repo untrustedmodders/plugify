@@ -9,7 +9,6 @@
 namespace plugify {
 	class Manager;
 
-	// Dependency Class
 	class PLUGIFY_API Dependency {
 	public:
 		Dependency();

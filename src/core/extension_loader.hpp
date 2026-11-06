@@ -54,7 +54,6 @@ namespace plugify {
 	template <typename Callback>
 	ScopedTimer(Callback&&) -> ScopedTimer<std::decay_t<Callback>>;
 
-	// Enhanced Loader class with better error handling and preloading support
 	class ExtensionLoader {
 	public:
 		struct LoadStatistics {
@@ -119,13 +118,11 @@ namespace plugify {
 				}
 			});
 
-			// Try to use preloaded assembly if available
 			auto assemblyResult = GetOrLoadAssembly(module.GetRuntime(), module.GetDirectories());
 			if (!assemblyResult) {
 				return MakeError(std::move(assemblyResult.error()));
 			}
 
-			// Load language module interface
 			auto langModuleResult = LoadLanguageModule(std::move(*assemblyResult), module);
 			if (!langModuleResult) {
 				// The module did not come up, so nothing holds its assembly any more -
@@ -169,7 +166,6 @@ namespace plugify {
 				module.SetLanguageModule(nullptr);
 			}
 
-			// Clear assembly and remove from cache
 			if ([[maybe_unused]] auto assembly = module.GetAssembly()) {
 				_assemblies.erase(module.GetRuntime());
 				module.SetAssembly(nullptr);
@@ -201,7 +197,6 @@ namespace plugify {
 
 			plugin.SetLanguageModule(languageModule);
 
-			// Load plugin through language module
 			auto loadResult = SafeCall<LoadData>("OnPluginLoad", plugin.GetName(), [&] {
 				return plugin.GetLanguageModule()->OnPluginLoad(plugin);
 			});
@@ -212,7 +207,6 @@ namespace plugify {
 				return MakeError(std::move(loadResult.error()));
 			}
 
-			// Validate and set plugin data
 			auto validateResult = ValidateAndSetPluginData(plugin, *loadResult);
 			if (!validateResult) {
 				plugin.SetLanguageModule(nullptr);
@@ -274,7 +268,6 @@ namespace plugify {
 		Result<void> UnloadPlugin(Extension& plugin) {
 			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
-			// Clear all plugin data
 			plugin.SetLanguageModule(nullptr);
 			plugin.SetUserData(nullptr);
 			plugin.SetMethodTable({});
@@ -301,31 +294,6 @@ namespace plugify {
 			return result;
 		}
 
-		// Preload support
-		/*Result<void> PreloadAssembly(
-			const std::filesystem::path& path,
-			const std::vector<std::filesystem::path>& searchPaths
-		) {
-			auto absPath = _fileSystem->GetAbsolutePath(path);
-			if (!absPath) {
-				return MakeError(absPath.error());
-			}
-
-			// Check if already cached
-			if (_assemblies.contains(*absPath)) {
-				return {};
-			}
-
-			LoadFlag flags = GetLoadFlags();
-			auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
-			if (!assemblyResult) {
-				return MakeError(assemblyResult.error());
-			}
-
-			_assemblies.emplace(std::move(*absPath), std::move(*assemblyResult));
-			return {};
-		}*/
-
 		// Statistics
 		const LoadStatistics& GetStatistics() const {
 			return _stats;
@@ -340,7 +308,6 @@ namespace plugify {
 		}
 
 	private:
-		// Helper to get or load assembly
 		Result<std::shared_ptr<IAssembly>> GetOrLoadAssembly(
 			const std::filesystem::path& path,
 			const std::vector<std::filesystem::path>& searchPaths
@@ -352,14 +319,12 @@ namespace plugify {
 				return MakeError(std::move(absPath.error()));
 			}
 
-			// Check cache first
 			if (auto it = _assemblies.find(*absPath); it != _assemblies.end()) {
 				if (auto assembly = it->second) {
 					return assembly;
 				}
 			}
 
-			// Load assembly
 			LoadFlag flags = GetLoadFlags();
 			auto assemblyResult = _assemblyLoader->Load(*absPath, flags, searchPaths);
 			if (!assemblyResult) {
@@ -437,7 +402,6 @@ namespace plugify {
 				);
 			}
 
-			// Validate methods
 			std::vector<std::string> errors;
 			for (size_t i = 0; i < methods.size(); ++i) {
 				const auto& [method, addr] = methods[i];

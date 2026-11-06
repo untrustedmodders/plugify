@@ -86,10 +86,6 @@ static const std::vector<std::shared_ptr<Enum>> emptyEnums;
 static const std::vector<MethodData> emptyMethodData;
 
 // ============================================================================
-// Extension::Impl Definition
-// ============================================================================
-
-// ============================================================================
 // Constructor & Destructor
 // ============================================================================
 
@@ -424,10 +420,9 @@ ExtensionType Extension::GetExtensionType(const std::filesystem::path& path) {
 }
 
 // ============================================================================
-// Additional Helper Methods (Optional)
+// State Machine
 // ============================================================================
 
-// Helper to validate state transitions (optional implementation)
 bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 	// Teardown reaches further than the table below suggests. Anything that got as
 	// far as the loading stage may still hold a language module and an assembly,
@@ -455,8 +450,6 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 		}
 	}
 
-	// Define valid state transitions
-	// This is just an example - adjust based on your actual state machine
 	switch (from) {
 		case ExtensionState::Unknown:
 			return to == ExtensionState::Discovered;
@@ -525,7 +518,6 @@ bool Extension::IsValidTransition(ExtensionState from, ExtensionState to) {
 	}
 }
 
-// Debug/logging helper
 std::string Extension::ToString() const {
 	return std::format(
 		"Extension[id={}, name={}, type={}, state={}, errors={}, warnings={}]",
@@ -542,7 +534,6 @@ const std::string& Extension::GetVersionString() const noexcept {
 	return _impl->version;
 }
 
-// Add dependency helper (for runtime dependency injection)
 void Extension::AddDependency(std::string dep) {
 	if (!_impl->manifest.dependencies) {
 		_impl->manifest.dependencies = std::vector<Dependency>{};
@@ -550,7 +541,6 @@ void Extension::AddDependency(std::string dep) {
 	_impl->manifest.dependencies->emplace_back().SetName(std::move(dep));
 }
 
-// Reset extension to initial state (useful for reload scenarios)
 void Extension::Reset() {
 	*this = Extension{};
 }

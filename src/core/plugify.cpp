@@ -71,9 +71,6 @@ struct Plugify::Impl {
 			return MakeError("Failed to create directories");
 		}
 
-		// Initialize manager
-		//manager.Initialize();
-
 		logger->Log("Plugify initialized successfully", Severity::Info);
 		logger->Log(std::format("Version: {}", version), Severity::Info);
 
@@ -145,7 +142,6 @@ private:
 			}
 		};
 
-		// createDir(config.paths.baseDir);
 		create_dir(config.paths.extensionsDir);
 		create_dir(config.paths.configsDir);
 		create_dir(config.paths.dataDir);

@@ -22,7 +22,6 @@ namespace plugify {
 		std::optional<std::vector<std::string>> suggestedFixes;
 		bool isBlocking{ true }; // True if this issue prevents loading the extension
 
-		// Generate detailed description with constraint info
 		std::string GetDetailedDescription() const {
 			std::string buffer;
 			auto it = std::back_inserter(buffer);

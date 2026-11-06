@@ -115,10 +115,8 @@ namespace plugify {
 			}
 		} logging{};
 
-		// Comprehensive merge implementation
 		void MergeFrom(const Config& other, ConfigSource source = ConfigSource::Override);
 
-		// Alternative merge for selective field updates
 		void MergeField(std::string_view fieldPath, const Config& other, ConfigSource source = ConfigSource::Override);
 
 		// Get effective source for debugging
@@ -132,12 +130,10 @@ namespace plugify {
 		    );
 		}
 
-		// Reset to defaults
 		void Reset() {
 			*this = Config{};
 		}
 
-		// Validation of fields
 		Result<void> Validate() const;
 
 	private:

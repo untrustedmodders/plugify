@@ -29,13 +29,6 @@ namespace plugify {
 		void Update(std::chrono::milliseconds deltaTime) const;
 		void Terminate() const;
 
-		// Extension operations
-		// Result<ExtensionRef> LoadExtension(const std::filesystem::path& path);
-		// Result<void> UnloadExtension(std::string_view name);
-		// Result<void> ReloadExtension(std::string_view name);
-		// Result<void> EnableExtension(std::string_view name);
-		// Result<void> DisableExtension(std::string_view name);
-
 		// Query operations
 		[[nodiscard]] bool
 		IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint = {}) const noexcept;

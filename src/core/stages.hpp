@@ -10,7 +10,6 @@ namespace plugify {
 		Sequential,	 // Processes in container order
 	};
 
-	// Base interface
 	template <typename T>
 	class IStage {
 	public:
@@ -41,7 +40,6 @@ namespace plugify {
 			return StageType::Transform;
 		}
 
-		// Process single item
 		virtual Result<void> ProcessItem(T& item) = 0;
 
 		// Optional: filter predicate
@@ -58,7 +56,6 @@ namespace plugify {
 			return StageType::Barrier;
 		}
 
-		// Process all items
 		// This allows the stage to reorder, filter, or add/remove items.
 		// Stages after a barrier may hold spans into the container or pointers at
 		// single items, so this is the last point at which it may be reallocated: a
@@ -74,10 +71,8 @@ namespace plugify {
 			return StageType::Sequential;
 		}
 
-		// Process item with knowledge of its position
 		virtual Result<void> ProcessItem(T& item) = 0;
 
-		// Should we continue after an error?
 		virtual bool ContinueOnError() const {
 			return true;
 		}

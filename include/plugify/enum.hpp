@@ -9,7 +9,6 @@
 namespace plugify {
 	class Value;
 
-	// Enum Class
 	class PLUGIFY_API Enum {
 	public:
 		Enum();

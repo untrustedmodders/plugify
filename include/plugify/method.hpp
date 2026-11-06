@@ -12,7 +12,6 @@
 namespace plugify {
 	class Property;
 
-	// Method Class
 	class PLUGIFY_API Method {
 	public:
 		Method();

@@ -199,13 +199,13 @@ void LibsolvDependencyResolver::AddExtensionsToPool(std::span<const Extension> e
 		_extensionToSolvableId[id] = solvableId;
 		_solvableIdToExtension[solvableId] = id;
 
-		// Setup dependencies and conflicts
 		SetupDependencies(solvableId, manifest);
 		SetupConflicts(solvableId, manifest);
 		SetupObsoletes(solvableId, manifest);
 	}
 
-	// Create provides for all extensions (self-provides)
+	// Index of who provides what, which every lookup below goes through. Nothing
+	// can be resolved before it, and it has to be rebuilt if a solvable is added.
 	pool_createwhatprovides(_pool.get());
 }
 
@@ -213,7 +213,6 @@ Id LibsolvDependencyResolver::AddSolvable(const Manifest& manifest) {
 	Id solvableId = repo_add_solvable(_repo);
 	Solvable* s = pool_id2solvable(_pool.get(), solvableId);
 
-	// Set extension name
 	s->name = pool_str2id(_pool.get(), manifest.name.c_str(), 1);
 
 	// Set version. Not as the manifest writes it: with several extensions under one
@@ -223,7 +222,6 @@ Id LibsolvDependencyResolver::AddSolvable(const Manifest& manifest) {
 	auto versionStr = MatchEvr(manifest.version);
 	s->evr = pool_str2id(_pool.get(), versionStr.c_str(), 1);
 
-	// Set vendor
 	if (manifest.author) {
 		s->vendor = pool_str2id(_pool.get(), manifest.author->c_str(), 1);
 	}
@@ -652,10 +650,8 @@ void LibsolvDependencyResolver::ProcessSolverProblems(Solver* solver, Resolution
 		Id source, target, dep;
 		SolverRuleinfo type = solver_ruleinfo(solver, probr, &source, &target, &dep);
 
-		// Create issue for this problem
 		DependencyIssue issue;
 		issue.problem = "Dependency problem";
-		//issue.isBlocking = true; // All problems from solver are blocking
 
 		// Determine affected extensions
 		if (source) {

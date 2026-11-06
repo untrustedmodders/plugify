@@ -8,7 +8,6 @@
 #include "plugify/types.hpp"
 
 namespace plugify {
-	// Platform-specific operations interface
 	class IPlatformOps {
 	public:
 		virtual ~IPlatformOps() = default;

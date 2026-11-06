@@ -9,7 +9,6 @@ namespace plugify {
 	// Pipeline Implementation
 	// ============================================================================
 
-	// Stage statistics
 	struct StageStatistics {
 		size_t itemsIn = 0;
 		size_t itemsOut = 0;
@@ -103,7 +102,6 @@ namespace plugify {
 					std::format_to(it, "{} item(s) failed to process:\n\n", totalFailed);
 				}
 
-				// Only show stages that had failures
 				for (const auto& stage : stages) {
 					if (stage.stats.failed > 0 || !stage.stats.errors.empty()) {
 						if (stage.stats.failed > 0) {
@@ -112,7 +110,6 @@ namespace plugify {
 							std::format_to(it, "Stage '{}':\n", stage.Title());
 						}
 
-						// Show actual errors with cleaner formatting
 						for (const auto& [item, error] : stage.stats.errors) {
 							std::format_to(it, "  • {}: {}\n", item, error);
 						}
@@ -124,7 +121,6 @@ namespace plugify {
 			}
 		};
 
-		// Builder pattern for pipeline construction
 		class Builder {
 			friend class Pipeline;
 
@@ -168,7 +164,6 @@ namespace plugify {
 
 			auto pipelineStart = std::chrono::steady_clock::now();
 
-			// Execute each stage
 			for (const auto& [stage, required] : _stages) {
 				auto stats = ExecuteStage(stage.get(), items);
 
@@ -206,7 +201,6 @@ namespace plugify {
 			// Setup. A stage that could not set itself up cannot do its job either,
 			// which is what stops the pipeline.
 			if (auto result = Guarded([&] { return stage->Setup(items); })) {
-				// Execute based on stage type
 				switch (stage->GetType()) {
 					case StageType::Transform:
 						ExecuteTransform(static_cast<ITransformStage<T>*>(stage), items, stats);
@@ -307,7 +301,6 @@ namespace plugify {
 					continue;
 				}
 
-				// Stop if error occurred and stage doesn't continue on error
 				if (stats.failed > 0 && !continueOnError) {
 					break;
 				}

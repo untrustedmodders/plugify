@@ -10,7 +10,6 @@
 namespace plugify {
 	class Binding;
 
-	// Class Class
 	class PLUGIFY_API Class {
 	public:
 		Class();
