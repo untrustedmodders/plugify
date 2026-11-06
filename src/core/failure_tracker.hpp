@@ -29,9 +29,9 @@ namespace plugify {
 
 			// Check if any of this extension's dependencies have failed
 			if (auto it = dependencies.find(ext.GetId()); it != dependencies.end()) {
-				for (const auto& depId : it->second) {
-					if (_failedExtensions.contains(depId)) {
-						return depId;
+				for (const auto& dependencyId : it->second) {
+					if (_failedExtensions.contains(dependencyId)) {
+						return dependencyId;
 					}
 				}
 			}
