@@ -20,11 +20,16 @@ namespace plugify {
 
 		virtual StageType GetType() const = 0;
 
-		// Optional: setup/teardown
-		virtual void Setup([[maybe_unused]] std::span<T> items) {
+		// Optional: setup/teardown. A stage that cannot set itself up cannot do its
+		// job either, so this failing stops the pipeline.
+		virtual Result<void> Setup([[maybe_unused]] std::span<T> items) {
+			return {};
 		}
 
-		virtual void Teardown([[maybe_unused]] std::span<T> items) {
+		// Runs whether the stage did its work or not, and a failure here is recorded
+		// rather than acted on: by this point the work has already happened.
+		virtual Result<void> Teardown([[maybe_unused]] std::span<T> items) {
+			return {};
 		}
 	};
 
@@ -54,7 +59,10 @@ namespace plugify {
 		}
 
 		// Process all items
-		// This allows the stage to reorder, filter, or add/remove items
+		// This allows the stage to reorder, filter, or add/remove items.
+		// Stages after a barrier may hold spans into the container or pointers at
+		// single items, so this is the last point at which it may be reallocated: a
+		// second barrier placed after them would invalidate what they kept.
 		virtual Result<void> ProcessAll(std::vector<T>& items) = 0;
 	};
 
@@ -67,7 +75,7 @@ namespace plugify {
 		}
 
 		// Process item with knowledge of its position
-		virtual Result<void> ProcessItem(T& item, size_t position, size_t total) = 0;
+		virtual Result<void> ProcessItem(T& item) = 0;
 
 		// Should we continue after an error?
 		virtual bool ContinueOnError() const {

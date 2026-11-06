@@ -459,7 +459,12 @@ namespace plugify {
 		Result<T> SafeCall(std::string_view op, std::string_view name, Func&& func, const Location& location = Location::current()) noexcept {
 			[[maybe_unused]] ScopedZone zone(_profiler, location, "{}::{}", name, op);
 			try {
-				return func();
+				if constexpr (std::is_void_v<std::invoke_result_t<Func>>) {
+					func();
+					return {};
+				} else {
+					return func();
+				}
 			} catch (const std::bad_alloc&) {
 				return MakeError("{}: out of memory", op);
 			} catch (const std::exception& e) {

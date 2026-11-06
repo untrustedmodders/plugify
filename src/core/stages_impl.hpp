@@ -28,13 +28,24 @@ namespace plugify {
 			return item.GetState() == ExtensionState::Discovered;
 		}
 
-		void Setup([[maybe_unused]] std::span<Extension> items) override {
-			if (auto result = LoadSchema(schemas::module)) {
-				_schemas[ExtensionType::Module] = std::move(*result);
+		Result<void> Setup([[maybe_unused]] std::span<Extension> items) override {
+			// The schemas are built into the library, so one of them failing to load is
+			// a problem with the build and not with anything the user wrote. Reported
+			// here it is said once; left to ProcessItem it came out as "no schema
+			// registered" against every manifest in the directory.
+			auto module = LoadSchema(schemas::module);
+			if (!module) {
+				return MakeError(std::move(module.error()));
 			}
-			if (auto result = LoadSchema(schemas::plugin)) {
-				_schemas[ExtensionType::Plugin] = std::move(*result);
+
+			auto plugin = LoadSchema(schemas::plugin);
+			if (!plugin) {
+				return MakeError(std::move(plugin.error()));
 			}
+
+			_schemas[ExtensionType::Module] = std::move(*module);
+			_schemas[ExtensionType::Plugin] = std::move(*plugin);
+			return {};
 		}
 
 		Result<void> ProcessItem(Extension& ext) override {
@@ -337,7 +348,6 @@ namespace plugify {
 
 
 	// Uses CRTP (Curiously Recurring Template Pattern) for compile-time polymorphism
-	// Derived classes must implement: DoProcessItem() [non-virtual]
 	template <typename Derived>
 	class BaseFailurePropagatingStage : public ISequentialStage<Extension> {
 	protected:
@@ -367,26 +377,23 @@ namespace plugify {
 			return true;
 		}
 
-		void Setup(std::span<Extension> items) override {
+		Result<void> Setup(std::span<Extension> items) override {
+			// Held for the rest of the stage, which is safe because the barrier that is
+			// allowed to reallocate the container has already run
 			_extensions = items;
 
 			if constexpr (requires(Derived& d) { d.DoSetup(items); }) {
 				static_cast<Derived*>(this)->DoSetup(items);
 			}
+
+			return {};
 		}
 
-		Result<void> ProcessItem(Extension& ext, size_t position, size_t total) override {
+		Result<void> ProcessItem(Extension& ext) override {
 			// Common dependency failure check
 			if (auto failedDep = _failureTracker.GetFailedDependency(ext, _depGraph)) {
 				return HandleDependencyFailure(ext, failedDep);
 			}
-
-			// Not `if constexpr`: a derived class without the method would leave this
-			// function returning nothing at all, which no warning catches.
-			static_assert(
-				requires(Derived& d, Extension& e) { d.DoProcessItem(e, size_t{}, size_t{}); },
-				"a failure-propagating stage has to implement DoProcessItem"
-			);
 
 			// Every stage keeps the same book: enter the busy state, do the work, and
 			// then either record the failure or leave the item in the state the next
@@ -394,10 +401,16 @@ namespace plugify {
 			// forget the timeout or to name the wrong state.
 			ext.StartOperation(Derived::kBusy);
 
-			auto result = static_cast<Derived*>(this)->DoProcessItem(ext, position, total);
-			if (!result) {
-				HandleOperationFailure(ext, result, ExtensionState::Failed);
-				return result;
+			// Not `if constexpr`: a derived class without the method would leave this
+			// function returning nothing at all, which no warning catches.
+			if constexpr (requires(Derived& d) { d.DoProcessItem(ext); }) {
+				auto result = static_cast<Derived*>(this)->DoProcessItem(ext);
+				if (!result) {
+					HandleOperationFailure(ext, result, ExtensionState::Failed);
+					return result;
+				}
+			} else {
+				static_assert("a failure-propagating stage has to implement DoProcessItem");
 			}
 
 			ext.EndOperation(Derived::kDone);
@@ -411,10 +424,12 @@ namespace plugify {
 			return {};
 		}
 
-		void Teardown(std::span<Extension> items) override {
+		Result<void> Teardown(std::span<Extension> items) override {
 			if constexpr (requires(Derived& d) { d.DoTeardown(items); }) {
-				static_cast<Derived*>(this)->DoTeardown(items);
+				return static_cast<Derived*>(this)->DoTeardown(items);
 			}
+
+			return {};
 		}
 
 	protected:
@@ -469,6 +484,7 @@ namespace plugify {
 	// ============================================================================
 
 	class LoadingStage : public BaseFailurePropagatingStage<LoadingStage> {
+		// Pointers into the container, which nothing after the barrier reallocates
 		std::flat_map<std::string_view, const Extension*> _loadedModules;
 
 	public:
@@ -486,7 +502,7 @@ namespace plugify {
 		}
 
 		// Non-virtual method called by base class via CRTP
-		Result<void> DoProcessItem(Extension& ext, size_t, size_t) {
+		Result<void> DoProcessItem(Extension& ext) {
 			switch (ext.GetType()) {
 				case ExtensionType::Module: {
 					auto result = _loader.LoadModule(ext);
@@ -547,16 +563,6 @@ namespace plugify {
 				}
 			}
 		}
-
-		Result<void> DoProcessItem(Extension& ext, size_t, size_t) {
-			for (const auto& module : _runningModules) {
-				if (auto result = _loader.MethodExport(*module, ext); !result) {
-					return result;
-				}
-			}
-
-			return {};
-		}
 	};
 
 	// ============================================================================
@@ -579,7 +585,7 @@ namespace plugify {
 				   && item.GetType() == ExtensionType::Plugin;
 		}
 
-		Result<void> DoProcessItem(Extension& ext, size_t, size_t) {
+		Result<void> DoProcessItem(Extension& ext) {
 			return _loader.StartPlugin(ext);
 		}
 

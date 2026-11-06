@@ -205,7 +205,7 @@ namespace plugify {
 
 			// Setup. A stage that could not set itself up cannot do its job either,
 			// which is what stops the pipeline.
-			if (auto result = Guarded([&] { stage->Setup(items); })) {
+			if (auto result = Guarded([&] { return stage->Setup(items); })) {
 				// Execute based on stage type
 				switch (stage->GetType()) {
 					case StageType::Transform:
@@ -228,7 +228,7 @@ namespace plugify {
 
 			// Teardown whatever happened above: a stage may have taken something in
 			// Setup that it has to give back.
-			if (auto result = Guarded([&] { stage->Teardown(items); }); !result) {
+			if (auto result = Guarded([&] { return stage->Teardown(items); }); !result) {
 				stats.errors.emplace_back(stage->GetName(), std::move(result.error()));
 			}
 
@@ -299,7 +299,6 @@ namespace plugify {
 			StageStatistics& stats
 		) {
 			bool continueOnError = stage->ContinueOnError();
-			size_t total = items.size();
 
 			for (size_t i = 0; i < items.size(); ++i) {
 				auto& item = items[i];
@@ -313,7 +312,7 @@ namespace plugify {
 					break;
 				}
 
-				if (auto result = Guarded([&] { return stage->ProcessItem(item, i, total); })) {
+				if (auto result = Guarded([&] { return stage->ProcessItem(item); })) {
 					++stats.succeeded;
 				} else {
 					++stats.failed;
