@@ -316,6 +316,9 @@ namespace plugify {
 		) {
 			[[maybe_unused]] ScopedZone zone(_profiler, PLUGIFY_SIGNATURE);
 
+			// Keyed on the absolute path, which is the runtime path itself: the
+			// manifest's is already absolute and lexically normal by the time it gets
+			// here, so the erases above find what this put in.
 			auto absPath = _fileSystem->GetAbsolutePath(path);
 			if (!absPath) {
 				return MakeError(std::move(absPath.error()));

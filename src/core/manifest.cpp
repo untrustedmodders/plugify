@@ -556,12 +556,16 @@ void Manifest::ResolvePaths(const std::filesystem::path& base, const std::filesy
 	} else {
 		runtime = PLUGIFY_PATH_LITERAL("bin") / create_name(file);
 	}
-	runtime = base / *runtime;
+	// Normal, not just absolute: a manifest is free to write 'bin/../bin/x' or
+	// './bin/x', and absolute() would collapse that while this path kept it. Two
+	// spellings of one file compare unequal, which is one spelling too many for
+	// something used as a cache key.
+	runtime = (base / *runtime).lexically_normal();
 
 	// Set correct path to directories
 	if (directories) {
 		for (auto& dir : *directories) {
-			dir = base / dir;
+			dir = (base / dir).lexically_normal();
 		}
 	}
 }
