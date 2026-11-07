@@ -373,7 +373,7 @@ std::vector<const Extension*> LibsolvDependencyResolver::Matches(
 
 		auto it = std::ranges::find(extensions, found->second, &Extension::GetId);
 		if (it != extensions.end()) {
-			matches.push_back(&(*it));
+			matches.push_back(&*it);
 		}
 	}
 

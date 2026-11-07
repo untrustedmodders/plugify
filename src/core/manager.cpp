@@ -687,7 +687,7 @@ const Extension* Manager::FindExtension(UniqueId id) const noexcept {
 
 	auto it = std::ranges::find(_impl->extensions, id, &Extension::GetId);
 	if (it != _impl->extensions.end()) {
-		return &(*it);
+		return &*it;
 	}
 	return nullptr;
 }
