@@ -55,9 +55,27 @@ namespace plugify {
 		 */
 		~JitCall();
 
-		enum class WaitType { None, Breakpoint, Wait_Keypress };
+		/**
+		 * @enum WaitType
+		 * @brief What the generated stub does right before it calls the target.
+		 *
+		 * Meant for debugging a call that is assembled at runtime, where there is
+		 * no source line to put a breakpoint on.
+		 */
+		enum class WaitType {
+			None,          ///< Call the target straight away.
+			Breakpoint,    ///< Trap into the debugger first.
+			Wait_Keypress  ///< Wait for a key press first.
+		};
 
-		using CallingFunc = void (*)(const uint64_t* params, const Return*);  // Return can be null
+		/**
+		 * @brief The signature of the generated stub.
+		 *
+		 * Takes the parameter slots built with @ref Parameters and, unless the
+		 * target returns nothing, the storage the return value is written to.
+		 * The @ref Return pointer may be null.
+		 */
+		using CallingFunc = void (*)(const uint64_t* params, const Return*);
 
 		/**
 		 * @brief HiddenParam is a predicate function pointer to determine if a ValueType should be
@@ -138,16 +156,22 @@ namespace plugify {
 		PLUGIFY_NO_DLL_EXPORT_WARNING(std::unique_ptr<Impl> _impl;)
 	};
 
-	// Concept for types that can be stored in parameter slots
+	/**
+	 * @brief Concept for types that can be stored in parameter slots.
+	 */
 	template <typename T>
 	concept ParameterType = std::is_trivially_copyable_v<T>
 	                        && (std::is_arithmetic_v<T> || std::is_pointer_v<T> || std::is_enum_v<T>);
 
-	// Concept for types that fit in a single slot
+	/**
+	 * @brief Concept for types that fit in a single slot.
+	 */
 	template <typename T>
 	concept SingleSlotType = ParameterType<T> && sizeof(T) <= sizeof(uint64_t);
 
-	// Concept for types that need multiple slots
+	/**
+	 * @brief Concept for types that need multiple slots.
+	 */
 	template <typename T>
 	concept MultiSlotType = ParameterType<T> && sizeof(T) > sizeof(uint64_t);
 
@@ -159,8 +183,8 @@ namespace plugify {
 	 */
 	class Parameters {
 	public:
-		using SlotType = uint64_t;
-		static constexpr size_t kSlotSize = sizeof(SlotType);
+		using SlotType = uint64_t;  ///< One register-sized parameter slot.
+		static constexpr size_t kSlotSize = sizeof(SlotType);  ///< Size of one slot in bytes.
 
 		/**
 		 * @brief Constructor.
@@ -286,8 +310,8 @@ namespace plugify {
 	 */
 	class Return {
 	public:
-		using SlotType = uint64_t;
-		static constexpr size_t kMaxSize = 2 * sizeof(SlotType);
+		using SlotType = uint64_t;  ///< One register-sized return slot.
+		static constexpr size_t kMaxSize = 2 * sizeof(SlotType);  ///< Largest return value in bytes.
 
 		/**
 		 * @brief Construct an object of type T in the return storage.

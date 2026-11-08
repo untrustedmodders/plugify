@@ -39,33 +39,50 @@ namespace plugify {
 	 * @brief Replacement for asmjit::FuncSignature using ValueType
 	 */
 	struct Signature {
-		inline static const size_t kMaxFuncArgs = 32;
-		inline static const uint8_t kNoVarArgs = 0xffU;
+		inline static const size_t kMaxFuncArgs = 32;  ///< Largest number of arguments a signature can hold.
+		inline static const uint8_t kNoVarArgs = 0xffU;  ///< Value of @ref varIndex for a function that is not variadic.
 
 		CallConv callConv{CallConv::CDecl}; ///< Calling convention
 		ValueType retType{ValueType::Void}; ///< Return type
 		uint8_t varIndex{kNoVarArgs};  ///< Variable index for variadic functions
 		std::inplace_vector<ValueType, kMaxFuncArgs> argTypes{}; ///< Argument types
 
+		/**
+		 * @brief Append an argument to the signature.
+		 * @param type Type of the argument.
+		 */
 		void AddArg(ValueType type) {
 			argTypes.push_back(type);
 		}
 
+		/**
+		 * @brief Get how many arguments the signature has.
+		 * @return The number of arguments.
+		 */
 		size_t ArgCount() const noexcept {
 			return argTypes.size();
 		}
 
+		/**
+		 * @brief Check whether the signature returns anything.
+		 * @return True if the return type is not @ref ValueType::Void.
+		 */
 		bool HasRet() const noexcept {
 			return retType != ValueType::Void;
 		}
 
+		/**
+		 * @brief Set the return type of the signature.
+		 * @param type The return type.
+		 */
 		void SetRet(ValueType type) noexcept {
 			retType = type;
 		}
 	};
 
 	/**
-	 * @brief Namespace containing string representations of CallConv enum values.
+	 * @struct CallName
+	 * @brief The string representation of each @ref CallConv value, as a manifest writes it.
 	 */
 	struct CallName {
 		static constexpr std::string_view CDecl = "cdecl";

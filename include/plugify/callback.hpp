@@ -167,7 +167,7 @@ namespace plugify {
 	 */
 	class ParametersSpan {
 	public:
-		using SlotType = uint64_t;
+		using SlotType = uint64_t;  ///< One register-sized parameter slot.
 
 		/**
 		 * @brief Constructs a ParametersSpan.
@@ -222,7 +222,7 @@ namespace plugify {
 	 */
 	class ReturnSlot {
 	public:
-		using SlotType = void;
+		using SlotType = void;  ///< The storage is untyped bytes.
 
 		/**
 		 * @brief Construct from byte storage

@@ -17,6 +17,9 @@ namespace plugify {
 	 */
 	class IAssembly {
 	public:
+		/**
+		 * @brief Virtual destructor
+		 */
 		virtual ~IAssembly() = default;
 
 		/**
@@ -51,5 +54,9 @@ namespace plugify {
 		virtual void* GetHandle() const = 0;
 	};
 
+	/**
+	 * @typedef AssemblyPtr
+	 * @brief Shared ownership of a loaded assembly.
+	 */
 	using AssemblyPtr = std::shared_ptr<IAssembly>;
 }  // namespace plugify

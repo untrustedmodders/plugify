@@ -13,12 +13,17 @@ namespace plugify {
 	 */
 	class IAssemblyLoader {
 	public:
+		/**
+		 * @brief Virtual destructor
+		 */
 		virtual ~IAssemblyLoader() = default;
 
 		/**
 		 * @brief Load an assembly from file
 		 * @param path Path to the assembly file
 		 * @param flags Loading flags
+		 * @param searchPaths Extra directories to look in while resolving the dependencies of the
+		 * assembly
 		 * @return Loaded assembly or error
 		 */
 		virtual Result<AssemblyPtr> Load(
@@ -35,5 +40,9 @@ namespace plugify {
 		virtual Result<void> Unload(const AssemblyPtr& assembly) = 0;
 	};
 
+	/**
+	 * @typedef AssemblyLoaderPtr
+	 * @brief Shared ownership of an assembly loader.
+	 */
 	using AssemblyLoaderPtr = std::shared_ptr<IAssemblyLoader>;
 }

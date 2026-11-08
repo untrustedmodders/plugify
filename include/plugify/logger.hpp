@@ -9,7 +9,15 @@ namespace plugify {
 	 * @enum Severity
 	 * @brief Enumerates severity levels for logging messages.
 	 */
-	enum class Severity { Unknown, Trace, Debug, Info, Warning, Error, Fatal };
+	enum class Severity {
+		Unknown,  ///< Not classified; logged whenever the level lets everything through.
+		Trace,    ///< Fine-grained tracing of what the framework is doing.
+		Debug,    ///< Diagnostics useful while developing an extension.
+		Info,     ///< Ordinary progress messages.
+		Warning,  ///< Something unexpected that did not stop the operation.
+		Error,    ///< An operation failed.
+		Fatal     ///< The framework cannot carry on.
+	};
 
 	/**
 	 * @class ILogger
@@ -17,6 +25,9 @@ namespace plugify {
 	 */
 	class ILogger {
 	public:
+		/**
+		 * @brief Virtual destructor.
+		 */
 		virtual ~ILogger() = default;
 
 		/**
