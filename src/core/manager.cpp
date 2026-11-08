@@ -134,13 +134,6 @@ public:
 
 		auto report = pipeline->Execute(extensions);
 
-		// A stage that stopped is Plugify unable to do its job; an extension that did
-		// not come up is Plugify doing its job and saying so. Only the first is the
-		// caller's problem.
-		const bool stopped = std::ranges::any_of(report.stages, [](const auto& stage) {
-			return stage.stats.stopped;
-		});
-
 		if (config.logging.printReport) {
 			logger->Log(report.Summary(), Severity::Info);
 			logger->Log(loader->GetStatistics().Summary(), Severity::Info);
@@ -189,7 +182,7 @@ public:
 			logger->Log(problems, Severity::Error);
 		}
 
-		if (stopped) {
+		if (report.Stopped()) {
 			// Whatever came up before the stage that stopped has to come back down:
 			// the caller is told that initialization failed, and will not call
 			// Terminate for something it does not believe is running.
@@ -395,6 +388,7 @@ public:
 		return exts;
 	}
 
+#pragma region Reports
 	// What the user reads when something did not come up: every extension that is
 	// not running, the errors it collected on the way, and where the missing
 	// pieces belong. Empty when all is well.
@@ -532,7 +526,6 @@ public:
 		}
 	}
 
-#pragma region Reports
 	static constexpr size_t kBufferSize = 4096;
 
 	std::string_view NameOf(UniqueId id) const {
@@ -660,9 +653,6 @@ void Manager::Terminate() const {
 bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint> constraint) const noexcept {
 	std::lock_guard lock(_impl->lifecycleMutex);
 
-	// Running, not merely discovered: one that failed, was skipped or is still on
-	// its way through the pipeline is not something a dependant can use. It is also
-	// what picks the surviving copy when a name is installed twice.
 	auto it = std::ranges::find_if(_impl->extensions, [&](const Extension& ext) {
 		return ext.GetState() == ExtensionState::Running && ext.GetName() == name;
 	});
@@ -675,9 +665,6 @@ bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint>
 const Extension* Manager::FindExtension(std::string_view name) const noexcept {
 	std::lock_guard lock(_impl->lifecycleMutex);
 
-	// A name can be installed twice, and only one copy of it runs. The running one
-	// is the answer; the first of the others is still worth returning, because that
-	// is what the caller reads the state and the errors off.
 	const Extension* first = nullptr;
 
 	for (const auto& ext : _impl->extensions) {

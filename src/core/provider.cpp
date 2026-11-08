@@ -10,8 +10,7 @@ struct Provider::Impl {
 	const ServiceLocator& services;
 	const Config& config;
 	const Manager& manager;
-	// Resolved once: this is the logging path for every language module, and a
-	// lookup costs a shared lock, a hash lookup and a refcount per message.
+
 	std::shared_ptr<ILogger> logger;
 };
 

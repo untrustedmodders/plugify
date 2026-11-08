@@ -119,6 +119,12 @@ namespace plugify {
 
 				return buffer;
 			}
+
+			bool Stopped() const {
+				return std::ranges::any_of(stages, [](const auto& stage) {
+					return stage.stats.stopped;
+				});
+			}
 		};
 
 		class Builder {
