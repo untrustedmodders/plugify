@@ -28,6 +28,10 @@ namespace plugify {
 			return _handle ? _handle->GetPath() : emptyPath;
 		}
 
+		Address GetBase() const override {
+			return _handle ? _handle->GetHandle() : nullptr;
+		}
+
 		void* GetHandle() const override {
 			return _handle ? _handle->GetHandle() : nullptr;
 		}
