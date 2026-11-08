@@ -55,7 +55,7 @@ namespace plugify {
 	 * and increments like one, but will not be mixed up with an unrelated number.
 	 * Identifiers are handed out by the manager as extensions are discovered.
 	 *
-	 * @see Extension::GetId, Registrar
+	 * @see Extension::GetId
 	 */
 	struct UniqueId {
 		/**

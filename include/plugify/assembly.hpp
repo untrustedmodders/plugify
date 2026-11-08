@@ -42,12 +42,6 @@ namespace plugify {
 		virtual const std::filesystem::path& GetPath() const = 0;
 
 		/**
-		 * @brief Get the base address of the assembly
-		 * @return Base memory address
-		 */
-		virtual Address GetBase() const = 0;
-
-		/**
 		 * @brief Get raw platform handle
 		 * @return Platform-specific handle (HMODULE, void*, etc)
 		 */
