@@ -675,11 +675,26 @@ bool Manager::IsExtensionLoaded(std::string_view name, std::optional<Constraint>
 const Extension* Manager::FindExtension(std::string_view name) const noexcept {
 	std::lock_guard lock(_impl->lifecycleMutex);
 
-	auto it = std::ranges::find(_impl->extensions, name, &Extension::GetName);
-	if (it != _impl->extensions.end()) {
-		return &(*it);
+	// A name can be installed twice, and only one copy of it runs. The running one
+	// is the answer; the first of the others is still worth returning, because that
+	// is what the caller reads the state and the errors off.
+	const Extension* first = nullptr;
+
+	for (const auto& ext : _impl->extensions) {
+		if (ext.GetName() != name) {
+			continue;
+		}
+
+		if (ext.GetState() == ExtensionState::Running) {
+			return &ext;
+		}
+
+		if (!first) {
+			first = &ext;
+		}
 	}
-	return nullptr;
+
+	return first;
 }
 
 const Extension* Manager::FindExtension(UniqueId id) const noexcept {
