@@ -6,7 +6,7 @@ FetchContent_Declare(
         valijson
         GIT_REPOSITORY ${PLUGIFY_VALIJSON_REPO}
         GIT_TAG ${PLUGIFY_VALIJSON_TAG}
-        GIT_SHALLOW TRUE
+        #GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
         GIT_SUBMODULES ""
         EXCLUDE_FROM_ALL
