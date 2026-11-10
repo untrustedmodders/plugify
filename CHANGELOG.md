@@ -1,5 +1,63 @@
 # Changelog
 
+## [3.1.1](https://github.com/untrustedmodders/plugify/compare/v3.1.0...v3.1.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* add bigobj attribute to plugify lib for MSVC ([3f1ed95](https://github.com/untrustedmodders/plugify/commit/3f1ed955ede359de028ce988863874ea2a302301)), closes [#28](https://github.com/untrustedmodders/plugify/issues/28)
+* add conflicts detection ([df9c3ec](https://github.com/untrustedmodders/plugify/commit/df9c3ec7481bc84c8aad97ab47a26f4c1fcb053a))
+* add dep alias ([82b5f26](https://github.com/untrustedmodders/plugify/commit/82b5f264ad68dbb95374d84c40a4428bc241c0af))
+* add dublication detection to libsolv ([4d46338](https://github.com/untrustedmodders/plugify/commit/4d4633870d7428387d888fda53b8e0aeb84b3ed7))
+* add flat_map & flat_set instead of map & set if available ([5e21118](https://github.com/untrustedmodders/plugify/commit/5e2111808ff346547eede35837e6240df68a6d38))
+* add missing format ([b487ea3](https://github.com/untrustedmodders/plugify/commit/b487ea393415a20722656ec0c30b9bd8b92c7545))
+* add misssing code ([7e207c0](https://github.com/untrustedmodders/plugify/commit/7e207c08c016c5c84a0b288389e5493f8702cba1))
+* add mutex on query operations and add cleanup ([9130b52](https://github.com/untrustedmodders/plugify/commit/9130b52afc95e441d6f356a118ce1945b124b1cc))
+* add pipeline exception detection ([6cd35e8](https://github.com/untrustedmodders/plugify/commit/6cd35e80f140e079f47bbd9fccd96ffe9c74c695))
+* add prologue-epilogue to stages ([b9ade0f](https://github.com/untrustedmodders/plugify/commit/b9ade0ff48fcb320fc14f5fa3a83cc073876ec45))
+* add variadic scoped zone formatter ([f16b4c9](https://github.com/untrustedmodders/plugify/commit/f16b4c9e1c4840e437cfc26be1766be1e1528aec))
+* allow manager to continue work if some plugins failed ([0a18614](https://github.com/untrustedmodders/plugify/commit/0a1861412b9e191975ac97b99cce815dc78ea2cb))
+* extension termination on failure ([58fb24f](https://github.com/untrustedmodders/plugify/commit/58fb24feea34c4e2f45d4d2ec4ff98ba8dc396bd))
+* failure cascades in libsolv ([4b0d364](https://github.com/untrustedmodders/plugify/commit/4b0d364c3b90f8c67ddfb208f8257904416e9338))
+* improve insertion on invalid weak ptr ([7e2a102](https://github.com/untrustedmodders/plugify/commit/7e2a1025d993ea2061bfdc1382748d19190c7a5a))
+* improve unsatisfied issues ([bd14d63](https://github.com/untrustedmodders/plugify/commit/bd14d636adb8afdec188ee11fbcbe2b44496a369))
+* libsolv refactor ([01b5704](https://github.com/untrustedmodders/plugify/commit/01b5704943c7d439737933e59f633affc809097e))
+* libsolv refactor (2) ([e03e545](https://github.com/untrustedmodders/plugify/commit/e03e54528ebb431dacfabbd91be15f2619473fc1))
+* libsolv refactor (3) ([4a845eb](https://github.com/untrustedmodders/plugify/commit/4a845eb30b595bc54d118b083d65b4e81f5195d7))
+* libsolv refactor (4) ([1cff904](https://github.com/untrustedmodders/plugify/commit/1cff904c25bb90c52fb0195c160ee38f08139386))
+* libsolv refactor (5) ([2e35e15](https://github.com/untrustedmodders/plugify/commit/2e35e15ab8a9079d8050abcb8b800070c17198fa))
+* libsolv refactor (6) ([0b891f6](https://github.com/untrustedmodders/plugify/commit/0b891f65e6aaa04c94d79d4187cc8f8e882aa626))
+* linux build for steamrt ([6579104](https://github.com/untrustedmodders/plugify/commit/6579104a01a49d26292381763d26c6c6ed790be8))
+* make a config file written against the schema actually load ([c1f2436](https://github.com/untrustedmodders/plugify/commit/c1f2436e36fbbd598d13da46cc6fa99293ba7341))
+* missing failures in libsolv ([0bc8332](https://github.com/untrustedmodders/plugify/commit/0bc8332be6434e09c3828de45ccac5d9d2c3d8ee))
+* MSVC C2026 error for embedded schemas ([5f14c62](https://github.com/untrustedmodders/plugify/commit/5f14c62d8699c71f4581ce49bf0f0f704e9da881)), closes [#26](https://github.com/untrustedmodders/plugify/issues/26)
+* name every unmet dependency ([063dfab](https://github.com/untrustedmodders/plugify/commit/063dfab0defcd84494820f9b546a9effa436e05d))
+* normalize paths ([baaa7ff](https://github.com/untrustedmodders/plugify/commit/baaa7ffb8313f4861b40375dbeec1de0b4da38e0))
+* obsoletes & cycles in libsolver ([4aab13a](https://github.com/untrustedmodders/plugify/commit/4aab13a93dab405bea9079112fc518654257dd13))
+* release build ([ea1427c](https://github.com/untrustedmodders/plugify/commit/ea1427c4d5775beaa401ba3de5364e01ce93a693))
+* remove GetBase from Assembly interface ([2898166](https://github.com/untrustedmodders/plugify/commit/2898166382345425c0dd2b02e12a9b23d59b4d29))
+* remove tolower approach for lookup ([5b44c66](https://github.com/untrustedmodders/plugify/commit/5b44c664b9d3a2646c969e5a3ea8dbeaf106b301))
+* remove unused staff from pipeline ([9b62383](https://github.com/untrustedmodders/plugify/commit/9b62383dd1fde586880a0d93ac1ca9092dcd666a))
+* restore GetBase to keep the IAssembly vtable layout ([464fec6](https://github.com/untrustedmodders/plugify/commit/464fec605b169a30a7aa6cb993013500436d705b))
+* revert dep alias ([58fd0ce](https://github.com/untrustedmodders/plugify/commit/58fd0ceb4bf8294aa789fe6f9e9c48c316367fad))
+* rework lookup by name for running extensions ([90fa0c2](https://github.com/untrustedmodders/plugify/commit/90fa0c25b32c1865fc0e023c5383125ed3612cc5))
+* rework UniqueId ([8a39644](https://github.com/untrustedmodders/plugify/commit/8a3964470fe112d4cd34a367490d1fdd04ba5050))
+* small improvements ([1fe9733](https://github.com/untrustedmodders/plugify/commit/1fe973360370edc8695b4183136b0d1675c57168))
+* small improvements (2) ([de2141f](https://github.com/untrustedmodders/plugify/commit/de2141fff175d1d3ebf7ebc0fe19b337ca69e92b))
+* small improvements with pipeline ([33d24cd](https://github.com/untrustedmodders/plugify/commit/33d24cdb6ee9bca2badb446ae46e6ad3e0ff90c5))
+* store fastest in report as string copies ([0b5a5e8](https://github.com/untrustedmodders/plugify/commit/0b5a5e841874f0dc5c0f477252112bf517a3284c))
+* tiny refactor ([f19e737](https://github.com/untrustedmodders/plugify/commit/f19e73705a098a2a7d9e24522ca2b13337cf7d2d))
+* update config schema ([6e8cf17](https://github.com/untrustedmodders/plugify/commit/6e8cf17752946008ef54b1daf615815fa53ce46d))
+* update deps ([85d0ade](https://github.com/untrustedmodders/plugify/commit/85d0ade7757151834916e0ca019e60919cba3f34))
+* update ignore file with ds store ([62f3d8b](https://github.com/untrustedmodders/plugify/commit/62f3d8b3d35f9321f385f21a3470101478cd1039))
+* use predicate on ranges ([96d59df](https://github.com/untrustedmodders/plugify/commit/96d59dfbb9a08b434630fc90cfdf46b341ab5b6d))
+* ver comparison in libsolv from RPM to semver ([e8e1f7b](https://github.com/untrustedmodders/plugify/commit/e8e1f7b104a5fdcbd594cc179cfd1fc686b7bd28))
+
+
+### Performance Improvements
+
+* stop paying for the profiler and the locator on every call ([e33734c](https://github.com/untrustedmodders/plugify/commit/e33734c9cb754a4e8ecddc30768ab15d394d0f5c))
+
 ## [3.1.0](https://github.com/untrustedmodders/plugify/compare/v3.0.0...v3.1.0) (2026-08-16)
 
 
